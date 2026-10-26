@@ -65,6 +65,9 @@
         "notice": {
           "$ref": "#/components/messages/assistant_notice"
         },
+        "drafted": {
+          "$ref": "#/components/messages/assistant_drafted"
+        },
         "ended": {
           "$ref": "#/components/messages/assistant_ended"
         },
@@ -133,6 +136,9 @@
         },
         {
           "$ref": "#/channels/assistantRun/messages/notice"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/drafted"
         },
         {
           "$ref": "#/channels/assistantRun/messages/ended"
@@ -871,6 +877,59 @@
           "required": [
             "where",
             "instruction"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_drafted": {
+        "name": "drafted",
+        "summary": "A machine draft cut on its translation line (XL-H): its version, marked until accepted, and the terms it did not translate by their labels",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "An id, as the API names the thing elsewhere"
+                },
+                "number": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "number"
+              ],
+              "additionalProperties": false
+            },
+            "missedTerms": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "term": {
+                    "type": "string",
+                    "description": "An id, as the API names the thing elsewhere"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "term",
+                  "label"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "version",
+            "missedTerms"
           ],
           "additionalProperties": false
         }

@@ -1407,6 +1407,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/{id}/translations/{line}/machine-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft a component's translation by machine, through the tenant's translate endpoint
+         * @description Drafts a component's translation by machine: its source, as a translator is shown it, sent in pieces as XLIFF 2.1 to the endpoint the environment routes translation to, each piece a run, with the space's terms it uses and their translations, and each reply read back as strictly as a vendor's file, so a code missing, repeated or invented refuses the whole draft. The draft is cut on the translation's line, marked as drafted by machine, and a publish refuses it until a person with approve accepts it. Each term it did not translate by one of its labels is named. Nothing is sent while the environment's translation policy is off, or outside the data boundary where it says inside. Guardrails, the hourly limit and the endpoint's size are held as a prompt run's are. It needs edit on the component, and a session.
+         */
+        post: operations["draftComponentTranslation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/components/{id}/translations/{line}/machine-draft/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a translation's machine drafts, so it may be published
+         * @description Accepts a translation's machine drafts, every one not yet accepted, so its versions are no longer marked and may be published. An edit after a draft does not accept it. It needs approve on the component.
+         */
+        post: operations["acceptComponentMachineDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{id}/translations/{line}/source-changes": {
         parameters: {
             query?: never;
@@ -13354,7 +13394,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -13489,7 +13529,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -25759,6 +25799,20 @@ export interface operations {
                                 /** @description Out of date: whether any source change since needs retranslating, as its author declared (LOC-015) */
                                 retranslate?: boolean;
                             };
+                            /** @description Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations */
+                            machine?: {
+                                version: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description Each of the space's terms the draft did not translate by one of its labels */
+                                missedTerms: {
+                                    /** Format: uuid */
+                                    term: string;
+                                    label: string;
+                                }[];
+                            } | null;
                         }[];
                     };
                 };
@@ -25928,6 +25982,20 @@ export interface operations {
                             /** @description Out of date: whether any source change since needs retranslating, as its author declared (LOC-015) */
                             retranslate?: boolean;
                         };
+                        /** @description Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations */
+                        machine?: {
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            };
+                            /** @description Each of the space's terms the draft did not translate by one of its labels */
+                            missedTerms: {
+                                /** Format: uuid */
+                                term: string;
+                                label: string;
+                            }[];
+                        } | null;
                     };
                 };
             };
@@ -26137,6 +26205,20 @@ export interface operations {
                             /** @description Out of date: whether any source change since needs retranslating, as its author declared (LOC-015) */
                             retranslate?: boolean;
                         };
+                        /** @description Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations */
+                        machine?: {
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            };
+                            /** @description Each of the space's terms the draft did not translate by one of its labels */
+                            missedTerms: {
+                                /** Format: uuid */
+                                term: string;
+                                label: string;
+                            }[];
+                        } | null;
                     };
                 };
             };
@@ -26221,6 +26303,325 @@ export interface operations {
                 };
             };
             /** @description translation_untranslated: nothing is translated yet to mark */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    draftComponentTranslation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                line: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: a `run` for each piece the component is sent in, `drafted` with the version cut, and `ended` or `failed` */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token, or the caller may read the component but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component, or open translation of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `translation_machine_off`: the environment sends nothing to machine translation; `translation_machine_outside`: it sends only inside the data boundary, and the endpoint is outside; `model_unconfigured`: no endpoint is set up to translate; `endpoint_unusable`: it is retired or has no key; `translation_nothing_to_translate`: the source has no text; `context_too_large`: a piece is more than the endpoint takes; `guardrail_refused`: a guardrail refused what would be sent; `lock_held`: somebody is editing the translation; `model_rate_limited`: past the hourly limit. Each before any call */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    acceptComponentMachineDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+                line: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted, and its status now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "line": "00000000-0000-4000-8000-000000000001",
+                     *       "language": "en",
+                     *       "head": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "translates": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "status": {
+                     *         "status": "untranslated"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description Its language line: open it as any line, `?line=`
+                         */
+                        line: string;
+                        language: string;
+                        /** @description Its newest version recorded against a source, or null while untranslated */
+                        head: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        } | null;
+                        /** @description The source version that head translates, or null */
+                        translates: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        } | null;
+                        status: {
+                            /**
+                             * @description The declared set (LOC-030): untranslated until its first cut; out of date the moment the source changes after what it translates
+                             * @enum {string}
+                             */
+                            status: "untranslated" | "machineDrafted" | "inTranslation" | "translated" | "outOfDate";
+                            /** @description Out of date: whether any source change since needs retranslating, as its author declared (LOC-015) */
+                            retranslate?: boolean;
+                        };
+                        /** @description Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations */
+                        machine?: {
+                            version: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            };
+                            /** @description Each of the space's terms the draft did not translate by one of its labels */
+                            missedTerms: {
+                                /** Format: uuid */
+                                term: string;
+                                label: string;
+                            }[];
+                        } | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the component but may not approve it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such component, or open translation of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `translation_nothing_drafted`: no machine draft of it waits to be accepted */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -36774,7 +37175,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -36924,7 +37325,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -56687,7 +57088,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -58740,7 +59141,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -79772,7 +80173,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            purpose: "drafting" | "chat" | "summarising" | "embedding";
+                            purpose: "drafting" | "chat" | "summarising" | "embedding" | "translate";
                             endpoint: string | null;
                             setBy: string | null;
                             setAt: string | null;
@@ -79852,7 +80253,7 @@ export interface operations {
                 "Idempotency-Key"?: string;
             };
             path: {
-                purpose: "drafting" | "chat" | "summarising" | "embedding";
+                purpose: "drafting" | "chat" | "summarising" | "embedding" | "translate";
             };
             cookie?: never;
         };
@@ -79888,7 +80289,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            purpose: "drafting" | "chat" | "summarising" | "embedding";
+                            purpose: "drafting" | "chat" | "summarising" | "embedding" | "translate";
                             endpoint: string | null;
                             setBy: string | null;
                             setAt: string | null;
@@ -84473,7 +84874,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -95185,7 +95586,8 @@ export interface operations {
                      *       "fallback": "source",
                      *       "outOfDate": "publish",
                      *       "note": {},
-                     *       "conflict": "review"
+                     *       "conflict": "review",
+                     *       "machine": "off"
                      *     }
                      */
                     "application/json": {
@@ -95201,6 +95603,11 @@ export interface operations {
                          * @enum {string}
                          */
                         conflict: "review" | "accept" | "reject";
+                        /**
+                         * @default off
+                         * @enum {string}
+                         */
+                        machine: "off" | "inside" | "any";
                     };
                 };
             };
@@ -95280,6 +95687,11 @@ export interface operations {
                      * @enum {string}
                      */
                     conflict?: "review" | "accept" | "reject";
+                    /**
+                     * @default off
+                     * @enum {string}
+                     */
+                    machine?: "off" | "inside" | "any";
                 };
             };
         };
@@ -95299,7 +95711,8 @@ export interface operations {
                      *       "fallback": "source",
                      *       "outOfDate": "publish",
                      *       "note": {},
-                     *       "conflict": "review"
+                     *       "conflict": "review",
+                     *       "machine": "off"
                      *     }
                      */
                     "application/json": {
@@ -95315,6 +95728,11 @@ export interface operations {
                          * @enum {string}
                          */
                         conflict: "review" | "accept" | "reject";
+                        /**
+                         * @default off
+                         * @enum {string}
+                         */
+                        machine: "off" | "inside" | "any";
                     };
                 };
             };
@@ -107355,6 +107773,20 @@ export interface operations {
                                     /** @description Out of date: whether any source change since needs retranslating, as its author declared (LOC-015) */
                                     retranslate?: boolean;
                                 };
+                                /** @description Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations */
+                                machine?: {
+                                    version: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        number: string;
+                                    };
+                                    /** @description Each of the space's terms the draft did not translate by one of its labels */
+                                    missedTerms: {
+                                        /** Format: uuid */
+                                        term: string;
+                                        label: string;
+                                    }[];
+                                } | null;
                             }[];
                         }[];
                         /** @description Whether more components have translations than the 500 a report names (API-058) */

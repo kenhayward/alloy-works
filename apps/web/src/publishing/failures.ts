@@ -522,6 +522,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       return 'This component has no translation into the language published in, and the document is not published with an untranslated component. Translate it, or let the document fall back to the source.';
     case 'translation_out_of_date':
       return "This component's translation is out of date with a change that needs retranslating. Retranslate it, or mark it current, and publish again.";
+    // A machine draft not yet accepted (the XL plan, XL-I).
+    case 'translation_machine_drafted':
+      return "This component's translation was drafted by machine and nobody has accepted it. A person who may approve it accepts it under Translations, and then publish again.";
     default:
       return 'The publication could not be made. Publish again.';
   }
@@ -545,6 +548,7 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   style_invalid: 'Its theme names no citation style that sets its citations.',
   occurrence_untranslated: 'A component in it has no translation into the language published in.',
   translation_out_of_date: 'A translation in it is out of date with its source.',
+  translation_machine_drafted: 'A translation in it was drafted by machine and not yet accepted.',
   occurrence_unresolved: 'A reference in it waits on an approved version.',
   asset_unreadable: 'A figure in it shows an image you may not see.',
   component_metadata_invalid: 'A component in it has fields not filled in as its type asks.',

@@ -1,4 +1,4 @@
-import type { createApiClient } from '@alloy-works/api-client';
+import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
 import { useCallback, useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
@@ -20,7 +20,15 @@ interface TranslationNow {
   readonly head: Shown | null;
   readonly translates: Shown | null;
   readonly status: { readonly status: string; readonly retranslate?: boolean };
+  /** Its machine draft waiting for a person with approve (XL-I), listed by a component's translations. */
+  readonly machine?: {
+    readonly version: Shown;
+    readonly missedTerms: readonly { readonly term: string; readonly label: string }[];
+  } | null;
 }
+
+/** How a draft's stream is read: `streamPost`, or a test's own. */
+type Stream = (options: StreamPostOptions) => ReturnType<typeof streamPost>;
 
 interface TranslationsNow {
   readonly source: { readonly language: string; readonly latest: Shown; readonly from?: Shown };
@@ -78,6 +86,7 @@ export function TranslationsButton({
   translatable,
   onGo,
   className,
+  stream = streamPost,
 }: {
   client: Client;
   componentId: string;
@@ -88,6 +97,7 @@ export function TranslationsButton({
   translatable: boolean;
   onGo: (address: string) => void;
   className?: string | undefined;
+  stream?: Stream;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -102,6 +112,7 @@ export function TranslationsButton({
           line={line}
           mayEdit={mayEdit}
           translatable={translatable}
+          stream={stream}
           onClose={() => setOpen(false)}
           onGo={(address) => {
             setOpen(false);
@@ -119,6 +130,7 @@ function TranslationsDialog({
   line,
   mayEdit,
   translatable,
+  stream,
   onClose,
   onGo,
 }: {
@@ -127,6 +139,7 @@ function TranslationsDialog({
   line: string | undefined;
   mayEdit: boolean;
   translatable: boolean;
+  stream: Stream;
   onClose: () => void;
   onGo: (address: string) => void;
 }) {
@@ -220,6 +233,16 @@ function TranslationsDialog({
                   </li>
                 ))}
               </ul>
+            )}
+            {here && (
+              <MachineDraft
+                client={client}
+                componentId={componentId}
+                translation={here}
+                mayEdit={mayEdit}
+                stream={stream}
+                onChanged={() => void read()}
+              />
             )}
             {here && (
               <SourceChanges
@@ -368,6 +391,99 @@ function SourceChanges({
       {mayEdit && translation.head !== null && (
         <button type="button" onClick={() => void mark()}>
           Mark current
+        </button>
+      )}
+      {said !== '' && <p role="status">{said}</p>}
+    </section>
+  );
+}
+
+/**
+ * **Draft by machine** (LOC-023 to LOC-026; the XL plan, XL-H to XL-K): on a translation, to whoever
+ * may edit, a draft by the environment's translate endpoint, cut on the line and marked; and, while a
+ * draft waits, the terms it did not translate by their labels and **Accept the machine draft**, which
+ * needs approve and lets it be published.
+ */
+function MachineDraft({
+  client,
+  componentId,
+  translation,
+  mayEdit,
+  stream,
+  onChanged,
+}: {
+  client: Client;
+  componentId: string;
+  translation: TranslationNow;
+  mayEdit: boolean;
+  stream: Stream;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [said, setSaid] = useState('');
+  const path = `/v1/components/${componentId}/translations/${translation.line}/machine-draft`;
+
+  const draft = async () => {
+    setBusy(true);
+    setSaid('Drafting by machine…');
+    let drafted: string | undefined;
+    let failed: string | undefined;
+    const outcome = await stream({
+      url: path,
+      body: {},
+      onEvent: (name, data) => {
+        const frame = data as Record<string, unknown>;
+        if (name === 'drafted') {
+          drafted = String((frame.version as { number?: unknown } | undefined)?.number ?? '');
+        }
+        if (name === 'failed') failed = String(frame.message ?? 'The draft failed.');
+      },
+    });
+    setBusy(false);
+    if (outcome.kind === 'refused') {
+      setSaid(refusal(outcome.body, 'The translation could not be drafted.'));
+    } else if (outcome.kind !== 'streamed' || failed !== undefined || drafted === undefined) {
+      setSaid(failed ?? 'The translation could not be drafted.');
+    } else {
+      setSaid(`Drafted by machine as ${drafted}. It is not published until a person accepts it.`);
+      onChanged();
+    }
+  };
+
+  const accept = async () => {
+    setBusy(true);
+    const { data, error } = await client
+      .POST('/v1/components/{id}/translations/{line}/machine-draft/accept', {
+        params: { path: { id: componentId, line: translation.line } },
+      })
+      .catch(() => ({ data: undefined, error: undefined }));
+    setBusy(false);
+    if (data) {
+      setSaid('The machine draft is accepted.');
+      onChanged();
+    } else setSaid(refusal(error, 'The machine draft could not be accepted.'));
+  };
+
+  const machine = translation.machine ?? null;
+  if (!mayEdit && machine === null) return null;
+  return (
+    <section aria-label="Machine draft">
+      {machine !== null && (
+        <>
+          <p>{`Version ${machine.version.number} was drafted by machine and waits to be accepted.`}</p>
+          {machine.missedTerms.length > 0 && (
+            <p>
+              {`Not translated by their labels: ${machine.missedTerms.map((each) => each.label).join(', ')}.`}
+            </p>
+          )}
+          <button type="button" disabled={busy} onClick={() => void accept()}>
+            Accept the machine draft
+          </button>{' '}
+        </>
+      )}
+      {mayEdit && (
+        <button type="button" disabled={busy} onClick={() => void draft()}>
+          Draft by machine
         </button>
       )}
       {said !== '' && <p role="status">{said}</p>}

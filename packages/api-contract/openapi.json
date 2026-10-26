@@ -24421,7 +24421,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -24948,7 +24949,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -62182,6 +62184,61 @@
                             "required": [
                               "status"
                             ]
+                          },
+                          "machine": {
+                            "description": "Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations",
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "version": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "number": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "id",
+                                      "number"
+                                    ]
+                                  },
+                                  "missedTerms": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "term": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "term",
+                                        "label"
+                                      ]
+                                    },
+                                    "description": "Each of the space's terms the draft did not translate by one of its labels"
+                                  }
+                                },
+                                "required": [
+                                  "version",
+                                  "missedTerms"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -62552,6 +62609,61 @@
                       },
                       "required": [
                         "status"
+                      ]
+                    },
+                    "machine": {
+                      "description": "Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "missedTerms": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "term": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "term",
+                                  "label"
+                                ]
+                              },
+                              "description": "Each of the space's terms the draft did not translate by one of its labels"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "missedTerms"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
                       ]
                     }
                   },
@@ -63026,6 +63138,61 @@
                       "required": [
                         "status"
                       ]
+                    },
+                    "machine": {
+                      "description": "Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "missedTerms": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "term": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "term",
+                                  "label"
+                                ]
+                              },
+                              "description": "Each of the space's terms the draft did not translate by one of its labels"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "missedTerms"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -63237,6 +63404,736 @@
           },
           "409": {
             "description": "translation_untranslated: nothing is translated yet to mark",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/translations/{line}/machine-draft": {
+      "post": {
+        "operationId": "draftComponentTranslation",
+        "summary": "Draft a component's translation by machine, through the tenant's translate endpoint",
+        "description": "Drafts a component's translation by machine: its source, as a translator is shown it, sent in pieces as XLIFF 2.1 to the endpoint the environment routes translation to, each piece a run, with the space's terms it uses and their translations, and each reply read back as strictly as a vendor's file, so a code missing, repeated or invented refuses the whole draft. The draft is cut on the translation's line, marked as drafted by machine, and a publish refuses it until a person with approve accepts it. Each term it did not translate by one of its labels is named. Nothing is sent while the environment's translation policy is off, or outside the data boundary where it says inside. Guardrails, the hourly limit and the endpoint's size are held as a prompt run's are. It needs edit on the component, and a session.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "line",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-sent events, as the AsyncAPI document’s `assistantRun` channel declares them: a `run` for each piece the component is sent in, `drafted` with the version cut, and `ended` or `failed`",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A personal token, or the caller may read the component but may not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component, or open translation of it, the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`translation_machine_off`: the environment sends nothing to machine translation; `translation_machine_outside`: it sends only inside the data boundary, and the endpoint is outside; `model_unconfigured`: no endpoint is set up to translate; `endpoint_unusable`: it is retired or has no key; `translation_nothing_to_translate`: the source has no text; `context_too_large`: a piece is more than the endpoint takes; `guardrail_refused`: a guardrail refused what would be sent; `lock_held`: somebody is editing the translation; `model_rate_limited`: past the hourly limit. Each before any call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/components/{id}/translations/{line}/machine-draft/accept": {
+      "post": {
+        "operationId": "acceptComponentMachineDraft",
+        "summary": "Accept a translation's machine drafts, so it may be published",
+        "description": "Accepts a translation's machine drafts, every one not yet accepted, so its versions are no longer marked and may be published. An edit after a draft does not accept it. It needs approve on the component.",
+        "tags": [
+          "Translations"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "approve",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "line",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Accepted, and its status now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "Its language line: open it as any line, `?line=`"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "head": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Its newest version recorded against a source, or null while untranslated"
+                    },
+                    "translates": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The source version that head translates, or null"
+                    },
+                    "status": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "untranslated",
+                            "machineDrafted",
+                            "inTranslation",
+                            "translated",
+                            "outOfDate"
+                          ],
+                          "description": "The declared set (LOC-030): untranslated until its first cut; out of date the moment the source changes after what it translates"
+                        },
+                        "retranslate": {
+                          "description": "Out of date: whether any source change since needs retranslating, as its author declared (LOC-015)",
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ]
+                    },
+                    "machine": {
+                      "description": "Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "version": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "number": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "number"
+                              ]
+                            },
+                            "missedTerms": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "term": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "term",
+                                  "label"
+                                ]
+                              },
+                              "description": "Each of the space's terms the draft did not translate by one of its labels"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "missedTerms"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "line",
+                    "language",
+                    "head",
+                    "translates",
+                    "status"
+                  ]
+                },
+                "example": {
+                  "line": "00000000-0000-4000-8000-000000000001",
+                  "language": "en",
+                  "head": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "translates": {
+                    "id": "00000000-0000-4000-8000-000000000001",
+                    "number": "example"
+                  },
+                  "status": {
+                    "status": "untranslated"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the component but may not approve it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such component, or open translation of it, the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`translation_nothing_drafted`: no machine draft of it waits to be accepted",
             "content": {
               "application/json": {
                 "schema": {
@@ -92847,7 +93744,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -93332,7 +94230,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -170079,7 +170978,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -176216,7 +177116,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -231646,7 +232547,8 @@
                               "drafting",
                               "chat",
                               "summarising",
-                              "embedding"
+                              "embedding",
+                              "translate"
                             ]
                           },
                           "endpoint": {
@@ -231850,7 +232752,8 @@
                 "drafting",
                 "chat",
                 "summarising",
-                "embedding"
+                "embedding",
+                "translate"
               ]
             }
           },
@@ -231931,7 +232834,8 @@
                               "drafting",
                               "chat",
                               "summarising",
-                              "embedding"
+                              "embedding",
+                              "translate"
                             ]
                           },
                           "endpoint": {
@@ -244149,7 +245053,8 @@
                               "entry_incomplete",
                               "style_invalid",
                               "occurrence_untranslated",
-                              "translation_out_of_date"
+                              "translation_out_of_date",
+                              "translation_machine_drafted"
                             ]
                           },
                           "node": {
@@ -275507,21 +276412,32 @@
                         "accept",
                         "reject"
                       ]
+                    },
+                    "machine": {
+                      "default": "off",
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "inside",
+                        "any"
+                      ]
                     }
                   },
                   "required": [
                     "fallback",
                     "outOfDate",
                     "note",
-                    "conflict"
+                    "conflict",
+                    "machine"
                   ],
-                  "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides"
+                  "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides. `machine`: whether content is sent to the `translate` model endpoint for a machine draft - `off`, the default, never; `inside`, only to an endpoint inside the data boundary; `any`, to any"
                 },
                 "example": {
                   "fallback": "source",
                   "outOfDate": "publish",
                   "note": {},
-                  "conflict": "review"
+                  "conflict": "review",
+                  "machine": "off"
                 }
               }
             },
@@ -275696,6 +276612,15 @@
                       "accept",
                       "reject"
                     ]
+                  },
+                  "machine": {
+                    "default": "off",
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "inside",
+                      "any"
+                    ]
                   }
                 },
                 "required": [
@@ -275704,7 +276629,7 @@
                   "note"
                 ],
                 "additionalProperties": false,
-                "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides"
+                "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides. `machine`: whether content is sent to the `translate` model endpoint for a machine draft - `off`, the default, never; `inside`, only to an endpoint inside the data boundary; `any`, to any"
               },
               "example": {
                 "fallback": "source",
@@ -275755,21 +276680,32 @@
                         "accept",
                         "reject"
                       ]
+                    },
+                    "machine": {
+                      "default": "off",
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "inside",
+                        "any"
+                      ]
                     }
                   },
                   "required": [
                     "fallback",
                     "outOfDate",
                     "note",
-                    "conflict"
+                    "conflict",
+                    "machine"
                   ],
-                  "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides"
+                  "description": "`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides. `machine`: whether content is sent to the `translate` model endpoint for a machine draft - `off`, the default, never; `inside`, only to an endpoint inside the data boundary; `any`, to any"
                 },
                 "example": {
                   "fallback": "source",
                   "outOfDate": "publish",
                   "note": {},
-                  "conflict": "review"
+                  "conflict": "review",
+                  "machine": "off"
                 }
               }
             },
@@ -316810,6 +317746,61 @@
                                   },
                                   "required": [
                                     "status"
+                                  ]
+                                },
+                                "machine": {
+                                  "description": "Its newest machine draft not yet accepted, which a publish refuses until a person with approve accepts it; null where there is none. Listed by a component's translations",
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "version": {
+                                          "type": "object",
+                                          "properties": {
+                                            "id": {
+                                              "type": "string",
+                                              "format": "uuid",
+                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                            },
+                                            "number": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "id",
+                                            "number"
+                                          ]
+                                        },
+                                        "missedTerms": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "term": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "label": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "term",
+                                              "label"
+                                            ]
+                                          },
+                                          "description": "Each of the space's terms the draft did not translate by one of its labels"
+                                        }
+                                      },
+                                      "required": [
+                                        "version",
+                                        "missedTerms"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
                                   ]
                                 }
                               },
