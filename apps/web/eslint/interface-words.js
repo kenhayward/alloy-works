@@ -16,6 +16,11 @@ const USER_PROPS = new Set([
   'alt',
   'label',
   'named',
+  // A confirmation's words (ConfirmDialog).
+  'question',
+  'sentence',
+  'keep',
+  'act',
 ]);
 
 /** Text with words in it: two letters together, not a code, a path or a symbol. */

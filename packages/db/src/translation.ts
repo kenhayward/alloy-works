@@ -1,5 +1,7 @@
 import {
   DEFAULT_TRANSLATION_POLICY,
+  INTERFACE_COLLATIONS,
+  type InterfaceLanguage,
   effectiveRevision,
   speaksFor,
   blockText,
@@ -650,6 +652,8 @@ export async function spaceTranslations(
   trx: TenantTransaction,
   spaceId: string,
   principalId: string,
+  /** The reader's language, whose collation the titles sort in (UI-H; LOC-003). */
+  language?: InterfaceLanguage,
 ): Promise<{
   readonly items: readonly {
     readonly component: { readonly id: string; readonly title: string };
@@ -690,8 +694,11 @@ export async function spaceTranslations(
     .orderBy('v.version_no', 'desc')
     .execute();
   // Ordered and capped before any status is read, so the cap bounds the work (the TR final review).
+  const collator = new Intl.Collator(
+    language === undefined ? undefined : INTERFACE_COLLATIONS[language],
+  );
   const ordered = [...titles].sort(
-    (a, b) => a.title.localeCompare(b.title) || a.artifact_id.localeCompare(b.artifact_id),
+    (a, b) => collator.compare(a.title, b.title) || a.artifact_id.localeCompare(b.artifact_id),
   );
   const named = ordered.slice(0, TRANSLATION_REPORT_MOST);
   const statuses = await translationsOf(

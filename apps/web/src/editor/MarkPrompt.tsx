@@ -5,6 +5,7 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import type { MarkCommand } from './press.js';
+import { words } from '../words/words.js';
 
 interface Field {
   /** The attribute this box fills in, as the stored mark spells it. */
@@ -61,32 +62,81 @@ const wellFormedTag = (tag: string) =>
  */
 const SHAPES: Record<string, Shape> = {
   hyperlink: {
-    title: 'Link',
+    get title() {
+      return words('editor.link');
+    },
     fields: [
-      { name: 'href', label: 'Address', hint: 'An address beginning http:, https: or mailto:' },
-      { name: 'title', label: 'Title (optional)' },
+      {
+        name: 'href',
+        get label() {
+          return words('editor.address');
+        },
+        get hint() {
+          return words('editor.an-address-beginning-http-https');
+        },
+      },
+      {
+        name: 'title',
+        get label() {
+          return words('editor.title-optional');
+        },
+      },
     ],
-    refusal: 'That address must begin http:, https: or mailto:.',
-    empty: 'Type an address, or press Cancel to leave the text as it is.',
-    absent: 'There is no link here any more, so there is nothing to take off.',
-    removes: 'Remove takes this link off and leaves the text it was on.',
-    remove: 'Remove link',
-    goesOn: 'The link goes on the selected text,',
+    get refusal() {
+      return words('editor.that-address-must-begin-http');
+    },
+    get empty() {
+      return words('editor.type-an-address-or-press');
+    },
+    get absent() {
+      return words('editor.there-is-no-link-here');
+    },
+    get removes() {
+      return words('editor.remove-takes-this-link-off');
+    },
+    get remove() {
+      return words('editor.remove-link');
+    },
+    get goesOn() {
+      return words('editor.the-link-goes-on-the');
+    },
   },
   language: {
-    title: 'Language',
+    get title() {
+      return words('editor.language');
+    },
     fields: [
-      { name: 'tag', label: 'Language tag', hint: 'A BCP 47 tag, such as fr, pt-BR or de-AT' },
+      {
+        name: 'tag',
+        get label() {
+          return words('editor.language-tag');
+        },
+        get hint() {
+          return words('editor.a-bcp-47-tag-such');
+        },
+      },
     ],
-    refusal: 'That is not a language tag. Try one like fr or pt-BR.',
-    empty: 'Type a language tag, or press Cancel to leave the text as it is.',
-    absent: 'There is no language tag here any more, so there is nothing to take off.',
-    removes: 'Remove takes this language tag off and leaves the text it was on.',
-    remove: 'Remove language tag',
-    goesOn: 'The language tag goes on the selected text,',
+    get refusal() {
+      return words('editor.that-is-not-a-language');
+    },
+    get empty() {
+      return words('editor.type-a-language-tag-or');
+    },
+    get absent() {
+      return words('editor.there-is-no-language-tag');
+    },
+    get removes() {
+      return words('editor.remove-takes-this-language-tag');
+    },
+    get remove() {
+      return words('editor.remove-language-tag');
+    },
+    get goesOn() {
+      return words('editor.the-language-tag-goes-on');
+    },
     warn: (tag) =>
       wellFormedTag(tag) && publishedLanguage(tag) === null
-        ? `A publication cannot carry the tag ${tag}. Press OK anyway to use it.`
+        ? words('editor.a-publication-cannot-carry-the', { tag })
         : null,
   },
 };
@@ -96,7 +146,7 @@ const SHAPES: Record<string, Shape> = {
  * was by the time the author pressed a button. One sentence for both marks, because it is one thing
  * that happened, and it names the remedy: select some text again.
  */
-const GONE = 'That text is not there any more. Press Cancel, select some text, and try again.';
+const GONE = (): string => words('editor.that-text-is-not-there');
 
 /**
  * Why a press came back with nothing done: the value the author typed, the text it was to go on, or
@@ -205,7 +255,7 @@ export function MarkPrompt({
     refused === null
       ? null
       : refused === 'gone'
-        ? GONE
+        ? GONE()
         : refused === 'noMark'
           ? shape.absent
           : nothingTyped
@@ -218,7 +268,7 @@ export function MarkPrompt({
   // The button that is about to do something else is called something else. An alert is heard once,
   // in the instant it fires; an accessible name is heard on every focus, which is what a user who
   // tabbed to this button and is deciding whether to press it again actually has.
-  const applies = warning === null ? 'OK' : 'OK anyway';
+  const applies = warning === null ? 'OK' : words('editor.ok-anyway');
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -341,7 +391,7 @@ export function MarkPrompt({
           <div className={styles['footer']}>
             <span className={styles['left']}>
               <button type="button" onClick={onCancel}>
-                Cancel
+                {words('editor.cancel')}
               </button>
               {removable && (
                 <button
@@ -366,8 +416,8 @@ export function MarkPrompt({
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

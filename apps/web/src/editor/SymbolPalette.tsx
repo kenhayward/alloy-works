@@ -6,6 +6,7 @@ import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './SymbolPalette.module.css';
 import { SYMBOL_GROUPS } from './symbols.js';
+import { words } from '../words/words.js';
 
 /** How many symbols stand in a row, which the up and down arrows move by. */
 export const PALETTE_COLUMNS = 12;
@@ -23,8 +24,7 @@ export interface SymbolPaletteProps {
 }
 
 /** What the palette says, once, where the typeface at the cursor lacks some of what it offers. */
-export const DIMMED_NOTE =
-  'Symbols the typeface here does not have are dimmed; set them in an equation.';
+export const DIMMED_NOTE = (): string => words('editor.symbol.dimmed-note');
 
 /** A group's symbols in rows of `PALETTE_COLUMNS`, as the grid's rows hold them. */
 const rowsOf = <T,>(items: readonly T[]): T[][] => {
@@ -146,9 +146,9 @@ export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPal
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Symbols" size={22} />
             </span>
-            Symbols
+            {words('editor.symbols')}
           </h2>
-          {lacking.size > 0 && <p className={own['note']}>{DIMMED_NOTE}</p>}
+          {lacking.size > 0 && <p className={own['note']}>{DIMMED_NOTE()}</p>}
           {SYMBOL_GROUPS.map((group, g) => (
             <section key={group.name} className={own['group']}>
               <h3 id={`${id}-group-${g}`} className={own['name']}>
@@ -166,7 +166,10 @@ export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPal
                       const index = r * PALETTE_COLUMNS + c;
                       const lacked = typeface !== null && lacking.has(symbol.codePoint);
                       const label = lacked
-                        ? `${symbol.name}, not in ${typeface.family}; use an equation`
+                        ? words('editor.not-in-use-an-equation', {
+                            name: symbol.name,
+                            family: typeface.family,
+                          })
                         : symbol.name;
                       return (
                         <div role="gridcell" key={symbol.codePoint}>
@@ -203,8 +206,8 @@ export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPal
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

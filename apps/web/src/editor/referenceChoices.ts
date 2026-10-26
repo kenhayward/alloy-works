@@ -16,6 +16,7 @@ import {
   type EditorView,
   type ReferenceContext,
 } from '@alloy-works/editor';
+import { words } from '../words/words.js';
 
 /**
  * One thing the Reference dialog offers (cross-references 1, ruling R11): what a reference to it
@@ -35,11 +36,21 @@ export interface ReferenceOption {
 
 /** Each form in the words the dialog offers it in: plain words, never the stored enum. */
 export const FORM_WORDS: Readonly<Record<CrossReferenceDisplay, string>> = {
-  number: 'Number',
-  title: 'Title',
-  numberAndTitle: 'Number and title',
-  page: 'Page',
-  relative: 'Above or below',
+  get number() {
+    return words('editor.number');
+  },
+  get title() {
+    return words('editor.title');
+  },
+  get numberAndTitle() {
+    return words('editor.number-and-title');
+  },
+  get page() {
+    return words('editor.page');
+  },
+  get relative() {
+    return words('editor.above-or-below');
+  },
 };
 
 /** Every form, in the stored enum's order: a section's are all of them. */

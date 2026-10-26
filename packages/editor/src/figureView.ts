@@ -2,9 +2,10 @@ import { DOMSerializer, type Node } from 'prosemirror-model';
 import type { Decoration, NodeView } from 'prosemirror-view';
 
 import { FAILED_CLASS, imageOfSpec, type BoundImage } from './bindings.js';
+import { say } from './words.js';
 
 /** What stands in an image's place where it does not load: unreadable to this reader, or gone. */
-export const MISSING_IMAGE = 'An image you may not see';
+export const MISSING_IMAGE = (): string => say('figure.missing-image');
 
 /** What a bound figure shows (B6.2): its image, or its words and whether it failed. */
 export interface BoundFigureShown {
@@ -50,7 +51,7 @@ export function fillBoundFigure(holder: HTMLElement, shown: BoundFigureShown): v
   image.setAttribute('data-asset', shown.image.asset);
   image.addEventListener('error', () => {
     holder.classList.add('aw-image-missing');
-    holder.setAttribute('data-missing', MISSING_IMAGE);
+    holder.setAttribute('data-missing', MISSING_IMAGE());
   });
   holder.replaceChildren(image);
 }
@@ -78,7 +79,7 @@ export function figureView(
   const holder = (dom as HTMLElement).querySelector<HTMLElement>('.aw-figure-image');
   holder?.querySelector('img')?.addEventListener('error', () => {
     holder.classList.add('aw-image-missing');
-    holder.setAttribute('data-missing', MISSING_IMAGE);
+    holder.setAttribute('data-missing', MISSING_IMAGE());
   });
   let drawn = '';
   const drawBound = (from: readonly Decoration[]) => {

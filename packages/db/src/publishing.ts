@@ -3197,6 +3197,7 @@ async function readablePublications(
     request.order ?? byDefault,
     limit,
     request.after,
+    request.language,
   );
   return {
     items: rows.map((row) => summaryOf({ ...row, published_at: new Date(row.published_at) })),

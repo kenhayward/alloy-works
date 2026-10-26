@@ -297,6 +297,7 @@ export async function listSpacesFor(
     request.order ?? order,
     limit,
     request.after,
+    request.language,
   );
   const shown: SpaceForPrincipal[] = [];
   for (const row of rows) {

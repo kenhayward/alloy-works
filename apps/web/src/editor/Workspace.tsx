@@ -63,6 +63,7 @@ import { ComponentList } from './ComponentList.js';
 import { SpacePane } from './SpacePane.js';
 import styles from './Workspace.module.css';
 import { Notice } from '../states/Notice.js';
+import { words } from '../words/words.js';
 
 export interface WorkspaceProps {
   /** Given in tests; the browser's own otherwise. */
@@ -222,7 +223,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   if (failed) {
     return (
       <Notice tone="failed">
-        <p>The workspace could not be loaded.</p>
+        <p>{words('editor.the-workspace-could-not-be')}</p>
         <button
           type="button"
           onClick={() => {
@@ -230,7 +231,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             setAttempt((count) => count + 1);
           }}
         >
-          Try again
+          {words('editor.try-again')}
         </button>
       </Notice>
     );
@@ -282,7 +283,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       return (
         <>
           <p>
-            <a href={`#/components/${opened}`}>Back to the component</a>
+            <a href={`#/components/${opened}`}>{words('editor.back-to-the-component')}</a>
           </p>
           <AccessPanel key={opened} at={{ kind: 'component', id: opened }} client={client} />
         </>
@@ -307,8 +308,8 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
               <OutlineRail
                 pane={spacePane}
                 chosen="space"
-                tabs={[{ key: 'space', label: placed?.space.name ?? 'Space' }]}
-                label="space pane"
+                tabs={[{ key: 'space', label: placed?.space.name ?? words('editor.space') }]}
+                label={words('editor.space-pane')}
                 className={styles['rail']}
               />
             ) : placed?.component === opened ? (
@@ -317,12 +318,12 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           </div>
           {!spacePane.collapsed && (
             <div className={styles['edge']}>
-              <PaneSeparator label="space pane" pane={spacePane} />
+              <PaneSeparator label={words('editor.space-pane')} pane={spacePane} />
             </div>
           )}
           <div className={styles['editor']}>
-            <nav aria-label="Breadcrumb" className={styles['trail']}>
-              <a href="#/components">Components</a>
+            <nav aria-label={words('editor.breadcrumb')} className={styles['trail']}>
+              <a href="#/components">{words('editor.components')}</a>
               {placed?.component === opened && <span>{` / ${placed.space.name}`}</span>}
             </nav>
             {/* A component on its own is set in the environment's theme and layout (themes.md, ET-A). */}
@@ -348,7 +349,11 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
           </div>
           {!dockPane.collapsed && (
             <div className={styles['dockEdge']}>
-              <PaneSeparator label="component panels" pane={dockSized} edge="end" />
+              <PaneSeparator
+                label={words('editor.component-panels-2')}
+                pane={dockSized}
+                edge="end"
+              />
             </div>
           )}
           {dockPane.collapsed && (
@@ -357,7 +362,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
                 pane={dockPane}
                 chosen=""
                 tabs={COMPONENT_PANELS.filter((each) => each.key !== 'table' || heldTable.holds)}
-                label="component panels"
+                label={words('editor.component-panels-2')}
                 edge="end"
                 className={styles['rail']}
               />
@@ -402,7 +407,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       return (
         <>
           <p>
-            <a href="#/templates">Back to templates</a>
+            <a href="#/templates">{words('editor.back-to-templates')}</a>
           </p>
           <AccessPanel
             key={templateAccess}
@@ -417,7 +422,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       return (
         <>
           <p>
-            <a href={connectionLink(connection.connection)}>Back to the connection</a>
+            <a href={connectionLink(connection.connection)}>
+              {words('editor.back-to-the-connection')}
+            </a>
           </p>
           <AccessPanel
             key={connection.connection}
@@ -509,7 +516,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
       return (
         <>
           <p>
-            <a href={documentLink(documents.document)}>Back to the document</a>
+            <a href={documentLink(documents.document)}>{words('editor.back-to-the-document')}</a>
           </p>
           <AccessPanel
             key={documents.document}

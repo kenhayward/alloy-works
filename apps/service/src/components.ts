@@ -57,6 +57,7 @@ import type { SessionPrincipal } from './sessions.js';
 import { markdownReader } from './markdown.js';
 import { refused } from './wire-codes.js';
 import { stateOf, workflowView } from './workflows.js';
+import { languageOf } from './listing.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PAGE = 50;
@@ -245,7 +246,7 @@ export function componentHandlers(
     // somebody from outside who may read no space, who was shared a publication and nothing of the
     // organisation's people (the R17 plan, R17-I).
     listPeople: async (request: FastifyRequest) => {
-      const asked = pageAsked('people', request.query as PeopleQuery);
+      const asked = pageAsked('people', request.query as PeopleQuery, languageOf(request));
       const people = await db.withTenant(tenantOf(request), async (trx) => {
         const listed = await listPeople(trx, asked);
         return (await readsOnlyShares(trx, principalOf(request).principalId))
@@ -254,13 +255,20 @@ export function componentHandlers(
       });
       return {
         items: people.items.map((each) => ({ ...each })),
-        next: cursorFor('people', asked.sort, asked.order, people.snapshot, people.next),
+        next: cursorFor(
+          'people',
+          asked.sort,
+          asked.order,
+          people.snapshot,
+          people.next,
+          asked.language,
+        ),
       };
     },
 
     listSpaces: async (request: FastifyRequest) => {
       const query = request.query as SpaceListQuery;
-      const asked = pageAsked('spaces', query);
+      const asked = pageAsked('spaces', query, languageOf(request));
       const spaces = await db.withTenant(tenantOf(request), (trx) =>
         listSpacesFor(
           trx,
@@ -272,16 +280,30 @@ export function componentHandlers(
       );
       return {
         items: [...spaces.items],
-        next: cursorFor('spaces', asked.sort, asked.order, spaces.snapshot, spaces.next),
+        next: cursorFor(
+          'spaces',
+          asked.sort,
+          asked.order,
+          spaces.snapshot,
+          spaces.next,
+          asked.language,
+        ),
       };
     },
 
     listComponentTypes: async (request: FastifyRequest, { trx }: Authorised) => {
-      const asked = pageAsked('componentTypes', request.query as PageQuery);
+      const asked = pageAsked('componentTypes', request.query as PageQuery, languageOf(request));
       const types = await listComponentTypes(trx, asked);
       return {
         items: [...types.items],
-        next: cursorFor('componentTypes', asked.sort, asked.order, types.snapshot, types.next),
+        next: cursorFor(
+          'componentTypes',
+          asked.sort,
+          asked.order,
+          types.snapshot,
+          types.next,
+          asked.language,
+        ),
       };
     },
 
@@ -372,7 +394,7 @@ export function componentHandlers(
 
     listComponents: async (request: FastifyRequest) => {
       const query = request.query as ComponentListQuery;
-      const asked = pageAsked('components', query);
+      const asked = pageAsked('components', query, languageOf(request));
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
       const types = query.types?.split(',');
@@ -404,7 +426,14 @@ export function componentHandlers(
           pastReview: past.has(item.id),
           ...(open.has(item.id) ? { lines: open.get(item.id)! } : {}),
         })),
-        next: cursorFor('components', asked.sort, asked.order, page.snapshot, page.next),
+        next: cursorFor(
+          'components',
+          asked.sort,
+          asked.order,
+          page.snapshot,
+          page.next,
+          asked.language,
+        ),
         total: page.total,
         // The space facet as the listing first answered it, kept beside `facets` (API-012).
         spaces: page.facets.spaces.map((one) => ({

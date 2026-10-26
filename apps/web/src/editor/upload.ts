@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -7,29 +8,42 @@ export type UploadOutcome =
   | { readonly ok: true; readonly assetVersion: string }
   | { readonly ok: false; readonly sentence: string };
 
-const TOO_LARGE =
-  'This image is larger than 25 MB or has more than 50 million pixels, which is more than an image may have.';
+const TOO_LARGE = (): string => words('editor.this-image-is-larger-than');
 
 /**
  * Each refusal said once, whether it came at the door as a wire code or after the check as the
  * upload's reason: the author needs what the file was, never where it was caught.
  */
 const SAID: Readonly<Record<string, string>> = {
-  asset_format_not_permitted: 'This is not a PNG or a JPEG image.',
-  not_permitted: 'This is not a PNG or a JPEG image.',
-  asset_too_large: TOO_LARGE,
-  too_large: TOO_LARGE,
-  too_many_pixels: TOO_LARGE,
-  asset_unreadable: 'This is not a complete PNG or JPEG image.',
-  malformed: 'This is not a complete PNG or JPEG image.',
-  undecodable: 'This image could not be read all the way through, so it may be damaged.',
-  unchecked: 'The image could not be checked. Try again.',
+  get asset_format_not_permitted() {
+    return words('editor.this-is-not-a-png');
+  },
+  get not_permitted() {
+    return words('editor.this-is-not-a-png');
+  },
+  asset_too_large: TOO_LARGE(),
+  too_large: TOO_LARGE(),
+  too_many_pixels: TOO_LARGE(),
+  get asset_unreadable() {
+    return words('editor.this-is-not-a-complete');
+  },
+  get malformed() {
+    return words('editor.this-is-not-a-complete');
+  },
+  get undecodable() {
+    return words('editor.this-image-could-not-be');
+  },
+  get unchecked() {
+    return words('editor.the-image-could-not-be-2');
+  },
   // Editing a component does not by itself let its author add to the space it is in.
-  forbidden: 'You may not add an image to this space.',
+  get forbidden() {
+    return words('editor.you-may-not-add-an');
+  },
 };
 
-const FAILED = 'The image could not be uploaded. Try again.';
-const TOO_SLOW = 'Checking the image is taking longer than it should. Try again in a moment.';
+const FAILED = (): string => words('editor.the-image-could-not-be-3');
+const TOO_SLOW = (): string => words('editor.checking-the-image-is-taking');
 
 /** How often the upload is followed, and for how long: every half second for thirty (ruling R4). */
 const FOLLOW_EVERY_MS = 500;
@@ -37,7 +51,7 @@ const FOLLOW_TIMES = 60;
 
 const refusal = (code: string | undefined): UploadOutcome => ({
   ok: false,
-  sentence: (code !== undefined ? SAID[code] : undefined) ?? FAILED,
+  sentence: (code !== undefined ? SAID[code] : undefined) ?? FAILED(),
 });
 
 /**
@@ -96,5 +110,5 @@ async function attempt(
     if (upload.state === 'refused') return refusal(upload.reason ?? undefined);
     await wait(FOLLOW_EVERY_MS);
   }
-  return { ok: false, sentence: TOO_SLOW };
+  return { ok: false, sentence: TOO_SLOW() };
 }

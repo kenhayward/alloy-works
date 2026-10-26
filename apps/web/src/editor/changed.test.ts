@@ -23,8 +23,9 @@ describe('when a component was last changed, as the list says it', () => {
     expect(whenChanged(at(9, 20, 16, 20), now)).toBe('Yesterday, 16:20');
   });
 
+  // The month as the bundled CLDR abbreviates it in en-GB (UI-A): Sept.
   it('gives the day and month this year, and the year before that', () => {
-    expect(whenChanged(at(9, 18, 9, 48), now)).toBe('18 Sep, 09:48');
+    expect(whenChanged(at(9, 18, 9, 48), now)).toBe('18 Sept, 09:48');
     expect(whenChanged(at(12, 3, 11, 0, 2025), now)).toBe('3 Dec 2025');
   });
 

@@ -82,7 +82,7 @@ export async function listDatasetSources(
     version_id: string;
     version_at: Date;
     content: unknown;
-  }>(trx, inner, types, request.order ?? order, limit, request.after);
+  }>(trx, inner, types, request.order ?? order, limit, request.after, request.language);
   return {
     items: rows.map((row) => {
       const provenance = parseProvenance(row.content);

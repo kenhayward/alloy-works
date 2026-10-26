@@ -18,6 +18,7 @@ import {
 import { VersionList, type ListedVersion } from './VersionList.js';
 import { ApprovalsList } from '../lifecycle/Approvals.js';
 import styles from './VersionList.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -107,7 +108,7 @@ export function VersionsPanel({
     const data = answer?.data;
     if (!data) return setShown('failed');
     setShown({
-      title: `Changes from ${data.from.number} to ${data.to.number}`,
+      title: words('editor.changes-from-to', { number: data.from.number, number2: data.to.number }),
       changes: data.changes as readonly UnitChange[],
       older: data.older as unknown as ContentDocument,
       newer: data.newer as unknown as ContentDocument,
@@ -177,7 +178,7 @@ export function VersionsPanel({
     const pair = mine?.();
     if (!pair) return setShown('nothing');
     setShown({
-      title: 'My changes',
+      title: words('editor.my-changes'),
       changes: compareContent(pair.older, pair.newer).changes,
       older: pair.older,
       newer: pair.newer,
@@ -188,7 +189,7 @@ export function VersionsPanel({
     <div className={styles['panel']}>
       {mine && (
         <button type="button" onClick={myChanges}>
-          My changes
+          {words('editor.my-changes')}
         </button>
       )}
       <VersionList
@@ -206,25 +207,36 @@ export function VersionsPanel({
       />
       <ApprovalsList client={client} kind="component" id={id} />
       {restoring && (
-        <section aria-label={`Restore ${restoring.version.number}`} className={styles['compared']}>
-          <h3 className={styles['heading']}>{`Restore ${restoring.version.number}`}</h3>
+        <section
+          aria-label={words('editor.restore', { number: restoring.version.number })}
+          className={styles['compared']}
+        >
+          <h3 className={styles['heading']}>
+            {words('editor.restore', { number: restoring.version.number })}
+          </h3>
           {restoring.preview === 'failed' && (
-            <p className={styles['muted']}>What restoring it would make could not be read.</p>
+            <p className={styles['muted']}>{words('editor.what-restoring-it-would-make')}</p>
           )}
           {typeof restoring.preview === 'object' && (
             <>
               <p className={styles['muted']}>
-                {`A new version after ${restoring.preview.latest.number}, holding what ${restoring.version.number} holds. ${restoring.version.number} itself stays as it is.`}
+                {words('editor.a-new-version-after-holding', {
+                  number: restoring.preview.latest.number,
+                  number2: restoring.version.number,
+                  number3: restoring.version.number,
+                })}
               </p>
               {restoring.preview.changed.length > 0 && (
                 <>
-                  <p className={styles['muted']}>
-                    Values it would bring back, beside what the latest holds now:
-                  </p>
-                  <ul aria-label="Values changed" className={styles['carried']}>
+                  <p className={styles['muted']}>{words('editor.values-it-would-bring-back')}</p>
+                  <ul aria-label={words('editor.values-changed')} className={styles['carried']}>
                     {restoring.preview.changed.map((each, index) => (
                       <li key={index}>
-                        {`${each.name ?? 'A field no longer held'}: ${valueText(each.restored)}, now ${valueText(each.latest)}`}
+                        {words('editor.now', {
+                          name: each.name ?? words('editor.a-field-no-longer-held'),
+                          restored: valueText(each.restored),
+                          latest: valueText(each.latest),
+                        })}
                       </li>
                     ))}
                   </ul>
@@ -233,13 +245,13 @@ export function VersionsPanel({
               {restoring.preview.notCarried.length > 0 && (
                 <>
                   <p className={styles['muted']}>
-                    Not carried forward, because these fields are no longer the component&apos;s:
+                    {words('editor.not-carried-forward-because-these')}
                   </p>
-                  <ul aria-label="Values not carried" className={styles['carried']}>
+                  <ul aria-label={words('editor.values-not-carried')} className={styles['carried']}>
                     {restoring.preview.notCarried.map((each, index) => (
                       <li
                         key={index}
-                      >{`${each.name ?? 'A field no longer held'}: ${valueText(each.value)}`}</li>
+                      >{`${each.name ?? words('editor.a-field-no-longer-held')}: ${valueText(each.value)}`}</li>
                     ))}
                   </ul>
                 </>
@@ -256,7 +268,7 @@ export function VersionsPanel({
                     disabled={restoring.answer === 'sending'}
                     onClick={() => void restore(restoring)}
                   >
-                    Restore this version
+                    {words('editor.restore-this-version')}
                   </button>
                 )}
             </>
@@ -265,9 +277,11 @@ export function VersionsPanel({
           <p role="status">{restoreAnswerText(restoring.answer)}</p>
         </section>
       )}
-      {shown === 'failed' && <p className={styles['muted']}>The comparison could not be read.</p>}
+      {shown === 'failed' && (
+        <p className={styles['muted']}>{words('editor.the-comparison-could-not-be')}</p>
+      )}
       {shown === 'nothing' && (
-        <p className={styles['muted']}>Nothing is open for editing to compare yet.</p>
+        <p className={styles['muted']}>{words('editor.nothing-is-open-for-editing')}</p>
       )}
       {shown !== null && shown !== 'failed' && shown !== 'nothing' && (
         <section aria-label={shown.title} className={styles['compared']}>
@@ -284,12 +298,12 @@ export function VersionsPanel({
             onClick={() =>
               drawn.current &&
               saveHtml(
-                `${shown.newer.title} - ${shown.title}.html`,
+                words('editor.html', { title: shown.newer.title, title2: shown.title }),
                 redlineHtml(`${shown.newer.title}: ${shown.title}`, drawn.current),
               )
             }
           >
-            Export
+            {words('editor.export')}
           </button>
         </section>
       )}

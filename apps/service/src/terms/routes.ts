@@ -32,6 +32,7 @@ import { cursorFor, pageAsked } from '../listing.js';
 import { refused } from '../wire-codes.js';
 import { workflowView } from '../workflows.js';
 import { exportSkos, readSkos, SKOS_QUADS_MOST } from './skos.js';
+import { languageOf } from '../listing.js';
 
 /** The term routes (terms.md; the TM plan, TM-A, TM-J). Moves are the workflow routes'. */
 
@@ -95,14 +96,21 @@ export function termHandlers() {
     listTerms: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { space } = request.params as SpaceParams;
       const query = request.query as TermListQuery;
-      const asked = pageAsked('terms', query);
+      const asked = pageAsked('terms', query, languageOf(request));
       const listed = await listTerms(trx, principalId, space, asked, {
         archived: query.archived === 'true',
       });
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: listed.items.map(summaryView),
-        next: cursorFor('terms', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'terms',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
       };
     },

@@ -10,6 +10,7 @@ import {
 import { Decoration, DecorationSet, type NodeView } from 'prosemirror-view';
 
 import { editorSchema } from './schema.js';
+import { say } from './words.js';
 
 const citationNode = editorSchema.nodes.citation!;
 
@@ -20,7 +21,7 @@ const citationNode = editorSchema.nodes.citation!;
  */
 
 /** What a surface shows of a citation whose entry its reader cannot read. */
-export const CITATION_UNAVAILABLE = 'Citation unavailable';
+export const CITATION_UNAVAILABLE = (): string => say('citation.unavailable');
 
 /** The class such a citation carries. */
 export const UNAVAILABLE_CLASS = 'aw-citation-unavailable';
@@ -156,14 +157,14 @@ export function citationDecorations(
     if (form === undefined) return false;
     // A flag is said in the text, so a screen reader hears it, as well as in the class (XR-G).
     const flag = flags?.get(cited.entry);
-    const text = `${form ?? CITATION_UNAVAILABLE}${flag ? ` (${flag})` : ''}`;
+    const text = `${form ?? CITATION_UNAVAILABLE()}${flag ? ` (${flag})` : ''}`;
     const classes = [
       ...(form === null ? [UNAVAILABLE_CLASS] : []),
       ...(flag ? [FLAGGED_CLASS] : []),
     ];
     const attrs = {
       ...(classes.length > 0 ? { class: classes.join(' ') } : {}),
-      ...(flag ? { 'data-flag': flag, title: `Its source says it is ${flag}` } : {}),
+      ...(flag ? { 'data-flag': flag, title: say('citation.flagged', { flag }) } : {}),
     };
     const spec = node.type === citationNode ? { citationText: text } : { referenceText: text };
     decorations.push(Decoration.node(pos, pos + 1, attrs, spec));

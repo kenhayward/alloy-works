@@ -16,6 +16,7 @@ import {
 } from './marks.js';
 import { editorSchema } from './schema.js';
 import { createEditorState } from './state.js';
+import { sayWith } from './words.js';
 
 /**
  * One sequence of identifiers across a test, so that two applications of one mark in the same test
@@ -139,6 +140,20 @@ describe('the command registry', () => {
       if (command.kind === 'mark') expect(editorSchema.marks[command.mark]).toBeDefined();
     }
     expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(26);
+  });
+
+  it('says each command and its shortcut from the words, as the label in English', () => {
+    for (const command of EDITOR_COMMANDS) {
+      expect(command.said, command.label).toBe(command.label);
+      expect(command.shortcutSaid, command.label).toMatch(/^Ctrl or Cmd/);
+    }
+    sayWith({ words: (key) => `[${key}]`, list: (values) => values.join() });
+    try {
+      expect(EDITOR_COMMANDS[0]!.said).toBe('[command.strong]');
+      expect(EDITOR_COMMANDS[0]!.shortcutSaid).toBe('[command.strong.keys]');
+    } finally {
+      sayWith(null);
+    }
   });
 
   it('names every block action once, in the order the toolbar shows them', () => {

@@ -77,7 +77,7 @@ describe('the publications list', () => {
       'Operator manual',
       '1.9',
       'PDF and Word',
-      '18 Sep 2025',
+      '18 Sept 2025',
       'Grace',
       'Not approved',
     ]);

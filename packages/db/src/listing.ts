@@ -1,3 +1,4 @@
+import { INTERFACE_COLLATIONS, type InterfaceLanguage } from '@alloy-works/domain';
 import { sql, type Compilable, type RawBuilder, type SqlBool } from 'kysely';
 import type { TenantTransaction } from './tables.js';
 
@@ -101,6 +102,8 @@ export interface ListingRequest<S extends string> {
   readonly after?: Keyset;
   /** The first page's snapshot, `pg_current_snapshot()` as text; absent for the first page. */
   readonly snapshot?: string;
+  /** The reader's interface language, whose collation text sorts by (UI-H; LOC-003). */
+  readonly language?: InterfaceLanguage | undefined;
 }
 
 /** A page: its rows, where the next begins or null at the end, and the snapshot the walk is read as of. */
@@ -200,6 +203,42 @@ export function visibleIn(column: string, snapshot: string): RawBuilder<SqlBool>
   return sql<SqlBool>`(${written} is null or pg_visible_in_snapshot(${written}, ${snapshot}::pg_snapshot))`;
 }
 
+/** Each language's ICU collation as the cluster names it, or null where it holds none: found once. */
+const collations = new Map<string, string | null>();
+
+/**
+ * The collation text sorts by for `language` (UI-H; LOC-003): the ICU collation of its locale, else of
+ * its base language, else the root's, as the cluster holds them, checked against `pg_collation` and
+ * never built from what a request says. Undefined for no language, so a listing sorts as it always has.
+ */
+export async function collationFor(
+  trx: TenantTransaction,
+  language: InterfaceLanguage | undefined,
+): Promise<string | undefined> {
+  if (language === undefined) return undefined;
+  const locale = INTERFACE_COLLATIONS[language];
+  if (!collations.has(locale)) {
+    const wanted = [`${locale}-x-icu`, `${locale.split('-')[0]}-x-icu`, 'und-x-icu'];
+    const { rows } = await sql<{ collname: string }>`
+      select collname from pg_collation where collname = any(${wanted}::text[])`.execute(trx);
+    const held = new Set(rows.map((row) => row.collname));
+    collations.set(locale, wanted.find((each) => held.has(each)) ?? null);
+  }
+  return collations.get(locale) ?? undefined;
+}
+
+/**
+ * `collate "<name>"` for the reader's language, or nothing where there is none: an order by display
+ * text outside a listing (UI-H). Never byte order, which is for identity alone.
+ */
+export async function collated(
+  trx: TenantTransaction,
+  language: InterfaceLanguage | undefined,
+): Promise<RawBuilder<unknown>> {
+  const collation = await collationFor(trx, language);
+  return collation === undefined ? sql`` : sql`collate ${sql.id(collation)}`;
+}
+
 /**
  * A listing's sort keys, each also spelled as text for a cursor: the columns `keysetPage` reads,
  * `sort_key_<n>` and `sort_text_<n>`.
@@ -223,17 +262,23 @@ export async function keysetPage<Row extends { readonly id: string }>(
   order: SortOrder,
   limit: number,
   after: Keyset | undefined,
+  /** The reader's language, whose collation a text key sorts by (UI-H); its default where none. */
+  language?: InterfaceLanguage,
 ): Promise<{ readonly rows: readonly Row[]; readonly next: Keyset | null }> {
   const direction = sql.raw(order === 'asc' ? 'asc' : 'desc');
   const past = sql.raw(order === 'asc' ? '>' : '<');
-  const columns = types.map((_, index) => sql.ref(`x.sort_key_${index}`));
+  const collation = await collationFor(trx, language);
+  // On the key itself, in the comparison as in the order, so the page and the cursor agree.
+  const collated = (value: RawBuilder<unknown>, type: KeyType) =>
+    type === 'text' && collation !== undefined ? sql`${value} collate ${sql.id(collation)}` : value;
+  const columns = types.map((type, index) => collated(sql.ref(`x.sort_key_${index}`), type));
   const { rows } = await sql<Row & Record<string, unknown>>`
     select x.* from (${inner}) as x
     where ${
       after === undefined
         ? sql`true`
         : sql`(${sql.join(columns)}, x.id) ${past} (${sql.join(
-            types.map((type, index) => sql`${after.keys[index]}::${sql.raw(type)}`),
+            types.map((type, index) => collated(sql`${after.keys[index]}::${sql.raw(type)}`, type)),
           )}, ${after.id}::uuid)`
     }
     order by ${sql.join(columns.map((column) => sql`${column} ${direction}`))}, x.id ${direction}

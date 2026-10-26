@@ -134,7 +134,7 @@ describe('citing an entry (the CI plan, CId)', () => {
       ]);
     expect(drawn).toEqual([
       ['(Marlow 2020)', {}],
-      [CITATION_UNAVAILABLE, { class: 'aw-citation-unavailable' }],
+      [CITATION_UNAVAILABLE(), { class: 'aw-citation-unavailable' }],
     ]);
     // A form arriving is no change to the document, and the history never holds it.
     expect(fromEditor(view.state.doc)).toEqual(fromEditor(next.doc));
@@ -185,7 +185,7 @@ describe('citing an entry (the CI plan, CId)', () => {
         },
       ],
       [
-        `${CITATION_UNAVAILABLE} (corrected)`,
+        `${CITATION_UNAVAILABLE()} (corrected)`,
         {
           class: 'aw-citation-unavailable aw-citation-flagged',
           'data-flag': 'corrected',

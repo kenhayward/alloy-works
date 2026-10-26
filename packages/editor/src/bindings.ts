@@ -25,6 +25,7 @@ import type { Node } from 'prosemirror-model';
 import { NodeSelection, type Command, type EditorState } from 'prosemirror-state';
 
 import { assetContentPath, BOUND_IMAGE, BOUND_TABLE, editorSchema } from './schema.js';
+import { listOf, say } from './words.js';
 
 const bindingNode = editorSchema.nodes.binding!;
 const figureNode = editorSchema.nodes.figure!;
@@ -202,22 +203,22 @@ export interface BindingSelected {
 }
 
 /** What the node says with nothing to tell it more: `toDOM`'s words. */
-export const BOUND_VALUE = 'Bound value';
+export const BOUND_VALUE = (): string => say('binding.bound-value');
 
 /** A binding the document holds nothing for. */
-export const NEVER_RESOLVED = 'No value - never resolved';
+export const NEVER_RESOLVED = (): string => say('binding.never-resolved');
 
 /** A binding the author has changed since the document's value was taken for it. */
-export const CHANGED_SINCE_RESOLVED = 'No value - the binding changed since it was resolved';
+export const CHANGED_SINCE_RESOLVED = (): string => say('binding.changed-since-resolved');
 
 /** A held value with a newer result waiting: shown always, beside the value. */
-export const REVISION_WAITING = 'revision waiting';
+export const REVISION_WAITING = (): string => say('binding.revision-waiting');
 
 /** A value a person revised by hand (DAT-115): shown always, beside the value, never by colour alone. */
-export const REVISED_BY_HAND = 'revised by hand';
+export const REVISED_BY_HAND = (): string => say('binding.revised-by-hand');
 
 /** On its own, where the definition's title cannot be shown. */
-export const A_BOUND_VALUE = 'a bound value';
+export const A_BOUND_VALUE = (): string => say('binding.a-bound-value');
 
 /** The class a binding shown on its own carries: the application's chip (B1-K). */
 export const ALONE_CLASS = 'aw-binding-alone';
@@ -226,13 +227,16 @@ export const ALONE_CLASS = 'aw-binding-alone';
 export const FAILED_CLASS = 'aw-binding-failed';
 
 /** Its kind, as a screen reader is told it after what it shows (B1-L). */
-const KIND = ', bound value';
+const KIND = (): string => say('binding.kind');
 
 /** `site is north and open is true`: a key's values as stored. */
 const keyWords = (key: Readonly<Record<string, string | boolean>>): string =>
-  Object.entries(key)
-    .map(([name, value]) => `${name} is ${String(value)}`)
-    .join(' and ');
+  listOf(
+    Object.entries(key).map(([name, value]) =>
+      say('binding.key-is', { column: name, value: String(value) }),
+    ),
+    'conjunction',
+  );
 
 /**
  * **The words each failure shows** (B1-J), keyed by the literal union so a code the view gains is a
@@ -240,20 +244,20 @@ const keyWords = (key: Readonly<Record<string, string | boolean>>): string =>
  * key read from the binding as the editor holds it.
  */
 export const BINDING_FAILURE_WORDS = {
-  take_invalid: (_binding, held) => `No value - the definition has no column ${held.column}`,
-  value_none: () => 'No value - the query returned no rows',
-  value_many: (_binding, held) => `No value - the query returned ${held.count ?? 'several'} rows`,
+  take_invalid: (_binding, held) => say('binding.take-invalid', { column: held.column }),
+  value_none: () => say('binding.value-none'),
+  value_many: (_binding, held) => say('binding.value-many', { count: held.count ?? 'several' }),
   row_missing: (binding) =>
     'take' in binding && 'key' in binding.take
-      ? `No value - no row where ${keyWords(binding.take.key)}`
-      : 'No value - no row',
-  value_null: () => 'No value - empty',
-  value_empty: () => 'No value - empty',
-  unavailable: () => 'No value - the result cannot be read',
+      ? say('binding.row-missing-where', { key: keyWords(binding.take.key) })
+      : say('binding.row-missing'),
+  value_null: () => say('binding.value-empty'),
+  value_empty: () => say('binding.value-empty'),
+  unavailable: () => say('binding.unavailable'),
   image_description_missing: (_binding, held) =>
-    `No image - the row has no description in ${held.column}`,
-  value_not_image: () => 'No image - the column is not an image',
-  image_not_placeable: () => 'No image - a footnote or a caption cannot hold one',
+    say('binding.image-description-missing', { column: held.column }),
+  value_not_image: () => say('binding.value-not-image'),
+  image_not_placeable: () => say('binding.image-not-placeable'),
 } satisfies {
   readonly [K in BindingFailureShown]: (
     binding: AnyBinding,
@@ -286,7 +290,9 @@ export function storedBinding(node: Node): Binding {
 
 /** What it asks for: its column, and a key's values as stored. */
 const asksFor = (take: Binding['take']): string =>
-  'key' in take ? `${take.column} where ${keyWords(take.key)}` : take.column;
+  'key' in take
+    ? say('binding.asks-for-where', { column: take.column, key: keyWords(take.key) })
+    : take.column;
 
 /** One binding's words in `context`. */
 function shownFor(
@@ -295,7 +301,7 @@ function shownFor(
 ): Omit<BindingShown, 'pos' | 'id'> {
   if (context === null) {
     return {
-      text: BOUND_VALUE,
+      text: BOUND_VALUE(),
       hidden: '',
       marker: null,
       failed: false,
@@ -306,8 +312,11 @@ function shownFor(
   if (context.kind === 'alone') {
     const title = context.titles.get(binding.query) ?? null;
     return {
-      text: title === null ? A_BOUND_VALUE : `${asksFor(binding.take)}, ${title}`,
-      hidden: `${KIND}, a value in each document`,
+      text:
+        title === null
+          ? A_BOUND_VALUE()
+          : say('binding.alone', { asks: asksFor(binding.take), title }),
+      hidden: say('binding.kind-alone'),
       marker: null,
       failed: false,
       resolved: false,
@@ -316,15 +325,15 @@ function shownFor(
   }
   const failed = (text: string, resolved = false) => ({
     text,
-    hidden: `${KIND}, failed`,
+    hidden: say('binding.kind-failed'),
     marker: null,
     failed: true,
     resolved,
     image: null,
   });
   const held = context.held.get(binding.id);
-  if (held === undefined) return failed(NEVER_RESOLVED);
-  if (held.binding !== bindingDigestInput(binding)) return failed(CHANGED_SINCE_RESOLVED);
+  if (held === undefined) return failed(NEVER_RESOLVED());
+  if (held.binding !== bindingDigestInput(binding)) return failed(CHANGED_SINCE_RESOLVED());
   // A bound table's result stands in no line: an inline binding is never shown one (TB2-C).
   if ('table' in held.shown) return failed(BINDING_FAILURE_WORDS.unavailable());
   if ('failure' in held.shown) {
@@ -339,19 +348,26 @@ function shownFor(
           alt: held.shown.image.alt,
         };
   const markers = [
-    ...(held.shown.revised === true ? [REVISED_BY_HAND] : []),
-    ...(held.shown.waiting ? [REVISION_WAITING] : []),
+    ...(held.shown.revised === true ? [REVISED_BY_HAND()] : []),
+    ...(held.shown.waiting ? [REVISION_WAITING()] : []),
   ];
   return markers.length > 0
     ? {
         text: held.shown.value,
-        hidden: `${KIND},`,
-        marker: markers.join(', '),
+        hidden: `${KIND()},`,
+        marker: listOf(markers, 'unit'),
         failed: false,
         resolved: true,
         image,
       }
-    : { text: held.shown.value, hidden: KIND, marker: null, failed: false, resolved: true, image };
+    : {
+        text: held.shown.value,
+        hidden: KIND(),
+        marker: null,
+        failed: false,
+        resolved: true,
+        image,
+      };
 }
 
 /**
@@ -401,7 +417,7 @@ export function boundFiguresShown(
       id: binding.id,
       ...each,
       // With nothing to tell it more, what the node says: `toDOM`'s words.
-      ...(context === null ? { text: BOUND_IMAGE } : {}),
+      ...(context === null ? { text: BOUND_IMAGE() } : {}),
       image: each.image === null || !decorative ? each.image : { ...each.image, alt: '' },
     });
     return false;
@@ -413,32 +429,29 @@ export function boundFiguresShown(
 export const PAGE_ROWS = 50;
 
 /** A bound table's binding never resolved in the document. */
-export const TABLE_NEVER_RESOLVED = 'No rows - never resolved';
+export const TABLE_NEVER_RESOLVED = (): string => say('bound-table.never-resolved');
 
 /** A bound table's binding changed since its result was held. */
-export const TABLE_CHANGED = 'No rows - the binding changed since it was resolved';
+export const TABLE_CHANGED = (): string => say('bound-table.changed');
 
 /** A bound table whose result the page cannot read. */
-export const TABLE_UNAVAILABLE = 'No rows - the result cannot be read';
+export const TABLE_UNAVAILABLE = (): string => say('bound-table.unavailable');
 
 /** A bound table whose rows the page is still reading. */
-export const TABLE_READING = 'Reading the rows';
+export const TABLE_READING = (): string => say('bound-table.reading');
 
 /** The words each failure of `checkTable` shows in place, by its code. */
 export const TABLE_FAILURE_WORDS = {
-  column_missing: (failure) => `No rows - the result has no column ${failure.column}`,
-  column_image: (failure) =>
-    `No rows - ${failure.column} is an image column, which a table cannot show`,
+  column_missing: (failure) => say('bound-table.column-missing', { column: failure.column }),
+  column_image: (failure) => say('bound-table.column-image', { column: failure.column }),
   format_mismatch: (failure) =>
-    `No rows - the format of ${failure.column} sets ${failure.detail}, which does not apply to its values`,
-  table_too_long: (failure) =>
-    `No rows - the result has ${failure.detail} rows, more than a table prints`,
+    say('bound-table.format-mismatch', { column: failure.column, detail: failure.detail }),
+  table_too_long: (failure) => say('bound-table.too-long', { count: failure.detail }),
   subtotal_not_boolean: (failure) =>
-    `No rows - ${failure.column} marks subtotals, so it must hold true or false`,
-  transpose_too_long: (failure) =>
-    `No rows - the result has ${failure.detail} rows, more than a table turns on its side`,
+    say('bound-table.subtotal-not-boolean', { column: failure.column }),
+  transpose_too_long: (failure) => say('bound-table.transpose-too-long', { count: failure.detail }),
   subtotal_ambiguous: (failure) =>
-    `No rows - row ${Number(failure.detail) + 1} of the result is a subtotal at two levels`,
+    say('bound-table.subtotal-ambiguous', { row: Number(failure.detail) + 1 }),
 } satisfies {
   readonly [K in TableFailure['code']]: (failure: TableFailure & { readonly code: K }) => string;
 };
@@ -448,18 +461,22 @@ export const tableFailureWords = (failure: TableFailure): string =>
   (TABLE_FAILURE_WORDS[failure.code] as (failure: TableFailure) => string)(failure);
 
 /** A keyed note on a table whose definition declares no key (DAT-012, `key_required`). */
-export const NOTE_KEY_REQUIRED =
-  'Its query definition declares no key, so this note cannot name its row';
+export const NOTE_KEY_REQUIRED = (): string => say('bound-table.note-key-required');
 
 /** A keyed note whose row the result no longer has (DAT-048, `note_row_missing`), by its key. */
 export const noteRowMissing = (key: Readonly<Record<string, CanonicalValue>>): string =>
-  `No row has the key ${Object.entries(key)
-    .map(([column, value]) => `${column} ${String(value)}`)
-    .join(', ')} now`;
+  say('bound-table.note-row-missing', {
+    key: listOf(
+      Object.entries(key).map(([column, value]) =>
+        say('bound-table.key-value', { column, value: String(value) }),
+      ),
+      'conjunction',
+    ),
+  });
 
 /** What a bound table shows on its own: the definition that fills it in each document (BI-B). */
 export const tableAlone = (title: string | null): string =>
-  `Filled from ${title ?? 'a query definition'} in each document`;
+  title === null ? say('bound-table.alone-untitled') : say('bound-table.alone', { title });
 
 /** A column of a bound table as the page draws it: its header, alignment and wrap. */
 export interface BoundTableColumnShown {
@@ -671,7 +688,7 @@ function notesPlaced(
       const { anchor } = note;
       const letter = letters.get(note.id) ?? null;
       if (anchor.kind === 'keyed' && keyless) {
-        return { id: note.id, letter: null, said: NOTE_KEY_REQUIRED, failed: true };
+        return { id: note.id, letter: null, said: NOTE_KEY_REQUIRED(), failed: true };
       }
       if (anchor.kind === 'keyed' && order !== null && noteRows.get(note.id) === null) {
         return { id: note.id, letter: null, said: noteRowMissing(anchor.key), failed: true };
@@ -708,7 +725,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
     context?.kind === 'document'
       ? (context.tables ?? DEFAULT_TABLE_SETTING)
       : DEFAULT_TABLE_SETTING;
-  if (context === null) return spanning([node.attrs], BOUND_TABLE, false);
+  if (context === null) return spanning([node.attrs], BOUND_TABLE(), false);
   if (context.kind === 'alone') {
     return spanning(
       [node.attrs],
@@ -717,11 +734,11 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
     );
   }
   const held = context.held.get(table.binding.id);
-  if (held === undefined) return spanning([node.attrs, setting], TABLE_NEVER_RESOLVED, true);
+  if (held === undefined) return spanning([node.attrs, setting], TABLE_NEVER_RESOLVED(), true);
   if (held.binding !== bindingDigestInput(table.binding)) {
-    return spanning([node.attrs, setting], TABLE_CHANGED, true);
+    return spanning([node.attrs, setting], TABLE_CHANGED(), true);
   }
-  if (!('table' in held.shown)) return spanning([node.attrs, setting], TABLE_UNAVAILABLE, true);
+  if (!('table' in held.shown)) return spanning([node.attrs, setting], TABLE_UNAVAILABLE(), true);
   heldTable = held.shown.table;
   const { columns, rowCount, rows } = held.shown.table;
   const presorted = held.shown.table.presorted === true;
@@ -746,7 +763,7 @@ function tableShownFor(node: Node, context: BindingContext | null): BoundTableSh
     ...(table.transpose === undefined ? [] : [table.transpose.header]),
   ];
   if (rows === null || named.some((name) => !sent.has(name))) {
-    return spanning([columns, node.attrs, style, setting], TABLE_READING, false);
+    return spanning([columns, node.attrs, style, setting], TABLE_READING(), false);
   }
   // The empty statement shows only where there are no rows: typing it changes nothing else.
   const empty = rows.rows.length === 0 ? wordsOf(node, 'boundTableEmpty') : '';

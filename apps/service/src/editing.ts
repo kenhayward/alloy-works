@@ -54,6 +54,7 @@ import { definitionReader } from './data/bindings.js';
 import type { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import { refused } from './wire-codes.js';
+import { languageOf } from './listing.js';
 
 /** Every refusal a session's write can meet from the store. */
 type Refusal =
@@ -402,7 +403,7 @@ export function editingHandlers() {
     listIterations: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { id } = request.params as ComponentParams;
       const query = request.query as IterationListQuery;
-      const asked = pageAsked('iterations', query);
+      const asked = pageAsked('iterations', query, languageOf(request));
       await mustHold(trx, id, principalId, query.session);
       const page = await listIterations(trx, {
         artifactId: id,
@@ -412,7 +413,14 @@ export function editingHandlers() {
       });
       return {
         items: page.items.map(iterationView),
-        next: cursorFor('iterations', asked.sort, asked.order, page.snapshot, page.next),
+        next: cursorFor(
+          'iterations',
+          asked.sort,
+          asked.order,
+          page.snapshot,
+          page.next,
+          asked.language,
+        ),
       };
     },
 

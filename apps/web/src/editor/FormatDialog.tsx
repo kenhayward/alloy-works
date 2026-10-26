@@ -6,41 +6,119 @@ import { Chip } from '../parts/Chip.js';
 import layout from './FormatDialog.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
+import { words as say } from '../words/words.js';
 
 /** What each member of a format is called in the dialog (tables.md, "Formatting"). */
 export const FORMAT_MEMBERS = {
-  style: 'Style',
-  places: 'Decimal places',
-  rounding: 'Rounding',
-  negative: 'Negative numbers',
-  negativeColour: 'Negative colour',
-  currency: 'Currency symbol',
-  percent: 'Percentage from',
-  duration: 'Duration',
-  fraction: 'Fraction of a second, places',
-  null: 'Where there is no value',
+  get style() {
+    return say('editor.style');
+  },
+  get places() {
+    return say('editor.decimal-places');
+  },
+  get rounding() {
+    return say('editor.rounding');
+  },
+  get negative() {
+    return say('editor.negative-numbers');
+  },
+  get negativeColour() {
+    return say('editor.negative-colour');
+  },
+  get currency() {
+    return say('editor.currency-symbol');
+  },
+  get percent() {
+    return say('editor.percentage-from');
+  },
+  get duration() {
+    return say('editor.duration');
+  },
+  get fraction() {
+    return say('editor.fraction-of-a-second-places');
+  },
+  get null() {
+    return say('editor.where-there-is-no-value');
+  },
 } as const satisfies Record<keyof FieldFormat, string>;
 
 /** The words each member's values are offered by. */
 export const FORMAT_WORDS = {
   style: {
-    number: 'A number',
-    currency: 'A currency',
-    percent: 'A percentage',
-    duration: 'A duration',
+    get number() {
+      return say('editor.a-number');
+    },
+    get currency() {
+      return say('editor.a-currency');
+    },
+    get percent() {
+      return say('editor.a-percentage');
+    },
+    get duration() {
+      return say('editor.a-duration');
+    },
   },
-  rounding: { halfAwayFromZero: 'Half away from zero', halfEven: 'Half to even' },
-  negative: { minus: 'With a minus sign', parentheses: 'In parentheses' },
-  negativeColour: { true: 'In the negative colour', false: 'In the text colour' },
-  position: { before: 'Before the number', after: 'After the number' },
-  percent: { fraction: 'A fraction, 0.25 as 25%', hundred: 'A hundred, 25 as 25%' },
-  from: { seconds: 'Seconds', minutes: 'Minutes' },
-  show: { 'h:mm': 'Hours and minutes', 'h:mm:ss': 'Hours, minutes and seconds' },
+  rounding: {
+    get halfAwayFromZero() {
+      return say('editor.half-away-from-zero');
+    },
+    get halfEven() {
+      return say('editor.half-to-even');
+    },
+  },
+  negative: {
+    get minus() {
+      return say('editor.with-a-minus-sign');
+    },
+    get parentheses() {
+      return say('editor.in-parentheses');
+    },
+  },
+  negativeColour: {
+    get true() {
+      return say('editor.in-the-negative-colour');
+    },
+    get false() {
+      return say('editor.in-the-text-colour');
+    },
+  },
+  position: {
+    get before() {
+      return say('editor.before-the-number');
+    },
+    get after() {
+      return say('editor.after-the-number');
+    },
+  },
+  percent: {
+    get fraction() {
+      return say('editor.a-fraction-0-25-as');
+    },
+    get hundred() {
+      return say('editor.a-hundred-25-as-25');
+    },
+  },
+  from: {
+    get seconds() {
+      return say('editor.seconds');
+    },
+    get minutes() {
+      return say('editor.minutes');
+    },
+  },
+  show: {
+    get 'h:mm'() {
+      return say('editor.hours-and-minutes');
+    },
+    get 'h:mm:ss'() {
+      return say('editor.hours-minutes-and-seconds');
+    },
+  },
 } as const;
 
 /** What a member left unset says it takes: the table style's value, in words. */
-export const STYLE_SAYS = 'Table style';
-export const STYLE_SETS_NONE = 'not set';
+export const STYLE_SAYS = (): string => say('editor.format.table-style');
+export const STYLE_SETS_NONE = (): string => say('editor.format.not-set');
 
 const NUMBER_TYPES = new Set(['integer', 'decimal']);
 const FRACTION_TYPES = new Set(['time', 'localDateTime', 'instant']);
@@ -57,7 +135,7 @@ export function membersFor(type: ColumnType | null): (keyof FieldFormat)[] {
 /** A member's value in words, as the style or the column holds it. */
 export function memberSaid(member: keyof FieldFormat, format: FieldFormat): string {
   const value = format[member];
-  if (value === undefined) return STYLE_SETS_NONE;
+  if (value === undefined) return STYLE_SETS_NONE();
   switch (member) {
     case 'style':
     case 'rounding':
@@ -68,11 +146,18 @@ export function memberSaid(member: keyof FieldFormat, format: FieldFormat): stri
       return FORMAT_WORDS.negativeColour[String(value) as 'true' | 'false'];
     case 'currency': {
       const currency = value as NonNullable<FieldFormat['currency']>;
-      return `${currency.symbol}, ${FORMAT_WORDS.position[currency.position].toLowerCase()}${currency.space ? ', spaced' : ''}`;
+      return say('editor.format.currency', {
+        symbol: currency.symbol,
+        position: currency.position,
+        spaced: String(currency.space),
+      });
     }
     case 'duration': {
       const duration = value as NonNullable<FieldFormat['duration']>;
-      return `${FORMAT_WORDS.from[duration.from]} as ${FORMAT_WORDS.show[duration.show].toLowerCase()}`;
+      return say('editor.format.duration', {
+        from: duration.from,
+        show: duration.show === 'h:mm' ? 'minutes' : 'seconds',
+      });
     }
     default:
       return String(value);
@@ -175,7 +260,8 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
   }, []);
 
   const set_ = (name: string, value: string | boolean) => setDraft({ ...draft, [name]: value });
-  const unset = (member: keyof FieldFormat) => `${STYLE_SAYS}: ${memberSaid(member, style)}`;
+  const unset = (member: keyof FieldFormat) =>
+    say('editor.format.style-takes', { style: STYLE_SAYS(), value: memberSaid(member, style) });
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -213,7 +299,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
     <div key={member} className={layout['row']}>
       <div className={layout['name']}>
         <label htmlFor={`${id}-${name}`}>{FORMAT_MEMBERS[member]}</label>
-        {set && <Chip tone="accent">Set</Chip>}
+        {set && <Chip tone="accent">{say('editor.set')}</Chip>}
         {hint !== null && (
           <span id={`${id}-${name}-style`} className={layout['hint']}>
             {hint}
@@ -269,7 +355,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
       member,
       name,
       set,
-      set ? unset(member) : `Left unset. ${unset(member)}`,
+      set ? unset(member) : say('editor.left-unset', { fallback: unset(member) }),
       <input
         id={`${id}-${name}`}
         type={kind}
@@ -303,7 +389,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
           'text',
           draft.symbol !== '' && (
             <>
-              <label htmlFor={`${id}-position`}>Symbol stands</label>
+              <label htmlFor={`${id}-position`}>{say('editor.symbol-stands')}</label>
               <select
                 id={`${id}-position`}
                 value={String(draft.position)}
@@ -321,7 +407,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
                   checked={draft.space === true}
                   onChange={(event) => set_('space', event.target.checked)}
                 />
-                A space between symbol and number
+                {say('editor.a-space-between-symbol-and')}
               </label>
             </>
           ),
@@ -333,7 +419,7 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
           FORMAT_WORDS.from,
           draft.from !== '' && (
             <>
-              <label htmlFor={`${id}-show`}>Shown as</label>
+              <label htmlFor={`${id}-show`}>{say('editor.shown-as')}</label>
               <select
                 id={`${id}-show`}
                 value={String(draft.show)}
@@ -370,8 +456,11 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
               const member = parsed.error.issues[0]?.path[0] as keyof FieldFormat | undefined;
               setSaid(
                 member === 'null'
-                  ? 'Where there is no value, the words cannot be empty or read as a number.'
-                  : `${member === undefined ? 'The format' : FORMAT_MEMBERS[member]} is not one a column can take.`,
+                  ? say('editor.where-there-is-no-value-2')
+                  : say('editor.is-not-one-a-column', {
+                      value1:
+                        member === undefined ? say('editor.the-format') : FORMAT_MEMBERS[member],
+                    }),
               );
               return;
             }
@@ -379,11 +468,12 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
           }}
         >
           <h2 id={`${id}-heading`} className={styles['heading']}>
-            Format of {header}
+            {say('editor.format-of')}
+            {header}
           </h2>
           <p className={styles['note']}>
-            Each member left unset takes the table style's, shown under its name.
-            {type?.base === 'text' && ' A text column takes only this one.'}
+            {say('editor.each-member-left-unset-takes')}
+            {type?.base === 'text' && say('editor.a-text-column-takes-only')}
           </p>
           <div className={layout['rows']}>{fields}</div>
           {said !== null && (
@@ -393,18 +483,18 @@ export function FormatDialog({ header, type, style, format, onDone, onCancel }: 
           )}
           <div className={styles['footer']}>
             <button type="button" onClick={onCancel}>
-              Cancel
+              {say('editor.cancel')}
             </button>
             <button type="submit" className="primary">
-              Apply
+              {say('editor.apply')}
             </button>
           </div>
         </form>
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={say('editor.close')}
+          title={say('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

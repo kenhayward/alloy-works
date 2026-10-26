@@ -61,7 +61,7 @@ describe('the Variable dialog (the R5 plan, R5b)', () => {
         onCancel={cancelled}
       />,
     );
-    expect(await screen.findByText(NO_VARIABLES)).toBeInTheDocument();
+    expect(await screen.findByText(NO_VARIABLES())).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(cancelled).toHaveBeenCalled();
   });

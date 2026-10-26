@@ -28,6 +28,7 @@ import { storageUnavailable } from './errors.js';
 import { refused } from './wire-codes.js';
 import { jobView } from './jobs.js';
 import { cursorFor, pageAsked } from './listing.js';
+import { languageOf } from './listing.js';
 
 export function cohortView(cohort: StoredCohort): CohortView {
   return {
@@ -161,7 +162,7 @@ export function cohortHandlers(
     /** The cohorts the caller may read, sorted, filtered and paged (SCH-065; the R14 plan, R14-A). */
     listCohorts: async (request: FastifyRequest): Promise<CohortList> => {
       const query = request.query as CohortListQuery;
-      const asked = pageAsked('cohorts', query);
+      const asked = pageAsked('cohorts', query, languageOf(request));
       const listed = await db.withTenant(tenantOf(request), (trx) =>
         listReadableCohorts(trx, callerOf(request).principalId, asked, {
           ...(query.template === undefined ? {} : { template: query.template }),
@@ -178,7 +179,14 @@ export function cohortHandlers(
           requestedAt: each.requestedAt.toISOString(),
           rows: { ...each.rows },
         })),
-        next: cursorFor('cohorts', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'cohorts',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
       };
     },
 

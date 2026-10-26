@@ -8,6 +8,7 @@ import { Icon } from './Icon.js';
 import { latexToMathml } from './latex.js';
 import styles from './MarkPrompt.module.css';
 import { describeEquation, speechLanguage } from './speech.js';
+import { words as say } from '../words/words.js';
 
 /**
  * **The dialog knows nothing of where the equation goes** (equations 3, ruling R3): its caller names
@@ -212,7 +213,7 @@ export function EquationDialog({
 
   const submit = () => {
     if (mathml === null) {
-      setSaid(outcome === null ? 'Type the equation in LaTeX.' : null);
+      setSaid(outcome === null ? say('editor.type-the-equation-in-latex') : null);
       field.current?.focus();
       return;
     }
@@ -226,9 +227,7 @@ export function EquationDialog({
     const given = alternative.trim() === '' ? null : alternative.trim();
     const described = withAlternative(mathml, given);
     if (described === null) {
-      setSaid(
-        'That description holds a character that cannot be stored. Take it out and try again.',
-      );
+      setSaid(say('editor.that-description-holds-a-character'));
       return;
     }
     const typed = latex.trim() === '' ? null : latex;
@@ -315,10 +314,10 @@ export function EquationDialog({
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Equation" size={22} />
             </span>
-            Equation
+            {say('editor.equation')}
           </h2>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-latex`}>LaTeX</label>
+            <label htmlFor={`${id}-latex`}>{say('editor.latex')}</label>
             <textarea
               id={`${id}-latex`}
               ref={field}
@@ -344,25 +343,26 @@ export function EquationDialog({
             )}
             {current !== null && current.latex === null && (
               <p id={`${id}-replaces`} className={styles['note']}>
-                This equation was stored without its LaTeX. Typing LaTeX here replaces it.
+                {say('editor.this-equation-was-stored-without')}
               </p>
             )}
             <span id={`${id}-latex-hint`} className={styles['hint']}>
-              Such as \frac{'{a}{b}'} or x^2
+              {say('editor.such-as-frac')}
+              {'{a}{b}'} {say('editor.or-x-2')}
             </span>
           </div>
           <div className={own['preview']} role="group" aria-labelledby={`${id}-preview`}>
             <span id={`${id}-preview`} className={own['label']}>
-              Preview
+              {say('editor.preview')}
             </span>
             <div ref={preview} className={own['drawn']} />
             {mathml === null && wrong === null && (
-              <p className={styles['note']}>The equation is drawn here as you type it.</p>
+              <p className={styles['note']}>{say('editor.the-equation-is-drawn-here')}</p>
             )}
           </div>
           {current === null && blockPlaceable && (
             <fieldset className={own['group']}>
-              <legend>Place as</legend>
+              <legend>{say('editor.place-as')}</legend>
               <div className={own['choices']}>
                 {(['inline', 'block'] as const).map((kind) => (
                   <label key={kind} className={own['choice']}>
@@ -376,7 +376,7 @@ export function EquationDialog({
                         change();
                       }}
                     />
-                    {kind === 'inline' ? 'Inline' : 'Block'}
+                    {kind === 'inline' ? say('editor.inline') : say('editor.block')}
                   </label>
                 ))}
               </div>
@@ -389,11 +389,11 @@ export function EquationDialog({
                 checked={numbered}
                 onChange={(event) => setNumbered(event.target.checked)}
               />
-              Numbered
+              {say('editor.numbered')}
             </label>
           )}
           <div className={styles['field']}>
-            <label htmlFor={`${id}-description`}>Description</label>
+            <label htmlFor={`${id}-description`}>{say('editor.description')}</label>
             <textarea
               id={`${id}-description`}
               rows={2}
@@ -418,23 +418,21 @@ export function EquationDialog({
             />
             {!spoken && (
               <p id={`${id}-unspoken`} className={styles['warning']}>
-                No description can be written for you in {languageName(language)}. Write one
-                yourself.
+                {say('editor.no-description-can-be-written')}
+                {languageName(language)}
+                {say('editor.write-one-yourself')}
               </p>
             )}
             {kept && (
               <p id={`${id}-kept`} className={styles['note']}>
-                The description is yours, so it was not written again. Generate again writes it for
-                the equation as it is now.
+                {say('editor.the-description-is-yours-so')}
               </p>
             )}
             {unwritten && (
-              <p className={styles['warning']}>
-                A description could not be written. Write one yourself.
-              </p>
+              <p className={styles['warning']}>{say('editor.a-description-could-not-be')}</p>
             )}
             <span id={`${id}-description-hint`} className={styles['hint']}>
-              What the equation says, for someone who cannot see it.
+              {say('editor.what-the-equation-says-for')}
             </span>
             {spoken && (
               <div className={own['again']}>
@@ -448,9 +446,9 @@ export function EquationDialog({
                     write(withAlternative(mathml, null) ?? mathml);
                   }}
                 >
-                  Generate again
+                  {say('editor.generate-again')}
                 </button>
-                {writing && <span role="status">Writing a description</span>}
+                {writing && <span role="status">{say('editor.writing-a-description')}</span>}
               </div>
             )}
           </div>
@@ -461,18 +459,22 @@ export function EquationDialog({
           )}
           <div className={styles['footer']}>
             <button type="button" onClick={onCancel}>
-              Cancel
+              {say('editor.cancel')}
             </button>
             <button type="submit" className="primary">
-              {placing ? 'Writing the description' : current === null ? 'Insert' : 'Change'}
+              {placing
+                ? say('editor.writing-the-description')
+                : current === null
+                  ? say('editor.insert')
+                  : say('editor.change')}
             </button>
           </div>
         </form>
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={say('editor.close')}
+          title={say('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

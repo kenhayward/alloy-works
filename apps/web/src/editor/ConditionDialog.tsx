@@ -6,6 +6,7 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ConditionDialog.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -17,12 +18,11 @@ export interface OfferedAxis {
 }
 
 /** What the dialog says where the environment declares no axis. */
-export const NO_AXES = 'No condition axes are declared yet.';
+export const NO_AXES = (): string => words('editor.condition.no-axes');
 /** What it says where the axes could not be read. */
-export const AXES_UNREAD = 'The condition axes could not be read.';
+export const AXES_UNREAD = (): string => words('editor.condition.axes-unread');
 /** Why an alternative is offered: the documented way to word text differently per profile. */
-export const ALTERNATIVE_SAID =
-  'To word this differently for other readers, add an alternative: a copy kept for the other values, to rewrite.';
+export const ALTERNATIVE_SAID = (): string => words('editor.condition.alternative-said');
 
 /** The keys of every declared axis, from the listing alone: what a paste keeps conditions on. */
 export async function declaredAxisKeys(client: Client): Promise<string[]> {
@@ -155,15 +155,15 @@ export function ConditionDialog({
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Condition" size={22} />
             </span>
-            Condition
+            {words('editor.condition')}
           </h2>
-          {axes === null && <p role="status">Reading the condition axes.</p>}
-          {axes === 'unread' && <p role="alert">{AXES_UNREAD}</p>}
-          {read !== null && read.length === 0 && <p>{NO_AXES}</p>}
+          {axes === null && <p role="status">{words('editor.reading-the-condition-axes')}</p>}
+          {axes === 'unread' && <p role="alert">{AXES_UNREAD()}</p>}
+          {read !== null && read.length === 0 && <p>{NO_AXES()}</p>}
           {read !== null && read.length > 0 && (
             <>
               <div className={styles['field']}>
-                <label htmlFor={`${id}-axis`}>Axis</label>
+                <label htmlFor={`${id}-axis`}>{words('editor.axis')}</label>
                 <select
                   id={`${id}-axis`}
                   value={axis ?? ''}
@@ -180,7 +180,7 @@ export function ConditionDialog({
                 </select>
               </div>
               <fieldset className={own['values']}>
-                <legend>Kept for</legend>
+                <legend>{words('editor.kept-for')}</legend>
                 {chosen?.values.map((each) => (
                   <label key={each.key} className={own['value']}>
                     <input
@@ -199,7 +199,7 @@ export function ConditionDialog({
                 ))}
               </fieldset>
               {onAlternative !== undefined && already !== undefined && others.length > 0 && (
-                <p className={own['said']}>{ALTERNATIVE_SAID}</p>
+                <p className={own['said']}>{ALTERNATIVE_SAID()}</p>
               )}
               <div className={own['actions']}>
                 <button
@@ -207,7 +207,7 @@ export function ConditionDialog({
                   disabled={axis === null || values.length === 0}
                   onClick={() => axis !== null && onSet({ axis, values })}
                 >
-                  Set condition
+                  {words('editor.set-condition')}
                 </button>
                 {onAlternative !== undefined && already !== undefined && others.length > 0 && (
                   <button
@@ -217,12 +217,12 @@ export function ConditionDialog({
                       onAlternative({ axis, values: others.map((each) => each.key) })
                     }
                   >
-                    Add alternative
+                    {words('editor.add-alternative')}
                   </button>
                 )}
                 {already !== undefined && (
                   <button type="button" onClick={() => axis !== null && onRemove(axis)}>
-                    Remove condition
+                    {words('editor.remove-condition')}
                   </button>
                 )}
               </div>
@@ -232,8 +232,8 @@ export function ConditionDialog({
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

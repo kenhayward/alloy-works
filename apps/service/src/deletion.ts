@@ -23,6 +23,7 @@ import { notFound, scopesOf, type Authorised } from './access.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
+import { languageOf } from './listing.js';
 
 /** A refusal as the wire lists it. */
 function refusalView(refusal: DeletionRefusal): DeletionRefusalView {
@@ -114,7 +115,7 @@ export function deletedListingHandlers(
   return {
     listDeleted: async (request: FastifyRequest): Promise<DeletedList> => {
       const query = request.query as DeletedListQuery;
-      const asked = pageAsked('deleted', query);
+      const asked = pageAsked('deleted', query, languageOf(request));
       const principal = principalOf(request).principalId;
       const scopes = scopesOf(request);
       return db.withTenant(tenantOf(request), async (trx) => {
@@ -147,7 +148,14 @@ export function deletedListingHandlers(
             deletedAt: item.deletedAt.toISOString(),
             mayUndelete: mayRetire(item.id),
           })),
-          next: cursorFor('deleted', asked.sort, asked.order, page.snapshot, page.next),
+          next: cursorFor(
+            'deleted',
+            asked.sort,
+            asked.order,
+            page.snapshot,
+            page.next,
+            asked.language,
+          ),
           total: page.total,
         };
       });

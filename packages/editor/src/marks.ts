@@ -6,11 +6,14 @@ import { NodeSelection, type Command, type EditorState } from 'prosemirror-state
 import { blockCommand, type BlockAction } from './blocks.js';
 import { isFootnote, sparingFootnotes } from './footnotes.js';
 import { editorSchema } from './schema.js';
+import { say, type EditorWordKey } from './words.js';
 
 /** What every row of the registry says, whatever it acts on. */
 interface CommandBase {
-  /** The toolbar's and the keymap's one label. */
+  /** Its name in English: the icon's and the tests' handle, never shown as it stands. */
   readonly label: string;
+  /** Its name as the toolbar says it, in the person's language (the UI plan, UIb). */
+  readonly said: string;
   /** A `prosemirror-keymap` key, e.g. `Mod-i`. */
   readonly shortcut: string;
   /**
@@ -47,14 +50,19 @@ export type EditorCommand =
       readonly action: BlockAction;
     });
 
-/** The registry, in the order the toolbar shows it. */
-export const EDITOR_COMMANDS: readonly EditorCommand[] = [
+/** A row as written: its words come from the catalogue by its mark or action. */
+type CommandRow = EditorCommand extends infer C
+  ? C extends EditorCommand
+    ? Omit<C, 'said' | 'shortcutSaid'>
+    : never
+  : never;
+
+const ROWS: readonly CommandRow[] = [
   {
     kind: 'mark',
     mark: 'strong',
     label: 'Strong',
     shortcut: 'Mod-b',
-    shortcutSaid: 'Ctrl or Cmd and B',
     prompts: false,
   },
   {
@@ -62,7 +70,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'emphasis',
     label: 'Emphasis',
     shortcut: 'Mod-i',
-    shortcutSaid: 'Ctrl or Cmd and I',
     prompts: false,
   },
   {
@@ -70,7 +77,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'underline',
     label: 'Underline',
     shortcut: 'Mod-u',
-    shortcutSaid: 'Ctrl or Cmd and U',
     prompts: false,
   },
   {
@@ -78,7 +84,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'subscript',
     label: 'Subscript',
     shortcut: 'Mod-,',
-    shortcutSaid: 'Ctrl or Cmd and comma',
     prompts: false,
   },
   {
@@ -86,7 +91,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'superscript',
     label: 'Superscript',
     shortcut: 'Mod-.',
-    shortcutSaid: 'Ctrl or Cmd and full stop',
     prompts: false,
   },
   {
@@ -94,7 +98,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'inlineCode',
     label: 'Inline code',
     shortcut: 'Mod-e',
-    shortcutSaid: 'Ctrl or Cmd and E',
     prompts: false,
   },
   {
@@ -102,7 +105,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'quotedPhrase',
     label: 'Quoted phrase',
     shortcut: 'Mod-Shift-q',
-    shortcutSaid: 'Ctrl or Cmd, Shift and Q',
     prompts: false,
   },
   {
@@ -110,7 +112,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'hyperlink',
     label: 'Link',
     shortcut: 'Mod-k',
-    shortcutSaid: 'Ctrl or Cmd and K',
     prompts: true,
   },
   {
@@ -118,7 +119,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'language',
     label: 'Language',
     shortcut: 'Mod-Shift-l',
-    shortcutSaid: 'Ctrl or Cmd, Shift and L',
     prompts: true,
   },
   // The TM plan, TMc (CNT-165): prompting as Link does, for the term only the author can choose, over
@@ -129,7 +129,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     mark: 'definedTerm',
     label: 'Term',
     shortcut: 'Mod-Alt-g',
-    shortcutSaid: 'Ctrl or Cmd, Alt and G',
     prompts: true,
   },
   // The block actions, after the ten marks. None of them prompts but Reference and Equation, at the
@@ -141,7 +140,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'bulletedList',
     label: 'Bulleted list',
     shortcut: 'Mod-Shift-8',
-    shortcutSaid: 'Ctrl or Cmd, Shift and 8',
     prompts: false,
   },
   {
@@ -149,7 +147,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'numberedList',
     label: 'Numbered list',
     shortcut: 'Mod-Shift-7',
-    shortcutSaid: 'Ctrl or Cmd, Shift and 7',
     prompts: false,
   },
   {
@@ -157,7 +154,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'definitionList',
     label: 'Definition list',
     shortcut: 'Mod-Shift-9',
-    shortcutSaid: 'Ctrl or Cmd, Shift and 9',
     prompts: false,
   },
   {
@@ -165,7 +161,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'nestItem',
     label: 'Nest item',
     shortcut: 'Mod-]',
-    shortcutSaid: 'Ctrl or Cmd and right square bracket',
     prompts: false,
   },
   {
@@ -173,7 +168,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'liftItem',
     label: 'Lift item',
     shortcut: 'Mod-[',
-    shortcutSaid: 'Ctrl or Cmd and left square bracket',
     prompts: false,
   },
   // Editor 5's two, decision J. Punctuation rather than letters: Ctrl-Shift-B, -C, -E, -K and -U
@@ -184,7 +178,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'quotation',
     label: 'Quotation',
     shortcut: 'Mod-Shift-.',
-    shortcutSaid: 'Ctrl or Cmd, Shift and full stop',
     prompts: false,
   },
   {
@@ -192,7 +185,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'preformatted',
     label: 'Preformatted text',
     shortcut: 'Mod-Shift-,',
-    shortcutSaid: 'Ctrl or Cmd, Shift and comma',
     prompts: false,
   },
   {
@@ -201,7 +193,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     label: 'Table',
     // The next of the list family's digits: no browser and no platform takes it.
     shortcut: 'Mod-Shift-0',
-    shortcutSaid: 'Ctrl or Cmd, Shift and 0',
     prompts: false,
   },
   // Footnotes 1, ruling R7: Word's own chord for a footnote (component-editor.md, "Tables and
@@ -212,7 +203,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'footnote',
     label: 'Footnote',
     shortcut: 'Mod-Alt-f',
-    shortcutSaid: 'Ctrl or Cmd, Alt and F',
     prompts: false,
   },
   // Cross-references 1, ruling R9: beside Footnote, on the same chord's X. The one block action that
@@ -223,7 +213,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'reference',
     label: 'Reference',
     shortcut: 'Mod-Alt-x',
-    shortcutSaid: 'Ctrl or Cmd, Alt and X',
     prompts: true,
   },
   // The CI plan, CId: beside Reference, prompting as it does, for the entry and locator only the
@@ -233,7 +222,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'cite',
     label: 'Cite',
     shortcut: 'Mod-Shift-2',
-    shortcutSaid: 'Ctrl or Cmd, Shift and 2',
     prompts: true,
   },
   // B2-A: beside Reference, prompting as it does, for the definition, parameters and value only the
@@ -246,7 +234,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'value',
     label: 'Value',
     shortcut: 'Mod-Shift-6',
-    shortcutSaid: 'Ctrl or Cmd, Shift and 6',
     prompts: true,
   },
   // The R5 plan, R5b: beside Value, prompting as it does, for the declared variable only the author
@@ -256,7 +243,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'variable',
     label: 'Variable',
     shortcut: 'Mod-Alt-v',
-    shortcutSaid: 'Ctrl or Cmd, Alt and V',
     prompts: true,
   },
   // The R6 plan, R6-H: beside Variable, prompting as it does, for the axis and values only the author
@@ -266,7 +252,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'condition',
     label: 'Condition',
     shortcut: 'Mod-Alt-o',
-    shortcutSaid: 'Ctrl or Cmd, Alt and O',
     prompts: true,
   },
   // Equations 1, ruling R6: prompting as Reference does, for the LaTeX only the author can type. On
@@ -282,7 +267,6 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'equation',
     label: 'Equation',
     shortcut: 'Mod-Shift-e',
-    shortcutSaid: 'Ctrl or Cmd, Shift and E',
     prompts: true,
   },
   // W14.7, decision W-L: the symbol palette, prompting as Equation does, for the character only the
@@ -297,10 +281,21 @@ export const EDITOR_COMMANDS: readonly EditorCommand[] = [
     action: 'symbol',
     label: 'Symbols',
     shortcut: 'Mod-Shift-m',
-    shortcutSaid: 'Ctrl or Cmd, Shift and M',
     prompts: true,
   },
 ];
+
+/** The registry, in the order the toolbar shows it, each row's words in the person's language. */
+export const EDITOR_COMMANDS: readonly EditorCommand[] = ROWS.map((row) => {
+  const key = `command.${row.kind === 'mark' ? row.mark : row.action}` as const;
+  return Object.defineProperties(
+    { ...row },
+    {
+      said: { enumerable: true, get: () => say(key as EditorWordKey) },
+      shortcutSaid: { enumerable: true, get: () => say(`${key}.keys` as EditorWordKey) },
+    },
+  ) as EditorCommand;
+});
 
 /**
  * The attributes a mark would carry, once the stored model has accepted the whole of it, or nothing

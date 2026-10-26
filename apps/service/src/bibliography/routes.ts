@@ -39,6 +39,7 @@ import { versionView } from '../components.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import { refused } from '../wire-codes.js';
 import { formatEntries, readRecords } from './interchange.js';
+import { languageOf } from '../listing.js';
 
 /** The bibliography routes (citations.md, "The entry"; the CI plan, CI-B, CI-C). */
 
@@ -132,7 +133,7 @@ export function bibliographyHandlers() {
     listBibliographyEntries: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
       const { space } = request.params as SpaceParams;
       const query = request.query as EntryListQuery;
-      const asked = pageAsked('bibliography', query);
+      const asked = pageAsked('bibliography', query, languageOf(request));
       const listed = await listEntries(trx, principalId, space, asked, {
         archived: query.archived === 'true',
       });
@@ -144,7 +145,14 @@ export function bibliographyHandlers() {
       );
       return {
         items: listed.items.map((each) => summaryView(each, flags)),
-        next: cursorFor('bibliography', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'bibliography',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
       };
     },

@@ -1,4 +1,5 @@
 import type * as SpeechRuleEngine from 'speech-rule-engine/mjs/index.js';
+import { words as say } from '../words/words.js';
 
 /**
  * An equation's alternative, written for the author by the speech rule engine (equations 1, ruling R7;
@@ -68,7 +69,7 @@ export function speechLanguage(tag: string): string | null {
 /** A language's rules, as the text of their file; refused for a name that is not in the table. */
 async function loadLocale(locale: string): Promise<string> {
   const load = Object.hasOwn(LOCALES, locale) ? LOCALES[locale] : undefined;
-  if (load === undefined) throw new Error(`The speech rule engine has no rules for ${locale}.`);
+  if (load === undefined) throw new Error(say('editor.the-speech-rule-engine-has', { locale }));
   return (await load()).default;
 }
 

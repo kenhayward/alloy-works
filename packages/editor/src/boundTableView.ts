@@ -4,16 +4,17 @@ import type { Decoration, NodeView } from 'prosemirror-view';
 import { FAILED_CLASS, type BoundTableNoteShown, type BoundTableShown } from './bindings.js';
 import { FOCUSED_COLUMN_CLASS } from './boundTableFocus.js';
 import { BOUND_TABLE } from './schema.js';
+import { say } from './words.js';
 
 /** The rows a bound table has beyond those the page shows, in words, or null for none (TB2-D). */
 export const moreRows = (count: number): string | null =>
-  count <= 0 ? null : count === 1 ? 'and 1 more row' : `and ${count} more rows`;
+  count <= 0 ? null : say('bound-table.more-rows', { count });
 
 /** What a body shows with nothing to tell it more: `toDOM`'s words. */
 const NOTHING_SAID: BoundTableShown = {
   columns: [],
   rows: [],
-  spanning: { text: BOUND_TABLE, failed: false },
+  spanning: { text: BOUND_TABLE(), failed: false },
   more: 0,
 };
 
@@ -96,7 +97,7 @@ export function fillBoundTable(
         icon.textContent = String.fromCodePoint(0x270e);
         const words = document.createElement('span');
         words.className = 'aw-binding-hidden';
-        words.textContent = ', revised by hand';
+        words.textContent = say('bound-table.cell-revised');
         marker.append(icon, words);
         cell.append(marker);
       }

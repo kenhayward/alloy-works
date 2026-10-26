@@ -36,6 +36,16 @@ whole interface moved, sorted in the person's collation and laid out right to le
   plurals untouched.
 - English locale data is bundled; another language's loads before it is shown.
 - The ESLint rule `alloy/interface-words` refuses words written in place in the folders moved so far.
+- `packages/editor` keeps its own words in `EDITOR_WORDS`, said through `say`; the renderer merges them
+  into its catalogue as `pm.<key>` and gives them back through `sayWith`, so the views ProseMirror draws
+  speak the person's language. With none given, as in the package's tests, English.
+
+## Collation (UI-H)
+
+Every request carries the interface language as `Accept-Language`. A listing whose order is a text key
+sorts it with the ICU collation for that language that Postgres holds (`<locale>-x-icu`, then the
+base language, then `und-x-icu`), in the cursor's keyset as in its order, and a cursor records the
+language it was made in, refusing one from another. The renderer's own sorts use `formats().compare`.
 
 ## The API
 

@@ -37,6 +37,7 @@ import { pageLimit } from './components.js';
 import { AppError, storageUnavailable } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import { DOWNLOAD_SECONDS } from './publishing.js';
+import { languageOf } from './listing.js';
 
 /**
  * An audit read's cursor (the AU2 plan, AU-M): the sequence the page ended at and the snapshot the
@@ -240,11 +241,22 @@ export function tenantExportHandlers(
       request: FastifyRequest,
       { trx }: Authorised,
     ): Promise<TenantExportList> => {
-      const asked = pageAsked('tenantExports', request.query as TenantExportQuery);
+      const asked = pageAsked(
+        'tenantExports',
+        request.query as TenantExportQuery,
+        languageOf(request),
+      );
       const listed = await listTenantExports(trx, asked);
       return {
         items: listed.items.map(tenantExportView),
-        next: cursorFor('tenantExports', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'tenantExports',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
       };
     },
 

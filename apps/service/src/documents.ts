@@ -93,6 +93,7 @@ import type { SessionPrincipal } from './sessions.js';
 import { PARAMETER_WORDS } from './templates.js';
 import { refused } from './wire-codes.js';
 import { stateOf, workflowView } from './workflows.js';
+import { languageOf } from './listing.js';
 
 /** Who a document is being shown to, in the transaction their permission was decided in. */
 interface Viewer {
@@ -483,7 +484,7 @@ export function documentHandlers(
   return {
     listDocuments: async (request: FastifyRequest) => {
       const query = request.query as DocumentListQuery;
-      const asked = pageAsked('documents', query);
+      const asked = pageAsked('documents', query, languageOf(request));
       const spaces = query.spaces?.split(',');
       const publishing = query.publishing?.split(',') as PublishingState[] | undefined;
       const { listed, states, past } = await db.withTenant(tenantOf(request), async (trx) => {
@@ -511,7 +512,14 @@ export function documentHandlers(
           state: stateOf(states, item.id),
           pastReview: past.has(item.id),
         })),
-        next: cursorFor('documents', asked.sort, asked.order, listed.snapshot, listed.next),
+        next: cursorFor(
+          'documents',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
         total: listed.total,
         facets: {
           spaces: listed.facets.spaces.map(

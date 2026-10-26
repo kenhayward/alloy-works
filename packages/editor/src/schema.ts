@@ -1,6 +1,7 @@
 import { Schema, type Attrs, type MarkSpec, type TagParseRule } from 'prosemirror-model';
 import { tableNodes } from 'prosemirror-tables';
 import { defaultLayout, equationAlternative, isLanguageLabel, kindWord } from '@alloy-works/domain';
+import { listOf, say } from './words.js';
 
 /**
  * Renders a mark's element, always carrying `data-mark-id`, so that the view can read its own output
@@ -143,10 +144,10 @@ export const assetContentPath = (asset: string): string =>
   `/v1/asset-versions/${encodeURIComponent(asset)}/content`;
 
 /** What a bound figure's image says with nothing to tell it what the binding holds (B6.2). */
-export const BOUND_IMAGE = 'Bound image';
+export const BOUND_IMAGE = (): string => say('binding.bound-image');
 
 /** What a bound table's body says with nothing to tell it what its binding holds (TB2.1). */
-export const BOUND_TABLE = 'Bound table';
+export const BOUND_TABLE = (): string => say('binding.bound-table');
 
 export const editorSchema = new Schema({
   nodes: {
@@ -447,11 +448,11 @@ export const editorSchema = new Schema({
       atom: true,
       selectable: false,
       draggable: false,
-      leafText: () => BOUND_TABLE,
+      leafText: () => BOUND_TABLE(),
       toDOM: () => [
         'div',
         { class: 'aw-bound-table-body', 'data-bound-table-body': '', contenteditable: 'false' },
-        BOUND_TABLE,
+        BOUND_TABLE(),
       ],
     },
     /**
@@ -581,7 +582,7 @@ export const editorSchema = new Schema({
             [
               'div',
               { class: 'aw-figure-image', contenteditable: 'false' },
-              ['span', { class: 'aw-bound-image', 'data-bound-image': '' }, BOUND_IMAGE],
+              ['span', { class: 'aw-bound-image', 'data-bound-image': '' }, BOUND_IMAGE()],
             ],
             ['div', { class: 'aw-figure-body' }, 0],
           ];
@@ -726,7 +727,9 @@ export const editorSchema = new Schema({
       toDOM: (node) => [
         'span',
         { class: 'aw-reference', 'data-reference': '' },
-        (node.attrs.target as { kind: string }).kind === 'node' ? kindWord('section') : 'Reference',
+        (node.attrs.target as { kind: string }).kind === 'node'
+          ? kindWord('section')
+          : say('reference.placeholder'),
       ],
     },
     /**
@@ -743,7 +746,11 @@ export const editorSchema = new Schema({
       draggable: false,
       marks: '',
       attrs: { entry: {}, locator: { default: null } },
-      toDOM: () => ['span', { class: 'aw-citation', 'data-citation': '' }, 'Citation'],
+      toDOM: () => [
+        'span',
+        { class: 'aw-citation', 'data-citation': '' },
+        say('citation.placeholder'),
+      ],
     },
     /**
      * A binding (the B1 plan, B1-B; bindings.md, "The node"): inline, an atom, carrying the stored
@@ -773,7 +780,11 @@ export const editorSchema = new Schema({
         mode: {},
         take: {},
       },
-      toDOM: () => ['span', { class: 'aw-binding', 'data-binding': '' }, 'Bound value'],
+      toDOM: () => [
+        'span',
+        { class: 'aw-binding', 'data-binding': '' },
+        say('binding.bound-value'),
+      ],
     },
     /**
      * A variable (the R5 plan, R5b): inline, an atom, naming a declared variable by its key, which a
@@ -897,7 +908,10 @@ export const editorSchema = new Schema({
           class: 'aw-condition',
           'data-axis': attrs.axis as string,
           'data-values': values.join(' '),
-          title: `Only where ${attrs.axis as string} is ${values.join(' or ')}`,
+          title: say('condition.only-where', {
+            axis: attrs.axis as string,
+            values: listOf(values, 'disjunction'),
+          }),
         };
       },
       fromElement: (node) => {

@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 
 import { entryName, type EntryOffered } from '../bibliography/entries.js';
 import type { ReferenceOption } from './referenceChoices.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -108,7 +109,7 @@ export function entryOptions(
   forms: CitationForms | null,
 ): readonly ReferenceOption[] {
   return entries.map((entry) => {
-    const name = `Entry ${entryName(entry)}`;
+    const name = words('editor.entry-2', { value1: entryName(entry) });
     return {
       key: `entry\u{0}${entry.id}`,
       target: { kind: 'entry', entry: entry.id },
@@ -118,8 +119,8 @@ export function entryOptions(
       shows: () => {
         const form = forms?.get(citationKey(entry.id, null));
         return form == null
-          ? 'Its in-text form, as the document sets it at publish'
-          : `${form}, until the document sets it at publish`;
+          ? words('editor.its-in-text-form-as')
+          : words('editor.until-the-document-sets-it', { form });
       },
     };
   });

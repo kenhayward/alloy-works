@@ -5,15 +5,16 @@ import { entryName, flagSaid, type EntryFlag } from '../bibliography/entries.js'
 import type { Csl } from '../bibliography/shape.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 /** A declared source's id, or a reference extension's `ext:` key (the XR plan, XR-J). */
 type SourceId = string;
 
 /** Why a result is shown but cannot be chosen. */
-export const MAY_NOT_MAKE = "You may not add entries to this space's bibliography.";
+export const MAY_NOT_MAKE = (): string => words('editor.citation.may-not-make');
 /** What the tab says where no source is on. */
-export const NO_SOURCES = 'No reference source is on in this environment.';
+export const NO_SOURCES = (): string => words('editor.citation.no-sources');
 
 /** What a chosen result cites: an entry already in the space, or a source's record to make one of. */
 export type Picked =
@@ -91,7 +92,7 @@ export function CitationSearch({
         body: { space: `space:${space}`, terms: terms.trim() },
       });
       if (!data) {
-        setFound('The source could not be searched.');
+        setFound(words('editor.the-source-could-not-be'));
         return;
       }
       setFound({
@@ -109,7 +110,7 @@ export function CitationSearch({
         })),
       });
     } catch {
-      setFound('The source could not be searched.');
+      setFound(words('editor.the-source-could-not-be'));
     }
   };
 
@@ -120,14 +121,15 @@ export function CitationSearch({
     void search();
   };
 
-  if (sources === null) return <p role="status">Reading the reference sources.</p>;
-  if (sources === 'unread') return <p role="alert">The reference sources could not be read.</p>;
-  if (sources.length === 0) return <p className={styles['note']}>{NO_SOURCES}</p>;
+  if (sources === null) return <p role="status">{words('editor.reading-the-reference-sources')}</p>;
+  if (sources === 'unread')
+    return <p role="alert">{words('editor.the-reference-sources-could-not')}</p>;
+  if (sources.length === 0) return <p className={styles['note']}>{NO_SOURCES()}</p>;
   const name = sources.find((each) => each.id === source)?.name ?? '';
   return (
     <>
       <label className={styles['field']}>
-        Source
+        {words('editor.source')}
         <select
           value={source ?? ''}
           onChange={(event) => {
@@ -143,9 +145,9 @@ export function CitationSearch({
           ))}
         </select>
       </label>
-      <p className={styles['note']}>{`Your search is sent to ${name}.`}</p>
+      <p className={styles['note']}>{words('editor.your-search-is-sent-to', { name })}</p>
       <label className={styles['field']}>
-        Search terms
+        {words('editor.search-terms')}
         <input
           type="search"
           value={terms}
@@ -155,19 +157,19 @@ export function CitationSearch({
       </label>
       <div>
         <button type="button" onClick={() => void search()}>
-          Search
+          {words('editor.search')}
         </button>
       </div>
-      {found === 'searching' && <p role="status">Searching.</p>}
+      {found === 'searching' && <p role="status">{words('editor.searching')}</p>}
       {typeof found === 'string' && found !== 'searching' && <p role="alert">{found}</p>}
       {typeof found === 'object' && found !== null && (
         <>
           <p className={styles['note']} aria-live="polite">
-            {found.results.length === 1 ? '1 result.' : `${found.results.length} results.`}
+            {words('editor.results', { count: found.results.length })}
           </p>
           {found.results.length > 0 && (
             <fieldset className={own['group']}>
-              <legend>Result</legend>
+              <legend>{words('editor.result')}</legend>
               <div className={own['targets']}>
                 {found.results.map((each) => {
                   const barred = each.match === undefined && !found.mayCreate;
@@ -184,14 +186,19 @@ export function CitationSearch({
                       />
                       {entryName({ id: each.identifier, key: '', csl: each.csl })}
                       {each.match &&
-                        ` (In the bibliography as ${each.match.key}${each.match.flag ? `, ${flagSaid(each.match.flag)}` : ''})`}
+                        (each.match.flag
+                          ? words('editor.citation.in-bibliography-flagged', {
+                              key: each.match.key,
+                              flag: flagSaid(each.match.flag),
+                            })
+                          : words('editor.citation.in-bibliography', { key: each.match.key }))}
                     </label>
                   );
                 })}
               </div>
               {!found.mayCreate && (
                 <p id={`${id}-barred`} className={styles['note']}>
-                  {MAY_NOT_MAKE}
+                  {MAY_NOT_MAKE()}
                 </p>
               )}
             </fieldset>

@@ -7,6 +7,7 @@ import { IconButton } from '../parts/IconButton.js';
 import { Icon } from './Icon.js';
 import styles from './ComponentDetail.module.css';
 import { VersionList } from './VersionList.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Page['items'][number];
@@ -62,7 +63,7 @@ export function ComponentDetail({
         <h2 id={heading} className={styles['title']}>
           {item.title}
         </h2>
-        <IconButton label="Close" onClick={onClose}>
+        <IconButton label={say('editor.close')} onClick={onClose}>
           <Icon name="Close" size={13} />
         </IconButton>
       </div>
@@ -74,25 +75,25 @@ export function ComponentDetail({
       </div>
       <div className={styles['acts']}>
         <a className={styles['open']} href={`#/components/${item.id}`}>
-          Open
+          {say('editor.open')}
         </a>
         <a className={styles['access']} href={`#/components/${item.id}/access`}>
-          Give access
+          {say('editor.give-access')}
         </a>
       </div>
       <section className={styles['section']} aria-labelledby={`${heading}-text`}>
         <h3 id={`${heading}-text`} className={styles['label']}>
-          Text
+          {say('editor.text')}
         </h3>
         {text === null ? (
-          <p className={styles['muted']}>The text could not be read.</p>
+          <p className={styles['muted']}>{say('editor.the-text-could-not-be')}</p>
         ) : (
           text !== undefined && <p className={styles['text']}>{text}</p>
         )}
       </section>
       <section className={styles['section']} aria-labelledby={`${heading}-versions`}>
         <h3 id={`${heading}-versions`} className={styles['label']}>
-          Versions
+          {say('editor.versions')}
         </h3>
         <VersionList client={client} id={item.id} limit={3} />
       </section>

@@ -30,6 +30,10 @@ describe('the interface-words rule (the UI plan, UI-F)', () => {
         errors: [{ messageId: 'words' }, { messageId: 'words' }],
       },
       { code: 'const d = <p>{`Welcome back, ${name}`}</p>;', errors: [{ messageId: 'words' }] },
+      {
+        code: 'const e = <ConfirmDialog question="Discard these changes?" act="Discard" />;',
+        errors: [{ messageId: 'words' }, { messageId: 'words' }],
+      },
     ],
   });
 });

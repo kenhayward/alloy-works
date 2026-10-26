@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { isAccessAnswers } from '../access/describe.js';
 import { archivalSaid, setArchived } from '../lifecycle/Archive.js';
 import styles from './RowMenu.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-const NOT_COPIED = 'The link could not be copied. Select it and copy it instead.';
+const NOT_COPIED = (): string => words('editor.the-link-could-not-be');
 
 /**
  * What can be done to one component from the list: open it, copy its link and - only for somebody
@@ -73,12 +74,12 @@ export function RowMenu({
     const address = `${window.location.origin}${window.location.pathname}#/components/${id}`;
     const copying = navigator.clipboard?.writeText(address);
     if (!copying) {
-      onNotice(NOT_COPIED);
+      onNotice(NOT_COPIED());
       return;
     }
     copying.then(
-      () => onNotice(`Copied the link to ${title}.`),
-      () => onNotice(NOT_COPIED),
+      () => onNotice(words('editor.copied-the-link-to', { title })),
+      () => onNotice(NOT_COPIED()),
     );
   };
 
@@ -100,8 +101,8 @@ export function RowMenu({
         ref={trigger}
         type="button"
         className={styles['kebab']}
-        aria-label={`Actions for ${title}`}
-        title={`Actions for ${title}`}
+        aria-label={words('editor.actions-for', { title })}
+        title={words('editor.actions-for', { title })}
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
       >
@@ -111,25 +112,25 @@ export function RowMenu({
         <ul className={styles['menu']}>
           <li>
             <a className={styles['item']} href={`#/components/${id}`}>
-              Open
+              {words('editor.open')}
             </a>
           </li>
           <li>
             <button type="button" className={styles['item']} onClick={copy}>
-              Copy link
+              {words('editor.copy-link')}
             </button>
           </li>
           {administers && (
             <li>
               <a className={styles['item']} href={`#/components/${id}/access`}>
-                Manage access
+                {words('editor.manage-access')}
               </a>
             </li>
           )}
           {retires && (
             <li>
               <button type="button" className={styles['item']} onClick={() => void archive()}>
-                {archived ? 'Unarchive' : 'Archive'}
+                {archived ? words('editor.unarchive') : words('editor.archive')}
               </button>
             </li>
           )}

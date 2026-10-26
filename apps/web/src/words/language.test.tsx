@@ -58,7 +58,7 @@ describe('the interface’s language (the UI plan, UI-E)', () => {
     // The whole interface turns, right to left, its words made over.
     await waitFor(() => expect(document.documentElement.dir).toBe('rtl'));
     expect(document.documentElement.lang).toBe('ar-XB');
-    expect(screen.getByRole('button', { name: /ļåñĝûåĝé/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /ļåñĝûåĝé/ })).toBeInTheDocument();
   });
 
   it('opens right to left where the person chose so, before any word is read', async () => {

@@ -3,6 +3,8 @@
  * `fetch`, as `followStream` is, but never retried - a retry would ask the model again, and be paid
  * for again - and a refusal before the stream answered as the JSON body it is.
  */
+import { saidLanguage } from './language.js';
+
 export interface StreamPostOptions {
   readonly url: string;
   readonly body: unknown;
@@ -26,7 +28,11 @@ export async function streamPost(options: StreamPostOptions): Promise<StreamPost
   try {
     response = await request(options.url, {
       method: 'POST',
-      headers: { accept: 'text/event-stream', 'content-type': 'application/json' },
+      headers: {
+        accept: 'text/event-stream',
+        'content-type': 'application/json',
+        ...(saidLanguage() === undefined ? {} : { 'accept-language': saidLanguage()! }),
+      },
       credentials: 'include',
       body: JSON.stringify(options.body),
       ...(options.signal === undefined ? {} : { signal: options.signal }),

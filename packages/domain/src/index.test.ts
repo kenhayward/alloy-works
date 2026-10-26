@@ -1032,6 +1032,9 @@ describe('the domain package', () => {
         'TRANSLATION_CONFLICTS',
         // UIa: the interface's declared languages.
         'INTERFACE_LANGUAGES',
+        // UIb: what each sorts by, and which a request names.
+        'INTERFACE_COLLATIONS',
+        'interfaceLanguageOf',
         // XLc: machine drafts and the policy that sends them.
         'TRANSLATE_INSTRUCTIONS',
         'TRANSLATE_INSTRUCTIONS_VERSION',

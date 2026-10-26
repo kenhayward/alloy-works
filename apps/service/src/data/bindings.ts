@@ -160,6 +160,7 @@ import { failureViewFor, type FailureIn } from './failure-words.js';
 import { carryRevisions, keptProblem, recordRevisionEvent, revisionsDecided } from './revisions.js';
 import { asWritten, connectionFacts, requireSqlPermitted } from './sql-access.js';
 import { datasetOf, datasetProblems, type ReadSource } from './dataset-source.js';
+import { languageOf } from '../listing.js';
 
 /**
  * Bindings and datasets (data.md, "Acts, revisions and failures"; the D3 plan, task 3). Reading what a
@@ -3100,7 +3101,7 @@ export function bindingHandlers(
         .where('kind', '=', 'component')
         .executeTakeFirst();
       if (!component) throw notFound();
-      const uses = await documentsHolding(trx, principalId, id, binding);
+      const uses = await documentsHolding(trx, principalId, id, binding, languageOf(request));
       return {
         documents: { readable: uses.readable.map((each) => ({ ...each })), others: uses.others },
       };
@@ -3369,7 +3370,9 @@ export function bindingHandlers(
       });
       return {
         components: view(await componentsBinding(trx, principalId, id)),
-        documents: view(await documentsResolving(trx, principalId, { definition: id })),
+        documents: view(
+          await documentsResolving(trx, principalId, { definition: id }, languageOf(request)),
+        ),
       };
     },
   };

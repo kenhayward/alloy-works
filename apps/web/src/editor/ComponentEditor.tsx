@@ -218,6 +218,7 @@ import { useHeardLock } from './lockLive.js';
 import { TakeOver } from './TakeOver.js';
 import { draftService, forgetDraft, memoryStore, readDraft, type DraftMode } from './draft.js';
 import type { FollowOptions } from '@alloy-works/api-client';
+import { words as say } from '../words/words.js';
 
 /**
  * The Equation dialog, loaded the first time it opens, and Temml with it (equations 1's final review,
@@ -416,9 +417,8 @@ const repeatOf = (stored: StoredSession, sentLater: Sent | null): Repeat | null 
  * Said where what a window kept before this page opened is offered as text to copy rather than brought
  * back, or cannot be read at all, rather than dropping it unsaid (final review of W11.3, D5).
  */
-const KEPT_OFFERED =
-  'What you typed before this page opened could not be brought back, so it is below for you to copy.';
-const KEPT_UNREADABLE = 'What you typed before this page opened could not be brought back.';
+const KEPT_OFFERED = (): string => say('editor.what-you-typed-before-this');
+const KEPT_UNREADABLE = (): string => say('editor.what-you-typed-before-this-2');
 
 /**
  * Whether the surface takes changes in this phase - the one predicate, shared by the view's own
@@ -445,21 +445,19 @@ function tableResolved(state: EditorState, binding: AnyBinding): boolean {
 
 /** What placing a bound table says where it left a declared column out (TB2-E). */
 export const columnsLeftOut = (left: number): string =>
-  `${left === 1 ? 'One column was' : `${left} columns were`} left out: a table shows no image column, and at most 64.`;
+  say('editor.left-out-a-table-shows', {
+    value1: say('editor.columns-were', { count: left }),
+  });
 
 /** What the status bar says after a paste: the report's own last sentence says why one was refused. */
-const PASTED = 'Pasted.';
-const PASTED_WITH_REPORT =
-  'Pasted. Some of it was changed or left out: the paste report says what.';
-const NOT_DROPPED = 'Dragging content in is not available yet. Copy and paste it instead.';
+const PASTED = (): string => say('editor.pasted');
+const PASTED_WITH_REPORT = (): string => say('editor.pasted-some-of-it-was');
+const NOT_DROPPED = (): string => say('editor.dragging-content-in-is-not');
 
 /** A link names a block the newest version no longer holds (SCH-057): the page says so. */
-export const LINKED_PART_GONE =
-  'The part the link names is no longer in this component. This is its latest version.';
-const PASTE_HELD =
-  'This paste holds headings. Keep it as one component or break it out: the paste report offers both.';
-const CLIPBOARD_UNREADABLE =
-  'The clipboard could not be read, so nothing was pasted. Allow this page to see the clipboard and try again.';
+export const LINKED_PART_GONE = (): string => say('editor.linked-part-gone');
+const PASTE_HELD = (): string => say('editor.this-paste-holds-headings-keep-2');
+const CLIPBOARD_UNREADABLE = (): string => say('editor.the-clipboard-could-not-be');
 
 /**
  * What a paste says: the report's entries worth an author's attention, beside the sentence for the
@@ -474,8 +472,8 @@ function pasteSentence(
   const beside = ok ? shown : shown.slice(0, -1);
   const said = ok
     ? beside.length > 0
-      ? PASTED_WITH_REPORT
-      : PASTED
+      ? PASTED_WITH_REPORT()
+      : PASTED()
     : (report.at(-1)?.message ?? '');
   return { beside, said };
 }
@@ -503,7 +501,7 @@ function sizeOf(doc: EditorView['state']['doc']): string {
     .textBetween(0, doc.content.size, ' ', ' ')
     .split(/\s+/)
     .filter((word) => word !== '').length;
-  return `${blocks} ${blocks === 1 ? 'block' : 'blocks'}, ${words} ${words === 1 ? 'word' : 'words'}`;
+  return `${blocks} ${say('editor.blocks', { count: blocks })}, ${words} ${say('editor.words', { count: words })}`;
 }
 
 /**
@@ -1167,8 +1165,8 @@ export function ComponentEditor({
       isEditablePhase(now) &&
       !into.isDestroyed &&
       command(into.state, into.dispatch.bind(into));
-    if (!ran) setNotice('The condition could not be changed where the cursor is.');
-    else if (done === 'added') setNotice('Alternative added. Write the wording for those readers.');
+    if (!ran) setNotice(say('editor.the-condition-could-not-be'));
+    else if (done === 'added') setNotice(say('editor.alternative-added-write-the-wording'));
     closeConditions();
   };
 
@@ -1434,7 +1432,7 @@ export function ComponentEditor({
     let replayed: EditorState | null = null;
     if (stored !== null && stored.version === component.version.id && stored.revision > 0) {
       try {
-        if (!component.mayEdit) throw new Error('The component may no longer be edited');
+        if (!component.mayEdit) throw new Error(say('editor.the-component-may-no-longer'));
         const state = replayStored(stored, (doc) => fresh(doc));
         // Storable as it stands, or the first save would refuse it.
         fromEditor(state.doc);
@@ -1565,8 +1563,8 @@ export function ComponentEditor({
     if (offeredNow !== null && offeredNow !== offeredKept) {
       keepOffered(component.id, principalId, offeredNow);
     }
-    if (differs(offering) !== null) setNotice(KEPT_OFFERED);
-    else if (unreadable) setNotice(KEPT_UNREADABLE);
+    if (differs(offering) !== null) setNotice(KEPT_OFFERED());
+    else if (unreadable) setNotice(KEPT_UNREADABLE());
     /** Offers `text` beside whatever is offered already, once the page is open: a repeat refused. */
     const offerAlso = (text: string) => {
       const shownNow =
@@ -1718,11 +1716,14 @@ export function ComponentEditor({
       open: (stored, restoredValues, label) => {
         const read = readContent(stored, { artifact: component.id, version: label });
         if (!read.ok || typeof restoredValues !== 'object' || Array.isArray(restoredValues)) {
-          return `${sentenceCase(label)} could not be read, so it was not restored.`;
+          return say('editor.could-not-be-read-so', { value1: sentenceCase(label) });
         }
         const reopened = toEditor(read.document);
         if (!reopened.editable) {
-          return `${sentenceCase(label)} holds content this editor cannot change yet (${reopened.unsupported.join(', ')}), so it was not restored.`;
+          return say('editor.holds-content-this-editor-cannot', {
+            value1: sentenceCase(label),
+            value2: reopened.unsupported.join(', '),
+          });
         }
         view.updateState(fresh(reopened.doc));
         tellTables(view.state.doc);
@@ -1758,7 +1759,7 @@ export function ComponentEditor({
       // Named once, from what the component opened with (task 5 brief): it does not follow a title
       // typed afterwards, which is wrong only after a rename, and the accessibility plan owns the
       // surface's naming.
-      label: `Content of ${opened.doc.attrs.title as string}`,
+      label: say('editor.content-of', { value1: opened.doc.attrs.title as string }),
       editable: () => component.mayEdit && isEditablePhase(phase),
       dispatch: (transaction, target) => {
         const before = target.state;
@@ -1781,7 +1782,7 @@ export function ComponentEditor({
       heldForBreakout: (held) => {
         setHeldPaste(held);
         setPasteReport(shownOfPaste(held.reading.ok ? held.reading.input.report : []));
-        setNotice(PASTE_HELD);
+        setNotice(PASTE_HELD());
       },
       pasted: ({ ok, report }) => {
         setHeldPaste(null);
@@ -1790,7 +1791,7 @@ export function ComponentEditor({
         setNotice(said);
         if (ok && phase !== 'editing') pasteSaid.current = said;
       },
-      refused: () => setNotice(NOT_DROPPED),
+      refused: () => setNotice(NOT_DROPPED()),
     });
     setSurface(view);
     setHeader(headerOf(view.state.doc));
@@ -1842,7 +1843,7 @@ export function ComponentEditor({
     const { doc } = surface.state;
     const at = whereBlockIs(doc, linkedBlock);
     if (at === undefined) {
-      setNotice(LINKED_PART_GONE);
+      setNotice(LINKED_PART_GONE());
       return;
     }
     const node = doc.nodeAt(at);
@@ -2139,17 +2140,17 @@ export function ComponentEditor({
     // Told what changed, not each new callback the page hands down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdsTable, entered]);
-  if (loaded.state === 'loading') return <Waiting>Opening...</Waiting>;
+  if (loaded.state === 'loading') return <Waiting>{say('editor.opening')}</Waiting>;
   // In place, a component that did not open still needs a way out, the card head being gone.
   const leave = onDone && (
     <button type="button" onClick={onDone}>
-      Done
+      {say('editor.done')}
     </button>
   );
   if (loaded.state === 'missing') {
     return (
       <Notice tone="refused">
-        <p>There is nothing here, or nothing you may read.</p>
+        <p>{say('editor.there-is-nothing-here-or')}</p>
         {leave}
       </Notice>
     );
@@ -2157,7 +2158,7 @@ export function ComponentEditor({
   if (loaded.state === 'deleted') {
     return (
       <Notice tone="refused">
-        <p>This component has been deleted.</p>
+        <p>{say('editor.this-component-has-been-deleted')}</p>
         {leave}
       </Notice>
     );
@@ -2167,8 +2168,8 @@ export function ComponentEditor({
       <Notice tone={loaded.signedOut ? 'signedOut' : 'failed'}>
         <p>
           {loaded.signedOut
-            ? 'You are signed out. Sign in again to open this component.'
-            : 'The component could not be opened.'}
+            ? say('editor.you-are-signed-out-sign')
+            : say('editor.the-component-could-not-be')}
         </p>
         <button
           type="button"
@@ -2177,7 +2178,7 @@ export function ComponentEditor({
             setAttempt((count) => count + 1);
           }}
         >
-          Try again
+          {say('editor.try-again')}
         </button>
         {leave}
       </Notice>
@@ -2241,7 +2242,9 @@ export function ComponentEditor({
               shown: {
                 text:
                   boundTableShown.spanning?.text ??
-                  `A table of ${boundTableShown.rows.length + boundTableShown.more} rows`,
+                  say('editor.a-table-of-rows', {
+                    value1: boundTableShown.rows.length + boundTableShown.more,
+                  }),
                 resolved: tableResolved(surface!.state, boundTable.binding),
               },
               place: 'table',
@@ -2329,7 +2332,10 @@ export function ComponentEditor({
               <ValuePanel
                 stacked
                 binding={bound.binding}
-                shown={shown.spanning?.text ?? `A table of ${shown.rows.length + shown.more} rows`}
+                shown={
+                  shown.spanning?.text ??
+                  say('editor.a-table-of-rows', { value1: shown.rows.length + shown.more })
+                }
                 resolved={tableResolved(surface.state, bound.binding)}
                 state={bindingStates?.get(bound.binding.id)}
                 {...(alone ? { title: titles.get(bound.binding.query) } : {})}
@@ -2422,7 +2428,7 @@ export function ComponentEditor({
       text = await navigator.clipboard.readText();
     } catch {
       // Refused, or no clipboard to ask at all outside a secure page.
-      setNotice(CLIPBOARD_UNREADABLE);
+      setNotice(CLIPBOARD_UNREADABLE());
       return;
     }
     const into = view.state.selection.$from.parent.type.spec.code ? 'preformatted' : 'blocks';
@@ -2462,7 +2468,7 @@ export function ComponentEditor({
     setBreakingOut(true);
     const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '.');
     const made = await importFile(client, spaceId, {
-      name: `Pasted ${stamp}.html`,
+      name: say('editor.pasted-html', { stamp }),
       type: 'html',
       bytes: new TextEncoder().encode(heldPaste.html),
     });
@@ -2550,7 +2556,7 @@ export function ComponentEditor({
         ref={headerRegion}
         className={styles['header']}
         role="group"
-        aria-label="Component header"
+        aria-label={say('editor.component-header')}
         tabIndex={-1}
         // Where the application's F6 enters this editor's own ring (`RegionKeys`).
         data-region-entry
@@ -2671,9 +2677,9 @@ export function ComponentEditor({
               title={header.title}
               className={styles['archive']}
             />
-            {archived && <Chip>Archived</Chip>}
+            {archived && <Chip>{say('editor.archived')}</Chip>}
             {/* Told only to whoever may retire it or administer the environment (lifecycle.md). */}
-            {(heldNow || shown.onHold === true) && <Chip>On hold</Chip>}
+            {(heldNow || shown.onHold === true) && <Chip>{say('editor.on-hold')}</Chip>}
             {standing && (
               <TransitionButtons
                 client={client}
@@ -2730,7 +2736,7 @@ export function ComponentEditor({
         ) : (
           <>
             <h2 id="component-title" className={styles['fallbackTitle']}>
-              {typeof title === 'string' ? title : 'Untitled'}
+              {typeof title === 'string' ? title : say('editor.untitled')}
             </h2>
             <span className={styles['version']}>
               {shown.version.number} · {shown.space.name}
@@ -2753,9 +2759,7 @@ export function ComponentEditor({
       )}
       {/* Before the first save of an approved one, what a save does (WF-F). */}
       {standing?.state.approved && shown.mayEdit && !drafting && (
-        <p className={styles['approvedNote']}>
-          This is approved. Saving starts a new draft, and the approved version stays as it is.
-        </p>
+        <p className={styles['approvedNote']}>{say('editor.this-is-approved-saving-starts')}</p>
       )}
       {/* A status, said at the status bar's left; the acts are the toolbar's first icons (ADR-0056). */}
       {session && loaded.state === 'open' && !drafting && (
@@ -2776,14 +2780,14 @@ export function ComponentEditor({
             drafting
               ? [
                   {
-                    label: 'Send suggestion',
-                    icon: 'Review',
+                    label: say('editor.send-suggestion'),
+                    icon: say('editor.review'),
                     disabled: sending,
                     onPress: () => void sendDraft(),
                   },
                   {
-                    label: 'Discard suggestion',
-                    icon: 'Close',
+                    label: say('editor.discard-suggestion'),
+                    icon: say('editor.close'),
                     disabled: sending,
                     onPress: () => {
                       forgetDraft(componentId, principalId);
@@ -2793,25 +2797,28 @@ export function ComponentEditor({
                 ]
               : [
                   {
-                    label: 'Done editing',
-                    icon: 'Done editing',
+                    label: say('editor.done-editing'),
+                    icon: say('editor.done-editing'),
                     disabled: doneDisabled,
                     // Done cuts a version where anything changed (CNT-070), so it asks first too.
                     onPress: () =>
                       session && (session.dirty || session.savedAt !== null)
-                        ? askFirst('Done editing', () => void done())
+                        ? askFirst(say('editor.done-editing'), () => void done())
                         : void done(),
                   },
                   {
-                    label: 'Save version',
-                    icon: 'Save version',
+                    label: say('editor.save-version'),
+                    icon: say('editor.save-version'),
                     disabled: !mayCut || phase !== 'editing',
                     onPress: () =>
-                      askFirst('Save version', () => void controls.current?.saveVersion()),
+                      askFirst(
+                        say('editor.save-version'),
+                        () => void controls.current?.saveVersion(),
+                      ),
                   },
                   {
-                    label: 'Saved text',
-                    icon: 'Saved text',
+                    label: say('editor.saved-text'),
+                    icon: say('editor.saved-text'),
                     disabled: !mayCut || phase !== 'editing',
                     onPress: recover,
                   },
@@ -2929,15 +2936,15 @@ export function ComponentEditor({
           : stripPart}
         {loaded.state === 'unreadable' && (
           <Notice tone="failed">
-            <p>This component could not be read.</p>
+            <p>{say('editor.this-component-could-not-be')}</p>
           </Notice>
         )}
         {loaded.state === 'readOnly' && (
           <Notice tone="readOnly">
             <p>
-              This component holds content this editor cannot change yet (
+              {say('editor.this-component-holds-content-this')}
               {loaded.unsupported.join(', ')}
-              ), so it is shown for reading only.
+              {say('editor.so-it-is-shown-for')}
             </p>
           </Notice>
         )}
@@ -2946,7 +2953,7 @@ export function ComponentEditor({
             {!inBand && toolsPart}
             {!shown.mayEdit && (
               <Notice tone="readOnly">
-                <p>You may read this component but not edit it.</p>
+                <p>{say('editor.you-may-read-this-component')}</p>
               </Notice>
             )}
             {lock && !lock.yours && phase === 'reading' && !held && (
@@ -2972,25 +2979,34 @@ export function ComponentEditor({
               Date.parse(heard.taking.until) + 60_000 > Date.now() && (
                 <Notice tone="editing">
                   <p role="alert">
-                    {`${heard.taking.by.name ?? 'Somebody'} has asked to take over this component. Keep working to keep it; otherwise it is theirs at ${new Date(heard.taking.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`}
+                    {say('editor.has-asked-to-take-over', {
+                      value1: heard.taking.by.name ?? say('editor.somebody'),
+                      value2: new Date(heard.taking.until).toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      }),
+                    })}
                   </p>
                 </Notice>
               )}
             {phase === 'editing' && heard?.holder && heard.holder.id !== principalId && (
               <Notice tone="editing">
                 <p role="alert">
-                  {`${heard.holder.name ?? 'Somebody'} has taken over this component. What you saved is kept, and offered again when you next hold it.`}
+                  {say('editor.has-taken-over-this-component', {
+                    value1: heard.holder.name ?? say('editor.somebody'),
+                  })}
                 </p>
               </Notice>
             )}
             {held?.yours && (
               <button type="button" onClick={() => controls.current?.claimAgain(true)}>
-                Continue here
+                {say('editor.continue-here')}
               </button>
             )}
             {held && !held.yours && (
               <button type="button" onClick={() => controls.current?.claimAgain(false)}>
-                Try again
+                {say('editor.try-again')}
               </button>
             )}
             {/* Above the text, before anybody types (RC-F): claimed, the saved text is listed. Only
@@ -3003,13 +3019,13 @@ export function ComponentEditor({
                 <Notice tone="unsaved">
                   <p>{unsavedSentence(unsaved.savedAt)}</p>
                   <button type="button" ref={noticeRecover} onClick={recover}>
-                    Recover
+                    {say('editor.recover')}
                   </button>
                   <button type="button" onClick={() => dismiss(unsaved.savedAt)}>
-                    Dismiss
+                    {say('editor.dismiss')}
                   </button>
                   <button type="button" onClick={() => setDiscarding(unsaved.savedAt)}>
-                    Discard
+                    {say('editor.discard')}
                   </button>
                 </Notice>
               )}
@@ -3017,25 +3033,25 @@ export function ComponentEditor({
                 recovering it here moves the edit to this window, as Continue here does. */}
             {unsaved !== null && lock?.yours === true && (
               <Notice tone="editing">
-                <p>You are editing this component in another window.</p>
+                <p>{say('editor.you-are-editing-this-component')}</p>
                 <button type="button" onClick={recover}>
-                  Recover here
+                  {say('editor.recover-here')}
                 </button>
               </Notice>
             )}
             {/* The same, found by a refused claim: the session's notice has said so already. */}
             {unsaved !== null && lock?.yours !== true && held?.yours === true && (
               <button type="button" onClick={recover}>
-                Recover here
+                {say('editor.recover-here')}
               </button>
             )}
             {phase === 'lost' && session?.recoverable && (
               <>
                 <button type="button" onClick={() => controls.current?.claimAgain(true)}>
-                  Continue
+                  {say('editor.continue')}
                 </button>
                 <button type="button" onClick={recover}>
-                  Recover
+                  {say('editor.recover')}
                 </button>
               </>
             )}
@@ -3050,13 +3066,15 @@ export function ComponentEditor({
                   const label = iterationLabel(iteration.savedAt);
                   const read = await controls.current?.peek(iteration.id);
                   if (read === undefined || !read.ok) {
-                    return `${sentenceCase(label)} could not be read.`;
+                    return say('editor.could-not-be-read', { value1: sentenceCase(label) });
                   }
                   const stored = readContent(read.content, {
                     artifact: componentId,
                     version: label,
                   });
-                  return stored.ok ? stored.document : `${sentenceCase(label)} could not be read.`;
+                  return stored.ok
+                    ? stored.document
+                    : say('editor.could-not-be-read', { value1: sentenceCase(label) });
                 }}
                 current={() => (surface === null ? null : fromEditor(surface.state.doc))}
                 restore={(iteration) =>
@@ -3096,7 +3114,7 @@ export function ComponentEditor({
             <UnheldFaces />
             {/* On its own, a sheet on a desk; in place, the document's sheet is the paper (ADR-0056). */}
             <Canvas sheet={onDone === undefined}>
-              <div ref={place} className={styles['surface']} tabIndex={-1} />
+              <div ref={place} className={styles['surface']} tabIndex={-1} data-content />
             </Canvas>
             {/* Beside the surface, wherever the type gives the component fields: its values are
                 part of the iteration, saved with the content (definitions.md, "Shown as they
@@ -3106,7 +3124,7 @@ export function ComponentEditor({
                 const fieldsSection = (
                   <section
                     ref={metadataRegion}
-                    aria-label={`Fields of ${shown.type.name}`}
+                    aria-label={say('editor.fields-of', { name: shown.type.name })}
                     className={styles['fields']}
                   >
                     <FieldsForm
@@ -3134,7 +3152,7 @@ export function ComponentEditor({
             {offered !== null && (
               <div>
                 <label>
-                  Text from before this page opened
+                  {say('editor.text-from-before-this-page')}
                   <textarea readOnly value={offered} />
                 </label>
                 <button
@@ -3146,13 +3164,13 @@ export function ComponentEditor({
                     surface?.focus();
                   }}
                 >
-                  Dismiss
+                  {say('editor.dismiss')}
                 </button>
               </div>
             )}
             {kept !== null && (
               <label>
-                Text that was not saved
+                {say('editor.text-that-was-not-saved')}
                 <textarea readOnly value={kept} />
               </label>
             )}
@@ -3170,17 +3188,18 @@ export function ComponentEditor({
       {discarding !== null && (
         // Discard (the R2 plan): set aside, not deleted, so it says where the changes still are.
         <ConfirmDialog
-          question="Discard these changes?"
-          sentence="These changes will no longer be offered for recovery. They stay in Saved text until they expire."
-          keep="Keep"
-          act="Discard"
+          question={say('editor.discard.question')}
+          sentence={say('editor.discard.sentence')}
+          keep={say('editor.discard.keep')}
+          act={say('editor.discard.act')}
           onKeep={() => setDiscarding(null)}
           onAct={async () => {
             const { response } = await client.PUT('/v1/components/{id}/unsaved/discarded', {
               params: { path: { id: componentId } },
               body: { upTo: discarding },
             });
-            if (!response.ok) throw new Error(`Discarding answered ${response.status}`);
+            if (!response.ok)
+              throw new Error(say('editor.discarding-answered', { status: response.status }));
             // Offered no more here; the service offers it nowhere else either.
             setDismissedAt(discarding);
             setDiscarding(null);
@@ -3203,7 +3222,7 @@ export function ComponentEditor({
               // own `editable` says (figures 2, final review).
               const now = controls.current?.view().phase;
               if (!shown.mayEdit || now === undefined || !isEditablePhase(now)) {
-                return 'This component can no longer be edited here, so the image was not placed.';
+                return say('editor.this-component-can-no-longer');
               }
               const dispatch = surface.dispatch.bind(surface);
               const command =
@@ -3217,7 +3236,7 @@ export function ComponentEditor({
                       ? replaceImageAsset(assetVersion, alternative)
                       : replaceFigureImage(assetVersion, alternative);
               const placed = command(surface.state, dispatch);
-              if (!placed) return 'The image could not be placed where the cursor is.';
+              if (!placed) return say('editor.the-image-could-not-be');
               setFigureDialog(null);
               surface.focus();
               return null;
@@ -3249,7 +3268,7 @@ export function ComponentEditor({
                 !isEditablePhase(now) ||
                 into.isDestroyed
               ) {
-                return 'This component can no longer be edited here, so the reference was not placed.';
+                return say('editor.this-component-can-no-longer-2');
               }
               const command =
                 referring.current === null
@@ -3257,8 +3276,8 @@ export function ComponentEditor({
                   : changeReference(referring.current.pos, choice);
               if (!command(into.state, into.dispatch.bind(into))) {
                 return referring.current === null
-                  ? 'A reference cannot be placed where the cursor is.'
-                  : 'That reference is not there any more.';
+                  ? say('editor.a-reference-cannot-be-placed')
+                  : say('editor.that-reference-is-not-there');
               }
               setReferring(null);
               return null;
@@ -3287,14 +3306,14 @@ export function ComponentEditor({
                 !isEditablePhase(now) ||
                 into.isDestroyed
               ) {
-                return 'This component can no longer be edited here, so the value was not placed.';
+                return say('editor.this-component-can-no-longer-3');
               }
               const changing = valuing.current;
               const dispatch = into.dispatch.bind(into);
               const notThere =
                 changing === null
-                  ? 'A value cannot be placed where the cursor is.'
-                  : 'That value is not there any more.';
+                  ? say('editor.a-value-cannot-be-placed')
+                  : say('editor.that-value-is-not-there');
               // A table's binding is the table's, which the cursor stands in (TB2-E, TB2-G).
               if (chosen[1] === 'table') {
                 const [choice, , columns] = chosen;
@@ -3361,7 +3380,7 @@ export function ComponentEditor({
                   !isEditablePhase(now) ||
                   into.isDestroyed
                 ) {
-                  return 'This component can no longer be edited here, so the equation was not placed.';
+                  return say('editor.this-component-can-no-longer-4');
                 }
                 const command =
                   equating.current === null
@@ -3369,8 +3388,8 @@ export function ComponentEditor({
                     : changeEquation(equating.current.pos, choice);
                 if (!command(into.state, into.dispatch.bind(into))) {
                   return equating.current === null
-                    ? 'An equation cannot be placed where the cursor is.'
-                    : 'That equation is not there any more.';
+                    ? say('editor.an-equation-cannot-be-placed')
+                    : say('editor.that-equation-is-not-there');
                 }
                 setEquating(null);
                 return null;
@@ -3403,7 +3422,7 @@ export function ComponentEditor({
                 isEditablePhase(now) &&
                 !into.isDestroyed &&
                 insertSymbol(character)(into.state, into.dispatch.bind(into));
-              if (!placed) setNotice('The symbol could not be inserted where the cursor is.');
+              if (!placed) setNotice(say('editor.the-symbol-could-not-be'));
               closeSymbols();
             }}
             onCancel={closeSymbols}
@@ -3425,7 +3444,7 @@ export function ComponentEditor({
                 isEditablePhase(now) &&
                 !into.isDestroyed &&
                 insertVariable(key)(into.state, into.dispatch.bind(into));
-              if (!placed) setNotice('The variable could not be placed where the cursor is.');
+              if (!placed) setNotice(say('editor.the-variable-could-not-be'));
               closeVariables();
             }}
             onCancel={closeVariables}
@@ -3449,7 +3468,7 @@ export function ComponentEditor({
                 !isEditablePhase(now) ||
                 into.isDestroyed
               ) {
-                return 'This component can no longer be edited here, so the citation was not placed.';
+                return say('editor.this-component-can-no-longer-5');
               }
               const command =
                 citing.current === null
@@ -3457,8 +3476,8 @@ export function ComponentEditor({
                   : changeCitation(citing.current.pos, choice);
               if (!command(into.state, into.dispatch.bind(into))) {
                 return citing.current === null
-                  ? 'A citation cannot be placed where the cursor is.'
-                  : 'That citation is not there any more.';
+                  ? say('editor.a-citation-cannot-be-placed')
+                  : say('editor.that-citation-is-not-there');
               }
               closeCitation();
               return null;

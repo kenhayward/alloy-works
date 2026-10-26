@@ -7,7 +7,16 @@ import {
   type SortOf,
   type SortOrder,
 } from '@alloy-works/db';
+import { interfaceLanguageOf, type InterfaceLanguage } from '@alloy-works/domain';
+import type { FastifyRequest } from 'fastify';
 import { AppError } from './errors.js';
+
+/**
+ * The reader's interface language, as their request's `Accept-Language` names a declared one: the
+ * renderer sends the language it is in (UI-H; LOC-003). Undefined where it names none.
+ */
+export const languageOf = (request: FastifyRequest): InterfaceLanguage | undefined =>
+  interfaceLanguageOf(request.headers['accept-language']);
 
 /**
  * A content listing's cursor (service-foundations.md, "Listings and idempotency, in T1"; LI-B): the
@@ -24,6 +33,8 @@ interface Written {
   readonly n: string;
   readonly k: readonly string[];
   readonly i: string;
+  /** The language its text keys were sorted in (UI-H): read back only in the same. */
+  readonly c?: InterfaceLanguage | undefined;
 }
 
 const PAGE = 50;
@@ -39,6 +50,7 @@ export function cursorFor<L extends ListingName>(
   order: SortOrder,
   snapshot: string,
   next: Keyset | null,
+  language?: InterfaceLanguage,
 ): string | null {
   if (next === null) return null;
   const written: Written = {
@@ -49,6 +61,7 @@ export function cursorFor<L extends ListingName>(
     n: snapshot,
     k: next.keys,
     i: next.id,
+    ...(language === undefined ? {} : { c: language }),
   };
   return Buffer.from(JSON.stringify(written), 'utf8').toString('base64url');
 }
@@ -66,6 +79,8 @@ export function pageAsked<L extends ListingName>(
     readonly sort?: string | undefined;
     readonly order?: SortOrder | undefined;
   },
+  /** The reader's language, which text sorts in and a cursor must have been sorted in (UI-H). */
+  language?: InterfaceLanguage,
 ): ListingRequest<SortOf<L>> & { readonly sort: SortOf<L>; readonly order: SortOrder } {
   const sorts = listingSorts[listing] as Record<
     string,
@@ -75,7 +90,7 @@ export function pageAsked<L extends ListingName>(
   const { types, order: byDefault } = sorts[sort]!;
   const order = query.order ?? byDefault;
   const limit = query.limit === undefined ? PAGE : Number(query.limit);
-  if (query.cursor === undefined) return { sort, order, limit };
+  if (query.cursor === undefined) return { sort, order, limit, language };
   let written: Written;
   try {
     written = JSON.parse(Buffer.from(query.cursor, 'base64url').toString('utf8')) as Written;
@@ -91,7 +106,9 @@ export function pageAsked<L extends ListingName>(
     written.o !== order ||
     typeof written.n !== 'string' ||
     !Array.isArray(written.k) ||
-    typeof written.i !== 'string'
+    typeof written.i !== 'string' ||
+    // A page sorted in one language never continues another's (the pre-flight review, F8).
+    written.c !== language
   ) {
     throw refusedCursor();
   }
@@ -101,6 +118,7 @@ export function pageAsked<L extends ListingName>(
     limit,
     after: { keys: written.k, id: written.i },
     snapshot: written.n,
+    language,
   };
   if (!isListingRequest(request, types)) throw refusedCursor();
   return request;

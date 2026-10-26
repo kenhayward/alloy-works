@@ -78,7 +78,7 @@ export function said(
   binding: AnyBinding,
   stale = false,
 ): string {
-  if (stale) return CHANGED_SINCE_RESOLVED;
+  if (stale) return CHANGED_SINCE_RESOLVED();
   if (taken === null || 'unavailable' in taken) return 'The result cannot be read';
   if ('table' in taken) return 'A table of the whole result';
   if ('value' in taken || 'image' in taken) return shownValue(taken, formats);

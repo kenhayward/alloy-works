@@ -1,5 +1,6 @@
 import type { ContentDocument } from '@alloy-works/domain';
 import { heldSentence } from './held.js';
+import { words } from '../words/words.js';
 
 /** Who holds a component, as a refusal names them. */
 export interface Holder {
@@ -352,13 +353,10 @@ export interface Session {
 const HELD = 'lock_held';
 
 /** A save refused as stale or conflicting, or a reload found behind the service: the same notice. */
-const NEWER_TEXT =
-  'Newer text was saved from another window, or from before this page was reloaded. ' +
-  'It is kept. Continuing starts a new session from what is on screen.';
+const NEWER_TEXT = (): string => words('editor.session.newer-text');
 
 /** Recovery, announced as it opens (component-editor.md, "Accessibility"). */
-const RECOVERY_OPENED =
-  'Your saved text is listed. Choose some to see what recovering it changes, or cancel to go on.';
+const RECOVERY_OPENED = (): string => words('editor.your-saved-text-is-listed');
 
 /**
  * The editing session, as a state machine over a service and a clock (component-editor.md, "The
@@ -448,8 +446,8 @@ export function createSession(options: SessionOptions): Session {
   /** "Kept to copy" is only true when there is something unsaved to copy (fix round 2, finding 7). */
   const lockGoneMessage = () =>
     dirty
-      ? 'This session no longer holds the component. Your unsaved text is kept below to copy.'
-      : 'This session no longer holds the component.';
+      ? words('editor.this-session-no-longer-holds-2')
+      : words('editor.this-session-no-longer-holds-3');
 
   /** True while Recovery, asked for from editing, waits for what is on screen to be saved. */
   let enteringRecovery = false;
@@ -464,8 +462,7 @@ export function createSession(options: SessionOptions): Session {
    * is how a refusal the service gave behaves too.
    */
   const unstorableMessage =
-    'This text cannot be saved as it stands, so it was not saved. ' +
-    'Undo the change that caused it and saving starts again.';
+    words('editor.this-text-cannot-be-saved') + words('editor.undo-the-change-that-caused');
 
   /**
    * `options.snapshot()` - `fromEditor`, which parses through `parseContentDocument` - threw, so
@@ -497,20 +494,20 @@ export function createSession(options: SessionOptions): Session {
     switch (code) {
       case 'signed_out':
         return unsaved
-          ? 'You are signed out. Sign in again; your unsaved text is kept below.'
-          : 'You are signed out. Sign in again.';
+          ? words('editor.you-are-signed-out-sign-5')
+          : words('editor.you-are-signed-out-sign-6');
       case 'invalid':
         return unsaved
-          ? 'The service did not accept this text, so it was not saved. Your unsaved text is kept below.'
-          : 'The service did not accept this request.';
+          ? words('editor.the-service-did-not-accept')
+          : words('editor.the-service-did-not-accept-2');
       case 'forbidden':
         return unsaved
-          ? 'You may no longer edit this component. Your unsaved text is kept below to copy.'
-          : 'You may no longer edit this component.';
+          ? words('editor.you-may-no-longer-edit')
+          : words('editor.you-may-no-longer-edit-2');
       case 'not_found':
         return unsaved
-          ? 'This component is no longer available to you. Your unsaved text is kept below to copy.'
-          : 'This component is no longer available to you.';
+          ? words('editor.this-component-is-no-longer')
+          : words('editor.this-component-is-no-longer-2');
     }
   };
 
@@ -617,8 +614,8 @@ export function createSession(options: SessionOptions): Session {
       failing = null;
       savedAt = clock.now();
       if (
-        notice === 'Not saved. Retrying.' ||
-        notice === 'Not saved, so no version was made.' ||
+        notice === words('editor.not-saved-retrying') ||
+        notice === words('editor.not-saved-so-no-version') ||
         (notice !== null && notice === refusalNotice)
       ) {
         notice = null;
@@ -651,10 +648,8 @@ export function createSession(options: SessionOptions): Session {
       // Taken from this session while it was idle (COL-045): who has it, and that the work it saved is
       // kept, offered when it next holds the lock.
       dirty = true;
-      const who = result.takenBy ?? 'Somebody';
-      lose(
-        `${who} has taken over this component. What you saved is kept, and offered again when you next hold it; your unsaved text is kept below to copy.`,
-      );
+      const who = result.takenBy ?? words('editor.somebody');
+      lose(words('editor.has-taken-over-this-component-2', { who }));
       return false;
     }
     if (
@@ -676,7 +671,7 @@ export function createSession(options: SessionOptions): Session {
       // overwritten, so it stops rather than guess: the author is offered a fresh session, starting
       // from what is on screen now (component-editor.md, "Undo across a reload").
       dirty = true;
-      lose(NEWER_TEXT, true);
+      lose(NEWER_TEXT(), true);
       return false;
     }
     // Held, not lost: the next attempt sends everything again under a higher sequence.
@@ -685,7 +680,7 @@ export function createSession(options: SessionOptions): Session {
     failing ??= clock.setTimeout(() => {
       hasFailed = true;
       save = 'failing';
-      notice = 'Not saved. Retrying.';
+      notice = words('editor.not-saved-retrying');
       publish();
     }, timing.failingMs);
     publish();
@@ -735,7 +730,7 @@ export function createSession(options: SessionOptions): Session {
     // answer at all - leaves the save the service holds at that number perhaps somebody else's, which
     // nothing may be sent over: as `behind`.
     if (isRefusal(result.code)) lose(refusalMessage(result.code, true));
-    else lose(NEWER_TEXT, true);
+    else lose(NEWER_TEXT(), true);
     return false;
   };
 
@@ -789,7 +784,7 @@ export function createSession(options: SessionOptions): Session {
   const claim = async (move: boolean, fresh: boolean, into: 'editing' | 'recovery' = 'editing') => {
     phase = 'claiming';
     holder = null;
-    notice = 'Starting to edit.';
+    notice = words('editor.starting-to-edit');
     // The sequence belongs to the session id, not to this call: the id survives Done editing within
     // the same window (decision 14), and the service keeps the latest sequence it has accepted per
     // artifact, principal and session - a release does not reset it (packages/db/src/editing.ts).
@@ -815,7 +810,8 @@ export function createSession(options: SessionOptions): Session {
       // Still claiming, so nothing else is sent, until the reload's last save is settled.
       if (pendingRepeat !== null && !(await sendAgain(pendingRepeat))) return;
       phase = into;
-      notice = into === 'recovery' ? RECOVERY_OPENED : 'You are editing this component.';
+      notice =
+        into === 'recovery' ? RECOVERY_OPENED() : words('editor.you-are-editing-this-component-2');
       // A successful claim is the real state, told plainly (fix round 2, finding 3): the previous
       // value could be `stopped`, left over from a refusal this claim has now resolved, which would
       // otherwise say "not saved" while there was nothing left unsaved. Whatever was kept as text
@@ -840,7 +836,7 @@ export function createSession(options: SessionOptions): Session {
     if (result.code === HELD) {
       holder = result.holder;
       notice = result.holder.yours
-        ? 'You are editing this component in another window.'
+        ? words('editor.you-are-editing-this-component')
         : heldSentence(result.holder);
       publish();
       options.onRefused(result.holder, hadPending);
@@ -852,7 +848,7 @@ export function createSession(options: SessionOptions): Session {
     holder = { name: null, expectedRelease: '', yours: false };
     notice = isRefusal(result.code)
       ? refusalMessage(result.code, hadPending)
-      : 'Could not start editing. Try again.';
+      : words('editor.could-not-start-editing-try');
     publish();
     options.onRefused(holder, hadPending);
   };
@@ -896,7 +892,7 @@ export function createSession(options: SessionOptions): Session {
     }
     if (!flushed) {
       phase = 'editing';
-      notice = 'Not saved, so no version was made.';
+      notice = words('editor.not-saved-so-no-version');
       publish();
       return;
     }
@@ -933,15 +929,15 @@ export function createSession(options: SessionOptions): Session {
       // reload, and every iteration is kept meanwhile.
       notice =
         result.code === 'translation_source_invalid'
-          ? 'This translation names a version that is not its source. Reload it: what you typed is saved.'
-          : 'The version could not be made.';
+          ? words('editor.this-translation-names-a-version')
+          : words('editor.the-version-could-not-be');
       publish();
       return;
     }
     const cut = result.outcome === 'cut';
     notice = cut
-      ? `Version ${result.version.number} saved.`
-      : `Nothing has changed since version ${result.version.number}.`;
+      ? words('editor.version-saved', { number: result.version.number })
+      : words('editor.nothing-has-changed-since-version', { number: result.version.number });
     if (result.version.id !== version.id) {
       version = result.version;
       options.onVersion(version);
@@ -962,7 +958,7 @@ export function createSession(options: SessionOptions): Session {
     // lock back up, not recovering from a stale one - rather than stranding the edit in `reading` with
     // no lock and nothing left scheduled to save it (fix round 2, finding 4).
     phase = 'claiming';
-    notice = 'Starting to edit.';
+    notice = words('editor.starting-to-edit');
     publish();
     const reclaimed = await claimWithin(false, false);
     if (disposed) return;
@@ -975,7 +971,7 @@ export function createSession(options: SessionOptions): Session {
     failures = 0;
     hasFailed = false;
     phase = 'editing';
-    notice = 'You are editing this component.';
+    notice = words('editor.you-are-editing-this-component-2');
     publish();
     schedule();
   };
@@ -1027,7 +1023,7 @@ export function createSession(options: SessionOptions): Session {
     behind() {
       if (phase !== 'reading' || disposed) return;
       dirty = true;
-      lose(NEWER_TEXT, true);
+      lose(NEWER_TEXT(), true);
     },
     recover() {
       if (phase === 'editing') {
@@ -1044,7 +1040,7 @@ export function createSession(options: SessionOptions): Session {
           if (disposed || (phase as Phase) !== 'editing' || (save as SaveState) === 'stopped')
             return;
           phase = 'recovery';
-          notice = RECOVERY_OPENED;
+          notice = RECOVERY_OPENED();
           publish();
         });
         return;
@@ -1059,7 +1055,7 @@ export function createSession(options: SessionOptions): Session {
     closeRecovery() {
       if (phase !== 'recovery') return;
       phase = 'editing';
-      notice = 'You are editing this component.';
+      notice = words('editor.you-are-editing-this-component-2');
       publish();
       if (dirty) schedule();
     },
@@ -1089,7 +1085,7 @@ export function createSession(options: SessionOptions): Session {
       if (disposed) return null;
       // Lost, or a refusal that stopped saving, on the way: its own notice says why.
       if ((phase as Phase) !== 'recovery') return notice;
-      if (!flushed) return refuseRestore('Not saved, so nothing was restored.');
+      if (!flushed) return refuseRestore(words('editor.not-saved-so-nothing-was'));
       let read = await service.iteration(id);
       if (disposed) return null;
       if ((phase as Phase) !== 'recovery') return notice;
@@ -1111,15 +1107,15 @@ export function createSession(options: SessionOptions): Session {
         }
         return refuseRestore(
           read.code === 'not_found'
-            ? 'That saved text is no longer kept.'
-            : 'The saved text could not be read. Try again.',
+            ? words('editor.that-saved-text-is-no')
+            : words('editor.the-saved-text-could-not'),
         );
       }
       const refused = options.open(read.content, read.values, label);
       if (refused !== null) return refuseRestore(refused);
       // Opened, with a fresh history: the restored text is the next iteration sent.
       phase = 'editing';
-      notice = `Restored ${label}.`;
+      notice = words('editor.restored', { label });
       dirty = true;
       save = hasFailed ? 'failing' : 'saving';
       publish();

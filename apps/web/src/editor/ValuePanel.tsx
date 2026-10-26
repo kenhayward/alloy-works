@@ -8,12 +8,17 @@ import { IconButton } from '../parts/IconButton.js';
 import type { BindingState } from '../structure/bindingContexts.js';
 import { Icon } from './Icon.js';
 import styles from './ValuePanel.module.css';
+import { words } from '../words/words.js';
 
 /** Each mode's word on its chip, and the rest of what it means, said after it and in its title. */
 const MODES = {
-  checked: ['Checked', 'looked for each time the document is opened'],
-  pinned: ['Pinned', 'never looked for'],
-} as const;
+  get checked() {
+    return [words('editor.value.checked'), words('editor.value.checked-means')] as const;
+  },
+  get pinned() {
+    return [words('editor.value.pinned'), words('editor.value.pinned-means')] as const;
+  },
+};
 
 export interface ValuePanelProps {
   /** The binding selected whole, or a bound figure's or a bound table's, as the component stores it. */
@@ -77,7 +82,7 @@ export function ValuePanel({
   stacked = false,
 }: ValuePanelProps) {
   const heading = useId();
-  const unreadable = 'a query definition you cannot read';
+  const unreadable = words('editor.a-query-definition-you-cannot');
   const named =
     state !== undefined
       ? (state.definition?.title ?? null)
@@ -104,7 +109,7 @@ export function ValuePanel({
       tabIndex={-1}
     >
       <h3 id={heading} className={styles['hidden']}>
-        Value
+        {words('editor.value')}
       </h3>
       <span className={styles['glyph']} aria-hidden="true">
         <Icon name="Value" />
@@ -112,7 +117,9 @@ export function ValuePanel({
       {named !== undefined && (
         <span className={styles['named']}>
           {named === null ? unreadable : <a href={queryDefinitionLink(binding.query)}>{named}</a>}
-          {version !== undefined && <span className={styles['mono']}>{` version ${version}`}</span>}
+          {version !== undefined && (
+            <span className={styles['mono']}>{words('editor.version-3', { version })}</span>
+          )}
         </span>
       )}
       <span className={styles['shown']}>{shown}</span>
@@ -121,39 +128,48 @@ export function ValuePanel({
         <span className={styles['hidden']}>{`, ${means}`}</span>
       </Chip>
       {resolved && held !== null && (
-        <span className={styles['muted']}>Fetched {longDate(held.provenance.at)}</span>
+        <span className={styles['muted']}>
+          {words('editor.fetched')}
+          {longDate(held.provenance.at)}
+        </span>
       )}
       <span className={styles['acts']}>
         {onProvenance && resolved && held !== null && (
-          <IconButton label="Provenance" onClick={(event) => onProvenance(event.currentTarget)}>
+          <IconButton
+            label={words('editor.provenance')}
+            onClick={(event) => onProvenance(event.currentTarget)}
+          >
             <Icon name="Provenance" />
           </IconButton>
         )}
         {onChange && (
-          <IconButton label="Change" onClick={onChange}>
+          <IconButton label={words('editor.change')} onClick={onChange}>
             <Icon name="Change" />
           </IconButton>
         )}
         {held?.keepable === true && onKeep && (
-          <IconButton label="Keep" onClick={onKeep}>
+          <IconButton label={words('editor.keep')} onClick={onKeep}>
             <Icon name="Keep" />
           </IconButton>
         )}
         {held?.keepable !== true && onResolve && (
-          <IconButton label="Resolve" onClick={onResolve}>
+          <IconButton label={words('editor.resolve')} onClick={onResolve}>
             <Icon name="Resolve" />
           </IconButton>
         )}
         {revisable && (
           <IconButton
-            label={table ? 'Revise a cell by hand' : 'Revise by hand'}
+            label={table ? words('editor.revise-a-cell-by-hand') : words('editor.revise-by-hand')}
             onClick={() => onRevise('revise')}
           >
             <Icon name="Edit" />
           </IconButton>
         )}
         {revisable && standing && (
-          <IconButton label="Withdraw the revision" onClick={() => onRevise('withdraw')}>
+          <IconButton
+            label={words('editor.withdraw-the-revision')}
+            onClick={() => onRevise('withdraw')}
+          >
             <Icon name="Undo" />
           </IconButton>
         )}

@@ -110,7 +110,7 @@ export async function listPeople(
     display_name: string | null;
     email: string | null;
     kind: string;
-  }>(trx, inner, types, request.order ?? order, limit, request.after);
+  }>(trx, inner, types, request.order ?? order, limit, request.after, request.language);
   return {
     // From outside the tenant, said so (IAM-045; the R13 plan, R13-A).
     items: rows.map((row) => ({

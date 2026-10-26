@@ -248,7 +248,7 @@ export async function listTerms(
     revision_no: number;
     version_no: number;
     created_at: Date;
-  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
   const states = await workflowStates(
     trx,
     rows.map((row) => row.id),

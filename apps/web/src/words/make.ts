@@ -1,3 +1,4 @@
+import { EDITOR_WORDS, type EditorWordKey } from '@alloy-works/editor';
 import { createIntl, createIntlCache, type IntlShape } from '@formatjs/intl';
 
 import enGB from './en-GB.json';
@@ -12,11 +13,19 @@ import { pseudolocalise } from './pseudo.js';
  * screen rendered alone reads as it always has.
  */
 
-export type WordKey = keyof typeof enGB;
+export type WordKey = keyof typeof enGB | `pm.${EditorWordKey}`;
 export type { InterfaceLocale };
 type Values = Record<string, string | number | Date | boolean | null | undefined>;
 
-const catalogues = new Map<string, Readonly<Record<string, string>>>([[DEFAULT_LANGUAGE, enGB]]);
+/** English: the catalogue, and the editor's own words under `pm.` (the UI plan, UIb). */
+const ENGLISH: Readonly<Record<WordKey, string>> = {
+  ...enGB,
+  ...(Object.fromEntries(
+    Object.entries(EDITOR_WORDS).map(([key, message]) => [`pm.${key}`, message]),
+  ) as Record<`pm.${EditorWordKey}`, string>),
+};
+
+const catalogues = new Map<string, Readonly<Record<string, string>>>([[DEFAULT_LANGUAGE, ENGLISH]]);
 
 /** A language's catalogue: its own, or for a pseudo-locale English made over (UI-D). */
 function catalogueOf(tag: string): Readonly<Record<string, string>> {
@@ -24,7 +33,7 @@ function catalogueOf(tag: string): Readonly<Record<string, string>> {
   if (known) return known;
   const locale = localeOf(tag);
   const made: Record<string, string> = Object.fromEntries(
-    Object.entries(enGB).map(([key, message]) => [
+    Object.entries(ENGLISH).map(([key, message]) => [
       key,
       locale.pseudo ? pseudolocalise(message, locale.tag as 'en-XA' | 'ar-XB') : message,
     ]),
@@ -66,7 +75,7 @@ export function makeWords(tag: string): Words {
   return {
     language,
     words: (key, values) =>
-      intl.formatMessage({ id: key, defaultMessage: enGB[key] }, values) as string,
+      intl.formatMessage({ id: key, defaultMessage: ENGLISH[key] }, values) as string,
     date: (value, options) => intl.formatDate(value, options),
     time: (value, options) => intl.formatTime(value, options),
     number: (value, options) => intl.formatNumber(value, options),

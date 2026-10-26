@@ -368,7 +368,7 @@ export async function listEntries(
     revision_no: number;
     version_no: number;
     created_at: Date;
-  }>(trx, base(), types, request.order ?? byDefault, limit, request.after);
+  }>(trx, base(), types, request.order ?? byDefault, limit, request.after, request.language);
   return {
     items: rows.map((row) => ({
       id: row.id,
