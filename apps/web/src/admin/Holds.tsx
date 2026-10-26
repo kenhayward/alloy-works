@@ -110,9 +110,7 @@ export function Holds({ client }: { client: Client }) {
                         {named(hold.appliedBy)}
                       </span>
                       <br />
-                      <span className={styles['muted']}>
-                        {when(hold.appliedAt)}
-                      </span>
+                      <span className={styles['muted']}>{when(hold.appliedAt)}</span>
                     </td>
                     <td>
                       {hold.released === null ? (

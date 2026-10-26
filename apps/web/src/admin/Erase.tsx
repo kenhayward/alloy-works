@@ -48,12 +48,8 @@ function goes(erasure: Erasure): string[] {
   return [
     words('admin.their-name-which-becomes-erased'),
     words('admin.each-replaced-by-a-fixed', { labels: erases.labels }),
-    ...(erases.sessions > 0
-      ? [words('admin.ended', { sessions: erases.sessions })]
-      : []),
-    ...(erases.tokens > 0
-      ? [words('admin.revoked', { tokens: erases.tokens })]
-      : []),
+    ...(erases.sessions > 0 ? [words('admin.ended', { sessions: erases.sessions })] : []),
+    ...(erases.tokens > 0 ? [words('admin.revoked', { tokens: erases.tokens })] : []),
     ...(erases.memberships > 0
       ? [words('admin.removed', { memberships: erases.memberships })]
       : []),

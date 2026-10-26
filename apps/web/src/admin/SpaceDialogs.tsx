@@ -142,7 +142,10 @@ function Archiving({
       });
       if (data)
         onDone(
-          words('admin.space-changed', { change: restore ? 'restore' : 'archive', name: data.name }),
+          words('admin.space-changed', {
+            change: restore ? 'restore' : 'archive',
+            name: data.name,
+          }),
         );
       else onDone(refusal(error, failed));
     } catch {

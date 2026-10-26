@@ -27,7 +27,6 @@ type Client = ReturnType<typeof createApiClient>;
  */
 type Read = { readonly rows: readonly ShownGroup[] } | 'refused' | 'signedOut' | 'failed' | null;
 
-
 /** A group's members in words: how many, and who, the first three named and the rest counted. */
 const membersOf = (group: ShownGroup, named = group.members.length) => {
   if (group.members.length === 0) return words('admin.no-members-2');
@@ -38,7 +37,9 @@ const membersOf = (group: ShownGroup, named = group.members.length) => {
     names: formats().list(names, { type: 'unit' }),
     rest,
   };
-  return rest > 0 ? words('admin.members-named-more', values) : words('admin.members-named', values);
+  return rest > 0
+    ? words('admin.members-named-more', values)
+    : words('admin.members-named', values);
 };
 
 const initials = (name: string) =>
@@ -386,9 +387,7 @@ export function Groups({ client }: { client: Client }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <p className={styles['counted']}>
-              {words('admin.groups-2', { count: shown.length })}
-            </p>
+            <p className={styles['counted']}>{words('admin.groups-2', { count: shown.length })}</p>
           </div>
           <div className={filling === null ? undefined : styles['withPanel']}>
             <table aria-label={words('admin.groups')} className={styles['table']}>
@@ -415,15 +414,13 @@ export function Groups({ client }: { client: Client }) {
                       {group.name}
                     </td>
                     <td className={styles['muted']}>
-                      {group.source === 'tenant' ? (
-                        words('admin.this-environment')
-                      ) : (
-                        wordsWith(
-                          'admin.sign-in',
-                          {},
-                          { value: <code data-content>{group.providerValue ?? ''}</code> },
-                        )
-                      )}
+                      {group.source === 'tenant'
+                        ? words('admin.this-environment')
+                        : wordsWith(
+                            'admin.sign-in',
+                            {},
+                            { value: <code data-content>{group.providerValue ?? ''}</code> },
+                          )}
                     </td>
                     <td>
                       {group.members.length === 0 && group.source !== 'tenant' ? (

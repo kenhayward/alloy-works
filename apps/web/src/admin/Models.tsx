@@ -249,9 +249,7 @@ export function Models({ client }: { client: Client }) {
       body: { endpoint },
     });
     if (data) {
-      setSaid(
-        words('admin.route-said', { purpose, state: endpoint === null ? 'off' : 'on' }),
-      );
+      setSaid(words('admin.route-said', { purpose, state: endpoint === null ? 'off' : 'on' }));
       again();
     } else setSaid(refusal(error, words('admin.the-route-could-not-be')));
   };

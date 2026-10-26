@@ -338,7 +338,10 @@ function Trend({ client }: { client: Client }) {
                     <td>
                       {formats().list(
                         row.costs.map((each) =>
-                          words('admin.cost-in', { currency: each.currency, amount: cents(each.cost) }),
+                          words('admin.cost-in', {
+                            currency: each.currency,
+                            amount: cents(each.cost),
+                          }),
                         ),
                         { type: 'unit' },
                       )}

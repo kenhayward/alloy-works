@@ -100,7 +100,9 @@ function status(person: ShownPerson, service?: ShownService) {
 const scopeWords = (scopes: readonly string[]) =>
   scopes.length === 0
     ? say('admin.reads-only')
-    : say('admin.may', { permissions: formats().list(scopes.map(permissionName), { type: 'unit' }) });
+    : say('admin.may', {
+        permissions: formats().list(scopes.map(permissionName), { type: 'unit' }),
+      });
 
 /** A service identity as People shows it beside its principal (the G8 plan, G8-J). */
 export interface ShownService {
@@ -432,7 +434,9 @@ function PersonPanel({
       heading={nameOf(person)}
       description={
         <>
-          {person.name !== null && person.email !== null && <span data-content>{person.email} </span>}
+          {person.name !== null && person.email !== null && (
+            <span data-content>{person.email} </span>
+          )}
           <Chip>{KINDS[person.kind]}</Chip> {status(person, service)}
         </>
       }
@@ -806,7 +810,9 @@ export function People({ client }: { client: Client }) {
                               <span>
                                 <span
                                   className={styles['name']}
-                                  {...(person.name ?? person.email) === null ? {} : { 'data-content': '' }}
+                                  {...((person.name ?? person.email) === null
+                                    ? {}
+                                    : { 'data-content': '' })}
                                 >
                                   {nameOf(person)}
                                 </span>{' '}

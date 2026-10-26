@@ -289,9 +289,7 @@ export function AuditLog({
             <option value="">{words('admin.everything')}</option>
             {families().map(({ family, name, kinds }) => (
               <optgroup key={family} label={name}>
-                <option value={`${family}.`}>
-                  {words('admin.any-of', { family: name })}
-                </option>
+                <option value={`${family}.`}>{words('admin.any-of', { family: name })}</option>
                 {kinds.map((kind) => (
                   <option key={kind} value={kind}>
                     {kindWords(kind)}
@@ -359,8 +357,7 @@ export function AuditLog({
       <p role="status" className={styles['exported']}>
         {exporting.state === 'writing' && words('admin.writing-the-export')}
         {exporting.state === 'failed' && exporting.said}
-        {exporting.state === 'done' &&
-          words('admin.the-export-holds', { count: exporting.events })}
+        {exporting.state === 'done' && words('admin.the-export-holds', { count: exporting.events })}
         {exporting.state === 'done' && downloadSaid !== '' && ` ${downloadSaid}`}
       </p>
       {exporting.state === 'done' && (
