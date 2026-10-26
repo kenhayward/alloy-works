@@ -2315,5 +2315,8 @@
   "listing.deleted": "Deleted",
   "listing.the-could-not-be-loaded": "The {what} could not be loaded.",
   "listing.try-again": "Try again",
-  "listing.show-more": "Show more"
+  "listing.show-more": "Show more",
+  "publishing.document": "Document",
+  "publishing.space": "Space",
+  "editor.list.type": "Type"
 }

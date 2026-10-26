@@ -117,13 +117,15 @@ export function PublicationList({ client }: { client: Client }) {
         )}
       </div>
       <Facet
-        legend="Document"
+        legend={words('publishing.document')}
+        content
         values={listing.facets?.documents ?? []}
         chosen={documents}
         onToggle={(value) => setDocuments((held) => toggled(held, value))}
       />
       <Facet
-        legend="Space"
+        legend={words('publishing.space')}
+        content
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}

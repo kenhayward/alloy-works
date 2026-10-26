@@ -247,7 +247,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         ))}
       </fieldset>
       <Facet
-        legend="Type"
+        legend={words('editor.list.type')}
+        content
         values={typeFacet}
         chosen={typesChosen}
         onToggle={(value) => setTypesChosen((held) => toggled(held, value))}

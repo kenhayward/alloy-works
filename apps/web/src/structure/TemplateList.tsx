@@ -110,7 +110,8 @@ export function TemplateList({ client }: { readonly client: Client }) {
         )}
       </div>
       <Facet
-        legend="Space"
+        legend={words('document.space')}
+        content
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}

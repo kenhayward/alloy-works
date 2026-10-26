@@ -16,6 +16,7 @@ const USER_PROPS = new Set([
   'alt',
   'label',
   'named',
+  'legend',
   // A confirmation's words (ConfirmDialog).
   'question',
   'sentence',

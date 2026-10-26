@@ -315,13 +315,14 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
         )}
       </div>
       <Facet
-        legend="Space"
+        legend={words('document.space')}
+        content
         values={facets.spaces}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}
       />
       <Facet
-        legend="Publishing"
+        legend={words('document.publishing')}
         values={publishing}
         chosen={states}
         labelOf={(value) =>

@@ -60,9 +60,12 @@ export function Facet({
   values,
   chosen,
   labelOf = (value) => value.label,
+  content = false,
   onToggle,
 }: {
   readonly legend: string;
+  /** Its values are the tenant's, a space's or a document's names, not the interface's words. */
+  readonly content?: boolean;
   readonly values: readonly FacetValue[];
   readonly chosen: readonly string[];
   readonly labelOf?: (value: FacetValue) => string;
@@ -84,7 +87,9 @@ export function Facet({
             checked={chosen.includes(value.value)}
             onChange={() => onToggle(value.value)}
           />
-          <span className={styles['optionName']}>{labelOf(value)}</span>
+          <span className={styles['optionName']} {...(content ? { 'data-content': '' } : {})}>
+            {labelOf(value)}
+          </span>
           <span className={styles['count']}>{value.count}</span>
         </label>
       ))}
