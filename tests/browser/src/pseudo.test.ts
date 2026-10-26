@@ -33,6 +33,20 @@ const surfaces = (component: string): readonly Surface[] => [
       page.getByRole('heading', { level: 2, name: say(language, 'home.needs-your-attention') }),
   },
   {
+    name: 'The documents',
+    address: '#/documents',
+    regions: ['main'],
+    ready: (page, language) =>
+      page.getByRole('heading', { level: 1, name: say(language, 'document.documents') }),
+  },
+  {
+    name: 'The publications',
+    address: '#/publications',
+    regions: ['main'],
+    ready: (page, language) =>
+      page.getByRole('heading', { level: 1, name: say(language, 'publishing.publications') }),
+  },
+  {
     // Its toolbar: the header's dates, reuse and style move with their own folders (UIc, UId).
     name: 'The component editor',
     address: `#/components/${component}`,

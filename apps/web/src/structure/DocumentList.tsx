@@ -404,12 +404,14 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <a className={styles['title']} href={documentLink(item.id)}>
+                      <a className={styles['title']} href={documentLink(item.id)} data-content>
                         {item.title}
                       </a>
                       {archived && <Chip>{words('document.archived')}</Chip>}
                     </td>
-                    <td className={styles['muted']}>{item.space.name}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.space.name}
+                    </td>
                     <td>{item.version}</td>
                     <td>
                       {item.state !== null && <StateLozenge state={item.state} />}

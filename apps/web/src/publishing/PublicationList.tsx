@@ -179,7 +179,11 @@ export function PublicationList({ client }: { client: Client }) {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <a className={styles['title']} href={`#/publications/${item.id}`}>
+                      <a
+                        className={styles['title']}
+                        href={`#/publications/${item.id}`}
+                        data-content
+                      >
                         {item.title}
                       </a>
                     </td>
@@ -188,7 +192,9 @@ export function PublicationList({ client }: { client: Client }) {
                     <td className={styles['muted']}>
                       <time dateTime={item.publishedAt}>{whenChanged(item.publishedAt)}</time>
                     </td>
-                    <td className={styles['muted']}>{item.publisher.displayName ?? ''}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.publisher.displayName ?? ''}
+                    </td>
                     <td>
                       <Lozenge kind="notApproved">{words('publishing.not-approved')}</Lozenge>
                     </td>

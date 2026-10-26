@@ -82,6 +82,8 @@ export default tseslint.config(
       'apps/web/src/publishing/**/*.{ts,tsx}',
       'apps/web/src/translation/**/*.{ts,tsx}',
       'apps/web/src/imports/**/*.{ts,tsx}',
+      'apps/web/src/listing/**/*.{ts,tsx}',
+      'apps/web/src/states/**/*.{ts,tsx}',
     ],
     ignores: ['**/*.test.{ts,tsx}'],
     plugins: { alloy: { rules: { 'interface-words': interfaceWords } } },

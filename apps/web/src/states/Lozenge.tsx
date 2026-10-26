@@ -30,9 +30,18 @@ const TONES: Readonly<Record<LozengeKind, ChipTone>> = {
 };
 
 /** A state, as a chip in its tone (LG5). */
-export function Lozenge({ kind, children }: { kind: LozengeKind; children: React.ReactNode }) {
+export function Lozenge({
+  kind,
+  content,
+  children,
+}: {
+  kind: LozengeKind;
+  /** Its words are the tenant's, a workflow's state name, not the interface's. */
+  content?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <Chip tone={TONES[kind]} data-kind={kind}>
+    <Chip tone={TONES[kind]} data-kind={kind} {...(content ? { 'data-content': '' } : {})}>
       {children}
     </Chip>
   );
@@ -56,8 +65,12 @@ export function StateLozenge({
 }) {
   const kind = Object.hasOwn(SEEDED, state.key) ? SEEDED[state.key] : undefined;
   return kind === undefined ? (
-    <Chip data-kind="state">{state.name}</Chip>
+    <Chip data-kind="state" data-content="">
+      {state.name}
+    </Chip>
   ) : (
-    <Lozenge kind={kind}>{state.name}</Lozenge>
+    <Lozenge kind={kind} content>
+      {state.name}
+    </Lozenge>
   );
 }

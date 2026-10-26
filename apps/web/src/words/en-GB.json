@@ -2308,5 +2308,12 @@
   "document.holds": "{sections, plural, one {# section} other {# sections}}, {components, plural, one {# component} other {# components}}",
   "document.made-by-when": "{who}, {when}",
   "publishing.a-condition": "a condition",
-  "publishing.a-field": "a field"
+  "publishing.a-field": "a field",
+  "listing.sort-by": "Sort by",
+  "listing.status": "Status",
+  "listing.archived": "Archived",
+  "listing.deleted": "Deleted",
+  "listing.the-could-not-be-loaded": "The {what} could not be loaded.",
+  "listing.try-again": "Try again",
+  "listing.show-more": "Show more"
 }
