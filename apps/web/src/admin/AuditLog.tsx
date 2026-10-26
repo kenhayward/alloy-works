@@ -10,7 +10,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
 import { FAMILY_WORDS, kindWords } from './auditWords.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type AuditEventView =
@@ -43,17 +43,18 @@ type Read =
   | 'failed'
   | null;
 
-/** The families, by name, each with its kinds: what the kind filter offers. */
-const FAMILIES = Object.entries(FAMILY_WORDS)
-  .map(([family, name]) => ({
-    family,
-    name,
-    kinds: auditKinds.filter((kind) => kind.startsWith(`${family}.`)),
-  }))
-  .sort((one, other) => one.name.localeCompare(other.name));
+/** The families, by name in the reader's language, each with its kinds: what the kind filter offers. */
+const families = () =>
+  Object.entries(FAMILY_WORDS)
+    .map(([family, name]) => ({
+      family,
+      name,
+      kinds: auditKinds.filter((kind) => kind.startsWith(`${family}.`)),
+    }))
+    .sort((one, other) => formats().compare(one.name, other.name));
 
 const when = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', {
+  formats().date(new Date(iso), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -81,8 +82,6 @@ type Exporting =
   | { readonly state: 'writing'; readonly id: string }
   | { readonly state: 'done'; readonly id: string; readonly events: number }
   | { readonly state: 'failed'; readonly said: string };
-
-const eventsCounted = (count: number) => words('admin.events', { count: count });
 
 /** Who acted, in words, where nobody is named. */
 const UNNAMED: Readonly<Record<string, string>> = {
@@ -252,7 +251,7 @@ export function AuditLog({
           aria-label={words('admin.only-what-did', { name })}
           onClick={() => choose({ actor })}
         >
-          {name}
+          <span data-content>{name}</span>
         </button>
         {event.actorKind === 'token' && (
           <span className={styles['muted']}> {words('admin.by-an-api-token')}</span>
@@ -265,7 +264,10 @@ export function AuditLog({
     const name = event.labels['subject']?.text;
     const id = event.subject?.id ?? null;
     // Only its subject's own name filters to it; a space's name is said, never offered as the subject.
-    if (name === undefined || id === null) return name ?? event.labels['space']?.text ?? null;
+    if (name === undefined || id === null) {
+      const said = name ?? event.labels['space']?.text;
+      return said === undefined ? null : <span data-content>{said}</span>;
+    }
     return (
       <button
         type="button"
@@ -273,7 +275,7 @@ export function AuditLog({
         aria-label={words('admin.only-events-about', { name })}
         onClick={() => choose({ subject: { id, name } })}
       >
-        {name}
+        <span data-content>{name}</span>
       </button>
     );
   };
@@ -285,10 +287,10 @@ export function AuditLog({
           {words('admin.what-happened')}
           <select value={filter.kind} onChange={(change) => choose({ kind: change.target.value })}>
             <option value="">{words('admin.everything')}</option>
-            {FAMILIES.map(({ family, name, kinds }) => (
+            {families().map(({ family, name, kinds }) => (
               <optgroup key={family} label={name}>
                 <option value={`${family}.`}>
-                  {words('admin.any-of', { value1: name.toLocaleLowerCase() })}
+                  {words('admin.any-of', { family: name })}
                 </option>
                 {kinds.map((kind) => (
                   <option key={kind} value={kind}>
@@ -327,7 +329,7 @@ export function AuditLog({
         </button>
         {filter.actor !== null && (
           <Chip tone="accent">
-            {words('admin.who', { name: filter.actor.name })}
+            {words('admin.who', { name: filter.actor.name })}{' '}
             <button
               type="button"
               className={styles['plainButton']}
@@ -340,7 +342,7 @@ export function AuditLog({
         )}
         {filter.subject !== null && (
           <Chip tone="accent">
-            {words('admin.about', { name: filter.subject.name })}
+            {words('admin.about', { name: filter.subject.name })}{' '}
             <button
               type="button"
               className={styles['plainButton']}
@@ -358,10 +360,8 @@ export function AuditLog({
         {exporting.state === 'writing' && words('admin.writing-the-export')}
         {exporting.state === 'failed' && exporting.said}
         {exporting.state === 'done' &&
-          words('admin.the-export-holds', {
-            value1: eventsCounted(exporting.events),
-            value2: downloadSaid === '' ? '' : ` ${downloadSaid}`,
-          })}
+          words('admin.the-export-holds', { count: exporting.events })}
+        {exporting.state === 'done' && downloadSaid !== '' && ` ${downloadSaid}`}
       </p>
       {exporting.state === 'done' && (
         <p>
