@@ -42,6 +42,8 @@ describe("the connector's one caller", () => {
       // An embedding model's sample, as an administrator confirms it (the G7 plan, G7-J).
       'generation/embedding.ts',
       // A search's words embedded as the person searches (the G7 plan, G7-G).
+      // A machine draft of a translation, as its translator asks for it (the XL plan, XL-H).
+      'generation/machine-drafts.ts',
       'generation/meaning.ts',
       'generation/models.ts',
       'generation/prompt-runs.ts',
