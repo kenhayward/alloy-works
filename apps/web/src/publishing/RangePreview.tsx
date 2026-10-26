@@ -49,8 +49,6 @@ export interface RangePreviewing {
   /** Whether the author has asked to see the pages as they edit. */
   readonly on: boolean;
   readonly toggle: () => void;
-  /** What the pane says on screen of the pages: untagged, and the tagged PDF the accessible path. */
-  readonly untagged: string | null;
   readonly pages: readonly RangePage[];
   /** Waiting for a save, drawing, drawn, or why not. */
   readonly said: string;
@@ -215,7 +213,6 @@ export function useRangePreview(options: {
       setFailed('');
       setOn((was) => !was);
     },
-    untagged: view?.untagged ?? null,
     pages,
     said,
   };
@@ -270,7 +267,8 @@ export function RangePreviewPane({
           <Icon name="Close" size={13} />
         </button>
       </div>
-      <p>{range.untagged ?? words('publishing.these-pages-are-pictures-drawn')}</p>
+      {/* PUB-080's words, the pane's own rather than the service's English (the UI plan, UI-L). */}
+      <p>{words('publishing.these-pages-are-pictures-drawn')}</p>
       <p>
         <button type="button" onClick={onPreview}>
           {words('publishing.preview')}
@@ -280,7 +278,12 @@ export function RangePreviewPane({
       {range.pages.length > 0 && (
         <div className={styles['canvas']}>
           {range.pages.map((page) => (
-            <img key={page.page} className={styles['page']} src={page.url} alt={page.alternative} />
+            <img
+              key={page.page}
+              className={styles['page']}
+              src={page.url}
+              alt={words('publishing.page-untagged', { page: page.page })}
+            />
           ))}
         </div>
       )}

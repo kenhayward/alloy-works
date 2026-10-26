@@ -1,9 +1,21 @@
 import { words } from '../words/words.js';
+
+/** The outline's guards a restore meets, each worded here (the UI plan, UI-L). */
+const GUARDS = [
+  'reference_refused',
+  'sections_added',
+  'sections_removed',
+  'sections_reordered',
+  'required_removed',
+] as const;
+const guarded = (why: string | undefined): why is (typeof GUARDS)[number] =>
+  (GUARDS as readonly (string | undefined)[]).includes(why);
 /** A refusal of a restore, as the preview or the write gives it (the RS plan, RS-E). */
 export interface RestoreRefusal {
   readonly code: string;
   readonly holder?: { readonly name: string | null } | undefined;
-  /** outline_invalid: why, in the outline's own words. */
+  /** outline_invalid: which of the outline's guards, by code, and why in the service's words. */
+  readonly why?: (typeof GUARDS)[number] | (string & {}) | undefined;
   readonly reason?: string | undefined;
   /** reference_deleted: the reference's node, and its component's last title (VER-044). */
   readonly node?: string | undefined;
@@ -42,9 +54,11 @@ export function restoreRefusalWords(refusal: RestoreRefusal): string {
       return words('editor.a-table-in-this-version');
     // A document's, refused by its outline's own guards (RS-F).
     case 'outline_invalid':
-      return refusal.reason === undefined
-        ? words('editor.this-version-no-longer-fits')
-        : words('editor.so-this-version-cannot-be', { reason: refusal.reason });
+      return guarded(refusal.why)
+        ? words(`editor.restore.${refusal.why}`)
+        : refusal.reason === undefined
+          ? words('editor.this-version-no-longer-fits')
+          : words('editor.so-this-version-cannot-be', { reason: refusal.reason });
     // VER-044: a component since deleted, by its last title.
     case 'reference_deleted':
       return words('editor.has-been-deleted-so-this', {

@@ -17,5 +17,5 @@ export type { TemmlAdmission, TemmlRefusal } from './temml.js';
 
 export type { Receiver } from './reidentify.js';
 
-export { createReport, readerEntry } from './report.js';
+export { createReport, readerEntry, reportMessages } from './report.js';
 export type { AdmissionStage, ReportAction, ReportCollector, ReportEntry } from './report.js';

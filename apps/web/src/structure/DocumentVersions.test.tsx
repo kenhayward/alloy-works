@@ -152,12 +152,9 @@ describe("a document's Versions panel", () => {
     expect(await screen.findByText('Restored from version 0.2')).toBeInTheDocument();
   });
 
-  it("says in words why the outline's guards refuse a restore, and offers none", async () => {
+  it("says in words, by its code, why the outline's guards refuse a restore, and offers none", async () => {
     const { client } = service([
-      {
-        code: 'outline_invalid',
-        reason: "This document's template does not allow sections to be added",
-      },
+      { code: 'outline_invalid', why: 'sections_added', reason: 'In English' },
     ]);
     render(<DocumentVersions client={client} id={DOCUMENT} mayEdit />);
     const list = await screen.findByRole('list', { name: 'Versions' });
