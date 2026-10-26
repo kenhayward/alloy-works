@@ -96,7 +96,9 @@ export function PanelTabs({
         >
           {tab.icon}
           {tab.label}
-          {tab.count !== undefined && <span className={styles['tabCount']}>{formats().number(tab.count)}</span>}
+          {tab.count !== undefined && (
+            <span className={styles['tabCount']}>{formats().number(tab.count)}</span>
+          )}
         </button>
       ))}
     </div>
