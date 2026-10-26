@@ -3097,12 +3097,10 @@
   "admin.state": "State",
   "admin.attempts": "Attempts",
   "admin.queued": "Queued",
-  "admin.what-was-sent-for-at": "What was sent for {type} at {value2}",
+  "admin.what-was-sent-for-at": "What was sent for {type} at {at}",
   "admin.what-was-sent": "What was sent",
   "admin.what-was-sent-and-what": "What was sent, and what came back",
   "admin.not-tried-yet": "Not tried yet.",
-  "admin.no-answer": "no answer ({value1})",
-  "admin.answered": "answered {status}",
   "admin.a-service-identity": "A service identity",
   "admin.made-the-webhook-to": "Made the webhook to {url}.",
   "admin.the-webhook-could-not-be": "The webhook could not be made.",
@@ -3133,7 +3131,6 @@
   "admin.remove-the-webhook-to": "Remove the webhook to {url}?",
   "admin.every-delivery-waiting-for-it": "Every delivery waiting for it goes with it.",
   "admin.deliveries-of": "Deliveries of {url}",
-  "admin.deliveries-to-2": "Deliveries to ",
   "admin.no-unresolved-suggestions": "no unresolved suggestions",
   "admin.no-open-threads": "no open threads",
   "admin.every-binding-resolved": "every binding resolved",
@@ -4924,5 +4921,7 @@
   "admin.failed-its-test": "{name} failed its test.",
   "admin.route-said": "{state, select, off {{purpose, select, drafting {Drafting is off.} chat {Chat is off.} summarising {Summarising is off.} embedding {Embedding is off.} translate {Machine translation is off.} other {{purpose} is off.}}} other {{purpose, select, drafting {Drafting route saved.} chat {Chat route saved.} summarising {Summarising route saved.} embedding {Embedding route saved.} translate {Machine translation route saved.} other {{purpose} route saved.}}}}",
   "admin.retired-mark": "(retired)",
-  "admin.cost-in": "{currency} {amount}"
+  "admin.cost-in": "{currency} {amount}",
+  "admin.url": "URL",
+  "admin.attempt-said": "{at}: {answered, select, no {{known, select, yes {no answer ({failure})} other {no answer (unknown)}}} other {answered {status}}}, {ms, number} ms"
 }
