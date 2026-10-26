@@ -88,7 +88,9 @@ export const Me = z.object({
   interfaceLanguage: z
     .enum(INTERFACE_LANGUAGES)
     .nullable()
-    .describe('The language they chose for the interface, or null for their browser’s; never the content’s'),
+    .describe(
+      'The language they chose for the interface, or null for their browser’s; never the content’s',
+    ),
 });
 export type Me = z.infer<typeof Me>;
 

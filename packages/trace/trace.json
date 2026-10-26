@@ -18096,6 +18096,15 @@
       ]
     },
     {
+      "document": "interface-localisation.md",
+      "owns": [
+        {
+          "id": "LOC-005",
+          "howItIsMet": "A person's interface language is theirs, stored apart from and never read from any content's"
+        }
+      ]
+    },
+    {
       "document": "lifecycle.md",
       "owns": [
         {
@@ -21265,13 +21274,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 672,
+      "line": 676,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 685,
+      "line": 689,
       "kind": "title"
     },
     {
@@ -21745,7 +21754,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2147,
+      "line": 2148,
       "kind": "title"
     },
     {
@@ -22640,6 +22649,12 @@
       "id": "DAT-022",
       "file": "apps/service/src/placing-bindings.test.ts",
       "line": 355,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/service/src/preferences.test.ts",
+      "line": 16,
       "kind": "title"
     },
     {
@@ -26366,6 +26381,24 @@
       "id": "SCH-058",
       "file": "apps/web/src/versions/VersionPages.test.tsx",
       "line": 42,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/web/src/words/language.test.tsx",
+      "line": 43,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/web/src/words/locales.test.ts",
+      "line": 18,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/web/src/words/words.test.tsx",
+      "line": 32,
       "kind": "title"
     },
     {
@@ -30799,7 +30832,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1048,
+      "line": 1050,
       "kind": "title"
     },
     {
