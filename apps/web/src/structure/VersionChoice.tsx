@@ -2,7 +2,7 @@ import type { ReferenceViewNode } from '@alloy-works/domain';
 import { useEffect, useRef, useState } from 'react';
 
 import styles from './DocumentText.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 /** One version of a component, as the list offers it: its id, its number, and when it was made. */
 export interface OfferedVersion {
@@ -53,7 +53,7 @@ export function versionSaid(
 
 /** When a version was made, as the list says it. */
 const madeOn = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 
 type Listed =
   | { readonly state: 'loading' }

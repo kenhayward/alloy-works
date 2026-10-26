@@ -143,11 +143,11 @@ export function PublicationList({ client }: { client: Client }) {
             {filtered
               ? words('publishing.the-filter', {
                   total,
-                  value2: total === 1 ? 'publication matches' : 'publications match',
+                  value2: total,
                 })
               : words('publishing.you-may-read', {
                   total,
-                  value2: total === 1 ? 'publication' : 'publications',
+                  value2: total,
                 })}
           </span>
           {items.length < total && (

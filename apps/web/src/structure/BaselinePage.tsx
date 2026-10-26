@@ -28,7 +28,7 @@ import styles from './BaselinePage.module.css';
 import { DocumentText } from './DocumentText.js';
 import { documentLink } from './links.js';
 import type { Names } from './tree.js';
-import { words as say, wordsWith } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -204,7 +204,7 @@ export function BaselinePage({
   const when = useMemo(
     () =>
       typeof shown === 'object' && shown !== null
-        ? new Date(shown.madeAt).toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short' })
+        ? formats().date(new Date(shown.madeAt), { dateStyle: 'long', timeStyle: 'short' })
         : '',
     [shown],
   );

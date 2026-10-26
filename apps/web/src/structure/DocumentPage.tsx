@@ -3184,7 +3184,7 @@ export function DocumentPage({
                                 say('document.suggestion-sent-on', {
                                   value1:
                                     drafting === null
-                                      ? 'a component'
+                                      ? say('document.a-component-in-sentence')
                                       : placeInOutline(
                                           document.outline,
                                           drafting,
@@ -3305,9 +3305,8 @@ function counted(nodes: readonly OutlineViewNode[]): { sections: number; compone
 /** What the status bar says the document is: what it holds, and which version of it in which space. */
 function aboutDocument(document: Opened): readonly string[] {
   const { sections, components } = counted(document.outline.nodes);
-  const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
   return [
-    `${plural(sections, 'section')}, ${plural(components, 'component')}`,
+    say('document.holds', { sections, components }),
     say('document.version-in', { number: document.version.number, name: document.space.name }),
   ];
 }

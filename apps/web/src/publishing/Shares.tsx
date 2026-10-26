@@ -5,7 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import styles from './PublicationPage.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,7 +38,7 @@ function sharesIn(data: unknown): readonly Share[] | undefined {
 const localDay = (at: Date) =>
   `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-${String(at.getDate()).padStart(2, '0')}`;
 const inDays = (days: number) => localDay(new Date(Date.now() + days * DAY));
-const when = (at: string) => new Date(at).toLocaleDateString(undefined, { dateStyle: 'long' });
+const when = (at: string) => formats().date(new Date(at), { dateStyle: 'long' });
 
 /**
  * **Shared outside the organisation** (PUB-057, PUB-058, PUB-060; the R17 plan): to whoever may share
@@ -93,7 +93,7 @@ export function Shares({ client, publication }: { client: Client; publication: s
                     ? words('publishing.not-opened-yet')
                     : words('publishing.opened-last-on', {
                         length: each.accesses.length,
-                        value2: each.accesses.length === 1 ? 'time' : 'times',
+                        value2: each.accesses.length,
                         value3: when(each.accesses[0]!.at),
                       })}
               </span>

@@ -23,7 +23,7 @@ const rowsSaid = (read: ReadRows): string =>
   read.ok
     ? words('document.giving', {
         length: read.rows.length,
-        value2: read.rows.length === 1 ? 'row' : 'rows',
+        value2: read.rows.length,
         value3: read.names.join(', '),
       })
     : read.problem;

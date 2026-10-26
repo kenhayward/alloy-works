@@ -114,7 +114,7 @@ function checkWords(check: Check): string {
     ? 'passed'
     : words('publishing.failed', {
         length: check.failedRules.length,
-        value2: check.failedRules.length === 1 ? 'rule' : 'rules',
+        value2: check.failedRules.length,
       });
   return words('publishing.checked-for-pdf-ua-1', { checkerVersion: check.checkerVersion, found });
 }

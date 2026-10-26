@@ -338,16 +338,12 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // GEN-025 (the G3 plan, G3-F): generated content waits to be accepted or rejected.
     case 'generated_unaccepted':
       return words('publishing.this-part-has-waiting-to', {
-        value1:
-          failure.detail === '1'
-            ? 'a generated suggestion'
-            : `${failure.detail ?? 'some'} generated suggestions`,
-        value2: failure.detail === '1' ? 'it' : 'them',
+        count: failure.detail === null ? 'some' : Number(failure.detail),
       });
     // REU-053: an unset axis leaves text out only where the document accepts it.
     case 'axis_unset':
       return words('publishing.content-here-depends-on-which', {
-        value1: failure.detail ?? 'a condition',
+        value1: failure.detail ?? words('publishing.a-condition'),
       });
     // REU-015: never applied over a changed paragraph, and never dropped without saying so.
     case 'override_stale':
@@ -358,7 +354,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // never the value, which is the component's.
     case 'component_metadata_invalid':
       return words('publishing.this-component-s-fields-are', {
-        value1: failure.detail ?? 'a field',
+        value1: failure.detail ?? words('publishing.a-field'),
       });
     case 'occurrence_unresolved':
       return words('publishing.this-reference-waits-on-an');
@@ -675,7 +671,7 @@ export function failureWords(failure: Failure, wordOffered = false): string {
       const [entry, variable] = (failure.detail ?? '').split(': ');
       return words('publishing.the-bibliography-entry-lacks-which', {
         value1: entry ?? '',
-        value2: variable ?? 'a field',
+        value2: variable ?? words('publishing.a-field'),
       });
     }
     case 'style_invalid':

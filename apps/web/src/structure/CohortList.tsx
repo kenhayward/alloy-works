@@ -1,7 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
 import styles from './CohortList.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -40,7 +40,9 @@ const SORTS: Readonly<Record<Sort, string>> = {
   },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = {
+  format: (at: Date) => formats().date(at, { day: 'numeric', month: 'short', year: 'numeric' }),
+};
 
 /** How a cohort's rows stand, in words: what is made, failed and waiting, each only where there is one. */
 export const rowsWords = (rows: Listed['rows']) =>

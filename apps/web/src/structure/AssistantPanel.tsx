@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
 import { PersonalPrompts } from './PersonalPrompts.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -324,13 +324,16 @@ export function AssistantPanel({
   const usage = async () => {
     const { data } = await client.GET('/v1/me/assistant-usage');
     if (!data) return;
-    const costs = data.costs.map((each) => `${each.currency} ${each.cost}`).join(', ');
+    const costs = formats().list(
+      data.costs.map((each) =>
+        words('document.cost', { currency: each.currency, cost: each.cost }),
+      ),
+      { type: 'unit' },
+    );
     setMonth(
-      words('document.this-month', {
-        runs: data.runs,
-        value2: data.runs === 1 ? 'run' : 'runs',
-        value3: costs === '' ? '' : `, ${costs}`,
-      }),
+      costs === ''
+        ? words('document.this-month', { runs: data.runs })
+        : words('document.this-month-costing', { runs: data.runs, costs }),
     );
   };
 

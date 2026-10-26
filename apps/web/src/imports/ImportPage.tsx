@@ -641,7 +641,7 @@ export function ImportPage({
                 {say('imports.from-word', {
                   author: each.author,
                   blocks: each.blocks,
-                  value3: each.blocks === 1 ? 'block' : 'blocks',
+                  value3: each.blocks,
                   text: each.text,
                 })}
               </li>
@@ -1020,7 +1020,7 @@ export function ImportPage({
       {view.sweepsAt !== null && (
         <p className={styles['muted']}>
           {say('imports.abandoned-on-unless-it-is', {
-            value1: new Date(view.sweepsAt).toLocaleDateString(),
+            value1: formats().date(new Date(view.sweepsAt)),
           })}
         </p>
       )}
@@ -1032,14 +1032,14 @@ export function ImportPage({
           <li>
             {say('imports.suggested-on-changed-unchanged', {
               length: view.outcome.suggested.length,
-              value2: view.outcome.suggested.length === 1 ? 'component' : 'components',
+              value2: view.outcome.suggested.length,
               unchanged: view.outcome.unchanged,
             })}
           </li>
           <li>
             {say('imports.made-new-placed-in-the', {
               length: view.outcome.made.length,
-              value2: view.outcome.made.length === 1 ? 'component' : 'components',
+              value2: view.outcome.made.length,
               length3: view.outcome.made.filter((each) => each.placed).length,
             })}
           </li>

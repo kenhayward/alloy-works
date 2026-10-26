@@ -8,7 +8,7 @@ import { FailureList } from './FailureList.js';
 import { failuresIn, isProductsOwn, type Failure } from './failures.js';
 import { FOLLOW_MS, refusedWords, useFollowing } from './following.js';
 import styles from './Preview.module.css';
-import { words as say, wordsWith } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -308,7 +308,7 @@ function failedIntro(failures: readonly Failure[]): string {
     : say('publishing.the-preview-could-not-be-5');
 }
 
-const clock = (at: Date) => at.toLocaleTimeString(undefined, { timeStyle: 'short' });
+const clock = (at: Date) => formats().time(at, { timeStyle: 'short' });
 
 /**
  * The pane beside the text: the preview in the browser's own PDF viewer, named for the document, with

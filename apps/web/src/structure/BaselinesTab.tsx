@@ -3,7 +3,7 @@ import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 
 import styles from './BaselinesTab.module.css';
 import { baselineLink, comparisonLink } from './links.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -47,13 +47,16 @@ const FORMATS = {
 } as const;
 type Formats = keyof typeof FORMATS;
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const when = {
+  format: (at: Date) =>
+    formats().date(at, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+};
 
 /** What a refusal says, from the service's own words, or a sentence of ours where it sent none. */
 const refusalOf = (error: unknown, fallback: string) =>
@@ -221,7 +224,10 @@ export function BaselinesTab({
                   <a href={baselineLink(document, baseline.id)}>{baseline.name}</a>
                 </h3>
                 <span className={styles['note']}>
-                  {`${baseline.madeBy.name ?? words('document.somebody')}, ${when.format(new Date(baseline.madeAt))}`}
+                  {words('document.made-by-when', {
+                    who: baseline.madeBy.name ?? words('document.somebody'),
+                    when: when.format(new Date(baseline.madeAt)),
+                  })}
                 </span>
                 <span className={styles['note']}>
                   {baseline.superseded === null

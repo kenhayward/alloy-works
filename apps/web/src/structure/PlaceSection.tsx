@@ -55,9 +55,6 @@ const MODES: readonly { readonly mode: Mode; readonly label: string }[] = [
   },
 ];
 
-const plural = (count: number, one: string, many: string) =>
-  `${count.toLocaleString('en-GB')} ${count === 1 ? one : many}`;
-
 /**
  * **Place from a document** (REU-054; the R2 plan, R2-F): another document's section placed here as
  * references under a new section of the author's, after a report of how much it pulls in (REU-046).
@@ -358,14 +355,10 @@ function PlaceDialog({
             <h3 id={`${headingId}report`}>{words('document.what-it-places')}</h3>
             <p>
               {words('document.to-of-text', {
-                value1: plural(report.occurrences, 'reference', 'references'),
-                value2: plural(
-                  report.components.length + report.unreadable,
-                  'component',
-                  'components',
-                ),
-                value3: plural(report.blocks, 'block', 'blocks'),
-                value4: plural(report.characters, 'character', 'characters'),
+                references: report.occurrences,
+                components: report.components.length + report.unreadable,
+                blocks: report.blocks,
+                characters: report.characters,
               })}
             </p>
             <ul>
@@ -380,8 +373,7 @@ function PlaceDialog({
             {report.unreadable > 0 && (
               <p role="alert">
                 {words('document.it-places-you-may-not', {
-                  value1: plural(report.unreadable, 'component', 'components'),
-                  value2: report.unreadable === 1 ? 'was' : 'were',
+                  count: report.unreadable,
                 })}
               </p>
             )}

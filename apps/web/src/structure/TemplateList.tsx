@@ -131,12 +131,9 @@ export function TemplateList({ client }: { readonly client: Client }) {
             {spaces.length > 0
               ? words('document.in-the-spaces-chosen', {
                   total: listing.total,
-                  value2: listing.total === 1 ? 'template is' : 'templates are',
+                  value2: listing.total,
                 })
-              : words('document.you-may-read', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'template' : 'templates',
-                })}
+              : words('document.templates-you-may-read', { total: listing.total })}
           </span>
           {listing.items.length < listing.total && (
             <span>{words('document.showing-1-to', { length: listing.items.length })}</span>

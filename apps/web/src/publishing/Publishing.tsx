@@ -87,17 +87,11 @@ function warnedWords(warnings: unknown): string | null {
     warnings.filter((each) => isRecord(each) && each.code === code).length;
   const translation = (
     [
-      [byNode('component_untranslated'), say('publishing.in-own-language-marked-untranslated')],
-      [byNode('translation_out_of_date'), say('publishing.translated-but-out-of-date')],
-      [byNode('override_skipped'), say('publishing.translated-overrides-not-applied')],
+      [byNode('component_untranslated'), 'publishing.in-own-language-marked-untranslated'],
+      [byNode('translation_out_of_date'), 'publishing.translated-but-out-of-date'],
+      [byNode('override_skipped'), 'publishing.translated-overrides-not-applied'],
     ] as const
-  ).flatMap(([n, words]) =>
-    n === 0
-      ? []
-      : [
-          `${n} ${say('publishing.components', { count: n })} ${words.replace('{its}', n === 1 ? 'its' : 'their')}`,
-        ],
-  );
+  ).flatMap(([count, key]) => (count === 0 ? [] : [say(key, { count })]));
   const said = [
     ...(sources.length === 0
       ? []

@@ -160,17 +160,10 @@ function titlesNotSaved(titles: readonly string[]): string {
 /** Names every title not saved after its field closed, once none is outstanding. */
 function lostTitles(lost: readonly LostTitle[]): string {
   const titles = lost.map((each) => each.title);
-  const which =
-    titles.length === 1
-      ? say('document.the-title-was', { value1: listed(titles) })
-      : say('document.the-titles-were', { value1: listed(titles) });
+  const said = { titles: listed(titles), count: titles.length };
   return lost.some((each) => each.signedOut)
-    ? say('document.you-are-signed-out-so', { which })
-    : say('document.not-saved-and-try-it', {
-        value1: which.charAt(0).toUpperCase(),
-        value2: which.slice(1),
-        value3: titles.length === 1 ? 'Select the section' : 'Select each section',
-      });
+    ? say('document.titles-not-saved-signed-out', said)
+    : say('document.titles-not-saved-try-again', said);
 }
 
 /** What a node's row says beside its title (STR-038). */
@@ -1689,7 +1682,7 @@ function ConfirmRemoval({
         <>
           <p id={warning}>
             {say('document.referenced-elsewhere-in-this-document', {
-              value1: referencedBy.count === 1 ? 'once' : `${referencedBy.count} times`,
+              count: referencedBy.count,
             })}
           </p>
           {referencedBy.list}

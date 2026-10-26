@@ -365,12 +365,9 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             {filtered
               ? words('document.the-filter', {
                   total,
-                  value2: total === 1 ? 'document matches' : 'documents match',
+                  value2: total,
                 })
-              : words('document.you-may-read', {
-                  total,
-                  value2: total === 1 ? 'document' : 'documents',
-                })}
+              : words('document.documents-you-may-read', { total })}
           </span>
           {items.length < total && (
             <span>{words('document.showing-1-to', { length: items.length })}</span>
