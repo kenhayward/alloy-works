@@ -228,10 +228,7 @@ async function decideGate(
 export function RevisionChip({ revision }: { revision: Revision | undefined }) {
   if (!revision) return null;
   return (
-    <Chip>
-      {words('lifecycle.revision-2')}
-      {revision.number}
-    </Chip>
+    <Chip>{words('lifecycle.revision-2', { number: revision.number })}</Chip>
   );
 }
 
@@ -240,8 +237,7 @@ const progressOf = (gate: Gate) =>
   words('lifecycle.of-approval', {
     count: gate.count,
     required: gate.required,
-    value3: gate.required === 1 ? '' : 's',
-    value4: gate.approvedByCaller ? ', yours among them' : '',
+    yours: gate.approvedByCaller ? 'yes' : 'no',
   });
 
 /**
@@ -320,7 +316,7 @@ export function TransitionButtons({
     if (answer.stale) onStale();
     return words('lifecycle.was-not', {
       title,
-      value2: reason === undefined ? 'approved' : 'returned',
+      decision: reason === undefined ? 'approved' : 'returned',
       refused: answer.refused,
     });
   };
@@ -352,6 +348,7 @@ export function TransitionButtons({
           className={className}
           disabled={busy}
           title={words('lifecycle.move-to', { name: transition.to.name })}
+          data-content
           onClick={() => {
             if (transition.reasonRequired) setAsking(transition);
             else {
@@ -375,6 +372,7 @@ export function TransitionButtons({
                   className={className}
                   disabled={busy}
                   title={words('lifecycle.approve-towards', { name: gate.to.name })}
+                  data-content
                   onClick={() =>
                     approving(words('lifecycle.approve'), () => {
                       void decideAt(gate).then((refused) => {
@@ -409,6 +407,7 @@ export function TransitionButtons({
                 className={className}
                 disabled={busy}
                 title={words('lifecycle.return-to', { name: gate.reject.to.name })}
+                data-content
                 onClick={() => setRejecting(gate)}
               >
                 {gate.reject.name}
@@ -419,7 +418,7 @@ export function TransitionButtons({
       ))}
       {rejecting && (
         <ReasonDialog
-          heading={`${rejecting.reject.name} ${title}`}
+          heading={words('lifecycle.act-on', { act: rejecting.reject.name, title })}
           explained={words('lifecycle.it-returns-to', { name: rejecting.reject.to.name })}
           submit={words('lifecycle.to', {
             name: rejecting.reject.name,
@@ -435,7 +434,7 @@ export function TransitionButtons({
       )}
       {asking && (
         <ReasonDialog
-          heading={`${asking.name} ${title}`}
+          heading={words('lifecycle.act-on', { act: asking.name, title })}
           explained={words('lifecycle.it-moves-to', { name: asking.to.name })}
           submit={words('lifecycle.to', { name: asking.name, name2: asking.to.name })}
           act={async (reason) => {
@@ -480,7 +479,7 @@ function ReasonDialog({
       return;
     }
     if (trimmed.length > MAX_REASON) {
-      setSaid(words('lifecycle.a-reason-is-at-most', { MAX_REASON }));
+      setSaid(words('lifecycle.a-reason-is-at-most', { max: MAX_REASON }));
       return;
     }
     setBusy(true);
