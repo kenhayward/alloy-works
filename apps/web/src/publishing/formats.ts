@@ -6,15 +6,17 @@ import { formats, words as say } from '../words/words.js';
 
 /** A format by the name an author knows it by; one this renderer does not know, as the service said it. */
 const FORMAT_WORDS: Record<string, string> = {
-  pdf: 'PDF',
+  get pdf() {
+    return say('publishing.pdf');
+  },
   get docx() {
     return say('publishing.word');
   },
 };
 
 /** `PDF`, `Word` or `PDF and Word`: the formats a publication holds, in the order it names them. */
-export function formatsWords(formats: readonly string[]): string {
-  return formats.map((format) => FORMAT_WORDS[format] ?? format).join(' and ');
+export function formatsWords(held: readonly string[]): string {
+  return formats().list(held.map((format) => FORMAT_WORDS[format] ?? format));
 }
 
 /** The kinds a report says of one table (Word 2, ruling R7). */
