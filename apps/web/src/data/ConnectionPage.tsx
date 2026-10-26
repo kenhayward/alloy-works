@@ -14,7 +14,6 @@ import styles from './ConnectionPage.module.css';
 import { useInstalledExtensions } from './extensions.js';
 import { connectionAccessLink, connectionLink, queryDefinitionLink } from './links.js';
 import {
-  KEY_PAIR_HINT,
   PATH_STYLE_LABELS,
   RUNS_AS_LABELS,
   runsAsOf,
@@ -32,6 +31,7 @@ import {
   isRecord,
   isRelations,
   isTested,
+  leftOutText,
   longDate,
   nameOf,
   refusalText,
@@ -41,7 +41,7 @@ import {
   type Tested,
 } from './shapes.js';
 import { isUses, PagedUses, type Uses } from './uses.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -105,21 +105,6 @@ const KINDS: Readonly<Record<string, string>> = {
 };
 
 /**
- * What a describe left out, in words, or null where it left out nothing: a table or column whose name
- * holds a control character, or whose type is longer than any PostgreSQL names, is never listed.
- */
-function leftOutText(leftOut: Described['leftOut']): string | null {
-  const parts = [
-    leftOut.relations > 0 &&
-      `${leftOut.relations} ${words('data.tables-or-views', { count: leftOut.relations })}`,
-    leftOut.columns > 0 &&
-      `${leftOut.columns} ${words('data.columns', { count: leftOut.columns })}`,
-  ].filter((part): part is string => typeof part === 'string');
-  if (parts.length === 0) return null;
-  return words('data.left-out-because-their-names', { value1: parts.join(', and ') });
-}
-
-/**
  * A test's answer in words (DAT-075): "Connected." and what it found of the account, or "Could not
  * connect." and the one reason the service gave, which names no address and repeats no credential.
  */
@@ -159,31 +144,21 @@ function credentialText(
   type: Settings['type'] = 'postgres',
 ): string {
   if (!credential.set) return words('data.not-set');
-  const set = words('data.set-by-on', {
-    value1: nameOf(credential.setBy),
-    value2: longDate(credential.setAt),
-  });
-  const what =
-    type === 'http' || type === 'extension'
-      ? 'secret'
-      : type === 's3'
-        ? words('data.key-pair')
-        : 'password';
-  if (credential.setBeforeBinding) {
-    return words('data.before-this-version-of-the', { set, what });
-  }
-  const moved =
-    type === 'extension'
-      ? words('data.the-extension-s-endpoint')
-      : type === 'http'
-        ? words('data.the-base-url-or-the')
-        : type === 's3'
-          ? words('data.the-endpoint-the-region-the')
-          : words('data.the-host-port-database-account');
+  const values = {
+    name: nameOf(credential.setBy),
+    date: longDate(credential.setAt),
+    secret: secretKind(type),
+    type,
+  };
+  if (credential.setBeforeBinding) return words('data.before-this-version-of-the', values);
   return credential.targetChanged
-    ? words('data.before-changed-set-the-again', { set, moved, what })
-    : `${set}.`;
+    ? words('data.before-changed-set-the-again', values)
+    : words('data.set-by-on', values);
 }
+
+/** What a connection of a type signs in with, as its messages select it. */
+const secretKind = (type: Settings['type']) =>
+  type === 'http' || type === 'extension' ? 'secret' : type === 's3' ? 'keyPair' : 'password';
 
 /** The query definitions naming a connection: those the caller may read, and how many more (D2-O). */
 interface Naming {
@@ -216,51 +191,37 @@ interface ConnectionUses {
   readonly documents: Uses;
 }
 
-/** Those the caller may not read, counted, never named. */
-const unread = (others: number) =>
-  words('data.you-may-not-read', {
-    others,
-    value2: others === 1 ? 'query definition' : 'query definitions',
-  });
-
 /**
  * Why retiring was refused (DAT-065), in words: the definitions still naming the connection, each the
  * caller may read by title and the rest counted.
  */
 function inUseText(naming: Naming): string {
   const titles = naming.readable.map((each) => each.title);
-  if (titles.length === 0)
-    return words('data.retire-these-first', { value1: unread(naming.others) });
-  const more =
-    naming.others === 0 ? '' : words('data.and-more-you-may-not', { others: naming.others });
-  return words('data.retire-these-first-2', { value1: titles.join(', '), more });
+  if (titles.length === 0) return words('data.retire-these-first', { others: naming.others });
+  return words('data.retire-these-first-2', {
+    titles: formats().list(titles, { type: 'unit', style: 'short' }),
+    others: naming.others,
+  });
 }
-
-/** "1 query definition", "2 documents". */
-const counted = (count: number, one: string, many: string) =>
-  `${count} ${count === 1 ? one : many}`;
 
 /** The strip's Credential cell (ADR-0050, decision 4): set, by whom and when, or what it lacks. */
 function credentialCell(credential: ConnectionView['credential']): StripCell {
   const base = {
     key: 'credential',
-    icon: words('data.credential'),
+    icon: 'Credential',
     label: words('data.credential'),
   } as const;
   if (!credential.set) return { ...base, tone: 'warn', value: words('data.not-set-2') };
-  const by = words('data.by-on', {
-    value1: nameOf(credential.setBy),
-    value2: longDate(credential.setAt),
-  });
+  const who = { name: nameOf(credential.setBy), date: longDate(credential.setAt) };
   if (credential.setBeforeBinding || credential.targetChanged) {
     return {
       ...base,
       tone: 'warn',
       value: words('data.set-again-to-use'),
-      detail: words('data.set', { by }),
+      detail: words('data.set', who),
     };
   }
-  return { ...base, tone: 'ok', value: words('data.set-2'), detail: by };
+  return { ...base, tone: 'ok', value: words('data.set-2'), detail: words('data.by-on', who) };
 }
 
 /**
@@ -273,40 +234,41 @@ function lastTestCell(view: ConnectionView): StripCell {
   if (last === null)
     return {
       ...base,
-      icon: words('data.test'),
+      icon: 'Test',
       tone: 'muted',
       value: words('data.not-tested-yet'),
     };
-  const when = words('data.on-by', { value1: longDate(last.at), value2: nameOf(last.by) });
+  const who = { date: longDate(last.at), name: nameOf(last.by) };
+  const when = words('data.on-by', who);
   if (last.version !== view.version.id) {
     return {
       ...base,
-      icon: words('data.needs-attention'),
+      icon: 'Needs attention',
       tone: 'warn',
       value: words('data.not-tested-since-this-version'),
-      detail: words('data.the-last-test-of-an', { when }),
+      detail: words('data.the-last-test-of-an', who),
     };
   }
   if (!last.credentialCurrent) {
     return {
       ...base,
-      icon: words('data.needs-attention'),
+      icon: 'Needs attention',
       tone: 'warn',
       value: words('data.not-tested-since-the-credential'),
-      detail: words('data.the-last-test-with-an', { when }),
+      detail: words('data.the-last-test-with-an', who),
     };
   }
   return last.outcome === 'ok'
     ? {
         ...base,
-        icon: words('data.done-editing'),
+        icon: 'Done editing',
         tone: 'ok',
         value: words('data.connected-2'),
         detail: when,
       }
     : {
         ...base,
-        icon: words('data.needs-attention'),
+        icon: 'Needs attention',
         tone: 'warn',
         value: words('data.could-not-connect-2'),
         detail: when,
@@ -317,13 +279,15 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
     return (
       <dl className={styles['settings']}>
         <dt>{words('data.description')}</dt>
-        <dd>{settings.description === '' ? words('data.none') : settings.description}</dd>
+        <dd {...(settings.description === '' ? {} : { 'data-content': true })}>
+          {settings.description === '' ? words('data.none') : settings.description}
+        </dd>
         <dt>{words('data.endpoint')}</dt>
-        <dd>{settings.source.endpoint}</dd>
+        <dd data-content>{settings.source.endpoint}</dd>
         <dt>{words('data.region')}</dt>
-        <dd>{settings.source.region}</dd>
+        <dd data-content>{settings.source.region}</dd>
         <dt>{words('data.bucket')}</dt>
-        <dd>{settings.source.bucket}</dd>
+        <dd data-content>{settings.source.bucket}</dd>
         <dt>{words('data.addressed')}</dt>
         <dd>{PATH_STYLE_LABELS[settings.source.pathStyle ? 'path' : 'virtual']}</dd>
         <dt>{words('data.runs-as')}</dt>
@@ -335,11 +299,13 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
     return (
       <dl className={styles['settings']}>
         <dt>{words('data.description')}</dt>
-        <dd>{settings.description === '' ? words('data.none') : settings.description}</dd>
+        <dd {...(settings.description === '' ? {} : { 'data-content': true })}>
+          {settings.description === '' ? words('data.none') : settings.description}
+        </dd>
         <dt>{words('data.base-url')}</dt>
-        <dd>{settings.source.baseUrl}</dd>
+        <dd data-content>{settings.source.baseUrl}</dd>
         <dt>{words('data.secret-header')}</dt>
-        <dd>{settings.source.secretHeader}</dd>
+        <dd data-content>{settings.source.secretHeader}</dd>
         <dt>{words('data.runs-as')}</dt>
         <dd>{RUNS_AS_LABELS.service}</dd>
       </dl>
@@ -349,13 +315,15 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
     return (
       <dl className={styles['settings']}>
         <dt>{words('data.description')}</dt>
-        <dd>{settings.description === '' ? words('data.none') : settings.description}</dd>
+        <dd {...(settings.description === '' ? {} : { 'data-content': true })}>
+          {settings.description === '' ? words('data.none') : settings.description}
+        </dd>
         <dt>{words('data.endpoint')}</dt>
-        <dd>{settings.source.endpoint}</dd>
+        <dd data-content>{settings.source.endpoint}</dd>
         {Object.entries(settings.source.settings).map(([key, value]) => (
           <Fragment key={key}>
-            <dt>{key}</dt>
-            <dd>
+            <dt data-content>{key}</dt>
+            <dd {...(typeof value === 'boolean' ? {} : { 'data-content': true })}>
               {typeof value === 'boolean'
                 ? value
                   ? words('data.yes')
@@ -372,16 +340,18 @@ function SettingsList({ settings }: { readonly settings: Settings }) {
   return (
     <dl className={styles['settings']}>
       <dt>{words('data.description')}</dt>
-      <dd>{settings.description === '' ? words('data.none') : settings.description}</dd>
+      <dd {...(settings.description === '' ? {} : { 'data-content': true })}>
+        {settings.description === '' ? words('data.none') : settings.description}
+      </dd>
       <dt>{words('data.host')}</dt>
-      <dd>{settings.source.host}</dd>
+      <dd data-content>{settings.source.host}</dd>
       <dt>{words('data.port')}</dt>
-      <dd>{settings.source.port}</dd>
+      <dd data-content>{settings.source.port}</dd>
       <dt>{words('data.database')}</dt>
-      <dd>{settings.source.database}</dd>
+      <dd data-content>{settings.source.database}</dd>
       <dt>{words('data.account')}</dt>
-      <dd>{settings.source.account}</dd>
-      <dt>TLS</dt>
+      <dd data-content>{settings.source.account}</dd>
+      <dt>{words('data.tls')}</dt>
       <dd>{TLS_LABELS[settings.source.tls]}</dd>
       <dt>{words('data.runs-as')}</dt>
       <dd>{RUNS_AS_LABELS[runsAsOf(settings.identity)]}</dd>
@@ -546,7 +516,7 @@ export function ConnectionPage({
   const http = type === 'http';
   const s3 = type === 's3';
   const extension = type === 'extension';
-  const secretWord = http || extension ? 'secret' : s3 ? words('data.key-pair') : 'password';
+  const signsInWith = secretKind(type);
   // An extension's secret is named as its manifest names it, where that is read.
   const manifest =
     extension && Array.isArray(extensions)
@@ -556,13 +526,16 @@ export function ConnectionPage({
         )?.manifest
       : undefined;
   const secretLabel =
-    manifest !== undefined && manifest.authentication !== 'none'
-      ? manifest.authentication.label
-      : http || extension
-        ? words('data.secret')
-        : s3
-          ? words('data.secret-access-key')
-          : words('data.password');
+    manifest !== undefined && manifest.authentication !== 'none' ? (
+      // The extension's own words for it, never the interface's.
+      <span data-content>{manifest.authentication.label}</span>
+    ) : http || extension ? (
+      words('data.secret')
+    ) : s3 ? (
+      words('data.secret-access-key')
+    ) : (
+      words('data.password')
+    );
 
   /**
    * Cuts the next version from the one shown, and shows what the service answered. Retiring and
@@ -641,7 +614,9 @@ export function ConnectionPage({
       setKeyId('');
       if (sent === '' || (s3 && sentId === '')) {
         setRotation(
-          s3 ? words('data.type-the-access-key-id') : words('data.type-the-first', { secretWord }),
+          s3
+            ? words('data.type-the-access-key-id')
+            : words('data.type-the-first', { secret: signsInWith }),
         );
         return;
       }
@@ -657,11 +632,11 @@ export function ConnectionPage({
         }
         setRotation(
           response.status === 401
-            ? words('data.you-are-signed-out-sign-2', { secretWord })
-            : refusalText(error, words('data.the-could-not-be-set', { secretWord })),
+            ? words('data.you-are-signed-out-sign-2', { secret: signsInWith })
+            : refusalText(error, words('data.the-could-not-be-set', { secret: signsInWith })),
         );
       } catch {
-        setRotation(words('data.the-could-not-be-set', { secretWord }));
+        setRotation(words('data.the-could-not-be-set', { secret: signsInWith }));
       }
     });
 
@@ -725,18 +700,14 @@ export function ConnectionPage({
       trail={
         <>
           <a href="#/connections">{words('data.connections')}</a>
-          {` / ${view.space.name}`}
+          {' / '}
+          <span data-content>{view.space.name}</span>
         </>
       }
       title={view.settings.name}
       chips={
         <>
-          <Chip>
-            {words('data.in', {
-              value1: http ? 'HTTP API' : s3 ? 'S3 bucket' : extension ? 'Extension' : 'PostgreSQL',
-              name: view.space.name,
-            })}
-          </Chip>
+          <Chip>{words('data.in', { type, name: view.space.name })}</Chip>
           <Chip className={styles['mono']}>
             {words('data.version', { number: view.version.number })}
           </Chip>
@@ -775,7 +746,7 @@ export function ConnectionPage({
         lastTestCell(view),
         {
           key: 'used-by',
-          icon: words('data.used-by'),
+          icon: 'Used by',
           tone: 'muted',
           label: words('data.used-by'),
           value:
@@ -783,18 +754,10 @@ export function ConnectionPage({
               ? words('data.could-not-be-read')
               : usedBy === null
                 ? ''
-                : counted(
-                    usedBy.definitions,
-                    words('data.query-definition'),
-                    words('data.query-definitions'),
-                  ),
+                : words('data.query-definitions-counted', { count: usedBy.definitions }),
           ...(usedBy === null
             ? {}
-            : {
-                detail: words('data.and', {
-                  value1: counted(usedBy.documents, 'document', 'documents'),
-                }),
-              }),
+            : { detail: words('data.and-documents', { count: usedBy.documents }) }),
         },
       ]}
       notice={
@@ -820,7 +783,7 @@ export function ConnectionPage({
               <div className={styles['form']}>
                 {s3 && (
                   <>
-                    <p className={styles['hint']}>{KEY_PAIR_HINT}</p>
+                    <p className={styles['hint']}>{words('data.a-static-access-key-pair')}</p>
                     <label>
                       {words('data.access-key-id')}
                       <input
@@ -877,9 +840,14 @@ export function ConnectionPage({
                   <tbody>
                     {tables.relations.map((relation) => (
                       <tr key={`${relation.schema}.${relation.name}`}>
-                        <td>{`${relation.schema}.${relation.name}`}</td>
+                        <td data-content>{`${relation.schema}.${relation.name}`}</td>
                         <td>{KINDS[relation.kind] ?? relation.kind}</td>
-                        <td>{relation.columns.map((column) => column.name).join(', ')}</td>
+                        <td data-content>
+                          {formats().list(
+                            relation.columns.map((column) => column.name),
+                            { type: 'unit', style: 'short' },
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -895,21 +863,18 @@ export function ConnectionPage({
           ) : (
             <div className={styles['lists']}>
               <PagedUses
-                heading="Query definitions"
+                heading={words('data.query-definitions-2')}
+                pages={words('data.pages-of-query-definitions')}
                 uses={uses.definitions}
                 link={queryDefinitionLink}
-                counted={(others) => words('data.used-by-2', { value1: unread(others) })}
+                counted={(others) => words('data.used-by-2', { others })}
               />
               <PagedUses
-                heading="Documents"
+                heading={words('data.documents')}
+                pages={words('data.pages-of-documents')}
                 uses={uses.documents}
                 link={documentLink}
-                counted={(others) =>
-                  words('data.held-by-you-may-not', {
-                    others,
-                    value2: others === 1 ? 'document' : 'documents',
-                  })
-                }
+                counted={(others) => words('data.held-by-you-may-not', { others })}
               />
             </div>
           )

@@ -2,7 +2,7 @@ import type { ExtensionSetting, ExtensionSettings } from '@alloy-works/domain';
 
 import { connectable, type Extensions, type InstalledExtension } from './extensions.js';
 import type { Settings } from './shapes.js';
-import { words } from '../words/words.js';
+import { words, wordsWith } from '../words/words.js';
 
 /** The types of source a connection reaches: a PostgreSQL database, an HTTP API, an S3 bucket (D6) or an extension's (EX). */
 export type SourceType = Settings['type'];
@@ -316,10 +316,6 @@ export function draftProblem(draft: Draft): string | null {
   return null;
 }
 
-/** What running as each person asks of the source, said beside the choice (the D7 plan, D7-C, D7-D). */
-export const RUNS_AS_HINT =
-  "Each person's role at the source is named by this, and made by the source's administrator, who grants it to the connection's account. The account must read nothing of its own, and SQL written by hand is not allowed on the connection.";
-
 /** How an S3 bucket is addressed, said beside the choice (the D6 plan, D6-C). */
 export const PATH_STYLE_LABELS = {
   get virtual() {
@@ -329,14 +325,6 @@ export const PATH_STYLE_LABELS = {
     return words('data.in-the-endpoint-s-path');
   },
 } as const;
-
-/** What an S3 connection's key pair is, said beside its fields. */
-export const KEY_PAIR_HINT =
-  "A static access key pair. Give it read access to this bucket alone: the store's own policy decides what the connection may read.";
-
-/** What an HTTP connection's secret is, said beside its header (the D6 plan, D6-D). */
-export const SECRET_HEADER_HINT =
-  'The secret is sent as this header, exactly as it is set: write "Bearer" and a space before a token where the API asks for one. It is never put in a URL.';
 
 export const TLS_LABELS: Readonly<Record<Draft['tls'], string>> = {
   get require() {
@@ -438,7 +426,8 @@ export function SettingsFields({
             {words('data.secret-header')}
             <input {...field('secretHeader')} autoComplete="off" spellCheck={false} />
           </label>
-          <p>{SECRET_HEADER_HINT}</p>
+          {/* What an HTTP connection's secret is, said beside its header (the D6 plan, D6-D). */}
+          <p>{words('data.the-secret-is-sent-as-this-header')}</p>
         </>
       ) : (
         <>
@@ -459,7 +448,7 @@ export function SettingsFields({
             <input {...field('account')} autoComplete="off" spellCheck={false} />
           </label>
           <label>
-            TLS
+            {words('data.tls')}
             <select
               value={draft.tls}
               onChange={(event) => onChange({ ...draft, tls: event.target.value as Draft['tls'] })}
@@ -484,7 +473,8 @@ export function SettingsFields({
               ))}
             </select>
           </label>
-          {draft.runsAs !== 'service' && <p>{RUNS_AS_HINT}</p>}
+          {/* What running as each person asks of the source (the D7 plan, D7-C, D7-D). */}
+          {draft.runsAs !== 'service' && <p>{words('data.each-persons-role-at-the-source')}</p>}
         </>
       )}
     </>
@@ -556,9 +546,12 @@ function ExtensionFields({
         <>
           <p>{words('data.its-calls-go-to', { endpoint: held.source.endpoint })}</p>
           {held.fields.map((field) => {
-            const label = field.required
-              ? words('data.required-2', { label: field.label })
-              : field.label;
+            // The manifest's own words for its field, never the interface's.
+            const label = field.required ? (
+              wordsWith('data.required-2', {}, { label: <span data-content>{field.label}</span> })
+            ) : (
+              <span data-content>{field.label}</span>
+            );
             const value = held.values[field.key];
             return field.type === 'boolean' ? (
               <label key={field.key}>

@@ -26,12 +26,12 @@ const DELIMITERS: Readonly<Record<FormatDraft['delimiter'], string>> = {
  */
 export function FormatFields<Draft extends FormatDraft>({
   draft,
-  noun,
+  holder,
   onChange,
 }: {
   readonly draft: Draft;
-  /** What holds the rows: "answer" or "file". */
-  readonly noun: string;
+  /** What holds the rows: an HTTP API's answer or a file. */
+  readonly holder: 'answer' | 'file';
   readonly onChange: (draft: Draft) => void;
 }) {
   return (
@@ -40,17 +40,13 @@ export function FormatFields<Draft extends FormatDraft>({
         <p className={styles['hint']}>{words('data.a-column-is-read-by')}</p>
       )}
       {draft.format === 'json' && (
-        <p className={styles['hint']}>
-          {words('data.each-is-a-json-pointer')}
-          {noun}
-          {words('data.or-each-name-after-a')}
-        </p>
+        <p className={styles['hint']}>{words('data.each-is-a-json-pointer', { holder })}</p>
       )}
       {draft.format === 'csv' && (
         <p className={styles['hint']}>{words('data.a-column-is-read-by-2')}</p>
       )}
       <div className={styles['formatLine']}>
-        <Choice label={words('data.the-is', { noun })}>
+        <Choice label={words('data.the-is', { holder })}>
           {(id) => (
             <select
               id={id}
@@ -59,9 +55,9 @@ export function FormatFields<Draft extends FormatDraft>({
                 onChange({ ...draft, format: event.target.value as FormatDraft['format'] })
               }
             >
-              <option value="json">JSON</option>
+              <option value="json">{words('data.json')}</option>
               <option value="jsonLines">{words('data.json-lines-an-object-a')}</option>
-              <option value="csv">CSV</option>
+              <option value="csv">{words('data.csv')}</option>
               <option value="xlsx">{words('data.xlsx-one-sheet-of-a')}</option>
             </select>
           )}
@@ -99,7 +95,7 @@ export function FormatFields<Draft extends FormatDraft>({
               />
             </label>
             <label>
-              {words('data.row-count-at-where-the', { noun })}
+              {words('data.row-count-at-where-the', { holder })}
               <input
                 value={draft.count}
                 spellCheck={false}

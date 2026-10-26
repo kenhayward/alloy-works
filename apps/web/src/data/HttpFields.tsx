@@ -80,13 +80,13 @@ export function PartField({
 /** A named list of pairs: query pairs, headers or body members. */
 function Pairs({
   legend,
-  noun,
+  kind,
   pairs,
   parameters,
   onChange,
 }: {
   readonly legend: string;
-  readonly noun: string;
+  readonly kind: 'pair' | 'header' | 'member';
   readonly pairs: readonly PairDraft[];
   readonly parameters: readonly ParameterDraft[];
   readonly onChange: (pairs: PairDraft[]) => void;
@@ -99,7 +99,7 @@ function Pairs({
       {pairs.map((pair, at) => (
         <div key={at} className={styles['fragment']}>
           <label>
-            {words('data.name-2', { noun, value2: at + 1 })}
+            {words('data.pair-name', { kind, n: at + 1 })}
             <input
               value={pair.name}
               spellCheck={false}
@@ -107,18 +107,18 @@ function Pairs({
             />
           </label>
           <PartField
-            label={words('data.value-2', { noun, value2: at + 1 })}
+            label={words('data.pair-value', { kind, n: at + 1 })}
             part={pair.value}
             parameters={parameters}
             onChange={(value) => set(at, { ...pair, value })}
           />
           <button type="button" onClick={() => onChange(pairs.filter((_, place) => place !== at))}>
-            {words('data.remove', { value1: noun.toLowerCase(), value2: at + 1 })}
+            {words('data.remove-pair', { kind, n: at + 1 })}
           </button>
         </div>
       ))}
       <button type="button" onClick={() => onChange([...pairs, NEW_PAIR])}>
-        {words('data.add', { value1: noun.toLowerCase() })}
+        {words('data.add-pair', { kind })}
       </button>
     </fieldset>
   );
@@ -146,8 +146,8 @@ export function HttpFields({
               onChange({ ...http, method: event.target.value as 'GET' | 'POST' })
             }
           >
-            <option value="GET">GET</option>
-            <option value="POST">POST</option>
+            <option value="GET">{words('data.get')}</option>
+            <option value="POST">{words('data.post')}</option>
           </select>
         )}
       </Choice>
@@ -156,7 +156,7 @@ export function HttpFields({
         {http.path.map((part, at) => (
           <div key={at} className={styles['fragment']}>
             <PartField
-              label={words('data.segment-2', { value1: at + 1 })}
+              label={words('data.segment-2', { n: at + 1 })}
               part={part}
               parameters={parameters}
               onChange={(changed) => setSegment(at, changed)}
@@ -167,7 +167,7 @@ export function HttpFields({
                 onChange({ ...http, path: http.path.filter((_, place) => place !== at) })
               }
             >
-              {words('data.remove-segment', { value1: at + 1 })}
+              {words('data.remove-segment', { n: at + 1 })}
             </button>
           </div>
         ))}
@@ -177,14 +177,14 @@ export function HttpFields({
       </fieldset>
       <Pairs
         legend={words('data.query')}
-        noun="Pair"
+        kind="pair"
         pairs={http.query}
         parameters={parameters}
         onChange={(query) => onChange({ ...http, query })}
       />
       <Pairs
         legend={words('data.headers')}
-        noun="Header"
+        kind="header"
         pairs={http.headers}
         parameters={parameters}
         onChange={(headers) => onChange({ ...http, headers })}
@@ -192,13 +192,13 @@ export function HttpFields({
       {http.method === 'POST' && (
         <Pairs
           legend={words('data.body-a-json-object')}
-          noun="Member"
+          kind="member"
           pairs={http.body}
           parameters={parameters}
           onChange={(body) => onChange({ ...http, body })}
         />
       )}
-      <FormatFields draft={http} noun="answer" onChange={onChange} />
+      <FormatFields draft={http} holder="answer" onChange={onChange} />
       <p className={styles['hint']}>{words('data.a-parameter-s-value-is')}</p>
     </div>
   );
