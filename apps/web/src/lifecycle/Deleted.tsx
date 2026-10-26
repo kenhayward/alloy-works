@@ -94,7 +94,9 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
   return (
     <section aria-labelledby="deleted-heading">
       {heading}
-      <p className={styles['summary']}>{words('lifecycle.deleted-you-may-read', { total, kind })}</p>
+      <p className={styles['summary']}>
+        {words('lifecycle.deleted-you-may-read', { total, kind })}
+      </p>
       <p role="status" className={styles['said']}>
         {said}
       </p>

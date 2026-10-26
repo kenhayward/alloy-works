@@ -2,13 +2,12 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { tokenScopes } from '@alloy-works/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { permissionName } from '../access/describe.js';
 import { Modal } from '../layouts/Modal.js';
 import { everyPage } from '../paging.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
-import { refusal, TokenTable, type ShownToken } from './TokenTable.js';
+import { permissionLabel, refusal, TokenTable, type ShownToken } from './TokenTable.js';
 import styles from './Tokens.module.css';
 import { words as say } from '../words/words.js';
 
@@ -53,8 +52,6 @@ function fromDateField(value: string): Date | null {
   const day = new Date(year, month - 1, date);
   return day.getMonth() === month - 1 ? day : null;
 }
-
-const capitalised = (words: string) => `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
 
 /** A token as the list shows it: whatever else the answer carries, never its secret. */
 const shown = (token: ShownToken): ShownToken => ({
@@ -208,7 +205,7 @@ export function NewToken({
                     setScopes(next);
                   }}
                 />
-                {capitalised(permissionName(scope))}
+                {permissionLabel(scope)}
               </label>
             ))}
           </fieldset>

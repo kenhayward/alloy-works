@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { permissionName } from '../access/describe.js';
 import { Modal } from '../layouts/Modal.js';
 import styles from './Tokens.module.css';
-import { words } from '../words/words.js';
+import { formats, words, type WordKey } from '../words/words.js';
 
 /**
  * A personal token as `GET /v1/tokens` and `GET /v1/principals/{id}/tokens` list it: never its secret,
@@ -21,28 +21,59 @@ export interface ShownToken {
 
 /** A day as a person reads it, in their own time zone and words. */
 export const day = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 
 /**
  * A moment as a person reads it, to the minute, in their own time zone and words: when a token stops,
  * which is as a day begins where the form made it, so its day alone would read as a day it still works.
  */
 export const moment = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, {
+  formats().date(new Date(iso), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hourCycle: 'h23',
   });
+
+/** Each permission a token may hold, in a list and as a choice's label. */
+const PERMISSIONS: Readonly<Record<string, readonly [WordKey, WordKey]>> = {
+  read: ['account.permission.read', 'account.permission-label.read'],
+  create: ['account.permission.create', 'account.permission-label.create'],
+  edit: ['account.permission.edit', 'account.permission-label.edit'],
+  comment: ['account.permission.comment', 'account.permission-label.comment'],
+  suggest: ['account.permission.suggest', 'account.permission-label.suggest'],
+  approve: ['account.permission.approve', 'account.permission-label.approve'],
+  publish: ['account.permission.publish', 'account.permission-label.publish'],
+  design: ['account.permission.design', 'account.permission-label.design'],
+  manage_definitions: [
+    'account.permission.manage-definitions',
+    'account.permission-label.manage-definitions',
+  ],
+  administer: ['account.permission.administer', 'account.permission-label.administer'],
+  use_connection: ['account.permission.use-connection', 'account.permission-label.use-connection'],
+  write_sql: ['account.permission.write-sql', 'account.permission-label.write-sql'],
+  retire: ['account.permission.retire', 'account.permission-label.retire'],
+};
+
+/** A permission as a list of them says it; the access page's words for one this page does not know. */
+const permissionWords = (permission: string) => {
+  const keys = PERMISSIONS[permission];
+  return keys === undefined ? permissionName(permission) : words(keys[0]);
+};
+
+/** A permission as a choice of it is labelled. */
+export const permissionLabel = (permission: string) => {
+  const keys = PERMISSIONS[permission];
+  return keys === undefined ? permissionName(permission) : words(keys[1]);
+};
 
 /**
  * What a token may do, in the access page's words: reading always, since reading is never masked
  * (service-foundations.md, TK-B), and then its scopes.
  */
 export const mayDo = (token: ShownToken) =>
-  ['read', ...token.scopes].map(permissionName).join(', ');
+  formats().list(['read', ...token.scopes].map(permissionWords), { type: 'unit' });
 
 /** The service's own sentence for a refusal, where it gave one; this page's otherwise. */
 export function refusal(error: unknown, fallback: string): string {
@@ -111,10 +142,14 @@ export function TokenTable({
           <tbody>
             {tokens.map((token) => (
               <tr key={token.id}>
-                <td className={styles['name']}>{token.name}</td>
+                <td className={styles['name']} data-content>
+                  {token.name}
+                </td>
                 <td className={styles['muted']}>{mayDo(token)}</td>
                 <td>{moment(token.expiresAt)}</td>
-                <td>{token.lastUsedAt === null ? 'never' : day(token.lastUsedAt)}</td>
+                <td>
+                  {token.lastUsedAt === null ? words('account.never-used') : day(token.lastUsedAt)}
+                </td>
                 <td className={styles['act']}>
                   <button
                     type="button"

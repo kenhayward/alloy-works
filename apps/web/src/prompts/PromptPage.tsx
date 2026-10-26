@@ -457,7 +457,9 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             {standing && <StateLozenge state={standing.state} />}
             <RevisionChip revision={standing?.revision} />
             {shown.prompt.description !== '' && (
-              <span className={styles['described']} data-content>{shown.prompt.description}</span>
+              <span className={styles['described']} data-content>
+                {shown.prompt.description}
+              </span>
             )}
           </>
         )

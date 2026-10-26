@@ -8,7 +8,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Inbox.module.css';
 import { moment, refusal } from './TokenTable.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Kind = 'mention' | 'reply' | 'resolution' | 'round';
@@ -109,55 +109,70 @@ const CADENCES: Readonly<Record<Cadence, string>> = {
 const placeWords = (place: Place | null) =>
   place?.title ?? words('account.something-you-may-no-longer');
 
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+/**
+ * What it is about, as a sentence's values: `readable` says whether its reader may read it now, and
+ * `place` its title where they may.
+ */
+const placeValues = (place: Place | null) => ({
+  readable: place?.title == null ? 'no' : 'yes',
+  place: place?.title ?? '',
+});
+
+/** Who did it, as a sentence's values: `named` says whether there is a name to show as `who`. */
+const actorValues = (actor: Notification['actor']) => ({
+  named: actor?.name == null ? 'no' : 'yes',
+  who: actor?.name ?? '',
+});
+
+/** An amount of money in its currency, as a budget alert says it, to the cent. */
+const money = (currency: string, text: string) =>
+  words('account.money', {
+    currency,
+    amount: formats().number(Number(text), { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  });
 
 /** What happened, in words (COL-063): who did what, and where. Never the comment's text (COL-036). */
 function said(each: Notification): string {
-  const who = each.actor?.name ?? words('account.somebody');
+  const about = { ...actorValues(each.actor), ...placeValues(each.on) };
   switch (each.kind) {
     case 'mention':
-      return words('account.mentioned-you-on', { who, value2: placeWords(each.on) });
+      return words('account.mentioned-you-on', about);
     case 'reply':
-      return words('account.replied-on', { who, value2: placeWords(each.on) });
+      return words('account.replied-on', about);
     case 'resolution':
-      return words('account.resolved-a-thread-on', { who, value2: placeWords(each.on) });
+      return words('account.resolved-a-thread-on', about);
     case 'round':
-      return words('account.asked-you-to-review', { who, value2: placeWords(each.on) });
+      return words('account.asked-you-to-review', about);
     case 'digest': {
       const counts = each.counts!;
       const parts = [
-        counts.mention > 0 ? plural(counts.mention, 'mention', 'mentions') : null,
-        counts.reply > 0 ? plural(counts.reply, 'reply', 'replies') : null,
-        counts.resolution > 0 ? plural(counts.resolution, 'resolution', 'resolutions') : null,
-        (counts.round ?? 0) > 0
-          ? plural(
-              counts.round!,
-              words('account.review-asked-of-you'),
-              words('account.reviews-asked-of-you'),
-            )
+        counts.mention > 0 ? words('account.digest-mentions', { count: counts.mention }) : null,
+        counts.reply > 0 ? words('account.digest-replies', { count: counts.reply }) : null,
+        counts.resolution > 0
+          ? words('account.digest-resolutions', { count: counts.resolution })
           : null,
+        (counts.round ?? 0) > 0 ? words('account.digest-rounds', { count: counts.round! }) : null,
       ].filter((part): part is string => part !== null);
       return words('account.your-daily-digest-on', {
-        value1: parts.join(', '),
-        value2: counts.places.map(placeWords).join(', '),
+        counts: formats().list(parts, { type: 'unit' }),
+        places: formats().list(counts.places.map(placeWords), { type: 'unit' }),
       });
     }
     case 'budget': {
       const budget = each.budget;
       if (!budget) return words('account.the-model-budget-crossed-a');
-      const money = (text: string) => `${budget.currency} ${Number(text).toFixed(2)}`;
       return words('account.models-have-cost-this-month', {
-        value1: money(budget.spent),
+        spent: money(budget.currency, budget.spent),
         threshold: budget.threshold,
-        value3: money(budget.limit),
+        limit: money(budget.currency, budget.limit),
       });
     }
     case 'webhook':
       return words('account.a-webhook-you-made-was');
     case 'reference':
       return words('account.a-source-cited-in-was', {
-        value1: placeWords(each.on),
-        value2: each.reference?.outcome ?? 'flagged',
+        ...placeValues(each.on),
+        outcome: each.reference?.outcome ?? 'flagged',
       });
     case 'import':
       return words('account.an-import-you-have-not');
@@ -284,7 +299,9 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
       <div className={styles['inbox']}>
         <h2 id={`${ids}-heading`}>{words('account.inbox')}</h2>
         <p className={styles['muted']}>
-          {unread === 0 ? words('account.nothing-unread') : plural(unread, 'unread', 'unread')}
+          {unread === 0
+            ? words('account.nothing-unread')
+            : words('account.unread-count', { count: unread })}
         </p>
         {read === null && <Waiting>{words('account.loading')}</Waiting>}
         {read === 'failed' && (
@@ -306,8 +323,10 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                 {/* What it is on, in its state now, to a reader of it alone (LIF-005). */}
                 {each.on?.state && <StateLozenge state={each.on.state} />}
                 <span className={styles['muted']}>
-                  {moment(each.at)}
-                  {each.read ? '' : words('account.unread')}
+                  {words('account.unread', {
+                    at: moment(each.at),
+                    unread: each.read ? 'no' : 'yes',
+                  })}
                 </span>
                 <span className={styles['acts']}>
                   {each.thread !== null && (
@@ -360,15 +379,24 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                         {opened.thread.comments.map((comment) => (
                           <li key={comment.id}>
                             <span className={styles['muted']}>
-                              {`${comment.author.name ?? words('account.somebody')}, ${moment(comment.at)}`}
+                              {wordsWith(
+                                'account.comment-by',
+                                {
+                                  named: comment.author.name === null ? 'no' : 'yes',
+                                  at: moment(comment.at),
+                                },
+                                { who: <span data-content>{comment.author.name}</span> },
+                              )}
                             </span>
-                            <p>
+                            <p data-content>
                               {comment.texts[comment.texts.length - 1]!.parts.map((part, index) =>
                                 'text' in part ? (
                                   <span key={index}>{part.text}</span>
                                 ) : (
                                   <span key={index} className={styles['mention']}>
-                                    {`@${names?.get(part.mention) ?? 'somebody'}`}
+                                    {names?.get(part.mention) === undefined
+                                      ? words('account.at-somebody')
+                                      : `@${names.get(part.mention)}`}
                                   </span>
                                 ),
                               )}
@@ -377,7 +405,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                         ))}
                       </ol>
                       <a href={hrefOf(opened.thread.on)} onClick={onClose}>
-                        {words('account.go-to', { value1: placeWords(each.on) })}
+                        {words('account.go-to', placeValues(each.on))}
                       </a>
                     </div>
                   ))}

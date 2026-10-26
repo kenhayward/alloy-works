@@ -227,9 +227,7 @@ async function decideGate(
 /** Its revision, where one was designated (VER-015): nothing for revision 0. */
 export function RevisionChip({ revision }: { revision: Revision | undefined }) {
   if (!revision) return null;
-  return (
-    <Chip>{words('lifecycle.revision-2', { number: revision.number })}</Chip>
-  );
+  return <Chip>{words('lifecycle.revision-2', { number: revision.number })}</Chip>;
 }
 
 /** How far a gate has got, in words. */
