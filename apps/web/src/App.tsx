@@ -11,6 +11,8 @@ import { moduleOf } from './shell/moduleOf.js';
 import { Rail } from './shell/Rail.js';
 import { RegionKeys } from './shell/regions.js';
 import { StatusProvider } from './shell/Status.js';
+import { localeDataVersion } from './words/locale-data.js';
+import { useWords } from './words/words.js';
 
 interface AppProps {
   bridge?: PlatformBridge;
@@ -39,6 +41,7 @@ export function App({
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
   const hash = useHash();
   const [searching, setSearching] = useCommandKey();
+  const { words } = useWords();
 
   useEffect(() => {
     let current = true;
@@ -62,9 +65,10 @@ export function App({
             {environment}
             <p>
               {platform === null
-                ? 'Checking which delivery this is...'
-                : `Running as ${platform.delivery} on ${platform.runtime}`}
+                ? words('app.delivery.checking')
+                : words('app.delivery', { delivery: platform.delivery, runtime: platform.runtime })}
             </p>
+            <p>{words('app.localeData', { version: localeDataVersion() })}</p>
           </div>
         }
       >

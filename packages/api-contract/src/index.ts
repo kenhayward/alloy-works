@@ -755,3 +755,4 @@ export {
   RelationshipView,
   relationshipRoutes,
 } from './relationships.js';
+export { MyPreferences, preferenceRoutes } from './preferences.js';

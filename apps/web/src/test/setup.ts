@@ -1,3 +1,5 @@
+// The bundled locale data first, as `main.tsx` loads it (the UI plan, UI-A).
+import '../words/polyfills.js';
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup, configure } from '@testing-library/react';
@@ -5,6 +7,7 @@ import { afterEach, beforeEach } from 'vitest';
 
 import { keepEditingAgain } from '../editor/editing-storage.js';
 import { armConsoleGate, releaseConsoleGate } from './consoleGate.js';
+import { resetWords } from '../words/words.js';
 
 /**
  * jsdom keeps one `sessionStorage` for a whole file, and the component editor keeps its session there
@@ -32,6 +35,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // The page's language and direction are the interface's, set by whoever chose them; never kept.
+  document.documentElement.removeAttribute('lang');
+  document.documentElement.removeAttribute('dir');
+  resetWords();
   cleanup();
   releaseConsoleGate();
   clearSessionStorage();

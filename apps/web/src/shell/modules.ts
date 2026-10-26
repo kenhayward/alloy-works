@@ -1,11 +1,20 @@
+import { words, type WordKey } from '../words/words.js';
 import type { ModuleName } from './moduleOf.js';
+
+/** A module's name as the interface says it: its name is its identity, which addresses compare. */
+export const moduleWords = (name: ModuleName): string => words(`module.${name}` as WordKey);
+
+/** What a module is for, as Home says it. */
+export const moduleAbout = (name: ModuleName): string => words(`module.${name}.about` as WordKey);
+
+/** A group's name as the interface says it. */
+export const groupWords = (group: ModuleGroup['group']): string =>
+  words(`module.group.${group}` as WordKey);
 
 /** A module as the rail, Home and search and commands name it. */
 export interface Module {
   readonly name: Exclude<ModuleName, 'Search' | 'Administration'>;
   readonly href: string;
-  /** What it is for, as Home says it. */
-  readonly about: string;
 }
 
 export interface ModuleGroup {
@@ -21,38 +30,30 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
       {
         name: 'Components',
         href: '#/components',
-        about: 'Write and version the typed pieces documents are assembled from.',
       },
       {
         name: 'Documents',
         href: '#/documents',
-        about: 'Build an outline of sections and component references, and publish it.',
       },
       {
         name: 'Templates',
         href: '#/templates',
-        about: 'Starting outlines, themes and parameters.',
       },
       {
         name: 'Prompts',
         href: '#/prompts',
-        about: 'Instructions a model runs on a part, declaring what it reads and writes.',
       },
       {
         name: 'Bibliography',
         href: '#/bibliography',
-        about: 'The sources a space cites, kept once, imported and exported.',
       },
       {
         name: 'Terms',
         href: '#/terms',
-        about:
-          'Governed terms: labels per language, definitions and relations, approved or deprecated.',
       },
       {
         name: 'Conversations',
         href: '#/conversations',
-        about: 'Talk with a model in your own words, about what you may read.',
       },
     ],
   },
@@ -62,18 +63,16 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
       {
         name: 'Publications',
         href: '#/publications',
-        about: 'Read what has been published. Kept exactly as it was made, never changed.',
       },
     ],
   },
   {
     group: 'Data',
     modules: [
-      { name: 'Connections', href: '#/connections', about: 'Sources an environment owns.' },
+      { name: 'Connections', href: '#/connections' },
       {
         name: 'Query definitions',
         href: '#/query-definitions',
-        about: 'Values and tables documents bind.',
       },
     ],
   },

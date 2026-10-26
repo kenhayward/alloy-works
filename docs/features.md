@@ -1272,6 +1272,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   under Translations; a publish refuses it until then, and each term it did not translate by its labels
   is named. Administration's **Translation** says whether anything is sent at all (off by default), or
   only inside the data boundary, and Models routes **Machine translation** to an endpoint.
+- **Interface language.** The header's **Interface language** button chooses the language the interface is in,
+  kept as the person's own and never the content's, or follows the browser. English is the one real
+  language; two test languages, one stretched and accented and one right to left, show what is not
+  yet translated or does not fit. Dates and numbers come from pinned locale data, named in About.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

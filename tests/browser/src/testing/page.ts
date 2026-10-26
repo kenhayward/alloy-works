@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, inject } from 'vitest';
 import type { Browser, Locator, Page } from 'playwright-core';
+import { SERVICE } from './addresses.js';
 import { launchPinned } from './launch.js';
 
 /** One browser per file, launched the first time a test asks for a page and closed after the file. */
@@ -45,17 +46,37 @@ export async function withPage<T>(
   {
     signedIn = true,
     forcedColors = false,
-  }: { readonly signedIn?: boolean; readonly forcedColors?: boolean } = {},
+    signedInAs,
+  }: {
+    readonly signedIn?: boolean;
+    readonly forcedColors?: boolean;
+    /** Another person's session cookie, `name=value`, in place of Ada's (the UI plan, UI-J). */
+    readonly signedInAs?: string;
+  } = {},
 ): Promise<T> {
   browser ??= launchPinned();
   const context = await (
     await browser
   ).newContext({
-    ...(signedIn ? { storageState: inject('storageState') } : {}),
+    ...(signedIn && signedInAs === undefined ? { storageState: inject('storageState') } : {}),
     viewport: { width: 1280, height: 800 },
     locale: 'en-GB',
     ...(forcedColors ? { forcedColors: 'active' as const } : {}),
   });
+  if (signedInAs !== undefined) {
+    const [name, ...value] = signedInAs.split('=');
+    await context.addCookies([
+      {
+        name: name!,
+        value: value.join('='),
+        domain: new URL(SERVICE).hostname,
+        path: '/',
+        secure: true,
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
+    ]);
+  }
   const noise: string[] = [];
   let result: T;
   try {

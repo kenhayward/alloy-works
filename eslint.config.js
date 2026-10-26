@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
+import interfaceWords from './apps/web/eslint/interface-words.js';
 
 export default tseslint.config(
   {
@@ -66,6 +67,20 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
     },
+  },
+  {
+    // The renderer's folders moved into the catalogue so far (the UI plan, UI-F): every word a person
+    // reads there is the catalogue's. The list grows each PR until it is the whole renderer.
+    files: [
+      'apps/web/src/App.tsx',
+      'apps/web/src/main.tsx',
+      'apps/web/src/shell/**/*.{ts,tsx}',
+      'apps/web/src/home/**/*.{ts,tsx}',
+      'apps/web/src/words/**/*.{ts,tsx}',
+    ],
+    ignores: ['**/*.test.{ts,tsx}'],
+    plugins: { alloy: { rules: { 'interface-words': interfaceWords } } },
+    rules: { 'alloy/interface-words': 'error' },
   },
   {
     // The data connector spike's findings rest on its programs as they ran, so the rules that would

@@ -808,6 +808,7 @@ const VALID_INPUT: Readonly<
   completeReview: { payload: { outcome: 'commented' } },
   editComment: { payload: { parts: [{ text: 'Hm' }] } },
   setInboxPreferences: { payload: { mention: 'daily' } },
+  setMyPreferences: { payload: { interfaceLanguage: null } },
   publishBaseline: { payload: { formats: ['pdf'] } },
   compareComponentVersions: { query: `from=${SESSION}&to=${SESSION}` },
   compareBaseline: { query: 'with=now' },

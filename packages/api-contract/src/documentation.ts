@@ -264,6 +264,8 @@ const operationTags = {
   Environments: ['getTenant'],
   Identity: [
     'getMe',
+    'getMyPreferences',
+    'setMyPreferences',
     'startOrganisationSignIn',
     'finishOrganisationSignIn',
     'startGoogleSignIn',
@@ -692,6 +694,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the environment selected by the request hostname. Check this before using a token or making a change, especially when you have both production and sandbox environments.',
   getMe:
     'Returns the person represented by the supplied personal token or signed-in session and the environment in which that credential was issued.',
+  getMyPreferences:
+    'Returns the caller’s own preferences: the language the interface is in, independent of the language of any content they work on, or null where it follows their browser. It needs a signed-in session.',
+  setMyPreferences:
+    'Chooses the caller’s own interface language, one of the declared languages, or null to follow their browser’s first declared language, else English. It changes nothing of any content’s language. It needs a signed-in session.',
   getAccess:
     'Ask whether the caller may perform each permission on a tenant, space or artifact target. The answer includes token scope restrictions when called with a token.',
   explainAccess:

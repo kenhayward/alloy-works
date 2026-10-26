@@ -1,3 +1,5 @@
+// The bundled locale data before anything formats (the UI plan, UI-A).
+import './words/polyfills.js';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -5,6 +7,7 @@ import { createRoot } from 'react-dom/client';
 import './theme/tokens.css';
 import './theme/base.css';
 import { App } from './App.js';
+import { InterfaceLanguage } from './words/language.js';
 import { installInterfaceFaces } from './theme/interface-faces.js';
 import { themeStore } from './theme/themes.js';
 
@@ -17,6 +20,8 @@ if (container === null) throw new Error('index.html is missing its #root element
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <InterfaceLanguage>
+      <App />
+    </InterfaceLanguage>
   </StrictMode>,
 );

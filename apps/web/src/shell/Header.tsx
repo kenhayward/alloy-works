@@ -7,6 +7,9 @@ import { Sessions } from '../account/Sessions.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
 import { THEME_CHOICES, useThemeChoice, type ThemeName } from '../theme/themes.js';
 import styles from './Header.module.css';
+import { useLanguageChoice } from '../words/language.js';
+import { INTERFACE_LOCALES } from '../words/locales.js';
+import { useWords, type WordKey } from '../words/words.js';
 
 /** The mark for each theme's ground, served beside the page from `public/`; CSS shows the one that fits. */
 export const MARKS: Record<ThemeName, string> = {
@@ -14,7 +17,11 @@ export const MARKS: Record<ThemeName, string> = {
   dark: 'mark-dark.svg',
 };
 
-const CHOICE_NAMES = { light: 'Light', dark: 'Dark', auto: 'Auto' } as const;
+const CHOICE_NAMES: Readonly<Record<string, WordKey>> = {
+  light: 'shell.theme.light',
+  dark: 'shell.theme.dark',
+  auto: 'shell.theme.auto',
+};
 
 interface Person {
   readonly displayName: string | null;
@@ -95,10 +102,11 @@ function Menu({
 /** Light, Dark or Auto (ADR-0046), from the header's own button; the choice is kept on this device. */
 function ThemeMenu() {
   const [choice, choose] = useThemeChoice();
+  const { words } = useWords();
   return (
     <Menu
-      label="Theme"
-      named="Theme"
+      label={words('shell.theme')}
+      named={words('shell.theme')}
       button={
         <svg
           className={styles['icon']}
@@ -125,7 +133,67 @@ function ThemeMenu() {
                   close();
                 }}
               >
-                {CHOICE_NAMES[each]}
+                {words(CHOICE_NAMES[each]!)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Menu>
+  );
+}
+
+/**
+ * The interface's language (the UI plan, UI-E; LOC-005), from the header beside the theme: the
+ * browser's, or one the person chooses, kept as theirs and never any content's.
+ */
+function LanguageMenu() {
+  const { chosen, choose } = useLanguageChoice();
+  const { words } = useWords();
+  const choices: readonly { tag: string | null; name: WordKey }[] = [
+    { tag: null, name: 'language.browser' },
+    ...INTERFACE_LOCALES.map((each) => ({
+      tag: each.tag,
+      name: `language.name.${each.tag}` as WordKey,
+    })),
+  ];
+  return (
+    <Menu
+      label={words('language.label')}
+      named={words('language.label')}
+      button={
+        <svg
+          className={styles['icon']}
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path
+            d="M2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+          />
+        </svg>
+      }
+    >
+      {(close) => (
+        <ul className={styles['items']}>
+          {choices.map((each) => (
+            <li key={each.tag ?? 'browser'}>
+              <button
+                type="button"
+                className={styles['item']}
+                aria-pressed={chosen === each.tag}
+                lang={each.tag ?? undefined}
+                onClick={() => {
+                  void choose(each.tag);
+                  close();
+                }}
+              >
+                {words(each.name)}
               </button>
             </li>
           ))}
@@ -146,6 +214,7 @@ export function Header({
   onSignedOut = () => window.location.reload(),
 }: HeaderProps) {
   const origin = window.location.origin;
+  const { words } = useWords();
   const client = useMemo(
     () => createApiClient({ baseUrl: origin, ...(given ? { fetch: given } : {}) }),
     [origin, given],
@@ -260,14 +329,18 @@ export function Header({
           width={18}
           height={18}
         />
-        Alloy Works
+        {words('shell.product')}
       </a>
-      {environment !== undefined && <span className={styles['environment']}>{environment}</span>}
+      {environment !== undefined && (
+        <span className={styles['environment']} data-content>
+          {environment}
+        </span>
+      )}
       <span className={styles['spacer']} />
       <button
         type="button"
         className={styles['search']}
-        aria-label="Search components, documents, or run a command"
+        aria-label={words('shell.search')}
         aria-keyshortcuts="Control+K"
         onClick={onSearch}
       >
@@ -281,38 +354,41 @@ export function Header({
           <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
           <path d="M10.4 10.4 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" />
         </svg>
-        <span className={styles['searchLabel']}>
-          Search components, documents, or run a command
-        </span>
-        <kbd className={styles['key']}>Ctrl K</kbd>
+        <span className={styles['searchLabel']}>{words('shell.search')}</span>
+        <kbd className={styles['key']}>{words('shell.search.key')}</kbd>
       </button>
       <span className={styles['spacer']} />
       <ThemeMenu />
+      {who !== undefined && who !== 'nobody' && <LanguageMenu />}
       {who === 'nobody' && ways.includes('organisation') && (
         <a className={styles['chip']} href={signInAt('organisation')}>
-          Sign in
+          {words('shell.signIn')}
         </a>
       )}
       {who === 'nobody' && ways.includes('google') && (
         <a className={styles['chip']} href={signInAt('google')}>
-          Sign in with Google
+          {words('shell.signInGoogle')}
         </a>
       )}
       {who !== undefined && who !== 'nobody' && (
         <Menu
-          label="Account"
+          label={words('shell.account')}
           button={
             <>
               <span className={styles['initials']} aria-hidden="true">
                 {initialsOf(who)}
               </span>
-              {who.displayName ?? who.email ?? 'Signed in'}
+              {(who.displayName ?? who.email) ? (
+                <span data-content>{who.displayName ?? who.email}</span>
+              ) : (
+                words('shell.signedIn')
+              )}
               {unread > 0 && (
                 <>
                   {' '}
                   <span className={styles['unread']}>
                     {unread}
-                    <span className={styles['hidden']}> unread</span>
+                    <span className={styles['hidden']}> {words('shell.unread')}</span>
                   </span>
                 </>
               )}
@@ -330,7 +406,9 @@ export function Header({
                     setReadingInbox(true);
                   }}
                 >
-                  {unread > 0 ? `Inbox (${unread} unread)` : 'Inbox'}
+                  {unread > 0
+                    ? words('shell.inboxUnread', { count: unread })
+                    : words('shell.inbox')}
                 </button>
               </li>
               <li>
@@ -342,7 +420,7 @@ export function Header({
                     setManagingTokens(true);
                   }}
                 >
-                  API tokens
+                  {words('shell.tokens')}
                 </button>
               </li>
               <li>
@@ -354,7 +432,7 @@ export function Header({
                     setSeeingSessions(true);
                   }}
                 >
-                  Sessions
+                  {words('shell.sessions')}
                 </button>
               </li>
               <li>
@@ -366,7 +444,7 @@ export function Header({
                     void signOut();
                   }}
                 >
-                  Sign out
+                  {words('shell.signOut')}
                 </button>
               </li>
             </ul>
