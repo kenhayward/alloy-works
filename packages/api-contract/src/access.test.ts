@@ -93,6 +93,8 @@ describe('what each route checks', () => {
         'keepProposal',
         'startAssistantRun',
         'startPromptRun',
+        'getMyPreferences',
+        'setMyPreferences',
         'draftComponentTranslation',
         'startPromptTrial',
         'listConversationEndpoints',
