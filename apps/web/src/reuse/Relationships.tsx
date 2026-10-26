@@ -313,7 +313,11 @@ export function RelationshipsDialog({
                 {say('reuse.some-relationships-lead-to-artifacts')}
               </p>
             )}
-            {read.more && <p className={styles['relMuted']}>{say('reuse.only-the-first-1-000', { count: 1000 })}</p>}
+            {read.more && (
+              <p className={styles['relMuted']}>
+                {say('reuse.only-the-first-1-000', { count: 1000 })}
+              </p>
+            )}
             <Relate
               client={client}
               centre={centre}

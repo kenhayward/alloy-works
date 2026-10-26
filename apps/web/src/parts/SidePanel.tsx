@@ -70,7 +70,11 @@ export function SidePanel({
           </h2>
           {description !== undefined && <p>{description}</p>}
         </div>
-        <IconButton label={words('parts.close')} shortcut={words('parts.escape-key')} onClick={onClose}>
+        <IconButton
+          label={words('parts.close')}
+          shortcut={words('parts.escape-key')}
+          onClick={onClose}
+        >
           <Icon name="Close" size={13} />
         </IconButton>
       </header>

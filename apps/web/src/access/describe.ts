@@ -324,9 +324,7 @@ export function describeGrant(grant: ShownGrant): string {
     role: grant.role.name,
     to: 'principal' in grant.subject ? 'person' : 'group',
     name:
-      'principal' in grant.subject
-        ? personName(grant.subject.principal)
-        : grant.subject.group.name,
+      'principal' in grant.subject ? personName(grant.subject.principal) : grant.subject.group.name,
     ends: grant.expiresAt === null ? 'no' : 'yes',
     until: grant.expiresAt?.slice(0, 10) ?? '',
   });

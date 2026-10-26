@@ -197,7 +197,6 @@ const RANGES: Record<string, string> = {
   },
 };
 
-
 /** A field's value as a reader reads it: a boolean as yes or no, anything else as its label. */
 const valueLabel = (dataType: string, facet: FacetValue) =>
   dataType === 'boolean'

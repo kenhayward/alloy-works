@@ -293,17 +293,13 @@ export function BaselineComparisonPage({
                                 binding: <span data-content>{value.binding}</span>,
                                 older: (
                                   <del>
-                                    <span className={styles['hidden']}>
-                                      {words('compare.was')}
-                                    </span>
+                                    <span className={styles['hidden']}>{words('compare.was')}</span>
                                     <Value value={value.older} />
                                   </del>
                                 ),
                                 newer: (
                                   <ins>
-                                    <span className={styles['hidden']}>
-                                      {words('compare.now')}
-                                    </span>
+                                    <span className={styles['hidden']}>{words('compare.now')}</span>
                                     <Value value={value.newer} />
                                   </ins>
                                 ),

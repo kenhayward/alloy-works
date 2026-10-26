@@ -194,9 +194,7 @@ export function Bibliography({ client }: { readonly client: Client }) {
       ) : (
         <>
           <p className={styles['summary']}>
-            <span>
-              {words('bibliography.you-may-read', { total })}
-            </span>
+            <span>{words('bibliography.you-may-read', { total })}</span>
             {entries.length < total && (
               <span>{words('bibliography.showing-1-to', { length: entries.length })}</span>
             )}

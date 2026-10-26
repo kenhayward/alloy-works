@@ -33,7 +33,10 @@ export function IconButton({
       type="button"
       className={className ?? styles['iconButton']}
       aria-label={label}
-      title={tooltip ?? (shortcut === undefined ? label : words('parts.with-shortcut', { label, shortcut }))}
+      title={
+        tooltip ??
+        (shortcut === undefined ? label : words('parts.with-shortcut', { label, shortcut }))
+      }
       {...(pressed === undefined ? {} : { 'aria-pressed': pressed })}
       {...rest}
     >

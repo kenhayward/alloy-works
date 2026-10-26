@@ -188,9 +188,7 @@ export function Terms({ client }: { readonly client: Client }) {
       ) : (
         <>
           <p className={styles['summary']}>
-            <span>
-              {words('terms.you-may-read', { total })}
-            </span>
+            <span>{words('terms.you-may-read', { total })}</span>
             {terms.length < total && (
               <span>{words('terms.showing-1-to', { length: terms.length })}</span>
             )}

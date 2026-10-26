@@ -399,9 +399,7 @@ function DateTimeInput(
       />
       {twice !== null && (
         <div role="radiogroup" aria-labelledby={question}>
-          <span id={question}>
-            {words('metadata.happens-twice-here-which-is', spoken(typed))}
-          </span>
+          <span id={question}>{words('metadata.happens-twice-here-which-is', spoken(typed))}</span>
           {(
             [
               ['first', twice.earlier],
