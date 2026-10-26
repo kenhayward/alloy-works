@@ -18,6 +18,7 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -27,15 +28,15 @@ type Client = ReturnType<typeof createApiClient>;
 type Read = { readonly rows: readonly ShownGroup[] } | 'refused' | 'signedOut' | 'failed' | null;
 
 const counted = (count: number) =>
-  count === 0 ? 'no members' : count === 1 ? '1 member' : `${count} members`;
+  count === 0 ? words('admin.no-members') : words('admin.members', { count: count });
 const Counted = (count: number) => counted(count).replace(/^n/, 'N');
 
 /** A group's members in words: how many, and who, the first three named and the rest counted. */
 const membersOf = (group: ShownGroup, named = group.members.length) => {
-  if (group.members.length === 0) return 'No members';
+  if (group.members.length === 0) return words('admin.no-members-2');
   const names = group.members.slice(0, named).map(personName);
   const rest = group.members.length - names.length;
-  return `${Counted(group.members.length)}: ${names.join(', ')}${rest > 0 ? ` and ${rest} more` : ''}`;
+  return `${Counted(group.members.length)}: ${names.join(', ')}${rest > 0 ? words('admin.and-more', { rest }) : ''}`;
 };
 
 const initials = (name: string) =>
@@ -68,7 +69,7 @@ function NewGroup({
     event.preventDefault();
     const trimmed = name.trim();
     if (trimmed === '') {
-      setSaid('Give the group a name.');
+      setSaid(words('admin.give-the-group-a-name'));
       return;
     }
     setBusy(true);
@@ -78,9 +79,9 @@ function NewGroup({
         body: { name: trimmed, ...(providerValue === '' ? {} : { providerValue }) },
       });
       if (data) onMade(trimmed);
-      else setSaid(refusal(error, 'The group could not be made.'));
+      else setSaid(refusal(error, words('admin.the-group-could-not-be')));
     } catch {
-      setSaid('The group could not be made.');
+      setSaid(words('admin.the-group-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -89,26 +90,23 @@ function NewGroup({
   return (
     <Modal labelledBy="new-group-heading" onClose={onClose}>
       <form className={styles['dialog']} onSubmit={(event) => void make(event)}>
-        <h2 id="new-group-heading">New group</h2>
+        <h2 id="new-group-heading">{words('admin.new-group')}</h2>
         <label>
-          Name
+          {words('admin.name')}
           <input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
         </label>
         <label>
-          {"Value from the organisation's sign-in"}
+          {words('admin.value-from-the-organisation-s')}
           <input value={value} maxLength={256} onChange={(event) => setValue(event.target.value)} />
         </label>
-        <p className={styles['muted']}>
-          Leave the value empty for a group whose members are chosen here. Given one, the group's
-          members are whoever signs in with that value among their groups.
-        </p>
+        <p className={styles['muted']}>{words('admin.leave-the-value-empty-for')}</p>
         <p role="status">{said}</p>
         <div className={styles['actions']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('admin.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
-            Make group
+            {words('admin.make-group')}
           </button>
         </div>
       </form>
@@ -171,9 +169,9 @@ function Members({
         body: { principals },
       });
       if (data) onSet(principals.length);
-      else setSaid(refusal(error, 'The members could not be set.'));
+      else setSaid(refusal(error, words('admin.the-members-could-not-be')));
     } catch {
-      setSaid('The members could not be set.');
+      setSaid(words('admin.the-members-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -188,16 +186,18 @@ function Members({
     : [];
   return (
     <SidePanel
-      heading={`Members of ${group.name}`}
+      heading={words('admin.members-of', { name: group.name })}
       description={
-        Array.isArray(people) ? `${chosen.size} of ${people.length} people chosen` : undefined
+        Array.isArray(people)
+          ? words('admin.of-people-chosen', { size: chosen.size, length: people.length })
+          : undefined
       }
       icon="Members"
       onClose={onClose}
       footer={
         <>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('admin.cancel')}
           </button>
           <button
             type="button"
@@ -205,15 +205,15 @@ function Members({
             disabled={busy || !Array.isArray(people)}
             onClick={() => void save()}
           >
-            Save members
+            {words('admin.save-members')}
           </button>
         </>
       }
     >
-      {people === null && <Waiting>Loading...</Waiting>}
+      {people === null && <Waiting>{words('admin.loading')}</Waiting>}
       {people === 'failed' && (
         <Notice tone="failed">
-          <p>The people could not be loaded.</p>
+          <p>{words('admin.the-people-could-not-be')}</p>
         </Notice>
       )}
       {Array.isArray(people) && (
@@ -221,13 +221,13 @@ function Members({
           <input
             type="search"
             className={styles['search']}
-            aria-label="Find a person"
-            placeholder="Find a person"
+            aria-label={words('admin.find-a-person')}
+            placeholder={words('admin.find-a-person')}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
           <fieldset className={styles['members']}>
-            <legend className={styles['hidden']}>Members</legend>
+            <legend className={styles['hidden']}>{words('admin.members-2')}</legend>
             {listed.map((person) => (
               <label key={person.id}>
                 <input
@@ -247,7 +247,9 @@ function Members({
                 </span>{' '}
                 {personName(person)}
                 {person.name !== null && person.email !== null ? ` (${person.email})` : ''}
-                {person.kind === 'external' && <span className={styles['muted']}> Outside</span>}
+                {person.kind === 'external' && (
+                  <span className={styles['muted']}> {words('admin.outside')}</span>
+                )}
               </label>
             ))}
           </fieldset>
@@ -321,20 +323,21 @@ export function Groups({ client }: { client: Client }) {
       const { data, error, response } = await client.DELETE('/v1/groups/{id}', {
         params: { path: { id: group.id } },
       });
-      if (data) setStatus(`Deleted the group ${group.name}, and everything granted to it.`);
-      else if (response.status === 404) setStatus(`${group.name} had already been deleted.`);
-      else setStatus(refusal(error, `${group.name} could not be deleted.`));
+      if (data) setStatus(words('admin.deleted-the-group-and-everything', { name: group.name }));
+      else if (response.status === 404)
+        setStatus(words('admin.had-already-been-deleted', { name: group.name }));
+      else setStatus(refusal(error, words('admin.could-not-be-deleted', { name: group.name })));
     } catch {
-      setStatus(`${group.name} could not be deleted.`);
+      setStatus(words('admin.could-not-be-deleted', { name: group.name }));
     }
     await load();
   };
 
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'refused') {
     return (
       <Notice tone="refused">
-        <p>You may not manage access here.</p>
+        <p>{words('admin.you-may-not-manage-access')}</p>
       </Notice>
     );
   }
@@ -342,14 +345,14 @@ export function Groups({ client }: { client: Client }) {
     // As the access panel says it.
     return (
       <Notice tone="signedOut">
-        <p>You are signed out. Sign in again to manage access.</p>
+        <p>{words('admin.you-are-signed-out-sign-2')}</p>
       </Notice>
     );
   }
   if (read === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The groups could not be loaded.</p>
+        <p>{words('admin.the-groups-could-not-be')}</p>
       </Notice>
     );
   }
@@ -360,14 +363,14 @@ export function Groups({ client }: { client: Client }) {
   return (
     <div ref={holder} className={styles['holder']} tabIndex={-1}>
       <div className={styles['lead']}>
-        <p>Grant to a group once, instead of to each person.</p>
+        <p>{words('admin.grant-to-a-group-once')}</p>
         <button type="button" className="primary" onClick={() => setMaking(true)}>
-          New group
+          {words('admin.new-group')}
         </button>
       </div>
       {read.rows.length === 0 ? (
         <Empty>
-          <p>There are no groups yet.</p>
+          <p>{words('admin.there-are-no-groups-yet')}</p>
         </Empty>
       ) : (
         <>
@@ -375,17 +378,17 @@ export function Groups({ client }: { client: Client }) {
             <input
               type="search"
               className={styles['search']}
-              aria-label="Find a group"
-              placeholder="Find a group"
+              aria-label={words('admin.find-a-group')}
+              placeholder={words('admin.find-a-group')}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
             <p className={styles['counted']}>
-              {`${shown.length} ${shown.length === 1 ? 'group' : 'groups'}`}
+              {`${shown.length} ${words('admin.groups-2', { count: shown.length })}`}
             </p>
           </div>
           <div className={filling === null ? undefined : styles['withPanel']}>
-            <table aria-label="Groups" className={styles['table']}>
+            <table aria-label={words('admin.groups')} className={styles['table']}>
               <colgroup>
                 <col />
                 <col className={styles['fromColumn']} />
@@ -394,11 +397,11 @@ export function Groups({ client }: { client: Client }) {
               </colgroup>
               <thead>
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">From</th>
-                  <th scope="col">Members</th>
+                  <th scope="col">{words('admin.name')}</th>
+                  <th scope="col">{words('admin.from')}</th>
+                  <th scope="col">{words('admin.members-2')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -408,16 +411,17 @@ export function Groups({ client }: { client: Client }) {
                     <td className={styles['strong']}>{group.name}</td>
                     <td className={styles['muted']}>
                       {group.source === 'tenant' ? (
-                        'This environment'
+                        words('admin.this-environment')
                       ) : (
                         <>
-                          Sign-in, <code>{group.providerValue ?? ''}</code>
+                          {words('admin.sign-in')}
+                          <code>{group.providerValue ?? ''}</code>
                         </>
                       )}
                     </td>
                     <td>
                       {group.members.length === 0 && group.source !== 'tenant' ? (
-                        <span className={styles['muted']}>Filled at sign-in</span>
+                        <span className={styles['muted']}>{words('admin.filled-at-sign-in')}</span>
                       ) : (
                         <span className={styles['faces']}>
                           <span aria-hidden="true">
@@ -426,7 +430,9 @@ export function Groups({ client }: { client: Client }) {
                                 {initials(personName(member))}
                               </span>
                             ))}{' '}
-                            {group.members.length === 0 ? 'No members' : group.members.length}
+                            {group.members.length === 0
+                              ? words('admin.no-members-2')
+                              : group.members.length}
                           </span>
                           <span className={styles['hidden']}>{membersOf(group)}</span>
                         </span>
@@ -437,17 +443,21 @@ export function Groups({ client }: { client: Client }) {
                         subject={group.name}
                         shown={[
                           {
-                            label: 'Members',
-                            name: `Members of ${group.name}`,
-                            icon: 'Members',
+                            label: words('admin.members-2'),
+                            name: words('admin.members-of', { name: group.name }),
+                            icon: words('admin.members-2'),
                             onSelect: () => setFilling(group),
                             ...(group.source === 'tenant'
                               ? {}
-                              : { unavailable: 'Filled by the sign-in provider' }),
+                              : { unavailable: words('admin.filled-by-the-sign-in') }),
                           },
                         ]}
                         more={[
-                          { label: 'Delete', danger: true, onSelect: () => setDeleting(group) },
+                          {
+                            label: words('admin.delete'),
+                            danger: true,
+                            onSelect: () => setDeleting(group),
+                          },
                         ]}
                       />
                     </td>
@@ -462,7 +472,7 @@ export function Groups({ client }: { client: Client }) {
                 group={filling}
                 onClose={() => setFilling(null)}
                 onSet={(count) => {
-                  setStatus(`${filling.name} now has ${counted(count)}.`);
+                  setStatus(words('admin.now-has', { name: filling.name, value2: counted(count) }));
                   setFilling(null);
                   void load();
                 }}
@@ -478,18 +488,18 @@ export function Groups({ client }: { client: Client }) {
           onClose={() => setMaking(false)}
           onMade={(name) => {
             setMaking(false);
-            setStatus(`Made the group ${name}.`);
+            setStatus(words('admin.made-the-group', { name }));
             void load();
           }}
         />
       )}
       {deleting !== null && (
         <ConfirmDialog
-          question={`Delete ${deleting.name}?`}
-          sentence="Everything granted to this group is deleted with it, so its members lose whatever they held only through it."
+          question={words('admin.delete-2', { name: deleting.name })}
+          sentence={words('admin.everything-granted-to-this-group')}
           {...(deleting.members.length === 0 ? {} : { detail: membersOf(deleting, 3) })}
-          keep="Keep it"
-          act="Delete group"
+          keep={words('admin.keep-it')}
+          act={words('admin.delete-group')}
           onKeep={() => setDeleting(null)}
           onAct={() => remove(deleting)}
         />

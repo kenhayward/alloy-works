@@ -21,6 +21,7 @@ import {
   type Draft,
 } from './SettingsFields.js';
 import { asBody, isRecord, refusalText } from './shapes.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -53,10 +54,34 @@ interface Facets {
 }
 
 const SORTS: readonly SortOption[] = [
-  { sort: 'name', order: 'asc', label: 'Name, A to Z' },
-  { sort: 'name', order: 'desc', label: 'Name, Z to A' },
-  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
-  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+  {
+    sort: 'name',
+    order: 'asc',
+    get label() {
+      return words('data.name-a-to-z');
+    },
+  },
+  {
+    sort: 'name',
+    order: 'desc',
+    get label() {
+      return words('data.name-z-to-a');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'desc',
+    get label() {
+      return words('data.newest-changed-first');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'asc',
+    get label() {
+      return words('data.oldest-changed-first');
+    },
+  },
 ];
 
 interface Space {
@@ -147,17 +172,14 @@ function NewConnection({
         onCreated(data.id);
         return;
       }
-      if (response.status === 401)
-        setNotice('You are signed out. Sign in again to make a connection.');
+      if (response.status === 401) setNotice(words('data.you-are-signed-out-sign-3'));
       else if (response.status === 403 || response.status === 404) {
-        setNotice('You may not make a connection in this space.');
+        setNotice(words('data.you-may-not-make-a'));
       } else if (response.status === 400) {
-        setNotice(
-          refusalText(error, 'These settings were not accepted. Check them and try again.'),
-        );
-      } else setNotice('The connection could not be made. Try again.');
+        setNotice(refusalText(error, words('data.these-settings-were-not-accepted')));
+      } else setNotice(words('data.the-connection-could-not-be-4'));
     } catch {
-      setNotice('The connection could not be made. Try again.');
+      setNotice(words('data.the-connection-could-not-be-4'));
     } finally {
       pending.current = false;
       setSending(false);
@@ -166,13 +188,10 @@ function NewConnection({
 
   return (
     <section aria-labelledby="new-connection-heading">
-      <h2 id="new-connection-heading">New connection</h2>
-      <p>
-        A connection reaches one PostgreSQL database, one HTTP API, one S3 bucket or one installed
-        extension. Its password, secret or key pair is set once it is made.
-      </p>
+      <h2 id="new-connection-heading">{words('data.new-connection')}</h2>
+      <p>{words('data.a-connection-reaches-one-postgresql')}</p>
       <label>
-        Space
+        {words('data.space')}
         <select value={where} onChange={(event) => setWhere(event.target.value)}>
           {spaces.map((space) => (
             <option key={space.id} value={space.id}>
@@ -183,7 +202,7 @@ function NewConnection({
       </label>
       <SettingsFields draft={draft} onChange={setDraft} extensions={extensions} />
       <button className="primary" type="button" disabled={sending} onClick={() => void create()}>
-        Create
+        {words('data.create')}
       </button>
       <p role="status">{notice}</p>
     </section>
@@ -233,20 +252,20 @@ export function Connections({ client }: { readonly client: Client }) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="connections-heading">
-        <h1 id="connections-heading">Connections</h1>
+        <h1 id="connections-heading">{words('data.connections')}</h1>
         {listing.signedOut ? (
           <Notice tone="signedOut">
-            <p>You are signed out. Sign in again to see your connections.</p>
+            <p>{words('data.you-are-signed-out-sign-4')}</p>
           </Notice>
         ) : (
           <Notice tone="failed">
-            <p>The connections could not be loaded.</p>
+            <p>{words('data.the-connections-could-not-be')}</p>
             <button
               type="button"
               disabled={listing.loading}
               onClick={() => void listing.load(null)}
             >
-              Try again
+              {words('data.try-again')}
             </button>
           </Notice>
         )}
@@ -258,15 +277,15 @@ export function Connections({ client }: { readonly client: Client }) {
   const filter = (
     <>
       <div className={styles['filterHead']}>
-        <span className={styles['overline']}>Filter</span>
+        <span className={styles['overline']}>{words('data.filter')}</span>
         {spaces.length > 0 && (
           <button type="button" className={styles['clear']} onClick={() => setSpaces([])}>
-            Clear
+            {words('data.clear')}
           </button>
         )}
       </div>
       <Facet
-        legend="Space"
+        legend={words('data.space')}
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}
@@ -278,10 +297,10 @@ export function Connections({ client }: { readonly client: Client }) {
     <ListLayout filter={filter}>
       <section aria-labelledby="connections-heading">
         <div className={styles['titleRow']}>
-          <h1 id="connections-heading">Connections</h1>
+          <h1 id="connections-heading">{words('data.connections')}</h1>
           {administered !== null && administered.length > 0 && (
             <button type="button" className="primary" onClick={() => setCreating(true)}>
-              New connection
+              {words('data.new-connection')}
             </button>
           )}
         </div>
@@ -300,25 +319,33 @@ export function Connections({ client }: { readonly client: Client }) {
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? `${listing.total} ${listing.total === 1 ? 'connection is' : 'connections are'} in the spaces chosen.`
-              : `${listing.total} ${listing.total === 1 ? 'connection' : 'connections'} you may read.`}
+              ? words('data.in-the-spaces-chosen', {
+                  total: listing.total,
+                  value2: listing.total === 1 ? 'connection is' : 'connections are',
+                })
+              : words('data.you-may-read', {
+                  total: listing.total,
+                  value2: listing.total === 1 ? 'connection' : 'connections',
+                })}
           </span>
-          {items.length < listing.total && <span>{`Showing 1 to ${items.length}.`}</span>}
+          {items.length < listing.total && (
+            <span>{words('data.showing-1-to', { length: items.length })}</span>
+          )}
         </p>
         {items.length === 0 ? (
           <Empty>
-            <p>There are no connections you may read.</p>
+            <p>{words('data.there-are-no-connections-you')}</p>
           </Empty>
         ) : (
           <div className={styles['table']}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Space</th>
-                  <th scope="col">Credential</th>
-                  <th scope="col">Last test</th>
-                  <th scope="col">Changed</th>
+                  <th scope="col">{words('data.name')}</th>
+                  <th scope="col">{words('data.space')}</th>
+                  <th scope="col">{words('data.credential')}</th>
+                  <th scope="col">{words('data.last-test')}</th>
+                  <th scope="col">{words('data.changed')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -326,20 +353,22 @@ export function Connections({ client }: { readonly client: Client }) {
                   <tr key={item.id}>
                     <td className={styles['title']}>
                       <a href={connectionLink(item.id)}>{item.name}</a>
-                      {item.retired && <span className={styles['muted']}> Retired</span>}
+                      {item.retired && (
+                        <span className={styles['muted']}> {words('data.retired-2')}</span>
+                      )}
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
-                    <td>{item.credentialSet ? 'Set' : 'Not set'}</td>
+                    <td>{item.credentialSet ? words('data.set-2') : words('data.not-set-2')}</td>
                     <td>
                       {item.lastTest === null
-                        ? 'Not tested'
+                        ? words('data.not-tested')
                         : item.lastTest.version !== item.version.id
-                          ? 'Not tested since this version'
+                          ? words('data.not-tested-since-this-version')
                           : !item.lastTest.credentialCurrent
-                            ? 'Not tested since the credential was set'
+                            ? words('data.not-tested-since-the-credential')
                             : item.lastTest.outcome === 'ok'
-                              ? 'Connected'
-                              : 'Could not connect'}
+                              ? words('data.connected-2')
+                              : words('data.could-not-connect-2')}
                     </td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>

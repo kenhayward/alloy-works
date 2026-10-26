@@ -1,29 +1,60 @@
 import type { UnitChange, UnitText } from '@alloy-works/domain';
 
 import styles from './Redline.module.css';
+import { words } from '../words/words.js';
 
 /** What a unit is called where it holds no text of its own. */
 const TYPE_WORDS: Record<string, string> = {
-  paragraph: 'Paragraph',
-  list: 'List',
-  item: 'List item',
-  table: 'Table',
-  cell: 'Table cell',
-  footnote: 'Footnote',
-  figure: 'Figure',
-  boundTable: 'Table of results',
-  preformatted: 'Preformatted text',
-  blockquote: 'Quotation',
-  equation: 'Equation',
-  section: 'Section',
-  reference: 'Component',
+  get paragraph() {
+    return words('compare.paragraph');
+  },
+  get list() {
+    return words('compare.list');
+  },
+  get item() {
+    return words('compare.list-item');
+  },
+  get table() {
+    return words('compare.table');
+  },
+  get cell() {
+    return words('compare.table-cell');
+  },
+  get footnote() {
+    return words('compare.footnote');
+  },
+  get figure() {
+    return words('compare.figure');
+  },
+  get boundTable() {
+    return words('compare.table-of-results');
+  },
+  get preformatted() {
+    return words('compare.preformatted-text');
+  },
+  get blockquote() {
+    return words('compare.quotation');
+  },
+  get equation() {
+    return words('compare.equation');
+  },
+  get section() {
+    return words('compare.section');
+  },
+  get reference() {
+    return words('compare.component');
+  },
 };
 
 const ATTRIBUTE_WORDS: Record<string, string> = {
   style: 'style',
   marks: 'formatting',
-  shape: 'rows or columns',
-  kind: 'kind of list',
+  get shape() {
+    return words('compare.rows-or-columns');
+  },
+  get kind() {
+    return words('compare.kind-of-list');
+  },
 };
 
 /** Each change's text: what an unchanged or an edited unit says now, or what one inserted or deleted said. */
@@ -36,13 +67,13 @@ export interface RedlineTexts {
 
 const Added = ({ text }: { text: string }) => (
   <ins className={styles['added']}>
-    <span className={styles['hidden']}>Added: </span>
+    <span className={styles['hidden']}>{words('compare.added')}</span>
     {text}
   </ins>
 );
 const Removed = ({ text }: { text: string }) => (
   <del className={styles['removed']}>
-    <span className={styles['hidden']}>Removed: </span>
+    <span className={styles['hidden']}>{words('compare.removed')}</span>
     {text}
   </del>
 );
@@ -73,7 +104,7 @@ export function Redline({
   label: string;
 }) {
   const nameOf = (key: string, text: UnitText | undefined) =>
-    text?.text || texts.names?.get(key) || TYPE_WORDS[text?.type ?? ''] || 'Part';
+    text?.text || texts.names?.get(key) || TYPE_WORDS[text?.type ?? ''] || words('compare.part');
   const changed = changes.some(
     (each) =>
       each.change !== 'matched' ||
@@ -82,7 +113,7 @@ export function Redline({
       each.changed.length > 0 ||
       each.matched === 'similarity',
   );
-  if (!changed) return <p className={styles['note']}>Nothing changed.</p>;
+  if (!changed) return <p className={styles['note']}>{words('compare.nothing-changed')}</p>;
   return (
     <ol className={styles['redline']} aria-label={label}>
       {changes.map((change) => {
@@ -95,7 +126,7 @@ export function Redline({
               className={styles['unit']}
               style={{ marginInlineStart: `${depthOf(change.newer, texts.newer) * 16}px` }}
             >
-              <span className={styles['badge']}>Added</span>
+              <span className={styles['badge']}>{words('compare.added-2')}</span>
               <Added text={nameOf(change.newer, text)} />
             </li>
           );
@@ -109,7 +140,7 @@ export function Redline({
               className={styles['unit']}
               style={{ marginInlineStart: `${depthOf(change.older, texts.older) * 16}px` }}
             >
-              <span className={styles['badge']}>Removed</span>
+              <span className={styles['badge']}>{words('compare.removed-2')}</span>
               <Removed text={nameOf(change.older, text)} />
             </li>
           );
@@ -127,11 +158,15 @@ export function Redline({
           return null;
         }
         const notes = [
-          ...(change.moved ? ['Moved'] : []),
-          ...(change.split ? ['Split'] : []),
-          ...(change.joined ? ['Joined'] : []),
+          ...(change.moved ? [words('compare.moved')] : []),
+          ...(change.split ? [words('compare.split')] : []),
+          ...(change.joined ? [words('compare.joined')] : []),
           ...(change.changed.length > 0
-            ? [`Changed: ${change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name).join(', ')}`]
+            ? [
+                words('compare.changed', {
+                  value1: change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name).join(', '),
+                }),
+              ]
             : []),
         ];
         return (
@@ -150,7 +185,9 @@ export function Redline({
               </span>
             ))}
             {change.matched === 'similarity' && (
-              <span className={styles['similar']}>Matched by similar wording</span>
+              <span className={styles['similar']}>
+                {words('compare.matched-by-similar-wording')}
+              </span>
             )}
             {change.edited === null ? (
               <span>{nameOf(change.newer, now)}</span>
@@ -189,26 +226,17 @@ export function redlineHtml(title: string, root: HTMLElement): string {
   // without them the redline still reads by its underlining and striking through.
   const token = (name: string) =>
     getComputedStyle(root.ownerDocument.documentElement).getPropertyValue(name).trim() || 'inherit';
-  return `<!doctype html>
-<html lang="en-GB">
-<head>
-<meta charset="utf-8">
-<title>${escape(title)}</title>
-<style>
-body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; color: ${token('--text')}; background: ${token('--surface')}; }
-ol { list-style: none; padding: 0; }
-li { margin: 0.25rem 0; }
-ins { color: ${token('--ok')}; background: ${token('--ok-bg')}; text-decoration: underline; }
-del { color: ${token('--danger')}; background: ${token('--danger-bg')}; text-decoration: line-through; }
-.hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-</style>
-</head>
-<body>
-<h1>${escape(title)}</h1>
-${root.innerHTML}
-</body>
-</html>
-`;
+  return words('compare.doctype-html-html-lang-en', {
+    value1: escape(title),
+    value2: token('--text'),
+    value3: token('--surface'),
+    value4: token('--ok'),
+    value5: token('--ok-bg'),
+    value6: token('--danger'),
+    value7: token('--danger-bg'),
+    value8: escape(title),
+    innerHTML: root.innerHTML,
+  });
 }
 
 /** Saves `html` as a file without navigating the page (a download never does). */

@@ -13,6 +13,7 @@ import { StateLozenge } from '../states/Lozenge.js';
 import { Notice } from '../states/Notice.js';
 import { termLink, TERMS } from './links.js';
 import { baseLabel, isSummary, said, type Summary, type Term } from './shape.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -33,9 +34,24 @@ interface Uses {
 }
 
 const RELATIONS = [
-  { key: 'broader', label: 'Broader' },
-  { key: 'narrower', label: 'Narrower' },
-  { key: 'related', label: 'Related' },
+  {
+    key: 'broader',
+    get label() {
+      return say('terms.broader');
+    },
+  },
+  {
+    key: 'narrower',
+    get label() {
+      return say('terms.narrower');
+    },
+  },
+  {
+    key: 'related',
+    get label() {
+      return say('terms.related');
+    },
+  },
 ] as const;
 
 /**
@@ -83,7 +99,7 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
   if (failed) {
     return (
       <Notice tone="failed">
-        <p>The term could not be loaded.</p>
+        <p>{say('terms.the-term-could-not-be')}</p>
       </Notice>
     );
   }
@@ -97,7 +113,7 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
     const path = archived ? '/v1/terms/{id}/archive' : '/v1/terms/{id}/unarchive';
     const { data, error } = await client.POST(path, { params: { path: { id } } });
     if (!data) {
-      setProblem(said(error, 'The term could not be changed.'));
+      setProblem(said(error, say('terms.the-term-could-not-be-2')));
       return;
     }
     setShown({ ...shown, archived: data.archived });
@@ -106,7 +122,7 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
   return (
     <article aria-labelledby="term-heading">
       <p>
-        <a href={TERMS}>Terms</a>
+        <a href={TERMS}>{say('terms.terms')}</a>
       </p>
       <h1 id="term-heading">{baseLabel(term).preferred}</h1>
       <p>
@@ -116,8 +132,8 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
       {shown.deprecated && (
         <p role="note">
           {term.replacedBy === undefined
-            ? 'This term is deprecated.'
-            : `This term is deprecated. Use ${nameOf(term.replacedBy)} instead.`}
+            ? say('terms.this-term-is-deprecated')
+            : say('terms.this-term-is-deprecated-use', { value1: nameOf(term.replacedBy) })}
         </p>
       )}
       {standing && (
@@ -142,19 +158,23 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
         />
       )}
       {notice !== '' && <p role="status">{notice}</p>}
-      <table aria-label="Labels">
+      <table aria-label={say('terms.labels')}>
         <thead>
           <tr>
-            <th scope="col">Language</th>
-            <th scope="col">Preferred</th>
-            <th scope="col">Alternatives</th>
-            <th scope="col">Abbreviation</th>
+            <th scope="col">{say('terms.language')}</th>
+            <th scope="col">{say('terms.preferred')}</th>
+            <th scope="col">{say('terms.alternatives')}</th>
+            <th scope="col">{say('terms.abbreviation')}</th>
           </tr>
         </thead>
         <tbody>
           {term.labels.map((each) => (
             <tr key={each.language}>
-              <td>{each.language === term.base ? `${each.language} (base)` : each.language}</td>
+              <td>
+                {each.language === term.base
+                  ? say('terms.base', { language: each.language })
+                  : each.language}
+              </td>
               <td>{each.preferred}</td>
               <td>{each.alternatives.join(', ')}</td>
               <td>{each.abbreviation ?? ''}</td>
@@ -165,7 +185,7 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
       <dl>
         {term.definition.map((each) => (
           <div key={each.language}>
-            <dt>{`Definition, ${each.language}`}</dt>
+            <dt>{say('terms.definition', { language: each.language })}</dt>
             <dd>{each.text}</dd>
           </div>
         ))}
@@ -186,22 +206,22 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
         )}
         {term.replacedBy !== undefined && (
           <div>
-            <dt>Replaced by</dt>
+            <dt>{say('terms.replaced-by')}</dt>
             <dd>
               <a href={termLink(term.replacedBy)}>{nameOf(term.replacedBy)}</a>
             </dd>
           </div>
         )}
-        <dt>Space</dt>
+        <dt>{say('terms.space')}</dt>
         <dd>{shown.space.name}</dd>
-        <dt>Version</dt>
+        <dt>{say('terms.version')}</dt>
         <dd>{shown.version.number}</dd>
       </dl>
-      {shown.archived && <p>This term is archived.</p>}
+      {shown.archived && <p>{say('terms.this-term-is-archived')}</p>}
       {shown.mayEdit && !editing && (
         <p>
           <button type="button" onClick={() => setEditing(true)}>
-            Edit
+            {say('terms.edit')}
           </button>
         </p>
       )}
@@ -219,9 +239,9 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
         />
       )}
       {uses !== null && (
-        <section aria-label="Used in">
-          <h2>Used in</h2>
-          {!used && <p>Nothing uses this term.</p>}
+        <section aria-label={say('terms.used-in')}>
+          <h2>{say('terms.used-in')}</h2>
+          {!used && <p>{say('terms.nothing-uses-this-term')}</p>}
           {uses.named.length > 0 && (
             <ul>
               {uses.named.map((each) => (
@@ -231,21 +251,21 @@ export function TermPage({ client, id }: { readonly client: Client; readonly id:
               ))}
             </ul>
           )}
-          {uses.unreadable && <p>Used in more you may not read.</p>}
+          {uses.unreadable && <p>{say('terms.used-in-more-you-may')}</p>}
         </section>
       )}
       {shown.mayRetire && (
         <p>
           {shown.archived ? (
             <button type="button" onClick={() => void archive(false)}>
-              Unarchive
+              {say('terms.unarchive')}
             </button>
           ) : (
             <button type="button" disabled={used} onClick={() => void archive(true)}>
-              Archive
+              {say('terms.archive')}
             </button>
           )}
-          {!shown.archived && used && ' A term in use is kept, so it cannot be archived.'}
+          {!shown.archived && used && say('terms.a-term-in-use-is')}
         </p>
       )}
       {problem !== null && (
@@ -340,7 +360,7 @@ function EditTerm({
         body: { openedFrom: shown.version.id, term: next },
       });
       if (!data) {
-        setProblem(said(error, 'The term could not be changed.'));
+        setProblem(said(error, say('terms.the-term-could-not-be-2')));
         return;
       }
       onSaved(data as unknown as Shown);
@@ -350,16 +370,16 @@ function EditTerm({
   };
 
   return (
-    <form aria-label="Edit term" onSubmit={(event) => void submit(event)}>
+    <form aria-label={say('terms.edit-term')} onSubmit={(event) => void submit(event)}>
       {rows.map((row, at) => (
         <fieldset key={at}>
-          <legend>{row.language === '' ? 'A new language' : row.language}</legend>
+          <legend>{row.language === '' ? say('terms.a-new-language') : row.language}</legend>
           <label>
-            Language{' '}
+            {say('terms.language')}{' '}
             <input value={row.language} onChange={(e) => change(at, 'language', e.target.value)} />
           </label>
           <label>
-            Preferred label{' '}
+            {say('terms.preferred-label')}{' '}
             <input
               value={row.preferred}
               required
@@ -367,21 +387,21 @@ function EditTerm({
             />
           </label>
           <label>
-            Alternative labels, one a line{' '}
+            {say('terms.alternative-labels-one-a-line')}{' '}
             <textarea
               value={row.alternatives}
               onChange={(e) => change(at, 'alternatives', e.target.value)}
             />
           </label>
           <label>
-            Abbreviation{' '}
+            {say('terms.abbreviation')}{' '}
             <input
               value={row.abbreviation}
               onChange={(e) => change(at, 'abbreviation', e.target.value)}
             />
           </label>
           <label>
-            Definition{' '}
+            {say('terms.definition-2')}{' '}
             <textarea
               value={row.definition}
               onChange={(e) => change(at, 'definition', e.target.value)}
@@ -399,11 +419,11 @@ function EditTerm({
             ])
           }
         >
-          Add a language
+          {say('terms.add-a-language')}
         </button>
       </p>
       <label>
-        Base language{' '}
+        {say('terms.base-language')}{' '}
         <select value={base} onChange={(event) => setBase(event.target.value)}>
           {rows
             .filter((row) => row.language.trim() !== '')
@@ -437,9 +457,9 @@ function EditTerm({
         </label>
       ))}
       <label>
-        Replaced by{' '}
+        {say('terms.replaced-by')}{' '}
         <select value={replacedBy} onChange={(event) => setReplacedBy(event.target.value)}>
-          <option value="">None</option>
+          <option value="">{say('terms.none')}</option>
           {others.map((each) => (
             <option key={each.id} value={each.id}>
               {each.label}
@@ -448,10 +468,10 @@ function EditTerm({
         </select>
       </label>
       <button type="submit" className="primary" disabled={busy}>
-        Save version
+        {say('terms.save-version')}
       </button>{' '}
       <button type="button" onClick={onCancel}>
-        Cancel
+        {say('terms.cancel')}
       </button>
       {problem !== null && (
         <Notice tone="failed">

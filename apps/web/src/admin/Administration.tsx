@@ -29,6 +29,7 @@ import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
 import { Spaces } from './Spaces.js';
 import { Workflows } from './Workflows.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,40 +39,224 @@ type Client = ReturnType<typeof createApiClient>;
  * component types are listed a space at a time.
  */
 const SECTIONS = [
-  { slug: 'overview', title: 'Overview', group: 'Environment' },
-  { slug: 'spaces', title: 'Spaces', group: 'Environment' },
-  { slug: 'editing', title: 'Editing', group: 'Environment' },
+  {
+    slug: 'overview',
+    get title() {
+      return words('admin.overview');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
+  {
+    slug: 'spaces',
+    get title() {
+      return words('admin.spaces');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
+  {
+    slug: 'editing',
+    get title() {
+      return words('admin.editing');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // What an accepted import keeps of the names a file carries (IMP-010; the IM plan, IM-I).
-  { slug: 'imports', title: 'Imports', group: 'Environment' },
-  { slug: 'translation', title: 'Translation', group: 'Environment' },
-  { slug: 'workflows', title: 'Workflows', group: 'Environment' },
+  {
+    slug: 'imports',
+    get title() {
+      return words('admin.imports');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
+  {
+    slug: 'translation',
+    get title() {
+      return words('admin.translation');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
+  {
+    slug: 'workflows',
+    get title() {
+      return words('admin.workflows');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // The model endpoints the environment calls, and what each purpose uses (GEN-027; the G1 plan).
-  { slug: 'models', title: 'Models', group: 'Environment' },
+  {
+    slug: 'models',
+    get title() {
+      return words('admin.models');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // Phrases forbidden in what a model is sent and returns (GEN-049; the G5 plan, G5-F).
-  { slug: 'guardrails', title: 'Guardrails', group: 'Environment' },
+  {
+    slug: 'guardrails',
+    get title() {
+      return words('admin.guardrails');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // The CSL styles a theme may name, CSE, Vancouver and Harvard given (the CI plan, CI-D).
-  { slug: 'citation-styles', title: 'Citation styles', group: 'Environment' },
+  {
+    slug: 'citation-styles',
+    get title() {
+      return words('admin.citation-styles');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // Crossref and PubMed, each searched from the Cite dialog unless switched off (the XR plan, XR-C).
-  { slug: 'reference-sources', title: 'Reference sources', group: 'Environment' },
+  {
+    slug: 'reference-sources',
+    get title() {
+      return words('admin.reference-sources');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // How often each person may call a model, the budget, and what models cost (the G6 plan).
-  { slug: 'spending', title: 'Model spending', group: 'Environment' },
+  {
+    slug: 'spending',
+    get title() {
+      return words('admin.model-spending');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // Events posted to a service identity's endpoint, and every delivery (the WB plan, WB-J).
-  { slug: 'webhooks', title: 'Webhooks', group: 'Environment' },
+  {
+    slug: 'webhooks',
+    get title() {
+      return words('admin.webhooks');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
   // Source types installed from their manifests, read first (the EX plan, EXc).
-  { slug: 'extensions', title: 'Extensions', group: 'Environment' },
-  { slug: 'people', title: 'People', group: 'People and access' },
-  { slug: 'groups', title: 'Groups', group: 'People and access' },
-  { slug: 'roles', title: 'Roles', group: 'People and access' },
+  {
+    slug: 'extensions',
+    get title() {
+      return words('admin.extensions');
+    },
+    get group() {
+      return words('admin.environment');
+    },
+  },
+  {
+    slug: 'people',
+    get title() {
+      return words('admin.people');
+    },
+    get group() {
+      return words('admin.people-and-access');
+    },
+  },
+  {
+    slug: 'groups',
+    get title() {
+      return words('admin.groups');
+    },
+    get group() {
+      return words('admin.people-and-access');
+    },
+  },
+  {
+    slug: 'roles',
+    get title() {
+      return words('admin.roles');
+    },
+    get group() {
+      return words('admin.people-and-access');
+    },
+  },
   // Everybody from outside and what each can reach (IAM-051; the R13 plan, R13-F).
-  { slug: 'outside', title: 'From outside', group: 'People and access' },
-  { slug: 'holds', title: 'Legal holds', group: 'System' },
-  { slug: 'retention', title: 'Retention', group: 'System' },
+  {
+    slug: 'outside',
+    get title() {
+      return words('admin.from-outside');
+    },
+    get group() {
+      return words('admin.people-and-access');
+    },
+  },
+  {
+    slug: 'holds',
+    get title() {
+      return words('admin.legal-holds');
+    },
+    get group() {
+      return words('admin.system');
+    },
+  },
+  {
+    slug: 'retention',
+    get title() {
+      return words('admin.retention');
+    },
+    get group() {
+      return words('admin.system');
+    },
+  },
   // How many queries run at once, and what they cost (DAT-053, DAT-071; the R18 plan).
-  { slug: 'queries', title: 'Query usage', group: 'System' },
-  { slug: 'audit', title: 'Audit log', group: 'System' },
+  {
+    slug: 'queries',
+    get title() {
+      return words('admin.query-usage');
+    },
+    get group() {
+      return words('admin.system');
+    },
+  },
+  {
+    slug: 'audit',
+    get title() {
+      return words('admin.audit-log');
+    },
+    get group() {
+      return words('admin.system');
+    },
+  },
   // The whole environment exported as a job, each kept seven days (API-044; the R21 plan, R21-B).
-  { slug: 'export', title: 'Export', group: 'System' },
-  { slug: 'about', title: 'About and release notes', group: 'System' },
+  {
+    slug: 'export',
+    get title() {
+      return words('admin.export');
+    },
+    get group() {
+      return words('admin.system');
+    },
+  },
+  {
+    slug: 'about',
+    get title() {
+      return words('admin.about-and-release-notes');
+    },
+    get group() {
+      return words('admin.system');
+    },
+  },
 ] as const;
 type Section = (typeof SECTIONS)[number]['slug'];
 const GROUPS = ['Environment', 'People and access', 'System'] as const;
@@ -242,9 +427,9 @@ export function Administration({
   }, [spaces, askAdminister]);
 
   return (
-    <section className={styles['administration']} aria-label="Administration">
-      <nav className={styles['menu']} aria-label="Sections of Administration">
-        <p className={styles['menuTitle']}>Administration</p>
+    <section className={styles['administration']} aria-label={words('admin.administration')}>
+      <nav className={styles['menu']} aria-label={words('admin.sections-of-administration')}>
+        <p className={styles['menuTitle']}>{words('admin.administration')}</p>
         {environment !== null && <p className={styles['environment']}>{environment}</p>}
         {GROUPS.map((group) => (
           <div key={group} className={styles['menuGroup']}>
@@ -271,8 +456,8 @@ export function Administration({
         ))}
       </nav>
       <div className={styles['shown']}>
-        <nav aria-label="Breadcrumb" className={styles['trail']}>
-          <a href="#/admin/overview">Administration</a>
+        <nav aria-label={words('admin.breadcrumb')} className={styles['trail']}>
+          <a href="#/admin/overview">{words('admin.administration')}</a>
           <span>{` / ${title.group}`}</span>
         </nav>
         <h1 ref={sectionHeading} tabIndex={-1}>

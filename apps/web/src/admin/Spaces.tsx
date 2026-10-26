@@ -8,6 +8,7 @@ import { SidePanel } from '../parts/SidePanel.js';
 import styles from './Administration.module.css';
 import { Shown, type Read } from './listing.js';
 import { SpaceDialog, type SpaceAct, type SpaceRow } from './SpaceDialogs.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,7 +38,7 @@ export function Spaces({
   onChanged: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [show, setShow] = useState<Show>('All');
+  const [show, setShow] = useState<Show>(say('admin.all'));
   const [act, setAct] = useState<SpaceAct | null>(null);
   const [said, setSaid] = useState('');
   const [access, setAccess] = useState<SpaceRow | null>(null);
@@ -54,9 +55,9 @@ export function Spaces({
     const more: MenuAction[] = [];
     if (administers(space.id)) {
       shown.push({
-        label: 'Access',
-        name: `Access to the space ${space.name}`,
-        icon: 'Access',
+        label: say('admin.access'),
+        name: say('admin.access-to-the-space', { name: space.name }),
+        icon: say('admin.access'),
         onSelect: () => setAccess(space),
       });
     }
@@ -65,25 +66,31 @@ export function Spaces({
       // Restore and Rename take turns in one place, so the focus stays as one becomes the other.
       if (space.archived) {
         shown.push({
-          label: 'Restore',
-          name: `Restore ${space.name}`,
-          icon: 'Restore',
+          label: say('admin.restore'),
+          name: say('admin.restore-2', { name: space.name }),
+          icon: say('admin.restore'),
           slot: 'change',
           onSelect: () => setAct({ kind: 'restore', space }),
         });
-        more.push({ label: 'Rename', onSelect: rename });
+        more.push({ label: say('admin.rename-2'), onSelect: rename });
       } else {
         shown.push({
-          label: 'Rename',
-          name: `Rename ${space.name}`,
-          icon: 'Rename',
+          label: say('admin.rename-2'),
+          name: say('admin.rename', { name: space.name }),
+          icon: say('admin.rename-2'),
           slot: 'change',
           onSelect: rename,
         });
-        more.push({ label: 'Archive', onSelect: () => setAct({ kind: 'archive', space }) });
+        more.push({
+          label: say('admin.archive'),
+          onSelect: () => setAct({ kind: 'archive', space }),
+        });
       }
       // A legal hold on everything in it (AH-G), an environment administrator's as the rest is.
-      more.push({ label: 'Place a hold', onSelect: () => setAct({ kind: 'hold', space }) });
+      more.push({
+        label: say('admin.place-a-hold'),
+        onSelect: () => setAct({ kind: 'hold', space }),
+      });
     }
     return { shown, more };
   };
@@ -91,10 +98,10 @@ export function Spaces({
   return (
     <>
       <div className={styles['lead']}>
-        <p>A space holds components and documents, and has access of its own.</p>
+        <p>{say('admin.a-space-holds-components-and')}</p>
         {mayChange && (
           <button type="button" className="primary" onClick={() => setAct({ kind: 'new' })}>
-            New space
+            {say('admin.new-space')}
           </button>
         )}
       </div>
@@ -107,12 +114,12 @@ export function Spaces({
                 <input
                   type="search"
                   className={styles['search']}
-                  aria-label="Find a space"
-                  placeholder="Find a space"
+                  aria-label={say('admin.find-a-space')}
+                  placeholder={say('admin.find-a-space')}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
-                <div role="group" aria-label="Show" className={styles['segments']}>
+                <div role="group" aria-label={say('admin.show')} className={styles['segments']}>
                   {SHOWS.map((each) => (
                     <button
                       key={each}
@@ -125,11 +132,11 @@ export function Spaces({
                   ))}
                 </div>
                 <p className={styles['counted']}>
-                  {`${shown.length} ${shown.length === 1 ? 'space' : 'spaces'}`}
+                  {`${shown.length} ${say('admin.spaces-2', { count: shown.length })}`}
                 </p>
               </div>
               <div className={access === null ? undefined : styles['withPanel']}>
-                <table aria-label="Spaces" className={styles['table']}>
+                <table aria-label={say('admin.spaces')} className={styles['table']}>
                   <colgroup>
                     <col />
                     <col className={styles['statusColumn']} />
@@ -138,11 +145,11 @@ export function Spaces({
                   </colgroup>
                   <thead>
                     <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Your access</th>
+                      <th scope="col">{say('admin.name')}</th>
+                      <th scope="col">{say('admin.status')}</th>
+                      <th scope="col">{say('admin.your-access')}</th>
                       <th scope="col">
-                        <span className={styles['hidden']}>Actions</span>
+                        <span className={styles['hidden']}>{say('admin.actions')}</span>
                       </th>
                     </tr>
                   </thead>
@@ -155,10 +162,18 @@ export function Spaces({
                       >
                         <td className={styles['strong']}>{space.name}</td>
                         <td>
-                          {space.archived ? <Chip>Archived</Chip> : <Chip tone="ok">Active</Chip>}
+                          {space.archived ? (
+                            <Chip>{say('admin.archived')}</Chip>
+                          ) : (
+                            <Chip tone="ok">{say('admin.active')}</Chip>
+                          )}
                         </td>
                         <td className={styles['muted']}>
-                          {space.archived ? '' : space.mayCreate ? 'May create' : 'Reads only'}
+                          {space.archived
+                            ? ''
+                            : space.mayCreate
+                              ? say('admin.may-create')
+                              : say('admin.reads-only')}
                         </td>
                         <td>
                           <RowActions subject={space.name} {...actionsOf(space)} />
@@ -170,7 +185,7 @@ export function Spaces({
                 {access !== null && (
                   <SidePanel
                     key={access.id}
-                    heading={`Access to ${access.name}`}
+                    heading={say('admin.access-to', { name: access.name })}
                     description="Space. Grants here add to the environment's."
                     icon="Access"
                     onClose={() => setAccess(null)}

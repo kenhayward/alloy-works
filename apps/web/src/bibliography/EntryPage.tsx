@@ -6,6 +6,7 @@ import { isRecord } from '../data/shapes.js';
 import { Notice } from '../states/Notice.js';
 import { BIBLIOGRAPHY } from './links.js';
 import { authorsFull, authorsLines, authorsTyped, TYPES, yearOf, type Csl } from './shape.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -39,11 +40,21 @@ interface Status {
 
 /** What each outcome says (the XR plan, XR-F). */
 const OUTCOMES: Readonly<Record<Status['outcome'], string>> = {
-  current: 'Current: the source holds it as this entry does.',
-  changed: 'Changed at the source.',
-  gone: 'The source no longer holds it.',
-  retracted: 'Retracted by its source',
-  corrected: 'Corrected by its source',
+  get current() {
+    return words('bibliography.current-the-source-holds-it');
+  },
+  get changed() {
+    return words('bibliography.changed-at-the-source');
+  },
+  get gone() {
+    return words('bibliography.the-source-no-longer-holds');
+  },
+  get retracted() {
+    return words('bibliography.retracted-by-its-source');
+  },
+  get corrected() {
+    return words('bibliography.corrected-by-its-source');
+  },
 };
 
 /**
@@ -77,17 +88,18 @@ function EntrySource({
     if (data) onChecked(data as Status);
     else {
       setProblem(
-        (error as { message?: string } | undefined)?.message ?? 'The entry could not be checked.',
+        (error as { message?: string } | undefined)?.message ??
+          words('bibliography.the-entry-could-not-be-2'),
       );
     }
   };
   const flagged = status?.outcome === 'retracted' || status?.outcome === 'corrected';
   const notice = status?.notice;
   return (
-    <section aria-label="Its source">
-      <h2>Its source</h2>
+    <section aria-label={words('bibliography.its-source')}>
+      <h2>{words('bibliography.its-source')}</h2>
       {status === null ? (
-        <p>{`Not yet checked against ${source}.`}</p>
+        <p>{words('bibliography.not-yet-checked-against', { source })}</p>
       ) : (
         <>
           <p role={flagged ? 'alert' : undefined}>
@@ -100,17 +112,22 @@ function EntrySource({
               : OUTCOMES[status.outcome]}
           </p>
           {status.differs.length > 0 && (
-            <p>{`The source now holds otherwise: ${status.differs.join(', ')}.`}</p>
+            <p>
+              {words('bibliography.the-source-now-holds-otherwise', {
+                value1: status.differs.join(', '),
+              })}
+            </p>
           )}
           <p>
-            Checked <time dateTime={status.checkedAt}>{status.checkedAt.slice(0, 10)}</time>.
+            {words('bibliography.checked')}
+            <time dateTime={status.checkedAt}>{status.checkedAt.slice(0, 10)}</time>.
           </p>
         </>
       )}
       {mayCheck && (
         <p>
           <button type="button" disabled={checking} onClick={() => void check()}>
-            Check now
+            {words('bibliography.check-now')}
           </button>
         </p>
       )}
@@ -124,8 +141,22 @@ function EntrySource({
 }
 
 const FORMATS = [
-  { value: 'csl-json', label: 'CSL-JSON', extension: 'json', type: 'application/json' },
-  { value: 'bibtex', label: 'BibTeX', extension: 'bib', type: 'application/x-bibtex' },
+  {
+    value: 'csl-json',
+    get label() {
+      return words('bibliography.csl-json');
+    },
+    extension: 'json',
+    type: 'application/json',
+  },
+  {
+    value: 'bibtex',
+    get label() {
+      return words('bibliography.bibtex');
+    },
+    extension: 'bib',
+    type: 'application/x-bibtex',
+  },
   { value: 'ris', label: 'RIS', extension: 'ris', type: 'application/x-research-info-systems' },
 ] as const;
 
@@ -194,7 +225,7 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
   if (failed) {
     return (
       <Notice tone="failed">
-        <p>The entry could not be loaded.</p>
+        <p>{words('bibliography.the-entry-could-not-be-3')}</p>
       </Notice>
     );
   }
@@ -217,7 +248,8 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
     const { data, error } = await client.POST(path, { params: { path: { id } } });
     if (!data) {
       setProblem(
-        (error as { message?: string } | undefined)?.message ?? 'The entry could not be changed.',
+        (error as { message?: string } | undefined)?.message ??
+          words('bibliography.the-entry-could-not-be-4'),
       );
       return;
     }
@@ -231,7 +263,7 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
       params: { path: { space: shown.space.id }, query: { format, ids: id } },
     });
     if (!data) {
-      setProblem('The entry could not be exported.');
+      setProblem(words('bibliography.the-entry-could-not-be-5'));
       return;
     }
     const chosen = FORMATS.find((each) => each.value === format)!;
@@ -241,17 +273,17 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
   return (
     <article aria-labelledby="entry-heading">
       <p>
-        <a href={BIBLIOGRAPHY}>Bibliography</a>
+        <a href={BIBLIOGRAPHY}>{words('bibliography.bibliography')}</a>
       </p>
       <h1 id="entry-heading">{shown.entry.key}</h1>
       <dl>
-        <dt>Authors</dt>
+        <dt>{words('bibliography.authors')}</dt>
         <dd>{authorsFull(csl)}</dd>
-        <dt>Title</dt>
+        <dt>{words('bibliography.title')}</dt>
         <dd>{csl.title ?? ''}</dd>
-        <dt>Year</dt>
+        <dt>{words('bibliography.year')}</dt>
         <dd>{yearOf(csl)}</dd>
-        <dt>Type</dt>
+        <dt>{words('bibliography.type')}</dt>
         <dd>{TYPES.find((each) => each.value === csl.type)?.label ?? csl.type}</dd>
         {csl.DOI !== undefined && (
           <>
@@ -261,7 +293,7 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
         )}
         {shown.entry.obtained !== undefined && (
           <>
-            <dt>Obtained</dt>
+            <dt>{words('bibliography.obtained')}</dt>
             <dd>
               {shown.entry.obtained.from},{' '}
               <time dateTime={shown.entry.obtained.at}>{shown.entry.obtained.at.slice(0, 10)}</time>
@@ -270,26 +302,26 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
         )}
         {shown.entry.checkedAt !== undefined && (
           <>
-            <dt>Last checked</dt>
+            <dt>{words('bibliography.last-checked')}</dt>
             <dd>
               <time dateTime={shown.entry.checkedAt}>{shown.entry.checkedAt.slice(0, 10)}</time>
             </dd>
           </>
         )}
-        <dt>Space</dt>
+        <dt>{words('bibliography.space')}</dt>
         <dd>{shown.space.name}</dd>
-        <dt>Version</dt>
+        <dt>{words('bibliography.version')}</dt>
         <dd>{shown.version.number}</dd>
       </dl>
-      {shown.archived && <p>This entry is archived.</p>}
+      {shown.archived && <p>{words('bibliography.this-entry-is-archived')}</p>}
       <p>
         {shown.mayEdit && !editing && (
           <button type="button" onClick={() => setEditing(true)}>
-            Edit
+            {words('bibliography.edit')}
           </button>
         )}{' '}
         <label>
-          Export as{' '}
+          {words('bibliography.export-as')}{' '}
           <select
             value={format}
             onChange={(event) => setFormat(event.target.value as typeof format)}
@@ -302,7 +334,7 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
           </select>
         </label>{' '}
         <button type="button" onClick={() => void exportAs()}>
-          Export
+          {words('bibliography.export')}
         </button>
       </p>
       {editing && (
@@ -320,16 +352,18 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
         <EntrySource
           client={client}
           id={id}
-          source={referenceSource(from.source)?.name ?? 'its reference extension'}
+          source={
+            referenceSource(from.source)?.name ?? words('bibliography.its-reference-extension')
+          }
           status={shown.status ?? null}
           mayCheck={shown.mayEdit}
           onChecked={(status) => setShown({ ...shown, status })}
         />
       )}
       {uses !== null && (
-        <section aria-label="Cited in">
-          <h2>Cited in</h2>
-          {!cited && <p>Nothing cites this entry.</p>}
+        <section aria-label={words('bibliography.cited-in')}>
+          <h2>{words('bibliography.cited-in')}</h2>
+          {!cited && <p>{words('bibliography.nothing-cites-this-entry')}</p>}
           {uses.components.named.length > 0 && (
             <ul>
               {uses.components.named.map((each) => (
@@ -340,14 +374,17 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
             </ul>
           )}
           {uses.baselines.named.length > 0 && (
-            <ul aria-label="Baselines">
+            <ul aria-label={words('bibliography.baselines')}>
               {uses.baselines.named.map((each) => (
-                <li key={each.id}>Baseline {each.name}</li>
+                <li key={each.id}>
+                  {words('bibliography.baseline')}
+                  {each.name}
+                </li>
               ))}
             </ul>
           )}
           {(uses.components.unreadable || uses.baselines.unreadable) && (
-            <p>Cited in more you may not read.</p>
+            <p>{words('bibliography.cited-in-more-you-may')}</p>
           )}
         </section>
       )}
@@ -355,14 +392,14 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
         <p>
           {shown.archived ? (
             <button type="button" onClick={() => void archive(false)}>
-              Unarchive
+              {words('bibliography.unarchive')}
             </button>
           ) : (
             <button type="button" disabled={cited} onClick={() => void archive(true)}>
-              Archive
+              {words('bibliography.archive')}
             </button>
           )}
-          {!shown.archived && cited && ' A cited entry is kept, so it cannot be archived.'}
+          {!shown.archived && cited && words('bibliography.a-cited-entry-is-kept')}
         </p>
       )}
       {problem !== null && (
@@ -436,7 +473,7 @@ function EditEntry({
         setProblem(
           isRecord(error) && typeof error.message === 'string'
             ? error.message
-            : 'The entry could not be changed.',
+            : words('bibliography.the-entry-could-not-be-4'),
         );
         return;
       }
@@ -447,9 +484,9 @@ function EditEntry({
   };
 
   return (
-    <form aria-label="Edit entry" onSubmit={(event) => void submit(event)}>
+    <form aria-label={words('bibliography.edit-entry')} onSubmit={(event) => void submit(event)}>
       <label>
-        Type{' '}
+        {words('bibliography.type')}{' '}
         <select value={type} onChange={(event) => setType(event.target.value)}>
           {TYPES.some((each) => each.value === csl.type) ? null : (
             <option value={csl.type}>{csl.type}</option>
@@ -462,24 +499,25 @@ function EditEntry({
         </select>
       </label>
       <label>
-        Title <input value={title} required onChange={(event) => setTitle(event.target.value)} />
+        {words('bibliography.title-2')}
+        <input value={title} required onChange={(event) => setTitle(event.target.value)} />
       </label>
       <label>
-        Authors, one a line, family name first{' '}
+        {words('bibliography.authors-one-a-line-family')}{' '}
         <textarea value={authors} onChange={(event) => setAuthors(event.target.value)} />
       </label>
       <label>
-        Year{' '}
+        {words('bibliography.year')}{' '}
         <input value={year} inputMode="numeric" onChange={(event) => setYear(event.target.value)} />
       </label>
       <label>
         DOI <input value={doi} onChange={(event) => setDoi(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || title.trim() === ''}>
-        Save version
+        {words('bibliography.save-version')}
       </button>{' '}
       <button type="button" onClick={onCancel}>
-        Cancel
+        {words('bibliography.cancel')}
       </button>
       {problem !== null && (
         <Notice tone="failed">

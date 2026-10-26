@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -64,13 +65,15 @@ export function Outside({ client }: { client: Client }) {
     void read();
   }, [read]);
 
-  const nameOf = (person: Reached['principal']) => person.name ?? person.email ?? 'Somebody';
+  const nameOf = (person: Reached['principal']) =>
+    person.name ?? person.email ?? words('admin.somebody');
   const whereOf = (grant: Reached['grants'][number], reads: Reached['reads']) => {
     const [kind, id] = grant.level.split(':');
-    if (kind === 'space') return reads.spaces.find((each) => each.id === id)?.name ?? 'a space';
+    if (kind === 'space')
+      return reads.spaces.find((each) => each.id === id)?.name ?? words('admin.a-space');
     // A share names its publication (the R17 plan); a grant before R17 names nothing.
     const on = (grant as { on?: { kind: string; title: string | null } | null }).on;
-    return on?.title ? `${on.title} (${on.kind})` : 'one item';
+    return on?.title ? `${on.title} (${on.kind})` : words('admin.one-item');
   };
 
   const extend = async (person: Reached, grant: Reached['grants'][number], where: string) => {
@@ -83,24 +86,29 @@ export function Outside({ client }: { client: Client }) {
       body: { expiresAt: `${chosen}T23:59:59.000Z` },
     });
     if (error) {
-      setRefused(refusal(error, 'The access could not be extended.'));
+      setRefused(refusal(error, words('admin.the-access-could-not-be')));
       return;
     }
     setSaid(
-      `Extended ${grant.role.name} in ${where} for ${nameOf(person.principal)} to ${day.format(new Date(`${chosen}T00:00:00.000Z`))}.`,
+      words('admin.extended-in-for-to', {
+        name: grant.role.name,
+        where,
+        value3: nameOf(person.principal),
+        value4: day.format(new Date(`${chosen}T00:00:00.000Z`)),
+      }),
     );
     await read();
   };
 
   return (
     <section aria-labelledby={`${ids}-heading`}>
-      <h2 id={`${ids}-heading`}>From outside the organisation</h2>
+      <h2 id={`${ids}-heading`}>{words('admin.from-outside-the-organisation')}</h2>
       <p role="status">{said}</p>
       {refused !== '' && <p role="alert">{refused}</p>}
-      {listed === null && <p>Reading who is from outside.</p>}
-      {listed === 'unread' && <p role="alert">Who is from outside could not be read.</p>}
+      {listed === null && <p>{words('admin.reading-who-is-from-outside')}</p>}
+      {listed === 'unread' && <p role="alert">{words('admin.who-is-from-outside-could')}</p>}
       {typeof listed === 'object' && listed !== null && listed.length === 0 && (
-        <p>Nobody from outside the organisation has access.</p>
+        <p>{words('admin.nobody-from-outside-the-organisation')}</p>
       )}
       {typeof listed === 'object' &&
         listed !== null &&
@@ -114,17 +122,19 @@ export function Outside({ client }: { client: Client }) {
             {person.principal.email !== null && <p>{person.principal.email}</p>}
             <p>
               {person.reads.spaces.length === 0
-                ? 'May read nothing yet.'
-                : `May read: ${person.reads.spaces.map((each) => each.name).join(', ')}.`}
+                ? words('admin.may-read-nothing-yet')
+                : words('admin.may-read', {
+                    value1: person.reads.spaces.map((each) => each.name).join(', '),
+                  })}
             </p>
-            <table aria-label={`What reaches ${nameOf(person.principal)}`}>
+            <table aria-label={words('admin.what-reaches', { value1: nameOf(person.principal) })}>
               <thead>
                 <tr>
-                  <th scope="col">Role</th>
-                  <th scope="col">Where</th>
-                  <th scope="col">Through</th>
-                  <th scope="col">Until</th>
-                  <th scope="col">Extend</th>
+                  <th scope="col">{words('admin.role')}</th>
+                  <th scope="col">{words('admin.where')}</th>
+                  <th scope="col">{words('admin.through')}</th>
+                  <th scope="col">{words('admin.until')}</th>
+                  <th scope="col">{words('admin.extend')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,20 +145,24 @@ export function Outside({ client }: { client: Client }) {
                     <tr key={grant.id}>
                       <td>
                         {grant.role.name}
-                        {grant.effect === 'deny' ? ', denied' : ''}
+                        {grant.effect === 'deny' ? words('admin.denied') : ''}
                       </td>
                       <td>{where}</td>
-                      <td>{grant.group === null ? 'Directly' : `The group ${grant.group.name}`}</td>
+                      <td>
+                        {grant.group === null
+                          ? words('admin.directly')
+                          : words('admin.the-group', { name: grant.group.name })}
+                      </td>
                       <td>
                         {grant.expiresAt === null
-                          ? 'No end'
-                          : `${grant.expired === true ? 'Ended ' : ''}${day.format(new Date(grant.expiresAt))}`}
+                          ? words('admin.no-end')
+                          : `${grant.expired === true ? words('admin.ended-2') : ''}${day.format(new Date(grant.expiresAt))}`}
                       </td>
                       <td>
                         {extendable && (
                           <>
                             <label htmlFor={`${ids}-${grant.id}`} className={styles['hidden']}>
-                              {`Extend ${grant.role.name} in ${where} to`}
+                              {words('admin.extend-in-to', { name: grant.role.name, where })}
                             </label>
                             <input
                               id={`${ids}-${grant.id}`}
@@ -163,7 +177,7 @@ export function Outside({ client }: { client: Client }) {
                               disabled={(days[grant.id] ?? nextDay(grant.expiresAt)) === ''}
                               onClick={() => void extend(person, grant, where)}
                             >
-                              Extend
+                              {words('admin.extend')}
                             </button>
                           </>
                         )}

@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -18,24 +19,36 @@ interface Settings {
 const FIELDS = [
   {
     key: 'lockReleaseMinutes',
-    label: 'A lock lasts, once its holder stops (minutes)',
+    get label() {
+      return words('admin.a-lock-lasts-once-its');
+    },
     min: 5,
     max: 240,
-    hint: 'After this long with nothing saved, a component being edited is free for anybody to edit.',
+    get hint() {
+      return words('admin.after-this-long-with-nothing');
+    },
   },
   {
     key: 'lockTakeMinutes',
-    label: 'A lock may be taken over after (minutes)',
+    get label() {
+      return words('admin.a-lock-may-be-taken');
+    },
     min: 1,
     max: 239,
-    hint: 'Somebody may ask an idle holder for the component after this long; always less than the time above.',
+    get hint() {
+      return words('admin.somebody-may-ask-an-idle');
+    },
   },
   {
     key: 'iterationRetentionDays',
-    label: 'Saved changes are kept after the next version (days)',
+    get label() {
+      return words('admin.saved-changes-are-kept-after');
+    },
     min: 1,
     max: 365,
-    hint: 'How long work saved but never made a version can still be recovered once someone saves a newer version.',
+    get hint() {
+      return words('admin.how-long-work-saved-but');
+    },
   },
 ] as const;
 
@@ -69,7 +82,7 @@ export function Editing({ client, mayChange }: { client: Client; mayChange: bool
     event.preventDefault();
     const body = Object.fromEntries(FIELDS.map(({ key }) => [key, Number(draft[key])]));
     if (Number(body['lockTakeMinutes']) >= Number(body['lockReleaseMinutes'])) {
-      setSaid('A lock may be taken over only before it would be free: make that time shorter.');
+      setSaid(words('admin.a-lock-may-be-taken-2'));
       return;
     }
     setBusy(true);
@@ -79,20 +92,20 @@ export function Editing({ client, mayChange }: { client: Client; mayChange: bool
       });
       if (data) {
         setRead(data);
-        setSaid('Saved.');
-      } else setSaid(refusal(error, 'The settings could not be saved.'));
+        setSaid(words('admin.saved'));
+      } else setSaid(refusal(error, words('admin.the-settings-could-not-be')));
     } catch {
-      setSaid('The settings could not be saved.');
+      setSaid(words('admin.the-settings-could-not-be'));
     } finally {
       setBusy(false);
     }
   };
 
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The editing settings could not be read.</p>
+        <p>{words('admin.the-editing-settings-could-not')}</p>
       </Notice>
     );
   }
@@ -118,13 +131,11 @@ export function Editing({ client, mayChange }: { client: Client; mayChange: bool
       {mayChange ? (
         <div>
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {words('admin.save')}
           </button>
         </div>
       ) : (
-        <p className={styles['muted']}>
-          Only an administrator of the environment may change these.
-        </p>
+        <p className={styles['muted']}>{words('admin.only-an-administrator-of-the')}</p>
       )}
     </form>
   );

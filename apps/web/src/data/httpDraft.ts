@@ -5,6 +5,7 @@ import type {
   HttpTemplate,
   QueryDefinition,
 } from '@alloy-works/domain';
+import { words } from '../words/words.js';
 
 /**
  * An HTTP request template as its page holds it while it is written (the D6 plan, D6-E): each part of
@@ -173,8 +174,7 @@ export function httpDraftOf(
   const body = flatBody(stored.request.body);
   if (body === undefined) {
     return {
-      reason:
-        'Its request body holds more than text and parameters, which this page cannot show to edit.',
+      reason: words('data.its-request-body-holds-more'),
     };
   }
   return {

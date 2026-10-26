@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { PlaceHoldDialog } from '../lifecycle/Hold.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -39,21 +40,24 @@ function Naming({
   const [name, setName] = useState(space?.name ?? '');
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
-  const heading = space === null ? 'New space' : `Rename ${space.name}`;
+  const heading =
+    space === null ? words('admin.new-space') : words('admin.rename', { name: space.name });
   const failed =
-    space === null ? 'The space could not be made.' : `${space.name} could not be renamed.`;
+    space === null
+      ? words('admin.the-space-could-not-be')
+      : words('admin.could-not-be-renamed', { name: space.name });
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     const trimmed = name.trim();
     if (trimmed === '') {
-      setSaid('Give the space a name.');
+      setSaid(words('admin.give-the-space-a-name'));
       return;
     }
     // In code points, as the service counts (SP-B): `maxLength` would count UTF-16 units, and stop a
     // name of 200 characters from outside the Basic Multilingual Plane at 100.
     if ([...trimmed.normalize('NFC')].length > 200) {
-      setSaid('A space name is at most 200 characters.');
+      setSaid(words('admin.a-space-name-is-at'));
       return;
     }
     setBusy(true);
@@ -68,8 +72,8 @@ function Naming({
       if (data) {
         onDone(
           space === null
-            ? `Made the space ${data.name}.`
-            : `Renamed ${space.name} to ${data.name}.`,
+            ? words('admin.made-the-space', { name: data.name })
+            : words('admin.renamed-to', { name: space.name, name2: data.name }),
         );
       } else setSaid(refusal(error, failed));
     } catch {
@@ -84,21 +88,21 @@ function Naming({
       <form className={styles['dialog']} onSubmit={(event) => void save(event)}>
         <h2 id="space-name-heading">{heading}</h2>
         <label>
-          Name
+          {words('admin.name')}
           <input value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <p className={styles['muted']}>
           {space === null
-            ? 'Grant roles on it from Access once it is made.'
-            : 'Only the name changes: what is in it, and who has access, stay as they are.'}
+            ? words('admin.grant-roles-on-it-from')
+            : words('admin.only-the-name-changes-what')}
         </p>
         <p role="status">{said}</p>
         <div className={styles['actions']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('admin.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
-            {space === null ? 'Make space' : 'Rename space'}
+            {space === null ? words('admin.make-space') : words('admin.rename-space')}
           </button>
         </div>
       </form>
@@ -124,7 +128,10 @@ function Archiving({
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const failed = `${space.name} could not be ${restore ? 'restored' : 'archived'}.`;
+  const failed = words('admin.could-not-be', {
+    name: space.name,
+    value2: restore ? 'restored' : 'archived',
+  });
 
   const change = async () => {
     setBusy(true);
@@ -133,7 +140,8 @@ function Archiving({
         params: { path: { id: space.id } },
         body: { archived: !restore },
       });
-      if (data) onDone(`${restore ? 'Restored' : 'Archived'} ${data.name}.`);
+      if (data)
+        onDone(`${restore ? words('admin.restored') : words('admin.archived')} ${data.name}.`);
       else onDone(refusal(error, failed));
     } catch {
       onDone(failed);
@@ -143,19 +151,15 @@ function Archiving({
   return (
     <Modal labelledBy="space-archive-heading" onClose={onClose}>
       <section aria-labelledby="space-archive-heading" className={styles['dialog']}>
-        <h2 id="space-archive-heading">{`${restore ? 'Restore' : 'Archive'} ${space.name}?`}</h2>
+        <h2 id="space-archive-heading">{`${restore ? words('admin.restore') : words('admin.archive')} ${space.name}?`}</h2>
         {restore ? (
-          <p>New components, documents and the rest can be made in it again.</p>
+          <p>{words('admin.new-components-documents-and-the')}</p>
         ) : (
-          <p>
-            Nothing new can be made in it. Nothing already in it changes: it can still be read,
-            edited and published, and everyone keeps the access they have. It can be restored at any
-            time.
-          </p>
+          <p>{words('admin.nothing-new-can-be-made')}</p>
         )}
         <div className={styles['actions']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('admin.cancel')}
           </button>
           <button
             type="button"
@@ -163,7 +167,7 @@ function Archiving({
             disabled={busy}
             onClick={() => void change()}
           >
-            {restore ? 'Restore space' : 'Archive space'}
+            {restore ? words('admin.restore-space') : words('admin.archive-space')}
           </button>
         </div>
       </section>

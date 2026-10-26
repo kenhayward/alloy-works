@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import styles from './Hold.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -41,11 +42,11 @@ export function HoldDialog({
     event.preventDefault();
     const trimmed = reason.trim();
     if (trimmed === '') {
-      setSaid('Give a reason.');
+      setSaid(words('lifecycle.give-a-reason'));
       return;
     }
     if (trimmed.length > MAX_REASON) {
-      setSaid(`A reason is at most ${MAX_REASON} characters.`);
+      setSaid(words('lifecycle.a-reason-is-at-most', { MAX_REASON }));
       return;
     }
     setBusy(true);
@@ -63,16 +64,14 @@ export function HoldDialog({
         <h2 id="hold-heading">{heading}</h2>
         <p>{explained}</p>
         <label>
-          Reason
+          {words('lifecycle.reason')}
           <textarea value={reason} onChange={(event) => setReason(event.target.value)} />
         </label>
-        <p className={styles['muted']}>
-          Shown only in Administration, to environment administrators.
-        </p>
+        <p className={styles['muted']}>{words('lifecycle.shown-only-in-administration-to')}</p>
         <p role="status">{said}</p>
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('lifecycle.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
             {submit}
@@ -90,12 +89,12 @@ export async function placeHold(
   title: string,
   reason: string,
 ): Promise<string> {
-  const failed = `The hold on ${title} could not be placed.`;
+  const failed = words('lifecycle.the-hold-on-could-not', { title });
   const answer = await client
     .POST('/v1/holds', { body: { target, reason } })
     .catch(() => ({ data: undefined, error: undefined }));
   if (!answer.data) throw new Error(refusal(answer.error, failed));
-  return `Placed a hold on ${title}.`;
+  return words('lifecycle.placed-a-hold-on', { title });
 }
 
 /** Releases a hold, as `placeHold` places one. */
@@ -105,12 +104,12 @@ export async function releaseHold(
   title: string,
   reason: string,
 ): Promise<string> {
-  const failed = `The hold on ${title} could not be released.`;
+  const failed = words('lifecycle.the-hold-on-could-not-2', { title });
   const answer = await client
     .POST('/v1/holds/{id}/release', { params: { path: { id } }, body: { reason } })
     .catch(() => ({ data: undefined, error: undefined }));
   if (!answer.data) throw new Error(refusal(answer.error, failed));
-  return `Released the hold on ${title}.`;
+  return words('lifecycle.released-the-hold-on', { title });
 }
 
 /**
@@ -137,7 +136,7 @@ export function PlaceHoldButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setAsking(true)}>
-        Place a hold
+        {words('lifecycle.place-a-hold')}
       </button>
       {asking && (
         <PlaceHoldDialog
@@ -171,11 +170,11 @@ export function PlaceHoldDialog({
 }) {
   return (
     <HoldDialog
-      heading={`Place a hold on ${title}`}
+      heading={words('lifecycle.place-a-hold-on', { title })}
       explained={
         'space' in target
-          ? 'Everything in this space is held until the hold is released.'
-          : 'It is held until the hold is released.'
+          ? words('lifecycle.everything-in-this-space-is')
+          : words('lifecycle.it-is-held-until-the')
       }
       submit="Place hold"
       act={(reason) => placeHold(client, target, title, reason)}

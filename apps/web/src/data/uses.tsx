@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import { Chip } from '../parts/Chip.js';
 import { Pager, pageOf } from '../parts/Pager.js';
 import styles from './uses.module.css';
+import { words } from '../words/words.js';
 
 /** What uses something: those the caller may read, by title, and how many more there are (D3-M). */
 export interface Uses {
@@ -63,7 +64,7 @@ export function UsedList({
       {uses.others > 0 && (
         <p>
           {uses.readable.length > 0
-            ? `And ${uses.others} more you may not read.`
+            ? words('data.and-more-you-may-not-2', { others: uses.others })
             : counted(uses.others)}
         </p>
       )}
@@ -100,7 +101,7 @@ export function PagedUses({
           {pageOf(uses.readable, page).map((each) => (
             <li key={each.id}>
               <a href={link(each.id)}>{each.title}</a>
-              {each.retired && <Chip tone="warn">Retired</Chip>}
+              {each.retired && <Chip tone="warn">{words('data.retired')}</Chip>}
             </li>
           ))}
         </ul>
@@ -108,15 +109,15 @@ export function PagedUses({
       {uses.others > 0 && (
         <p className={styles['others']}>
           {uses.readable.length > 0
-            ? `And ${uses.others} more you may not read.`
+            ? words('data.and-more-you-may-not-2', { others: uses.others })
             : counted(uses.others)}
         </p>
       )}
-      {total === 0 && <p className={styles['others']}>None.</p>}
+      {total === 0 && <p className={styles['others']}>{words('data.none-2')}</p>}
       {uses.readable.length > 0 && (
         <div className={styles['foot']}>
           <Pager
-            label={`Pages of ${heading.toLocaleLowerCase()}`}
+            label={words('data.pages-of', { value1: heading.toLocaleLowerCase() })}
             total={uses.readable.length}
             page={page}
             onPage={setPage}

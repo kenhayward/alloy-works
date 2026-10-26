@@ -9,6 +9,7 @@ import { useId, useMemo, useRef, useState } from 'react';
 
 import { authorZone, instantFor, localIn } from './dateTime.js';
 import styles from './FieldsForm.module.css';
+import { words } from '../words/words.js';
 
 type Values = Readonly<Record<string, unknown>>;
 
@@ -67,11 +68,11 @@ const MONTHS = [
 function spoken(local: string): string {
   const [date = '', time = ''] = local.split('T');
   const [year, month, day] = date.split('-').map(Number);
-  return `${time} on ${day} ${MONTHS[(month ?? 1) - 1]} ${year}`;
+  return words('metadata.on', { time, day, value3: MONTHS[(month ?? 1) - 1], year });
 }
 
 /** The offset a stored instant carries, as `UTC+01:00`. */
-const offsetOf = (value: string) => `UTC${value.slice(-6)}`;
+const offsetOf = (value: string) => words('metadata.utc', { value1: value.slice(-6) });
 
 /**
  * A set of fields and their values (definitions.md, "Shown as they arise"; MET-021): an input per data
@@ -136,8 +137,12 @@ function FieldRow(props: FieldRowProps) {
   const describedBy = `${base}-said`;
   const invalid = props.failures.length > 0 || problem !== null;
   const notes = [
-    ...(props.requiredBy.length > 0 ? [`Required by ${props.requiredBy.join(', ')}`] : []),
-    ...(props.fixedBy.length > 0 ? [`Fixed by ${props.fixedBy.join(', ')}`] : []),
+    ...(props.requiredBy.length > 0
+      ? [words('metadata.required-by', { value1: props.requiredBy.join(', ') })]
+      : []),
+    ...(props.fixedBy.length > 0
+      ? [words('metadata.fixed-by', { value1: props.fixedBy.join(', ') })]
+      : []),
   ];
   const described = (
     <span id={describedBy} className={styles['failures']}>
@@ -271,8 +276,8 @@ function OneInput(
           }
           {...aria}
         >
-          <option value="">Nobody</option>
-          {!known && <option value={chosen}>Someone no longer here</option>}
+          <option value="">{words('metadata.nobody')}</option>
+          {!known && <option value={chosen}>{words('metadata.someone-no-longer-here')}</option>}
           {props.people.map((each) => (
             <option key={each.id} value={each.id}>
               {each.name}
@@ -329,7 +334,7 @@ function NumberInput(
           return;
         }
         const canonical = canonicaliseDecimal(raw.trim());
-        props.onProblem(canonical === undefined ? 'Enter a number, such as 12.5' : null);
+        props.onProblem(canonical === undefined ? words('metadata.enter-a-number-such-as') : null);
         props.onChange(canonical ?? null);
       }}
       {...props.aria}
@@ -381,8 +386,8 @@ function DateTimeInput(
           } else {
             props.onProblem(
               named.kind === 'none'
-                ? `There is no ${spoken(raw)} here: the clocks go forward past it`
-                : 'Enter a date and a time',
+                ? words('metadata.there-is-no-here-the', { value1: spoken(raw) })
+                : words('metadata.enter-a-date-and-a'),
             );
             props.onChange(null);
           }
@@ -391,11 +396,13 @@ function DateTimeInput(
       />
       {twice !== null && (
         <div role="radiogroup" aria-labelledby={question}>
-          <span id={question}>{`${spoken(typed)} happens twice here. Which is meant?`}</span>
+          <span id={question}>
+            {words('metadata.happens-twice-here-which-is', { value1: spoken(typed) })}
+          </span>
           {(
             [
-              ['The first', twice.earlier],
-              ['The second', twice.later],
+              [words('metadata.the-first'), twice.earlier],
+              [words('metadata.the-second'), twice.later],
             ] as const
           ).map(([which, value]) => (
             <label key={value}>
@@ -405,7 +412,7 @@ function DateTimeInput(
                 onChange={() => props.onChange(value)}
                 disabled={props.readOnly}
               />
-              {`${which}, at ${offsetOf(value)}`}
+              {words('metadata.at', { which, value2: offsetOf(value) })}
             </label>
           ))}
         </div>
@@ -444,9 +451,12 @@ function ManyInput(
     if (typeof value === 'string' && value !== '') return value;
     if (typeof value === 'object' && value !== null && 'user' in value) {
       const id = String((value as { user: unknown }).user);
-      return props.people.find((each) => each.id === id)?.name ?? 'someone no longer here';
+      return (
+        props.people.find((each) => each.id === id)?.name ??
+        words('metadata.someone-no-longer-here-2')
+      );
     }
-    return `value ${index + 1}`;
+    return words('metadata.value', { value1: index + 1 });
   };
   return (
     <ol className={styles['many']}>
@@ -454,7 +464,7 @@ function ManyInput(
         <li key={key}>
           <OneInput
             {...props}
-            label={`${props.field.name}, value ${index + 1}`}
+            label={words('metadata.value-2', { name: props.field.name, value2: index + 1 })}
             value={entry}
             onChange={(value) =>
               emit(rows.map((row, at) => (at === index ? { key: row.key, value } : row)))
@@ -471,7 +481,7 @@ function ManyInput(
                   emit(next);
                 }}
               >
-                {`Move ${nameOf(entry, index)} up`}
+                {words('metadata.move-up', { value1: nameOf(entry, index) })}
               </button>
               <button
                 type="button"
@@ -482,10 +492,10 @@ function ManyInput(
                   emit(next);
                 }}
               >
-                {`Move ${nameOf(entry, index)} down`}
+                {words('metadata.move-down', { value1: nameOf(entry, index) })}
               </button>
               <button type="button" onClick={() => emit(rows.filter((_, at) => at !== index))}>
-                {`Remove ${nameOf(entry, index)}`}
+                {words('metadata.remove', { value1: nameOf(entry, index) })}
               </button>
             </>
           )}
@@ -494,7 +504,7 @@ function ManyInput(
       {!props.readOnly && (
         <li>
           <button type="button" onClick={() => setRows([...rows, keyed(null)])}>
-            {`Add to ${props.field.name}`}
+            {words('metadata.add-to', { name: props.field.name })}
           </button>
         </li>
       )}

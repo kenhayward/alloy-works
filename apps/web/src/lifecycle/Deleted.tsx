@@ -6,6 +6,7 @@ import { usePagedListing } from '../listing/usePagedListing.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from './Deleted.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -62,20 +63,20 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
     setBusy(false);
     if (answer?.data) {
       setUndone((held) => [...held, row]);
-      setSaid(`Undeleted ${row.title}.`);
-    } else setSaid(`${row.title} could not be undeleted. Try again.`);
+      setSaid(words('lifecycle.undeleted', { title: row.title }));
+    } else setSaid(words('lifecycle.could-not-be-undeleted-try', { title: row.title }));
   };
 
-  const heading = <h1 id="deleted-heading">{`Deleted ${plural}`}</h1>;
+  const heading = <h1 id="deleted-heading">{words('lifecycle.deleted', { plural })}</h1>;
   if (listing.items === null) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="deleted-heading">
         {heading}
         <Notice tone="failed">
-          <p>{`The deleted ${plural} could not be loaded.`}</p>
+          <p>{words('lifecycle.the-deleted-could-not-be', { plural })}</p>
           <button type="button" disabled={listing.loading} onClick={() => void listing.load(null)}>
-            Try again
+            {words('lifecycle.try-again')}
           </button>
         </Notice>
       </section>
@@ -89,29 +90,29 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
     <section aria-labelledby="deleted-heading">
       {heading}
       <p className={styles['summary']}>
-        {`${total} deleted ${total === 1 ? kind : plural} you may read.`}
+        {words('lifecycle.deleted-you-may-read', { total, value2: total === 1 ? kind : plural })}
       </p>
       <p role="status" className={styles['said']}>
         {said}
       </p>
       {back !== undefined && said === `Undeleted ${back.title}.` && (
         <p>
-          <a href={LINK[kind](back.id)}>{`Open ${back.title}`}</a>
+          <a href={LINK[kind](back.id)}>{words('lifecycle.open', { title: back.title })}</a>
         </p>
       )}
       {rows.length === 0 ? (
         <Empty>
-          <p>{`There are no deleted ${plural} you may read.`}</p>
+          <p>{words('lifecycle.there-are-no-deleted-you', { plural })}</p>
         </Empty>
       ) : (
         <div className={styles['deletedTable']}>
-          <table aria-label={`Deleted ${plural}`}>
+          <table aria-label={words('lifecycle.deleted', { plural })}>
             <thead>
               <tr>
-                <th scope="col">Title</th>
-                <th scope="col">Space</th>
-                <th scope="col">Deleted by</th>
-                <th scope="col">Deleted</th>
+                <th scope="col">{words('lifecycle.title')}</th>
+                <th scope="col">{words('lifecycle.space')}</th>
+                <th scope="col">{words('lifecycle.deleted-by')}</th>
+                <th scope="col">{words('lifecycle.deleted-2')}</th>
                 <td aria-hidden="true" />
               </tr>
             </thead>
@@ -120,7 +121,9 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
                 <tr key={row.id}>
                   <td className={styles['deletedTitle']}>{row.title}</td>
                   <td className={styles['quiet']}>{row.space.name}</td>
-                  <td className={styles['quiet']}>{row.deletedBy.name ?? 'Somebody'}</td>
+                  <td className={styles['quiet']}>
+                    {row.deletedBy.name ?? words('lifecycle.somebody')}
+                  </td>
                   <td className={styles['quiet']}>
                     <time dateTime={row.deletedAt}>{when.format(new Date(row.deletedAt))}</time>
                   </td>
@@ -129,10 +132,10 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
                       <button
                         type="button"
                         disabled={busy}
-                        aria-label={`Undelete ${row.title}`}
+                        aria-label={words('lifecycle.undelete', { title: row.title })}
                         onClick={() => void undelete(row)}
                       >
-                        Undelete
+                        {words('lifecycle.undelete-2')}
                       </button>
                     )}
                   </td>
@@ -142,7 +145,7 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
           </table>
         </div>
       )}
-      <More listing={listing} what={`deleted ${plural}`} />
+      <More listing={listing} what={words('lifecycle.deleted-3', { plural })} />
     </section>
   );
 }

@@ -10,6 +10,7 @@ import { Notice } from '../states/Notice.js';
 import listStyles from '../structure/DocumentList.module.css';
 import { LIBRARIES, libraryLink, PROMPTS, promptLink } from './links.js';
 import styles from './PromptPage.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -71,9 +72,9 @@ export function PromptLibraries({ client }: { readonly client: Client }) {
   if (failed) {
     return (
       <section aria-labelledby="libraries-heading">
-        <h1 id="libraries-heading">Prompt libraries</h1>
+        <h1 id="libraries-heading">{words('prompts.prompt-libraries')}</h1>
         <Notice tone="failed">
-          <p>The libraries could not be loaded. Reading them needs read across the environment.</p>
+          <p>{words('prompts.the-libraries-could-not-be')}</p>
         </Notice>
       </section>
     );
@@ -82,10 +83,10 @@ export function PromptLibraries({ client }: { readonly client: Client }) {
   return (
     <section aria-labelledby="libraries-heading">
       <p>
-        <a href={PROMPTS}>Prompts</a>
+        <a href={PROMPTS}>{words('prompts.prompts')}</a>
       </p>
       <div className={listStyles['titleRow']}>
-        <h1 id="libraries-heading">Prompt libraries</h1>
+        <h1 id="libraries-heading">{words('prompts.prompt-libraries')}</h1>
         <button
           type="button"
           className="primary"
@@ -93,23 +94,21 @@ export function PromptLibraries({ client }: { readonly client: Client }) {
             window.location.hash = libraryLink('new');
           }}
         >
-          New library
+          {words('prompts.new-library')}
         </button>
       </div>
-      <p className={listStyles['summary']}>
-        Each template binds one library, and this environment&apos;s default where it names none.
-      </p>
+      <p className={listStyles['summary']}>{words('prompts.each-template-binds-one-library')}</p>
       {items.length === 0 ? (
         <Empty>
-          <p>There are no libraries.</p>
+          <p>{words('prompts.there-are-no-libraries')}</p>
         </Empty>
       ) : (
         <div className={listStyles['table']}>
           <table>
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Prompts</th>
+                <th scope="col">{words('prompts.name')}</th>
+                <th scope="col">{words('prompts.prompts')}</th>
               </tr>
             </thead>
             <tbody>
@@ -117,7 +116,9 @@ export function PromptLibraries({ client }: { readonly client: Client }) {
                 <tr key={item.id}>
                   <td className={listStyles['title']}>
                     <a href={libraryLink(item.id)}>{item.name}</a>
-                    {item.isDefault && <span className={listStyles['muted']}> Default</span>}
+                    {item.isDefault && (
+                      <span className={listStyles['muted']}> {words('prompts.default')}</span>
+                    )}
                   </td>
                   <td>{item.prompts}</td>
                 </tr>
@@ -132,10 +133,10 @@ export function PromptLibraries({ client }: { readonly client: Client }) {
 
 const STATE_WORDS = (each: Listed): string =>
   each.state === 'approved'
-    ? `Runs revision ${each.revision.number}`
+    ? words('prompts.runs-revision', { number: each.revision.number })
     : each.state === 'unapproved'
-      ? 'Never approved, so it runs nothing yet'
-      : 'A prompt you may not read';
+      ? words('prompts.never-approved-so-it-runs')
+      : words('prompts.a-prompt-you-may-not');
 
 /**
  * A library's page (G4-F): its name and the prompts it lists, each saying the revision it runs, in
@@ -188,7 +189,7 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
   if (failed) {
     return (
       <Notice tone="failed">
-        <p>This library could not be loaded, or there is none you may read.</p>
+        <p>{words('prompts.this-library-could-not-be')}</p>
       </Notice>
     );
   }
@@ -198,7 +199,9 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
     const listed = shown?.prompts.find((each) => each.id === prompt);
     if (listed?.state === 'approved') return listed.prompt.title;
     if (listed?.state === 'unapproved') return listed.title;
-    return readable.find((each) => each.id === prompt)?.title ?? 'A prompt you may not read';
+    return (
+      readable.find((each) => each.id === prompt)?.title ?? words('prompts.a-prompt-you-may-not')
+    );
   };
   const addable = readable.filter((each) => !prompts.includes(each.id));
 
@@ -223,14 +226,14 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
         setShown(data);
         setSaid(
           data.version.id === shown.version.id
-            ? 'Nothing changed, so no version was saved.'
-            : `Saved as version ${data.version.number}.`,
+            ? words('prompts.nothing-changed-so-no-version')
+            : words('prompts.saved-as-version', { number: data.version.number }),
         );
         return;
       }
-      setSaid(refusal(error, 'The library could not be saved. Try again.'));
+      setSaid(refusal(error, words('prompts.the-library-could-not-be')));
     } catch {
-      setSaid('The library could not be saved. Try again.');
+      setSaid(words('prompts.the-library-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -239,26 +242,28 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
   return (
     <section aria-labelledby="library-heading">
       <p>
-        <a href={LIBRARIES}>Prompt libraries</a>
+        <a href={LIBRARIES}>{words('prompts.prompt-libraries')}</a>
       </p>
-      <h1 id="library-heading">{isNew ? 'New library' : shown!.library.name}</h1>
+      <h1 id="library-heading">{isNew ? words('prompts.new-library') : shown!.library.name}</h1>
       {shown !== null && (
         <p>
-          <Chip className={styles['mono']}>{`Version ${shown.version.number}`}</Chip>
-          {shown.isDefault && <Chip>Default</Chip>}
+          <Chip className={styles['mono']}>
+            {words('prompts.version', { number: shown.version.number })}
+          </Chip>
+          {shown.isDefault && <Chip>{words('prompts.default-2')}</Chip>}
         </p>
       )}
       <form className={styles['promptForm']} onSubmit={(event) => void save(event)}>
         <fieldset disabled={!mayEdit || busy}>
-          <legend>Library</legend>
+          <legend>{words('prompts.library')}</legend>
           <label>
-            Name
+            {words('prompts.name')}
             <input value={name} required onChange={(event) => setName(event.target.value)} />
           </label>
           {prompts.length === 0 ? (
-            <p className={styles['promptHint']}>It lists no prompts.</p>
+            <p className={styles['promptHint']}>{words('prompts.it-lists-no-prompts')}</p>
           ) : (
-            <ol aria-label="Prompts it lists">
+            <ol aria-label={words('prompts.prompts-it-lists')}>
               {prompts.map((prompt) => {
                 const listed = shown?.prompts.find((each) => each.id === prompt);
                 return (
@@ -271,10 +276,10 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
                     </span>
                     <button
                       type="button"
-                      aria-label={`Remove ${titleOf(prompt)}`}
+                      aria-label={words('prompts.remove', { value1: titleOf(prompt) })}
                       onClick={() => setPrompts((was) => was.filter((each) => each !== prompt))}
                     >
-                      Remove
+                      {words('prompts.remove-2')}
                     </button>
                   </li>
                 );
@@ -284,9 +289,9 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
           {addable.length > 0 && (
             <div className={styles['source']}>
               <label>
-                Add a prompt
+                {words('prompts.add-a-prompt')}
                 <select value={adding} onChange={(event) => setAdding(event.target.value)}>
-                  <option value="">Choose a prompt</option>
+                  <option value="">{words('prompts.choose-a-prompt')}</option>
                   {addable.map((each) => (
                     <option key={each.id} value={each.id}>
                       {each.title}
@@ -302,14 +307,14 @@ export function LibraryPage({ client, id }: { readonly client: Client; readonly 
                   setAdding('');
                 }}
               >
-                Add
+                {words('prompts.add')}
               </button>
             </div>
           )}
         </fieldset>
         {mayEdit && (
           <button type="submit" className="primary" disabled={busy}>
-            {isNew ? 'Make library' : 'Save version'}
+            {isNew ? words('prompts.make-library') : words('prompts.save-version')}
           </button>
         )}
         {said !== '' && <p role="status">{said}</p>}

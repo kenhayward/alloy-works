@@ -10,6 +10,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { refusal, TokenTable, type ShownToken } from './TokenTable.js';
 import styles from './Tokens.module.css';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -108,8 +109,8 @@ export function NewToken({
     if (trimmed === '') {
       setProblem(
         holder === undefined
-          ? 'Give the token a name, to tell it apart from your others.'
-          : 'Give the token a name, to tell it apart from its others.',
+          ? say('account.give-the-token-a-name')
+          : say('account.give-the-token-a-name-2'),
       );
       return;
     }
@@ -119,7 +120,7 @@ export function NewToken({
       expiresAt < daysFromToday(1) ||
       expiresAt.getTime() > Date.now() + MAX_MS
     ) {
-      setProblem('Choose an expiry from tomorrow to a year from today.');
+      setProblem(say('account.choose-an-expiry-from-tomorrow'));
       return;
     }
     setProblem('');
@@ -141,10 +142,10 @@ export function NewToken({
         onIssued(shown(data as ShownToken));
         setSecret((data as { secret: string }).secret);
       } else {
-        setProblem(refusal(error, 'The token could not be created.'));
+        setProblem(refusal(error, say('account.the-token-could-not-be')));
       }
     } catch {
-      setProblem('The token could not be created.');
+      setProblem(say('account.the-token-could-not-be'));
     } finally {
       setSending(false);
     }
@@ -154,9 +155,9 @@ export function NewToken({
     if (secret === null) return;
     try {
       await navigator.clipboard.writeText(secret);
-      setCopied('Copied.');
+      setCopied(say('account.copied'));
     } catch {
-      setCopied('The token could not be copied. Select it and copy it yourself.');
+      setCopied(say('account.the-token-could-not-be-2'));
     }
   };
 
@@ -165,10 +166,12 @@ export function NewToken({
       {secret === null ? (
         <section aria-labelledby="new-token-heading">
           <h2 id="new-token-heading">
-            {holder === undefined ? 'New token' : `New token for ${holder.name}`}
+            {holder === undefined
+              ? say('account.new-token')
+              : say('account.new-token-for', { name: holder.name })}
           </h2>
           <label>
-            Name
+            {say('account.name')}
             <input
               value={name}
               maxLength={80}
@@ -177,7 +180,7 @@ export function NewToken({
             />
           </label>
           <label>
-            Works until the start of
+            {say('account.works-until-the-start-of')}
             <input
               type="date"
               value={expiry}
@@ -187,11 +190,11 @@ export function NewToken({
             />
           </label>
           <fieldset className={styles['scopes']}>
-            <legend>What it may do besides reading</legend>
+            <legend>{say('account.what-it-may-do-besides')}</legend>
             <p className={styles['muted']}>
               {holder === undefined
-                ? 'Reading is always allowed: a token reads what you read. It can never do more than you may, whatever is chosen here.'
-                : `Reading is always allowed: a token reads what ${holder.name} reads. It can never do more than ${holder.name} may, whatever is chosen here.`}
+                ? say('account.reading-is-always-allowed-a')
+                : say('account.reading-is-always-allowed-a-2', { name: holder.name })}
             </p>
             {tokenScopes.map((scope) => (
               <label key={scope} className={styles['scope']}>
@@ -211,7 +214,7 @@ export function NewToken({
           </fieldset>
           <p role="status">{problem}</p>
           <button type="button" onClick={close}>
-            Cancel
+            {say('account.cancel')}
           </button>
           <button
             type="button"
@@ -219,20 +222,17 @@ export function NewToken({
             disabled={sending}
             onClick={() => void create()}
           >
-            Create token
+            {say('account.create-token')}
           </button>
         </section>
       ) : (
         <section aria-labelledby="new-token-heading">
           <h2 id="new-token-heading">
-            {holder === undefined ? 'Copy your token' : 'Copy the token'}
+            {holder === undefined ? say('account.copy-your-token') : say('account.copy-the-token')}
           </h2>
-          <p className={styles['warning']}>
-            Copy it now: this token will not be shown again, and nobody can find it for you later.
-            Keep it as you would a password.
-          </p>
+          <p className={styles['warning']}>{say('account.copy-it-now-this-token')}</p>
           <label className={styles['secret']}>
-            Token
+            {say('account.token')}
             <input
               ref={field}
               readOnly
@@ -244,10 +244,10 @@ export function NewToken({
           </label>
           <p role="status">{copied}</p>
           <button type="button" onClick={() => void copy()}>
-            Copy
+            {say('account.copy')}
           </button>
           <button type="button" className="primary" onClick={close}>
-            Done
+            {say('account.done')}
           </button>
         </section>
       )}
@@ -293,15 +293,15 @@ export function ApiTokens({ client, onClose }: { client: Client; onClose: () => 
       });
       if (response.ok) {
         gone();
-        setStatus(`Revoked ${token.name}.`);
+        setStatus(say('account.revoked', { name: token.name }));
       } else if (response.status === 404) {
         gone();
-        setStatus(`${token.name} had already been revoked.`);
+        setStatus(say('account.had-already-been-revoked', { name: token.name }));
       } else {
-        setStatus(refusal(error, `${token.name} could not be revoked.`));
+        setStatus(refusal(error, say('account.could-not-be-revoked', { name: token.name })));
       }
     } catch {
-      setStatus(`${token.name} could not be revoked.`);
+      setStatus(say('account.could-not-be-revoked', { name: token.name }));
     }
   };
 
@@ -309,27 +309,24 @@ export function ApiTokens({ client, onClose }: { client: Client; onClose: () => 
     <>
       <Modal labelledBy="api-tokens-heading" onClose={onClose}>
         <div className={styles['tokens']}>
-          <h2 id="api-tokens-heading">API tokens</h2>
-          <p className={styles['muted']}>
-            A token lets a script act as you, doing only what you choose of what you may do, until
-            it expires or you revoke it.
-          </p>
-          {read === null && <Waiting>Loading...</Waiting>}
+          <h2 id="api-tokens-heading">{say('account.api-tokens')}</h2>
+          <p className={styles['muted']}>{say('account.a-token-lets-a-script')}</p>
+          {read === null && <Waiting>{say('account.loading')}</Waiting>}
           {read === 'failed' && (
             <Notice tone="failed">
-              <p>Your tokens could not be loaded.</p>
+              <p>{say('account.your-tokens-could-not-be')}</p>
               <button type="button" onClick={() => void load()}>
-                Try again
+                {say('account.try-again')}
               </button>
             </Notice>
           )}
           {Array.isArray(read) && (
             <TokenTable
-              label="Your tokens"
+              label={say('account.your-tokens')}
               tokens={read}
               empty={
                 <Empty>
-                  <p>You have no API tokens.</p>
+                  <p>{say('account.you-have-no-api-tokens')}</p>
                 </Empty>
               }
               onRevoke={revoke}
@@ -338,7 +335,7 @@ export function ApiTokens({ client, onClose }: { client: Client; onClose: () => 
           <p role="status">{status}</p>
           <div className={styles['actions']}>
             <button type="button" className="primary" onClick={() => setIssuing(true)}>
-              New token
+              {say('account.new-token')}
             </button>
           </div>
         </div>
@@ -348,7 +345,7 @@ export function ApiTokens({ client, onClose }: { client: Client; onClose: () => 
           client={client}
           onIssued={(token) => {
             setRead((was) => (Array.isArray(was) ? [...was, token] : was));
-            setStatus(`Created ${token.name}.`);
+            setStatus(say('account.created', { name: token.name }));
           }}
           onClose={() => setIssuing(false)}
         />

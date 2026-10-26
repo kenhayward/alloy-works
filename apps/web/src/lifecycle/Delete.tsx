@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './Delete.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,7 +38,9 @@ const counted = (count: number, one: string, many: string) =>
 
 /** A list in words: a, b and c. */
 const listed = (parts: readonly string[]) =>
-  parts.length <= 1 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
+  parts.length <= 1
+    ? (parts[0] ?? '')
+    : words('lifecycle.and', { value1: parts.slice(0, -1).join(', '), value2: parts.at(-1) });
 
 /**
  * What stays, in words: every count but an empty one, versions and events always. Unsaved changes
@@ -48,15 +51,16 @@ export function remainsWords(remains: Remains): string {
     counted(remains.versions, 'version', 'versions'),
     ...(remains.threads > 0 ? [counted(remains.threads, 'thread', 'threads')] : []),
     ...(remains.suggestions > 0 ? [counted(remains.suggestions, 'suggestion', 'suggestions')] : []),
-    ...(remains.rounds > 0 ? [counted(remains.rounds, 'review round', 'review rounds')] : []),
-    counted(remains.events, 'audit event', 'audit events'),
+    ...(remains.rounds > 0
+      ? [counted(remains.rounds, words('lifecycle.review-round'), words('lifecycle.review-rounds'))]
+      : []),
+    counted(remains.events, words('lifecycle.audit-event'), words('lifecycle.audit-events')),
   ];
-  const kept = `Nothing is removed: its ${listed(parts)} are kept, out of reach, and come back if it is undeleted.`;
+  const kept = words('lifecycle.nothing-is-removed-its-are', { value1: listed(parts) });
   if (remains.iterations === 0) return kept;
-  const expiring =
-    remains.iterations === 1
-      ? 'Its 1 unsaved change still expires as usual.'
-      : `Its ${remains.iterations} unsaved changes still expire as usual.`;
+  const expiring = words('lifecycle.its-unsaved-changes-still-expire', {
+    count: remains.iterations,
+  });
   return `${kept} ${expiring}`;
 }
 
@@ -65,39 +69,59 @@ export function remainsWords(remains: Remains): string {
  * that there is one, never how many (SCH-032).
  */
 export function deletionRefusalWords(refusal: DeletionRefusal): string {
-  const names = (refusal.named ?? []).map((each) => each.title || 'Untitled');
+  const names = (refusal.named ?? []).map((each) => each.title || words('lifecycle.untitled'));
   const of = (one: string, many: string, unseen: string) => {
-    if (names.length === 0) return `Something you may not read ${unseen}.`;
+    if (names.length === 0) return words('lifecycle.something-you-may-not-read', { unseen });
     const named = `${names.length === 1 ? one : many}: ${listed(names)}.`;
-    return refusal.unreadable === true ? `${named} Something you may not read does too.` : named;
+    return refusal.unreadable === true
+      ? words('lifecycle.something-you-may-not-read-2', { named })
+      : named;
   };
   switch (refusal.code) {
     case 'baselined':
-      return of('A baseline pins it', 'Baselines pin it', 'pins it');
+      return of(
+        words('lifecycle.a-baseline-pins-it'),
+        words('lifecycle.baselines-pin-it'),
+        words('lifecycle.pins-it'),
+      );
     case 'published':
-      return of('A publication placed it', 'Publications placed it', 'placed it');
+      return of(
+        words('lifecycle.a-publication-placed-it'),
+        words('lifecycle.publications-placed-it'),
+        words('lifecycle.placed-it'),
+      );
     case 'publishing':
       return of(
-        'A publication waiting to be made places it',
-        'Publications waiting to be made place it',
-        'is waiting to be made with it',
+        words('lifecycle.a-publication-waiting-to-be'),
+        words('lifecycle.publications-waiting-to-be-made'),
+        words('lifecycle.is-waiting-to-be-made'),
       );
     case 'referenced':
-      return of('A document references it', 'Documents reference it', 'references it');
+      return of(
+        words('lifecycle.a-document-references-it'),
+        words('lifecycle.documents-reference-it'),
+        words('lifecycle.references-it'),
+      );
     case 'in_review':
-      return of('A review round is open on it', 'Review rounds are open on it', 'is reviewing it');
+      return of(
+        words('lifecycle.a-review-round-is-open'),
+        words('lifecycle.review-rounds-are-open-on'),
+        words('lifecycle.is-reviewing-it'),
+      );
     case 'held':
-      return 'A legal hold is on it or its space.';
+      return words('lifecycle.a-legal-hold-is-on');
     case 'kept':
       return refusal.until === undefined
-        ? 'A retention keep holds it.'
-        : `A retention keep holds it until ${day.format(new Date(refusal.until))}.`;
+        ? words('lifecycle.a-retention-keep-holds-it')
+        : words('lifecycle.a-retention-keep-holds-it-2', {
+            value1: day.format(new Date(refusal.until)),
+          });
     case 'locked':
       return refusal.yours === true
-        ? 'You are editing it: choose Done editing first.'
-        : `${refusal.holder?.name ?? 'Somebody'} is editing it.`;
+        ? words('lifecycle.you-are-editing-it-choose')
+        : words('lifecycle.is-editing-it', { value1: refusal.holder?.name ?? 'Somebody' });
     default:
-      return 'Something depends on it.';
+      return words('lifecycle.something-depends-on-it');
   }
 }
 
@@ -169,30 +193,28 @@ export function DeleteDialog({
     }
     const refusals = (answer?.error as { refusals?: DeletionRefusal[] } | undefined)?.refusals;
     if (refusals && shown.state === 'read') setShown({ ...shown, refusals });
-    else setSaid(`${title} could not be deleted. Try again.`);
+    else setSaid(words('lifecycle.could-not-be-deleted-try', { title }));
     setBusy(false);
   };
 
   return (
     <Modal labelledBy="delete-heading" size="dialog" onClose={onClose}>
       <div className={styles['deleting']}>
-        <h2 id="delete-heading">{`Delete ${title}`}</h2>
-        {shown.state === 'loading' && <p>Reading what depends on it.</p>}
-        {shown.state === 'failed' && <p>What depends on it could not be read.</p>}
+        <h2 id="delete-heading">{words('lifecycle.delete', { title })}</h2>
+        {shown.state === 'loading' && <p>{words('lifecycle.reading-what-depends-on-it')}</p>}
+        {shown.state === 'failed' && <p>{words('lifecycle.what-depends-on-it-could')}</p>}
         {shown.state === 'read' && (
           <>
             <p>{remainsWords(shown.remains)}</p>
             {shown.refusals.length > 0 && (
               <>
-                <p>It cannot be deleted while:</p>
+                <p>{words('lifecycle.it-cannot-be-deleted-while')}</p>
                 <ul className={styles['reasons']}>
                   {shown.refusals.map((refusal) => (
                     <li key={refusal.code}>{deletionRefusalWords(refusal)}</li>
                   ))}
                 </ul>
-                <p className={styles['quiet']}>
-                  Archive it instead to take it out of listings and search.
-                </p>
+                <p className={styles['quiet']}>{words('lifecycle.archive-it-instead-to-take')}</p>
               </>
             )}
           </>
@@ -200,11 +222,11 @@ export function DeleteDialog({
         <p role="status">{said}</p>
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('lifecycle.cancel')}
           </button>
           {shown.state === 'read' && shown.refusals.length === 0 && (
             <button type="button" className="danger" disabled={busy} onClick={() => void remove()}>
-              Delete
+              {words('lifecycle.delete-2')}
             </button>
           )}
         </div>
@@ -239,7 +261,7 @@ export function DeleteButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setAsking(true)}>
-        Delete
+        {words('lifecycle.delete-2')}
       </button>
       {asking && (
         <DeleteDialog

@@ -6,6 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { Icon } from '../editor/Icon.js';
 import styles from './Administration.module.css';
 import { Shown, type Read } from './listing.js';
+import { words } from '../words/words.js';
 
 export interface RoleRow {
   readonly id: string;
@@ -30,9 +31,7 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          A role is a set of permissions. It does nothing until it is granted somewhere, to someone.
-        </p>
+        <p>{words('admin.a-role-is-a-set')}</p>
       </div>
       <Shown read={read} failed="The roles could not be loaded.">
         {(rows) => {
@@ -45,8 +44,8 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                 <input
                   type="search"
                   className={styles['search']}
-                  aria-label="Find a role"
-                  placeholder="Find a role"
+                  aria-label={words('admin.find-a-role')}
+                  placeholder={words('admin.find-a-role')}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
@@ -54,22 +53,29 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                   <span className={styles['holds']} aria-hidden="true">
                     <Icon name="Done editing" />
                   </span>{' '}
-                  holds the permission{' '}
-                  {`${rows.length} ${rows.length === 1 ? 'role' : 'roles'}, ${permissions.length} permissions`}
+                  {words('admin.holds-the-permission')}{' '}
+                  {words('admin.permissions', {
+                    length: rows.length,
+                    value2: rows.length === 1 ? 'role' : 'roles',
+                    length3: permissions.length,
+                  })}
                 </p>
               </div>
               {/* Scrolled sideways where the window is narrower than the grid, so reached by keyboard too. */}
               <div
                 className={styles['scroller']}
                 role="region"
-                aria-label="Roles by permission"
+                aria-label={words('admin.roles-by-permission')}
                 tabIndex={0}
               >
-                <table aria-label="Roles" className={`${styles['table']} ${styles['grid']}`}>
+                <table
+                  aria-label={words('admin.roles')}
+                  className={`${styles['table']} ${styles['grid']}`}
+                >
                   <thead>
                     <tr>
                       <th scope="col" className={styles['roleColumn']}>
-                        Role
+                        {words('admin.role')}
                       </th>
                       {permissions.map((permission) => (
                         <th key={permission} scope="col">
@@ -86,7 +92,7 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                           {!allowable(role.permissions as Permission[]) && (
                             <>
                               {' '}
-                              <Chip tone="warn">Deny only</Chip>
+                              <Chip tone="warn">{words('admin.deny-only')}</Chip>
                             </>
                           )}
                         </th>
@@ -95,7 +101,7 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                             {role.permissions.includes(permission) && (
                               <span className={styles['holds']}>
                                 <Icon name="Done editing" />
-                                <span className={styles['hidden']}>Holds</span>
+                                <span className={styles['hidden']}>{words('admin.holds')}</span>
                               </span>
                             )}
                           </td>

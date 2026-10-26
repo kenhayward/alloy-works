@@ -15,6 +15,7 @@ import {
   type GraphFilter,
 } from './graph.js';
 import styles from './Relationships.module.css';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -91,7 +92,9 @@ const KIND_PLURAL: Readonly<Record<string, string>> = {
   component: 'components',
   template: 'templates',
   asset: 'assets',
-  queryDefinition: 'query definitions',
+  get queryDefinition() {
+    return say('reuse.query-definitions');
+  },
   publication: 'publications',
 };
 const KIND_ONE: Readonly<Record<string, string>> = {
@@ -99,7 +102,9 @@ const KIND_ONE: Readonly<Record<string, string>> = {
   component: 'component',
   template: 'template',
   asset: 'asset',
-  queryDefinition: 'query definition',
+  get queryDefinition() {
+    return say('reuse.query-definition');
+  },
   publication: 'publication',
 };
 const plural = (kind: string) => KIND_PLURAL[kind] ?? kind;
@@ -107,7 +112,7 @@ const plural = (kind: string) => KIND_PLURAL[kind] ?? kind;
 /** How a relationship reads from the artifact it was read from: its name, or its inverse's. */
 export function saidFrom(edge: GraphEdge, types: readonly OfferedType[]): string {
   const type = types.find((each) => each.id === edge.relationship.type);
-  if (!type) return 'Related to';
+  if (!type) return say('reuse.related-to');
   const outward = edge.relationship.from.artifact === edge.from;
   return outward || !type.directed ? type.name : type.inverseName;
 }
@@ -133,7 +138,7 @@ export function RelationshipsButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Relationships
+        {say('reuse.relationships')}
       </button>
       {open && (
         <RelationshipsDialog
@@ -211,7 +216,7 @@ export function RelationshipsDialog({
     if (!read) return;
     const data = await neighboursOf(id);
     if (!data) {
-      setNotice('Its relationships could not be read.');
+      setNotice(say('reuse.its-relationships-could-not-be'));
       return;
     }
     setRead((was) =>
@@ -228,14 +233,14 @@ export function RelationshipsDialog({
   const remove = async (relationship: string) => {
     const { error } = await client
       .DELETE('/v1/relationships/{id}', { params: { path: { id: relationship } } })
-      .catch(() => ({ error: { message: 'The relationship could not be removed.' } }));
+      .catch(() => ({ error: { message: say('reuse.the-relationship-could-not-be') } }));
     if (error) {
       setNotice(
-        (error as { message?: string }).message ?? 'The relationship could not be removed.',
+        (error as { message?: string }).message ?? say('reuse.the-relationship-could-not-be'),
       );
       return;
     }
-    setNotice('The relationship is removed.');
+    setNotice(say('reuse.the-relationship-is-removed'));
     setReloads((n) => n + 1);
   };
 
@@ -243,14 +248,14 @@ export function RelationshipsDialog({
   return (
     <Modal labelledBy={headingId} size="wide" onClose={onClose}>
       <div className={styles['relDialog']}>
-        <h2 id={headingId}>{`Relationships of ${centre.title}`}</h2>
+        <h2 id={headingId}>{say('reuse.relationships-of', { title: centre.title })}</h2>
         <form
           className={styles['relFilters']}
-          aria-label="Filter"
+          aria-label={say('reuse.filter')}
           onSubmit={(event) => event.preventDefault()}
         >
           <label>
-            Type
+            {say('reuse.type')}
             <select
               value={filter.type ?? ''}
               onChange={(event) =>
@@ -262,7 +267,7 @@ export function RelationshipsDialog({
                 })
               }
             >
-              <option value="">Every type</option>
+              <option value="">{say('reuse.every-type')}</option>
               {(types ?? []).map((each) => (
                 <option key={each.id} value={each.id}>
                   {each.name}
@@ -271,7 +276,7 @@ export function RelationshipsDialog({
             </select>
           </label>
           <label>
-            Direction
+            {say('reuse.direction')}
             <select
               value={filter.direction ?? ''}
               onChange={(event) =>
@@ -281,9 +286,9 @@ export function RelationshipsDialog({
                 })
               }
             >
-              <option value="">Both ways</option>
-              <option value="out">{`From ${centre.title}`}</option>
-              <option value="in">{`To ${centre.title}`}</option>
+              <option value="">{say('reuse.both-ways')}</option>
+              <option value="out">{say('reuse.from', { title: centre.title })}</option>
+              <option value="in">{say('reuse.to', { title: centre.title })}</option>
             </select>
           </label>
           {filtering && filtering.fields.length > 0 && (
@@ -296,14 +301,15 @@ export function RelationshipsDialog({
         </form>
         {/* Every view is a query an integrator can ask too (REL-028). */}
         <p className={styles['relQuery']}>
-          Answered by <code>{queryOf(centre.id, filter)}</code>
+          {say('reuse.answered-by')}
+          <code>{queryOf(centre.id, filter)}</code>
         </p>
         {notice && <p role="status">{notice}</p>}
         {(read === undefined || types === undefined) && (
-          <p role="status">Reading its relationships.</p>
+          <p role="status">{say('reuse.reading-its-relationships')}</p>
         )}
         {(read === null || types === null) && (
-          <p role="status">Its relationships could not be read.</p>
+          <p role="status">{say('reuse.its-relationships-could-not-be')}</p>
         )}
         {read && types && (
           <>
@@ -322,16 +328,16 @@ export function RelationshipsDialog({
             />
             {read.cut && (
               <p className={styles['relMuted']}>
-                Some relationships lead to artifacts you may not read.
+                {say('reuse.some-relationships-lead-to-artifacts')}
               </p>
             )}
-            {read.more && <p className={styles['relMuted']}>Only the first 1,000 are shown.</p>}
+            {read.more && <p className={styles['relMuted']}>{say('reuse.only-the-first-1-000')}</p>}
             <Relate
               client={client}
               centre={centre}
               types={types}
               onRelated={() => {
-                setNotice('The relationship is made.');
+                setNotice(say('reuse.the-relationship-is-made'));
                 setReloads((n) => n + 1);
               }}
             />
@@ -339,7 +345,7 @@ export function RelationshipsDialog({
         )}
         <div className={styles['relButtons']}>
           <button type="button" onClick={onClose}>
-            Close
+            {say('reuse.close')}
           </button>
         </div>
       </div>
@@ -366,7 +372,7 @@ function ValueFilter({
   return (
     <>
       <label>
-        Field
+        {say('reuse.field')}
         <select value={field} onChange={(event) => onFilter(event.target.value, filter.value)}>
           {fields.map((each) => (
             <option key={each.id} value={each.id}>
@@ -376,7 +382,7 @@ function ValueFilter({
         </select>
       </label>
       <label>
-        Value
+        {say('reuse.value')}
         <input
           value={value}
           onChange={(event) => setValue(event.target.value)}
@@ -408,7 +414,9 @@ function Drawing({
       className={styles['relGraph']}
       viewBox={`0 0 ${SIZE} ${SIZE}`}
       role="img"
-      aria-label={`A graph of ${drawn.nodes.length - 1 + drawn.counts.reduce((n, each) => n + each.ids.length, 0)} related artifacts; the list below says the same`}
+      aria-label={say('reuse.a-graph-of-related-artifacts', {
+        value1: drawn.nodes.length - 1 + drawn.counts.reduce((n, each) => n + each.ids.length, 0),
+      })}
     >
       {drawn.lines.map((line) => (
         <line key={line.key} x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
@@ -462,7 +470,7 @@ function Listing({
   const foldOf = (from: string, to: string) =>
     folds.find((fold) => fold.parent === from && fold.ids.includes(to));
   const sources = [...graph.expanded];
-  if (graph.edges.length === 0) return <p>It has no relationships you may read.</p>;
+  if (graph.edges.length === 0) return <p>{say('reuse.it-has-no-relationships-you')}</p>;
   return (
     <div className={styles['relListing']}>
       {sources.map((source) => {
@@ -471,7 +479,7 @@ function Listing({
         const shown = edges.filter((edge) => !foldOf(source, edge.to));
         const folded = folds.filter((fold) => fold.parent === source);
         return (
-          <section key={source} aria-label={`Relationships of ${from.title}`}>
+          <section key={source} aria-label={say('reuse.relationships-of', { title: from.title })}>
             {source !== graph.centre && <h3>{from.title}</h3>}
             <ul className={styles['relList']}>
               {shown.map((edge) => (
@@ -542,17 +550,20 @@ function EdgeItem({
         <button
           type="button"
           onClick={() => onExpand(other.id)}
-          aria-label={`Expand ${other.title}`}
+          aria-label={say('reuse.expand', { title: other.title })}
         >
-          Expand
+          {say('reuse.expand-2')}
         </button>
       )}
       <button
         type="button"
         onClick={() => onRemove(edge.relationship.id)}
-        aria-label={`Remove ${saidFrom(edge, types).toLowerCase()} ${other.title}`}
+        aria-label={say('reuse.remove', {
+          value1: saidFrom(edge, types).toLowerCase(),
+          title: other.title,
+        })}
       >
-        Remove
+        {say('reuse.remove-2')}
       </button>
     </li>
   );
@@ -597,9 +608,11 @@ function Relate({
   const formId = useId();
   if (offers.length === 0) {
     return (
-      <p
-        className={styles['relMuted']}
-      >{`No relationship type relates a ${KIND_ONE[centre.kind] ?? centre.kind}.`}</p>
+      <p className={styles['relMuted']}>
+        {say('reuse.no-relationship-type-relates-a', {
+          value1: KIND_ONE[centre.kind] ?? centre.kind,
+        })}
+      </p>
     );
   }
   const asked = offers[offer]!;
@@ -628,9 +641,11 @@ function Relate({
         : { from: { artifact: chosen }, to: { artifact: centre.id } };
     const { error } = await client
       .POST('/v1/relationships', { body: { type: asked.type.id, ...ends } })
-      .catch(() => ({ error: { message: 'The relationship could not be made.' } }));
+      .catch(() => ({ error: { message: say('reuse.the-relationship-could-not-be-2') } }));
     if (error) {
-      setSaid((error as { message?: string }).message ?? 'The relationship could not be made.');
+      setSaid(
+        (error as { message?: string }).message ?? say('reuse.the-relationship-could-not-be-2'),
+      );
       return;
     }
     setSaid(null);
@@ -641,9 +656,9 @@ function Relate({
   };
   return (
     <section aria-labelledby={`${formId}heading`} className={styles['relRelate']}>
-      <h3 id={`${formId}heading`}>Relate</h3>
+      <h3 id={`${formId}heading`}>{say('reuse.relate')}</h3>
       <label>
-        Relationship
+        {say('reuse.relationship')}
         <select value={offer} onChange={(event) => setOffer(Number(event.target.value))}>
           {offers.map((each, at) => (
             <option key={`${each.type.id}${each.end}`} value={at}>
@@ -660,15 +675,15 @@ function Relate({
         }}
       >
         <label>
-          Find
+          {say('reuse.find')}
           <input value={words} onChange={(event) => setWords(event.target.value)} />
         </label>
-        <button type="submit">Find</button>
+        <button type="submit">{say('reuse.find')}</button>
       </form>
-      {found && found.length === 0 && <p>Nothing found to relate.</p>}
+      {found && found.length === 0 && <p>{say('reuse.nothing-found-to-relate')}</p>}
       {found && found.length > 0 && (
         <fieldset>
-          <legend>Relate to</legend>
+          <legend>{say('reuse.relate-to')}</legend>
           {found.map((each) => (
             <label key={each.id}>
               <input
@@ -684,7 +699,7 @@ function Relate({
       )}
       {said && <p role="alert">{said}</p>}
       <button type="button" className="primary" disabled={!chosen} onClick={() => void relate()}>
-        Relate
+        {say('reuse.relate')}
       </button>
     </section>
   );

@@ -3,6 +3,7 @@ import { useEffect, useId, useState } from 'react';
 import { Modal } from '../layouts/Modal.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import styles from './UsedIn.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 export type Uses =
@@ -89,16 +90,18 @@ export function reachesAny(uses: Uses, related: readonly Related[] = []): boolea
 }
 
 const KIND_SAID: Readonly<Record<string, string>> = {
-  queryDefinition: 'query definition',
+  get queryDefinition() {
+    return words('reuse.query-definition');
+  },
 };
 
 /** How one reference follows the component, in the reader's words (REU-007). */
 export function followsSaid(reference: UsingReference): string {
   switch (reference.mode) {
     case 'latest':
-      return 'Follows the latest version';
+      return words('reuse.follows-the-latest-version');
     case 'approved':
-      return 'Follows approved revisions';
+      return words('reuse.follows-approved-revisions');
     case 'pinned':
       return `Pinned to version ${reference.version?.number ?? ''}`.trimEnd();
   }
@@ -118,7 +121,7 @@ function DocumentItem({ document }: { document: UsingDocument }) {
   );
 }
 
-const MORE = 'Documents you may not read place it too.';
+const MORE = (): string => words('reuse.documents-you-may-not-read');
 
 /** The header's Used in: where a component is used, opened as a dialog (REU-006, REU-007). */
 export function UsedInButton({
@@ -126,7 +129,7 @@ export function UsedInButton({
   id,
   title,
   className,
-  label = 'Used in',
+  label = words('reuse.used-in'),
 }: {
   client: Client;
   id: string;
@@ -175,13 +178,13 @@ function UsedInDialog({
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <div className={styles['dialog']}>
-        <h2 id={headingId}>{`Where ${title} is used`}</h2>
-        {uses === undefined && <p role="status">Reading where it is used.</p>}
-        {uses === null && <p role="status">Where it is used could not be read.</p>}
+        <h2 id={headingId}>{words('reuse.where-is-used', { title })}</h2>
+        {uses === undefined && <p role="status">{words('reuse.reading-where-it-is-used')}</p>}
+        {uses === null && <p role="status">{words('reuse.where-it-is-used-could')}</p>}
         {uses && (
           <>
             <section aria-labelledby={`${headingId}documents`}>
-              <h3 id={`${headingId}documents`}>Documents</h3>
+              <h3 id={`${headingId}documents`}>{words('reuse.documents')}</h3>
               {uses.documents.length > 0 ? (
                 <ul className={styles['list']}>
                   {uses.documents.map((each) => (
@@ -189,34 +192,36 @@ function UsedInDialog({
                   ))}
                 </ul>
               ) : (
-                !uses.unreadableDocuments && <p>No document places it.</p>
+                !uses.unreadableDocuments && <p>{words('reuse.no-document-places-it')}</p>
               )}
-              {uses.unreadableDocuments && <p className={styles['muted']}>{MORE}</p>}
+              {uses.unreadableDocuments && <p className={styles['muted']}>{MORE()}</p>}
             </section>
             <section aria-labelledby={`${headingId}pinned`}>
-              <h3 id={`${headingId}pinned`}>Pinned, so no change reaches them</h3>
+              <h3 id={`${headingId}pinned`}>{words('reuse.pinned-so-no-change-reaches')}</h3>
               {pins > 0 && (
                 <ul className={styles['list']}>
                   {uses.baselines.named.map((each) => (
                     <li key={each.id}>
                       <a href={`#/documents/${each.document}/baselines/${each.id}`}>
-                        {`Baseline ${each.name}`}
+                        {words('reuse.baseline', { name: each.name })}
                       </a>
                     </li>
                   ))}
                   {uses.publications.named.map((each) => (
                     <li key={each.id}>
-                      <a href={`#/publications/${each.id}`}>{`Publication of ${each.title}`}</a>
+                      <a href={`#/publications/${each.id}`}>
+                        {words('reuse.publication-of', { title: each.title })}
+                      </a>
                     </li>
                   ))}
                 </ul>
               )}
               {pins === 0 && !uses.baselines.unreadable && !uses.publications.unreadable && (
-                <p>No baseline or publication pins it.</p>
+                <p>{words('reuse.no-baseline-or-publication-pins')}</p>
               )}
               {(uses.baselines.unreadable || uses.publications.unreadable) && (
                 <p className={styles['muted']}>
-                  Baselines or publications you may not read pin it too.
+                  {words('reuse.baselines-or-publications-you-may')}
                 </p>
               )}
             </section>
@@ -224,7 +229,7 @@ function UsedInDialog({
         )}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Close
+            {words('reuse.close')}
           </button>
         </div>
       </div>
@@ -273,21 +278,25 @@ export function ReachDialog({
     <Modal labelledBy={headingId} size="narrow" onClose={onCancel}>
       <div className={styles['dialog']}>
         <h2 id={headingId}>
-          {act.startsWith('Approve') ? `${act} ${title}?` : `Save a version of ${title}?`}
+          {act.startsWith('Approve')
+            ? `${act} ${title}?`
+            : words('reuse.save-a-version-of', { title })}
         </h2>
         {(count > 0 || uses.unreadableDocuments) && (
           <p>
             {count > 0
-              ? `It reaches ${count === 1 ? 'one document' : `${count} documents`} that follow this component: now where it follows the latest version, and once approved where it follows approved revisions.`
-              : 'It may reach documents that follow this component.'}
+              ? words('reuse.it-reaches-that-follow-this', {
+                  value1: count === 1 ? 'one document' : `${count} documents`,
+                })
+              : words('reuse.it-may-reach-documents-that')}
           </p>
         )}
-        {group('approved', 'Approved documents', approved)}
-        {group('drafts', 'Drafts', drafts)}
-        {uses.unreadableDocuments && <p className={styles['muted']}>{MORE}</p>}
+        {group('approved', words('reuse.approved-documents'), approved)}
+        {group('drafts', words('reuse.drafts'), drafts)}
+        {uses.unreadableDocuments && <p className={styles['muted']}>{MORE()}</p>}
         {related.length > 0 && (
           <section aria-labelledby={`${headingId}related`}>
-            <h3 id={`${headingId}related`}>Related through relationships</h3>
+            <h3 id={`${headingId}related`}>{words('reuse.related-through-relationships')}</h3>
             <ul className={styles['list']}>
               {related.map((each) => (
                 <li key={each.id}>{`${each.title} (${KIND_SAID[each.kind] ?? each.kind})`}</li>
@@ -297,7 +306,7 @@ export function ReachDialog({
         )}
         <div className={styles['buttons']}>
           <button type="button" onClick={onCancel}>
-            Cancel
+            {words('reuse.cancel')}
           </button>
           <button type="button" className="primary" onClick={onConfirm}>
             {act}

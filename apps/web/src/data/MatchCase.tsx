@@ -1,5 +1,6 @@
 import { offersMatchCase, withoutMatchCase, type FilterDraft } from './definitionDraft.js';
 import styles from './QueryDefinitionPage.module.css';
+import { words } from '../words/words.js';
 
 /** Match case on a contains or starts with filter (DAT-119, MC-C): unticked, the filter ignores case. */
 export function MatchCase({
@@ -23,7 +24,7 @@ export function MatchCase({
           onChange(event.target.checked ? { ...filter, matchCase: true } : withoutMatchCase(filter))
         }
       />
-      Match case
+      {words('data.match-case')}
     </label>
   );
 }

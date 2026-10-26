@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AssistantPanel } from '../structure/AssistantPanel.js';
 import { documentLink } from '../structure/links.js';
 import styles from '../structure/DocumentList.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -42,15 +43,12 @@ export function Conversations({ client }: { readonly client: Client }) {
 
   return (
     <section aria-labelledby="conversations-heading">
-      <h1 id="conversations-heading">Conversations</h1>
-      <p className={styles['summary']}>
-        Talk with a model about anything, in your own words. It reads only what you may read, and
-        nothing it proposes changes a part until you accept it. Nobody else sees your conversations.
-      </p>
+      <h1 id="conversations-heading">{words('conversations.conversations')}</h1>
+      <p className={styles['summary']}>{words('conversations.talk-with-a-model-about')}</p>
       <AssistantPanel client={client} document={null} component={null} onCite={() => {}} />
       {onDocuments.length > 0 && (
         <section aria-labelledby="on-documents-heading">
-          <h2 id="on-documents-heading">On documents</h2>
+          <h2 id="on-documents-heading">{words('conversations.on-documents')}</h2>
           <ul>
             {onDocuments.map((each) => (
               <li key={each.id}>

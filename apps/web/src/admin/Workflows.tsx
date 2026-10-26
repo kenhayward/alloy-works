@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -55,20 +56,40 @@ type Condition =
 
 /** Each condition, as a transition's row offers it: "Submit requires no open threads". */
 const CONDITIONS: Readonly<Record<Condition, string>> = {
-  suggestions: 'no unresolved suggestions',
-  threads: 'no open threads',
-  bindings: 'every binding resolved',
-  sections: 'no required section missing',
-  revisions: 'no value revised by hand outstanding',
-  components: 'every component approved',
+  get suggestions() {
+    return words('admin.no-unresolved-suggestions');
+  },
+  get threads() {
+    return words('admin.no-open-threads');
+  },
+  get bindings() {
+    return words('admin.every-binding-resolved');
+  },
+  get sections() {
+    return words('admin.no-required-section-missing');
+  },
+  get revisions() {
+    return words('admin.no-value-revised-by-hand');
+  },
+  get components() {
+    return words('admin.every-component-approved');
+  },
   // LIF-065 (the R11 plan, R11-G): every axis what the document keeps depends on, set.
-  profile: 'every condition set in the profile',
+  get profile() {
+    return words('admin.every-condition-set-in-the');
+  },
   // GEN-025 (the G3 plan, G3-B): a part of "no unresolved suggestions", the generated ones alone.
-  generated: 'no generated content waiting to be accepted',
+  get generated() {
+    return words('admin.no-generated-content-waiting-to');
+  },
   // GEN-045 (the G4 plan, G4-E): a prompt's approval attests a trial of it.
-  trial: 'a finished trial run of the version',
+  get trial() {
+    return words('admin.a-finished-trial-run-of');
+  },
   // LIB-036 (the XR plan, XR-H): a source its source says is retracted, cited by what is placed.
-  noRetracted: 'no retracted sources cited',
+  get noRetracted() {
+    return words('admin.no-retracted-sources-cited');
+  },
 };
 
 /** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
@@ -120,14 +141,56 @@ interface Listed {
 type Edited<T> = T & { readonly label: string };
 
 const KINDS: Readonly<Record<Kind, { heading: string; one: string }>> = {
-  component: { heading: 'Components', one: 'Component' },
-  document: { heading: 'Documents', one: 'Document' },
-  queryDefinition: { heading: 'Query definitions', one: 'Query definition' },
-  prompt: { heading: 'Prompts', one: 'Prompt' },
-  term: { heading: 'Terms', one: 'Term' },
+  component: {
+    get heading() {
+      return words('admin.components');
+    },
+    get one() {
+      return words('admin.component');
+    },
+  },
+  document: {
+    get heading() {
+      return words('admin.documents');
+    },
+    get one() {
+      return words('admin.document');
+    },
+  },
+  queryDefinition: {
+    get heading() {
+      return words('admin.query-definitions');
+    },
+    get one() {
+      return words('admin.query-definition');
+    },
+  },
+  prompt: {
+    get heading() {
+      return words('admin.prompts');
+    },
+    get one() {
+      return words('admin.prompt');
+    },
+  },
+  term: {
+    get heading() {
+      return words('admin.terms');
+    },
+    get one() {
+      return words('admin.term');
+    },
+  },
 };
 
-const PERMISSIONS: Readonly<Record<Permission, string>> = { edit: 'Edit', approve: 'Approve' };
+const PERMISSIONS: Readonly<Record<Permission, string>> = {
+  get edit() {
+    return words('admin.edit-2');
+  },
+  get approve() {
+    return words('admin.approve');
+  },
+};
 
 const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -163,11 +226,7 @@ export function Workflows({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          Every component and document is in one state of its kind&apos;s workflow, and moves along
-          its transitions by whoever each permits. A save here is the next version, in force at
-          once; every version is kept.
-        </p>
+        <p>{words('admin.every-component-and-document-is')}</p>
       </div>
       <Shown read={read} failed="The workflows could not be loaded.">
         {(rows) =>
@@ -265,12 +324,12 @@ function KindWorkflow({
       if (data) {
         setSaid(
           data.version === version
-            ? `Nothing changed: version ${version} is in force.`
-            : `Saved as version ${data.version}.`,
+            ? words('admin.nothing-changed-version-is-in', { version })
+            : words('admin.saved-as-version', { version: data.version }),
         );
         onSaved();
       } else {
-        setSaid(refusal(error, 'The workflow could not be saved.'));
+        setSaid(refusal(error, words('admin.the-workflow-could-not-be')));
         const found = (error as { problems?: unknown } | undefined)?.problems;
         if (Array.isArray(found)) {
           setProblems(
@@ -283,7 +342,7 @@ function KindWorkflow({
         }
       }
     } catch {
-      setSaid('The workflow could not be saved.');
+      setSaid(words('admin.the-workflow-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -300,18 +359,22 @@ function KindWorkflow({
       <h2 id={headingId}>{heading}</h2>
       <p className={styles['muted']}>
         {by === null
-          ? `Version ${version}, as seeded`
-          : `Version ${version}, saved by ${by.name ?? 'somebody'} on ${when.format(new Date(at))}`}
+          ? words('admin.version-as-seeded', { version })
+          : words('admin.version-saved-by-on', {
+              version,
+              value2: by.name ?? 'somebody',
+              value3: when.format(new Date(at)),
+            })}
       </p>
-      <table aria-label={`${one} states`} className={styles['table']}>
+      <table aria-label={words('admin.states', { one })} className={styles['table']}>
         <thead>
           <tr>
-            <th scope="col">State</th>
-            <th scope="col">Starts here</th>
-            <th scope="col">Approved</th>
-            <th scope="col">In it now</th>
+            <th scope="col">{words('admin.state')}</th>
+            <th scope="col">{words('admin.starts-here')}</th>
+            <th scope="col">{words('admin.approved')}</th>
+            <th scope="col">{words('admin.in-it-now')}</th>
             <th scope="col">
-              <span className={styles['hidden']}>Actions</span>
+              <span className={styles['hidden']}>{words('admin.actions')}</span>
             </th>
           </tr>
         </thead>
@@ -320,7 +383,7 @@ function KindWorkflow({
             <tr key={state.key}>
               <td>
                 <input
-                  aria-label={`Name of ${state.label}`}
+                  aria-label={words('admin.name-of', { label: state.label })}
                   value={state.name}
                   onChange={(change) => changeState(state.key, { name: change.target.value })}
                 />
@@ -329,7 +392,7 @@ function KindWorkflow({
                 <input
                   type="radio"
                   name={`${kind}-initial`}
-                  aria-label={`${state.label} is where one starts`}
+                  aria-label={words('admin.is-where-one-starts', { label: state.label })}
                   checked={state.initial}
                   onChange={() =>
                     setStates((was) =>
@@ -341,7 +404,7 @@ function KindWorkflow({
               <td>
                 <input
                   type="checkbox"
-                  aria-label={`${state.label} counts as approved`}
+                  aria-label={words('admin.counts-as-approved', { label: state.label })}
                   checked={state.approved}
                   onChange={(change) => changeState(state.key, { approved: change.target.checked })}
                 />
@@ -350,7 +413,7 @@ function KindWorkflow({
               <td>
                 <button
                   type="button"
-                  aria-label={`Remove the state ${state.label}`}
+                  aria-label={words('admin.remove-the-state', { label: state.label })}
                   onClick={() => {
                     setStates((was) => was.filter((each) => each.key !== state.key));
                     setTransitions((was) =>
@@ -358,7 +421,7 @@ function KindWorkflow({
                     );
                   }}
                 >
-                  Remove
+                  {words('admin.remove-2')}
                 </button>
               </td>
             </tr>
@@ -367,27 +430,27 @@ function KindWorkflow({
       </table>
       <div className={styles['toolbar']}>
         <input
-          aria-label="New state"
-          placeholder="New state"
+          aria-label={words('admin.new-state')}
+          placeholder={words('admin.new-state')}
           value={newState}
           onChange={(change) => setNewState(change.target.value)}
         />
         <button type="button" onClick={addState}>
-          Add state
+          {words('admin.add-state')}
         </button>
       </div>
-      <table aria-label={`${one} transitions`} className={styles['table']}>
+      <table aria-label={words('admin.transitions', { one })} className={styles['table']}>
         <thead>
           <tr>
-            <th scope="col">Transition</th>
-            <th scope="col">From</th>
-            <th scope="col">To</th>
-            <th scope="col">Needs</th>
-            <th scope="col">Reason</th>
-            <th scope="col">Gate</th>
-            {CONDITIONS_OF[kind].length > 0 && <th scope="col">Requires</th>}
+            <th scope="col">{words('admin.transition')}</th>
+            <th scope="col">{words('admin.from')}</th>
+            <th scope="col">{words('admin.to')}</th>
+            <th scope="col">{words('admin.needs')}</th>
+            <th scope="col">{words('admin.reason')}</th>
+            <th scope="col">{words('admin.gate')}</th>
+            {CONDITIONS_OF[kind].length > 0 && <th scope="col">{words('admin.requires')}</th>}
             <th scope="col">
-              <span className={styles['hidden']}>Actions</span>
+              <span className={styles['hidden']}>{words('admin.actions')}</span>
             </th>
           </tr>
         </thead>
@@ -396,7 +459,7 @@ function KindWorkflow({
             <tr key={transition.key}>
               <td>
                 <input
-                  aria-label={`Name of ${transition.label}`}
+                  aria-label={words('admin.name-of', { label: transition.label })}
                   value={transition.name}
                   onChange={(change) =>
                     changeTransition(transition.key, { name: change.target.value })
@@ -405,7 +468,7 @@ function KindWorkflow({
               </td>
               <td>
                 <select
-                  aria-label={`${transition.label} moves from`}
+                  aria-label={words('admin.moves-from', { label: transition.label })}
                   value={transition.from}
                   onChange={(change) =>
                     changeTransition(transition.key, { from: change.target.value })
@@ -416,7 +479,7 @@ function KindWorkflow({
               </td>
               <td>
                 <select
-                  aria-label={`${transition.label} moves to`}
+                  aria-label={words('admin.moves-to', { label: transition.label })}
                   value={transition.to}
                   onChange={(change) =>
                     changeTransition(transition.key, { to: change.target.value })
@@ -427,7 +490,7 @@ function KindWorkflow({
               </td>
               <td>
                 <select
-                  aria-label={`${transition.label} needs`}
+                  aria-label={words('admin.needs-2', { label: transition.label })}
                   value={transition.permission}
                   onChange={(change) =>
                     changeTransition(transition.key, {
@@ -445,7 +508,7 @@ function KindWorkflow({
               <td>
                 <input
                   type="checkbox"
-                  aria-label={`${transition.label} asks for a reason`}
+                  aria-label={words('admin.asks-for-a-reason', { label: transition.label })}
                   checked={transition.reasonRequired}
                   onChange={(change) =>
                     changeTransition(transition.key, { reasonRequired: change.target.checked })
@@ -468,7 +531,10 @@ function KindWorkflow({
                       <label key={condition}>
                         <input
                           type="checkbox"
-                          aria-label={`${transition.label} requires ${CONDITIONS[condition]}`}
+                          aria-label={words('admin.requires-2', {
+                            label: transition.label,
+                            value2: CONDITIONS[condition],
+                          })}
                           checked={transition.requires?.includes(condition) ?? false}
                           onChange={(change) => {
                             const was = transition.requires ?? [];
@@ -489,12 +555,12 @@ function KindWorkflow({
               <td>
                 <button
                   type="button"
-                  aria-label={`Remove the transition ${transition.label}`}
+                  aria-label={words('admin.remove-the-transition', { label: transition.label })}
                   onClick={() =>
                     setTransitions((was) => was.filter((each) => each.key !== transition.key))
                   }
                 >
-                  Remove
+                  {words('admin.remove-2')}
                 </button>
               </td>
             </tr>
@@ -503,13 +569,13 @@ function KindWorkflow({
       </table>
       <div className={styles['toolbar']}>
         <input
-          aria-label="New transition"
-          placeholder="New transition"
+          aria-label={words('admin.new-transition')}
+          placeholder={words('admin.new-transition')}
           value={newTransition}
           onChange={(change) => setNewTransition(change.target.value)}
         />
         <button type="button" onClick={addTransition}>
-          Add transition
+          {words('admin.add-transition')}
         </button>
       </div>
       {kind !== 'queryDefinition' && kind !== 'prompt' && kind !== 'term' && (
@@ -530,7 +596,7 @@ function KindWorkflow({
       )}
       <div className={styles['toolbar']}>
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
-          {`Save as version ${version + 1}`}
+          {words('admin.save-as-version', { value1: version + 1 })}
         </button>
       </div>
       <p role="status">{said}</p>
@@ -568,7 +634,7 @@ function GateCell({
     <div className={styles['gate']}>
       <input
         type="checkbox"
-        aria-label={`${label} is a gate`}
+        aria-label={words('admin.is-a-gate', { label })}
         checked={gate !== undefined}
         onChange={(change) => {
           if (!change.target.checked) {
@@ -580,7 +646,7 @@ function GateCell({
             gate: {
               approvals: 1,
               notAuthor: true,
-              reject: { name: 'Return', to: initial },
+              reject: { name: words('admin.return'), to: initial },
               designates: true,
               baseline: false,
               publication: 'none',
@@ -591,9 +657,9 @@ function GateCell({
       {gate && (
         <>
           <label>
-            Approvers
+            {words('admin.approvers')}
             <select
-              aria-label={`Approvers ${label} needs`}
+              aria-label={words('admin.approvers-needs', { label })}
               value={gate.approvals}
               onChange={(change) =>
                 onChange({ gate: { ...gate, approvals: Number(change.target.value) } })
@@ -609,23 +675,23 @@ function GateCell({
           <label>
             <input
               type="checkbox"
-              aria-label={`${label} refuses its authors`}
+              aria-label={words('admin.refuses-its-authors', { label })}
               checked={gate.notAuthor ?? false}
               onChange={(change) =>
                 onChange({ gate: { ...gate, notAuthor: change.target.checked } })
               }
             />
-            Not its authors
+            {words('admin.not-its-authors')}
           </label>
           <input
-            aria-label={`Rejecting ${label} is called`}
+            aria-label={words('admin.rejecting-is-called', { label })}
             value={gate.reject.name}
             onChange={(change) =>
               onChange({ gate: { ...gate, reject: { ...gate.reject, name: change.target.value } } })
             }
           />
           <select
-            aria-label={`Rejecting ${label} returns to`}
+            aria-label={words('admin.rejecting-returns-to', { label })}
             value={gate.reject.to}
             onChange={(change) =>
               onChange({ gate: { ...gate, reject: { ...gate.reject, to: change.target.value } } })
@@ -639,7 +705,7 @@ function GateCell({
               <label>
                 <input
                   type="checkbox"
-                  aria-label={`${label} takes a baseline`}
+                  aria-label={words('admin.takes-a-baseline', { label })}
                   checked={gate.baseline ?? false}
                   onChange={(change) =>
                     onChange({
@@ -651,10 +717,10 @@ function GateCell({
                     })
                   }
                 />
-                Takes a baseline
+                {words('admin.takes-a-baseline-2')}
               </label>
               <select
-                aria-label={`${label} publishes`}
+                aria-label={words('admin.publishes', { label })}
                 value={gate.publication ?? 'none'}
                 disabled={!(gate.baseline ?? false)}
                 onChange={(change) =>
@@ -666,9 +732,9 @@ function GateCell({
                   })
                 }
               >
-                <option value="none">Publishes nothing</option>
-                <option value="permitted">May publish</option>
-                <option value="required">Publishes</option>
+                <option value="none">{words('admin.publishes-nothing')}</option>
+                <option value="permitted">{words('admin.may-publish')}</option>
+                <option value="required">{words('admin.publishes-2')}</option>
               </select>
             </>
           )}
@@ -704,9 +770,9 @@ function ReviewPolicy({
   }, [lapse.kind, onPeople]);
   return (
     <fieldset className={styles['gate']}>
-      <legend>{`${one} reviews`}</legend>
+      <legend>{words('admin.reviews', { one })}</legend>
       <label>
-        Days before a review its owner is prompted
+        {words('admin.days-before-a-review-its')}
         <input
           type="number"
           min={0}
@@ -721,7 +787,7 @@ function ReviewPolicy({
         />
       </label>
       <label>
-        When a review lapses
+        {words('admin.when-a-review-lapses')}
         <select
           value={lapse.kind}
           onChange={(change) => {
@@ -737,14 +803,14 @@ function ReviewPolicy({
             });
           }}
         >
-          <option value="visibility">Show it as past review</option>
-          <option value="move">Move it to a state</option>
-          <option value="escalate">Escalate to a person</option>
+          <option value="visibility">{words('admin.show-it-as-past-review')}</option>
+          <option value="move">{words('admin.move-it-to-a-state')}</option>
+          <option value="escalate">{words('admin.escalate-to-a-person')}</option>
         </select>
       </label>
       {lapse.kind === 'move' && (
         <select
-          aria-label="A lapsed review moves it to"
+          aria-label={words('admin.a-lapsed-review-moves-it')}
           value={lapse.to}
           onChange={(change) =>
             onChange({ ...review, lapse: { kind: 'move', to: change.target.value } })
@@ -759,7 +825,7 @@ function ReviewPolicy({
       )}
       {lapse.kind === 'escalate' && (
         <select
-          aria-label="A lapsed review is escalated to"
+          aria-label={words('admin.a-lapsed-review-is-escalated')}
           value={lapse.to}
           onChange={(change) =>
             onChange({ ...review, lapse: { kind: 'escalate', to: change.target.value } })

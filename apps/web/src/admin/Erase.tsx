@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './Erase.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -33,14 +34,14 @@ export function erasureRefusalWords(refusal: ErasureRefusal): string {
   switch (refusal.code) {
     case 'granted':
       return refusal.grants === 1
-        ? '1 grant names them: remove their access first.'
-        : `${refusal.grants ?? 'Some'} grants name them: remove their access first.`;
+        ? words('admin.1-grant-names-them-remove')
+        : words('admin.grants-name-them-remove-their', { value1: refusal.grants ?? 'Some' });
     case 'self':
-      return 'You cannot erase yourself.';
+      return words('admin.you-cannot-erase-yourself');
     case 'service':
-      return 'A service is not a person, and is not erased.';
+      return words('admin.a-service-is-not-a');
     default:
-      return 'Something refuses it.';
+      return words('admin.something-refuses-it');
   }
 }
 
@@ -48,17 +49,27 @@ export function erasureRefusalWords(refusal: ErasureRefusal): string {
 function goes(erasure: Erasure): string[] {
   const { erases } = erasure;
   return [
-    'Their name, which becomes "Erased person" everywhere it is shown, and their address',
-    `${counted(erases.labels, 'audit log label naming them', 'audit log labels naming them')}, each replaced by a fixed word, with those this erasure records`,
-    ...(erases.sessions > 0 ? [`${counted(erases.sessions, 'session', 'sessions')}, ended`] : []),
-    ...(erases.tokens > 0 ? [`${counted(erases.tokens, 'API token', 'API tokens')}, revoked`] : []),
+    words('admin.their-name-which-becomes-erased'),
+    words('admin.each-replaced-by-a-fixed', {
+      value1: counted(erases.labels, 'audit log label naming them', 'audit log labels naming them'),
+    }),
+    ...(erases.sessions > 0
+      ? [words('admin.ended', { value1: counted(erases.sessions, 'session', 'sessions') })]
+      : []),
+    ...(erases.tokens > 0
+      ? [words('admin.revoked', { value1: counted(erases.tokens, 'API token', 'API tokens') })]
+      : []),
     ...(erases.memberships > 0
-      ? [`${counted(erases.memberships, 'group membership', 'group memberships')}, removed`]
+      ? [
+          words('admin.removed', {
+            value1: counted(erases.memberships, 'group membership', 'group memberships'),
+          }),
+        ]
       : []),
     ...(erasure.person.invited
-      ? ['Their invitation, withdrawn']
+      ? [words('admin.their-invitation-withdrawn')]
       : erases.invitation
-        ? ['The invitation that held their address']
+        ? [words('admin.the-invitation-that-held-their')]
         : []),
   ];
 }
@@ -66,11 +77,13 @@ function goes(erasure: Erasure): string[] {
 /** What stays, said whatever the counts (VER-038). */
 function stays(erasure: Erasure): string[] {
   return [
-    'Their identifier, and the one their provider gives them, so they can never sign in here again',
-    `${counted(erasure.remains.events, 'audit event', 'audit events')} recorded against them, read with the fixed word`,
-    'What they wrote: content, titles, comments and messages',
-    'The name a data source saw them by, kept in the data but no longer shown',
-    'Audit log exports made before now',
+    words('admin.their-identifier-and-the-one'),
+    words('admin.recorded-against-them-read-with', {
+      value1: counted(erasure.remains.events, 'audit event', 'audit events'),
+    }),
+    words('admin.what-they-wrote-content-titles'),
+    words('admin.the-name-a-data-source'),
+    words('admin.audit-log-exports-made-before'),
   ];
 }
 
@@ -131,7 +144,7 @@ export function EraseDialog({
     if (refusals && shown.state === 'read') {
       setShown({ state: 'read', erasure: { ...shown.erasure, refusals } });
     } else {
-      setSaid(`${name} could not be erased. Try again.`);
+      setSaid(words('admin.could-not-be-erased-try', { name }));
     }
     acting.current = false;
     setBusy(false);
@@ -140,14 +153,14 @@ export function EraseDialog({
   return (
     <Modal labelledBy={heading} size="dialog" onClose={onClose}>
       <div className={styles['erasing']}>
-        <h2 id={heading}>{`Erase ${name}?`}</h2>
-        {shown.state === 'loading' && <p>Reading what erasing them takes.</p>}
-        {shown.state === 'failed' && <p>What erasing them takes could not be read.</p>}
+        <h2 id={heading}>{words('admin.erase', { name })}</h2>
+        {shown.state === 'loading' && <p>{words('admin.reading-what-erasing-them-takes')}</p>}
+        {shown.state === 'failed' && <p>{words('admin.what-erasing-them-takes-could')}</p>}
         {shown.state === 'read' && (
           <>
             {shown.erasure.refusals.length > 0 && (
               <>
-                <p>They cannot be erased while:</p>
+                <p>{words('admin.they-cannot-be-erased-while')}</p>
                 <ul className={styles['listed']}>
                   {shown.erasure.refusals.map((refusal) => (
                     <li key={refusal.code}>{erasureRefusalWords(refusal)}</li>
@@ -155,29 +168,29 @@ export function EraseDialog({
                 </ul>
               </>
             )}
-            <h3>What goes</h3>
+            <h3>{words('admin.what-goes')}</h3>
             <ul className={styles['listed']}>
               {goes(shown.erasure).map((each) => (
                 <li key={each}>{each}</li>
               ))}
             </ul>
-            <h3>What stays</h3>
+            <h3>{words('admin.what-stays')}</h3>
             <ul className={styles['listed']}>
               {stays(shown.erasure).map((each) => (
                 <li key={each}>{each}</li>
               ))}
             </ul>
-            <p>This cannot be undone.</p>
+            <p>{words('admin.this-cannot-be-undone')}</p>
           </>
         )}
         <p role="status">{said}</p>
         <div className={styles['buttons']}>
           <button type="button" data-autofocus onClick={onClose}>
-            Cancel
+            {words('admin.cancel')}
           </button>
           {shown.state === 'read' && shown.erasure.refusals.length === 0 && (
             <button type="button" className="danger" disabled={busy} onClick={() => void erase()}>
-              Erase
+              {words('admin.erase-2')}
             </button>
           )}
         </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
+import { words } from '../words/words.js';
 
 /** The access page's sentence, for the same refusal. */
 export const NOT_YOURS = 'You may not manage access here.';
@@ -51,7 +52,7 @@ export function Shown<T>({
   failed: string;
   children: (rows: readonly T[]) => React.ReactNode;
 }) {
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'refused') {
     return (
       <Notice tone="refused">

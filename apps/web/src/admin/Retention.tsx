@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -19,15 +20,25 @@ export interface KeepRow {
   readonly at: string;
 }
 
-const KINDS: Readonly<Record<Kind, string>> = { component: 'Components', document: 'Documents' };
-const BOTH = 'Components and documents';
+const KINDS: Readonly<Record<Kind, string>> = {
+  get component() {
+    return say('admin.components');
+  },
+  get document() {
+    return say('admin.documents');
+  },
+};
+const BOTH = (): string => say('admin.components-and-documents');
 const MAX_DAYS = 36_500;
 
 const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** What a keep keeps, in words: "components in Clinical", "documents in every space". */
 const keptWords = (kind: Kind | null, space: string | null) =>
-  `${(kind === null ? BOTH : KINDS[kind]).toLowerCase()} in ${space ?? 'every space'}`;
+  say('admin.in-2', {
+    value1: (kind === null ? BOTH : KINDS[kind]).toLowerCase(),
+    value2: space ?? 'every space',
+  });
 
 const sentence = (words: string) => `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
 
@@ -77,13 +88,13 @@ export function Retention({ client }: { client: Client }) {
       if (data) {
         setSaid(
           body.days === null
-            ? `Cleared the keep on ${words}.`
-            : `${sentence(words)} are kept for at least ${body.days} days.`,
+            ? say('admin.cleared-the-keep-on', { words })
+            : say('admin.are-kept-for-at-least', { value1: sentence(words), days: body.days }),
         );
         setGeneration((count) => count + 1);
-      } else setSaid(refusal(error, 'The keep could not be changed.'));
+      } else setSaid(refusal(error, say('admin.the-keep-could-not-be')));
     } catch {
-      setSaid('The keep could not be changed.');
+      setSaid(say('admin.the-keep-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -92,12 +103,12 @@ export function Retention({ client }: { client: Client }) {
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (kind === '' && space === '') {
-      setSaid('Choose a kind, a space or both.');
+      setSaid(say('admin.choose-a-kind-a-space'));
       return;
     }
     const count = Number(days);
     if (!/^\d+$/.test(days.trim()) || count < 1 || count > MAX_DAYS) {
-      setSaid(`Give whole days, from 1 to ${MAX_DAYS}.`);
+      setSaid(say('admin.give-whole-days-from-1', { MAX_DAYS }));
       return;
     }
     void put({ kind: kind === '' ? null : kind, space: space === '' ? null : space, days: count });
@@ -106,25 +117,26 @@ export function Retention({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          A keep is the least time a component or document is kept before it may be deleted, counted
-          from its latest version. Every keep that reaches it applies, and the longest wins. A legal
-          hold still stands, whatever the keep.
-        </p>
+        <p>{say('admin.a-keep-is-the-least')}</p>
       </div>
-      <form className={styles['toolbar']} onSubmit={submit} aria-label="Set a keep" noValidate>
+      <form
+        className={styles['toolbar']}
+        onSubmit={submit}
+        aria-label={say('admin.set-a-keep')}
+        noValidate
+      >
         <label className={styles['filter']}>
-          Kind
+          {say('admin.kind')}
           <select value={kind} onChange={(change) => setKind(change.target.value as Kind | '')}>
-            <option value="">{BOTH}</option>
+            <option value="">{BOTH()}</option>
             <option value="component">{KINDS.component}</option>
             <option value="document">{KINDS.document}</option>
           </select>
         </label>
         <label className={styles['filter']}>
-          Space
+          {say('admin.space')}
           <select value={space} onChange={(change) => setSpace(change.target.value)}>
-            <option value="">Every space</option>
+            <option value="">{say('admin.every-space')}</option>
             {spaces.map((each) => (
               <option key={each.id} value={each.id}>
                 {each.name}
@@ -133,7 +145,7 @@ export function Retention({ client }: { client: Client }) {
           </select>
         </label>
         <label className={styles['filter']}>
-          Days
+          {say('admin.days')}
           <input
             type="number"
             min={1}
@@ -144,26 +156,24 @@ export function Retention({ client }: { client: Client }) {
           />
         </label>
         <button type="submit" className="primary" disabled={busy}>
-          Set keep
+          {say('admin.set-keep')}
         </button>
       </form>
       <p role="status">{said}</p>
       <Shown read={read} failed="The keeps could not be loaded.">
         {(rows) =>
           rows.length === 0 ? (
-            <p className={styles['muted']}>
-              No keep is set: anything nothing depends on may be deleted.
-            </p>
+            <p className={styles['muted']}>{say('admin.no-keep-is-set-anything')}</p>
           ) : (
-            <table aria-label="Retention keeps" className={styles['table']}>
+            <table aria-label={say('admin.retention-keeps')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Kind</th>
-                  <th scope="col">Space</th>
-                  <th scope="col">Kept for at least</th>
-                  <th scope="col">Set</th>
+                  <th scope="col">{say('admin.kind')}</th>
+                  <th scope="col">{say('admin.space')}</th>
+                  <th scope="col">{say('admin.kept-for-at-least')}</th>
+                  <th scope="col">{say('admin.set')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{say('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -171,12 +181,12 @@ export function Retention({ client }: { client: Client }) {
                 {rows.map((keep) => (
                   <tr key={`${keep.kind ?? ''} ${keep.space?.id ?? ''}`}>
                     <td className={styles['strong']}>
-                      {keep.kind === null ? BOTH : KINDS[keep.kind]}
+                      {keep.kind === null ? BOTH() : KINDS[keep.kind]}
                     </td>
-                    <td>{keep.space?.name ?? 'Every space'}</td>
-                    <td>{`${keep.days} ${keep.days === 1 ? 'day' : 'days'}`}</td>
+                    <td>{keep.space?.name ?? say('admin.every-space')}</td>
+                    <td>{`${keep.days} ${say('admin.days-2', { count: keep.days })}`}</td>
                     <td>
-                      {keep.by.name ?? 'Somebody'}
+                      {keep.by.name ?? say('admin.somebody')}
                       <br />
                       <span className={styles['muted']}>{when.format(new Date(keep.at))}</span>
                     </td>
@@ -184,12 +194,14 @@ export function Retention({ client }: { client: Client }) {
                       <button
                         type="button"
                         disabled={busy}
-                        aria-label={`Clear the keep on ${keptWords(keep.kind, keep.space?.name ?? null)}`}
+                        aria-label={say('admin.clear-the-keep-on', {
+                          value1: keptWords(keep.kind, keep.space?.name ?? null),
+                        })}
                         onClick={() =>
                           void put({ kind: keep.kind, space: keep.space?.id ?? null, days: null })
                         }
                       >
-                        Clear
+                        {say('admin.clear')}
                       </button>
                     </td>
                   </tr>

@@ -7,6 +7,7 @@ import {
   type EditorView,
 } from '@alloy-works/editor';
 import { usePresentation } from './presentation.js';
+import { words } from '../words/words.js';
 
 /** One entry of a style list: the identifier stored, and the name an author reads. */
 export interface Choice {
@@ -26,7 +27,10 @@ export function paragraphChoices(theme: ResolvedTheme, places: readonly Place[])
   const named =
     defaults.size === 1 && only !== undefined ? theme.paragraphStyles.get(only) : undefined;
   const choices: Choice[] = [
-    { value: 'body', label: named ? `${named.name} (default)` : 'Default' },
+    {
+      value: 'body',
+      label: named ? words('theme.default', { name: named.name }) : words('theme.default-2'),
+    },
   ];
   for (const style of theme.paragraphStyles.values()) {
     if (style.id === 'body') continue;
@@ -85,7 +89,7 @@ export function StyleSelect({
       >
         {value === null && (
           <option value="" disabled>
-            Several styles
+            {words('theme.several-styles')}
           </option>
         )}
         {value !== null && !known && <option value={value}>{value}</option>}
@@ -122,7 +126,7 @@ export function ParagraphStyle({
   return (
     <StyleSelect
       className={className}
-      label="Paragraph style"
+      label={words('theme.paragraph-style')}
       value={stored.size === 1 && only !== undefined ? only : null}
       choices={paragraphChoices(presentation.theme, [
         ...new Set(paragraphs.map(({ place }) => place)),
@@ -147,7 +151,7 @@ export function TableStyle({
   if (presentation?.state !== 'ready') return null;
   return (
     <StyleSelect
-      label="Table style"
+      label={words('theme.table-style')}
       value={value}
       choices={tableChoices(presentation.theme)}
       enabled={enabled}
@@ -174,7 +178,7 @@ export function ImageStyle({
   if (presentation?.state !== 'ready') return null;
   return (
     <StyleSelect
-      label="Image style"
+      label={words('theme.image-style')}
       value={value}
       choices={imageChoices(presentation.theme, target)}
       enabled={enabled}

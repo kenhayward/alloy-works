@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Chip } from '../parts/Chip.js';
 import { documentLink, nodeLink } from '../structure/links.js';
 import styles from './VersionPages.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -25,8 +26,16 @@ function versionSentence(version: Heading, latest: { readonly number: string }):
     month: 'long',
     year: 'numeric',
   });
-  const by = version.author === null ? '' : ` by ${version.author.name ?? 'somebody'}`;
-  return `An earlier version, ${version.number},${by} on ${when}. The latest is ${latest.number}.`;
+  const by =
+    version.author === null
+      ? ''
+      : words('versions.by', { value1: version.author.name ?? 'somebody' });
+  return words('versions.an-earlier-version-on-the', {
+    number: version.number,
+    by,
+    when,
+    number4: latest.number,
+  });
 }
 
 /** One version read once, and what its answer says when it is not one. */
@@ -55,12 +64,12 @@ function useVersion<T>(read: () => Promise<{ data?: T; response: Response }>, ke
 function Unread({ shown, kind }: { shown: 'missing' | 'deleted' | 'failed' | null; kind: string }) {
   const said =
     shown === null
-      ? 'Opening...'
+      ? words('versions.opening')
       : shown === 'missing'
-        ? 'There is no such version.'
+        ? words('versions.there-is-no-such-version')
         : shown === 'deleted'
-          ? `This ${kind} has been deleted.`
-          : 'The version could not be read.';
+          ? words('versions.this-has-been-deleted', { kind })
+          : words('versions.the-version-could-not-be');
   return <p className={styles['versionNote']}>{said}</p>;
 }
 
@@ -80,14 +89,14 @@ function Head({
   return (
     <header className={styles['versionHead']}>
       <p>
-        <a href={latestLink}>Open the latest</a>
+        <a href={latestLink}>{words('versions.open-the-latest')}</a>
       </p>
       <h1 id="version-heading" className={styles['versionTitle']}>
         {title}
       </h1>
       <div className={styles['versionFacts']}>
-        <Chip tone="info">{`Version ${version.number}`}</Chip>
-        {archived && <Chip tone="warn">Archived</Chip>}
+        <Chip tone="info">{words('versions.version', { number: version.number })}</Chip>
+        {archived && <Chip tone="warn">{words('versions.archived')}</Chip>}
       </div>
       <p className={styles['versionNote']}>{versionSentence(version, latest)}</p>
     </header>
@@ -133,7 +142,9 @@ export function ComponentVersionPage({
     if (!host || read === null || isLatest) return;
     const rendered = renderContent(read.content, window.document);
     if (rendered === null) {
-      host.replaceChildren(window.document.createTextNode('This version cannot be shown.'));
+      host.replaceChildren(
+        window.document.createTextNode(words('versions.this-version-cannot-be-shown')),
+      );
       return;
     }
     host.replaceChildren(rendered);
@@ -237,8 +248,8 @@ export function DocumentVersionPage({
             <span className={item.type === 'reference' ? styles['versionReference'] : undefined}>
               {item.type === 'reference'
                 ? item.component === null
-                  ? 'A component you cannot open'
-                  : (titles.get(item.id) ?? 'A component')
+                  ? words('versions.a-component-you-cannot-open')
+                  : (titles.get(item.id) ?? words('versions.a-component'))
                 : titleWords(item.title)}
             </span>
             {list(item.children ?? [])}

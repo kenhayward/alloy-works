@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import type { Movable } from './Workflow.js';
 import styles from './Hold.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,7 +39,7 @@ export function ApprovalsList({ client, kind, id }: { client: Client; kind: Mova
           data.approvals.map((each) => ({
             decision: each.decision,
             reason: each.reason,
-            by: each.by.name ?? 'Someone',
+            by: each.by.name ?? words('lifecycle.someone'),
             at: each.at,
           })),
         );
@@ -51,10 +52,10 @@ export function ApprovalsList({ client, kind, id }: { client: Client; kind: Mova
 
   if (decided.length === 0) return null;
   return (
-    <ul aria-label="Approvals" className={styles['approvals']}>
+    <ul aria-label={words('lifecycle.approvals')} className={styles['approvals']}>
       {decided.map((each, index) => (
         <li key={index}>
-          {`${each.by} ${each.decision === 'approved' ? 'approved' : 'returned it'}, ${when.format(new Date(each.at))}${each.reason === null ? '' : `: ${each.reason}`}`}
+          {`${each.by} ${each.decision === 'approved' ? 'approved' : words('lifecycle.returned-it')}, ${when.format(new Date(each.at))}${each.reason === null ? '' : `: ${each.reason}`}`}
         </li>
       ))}
     </ul>

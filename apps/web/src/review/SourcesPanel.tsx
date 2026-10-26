@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { flagSaid } from '../bibliography/entries.js';
 import { entryLink } from '../bibliography/links.js';
 import { Notice } from '../states/Notice.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -54,13 +55,13 @@ export function SourcesPanel({
   if (items === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The flagged sources could not be read.</p>
+        <p>{words('review.the-flagged-sources-could-not')}</p>
       </Notice>
     );
   }
-  if (items.length === 0) return <p>No cited source is retracted or corrected.</p>;
+  if (items.length === 0) return <p>{words('review.no-cited-source-is-retracted')}</p>;
   return (
-    <ul aria-label="Flagged sources">
+    <ul aria-label={words('review.flagged-sources')}>
       {items.map((each, at) => {
         const named = each.entry && [each.entry.key, each.entry.title].filter(Boolean).join(', ');
         return (
@@ -69,11 +70,11 @@ export function SourcesPanel({
             {each.entry ? (
               <a href={entryLink(each.entry.id)}>{named}</a>
             ) : (
-              'a source you may not read'
+              words('review.a-source-you-may-not')
             )}
             {each.components.length > 0 && (
               <>
-                {'. Cited in '}
+                {words('review.cited-in')}
                 {each.components.map((component, index) => (
                   <span key={component.id}>
                     {index > 0 && ', '}
@@ -83,7 +84,7 @@ export function SourcesPanel({
                 .
               </>
             )}
-            {each.unreadable && ' Cited in components you may not read.'}
+            {each.unreadable && words('review.cited-in-components-you-may')}
           </li>
         );
       })}

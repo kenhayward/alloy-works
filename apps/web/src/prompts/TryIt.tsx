@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { isRecord } from '../data/shapes.js';
 import styles from './PromptPage.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -33,7 +34,10 @@ export function partsOf(outline: unknown): Part[] {
       ) {
         parts.push({
           node: each.id,
-          label: `Part ${parts.length + 1}${section === null ? '' : `, in ${section}`}`,
+          label: words('prompts.part', {
+            value1: parts.length + 1,
+            value2: section === null ? '' : `, in ${section}`,
+          }),
         });
       }
       visit(each.children, each.type === 'section' ? titleOf(each.title) : section);
@@ -126,10 +130,13 @@ export function TryIt({
         if (name === 'ended') {
           setSaid(
             frame.outcome !== 'finished'
-              ? 'The trial did not finish, so it does not count towards approval.'
+              ? words('prompts.the-trial-did-not-finish')
               : frame.tokensIn === null
-                ? 'Tried. No tokens were reported.'
-                : `Tried: ${String(frame.tokensIn)} tokens in, ${String(frame.tokensOut)} out.`,
+                ? words('prompts.tried-no-tokens-were-reported')
+                : words('prompts.tried-tokens-in-out', {
+                    value1: String(frame.tokensIn),
+                    value2: String(frame.tokensOut),
+                  }),
           );
         }
         if (name === 'failed') setSaid(String(frame.message));
@@ -137,11 +144,11 @@ export function TryIt({
     });
     if (outcome.kind === 'refused') {
       const body = outcome.body as { message?: string } | null;
-      setSaid(body?.message ?? 'The prompt could not be tried.');
+      setSaid(body?.message ?? words('prompts.the-prompt-could-not-be-2'));
     } else if (outcome.kind === 'failed') {
-      setSaid('The trial stopped answering.');
+      setSaid(words('prompts.the-trial-stopped-answering'));
     } else if (outcome.kind === 'stopped') {
-      setSaid('Stopped.');
+      setSaid(words('prompts.stopped'));
     }
     stop.current = null;
     setRunning(false);
@@ -149,15 +156,12 @@ export function TryIt({
   };
 
   return (
-    <section aria-label="Try it" className={styles['promptForm']}>
-      <p className={styles['promptHint']}>
-        A trial runs this version on a part, as it would run on the document, and changes nothing.
-        Approving the version needs one.
-      </p>
+    <section aria-label={words('prompts.try-it')} className={styles['promptForm']}>
+      <p className={styles['promptHint']}>{words('prompts.a-trial-runs-this-version')}</p>
       <label>
-        Document
+        {words('prompts.document')}
         <select value={document} onChange={(event) => setDocument(event.target.value)}>
-          <option value="">Choose a document</option>
+          <option value="">{words('prompts.choose-a-document')}</option>
           {documents.map((each) => (
             <option key={each.id} value={each.id}>
               {each.title}
@@ -167,7 +171,7 @@ export function TryIt({
       </label>
       {document !== '' && (
         <label>
-          Part
+          {words('prompts.part-2')}
           <select value={node} onChange={(event) => setNode(event.target.value)}>
             {parts.map((each) => (
               <option key={each.node} value={each.node}>
@@ -184,16 +188,16 @@ export function TryIt({
           disabled={running || document === '' || node === ''}
           onClick={() => void tryIt()}
         >
-          Try it
+          {words('prompts.try-it')}
         </button>
         {running && (
           <button type="button" onClick={() => stop.current?.abort()}>
-            Stop
+            {words('prompts.stop')}
           </button>
         )}
       </div>
       {output !== '' && (
-        <pre role="region" aria-label="What it wrote" className={styles['output']}>
+        <pre role="region" aria-label={words('prompts.what-it-wrote')} className={styles['output']}>
           {output}
         </pre>
       )}

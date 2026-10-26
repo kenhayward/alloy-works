@@ -2,15 +2,24 @@ import type { ExtensionSetting, ExtensionSettings } from '@alloy-works/domain';
 
 import { connectable, type Extensions, type InstalledExtension } from './extensions.js';
 import type { Settings } from './shapes.js';
+import { words } from '../words/words.js';
 
 /** The types of source a connection reaches: a PostgreSQL database, an HTTP API, an S3 bucket (D6) or an extension's (EX). */
 export type SourceType = Settings['type'];
 
 export const TYPE_LABELS: Readonly<Record<SourceType, string>> = {
-  postgres: 'A PostgreSQL database',
-  http: 'An HTTP API',
-  s3: 'An S3 bucket',
-  extension: 'An extension',
+  get postgres() {
+    return words('data.a-postgresql-database');
+  },
+  get http() {
+    return words('data.an-http-api-2');
+  },
+  get s3() {
+    return words('data.an-s3-bucket-2');
+  },
+  get extension() {
+    return words('data.an-extension-2');
+  },
 };
 
 /** What the settings form holds while it is being written: the port as typed. */
@@ -127,12 +136,12 @@ function extensionValues(
     }
     const text = typeof typed === 'string' ? typed.trim() : '';
     if (text === '') {
-      if (field.required) return `${field.label} is required.`;
+      if (field.required) return words('data.is-required', { label: field.label });
       continue;
     }
     if (field.type === 'number') {
       const number = Number(text);
-      if (!Number.isFinite(number)) return `${field.label} is a number.`;
+      if (!Number.isFinite(number)) return words('data.is-a-number', { label: field.label });
       values[field.key] = number;
     } else values[field.key] = text;
   }
@@ -142,9 +151,15 @@ function extensionValues(
 export type RunsAs = 'service' | 'email' | 'subject';
 
 export const RUNS_AS_LABELS: Readonly<Record<RunsAs, string>> = {
-  service: "The connection's account",
-  email: 'Each person, by the email they sign in with',
-  subject: "Each person, by their identifier at the organisation's sign-in",
+  get service() {
+    return words('data.the-connection-s-account');
+  },
+  get email() {
+    return words('data.each-person-by-the-email');
+  },
+  get subject() {
+    return words('data.each-person-by-their-identifier');
+  },
 };
 
 export function runsAsOf(identity: Settings['identity']): RunsAs {
@@ -271,34 +286,33 @@ export function settingsOf(
 
 /** What stops a draft being sent, said in a sentence; null where nothing does. */
 export function draftProblem(draft: Draft): string | null {
-  if (draft.name.trim() === '') return 'A connection needs a name.';
+  if (draft.name.trim() === '') return words('data.a-connection-needs-a-name');
   if (draft.type === 'extension') {
-    if (draft.extension === null) return 'Choose the extension it reaches.';
+    if (draft.extension === null) return words('data.choose-the-extension-it-reaches');
     const values = extensionValues(draft.extension);
     return typeof values === 'string' ? values : null;
   }
   if (draft.type === 'http') {
     if (!/^https?:\/\/[^/?#]+/.test(draft.baseUrl.trim())) {
-      return 'A base URL starts http:// or https:// and names its host.';
+      return words('data.a-base-url-starts-http');
     }
-    if (draft.secretHeader.trim() === '')
-      return 'A connection needs the header its secret is sent in.';
+    if (draft.secretHeader.trim() === '') return words('data.a-connection-needs-the-header');
     return null;
   }
   if (draft.type === 's3') {
     if (!/^https?:\/\/[^/?#]+$/.test(draft.endpoint.trim())) {
-      return 'An endpoint starts http:// or https:// and names its host, and its port if it needs one, as https://storage.example.com:9000.';
+      return words('data.an-endpoint-starts-http-or');
     }
-    if (draft.region.trim() === '') return 'A connection needs the region of its bucket.';
-    if (draft.bucket.trim() === '') return 'A connection needs the name of its bucket.';
+    if (draft.region.trim() === '') return words('data.a-connection-needs-the-region');
+    if (draft.bucket.trim() === '') return words('data.a-connection-needs-the-name');
     return null;
   }
-  if (draft.host.trim() === '') return 'A connection needs the host of its source.';
+  if (draft.host.trim() === '') return words('data.a-connection-needs-the-host');
   if (!/^\d{1,5}$/.test(draft.port) || Number(draft.port) < 1 || Number(draft.port) > 65535) {
-    return 'A port is a whole number from 1 to 65535.';
+    return words('data.a-port-is-a-whole');
   }
-  if (draft.database === '') return 'A connection needs the name of its database.';
-  if (draft.account === '') return 'A connection needs the account it signs in as.';
+  if (draft.database === '') return words('data.a-connection-needs-the-name-2');
+  if (draft.account === '') return words('data.a-connection-needs-the-account');
   return null;
 }
 
@@ -308,8 +322,12 @@ export const RUNS_AS_HINT =
 
 /** How an S3 bucket is addressed, said beside the choice (the D6 plan, D6-C). */
 export const PATH_STYLE_LABELS = {
-  virtual: 'By its name before the endpoint, as AWS addresses buckets',
-  path: "In the endpoint's path, as MinIO and SeaweedFS do by default",
+  get virtual() {
+    return words('data.by-its-name-before-the');
+  },
+  get path() {
+    return words('data.in-the-endpoint-s-path');
+  },
 } as const;
 
 /** What an S3 connection's key pair is, said beside its fields. */
@@ -321,8 +339,12 @@ export const SECRET_HEADER_HINT =
   'The secret is sent as this header, exactly as it is set: write "Bearer" and a space before a token where the API asks for one. It is never put in a URL.';
 
 export const TLS_LABELS: Readonly<Record<Draft['tls'], string>> = {
-  require: 'Required',
-  verifyFull: "Required, and the source's certificate checked",
+  get require() {
+    return words('data.required');
+  },
+  get verifyFull() {
+    return words('data.required-and-the-source-s');
+  },
 };
 
 /**
@@ -353,7 +375,7 @@ export function SettingsFields({
     <>
       {typeFixed ? null : (
         <label>
-          Type
+          {words('data.type')}
           <select
             value={draft.type}
             onChange={(event) => onChange({ ...draft, type: event.target.value as SourceType })}
@@ -367,11 +389,11 @@ export function SettingsFields({
         </label>
       )}
       <label>
-        Name
+        {words('data.name')}
         <input {...field('name')} />
       </label>
       <label>
-        Description
+        {words('data.description')}
         <textarea rows={2} {...field('description')} />
       </label>
       {draft.type === 'extension' ? (
@@ -384,19 +406,19 @@ export function SettingsFields({
       ) : draft.type === 's3' ? (
         <>
           <label>
-            Endpoint
+            {words('data.endpoint')}
             <input {...field('endpoint')} autoComplete="off" spellCheck={false} inputMode="url" />
           </label>
           <label>
-            Region
+            {words('data.region')}
             <input {...field('region')} autoComplete="off" spellCheck={false} />
           </label>
           <label>
-            Bucket
+            {words('data.bucket')}
             <input {...field('bucket')} autoComplete="off" spellCheck={false} />
           </label>
           <label>
-            Addressed
+            {words('data.addressed')}
             <select
               value={draft.pathStyle ? 'path' : 'virtual'}
               onChange={(event) => onChange({ ...draft, pathStyle: event.target.value === 'path' })}
@@ -409,11 +431,11 @@ export function SettingsFields({
       ) : draft.type === 'http' ? (
         <>
           <label>
-            Base URL
+            {words('data.base-url')}
             <input {...field('baseUrl')} autoComplete="off" spellCheck={false} inputMode="url" />
           </label>
           <label>
-            Secret header
+            {words('data.secret-header')}
             <input {...field('secretHeader')} autoComplete="off" spellCheck={false} />
           </label>
           <p>{SECRET_HEADER_HINT}</p>
@@ -421,19 +443,19 @@ export function SettingsFields({
       ) : (
         <>
           <label>
-            Host
+            {words('data.host')}
             <input {...field('host')} autoComplete="off" spellCheck={false} />
           </label>
           <label>
-            Port
+            {words('data.port')}
             <input {...field('port')} inputMode="numeric" />
           </label>
           <label>
-            Database
+            {words('data.database')}
             <input {...field('database')} autoComplete="off" spellCheck={false} />
           </label>
           <label>
-            Account
+            {words('data.account')}
             <input {...field('account')} autoComplete="off" spellCheck={false} />
           </label>
           <label>
@@ -450,7 +472,7 @@ export function SettingsFields({
             </select>
           </label>
           <label>
-            Runs as
+            {words('data.runs-as')}
             <select
               value={draft.runsAs}
               onChange={(event) => onChange({ ...draft, runsAs: event.target.value as RunsAs })}
@@ -471,9 +493,12 @@ export function SettingsFields({
 
 /** What is said where the extensions cannot be listed, by why. */
 const UNLISTED: Readonly<Record<'refused' | 'failed', string>> = {
-  refused:
-    'Only somebody who administers the environment may read its extensions, so they make a connection to one.',
-  failed: 'The extensions could not be read. Try again.',
+  get refused() {
+    return words('data.only-somebody-who-administers-the');
+  },
+  get failed() {
+    return words('data.the-extensions-could-not-be');
+  },
 };
 
 /**
@@ -507,7 +532,7 @@ function ExtensionFields({
           <p>{UNLISTED[extensions]}</p>
         ) : (
           <label>
-            Extension
+            {words('data.extension')}
             <select
               value={held?.source.extension ?? ''}
               onChange={(event) => {
@@ -518,7 +543,7 @@ function ExtensionFields({
                 });
               }}
             >
-              <option value="">Choose an extension</option>
+              <option value="">{words('data.choose-an-extension')}</option>
               {connectable(listed).map((each) => (
                 <option key={each.id} value={each.id}>
                   {`${each.manifest.name} ${each.manifest.version}`}
@@ -529,9 +554,11 @@ function ExtensionFields({
         ))}
       {held !== null && (
         <>
-          <p>{`Its calls go to ${held.source.endpoint}.`}</p>
+          <p>{words('data.its-calls-go-to', { endpoint: held.source.endpoint })}</p>
           {held.fields.map((field) => {
-            const label = field.required ? `${field.label} (required)` : field.label;
+            const label = field.required
+              ? words('data.required-2', { label: field.label })
+              : field.label;
             const value = held.values[field.key];
             return field.type === 'boolean' ? (
               <label key={field.key}>
@@ -559,17 +586,24 @@ function ExtensionFields({
       )}
       {newer && latest !== undefined && held !== null && (
         <>
-          <p>{`${latest.manifest.name} has a newer manifest, ${latest.manifest.version}. This connection keeps the one it was saved against until you choose the latest.`}</p>
+          <p>
+            {words('data.has-a-newer-manifest-this', {
+              name: latest.manifest.name,
+              version: latest.manifest.version,
+            })}
+          </p>
           <button
             type="button"
             onClick={() => onChange({ ...draft, extension: extensionDraftOf(latest, held) })}
           >
-            Use the latest manifest
+            {words('data.use-the-latest-manifest')}
           </button>
         </>
       )}
       {typeFixed && draft.extension !== null && moved(draft.extension, latest) && (
-        <p>{`Its endpoint moves to ${draft.extension.source.endpoint}, so its secret must be set again once this is saved.`}</p>
+        <p>
+          {words('data.its-endpoint-moves-to-so', { endpoint: draft.extension.source.endpoint })}
+        </p>
       )}
     </>
   );

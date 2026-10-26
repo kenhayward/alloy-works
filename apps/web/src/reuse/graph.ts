@@ -1,4 +1,5 @@
 import type { paths } from '@alloy-works/api-client';
+import { words } from '../words/words.js';
 
 /** One relationship of an artifact, read from its end, as the service answers it. */
 export type GraphNeighbour =
@@ -178,5 +179,5 @@ export function searchOf(filter: GraphFilter): string {
 
 /** The query that answers a view of one artifact's relationships, as an integrator would ask it (REL-028). */
 export function queryOf(id: string, filter: GraphFilter): string {
-  return `GET /v1/artifacts/${id}/relationships${searchOf(filter)}`;
+  return words('reuse.get-v1-artifacts-relationships', { id, value2: searchOf(filter) });
 }

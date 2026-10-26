@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -167,7 +168,7 @@ async function move(
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;
     return {
-      refused: refusal(error, 'Try again.'),
+      refused: refusal(error, words('lifecycle.try-again-2')),
       stale:
         code === 'state_moved' ||
         code === 'transition_unknown' ||
@@ -176,7 +177,7 @@ async function move(
         code === 'forbidden',
     };
   } catch {
-    return { refused: 'Try again.', stale: false };
+    return { refused: words('lifecycle.try-again-2'), stale: false };
   }
 }
 
@@ -209,7 +210,7 @@ async function decideGate(
     if (moved) return { moved };
     const code = (error as { code?: unknown } | undefined)?.code;
     return {
-      refused: refusal(error, 'Try again.'),
+      refused: refusal(error, words('lifecycle.try-again-2')),
       stale:
         code === 'state_moved' ||
         code === 'version_moved' ||
@@ -219,19 +220,29 @@ async function decideGate(
         code === 'forbidden',
     };
   } catch {
-    return { refused: 'Try again.', stale: false };
+    return { refused: words('lifecycle.try-again-2'), stale: false };
   }
 }
 
 /** Its revision, where one was designated (VER-015): nothing for revision 0. */
 export function RevisionChip({ revision }: { revision: Revision | undefined }) {
   if (!revision) return null;
-  return <Chip>Revision {revision.number}</Chip>;
+  return (
+    <Chip>
+      {words('lifecycle.revision-2')}
+      {revision.number}
+    </Chip>
+  );
 }
 
 /** How far a gate has got, in words. */
 const progressOf = (gate: Gate) =>
-  `${gate.count} of ${gate.required} approval${gate.required === 1 ? '' : 's'}${gate.approvedByCaller ? ', yours among them' : ''}`;
+  words('lifecycle.of-approval', {
+    count: gate.count,
+    required: gate.required,
+    value3: gate.required === 1 ? '' : 's',
+    value4: gate.approvedByCaller ? ', yours among them' : '',
+  });
 
 /**
  * A button for each transition the view says the reader may take (WF-F), none otherwise: the move
@@ -299,15 +310,19 @@ export function TransitionButtons({
       const now = answer.moved.state;
       const said =
         reason !== undefined
-          ? `Moved ${title} to ${now.name}.`
+          ? words('lifecycle.moved-to', { title, name: now.name })
           : now.key !== standing.state.key
-            ? `Approved ${title}. It is now ${now.name}.`
-            : `Approved ${title}. It needs more approvals.`;
+            ? words('lifecycle.approved-it-is-now', { title, name: now.name })
+            : words('lifecycle.approved-it-needs-more-approvals', { title });
       onMoved(answer.moved, said);
       return undefined;
     }
     if (answer.stale) onStale();
-    return `${title} was not ${reason === undefined ? 'approved' : 'returned'}. ${answer.refused}`;
+    return words('lifecycle.was-not', {
+      title,
+      value2: reason === undefined ? 'approved' : 'returned',
+      refused: answer.refused,
+    });
   };
 
   /** Moves along `transition`, answering what to say where it was refused. */
@@ -321,11 +336,11 @@ export function TransitionButtons({
     });
     setBusy(false);
     if ('moved' in answer) {
-      onMoved(answer.moved, `Moved ${title} to ${answer.moved.state.name}.`);
+      onMoved(answer.moved, words('lifecycle.moved-to', { title, name: answer.moved.state.name }));
       return undefined;
     }
     if (answer.stale) onStale();
-    return `${title} was not moved. ${answer.refused}`;
+    return words('lifecycle.was-not-moved', { title, refused: answer.refused });
   };
 
   return (
@@ -336,7 +351,7 @@ export function TransitionButtons({
           type="button"
           className={className}
           disabled={busy}
-          title={`Move to ${transition.to.name}`}
+          title={words('lifecycle.move-to', { name: transition.to.name })}
           onClick={() => {
             if (transition.reasonRequired) setAsking(transition);
             else {
@@ -359,9 +374,9 @@ export function TransitionButtons({
                   type="button"
                   className={className}
                   disabled={busy}
-                  title={`Approve, towards ${gate.to.name}`}
+                  title={words('lifecycle.approve-towards', { name: gate.to.name })}
                   onClick={() =>
-                    approving('Approve', () => {
+                    approving(words('lifecycle.approve'), () => {
                       void decideAt(gate).then((refused) => {
                         if (refused !== undefined) onNotice(refused);
                       });
@@ -377,23 +392,23 @@ export function TransitionButtons({
                   type="button"
                   className={className}
                   disabled={busy}
-                  title={`Approve, and publish once ${gate.to.name}`}
+                  title={words('lifecycle.approve-and-publish-once', { name: gate.to.name })}
                   onClick={() =>
-                    approving('Approve and publish', () => {
+                    approving(words('lifecycle.approve-and-publish'), () => {
                       void decideAt(gate, undefined, true).then((refused) => {
                         if (refused !== undefined) onNotice(refused);
                       });
                     })
                   }
                 >
-                  {`${gate.name} and publish`}
+                  {words('lifecycle.and-publish', { name: gate.name })}
                 </button>
               )}
               <button
                 type="button"
                 className={className}
                 disabled={busy}
-                title={`Return to ${gate.reject.to.name}`}
+                title={words('lifecycle.return-to', { name: gate.reject.to.name })}
                 onClick={() => setRejecting(gate)}
               >
                 {gate.reject.name}
@@ -405,8 +420,11 @@ export function TransitionButtons({
       {rejecting && (
         <ReasonDialog
           heading={`${rejecting.reject.name} ${title}`}
-          explained={`It returns to ${rejecting.reject.to.name}.`}
-          submit={`${rejecting.reject.name} to ${rejecting.reject.to.name}`}
+          explained={words('lifecycle.it-returns-to', { name: rejecting.reject.to.name })}
+          submit={words('lifecycle.to', {
+            name: rejecting.reject.name,
+            name2: rejecting.reject.to.name,
+          })}
           act={async (reason) => {
             const refused = await decideAt(rejecting, reason);
             if (refused === undefined) setRejecting(null);
@@ -418,8 +436,8 @@ export function TransitionButtons({
       {asking && (
         <ReasonDialog
           heading={`${asking.name} ${title}`}
-          explained={`It moves to ${asking.to.name}.`}
-          submit={`${asking.name} to ${asking.to.name}`}
+          explained={words('lifecycle.it-moves-to', { name: asking.to.name })}
+          submit={words('lifecycle.to', { name: asking.name, name2: asking.to.name })}
           act={async (reason) => {
             const refused = await take(asking, reason);
             if (refused === undefined) setAsking(null);
@@ -458,11 +476,11 @@ function ReasonDialog({
     event.preventDefault();
     const trimmed = reason.trim();
     if (trimmed === '') {
-      setSaid('Give a reason.');
+      setSaid(words('lifecycle.give-a-reason'));
       return;
     }
     if (trimmed.length > MAX_REASON) {
-      setSaid(`A reason is at most ${MAX_REASON} characters.`);
+      setSaid(words('lifecycle.a-reason-is-at-most', { MAX_REASON }));
       return;
     }
     setBusy(true);
@@ -479,14 +497,14 @@ function ReasonDialog({
         <h2 id={headingId}>{heading}</h2>
         <p>{explained}</p>
         <label>
-          Reason
+          {words('lifecycle.reason')}
           <textarea value={reason} onChange={(event) => setReason(event.target.value)} />
         </label>
-        <p className={styles['muted']}>Kept with the move, for whoever reads its history.</p>
+        <p className={styles['muted']}>{words('lifecycle.kept-with-the-move-for')}</p>
         <p role="status">{said}</p>
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('lifecycle.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
             {submit}

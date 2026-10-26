@@ -2,6 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useState } from 'react';
 
 import { isAccessAnswers } from './describe.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -63,7 +64,7 @@ export function ManageAccessLink({
   return (
     <a href={href} className={className} {...(label === undefined ? {} : { 'aria-label': label })}>
       {icon}
-      Manage access
+      {words('access.manage-access')}
     </a>
   );
 }

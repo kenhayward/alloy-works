@@ -11,6 +11,7 @@ import styles from '../structure/DocumentList.module.css';
 import { connectionLink, NEW_QUERY_DEFINITION, queryDefinitionLink } from './links.js';
 import { useDefinitionPlaces } from './places.js';
 import { isRecord } from './shapes.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -33,10 +34,34 @@ interface Facets {
 }
 
 const SORTS: readonly SortOption[] = [
-  { sort: 'title', order: 'asc', label: 'Title, A to Z' },
-  { sort: 'title', order: 'desc', label: 'Title, Z to A' },
-  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
-  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+  {
+    sort: 'title',
+    order: 'asc',
+    get label() {
+      return words('data.title-a-to-z');
+    },
+  },
+  {
+    sort: 'title',
+    order: 'desc',
+    get label() {
+      return words('data.title-z-to-a');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'desc',
+    get label() {
+      return words('data.newest-changed-first');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'asc',
+    get label() {
+      return words('data.oldest-changed-first');
+    },
+  },
 ];
 
 function asItems(items: readonly unknown[]): Item[] {
@@ -84,20 +109,20 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="query-definitions-heading">
-        <h1 id="query-definitions-heading">Query definitions</h1>
+        <h1 id="query-definitions-heading">{words('data.query-definitions-2')}</h1>
         {listing.signedOut ? (
           <Notice tone="signedOut">
-            <p>You are signed out. Sign in again to see your query definitions.</p>
+            <p>{words('data.you-are-signed-out-sign-7')}</p>
           </Notice>
         ) : (
           <Notice tone="failed">
-            <p>The query definitions could not be loaded.</p>
+            <p>{words('data.the-query-definitions-could-not')}</p>
             <button
               type="button"
               disabled={listing.loading}
               onClick={() => void listing.load(null)}
             >
-              Try again
+              {words('data.try-again')}
             </button>
           </Notice>
         )}
@@ -109,15 +134,15 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
   const filter = (
     <>
       <div className={styles['filterHead']}>
-        <span className={styles['overline']}>Filter</span>
+        <span className={styles['overline']}>{words('data.filter')}</span>
         {spaces.length > 0 && (
           <button type="button" className={styles['clear']} onClick={() => setSpaces([])}>
-            Clear
+            {words('data.clear')}
           </button>
         )}
       </div>
       <Facet
-        legend="Space"
+        legend={words('data.space')}
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}
@@ -129,7 +154,7 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
     <ListLayout filter={filter}>
       <section aria-labelledby="query-definitions-heading">
         <div className={styles['titleRow']}>
-          <h1 id="query-definitions-heading">Query definitions</h1>
+          <h1 id="query-definitions-heading">{words('data.query-definitions-2')}</h1>
           {places !== null && places.spaces.length > 0 && places.connections.length > 0 && (
             <button
               type="button"
@@ -138,7 +163,7 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
                 window.location.hash = NEW_QUERY_DEFINITION;
               }}
             >
-              New query definition
+              {words('data.new-query-definition')}
             </button>
           )}
         </div>
@@ -146,24 +171,32 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? `${listing.total} ${listing.total === 1 ? 'query definition is' : 'query definitions are'} in the spaces chosen.`
-              : `${listing.total} ${listing.total === 1 ? 'query definition' : 'query definitions'} you may read.`}
+              ? words('data.in-the-spaces-chosen', {
+                  total: listing.total,
+                  value2: listing.total === 1 ? 'query definition is' : 'query definitions are',
+                })
+              : words('data.you-may-read', {
+                  total: listing.total,
+                  value2: listing.total === 1 ? 'query definition' : 'query definitions',
+                })}
           </span>
-          {items.length < listing.total && <span>{`Showing 1 to ${items.length}.`}</span>}
+          {items.length < listing.total && (
+            <span>{words('data.showing-1-to', { length: items.length })}</span>
+          )}
         </p>
         {items.length === 0 ? (
           <Empty>
-            <p>There are no query definitions you may read.</p>
+            <p>{words('data.there-are-no-query-definitions')}</p>
           </Empty>
         ) : (
           <div className={styles['table']}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Title</th>
-                  <th scope="col">Space</th>
-                  <th scope="col">Connection</th>
-                  <th scope="col">Changed</th>
+                  <th scope="col">{words('data.title')}</th>
+                  <th scope="col">{words('data.space')}</th>
+                  <th scope="col">{words('data.connection')}</th>
+                  <th scope="col">{words('data.changed')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,14 +204,16 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
                   <tr key={item.id}>
                     <td className={styles['title']}>
                       <a href={queryDefinitionLink(item.id)}>{item.title}</a>
-                      {item.retired && <span className={styles['muted']}> Retired</span>}
+                      {item.retired && (
+                        <span className={styles['muted']}> {words('data.retired-2')}</span>
+                      )}
                     </td>
                     <td className={styles['muted']}>{item.space.name}</td>
                     <td>
                       {item.connection === null ? (
-                        'None'
+                        words('data.none')
                       ) : item.connection.name === null ? (
-                        'A connection you may not read'
+                        words('data.a-connection-you-may-not')
                       ) : (
                         <a href={connectionLink(item.connection.id)}>{item.connection.name}</a>
                       )}

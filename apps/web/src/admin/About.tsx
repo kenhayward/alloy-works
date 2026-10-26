@@ -1,4 +1,5 @@
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 /**
  * Administration's About and release notes (the AD plan, AD7): this version, how it is being run, the
@@ -9,26 +10,23 @@ export function About({ about }: { about: React.ReactNode }) {
   const notes = __RELEASE_NOTES__;
   return (
     <>
-      <p>{`Version ${__APP_VERSION__}`}</p>
+      <p>{words('admin.version', { __APP_VERSION__ })}</p>
       {about}
       {/* CPAL's attribution, here alone and never where citations are used (ADR-0067). */}
       <section aria-labelledby="third-party-notices">
-        <h2 id="third-party-notices">Third-party notices</h2>
+        <h2 id="third-party-notices">{words('admin.third-party-notices')}</h2>
+        <p>{words('admin.citations-are-formatted-by-citeproc')}</p>
         <p>
-          Citations are formatted by citeproc-js, Copyright (c) 2009-2019 Frank Bennett, under the
-          Common Public Attribution License 1.0.
-        </p>
-        <p>
-          Citation styles and locales from the{' '}
+          {words('admin.citation-styles-and-locales-from')}{' '}
           <a href="https://citationstyles.org" target="_blank" rel="noreferrer">
-            Citation Style Language project
+            {words('admin.citation-style-language-project')}
           </a>
-          , under the Creative Commons Attribution-ShareAlike 3.0 licence.
+          {words('admin.under-the-creative-commons-attribution')}
         </p>
       </section>
       {notes !== null && (
         <section aria-labelledby="release-notes" className={styles['notes']}>
-          <h2 id="release-notes">{`What changed in ${notes.version}`}</h2>
+          <h2 id="release-notes">{words('admin.what-changed-in', { version: notes.version })}</h2>
           <p className={styles['muted']}>
             {new Date(`${notes.date}T12:00:00Z`).toLocaleDateString('en-GB', {
               day: 'numeric',
@@ -37,7 +35,10 @@ export function About({ about }: { about: React.ReactNode }) {
             })}
           </p>
           {notes.sections.map((section) => (
-            <section key={section.heading} aria-label={`${section.heading} in ${notes.version}`}>
+            <section
+              key={section.heading}
+              aria-label={words('admin.in', { heading: section.heading, version: notes.version })}
+            >
               <h3>{section.heading}</h3>
               <ul>
                 {section.items.map((item) => (

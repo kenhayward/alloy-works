@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -41,38 +42,42 @@ function took(ms: number): string {
   if (seconds < 60) return `${seconds} s`;
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
-  return rest === 0 ? `${minutes} min` : `${minutes} min ${rest} s`;
+  return rest === 0 ? words('admin.min', { minutes }) : words('admin.min-s', { minutes, rest });
 }
 
 /** Bytes as a person reads them. */
 function size(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024) return words('admin.kb', { value1: (bytes / 1024).toFixed(1) });
+  return words('admin.mb', { value1: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 function UsageTable({ name, totals }: { name: string; totals: readonly Total[] }) {
   if (totals.length === 0)
-    return <p className={styles['muted']}>{`${name}: none in this period.`}</p>;
+    return <p className={styles['muted']}>{words('admin.none-in-this-period', { name })}</p>;
   return (
     <table aria-label={name} className={styles['table']}>
       <caption className={styles['strong']}>{name}</caption>
       <thead>
         <tr>
-          <th scope="col">{name === 'By document' ? 'Document' : 'Query definition'}</th>
-          <th scope="col">Runs</th>
-          <th scope="col">Not answered</th>
-          <th scope="col">Time</th>
-          <th scope="col">Rows</th>
-          <th scope="col">Size</th>
+          <th scope="col">
+            {name === 'By document' ? words('admin.document') : words('admin.query-definition')}
+          </th>
+          <th scope="col">{words('admin.runs')}</th>
+          <th scope="col">{words('admin.not-answered')}</th>
+          <th scope="col">{words('admin.time')}</th>
+          <th scope="col">{words('admin.rows')}</th>
+          <th scope="col">{words('admin.size')}</th>
         </tr>
       </thead>
       <tbody>
         {totals.map((each) => (
           <tr key={each.id}>
-            <td className={styles['strong']}>{each.title ?? 'No longer here'}</td>
+            <td className={styles['strong']}>{each.title ?? words('admin.no-longer-here')}</td>
             <td>{each.runs.toLocaleString()}</td>
-            <td>{`${each.failed} failed, ${each.throttled} throttled`}</td>
+            <td>
+              {words('admin.failed-throttled', { failed: each.failed, throttled: each.throttled })}
+            </td>
             <td>{took(each.durationMs)}</td>
             <td>{each.rows.toLocaleString()}</td>
             <td>{size(each.bytes)}</td>
@@ -146,10 +151,10 @@ export function QueryUsage({ client, mayChange }: { client: Client; mayChange: b
       });
       if (data) {
         setSettings(data as DataSettings);
-        setSaid('Saved.');
-      } else setSaid(refusal(error, 'The limit could not be saved.'));
+        setSaid(words('admin.saved'));
+      } else setSaid(refusal(error, words('admin.the-limit-could-not-be')));
     } catch {
-      setSaid('The limit could not be saved.');
+      setSaid(words('admin.the-limit-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -162,7 +167,7 @@ export function QueryUsage({ client, mayChange }: { client: Client; mayChange: b
       {settings !== null && (
         <form className={styles['settings']} onSubmit={(event) => void save(event)}>
           <label className={styles['setting']}>
-            <span className={styles['strong']}>Queries running at once</span>
+            <span className={styles['strong']}>{words('admin.queries-running-at-once')}</span>
             <input
               type="number"
               min={1}
@@ -174,43 +179,44 @@ export function QueryUsage({ client, mayChange }: { client: Client; mayChange: b
               onChange={(change) => setDraft(change.target.value)}
             />
             <span className={styles['muted']}>
-              {`How many of this environment's queries may run at the same time, across documents, checks and samples: ${settings.defaults.concurrentRuns} unless lowered, at most ${settings.ceilings.concurrentRuns}. One more waits a few seconds, then is refused, to be tried again.`}
+              {words('admin.how-many-of-this-environment', {
+                concurrentRuns: settings.defaults.concurrentRuns,
+                concurrentRuns2: settings.ceilings.concurrentRuns,
+              })}
             </span>
           </label>
           <p role="status">{said}</p>
           {mayChange ? (
             <div>
               <button type="submit" className="primary" disabled={busy}>
-                Save
+                {words('admin.save')}
               </button>
             </div>
           ) : (
-            <p className={styles['muted']}>
-              Only an administrator of the environment may change this.
-            </p>
+            <p className={styles['muted']}>{words('admin.only-an-administrator-of-the-2')}</p>
           )}
         </form>
       )}
       <div className={styles['toolbar']}>
         <label className={styles['filter']} htmlFor={periodId}>
-          Period
+          {words('admin.period')}
         </label>
         <select
           id={periodId}
           value={String(days)}
           onChange={(change) => setDays(Number(change.target.value))}
         >
-          <option value="7">The last 7 days</option>
-          <option value="30">The last 30 days</option>
-          <option value="90">The last 90 days</option>
-          <option value="395">The last 13 months</option>
+          <option value="7">{words('admin.the-last-7-days')}</option>
+          <option value="30">{words('admin.the-last-30-days')}</option>
+          <option value="90">{words('admin.the-last-90-days')}</option>
+          <option value="395">{words('admin.the-last-13-months')}</option>
         </select>
-        <a href={csv}>Download every run (CSV)</a>
+        <a href={csv}>{words('admin.download-every-run-csv')}</a>
       </div>
-      {usage === null && <Waiting>Loading...</Waiting>}
+      {usage === null && <Waiting>{words('admin.loading')}</Waiting>}
       {usage === 'failed' && (
         <Notice tone="failed">
-          <p>What the queries cost could not be read.</p>
+          <p>{words('admin.what-the-queries-cost-could')}</p>
         </Notice>
       )}
       {usage !== null && usage !== 'failed' && (

@@ -9,6 +9,7 @@ import type { ThreadOn } from '../search/links.js';
 import { reviewThreadLink } from '../structure/links.js';
 import { anchorWords } from './ThreadsPanel.js';
 import styles from './ThreadPage.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Part = { readonly text: string } | { readonly mention: string };
@@ -97,7 +98,11 @@ export function ThreadPage({
     )
       .then((all) => {
         if (current && 'items' in all) {
-          setNames(new Map(all.items.map((person) => [person.id, person.name ?? 'Somebody'])));
+          setNames(
+            new Map(
+              all.items.map((person) => [person.id, person.name ?? words('review.somebody')]),
+            ),
+          );
         }
       })
       .catch(() => undefined);
@@ -120,32 +125,40 @@ export function ThreadPage({
     >
       {read !== null && (
         <p className={styles['threadLinks']}>
-          <a href={`#/${read.on.kind}s/${read.on.id}`}>{`Open the ${read.on.kind}`}</a>
+          <a href={`#/${read.on.kind}s/${read.on.id}`}>
+            {words('review.open-the', { kind: read.on.kind })}
+          </a>
           {read.on.kind === 'document' && (
-            <a href={reviewThreadLink(read.on.id, thread)}>Open in Review</a>
+            <a href={reviewThreadLink(read.on.id, thread)}>{words('review.open-in-review')}</a>
           )}
         </p>
       )}
-      {shown === null && <p>Opening...</p>}
-      {shown === 'missing' && <p>There is no such thread, or you may not read it.</p>}
-      {shown === 'failed' && <p>The thread could not be read.</p>}
+      {shown === null && <p>{words('review.opening')}</p>}
+      {shown === 'missing' && <p>{words('review.there-is-no-such-thread')}</p>}
+      {shown === 'failed' && <p>{words('review.the-thread-could-not-be')}</p>}
       {typeof shown === 'object' && shown !== null && (
         <>
           <h1 id="thread-heading" className={styles['threadHeading']}>
-            {`A thread on ${
-              shown.anchor.kind === 'span'
-                ? anchorWords(shown.anchor)
-                : anchorWords(shown.anchor).toLowerCase()
-            }`}
+            {words('review.a-thread-on', {
+              value1:
+                shown.anchor.kind === 'span'
+                  ? anchorWords(shown.anchor)
+                  : anchorWords(shown.anchor).toLowerCase(),
+            })}
           </h1>
           {orphaned && (
             <p>
-              <Chip tone="warn">Its text is no longer there</Chip>
+              <Chip tone="warn">{words('review.its-text-is-no-longer')}</Chip>
             </p>
           )}
           {shown.resolution && (
             <p>
-              <Chip tone="ok">{`Resolved by ${shown.resolution.by.name ?? 'somebody'}, ${when.format(new Date(shown.resolution.at))}`}</Chip>
+              <Chip tone="ok">
+                {words('review.resolved-by', {
+                  value1: shown.resolution.by.name ?? 'somebody',
+                  value2: when.format(new Date(shown.resolution.at)),
+                })}
+              </Chip>
             </p>
           )}
           <ol className={styles['threadMessages']}>
@@ -161,7 +174,7 @@ export function ThreadPage({
                   className={styles['threadMessage']}
                 >
                   <p className={styles['threadWho']}>
-                    {each.author.name ?? 'Somebody'}
+                    {each.author.name ?? words('review.somebody')}
                     <Outside person={each.author} />
                     {`, ${when.format(new Date(each.at))}`}
                   </p>
@@ -170,7 +183,9 @@ export function ThreadPage({
                       'text' in part ? (
                         <span key={index}>{part.text}</span>
                       ) : (
-                        <span key={index}>{`@${names.get(part.mention) ?? 'Somebody'}`}</span>
+                        <span
+                          key={index}
+                        >{`@${names.get(part.mention) ?? words('review.somebody')}`}</span>
                       ),
                     )}
                   </p>

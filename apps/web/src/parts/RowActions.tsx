@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from './IconButton.js';
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 export interface RowAction {
   /** The action, as its tooltip says it: "Rename". */
@@ -47,7 +48,7 @@ export function RowActions({
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  if (shown.length > 2) throw new Error('A row shows at most two actions as icons');
+  if (shown.length > 2) throw new Error(words('parts.a-row-shows-at-most'));
   const items = () => [...(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
 
   useEffect(() => {
@@ -97,7 +98,7 @@ export function RowActions({
         <span className={styles['moreAnchor']}>
           <IconButton
             ref={button}
-            label={`More actions for ${subject}`}
+            label={words('parts.more-actions-for', { subject })}
             tooltip="More actions"
             className={`${styles['iconButton']} ${styles['rowIcon']}`}
             aria-haspopup="menu"
@@ -112,7 +113,7 @@ export function RowActions({
               ref={menu}
               id={menuId}
               role="menu"
-              aria-label={`More actions for ${subject}`}
+              aria-label={words('parts.more-actions-for', { subject })}
               className={styles['menu']}
               onKeyDown={(event) => {
                 const keys: Record<string, () => void> = {

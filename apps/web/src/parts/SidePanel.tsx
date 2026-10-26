@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from './IconButton.js';
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 /**
  * A row's details beside its list (ADR-0049, decision 5): 440px, docked in a column of its own from
@@ -69,7 +70,7 @@ export function SidePanel({
           </h2>
           {description !== undefined && <p>{description}</p>}
         </div>
-        <IconButton label="Close" shortcut="Escape" onClick={onClose}>
+        <IconButton label={words('parts.close')} shortcut="Escape" onClick={onClose}>
           <Icon name="Close" size={13} />
         </IconButton>
       </header>

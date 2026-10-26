@@ -27,6 +27,7 @@ import { whoseView } from '../structure/ownView.js';
 import { usePresentation } from '../theme/presentation.js';
 import { longDate } from './shapes.js';
 import styles from './ProvenancePanel.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,9 +39,15 @@ const CHECKSUM_SHOWN = 12;
 
 /** How a person whose own view a value is signed in, in words (DAT-024). */
 const SIGNED_IN: Readonly<Record<string, string>> = {
-  organisation: "signed in through the organisation's provider",
-  google: 'signed in with Google',
-  token: 'acting through a personal API token',
+  get organisation() {
+    return words('data.signed-in-through-the-organisation');
+  },
+  get google() {
+    return words('data.signed-in-with-google');
+  },
+  get token() {
+    return words('data.acting-through-a-personal-api');
+  },
 };
 
 /**
@@ -51,21 +58,25 @@ function whoseViewSaid(
   provenance: ProvenanceShown,
   by: { readonly id: string; readonly displayName: string | null },
 ): string {
-  if (provenance.identity === 'service') return 'The service account';
-  const whose = whoseView(provenance, by) ?? "A person's own view";
+  if (provenance.identity === 'service') return words('data.the-service-account');
+  const whose = whoseView(provenance, by) ?? words('data.a-person-s-own-view');
   const route = provenance.signInRoute ? SIGNED_IN[provenance.signInRoute] : undefined;
   return [
     whose,
     ...(route === undefined ? [] : [route]),
     provenance.asSeen
-      ? `seen by the source as ${provenance.asSeen}`
-      : 'as the source showed it to them',
+      ? words('data.seen-by-the-source-as', { asSeen: provenance.asSeen })
+      : words('data.as-the-source-showed-it'),
   ].join(', ');
 }
 
 const MODES = {
-  checked: 'Checked - looked for each time the document is opened',
-  pinned: 'Pinned - never looked for',
+  get checked() {
+    return words('data.checked-looked-for-each-time');
+  },
+  get pinned() {
+    return words('data.pinned-never-looked-for');
+  },
 } as const;
 
 /**
@@ -79,8 +90,8 @@ export function said(
   stale = false,
 ): string {
   if (stale) return CHANGED_SINCE_RESOLVED();
-  if (taken === null || 'unavailable' in taken) return 'The result cannot be read';
-  if ('table' in taken) return 'A table of the whole result';
+  if (taken === null || 'unavailable' in taken) return words('data.the-result-cannot-be-read');
+  if ('table' in taken) return words('data.a-table-of-the-whole');
   if ('value' in taken || 'image' in taken) return shownValue(taken, formats);
   return bindingFailureWords(binding, failureHeld(taken, binding));
 }
@@ -88,13 +99,27 @@ export function said(
 /** What a taken value was, as the query returned it: its canonical form, its column and its type. */
 function returned(taken: Taken | null): string | null {
   if (taken === null || !('value' in taken)) return null;
-  return `${String(taken.value)}, from the column ${taken.column.name} (${taken.column.type.base})`;
+  return words('data.from-the-column', {
+    value1: String(taken.value),
+    name: taken.column.name,
+    base: taken.column.type.base,
+  });
 }
 
 /** The dialog's two tabs: the facts, then the rows, read only once their tab is chosen. */
 const TABS = [
-  { key: 'provenance', label: 'Provenance' },
-  { key: 'results', label: 'Results' },
+  {
+    key: 'provenance',
+    get label() {
+      return words('data.provenance');
+    },
+  },
+  {
+    key: 'results',
+    get label() {
+      return words('data.results');
+    },
+  },
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];
@@ -243,10 +268,10 @@ export function ProvenancePanel({
       >
         <div className={styles['panel']}>
           <h2 id={heading} ref={headingRef} tabIndex={-1} className={styles['heading']}>
-            Provenance
+            {words('data.provenance')}
           </h2>
           <PanelTabs
-            label="Provenance and results"
+            label={words('data.provenance-and-results')}
             tabs={TABS}
             chosen={tab}
             onChoose={(key) => {
@@ -262,7 +287,7 @@ export function ProvenancePanel({
             hidden={tab !== 'provenance'}
           >
             <dl className={styles['facts']}>
-              <dt>Value</dt>
+              <dt>{words('data.value')}</dt>
               <dd>
                 {said(
                   standing !== undefined && held.taken !== null && 'value' in held.taken
@@ -275,7 +300,7 @@ export function ProvenancePanel({
               </dd>
               {returned(held.taken) !== null && (
                 <>
-                  <dt>As the query returned it</dt>
+                  <dt>{words('data.as-the-query-returned-it')}</dt>
                   <dd>{returned(held.taken)}</dd>
                 </>
               )}
@@ -285,66 +310,88 @@ export function ProvenancePanel({
                 .filter((each) => each.stands)
                 .map((each) => (
                   <Fragment key={each.id}>
-                    <dt>Revised by hand</dt>
+                    <dt>{words('data.revised-by-hand')}</dt>
                     <dd data-revision={each.id}>
-                      {`${String(each.value)}${
-                        each.cell === null
-                          ? ''
-                          : ` in ${each.cell.column}, the row ${Object.values(each.cell.key).map(String).join(', ')}`
-                      }, by ${each.by.displayName ?? 'somebody'}, ${longDate(each.at)}: ${each.reason}`}
+                      {words('data.by', {
+                        value1: String(each.value),
+                        value2:
+                          each.cell === null
+                            ? ''
+                            : ` in ${each.cell.column}, the row ${Object.values(each.cell.key).map(String).join(', ')}`,
+                        value3: each.by.displayName ?? 'somebody',
+                        value4: longDate(each.at),
+                        reason: each.reason,
+                      })}
                     </dd>
                   </Fragment>
                 ))}
               {state.waiting !== null && (
                 <>
-                  <dt>Waiting</dt>
-                  <dd>A newer result is waiting: {said(state.waiting.taken, formats, binding)}</dd>
+                  <dt>{words('data.waiting')}</dt>
+                  <dd>
+                    {words('data.a-newer-result-is-waiting')}
+                    {said(state.waiting.taken, formats, binding)}
+                  </dd>
                 </>
               )}
-              <dt>Query definition</dt>
+              <dt>{words('data.query-definition-2')}</dt>
               <dd>
                 {state.definition === null
-                  ? 'a query definition you cannot read'
-                  : `${state.definition.title}, version ${state.definition.version}`}
+                  ? words('data.a-query-definition-you-cannot')
+                  : words('data.version-2', {
+                      title: state.definition.title,
+                      version: state.definition.version,
+                    })}
               </dd>
               {state.connection !== null && (
                 <>
-                  <dt>Connection</dt>
+                  <dt>{words('data.connection')}</dt>
                   <dd>{state.connection.name}</dd>
                 </>
               )}
-              <dt>Parameters</dt>
+              <dt>{words('data.parameters')}</dt>
               <dd>
                 {parameters.length === 0
-                  ? 'None'
+                  ? words('data.none')
                   : parameters.map(([name, value]) => `${name}: ${String(value)}`).join(', ')}
               </dd>
-              <dt>Whose view</dt>
+              <dt>{words('data.whose-view')}</dt>
               <dd>{whoseViewSaid(provenance, held.by)}</dd>
-              <dt>Fetched</dt>
+              <dt>{words('data.fetched')}</dt>
               <dd>{longDate(provenance.at)}</dd>
-              <dt>Rows</dt>
-              <dd>{provenance.rowCount === 1 ? '1 row' : `${provenance.rowCount} rows`}</dd>
-              <dt>Checksum</dt>
+              <dt>{words('data.rows')}</dt>
+              <dd>{words('data.rows-2', { count: provenance.rowCount })}</dd>
+              <dt>{words('data.checksum')}</dt>
               <dd>
                 <code>
                   {whole ? provenance.checksum : provenance.checksum.slice(0, CHECKSUM_SHOWN)}
                 </code>{' '}
                 {!whole && (
                   <button type="button" onClick={() => setWhole(true)}>
-                    Show the whole checksum
+                    {words('data.show-the-whole-checksum')}
                   </button>
                 )}
               </dd>
-              <dt>Dataset</dt>
-              <dd>{`${held.name ?? 'An unnamed dataset'}, version ${held.number}`}</dd>
-              <dt>{held.act === 'accept' ? 'Accepted' : 'Resolved'}</dt>
-              <dd>{`${held.act === 'accept' ? 'Accepted' : 'Resolved'} by ${by} on ${longDate(held.at)}`}</dd>
-              <dt>Mode</dt>
+              <dt>{words('data.dataset')}</dt>
+              <dd>
+                {words('data.version-3', {
+                  value1: held.name ?? 'An unnamed dataset',
+                  number: held.number,
+                })}
+              </dd>
+              <dt>{held.act === 'accept' ? words('data.accepted') : words('data.resolved')}</dt>
+              <dd>
+                {words('data.by-on-2', {
+                  value1: held.act === 'accept' ? 'Accepted' : 'Resolved',
+                  by,
+                  value3: longDate(held.at),
+                })}
+              </dd>
+              <dt>{words('data.mode')}</dt>
               <dd>{MODES[binding.mode]}</dd>
               {provenance.sql !== null && (
                 <>
-                  <dt>What ran</dt>
+                  <dt>{words('data.what-ran')}</dt>
                   <dd>
                     <pre className={styles['sql']}>{provenance.sql}</pre>
                   </dd>
@@ -355,12 +402,17 @@ export function ProvenancePanel({
           {tab === 'results' && (
             <div id={ids('results').panel} role="tabpanel" aria-labelledby={ids('results').tab}>
               {result.state === 'failed' ? (
-                <p>The result could not be read.</p>
+                <p>{words('data.the-result-could-not-be')}</p>
               ) : result.state !== 'shown' ? (
-                <p>Reading the result...</p>
+                <p>{words('data.reading-the-result')}</p>
               ) : (
                 // Scrolled within the dialog, so reachable by the keyboard as well as the pointer.
-                <div className={styles['result']} tabIndex={0} role="group" aria-label="The result">
+                <div
+                  className={styles['result']}
+                  tabIndex={0}
+                  role="group"
+                  aria-label={words('data.the-result')}
+                >
                   <table>
                     <thead>
                       <tr>
@@ -384,7 +436,7 @@ export function ProvenancePanel({
                   {result.rows.length > ROWS_SHOWN && (
                     <p>
                       and {result.rows.length - ROWS_SHOWN} more{' '}
-                      {result.rows.length - ROWS_SHOWN === 1 ? 'row' : 'rows'}
+                      {words('data.rows-3', { count: result.rows.length - ROWS_SHOWN })}
                     </p>
                   )}
                 </div>
@@ -395,8 +447,8 @@ export function ProvenancePanel({
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('data.close')}
+          title={words('data.close')}
           onClick={onClose}
         >
           <Icon name="Close" size={13} />

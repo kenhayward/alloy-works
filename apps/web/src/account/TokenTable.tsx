@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { permissionName } from '../access/describe.js';
 import { Modal } from '../layouts/Modal.js';
 import styles from './Tokens.module.css';
+import { words } from '../words/words.js';
 
 /**
  * A personal token as `GET /v1/tokens` and `GET /v1/principals/{id}/tokens` list it: never its secret,
@@ -98,12 +99,12 @@ export function TokenTable({
         <table aria-label={label}>
           <thead>
             <tr>
-              <th scope="col">Name</th>
-              <th scope="col">May do</th>
-              <th scope="col">Works until</th>
-              <th scope="col">Last used</th>
+              <th scope="col">{words('account.name')}</th>
+              <th scope="col">{words('account.may-do')}</th>
+              <th scope="col">{words('account.works-until')}</th>
+              <th scope="col">{words('account.last-used')}</th>
               <th scope="col">
-                <span className={styles['hidden']}>Revoke</span>
+                <span className={styles['hidden']}>{words('account.revoke')}</span>
               </th>
             </tr>
           </thead>
@@ -118,10 +119,10 @@ export function TokenTable({
                   <button
                     type="button"
                     className="danger"
-                    aria-label={`Revoke ${token.name}`}
+                    aria-label={words('account.revoke-2', { name: token.name })}
                     onClick={() => setConfirming(token)}
                   >
-                    Revoke
+                    {words('account.revoke')}
                   </button>
                 </td>
               </tr>
@@ -132,17 +133,16 @@ export function TokenTable({
       {confirming !== null && (
         <Modal labelledBy="revoke-token-heading" onClose={() => setConfirming(null)}>
           <section aria-labelledby="revoke-token-heading">
-            <h2 id="revoke-token-heading">{`Revoke ${confirming.name}?`}</h2>
-            <p>
-              Anything using this token is refused from its next request. A token revoked cannot be
-              brought back: issue a new one instead.
-            </p>
+            <h2 id="revoke-token-heading">
+              {words('account.revoke-3', { name: confirming.name })}
+            </h2>
+            <p>{words('account.anything-using-this-token-is')}</p>
             <div className={styles['actions']}>
               <button type="button" onClick={() => setConfirming(null)}>
-                Keep it
+                {words('account.keep-it')}
               </button>
               <button type="button" className="danger" onClick={() => void confirm()}>
-                Revoke token
+                {words('account.revoke-token')}
               </button>
             </div>
           </section>

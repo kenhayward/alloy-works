@@ -1,5 +1,6 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { useState } from 'react';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -35,9 +36,12 @@ export async function setArchived(
 /** What an archival act says once done, or that it was not. */
 export function archivalSaid(title: string, archived: boolean | undefined, asked: boolean): string {
   if (archived === undefined) {
-    return `${title} could not be ${asked ? 'archived' : 'unarchived'}. Try again.`;
+    return words('lifecycle.could-not-be-try-again', {
+      title,
+      value2: asked ? 'archived' : 'unarchived',
+    });
   }
-  return `${archived ? 'Archived' : 'Unarchived'} ${title}.`;
+  return `${archived ? words('lifecycle.archived') : words('lifecycle.unarchived')} ${title}.`;
 }
 
 /**
@@ -78,7 +82,7 @@ export function ArchiveButton({
         onChanged(now ?? archived, archivalSaid(title, now, !archived));
       }}
     >
-      {archived ? 'Unarchive' : 'Archive'}
+      {archived ? words('lifecycle.unarchive') : words('lifecycle.archive')}
     </button>
   );
 }

@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /**
  * The shapes below are the service's, written out rather than taken from `@alloy-works/api-client`:
  * that package's built declarations do not carry its generated types, so a type named from them is
@@ -111,14 +112,18 @@ export interface Place {
 
 const spacePlace = (space: { readonly id: string; readonly name: string }): Place => ({
   target: `space:${space.id}`,
-  label: `The space ${space.name}`,
-  named: `the space ${space.name}`,
+  label: words('access.the-space-3', { name: space.name }),
+  named: words('access.the-space', { name: space.name }),
 });
 
 const TENANT: Place = {
   target: 'tenant',
-  label: 'The whole environment',
-  named: 'the whole environment',
+  get label() {
+    return words('access.the-whole-environment-2');
+  },
+  get named() {
+    return words('access.the-whole-environment');
+  },
 };
 
 /**
@@ -131,9 +136,13 @@ export function placesFor(
 ): Place[] {
   if (at.kind === 'tenant') return [TENANT];
   if (at.kind === 'space') return [spacePlace(at), TENANT];
-  if (space === undefined) throw new Error('An artifact is placed in its space');
+  if (space === undefined) throw new Error(words('access.an-artifact-is-placed-in'));
   return [
-    { target: `artifact:${at.id}`, label: `This ${at.kind}`, named: `this ${at.kind}` },
+    {
+      target: `artifact:${at.id}`,
+      label: words('access.this-2', { kind: at.kind }),
+      named: words('access.this', { kind: at.kind }),
+    },
     spacePlace(space),
     TENANT,
   ];
@@ -144,7 +153,7 @@ export function personName(person: {
   readonly name: string | null;
   readonly email: string | null;
 }): string {
-  return person.name ?? person.email ?? 'Someone with no name or address';
+  return person.name ?? person.email ?? words('access.someone-with-no-name-or');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -209,12 +218,12 @@ export function isShownInvitation(value: unknown): value is ShownInvitation {
  * the organisation, and "lapsed" rather than a date nobody can still accept it by.
  */
 export function describeInvitation(invitation: ShownInvitation): string {
-  const outside = invitation.external ? ', from outside the organisation' : '';
+  const outside = invitation.external ? words('access.from-outside-the-organisation') : '';
   const until = invitation.lapsed
-    ? ', lapsed: invite them again to renew it'
+    ? words('access.lapsed-invite-them-again-to')
     : invitation.expiresAt === null
       ? ''
-      : `, until ${invitation.expiresAt.slice(0, 10)}`;
+      : words('access.until', { value1: invitation.expiresAt.slice(0, 10) });
   return `${invitation.email}${outside}${until}`;
 }
 
@@ -307,15 +316,23 @@ export function describeGrant(grant: ShownGrant): string {
   const who =
     'principal' in grant.subject
       ? personName(grant.subject.principal)
-      : `the group ${grant.subject.group.name}`;
-  const until = grant.expiresAt === null ? '' : ` until ${grant.expiresAt.slice(0, 10)}`;
-  return `${grant.effect === 'allow' ? 'Allowed' : 'Denied'} ${grant.role.name} to ${who}${until}`;
+      : words('access.the-group', { name: grant.subject.group.name });
+  const until =
+    grant.expiresAt === null
+      ? ''
+      : words('access.until-2', { value1: grant.expiresAt.slice(0, 10) });
+  return words('access.to', {
+    value1: grant.effect === 'allow' ? 'Allowed' : 'Denied',
+    name: grant.role.name,
+    who,
+    until,
+  });
 }
 
 /** A permission as a person reads it: `manage_definitions` is "manage definitions". */
 export function permissionName(permission: string): string {
   // SQL is an initialism, and reads as one.
-  if (permission === 'write_sql') return 'write SQL';
+  if (permission === 'write_sql') return words('access.write-sql');
   return permission.replaceAll('_', ' ');
 }
 
@@ -334,31 +351,43 @@ export function explainAnswer(
   const grants = answer.grants
     .map((reached) => {
       // A group by its name (IAM-030), and "a group" only where the service could not name it.
-      const group = reached.groupName === null ? 'a group' : `the group ${reached.groupName}`;
+      const group =
+        reached.groupName === null
+          ? words('access.a-group-2')
+          : words('access.the-group-2', { groupName: reached.groupName });
       const person = 'principal' in reached.subject ? people.get(reached.subject.principal) : null;
-      const who = 'group' in reached.subject ? group : person ? personName(person) : 'a person';
+      const who =
+        'group' in reached.subject
+          ? group
+          : person
+            ? personName(person)
+            : words('access.a-person-2');
       // Naming the group it reached them "through" only makes sense when the grant is to a person: a
       // grant already made to a group names that group, whatever `through` holds.
       const through =
-        'principal' in reached.subject && reached.through !== null ? ` through ${group}` : '';
+        'principal' in reached.subject && reached.through !== null
+          ? words('access.through', { group })
+          : '';
       const effect = reached.effect === 'allow' ? 'allowed' : 'denied';
-      return `${reached.role} ${effect} to ${who}${through}`;
+      return words('access.to-2', { role: reached.role, effect, who, through });
     })
     .join('; ');
   switch (answer.reason) {
     case 'allowed':
-      return `Allowed at ${where(answer.level!)}, by ${grants}.`;
+      return words('access.allowed-at-by', { value1: where(answer.level!), grants });
     case 'denied':
-      return `Refused at ${where(answer.level!)}, by ${grants}.`;
+      return words('access.refused-at-by', { value1: where(answer.level!), grants });
     case 'not_granted':
-      return `Refused: nothing grants it at ${answer.checked.map(where).join(', ')}.`;
+      return words('access.refused-nothing-grants-it-at', {
+        value1: answer.checked.map(where).join(', '),
+      });
     case 'capped':
-      return 'Refused: someone from outside the organisation may never have it, whatever is granted.';
+      return words('access.refused-someone-from-outside-the');
     case 'scoped':
-      return `Not allowed by this token: its scopes leave it out, though ${grants} at ${where(answer.level!)} would allow it.`;
+      return words('access.not-allowed-by-this-token', { grants, value2: where(answer.level!) });
     default:
       // Only reachable from a body this page did not validate as an ExplainedPermission: a defensive
       // fallback, not a state the service is expected to send.
-      return 'This answer could not be explained.';
+      return words('access.this-answer-could-not-be');
   }
 }
