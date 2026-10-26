@@ -26,16 +26,13 @@ interface Erasure {
   readonly refusals: readonly ErasureRefusal[];
 }
 
-const counted = (count: number, one: string, many: string) =>
-  `${count} ${count === 1 ? one : many}`;
-
 /** Why they may not be erased yet, in words. */
 export function erasureRefusalWords(refusal: ErasureRefusal): string {
   switch (refusal.code) {
     case 'granted':
-      return refusal.grants === 1
-        ? words('admin.1-grant-names-them-remove')
-        : words('admin.grants-name-them-remove-their', { value1: refusal.grants ?? 'Some' });
+      return refusal.grants === undefined
+        ? words('admin.some-grants-name-them')
+        : words('admin.grants-name-them-remove-their', { grants: refusal.grants });
     case 'self':
       return words('admin.you-cannot-erase-yourself');
     case 'service':
@@ -50,21 +47,15 @@ function goes(erasure: Erasure): string[] {
   const { erases } = erasure;
   return [
     words('admin.their-name-which-becomes-erased'),
-    words('admin.each-replaced-by-a-fixed', {
-      value1: counted(erases.labels, 'audit log label naming them', 'audit log labels naming them'),
-    }),
+    words('admin.each-replaced-by-a-fixed', { labels: erases.labels }),
     ...(erases.sessions > 0
-      ? [words('admin.ended', { value1: counted(erases.sessions, 'session', 'sessions') })]
+      ? [words('admin.ended', { sessions: erases.sessions })]
       : []),
     ...(erases.tokens > 0
-      ? [words('admin.revoked', { value1: counted(erases.tokens, 'API token', 'API tokens') })]
+      ? [words('admin.revoked', { tokens: erases.tokens })]
       : []),
     ...(erases.memberships > 0
-      ? [
-          words('admin.removed', {
-            value1: counted(erases.memberships, 'group membership', 'group memberships'),
-          }),
-        ]
+      ? [words('admin.removed', { memberships: erases.memberships })]
       : []),
     ...(erasure.person.invited
       ? [words('admin.their-invitation-withdrawn')]
@@ -78,9 +69,7 @@ function goes(erasure: Erasure): string[] {
 function stays(erasure: Erasure): string[] {
   return [
     words('admin.their-identifier-and-the-one'),
-    words('admin.recorded-against-them-read-with', {
-      value1: counted(erasure.remains.events, 'audit event', 'audit events'),
-    }),
+    words('admin.recorded-against-them-read-with', { events: erasure.remains.events }),
     words('admin.what-they-wrote-content-titles'),
     words('admin.the-name-a-data-source'),
     words('admin.audit-log-exports-made-before'),

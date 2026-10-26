@@ -116,7 +116,7 @@ export function Guardrails({ client }: { client: Client }) {
           {words('admin.add')}
         </button>
       </form>
-      <Shown read={read} failed="The guardrails could not be loaded.">
+      <Shown read={read} failed={words('admin.the-guardrails-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{words('admin.no-phrase-is-forbidden')}</p>
@@ -135,9 +135,11 @@ export function Guardrails({ client }: { client: Client }) {
               <tbody>
                 {rows.map((rule) => (
                   <tr key={rule.id}>
-                    <td className={styles['strong']}>{rule.phrase}</td>
+                    <td className={styles['strong']} data-content>
+                      {rule.phrase}
+                    </td>
                     <td>{SIDES[rule.applies]}</td>
-                    <td>{rule.reason}</td>
+                    <td data-content>{rule.reason}</td>
                     <td>
                       <button
                         type="button"

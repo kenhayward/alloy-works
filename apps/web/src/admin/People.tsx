@@ -266,7 +266,7 @@ function HeldTokens({
       <p ref={intro} tabIndex={-1} className={styles['muted']}>
         {say('admin.revoking-a-token-ends-it')}
       </p>
-      <Shown read={read} failed="The tokens could not be loaded.">
+      <Shown read={read} failed={say('admin.the-tokens-could-not-be-loaded')}>
         {() =>
           live!.length === 0 ? (
             <Empty>
@@ -887,7 +887,7 @@ export function People({ client }: { client: Client }) {
           id={idsOf('invitations').panel}
           aria-labelledby={idsOf('invitations').tab}
         >
-          <Shown read={invitations} failed="Invitations could not be loaded.">
+          <Shown read={invitations} failed={say('admin.invitations-could-not-be-loaded')}>
             {() => {
               const shown = pending!.filter(
                 (each) =>

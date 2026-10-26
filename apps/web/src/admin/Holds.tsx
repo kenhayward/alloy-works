@@ -6,7 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { HoldDialog, releaseHold } from '../lifecycle/Hold.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -43,11 +43,11 @@ const KINDS: Readonly<Record<string, string>> = {
   },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = (at: string) =>
+  formats().date(new Date(at), { day: 'numeric', month: 'short', year: 'numeric' });
 
 const titleOf = (hold: HoldRow) =>
-  hold.target.title ??
-  say('admin.the', { value1: (KINDS[hold.target.kind] ?? 'item').toLowerCase() });
+  hold.target.title ?? say('admin.the', { kind: hold.target.kind });
 const named = (person: Person) => person.name ?? say('admin.somebody');
 
 /**
@@ -74,7 +74,7 @@ export function Holds({ client }: { client: Client }) {
       <div className={styles['lead']}>
         <p>{say('admin.a-legal-hold-keeps-a')}</p>
       </div>
-      <Shown read={read} failed="The legal holds could not be loaded.">
+      <Shown read={read} failed={say('admin.the-legal-holds-could-not-be')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{say('admin.nothing-is-on-hold')}</p>
@@ -95,16 +95,23 @@ export function Holds({ client }: { client: Client }) {
                 {rows.map((hold) => (
                   <tr key={hold.id} data-archived={hold.released ? 'true' : undefined}>
                     <td>
-                      <span className={styles['strong']}>{titleOf(hold)}</span>
+                      <span
+                        className={styles['strong']}
+                        {...(hold.target.title === null ? {} : { 'data-content': '' })}
+                      >
+                        {titleOf(hold)}
+                      </span>
                       <br />
                       <span className={styles['muted']}>{KINDS[hold.target.kind]}</span>
                     </td>
-                    <td>{hold.reason}</td>
+                    <td data-content>{hold.reason}</td>
                     <td>
-                      {named(hold.appliedBy)}
+                      <span {...(hold.appliedBy.name === null ? {} : { 'data-content': '' })}>
+                        {named(hold.appliedBy)}
+                      </span>
                       <br />
                       <span className={styles['muted']}>
-                        {when.format(new Date(hold.appliedAt))}
+                        {when(hold.appliedAt)}
                       </span>
                     </td>
                     <td>
@@ -115,7 +122,11 @@ export function Holds({ client }: { client: Client }) {
                           <Chip>{say('admin.released')}</Chip>
                           <br />
                           <span className={styles['muted']}>
-                            {`${named(hold.released.by)}, ${when.format(new Date(hold.released.at))}: ${hold.released.reason}`}
+                            {say('admin.released-by-at', {
+                              by: named(hold.released.by),
+                              at: when(hold.released.at),
+                              reason: hold.released.reason,
+                            })}
                           </span>
                         </>
                       )}
@@ -124,7 +135,7 @@ export function Holds({ client }: { client: Client }) {
                       {hold.released === null && (
                         <button
                           type="button"
-                          aria-label={say('admin.release-the-hold-on', { value1: titleOf(hold) })}
+                          aria-label={say('admin.release-the-hold-on', { title: titleOf(hold) })}
                           onClick={() => setReleasing(hold)}
                         >
                           {say('admin.release')}
@@ -141,9 +152,9 @@ export function Holds({ client }: { client: Client }) {
       <p role="status">{said}</p>
       {releasing !== null && (
         <HoldDialog
-          heading={say('admin.release-the-hold-on', { value1: titleOf(releasing) })}
-          explained="It is no longer held by this hold. Any other hold on it still stands."
-          submit="Release hold"
+          heading={say('admin.release-the-hold-on', { title: titleOf(releasing) })}
+          explained={say('admin.it-is-no-longer-held')}
+          submit={say('admin.release-hold')}
           act={(reason) => releaseHold(client, releasing.id, titleOf(releasing), reason)}
           onClose={() => setReleasing(null)}
           onDone={(words) => {

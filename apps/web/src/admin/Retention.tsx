@@ -160,7 +160,7 @@ export function Retention({ client }: { client: Client }) {
         </button>
       </form>
       <p role="status">{said}</p>
-      <Shown read={read} failed="The keeps could not be loaded.">
+      <Shown read={read} failed={say('admin.the-keeps-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{say('admin.no-keep-is-set-anything')}</p>

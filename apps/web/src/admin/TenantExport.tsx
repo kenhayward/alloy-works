@@ -6,7 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { followInFrame } from '../publishing/Preview.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -34,20 +34,21 @@ const STATES: Readonly<Record<ExportRow['state'], string>> = {
   },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const when = (at: string) =>
+  formats().date(new Date(at), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /** A size in words: KB and MB of 1,024, to one place. */
 function sizeOf(bytes: number | null): string {
   if (bytes === null) return '';
   if (bytes < 1024) return words('admin.bytes-2', { bytes });
-  if (bytes < 1024 * 1024) return words('admin.kb', { value1: (bytes / 1024).toFixed(1) });
-  return words('admin.mb', { value1: (bytes / (1024 * 1024)).toFixed(1) });
+  if (bytes < 1024 * 1024) return words('admin.kb', { kb: bytes / 1024 });
+  return words('admin.mb', { mb: bytes / (1024 * 1024) });
 }
 
 /**
@@ -126,7 +127,7 @@ export function TenantExport({
           {words('admin.export-everything')}
         </button>
       </div>
-      <Shown read={read} failed="The exports could not be loaded.">
+      <Shown read={read} failed={words('admin.the-exports-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{words('admin.nothing-has-been-exported-yet')}</p>
@@ -145,7 +146,7 @@ export function TenantExport({
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const asked = when.format(new Date(row.requestedAt));
+                  const asked = when(row.requestedAt);
                   return (
                     <tr key={row.id} data-archived={row.state === 'expired' ? 'true' : undefined}>
                       <td>{asked}</td>
@@ -153,7 +154,7 @@ export function TenantExport({
                         <Chip>{STATES[row.state]}</Chip>
                       </td>
                       <td>{sizeOf(row.bytes)}</td>
-                      <td>{row.expiresAt === null ? '' : when.format(new Date(row.expiresAt))}</td>
+                      <td>{row.expiresAt === null ? '' : when(row.expiresAt)}</td>
                       <td>
                         {row.state === 'done' && (
                           <button

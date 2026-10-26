@@ -243,7 +243,7 @@ export function CitationStyles({ client }: { client: Client }) {
         </ul>
       )}
       {shown?.sample && <Sample sample={shown.sample} />}
-      <Shown read={read} failed="The citation styles could not be loaded.">
+      <Shown read={read} failed={words('admin.the-citation-styles-could-not-be')}>
         {(rows) => (
           <table aria-label={words('admin.citation-styles')} className={styles['table']}>
             <thead>

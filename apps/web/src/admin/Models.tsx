@@ -373,7 +373,7 @@ export function Models({ client }: { client: Client }) {
           </button>
         </form>
       )}
-      <Shown read={read} failed="The model endpoints could not be loaded.">
+      <Shown read={read} failed={words('admin.the-model-endpoints-could-not-be')}>
         {(rows) => (
           <>
             {rows.length === 0 ? (

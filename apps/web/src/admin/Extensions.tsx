@@ -330,7 +330,7 @@ export function Extensions({ client }: { client: Client }) {
           </button>
         </Declared>
       )}
-      <Shown read={read} failed="The extensions could not be loaded.">
+      <Shown read={read} failed={words('admin.the-extensions-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{words('admin.no-extension-is-installed')}</p>

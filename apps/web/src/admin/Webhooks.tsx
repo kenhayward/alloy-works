@@ -130,7 +130,7 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
       setOpen({ id: delivery.id, tried: data.tried, sent: JSON.stringify(data.payload, null, 2) });
   };
   return (
-    <Shown read={read} failed="The deliveries could not be loaded.">
+    <Shown read={read} failed={words('admin.the-deliveries-could-not-be-loaded')}>
       {(rows) =>
         rows.length === 0 ? (
           <p className={styles['muted']}>{words('admin.nothing-has-been-delivered-to')}</p>
@@ -351,7 +351,7 @@ export function Webhooks({ client }: { client: Client }) {
         </button>
       </form>
       <p role="status">{said}</p>
-      <Shown read={read} failed="The webhooks could not be loaded.">
+      <Shown read={read} failed={words('admin.the-webhooks-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{words('admin.no-webhook-is-made')}</p>

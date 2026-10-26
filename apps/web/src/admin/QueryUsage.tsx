@@ -5,7 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -39,7 +39,7 @@ interface DataSettings {
 /** A run's time in minutes and seconds, as a person reads it. */
 function took(ms: number): string {
   const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return `${seconds} s`;
+  if (seconds < 60) return words('admin.seconds', { seconds });
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
   return rest === 0 ? words('admin.min', { minutes }) : words('admin.min-s', { minutes, rest });
@@ -47,21 +47,22 @@ function took(ms: number): string {
 
 /** Bytes as a person reads them. */
 function size(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return words('admin.kb', { value1: (bytes / 1024).toFixed(1) });
-  return words('admin.mb', { value1: (bytes / (1024 * 1024)).toFixed(1) });
+  if (bytes < 1024) return words('admin.bytes-b', { bytes });
+  if (bytes < 1024 * 1024) return words('admin.kb', { kb: bytes / 1024 });
+  return words('admin.mb', { mb: bytes / (1024 * 1024) });
 }
 
-function UsageTable({ name, totals }: { name: string; totals: readonly Total[] }) {
+function UsageTable({ by, totals }: { by: 'definition' | 'document'; totals: readonly Total[] }) {
   if (totals.length === 0)
-    return <p className={styles['muted']}>{words('admin.none-in-this-period', { name })}</p>;
+    return <p className={styles['muted']}>{words('admin.none-in-this-period', { by })}</p>;
+  const name = by === 'document' ? words('admin.by-document') : words('admin.by-query-definition');
   return (
     <table aria-label={name} className={styles['table']}>
       <caption className={styles['strong']}>{name}</caption>
       <thead>
         <tr>
           <th scope="col">
-            {name === 'By document' ? words('admin.document') : words('admin.query-definition')}
+            {by === 'document' ? words('admin.document') : words('admin.query-definition')}
           </th>
           <th scope="col">{words('admin.runs')}</th>
           <th scope="col">{words('admin.not-answered')}</th>
@@ -73,13 +74,18 @@ function UsageTable({ name, totals }: { name: string; totals: readonly Total[] }
       <tbody>
         {totals.map((each) => (
           <tr key={each.id}>
-            <td className={styles['strong']}>{each.title ?? words('admin.no-longer-here')}</td>
-            <td>{each.runs.toLocaleString()}</td>
+            <td
+              className={styles['strong']}
+              {...(each.title === null ? {} : { 'data-content': '' })}
+            >
+              {each.title ?? words('admin.no-longer-here')}
+            </td>
+            <td>{formats().number(each.runs)}</td>
             <td>
               {words('admin.failed-throttled', { failed: each.failed, throttled: each.throttled })}
             </td>
             <td>{took(each.durationMs)}</td>
-            <td>{each.rows.toLocaleString()}</td>
+            <td>{formats().number(each.rows)}</td>
             <td>{size(each.bytes)}</td>
           </tr>
         ))}
@@ -180,8 +186,8 @@ export function QueryUsage({ client, mayChange }: { client: Client; mayChange: b
             />
             <span className={styles['muted']}>
               {words('admin.how-many-of-this-environment', {
-                concurrentRuns: settings.defaults.concurrentRuns,
-                concurrentRuns2: settings.ceilings.concurrentRuns,
+                byDefault: settings.defaults.concurrentRuns,
+                ceiling: settings.ceilings.concurrentRuns,
               })}
             </span>
           </label>
@@ -221,8 +227,8 @@ export function QueryUsage({ client, mayChange }: { client: Client; mayChange: b
       )}
       {usage !== null && usage !== 'failed' && (
         <>
-          <UsageTable name="By query definition" totals={usage.byQueryDefinition} />
-          <UsageTable name="By document" totals={usage.byDocument} />
+          <UsageTable by="definition" totals={usage.byQueryDefinition} />
+          <UsageTable by="document" totals={usage.byDocument} />
         </>
       )}
     </div>

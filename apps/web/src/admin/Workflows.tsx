@@ -228,7 +228,7 @@ export function Workflows({ client }: { client: Client }) {
       <div className={styles['lead']}>
         <p>{words('admin.every-component-and-document-is')}</p>
       </div>
-      <Shown read={read} failed="The workflows could not be loaded.">
+      <Shown read={read} failed={words('admin.the-workflows-could-not-be-loaded')}>
         {(rows) =>
           rows.map((listed) => (
             <KindWorkflow
