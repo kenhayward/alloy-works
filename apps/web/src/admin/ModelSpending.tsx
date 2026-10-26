@@ -5,8 +5,13 @@ import { refusal } from '../account/TokenTable.js';
 import { isShownPerson, personName, type ShownPerson } from '../access/describe.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
+
+/** An amount of money to the cent, in the reader's language. */
+const cents = (amount: string | number) =>
+  formats().number(Number(amount), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 interface Limits {
   readonly perHour: number | null;
@@ -128,16 +133,16 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
     });
     if (data) {
       shown(data, false);
-      setSaid('The budget is set, counting from this month.');
-    } else setSaid(refusal(error, 'The budget could not be set.'));
+      setSaid(words('admin.the-budget-is-set-counting'));
+    } else setSaid(refusal(error, words('admin.the-budget-could-not-be')));
   };
 
   const lift = async () => {
     const { data, error } = await client.PUT('/v1/model-budget', { body: { budget: null } });
     if (data) {
       shown(data, false);
-      setSaid('There is no budget now.');
-    } else setSaid(refusal(error, 'The budget could not be lifted.'));
+      setSaid(words('admin.there-is-no-budget-now'));
+    } else setSaid(refusal(error, words('admin.the-budget-could-not-be-2')));
   };
 
   const name = async () => {
@@ -147,43 +152,52 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
     if (data) {
       shown(data);
       const count = data.recipients.length;
-      setSaid(count === 1 ? '1 person is told.' : `${count} people are told.`);
-    } else setSaid(refusal(error, 'Who is told could not be saved.'));
+      setSaid(words('admin.people-are-told', { count: count }));
+    } else setSaid(refusal(error, words('admin.who-is-told-could-not')));
   };
 
-  const money = (amount: string | number) => `${currency} ${Number(amount).toFixed(2)}`;
   return (
-    <section aria-label="Budget">
-      <h2>Budget</h2>
+    <section aria-label={words('admin.budget')}>
+      <h2>{words('admin.budget')}</h2>
       <div className={styles['lead']}>
-        <p>
-          What the environment means to spend on models a month, and the percents of it at which the
-          people named here are told, in their inbox.
-        </p>
-        <p>When it is spent, nothing stops: every capability continues.</p>
+        <p>{words('admin.what-the-environment-means-to')}</p>
+        <p>{words('admin.when-it-is-spent-nothing')}</p>
       </div>
-      {read === 'failed' && <p>The budget could not be loaded.</p>}
+      {read === 'failed' && <p>{words('admin.the-budget-could-not-be-3')}</p>}
       {read !== null && read !== 'failed' && (
         <>
           <p>
             {read.budget
-              ? `${money(read.spent)} of ${money(read.budget.limit)} spent in ${read.month}.`
-              : `No budget is set. ${money(read.spent)} spent in ${read.month}.`}
-            {read.otherCurrencyRuns > 0 &&
-              ` ${read.otherCurrencyRuns} runs cost something in another currency, counted in no budget.`}
+              ? words('admin.of-spent-in', {
+                  currency,
+                  spent: cents(read.spent),
+                  limit: cents(read.budget.limit),
+                  month: read.month,
+                })
+              : words('admin.no-budget-is-set-spent', {
+                  currency,
+                  spent: cents(read.spent),
+                  month: read.month,
+                })}
+            {read.otherCurrencyRuns > 0 && (
+              <>
+                {' '}
+                {words('admin.runs-cost-something-in-another', { runs: read.otherCurrencyRuns })}
+              </>
+            )}
           </p>
           <form
             className={styles['toolbar']}
-            aria-label="Set the budget"
+            aria-label={words('admin.set-the-budget')}
             onSubmit={(event) => void save(event)}
             noValidate
           >
             <label className={styles['filter']}>
-              Currency
+              {words('admin.currency')}
               <input value={currency} onChange={(change) => setCurrency(change.target.value)} />
             </label>
             <label className={styles['filter']}>
-              Monthly limit
+              {words('admin.monthly-limit')}
               <input
                 type="number"
                 min={0}
@@ -193,20 +207,20 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
               />
             </label>
             <label className={styles['filter']}>
-              Alert at percents
+              {words('admin.alert-at-percents')}
               <input value={thresholds} onChange={(change) => setThresholds(change.target.value)} />
             </label>
             <button type="submit" className="primary" disabled={!(Number(limit) > 0)}>
-              Save budget
+              {words('admin.save-budget')}
             </button>
             {read.budget && (
               <button type="button" onClick={() => void lift()}>
-                Lift budget
+                {words('admin.lift-budget')}
               </button>
             )}
           </form>
           <fieldset className={styles['toolbar']}>
-            <legend>Told, through the inbox</legend>
+            <legend>{words('admin.told-through-the-inbox')}</legend>
             {people.map((one) => (
               <label key={one.id} className={styles['filter']}>
                 <input
@@ -219,11 +233,11 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
                     setTold(next);
                   }}
                 />
-                {personName(one)}
+                <span data-content>{personName(one)}</span>
               </label>
             ))}
             <button type="button" onClick={() => void name()}>
-              Save who is told
+              {words('admin.save-who-is-told')}
             </button>
           </fieldset>
         </>
@@ -253,12 +267,24 @@ interface Usage {
 }
 
 const PURPOSES: Readonly<Record<string, string>> = {
-  drafting: 'Drafting',
-  chat: 'Conversations',
-  summarising: 'Summarising',
-  embedding: 'Embedding',
-  trial: 'Prompt trials',
-  test: 'Endpoint tests',
+  get drafting() {
+    return words('admin.drafting');
+  },
+  get chat() {
+    return words('admin.conversations');
+  },
+  get summarising() {
+    return words('admin.summarising');
+  },
+  get embedding() {
+    return words('admin.embedding');
+  },
+  get trial() {
+    return words('admin.prompt-trials');
+  },
+  get test() {
+    return words('admin.endpoint-tests');
+  },
 };
 
 /** Twelve months of use, by month and purpose, the oldest first (G6-F). */
@@ -278,26 +304,26 @@ function Trend({ client }: { client: Client }) {
       current = false;
     };
   }, [client]);
-  const count = (value: number) => value.toLocaleString('en-GB');
+  const count = (value: number) => formats().number(value);
   return (
-    <section aria-label="Twelve months">
-      <h2>Twelve months</h2>
-      {usage === 'failed' && <p>The months could not be loaded.</p>}
+    <section aria-label={words('admin.twelve-months')}>
+      <h2>{words('admin.twelve-months')}</h2>
+      {usage === 'failed' && <p>{words('admin.the-months-could-not-be')}</p>}
       {usage !== null && usage !== 'failed' && (
         <>
           {usage.models.length === 0 ? (
-            <p className={styles['muted']}>No model has been called in these months.</p>
+            <p className={styles['muted']}>{words('admin.no-model-has-been-called')}</p>
           ) : (
-            <table aria-label="Model use by month" className={styles['table']}>
+            <table aria-label={words('admin.model-use-by-month')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Month</th>
-                  <th scope="col">For</th>
-                  <th scope="col">Runs</th>
-                  <th scope="col">Tokens in</th>
-                  <th scope="col">From the cache</th>
-                  <th scope="col">Tokens out</th>
-                  <th scope="col">Cost</th>
+                  <th scope="col">{words('admin.month')}</th>
+                  <th scope="col">{words('admin.for')}</th>
+                  <th scope="col">{words('admin.runs')}</th>
+                  <th scope="col">{words('admin.tokens-in')}</th>
+                  <th scope="col">{words('admin.from-the-cache')}</th>
+                  <th scope="col">{words('admin.tokens-out')}</th>
+                  <th scope="col">{words('admin.cost')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -310,9 +336,15 @@ function Trend({ client }: { client: Client }) {
                     <td>{count(row.tokensCached)}</td>
                     <td>{count(row.tokensOut)}</td>
                     <td>
-                      {row.costs
-                        .map((each) => `${each.currency} ${Number(each.cost).toFixed(2)}`)
-                        .join(', ')}
+                      {formats().list(
+                        row.costs.map((each) =>
+                          words('admin.cost-in', {
+                            currency: each.currency,
+                            amount: cents(each.cost),
+                          }),
+                        ),
+                        { type: 'unit' },
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -320,13 +352,13 @@ function Trend({ client }: { client: Client }) {
             </table>
           )}
           {usage.queries.length > 0 && (
-            <table aria-label="Query runs by month" className={styles['table']}>
+            <table aria-label={words('admin.query-runs-by-month')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Month</th>
-                  <th scope="col">Query runs</th>
-                  <th scope="col">Rows</th>
-                  <th scope="col">Bytes</th>
+                  <th scope="col">{words('admin.month')}</th>
+                  <th scope="col">{words('admin.query-runs')}</th>
+                  <th scope="col">{words('admin.rows')}</th>
+                  <th scope="col">{words('admin.bytes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -383,7 +415,7 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
     const perHour = runsOf(each);
     // Only an empty box lifts the limit: anything else not a whole number of runs is said so.
     if (perHour === null && each.trim() !== '') {
-      setSaid('A limit is a whole number of runs, 1 or more. Leave it empty for none.');
+      setSaid(words('admin.a-limit-is-a-whole'));
       return;
     }
     const { data, error } = await client.PUT('/v1/model-limits', { body: { perHour } });
@@ -391,10 +423,10 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
       shown(data);
       setSaid(
         perHour === null
-          ? 'Nobody is limited now.'
-          : `Each person may start ${perHour} runs an hour.`,
+          ? words('admin.nobody-is-limited-now')
+          : words('admin.each-person-may-start-runs', { perHour }),
       );
-    } else setSaid(refusal(error, 'The limit could not be saved.'));
+    } else setSaid(refusal(error, words('admin.the-limit-could-not-be')));
   };
 
   const setOwn = async (id: string, perHour: number | null, name: string) => {
@@ -407,10 +439,10 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
       setTheirs('');
       setSaid(
         perHour === null
-          ? `${name} has the environment's limit again.`
-          : `${name} may start ${perHour} runs an hour.`,
+          ? words('admin.has-the-environment-s-limit', { name })
+          : words('admin.may-start-runs-an-hour', { name, perHour }),
       );
-    } else setSaid(refusal(error, 'Their limit could not be saved.'));
+    } else setSaid(refusal(error, words('admin.their-limit-could-not-be')));
   };
 
   useEffect(() => {
@@ -419,59 +451,64 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
 
   const chosen = people.find((one) => one.id === person);
   return (
-    <section aria-label="Rate limits">
-      <h2>Rate limits</h2>
+    <section aria-label={words('admin.rate-limits')}>
+      <h2>{words('admin.rate-limits')}</h2>
       <div className={styles['lead']}>
-        <p>
-          How many model runs each person may start an hour. A run over it is refused, saying when
-          one is free again. Testing an endpoint is never counted.
-        </p>
+        <p>{words('admin.how-many-model-runs-each')}</p>
       </div>
-      {limits === 'failed' && <p>The limits could not be loaded.</p>}
+      {limits === 'failed' && <p>{words('admin.the-limits-could-not-be')}</p>}
       {limits !== null && limits !== 'failed' && (
         <>
           <form className={styles['toolbar']} onSubmit={(event) => void save(event)} noValidate>
             <label className={styles['filter']}>
-              Runs an hour per person
+              {words('admin.runs-an-hour-per-person')}
               <input
                 type="number"
                 min={1}
                 value={each}
-                placeholder="Unlimited"
+                placeholder={words('admin.unlimited')}
                 onChange={(change) => setEach(change.target.value)}
               />
             </label>
             <button type="submit" className="primary">
-              Save limit
+              {words('admin.save-limit')}
             </button>
           </form>
           {limits.people.length === 0 ? (
-            <p className={styles['muted']}>Nobody has a limit of their own.</p>
+            <p className={styles['muted']}>{words('admin.nobody-has-a-limit-of')}</p>
           ) : (
-            <table aria-label="People with their own limit" className={styles['table']}>
+            <table
+              aria-label={words('admin.people-with-their-own-limit')}
+              className={styles['table']}
+            >
               <thead>
                 <tr>
-                  <th scope="col">Person</th>
-                  <th scope="col">Runs an hour</th>
+                  <th scope="col">{words('admin.person')}</th>
+                  <th scope="col">{words('admin.runs-an-hour')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {limits.people.map((row) => {
-                  const name = row.person.name ?? 'Someone with no name';
+                  const name = row.person.name ?? words('admin.someone-with-no-name');
                   return (
                     <tr key={row.person.id}>
-                      <td className={styles['strong']}>{name}</td>
-                      <td>{row.perHour}</td>
+                      <td
+                        className={styles['strong']}
+                        {...(row.person.name === null ? {} : { 'data-content': '' })}
+                      >
+                        {name}
+                      </td>
+                      <td>{formats().number(row.perHour)}</td>
                       <td>
                         <button
                           type="button"
-                          aria-label={`Remove ${name}`}
+                          aria-label={words('admin.remove', { name })}
                           onClick={() => void setOwn(row.person.id, null, name)}
                         >
-                          Remove
+                          {words('admin.remove-2')}
                         </button>
                       </td>
                     </tr>
@@ -482,7 +519,7 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
           )}
           <form
             className={styles['toolbar']}
-            aria-label="Set a person's own limit"
+            aria-label={words('admin.set-a-person-s-own')}
             onSubmit={(event) => {
               event.preventDefault();
               const perHour = runsOf(theirs);
@@ -491,17 +528,17 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
             noValidate
           >
             <label className={styles['filter']}>
-              Person
+              {words('admin.person')}
               <select value={person} onChange={(change) => setPerson(change.target.value)}>
                 {people.map((one) => (
-                  <option key={one.id} value={one.id}>
+                  <option key={one.id} value={one.id} data-content>
                     {personName(one)}
                   </option>
                 ))}
               </select>
             </label>
             <label className={styles['filter']}>
-              Their runs an hour
+              {words('admin.their-runs-an-hour')}
               <input
                 type="number"
                 min={1}
@@ -510,7 +547,7 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
               />
             </label>
             <button type="submit" disabled={!chosen || runsOf(theirs) === null}>
-              Set theirs
+              {words('admin.set-theirs')}
             </button>
           </form>
         </>

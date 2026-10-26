@@ -133,7 +133,8 @@ export function OutlineRail({
 }: {
   pane: Pane;
   chosen: string;
-  tabs?: readonly { readonly key: string; readonly label: string }[];
+  /** Each tab's key and label, marked `content` where the label is the tenant's, a space's name. */
+  tabs?: readonly { readonly key: string; readonly label: string; readonly content?: boolean }[];
   label?: string;
   edge?: 'start' | 'end';
   className?: string | undefined;
@@ -148,6 +149,7 @@ export function OutlineRail({
           // Marked only where there is a choice to mark: one tab's name is just its name.
           data-chosen={offered.length > 1 && tab.key === chosen}
           aria-hidden="true"
+          data-content={tab.content === true ? '' : undefined}
         >
           {tab.label}
         </span>

@@ -23,7 +23,7 @@ function service() {
   };
   let limits = {
     perHour: 20 as number | null,
-    people: [{ person: { id: GRACE, name: 'Grace Hopper' }, perHour: 60 }],
+    people: [{ person: { id: GRACE, name: 'Grace Moss' }, perHour: 60 }],
   };
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -65,7 +65,7 @@ function service() {
             ...budget,
             recipients: (body.principals as string[]).map((id) => ({
               id,
-              name: id === IVY ? 'Ivy Lane' : 'Grace Hopper',
+              name: id === IVY ? 'Ivy Lane' : 'Grace Moss',
             })),
           };
         }
@@ -97,7 +97,7 @@ function service() {
         items: [
           {
             id: GRACE,
-            name: 'Grace Hopper',
+            name: 'Grace Moss',
             email: 'grace@example.test',
             kind: 'user',
             invited: false,
@@ -195,7 +195,7 @@ describe("Administration's Model spending", () => {
     ).toBeInTheDocument();
 
     const table = within(limits).getByRole('table', { name: 'People with their own limit' });
-    expect(within(table).getByText('Grace Hopper')).toBeInTheDocument();
+    expect(within(table).getByText('Grace Moss')).toBeInTheDocument();
     await user.selectOptions(within(limits).getByRole('combobox', { name: 'Person' }), 'Ivy Lane');
     await user.type(within(limits).getByRole('spinbutton', { name: 'Their runs an hour' }), '5');
     await user.click(within(limits).getByRole('button', { name: 'Set theirs' }));
@@ -206,7 +206,7 @@ describe("Administration's Model spending", () => {
     });
     expect(await within(table).findByText('Ivy Lane')).toBeInTheDocument();
 
-    await user.click(within(table).getByRole('button', { name: 'Remove Grace Hopper' }));
+    await user.click(within(table).getByRole('button', { name: 'Remove Grace Moss' }));
     expect(sent).toContainEqual({
       method: 'PUT',
       path: `/v1/model-limits/people/${GRACE}`,

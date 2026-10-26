@@ -21,7 +21,8 @@ import {
 import fileStyles from './FileFields.module.css';
 import { Act, Section } from './FileFields.js';
 import styles from './QueryDefinitionPage.module.css';
-import { isRecord, type Described } from './shapes.js';
+import { isRecord, leftOutText, type Described } from './shapes.js';
+import { formats, words } from '../words/words.js';
 
 /**
  * The builder's half of a query definition's Query step (the D4 plan, D4-O): one table or view from
@@ -33,11 +34,21 @@ import { isRecord, type Described } from './shapes.js';
  */
 
 const AGGREGATE_WORDS: Readonly<Record<AggregateName, string>> = {
-  count: 'Count',
-  sum: 'Sum',
-  average: 'Average',
-  minimum: 'Minimum',
-  maximum: 'Maximum',
+  get count() {
+    return words('data.count');
+  },
+  get sum() {
+    return words('data.sum');
+  },
+  get average() {
+    return words('data.average');
+  },
+  get minimum() {
+    return words('data.minimum');
+  },
+  get maximum() {
+    return words('data.maximum');
+  },
 };
 
 /** Whether a source's name can be held by a definition, which holds names in NFC alone (D2-F, D4-P). */
@@ -62,20 +73,10 @@ interface SourceColumn {
 function listedLines(described: Described): string[] {
   const lines: string[] = [];
   if (described.truncated) {
-    lines.push(
-      'The list was cut short: the source has more tables and views than the connector lists at once.',
-    );
+    lines.push(words('data.the-list-was-cut-short'));
   }
-  const { relations, columns } = described.leftOut;
-  const parts = [
-    relations > 0 && `${relations} ${relations === 1 ? 'table or view' : 'tables or views'}`,
-    columns > 0 && `${columns} ${columns === 1 ? 'column' : 'columns'}`,
-  ].filter((part): part is string => typeof part === 'string');
-  if (parts.length > 0) {
-    lines.push(
-      `Left out because their names or types cannot be shown here: ${parts.join(', and ')}.`,
-    );
-  }
+  const left = leftOutText(described.leftOut);
+  if (left !== null) lines.push(left);
   return lines;
 }
 
@@ -211,12 +212,12 @@ export function BuilderFields({
   return (
     <>
       <Section
-        heading="Write the query with"
+        heading={words('data.write-the-query-with')}
         aside={
           <span className={styles['queryLine']}>
             {head}
             {(described !== null || builder.table !== null) && (
-              <Choice label="Table or view">
+              <Choice label={words('data.table-or-view')}>
                 {(id) => (
                   <select
                     id={id}
@@ -236,9 +237,14 @@ export function BuilderFields({
                       });
                     }}
                   >
-                    {builder.table === null && <option value="">Choose a table or view</option>}
+                    {builder.table === null && (
+                      <option value="">{words('data.choose-a-table-or-view')}</option>
+                    )}
                     {builder.table !== null && chosen === undefined && (
-                      <option value={tableKey(builder.table.schema, builder.table.name)}>
+                      <option
+                        value={tableKey(builder.table.schema, builder.table.name)}
+                        data-content
+                      >
                         {`${builder.table.schema}.${builder.table.name}`}
                       </option>
                     )}
@@ -254,7 +260,11 @@ export function BuilderFields({
                                 value={tableKey(each.schema, each.name)}
                                 disabled={!holdable}
                               >
-                                {`${each.schema}.${each.name}${holdable ? '' : ' (not offered)'}`}
+                                {holdable
+                                  ? `${each.schema}.${each.name}`
+                                  : words('data.relation-not-offered', {
+                                      name: `${each.schema}.${each.name}`,
+                                    })}
                               </option>
                             );
                           })}
@@ -270,10 +280,10 @@ export function BuilderFields({
           <button
             type="button"
             disabled={busy}
-            title="Lists the tables and views the connection's account may read, to build the query from."
+            title={words('data.lists-the-tables-and-views')}
             onClick={onDescribe}
           >
-            Describe the source
+            {words('data.describe-the-source')}
           </button>
         }
       >
@@ -286,7 +296,10 @@ export function BuilderFields({
           ))}
         {unoffered.length > 0 && (
           <p className={styles['hint']}>
-            {`Not offered, as ${unoffered.length === 1 ? 'its name is' : 'their names are'} not in the composed form a query definition holds: ${unoffered.join(', ')}. A view at the source under a composed name reaches ${unoffered.length === 1 ? 'it' : 'each'}.`}
+            {words('data.not-offered-as-not-in', {
+              count: unoffered.length,
+              names: formats().list(unoffered, { type: 'unit', style: 'short' }),
+            })}
           </p>
         )}
       </Section>
@@ -294,8 +307,8 @@ export function BuilderFields({
       {builder.table !== null && (
         <>
           <Section
-            heading="Columns to return"
-            count={`${builder.columns.length} of ${offered.length}`}
+            heading={words('data.columns-to-return')}
+            count={words('data.of', { picked: builder.columns.length, offered: offered.length })}
             aside={
               <label className={styles['check']}>
                 <input
@@ -307,7 +320,7 @@ export function BuilderFields({
                   disabled={offered.length === 0}
                   onChange={selectAll}
                 />
-                Select all
+                {words('data.select-all')}
               </label>
             }
           >
@@ -316,8 +329,8 @@ export function BuilderFields({
                 .filter((place) => place * perColumn < available.length)
                 .map((place) => (
                   <span key={place}>
-                    <span>At the source</span>
-                    <span>Returned as</span>
+                    <span>{words('data.at-the-source')}</span>
+                    <span>{words('data.returned-as')}</span>
                   </span>
                 ))}
             </div>
@@ -343,11 +356,13 @@ export function BuilderFields({
                           })
                         }
                       />
-                      <span className={styles['mono']}>{column.name}</span>
+                      <span className={styles['mono']} data-content>
+                        {column.name}
+                      </span>
                     </label>
                     {held !== undefined && (
                       <input
-                        aria-label={`Name of ${column.name}`}
+                        aria-label={words('data.name-of', { name: column.name })}
                         value={held.name}
                         spellCheck={false}
                         onChange={(event) =>
@@ -367,43 +382,50 @@ export function BuilderFields({
               })}
             </ul>
             {offered.length < available.length && (
-              <p className={styles['hint']}>
-                A column whose name is not in the composed form a query definition holds is shown
-                and not offered. A view at the source under a composed name reaches it.
-              </p>
+              <p className={styles['hint']}>{words('data.a-column-whose-name-is')}</p>
             )}
           </Section>
 
           <Section
-            heading="Filters"
-            hint="Text is compared by code point, so a filter matches the text exactly as it is written. A value is always sent apart from the SQL, never placed in it."
+            heading={words('data.filters')}
+            hint={words('data.text-is-compared-by-code-point')}
             acts={
               <>
                 {builder.filters.length > 1 && (
                   <Segmented
-                    label="Match"
+                    label={words('data.match')}
                     value={builder.match}
                     onChange={(match) =>
                       onChange({ ...builder, match: match as BuilderDraft['match'] })
                     }
                     options={[
-                      { value: 'all', label: 'Match all', name: 'Match all' },
-                      { value: 'any', label: 'Match any', name: 'Match any' },
+                      {
+                        value: 'all',
+                        label: words('data.match-all'),
+                        name: words('data.match-all'),
+                      },
+                      {
+                        value: 'any',
+                        label: words('data.match-any'),
+                        name: words('data.match-any'),
+                      },
                     ]}
                   />
                 )}
-                {offered.length > 0 && <Act words="Add a filter" onClick={addFilter} />}
+                {offered.length > 0 && (
+                  <Act words={words('data.add-a-filter')} onClick={addFilter} />
+                )}
               </>
             }
           >
             {builder.filters.length > 0 && (
               <RowTable
-                label="Filters"
+                label={words('data.filters')}
                 columns={[
-                  { head: 'Column', width: 230 },
-                  { head: 'Compared with', width: 210 },
-                  { head: 'Comparison', width: 190 },
-                  { head: 'Value' },
+                  { head: words('data.column'), width: 230 },
+                  { head: words('data.compared-with'), width: 210 },
+                  { head: words('data.comparison'), width: 190 },
+                  { head: words('data.value') },
                 ]}
                 rows={builder.filters.map((filter, at) => {
                   const n = at + 1;
@@ -414,7 +436,7 @@ export function BuilderFields({
                     cells: [
                       <select
                         key="column"
-                        aria-label={`Column of filter ${n}`}
+                        aria-label={words('data.column-of-filter', { n })}
                         value={filter.column}
                         onChange={(event) => {
                           const column = event.target.value;
@@ -436,7 +458,7 @@ export function BuilderFields({
                       </select>,
                       <select
                         key="to"
-                        aria-label={`Filter ${n} compared with`}
+                        aria-label={words('data.filter-compared-with', { n })}
                         value={
                           'parameter' in filter.to ? `parameter:${filter.to.parameter}` : 'value'
                         }
@@ -455,11 +477,11 @@ export function BuilderFields({
                             {parameter.name}
                           </option>
                         ))}
-                        <option value="value">A fixed value</option>
+                        <option value="value">{words('data.a-fixed-value')}</option>
                       </select>,
                       <select
                         key="is"
-                        aria-label={`Comparison of filter ${n}`}
+                        aria-label={words('data.comparison-of-filter', { n })}
                         value={filter.is}
                         onChange={(event) =>
                           setFilter(
@@ -478,7 +500,7 @@ export function BuilderFields({
                         <span key="value" className={fileStyles['value']}>
                           {'value' in filter.to ? (
                             <input
-                              aria-label={`Value of filter ${n}`}
+                              aria-label={words('data.value-of-filter', { n })}
                               value={filter.to.value}
                               onChange={(event) =>
                                 setFilter(at, {
@@ -492,18 +514,18 @@ export function BuilderFields({
                             />
                           ) : (
                             <span className={styles['hint']}>
-                              {`The value of ${filter.to.parameter}`}
+                              {words('data.the-value-of', { parameter: filter.to.parameter })}
                             </span>
                           )}
                           <MatchCase
                             filter={filter}
-                            name={`Match case of filter ${n}`}
+                            name={words('data.match-case-of-filter', { n })}
                             onChange={(changed) => setFilter(at, changed)}
                           />
                         </span>
                       ),
                     ],
-                    remove: `Remove filter ${n}`,
+                    remove: words('data.remove-filter', { n }),
                     onRemove: () =>
                       onChange({
                         ...builder,
@@ -516,7 +538,7 @@ export function BuilderFields({
           </Section>
 
           <Section
-            heading="Summaries"
+            heading={words('data.summaries')}
             aside={
               <label className={styles['check']}>
                 <input
@@ -530,24 +552,26 @@ export function BuilderFields({
                     })
                   }
                 />
-                Group and summarise
+                {words('data.group-and-summarise')}
               </label>
             }
             hint={
               builder.grouped
-                ? 'Rows are grouped by the columns returned, and each summary is taken over a group. An average is rounded at the source to the places it declares, so its column is declared a decimal of at least those places.'
-                : 'Rows are grouped by the columns returned, and each summary is taken over a group.'
+                ? words('data.rows-are-grouped-by-the')
+                : words('data.rows-are-grouped-by-the-2')
             }
-            acts={builder.grouped && <Act words="Add a summary" onClick={addSummary} />}
+            acts={
+              builder.grouped && <Act words={words('data.add-a-summary')} onClick={addSummary} />
+            }
           >
             {builder.grouped && builder.summaries.length > 0 && (
               <RowTable
-                label="Summaries"
+                label={words('data.summaries')}
                 columns={[
-                  { head: 'Summary', width: 170 },
-                  { head: 'Of', width: 230 },
-                  { head: 'Name' },
-                  { head: 'Places', width: 170 },
+                  { head: words('data.summary'), width: 170 },
+                  { head: words('data.of-2'), width: 230 },
+                  { head: words('data.name') },
+                  { head: words('data.places'), width: 170 },
                 ]}
                 rows={builder.summaries.map((summary, at) => {
                   const n = at + 1;
@@ -556,7 +580,7 @@ export function BuilderFields({
                     cells: [
                       <select
                         key="aggregate"
-                        aria-label={`Summary ${n}`}
+                        aria-label={words('data.summary-2', { n })}
                         value={summary.aggregate}
                         onChange={(event) => {
                           const aggregate = event.target.value as AggregateName;
@@ -586,13 +610,15 @@ export function BuilderFields({
                       </select>,
                       <select
                         key="of"
-                        aria-label={`Of summary ${n}`}
+                        aria-label={words('data.of-summary', { n })}
                         value={summary.column}
                         onChange={(event) =>
                           setSummary(at, { ...summary, column: event.target.value })
                         }
                       >
-                        {summary.aggregate === 'count' && <option value="">Every row</option>}
+                        {summary.aggregate === 'count' && (
+                          <option value="">{words('data.every-row')}</option>
+                        )}
                         {offered.map((column) => (
                           <option key={column.name} value={column.name}>
                             {column.name}
@@ -601,7 +627,7 @@ export function BuilderFields({
                       </select>,
                       <input
                         key="name"
-                        aria-label={`Name of summary ${n}`}
+                        aria-label={words('data.name-of-summary', { n })}
                         value={summary.name}
                         spellCheck={false}
                         onChange={(event) =>
@@ -611,7 +637,7 @@ export function BuilderFields({
                       summary.aggregate === 'average' ? (
                         <input
                           key="places"
-                          aria-label={`Places of summary ${n}`}
+                          aria-label={words('data.places-of-summary', { n })}
                           inputMode="numeric"
                           value={summary.places}
                           onChange={(event) =>
@@ -620,11 +646,11 @@ export function BuilderFields({
                         />
                       ) : (
                         <span key="places" className={styles['hint']}>
-                          Only for an average
+                          {words('data.only-for-an-average')}
                         </span>
                       ),
                     ],
-                    remove: `Remove summary ${n}`,
+                    remove: words('data.remove-summary', { n }),
                     onRemove: () =>
                       onChange({
                         ...builder,

@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -86,31 +87,39 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
       });
       if (data) {
         show(data);
-        setSaid('Saved.');
-      } else setSaid(refusal(error, 'The policy could not be saved.'));
+        setSaid(say('admin.saved'));
+      } else setSaid(refusal(error, say('admin.the-policy-could-not-be')));
     } catch {
-      setSaid('The policy could not be saved.');
+      setSaid(say('admin.the-policy-could-not-be'));
     } finally {
       setBusy(false);
     }
   };
 
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{say('admin.loading')}</Waiting>;
   if (read === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The translation settings could not be read.</p>
+        <p>{say('admin.the-translation-settings-could-not')}</p>
       </Notice>
     );
   }
   return (
     <form className={styles['settings']} onSubmit={(event) => void save(event)}>
       <fieldset>
-        <legend className={styles['strong']}>A component with no translation</legend>
+        <legend className={styles['strong']}>{say('admin.a-component-with-no-translation')}</legend>
         {(
           [
-            ['source', 'Publish it in its own language', 'Marked as untranslated, and reported.'],
-            ['refuse', 'Refuse the publish', 'Naming each component without a translation.'],
+            [
+              'source',
+              say('admin.publish-it-in-its-own'),
+              say('admin.marked-as-untranslated-and-reported'),
+            ],
+            [
+              'refuse',
+              say('admin.refuse-the-publish'),
+              say('admin.naming-each-component-without-a'),
+            ],
           ] as const
         ).map(([value, label, hint]) => (
           <label key={value} className={styles['setting']}>
@@ -130,11 +139,11 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
         ))}
       </fieldset>
       <fieldset>
-        <legend className={styles['strong']}>A translation out of date with its source</legend>
+        <legend className={styles['strong']}>{say('admin.a-translation-out-of-date')}</legend>
         {(
           [
-            ['publish', 'Publish it', 'Reported, where the change needs retranslating.'],
-            ['refuse', 'Refuse the publish', 'Only where the change needs retranslating.'],
+            ['publish', say('admin.publish-it'), say('admin.reported-where-the-change-needs')],
+            ['refuse', say('admin.refuse-the-publish'), say('admin.only-where-the-change-needs')],
           ] as const
         ).map(([value, label, hint]) => (
           <label key={value} className={styles['setting']}>
@@ -155,13 +164,17 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
       </fieldset>
       <fieldset>
         <legend className={styles['strong']}>
-          A returned translation whose source moved since it was sent
+          {say('admin.a-returned-translation-whose-source')}
         </legend>
         {(
           [
-            ['review', 'Hold it for review', 'A person decides, nothing offered first.'],
-            ['accept', 'Offer to accept it', 'As a translation of the version sent, out of date.'],
-            ['reject', 'Offer to reject it', 'A person still decides.'],
+            [
+              'review',
+              say('admin.hold-it-for-review'),
+              say('admin.a-person-decides-nothing-offered'),
+            ],
+            ['accept', say('admin.offer-to-accept-it'), say('admin.as-a-translation-of-the')],
+            ['reject', say('admin.offer-to-reject-it'), say('admin.a-person-still-decides')],
           ] as const
         ).map(([value, label, hint]) => (
           <label key={value} className={styles['setting']}>
@@ -181,16 +194,20 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
         ))}
       </fieldset>
       <fieldset>
-        <legend className={styles['strong']}>Machine translation</legend>
+        <legend className={styles['strong']}>{say('admin.machine-translation')}</legend>
         {(
           [
-            ['off', 'Send nothing', 'No component is drafted by machine.'],
+            ['off', say('admin.send-nothing'), say('admin.no-component-is-drafted-by')],
             [
               'inside',
-              'Only inside the data boundary',
-              'To a translate endpoint inside the boundary alone.',
+              say('admin.only-inside-the-data-boundary'),
+              say('admin.to-a-translate-endpoint-inside'),
             ],
-            ['any', 'To any translate endpoint', 'Inside or outside the boundary.'],
+            [
+              'any',
+              say('admin.to-any-translate-endpoint'),
+              say('admin.inside-or-outside-the-boundary'),
+            ],
           ] as const
         ).map(([value, label, hint]) => (
           <label key={value} className={styles['setting']}>
@@ -210,29 +227,26 @@ export function TranslationPolicy({ client, mayChange }: { client: Client; mayCh
         ))}
       </fieldset>
       <label htmlFor={noteId} className={styles['strong']}>
-        What the mark says, by language
+        {say('admin.what-the-mark-says-by')}
       </label>
       <textarea
         id={noteId}
         rows={4}
         value={note}
         disabled={!mayChange}
-        placeholder="fr: Non traduit"
+        placeholder={say('admin.fr-non-traduit')}
         onChange={(event) => setNote(event.target.value)}
       />
-      <p className={styles['muted']}>
-        One language a line, its tag then its words. A language with none says Untranslated,
-        followed by the language the component is in.
-      </p>
+      <p className={styles['muted']}>{say('admin.one-language-a-line-its')}</p>
       <p role="status">{said}</p>
       {mayChange ? (
         <div>
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {say('admin.save')}
           </button>
         </div>
       ) : (
-        <p className={styles['muted']}>Only an administrator of the environment may change this.</p>
+        <p className={styles['muted']}>{say('admin.only-an-administrator-of-the-2')}</p>
       )}
     </form>
   );

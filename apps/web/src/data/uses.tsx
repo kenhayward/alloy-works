@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import { Chip } from '../parts/Chip.js';
 import { Pager, pageOf } from '../parts/Pager.js';
 import styles from './uses.module.css';
+import { formats, words } from '../words/words.js';
 
 /** What uses something: those the caller may read, by title, and how many more there are (D3-M). */
 export interface Uses {
@@ -55,7 +56,9 @@ export function UsedList({
         <ul>
           {uses.readable.map((each) => (
             <li key={each.id}>
-              <a href={link(each.id)}>{each.title}</a>
+              <a href={link(each.id)} data-content>
+                {each.title}
+              </a>
             </li>
           ))}
         </ul>
@@ -63,7 +66,7 @@ export function UsedList({
       {uses.others > 0 && (
         <p>
           {uses.readable.length > 0
-            ? `And ${uses.others} more you may not read.`
+            ? words('data.and-more-you-may-not-2', { others: uses.others })
             : counted(uses.others)}
         </p>
       )}
@@ -77,11 +80,14 @@ export function UsedList({
  */
 export function PagedUses({
   heading,
+  pages,
   uses,
   link,
   counted,
 }: {
   readonly heading: string;
+  /** Its pager's name: "Pages of documents". */
+  readonly pages: string;
   readonly uses: Uses;
   readonly link: (id: string) => string;
   readonly counted: (others: number) => string;
@@ -93,14 +99,16 @@ export function PagedUses({
     <section aria-labelledby={id} className={styles['list']}>
       <header className={styles['head']}>
         <h2 id={id}>{heading}</h2>
-        <Chip className={styles['count']}>{total}</Chip>
+        <Chip className={styles['count']}>{formats().number(total)}</Chip>
       </header>
       {uses.readable.length > 0 && (
         <ul className={styles['items']}>
           {pageOf(uses.readable, page).map((each) => (
             <li key={each.id}>
-              <a href={link(each.id)}>{each.title}</a>
-              {each.retired && <Chip tone="warn">Retired</Chip>}
+              <a href={link(each.id)} data-content>
+                {each.title}
+              </a>
+              {each.retired && <Chip tone="warn">{words('data.retired')}</Chip>}
             </li>
           ))}
         </ul>
@@ -108,19 +116,14 @@ export function PagedUses({
       {uses.others > 0 && (
         <p className={styles['others']}>
           {uses.readable.length > 0
-            ? `And ${uses.others} more you may not read.`
+            ? words('data.and-more-you-may-not-2', { others: uses.others })
             : counted(uses.others)}
         </p>
       )}
-      {total === 0 && <p className={styles['others']}>None.</p>}
+      {total === 0 && <p className={styles['others']}>{words('data.none-2')}</p>}
       {uses.readable.length > 0 && (
         <div className={styles['foot']}>
-          <Pager
-            label={`Pages of ${heading.toLocaleLowerCase()}`}
-            total={uses.readable.length}
-            page={page}
-            onPage={setPage}
-          />
+          <Pager label={pages} total={uses.readable.length} page={page} onPage={setPage} />
         </div>
       )}
     </section>

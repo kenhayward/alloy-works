@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -18,11 +19,31 @@ const POLICIES: readonly {
 }[] = [
   {
     policy: 'map',
-    label: 'Match to members',
-    hint: 'Each name is kept as text, with the member its email matches, or a name match the importer confirms.',
+    get label() {
+      return words('admin.match-to-members');
+    },
+    get hint() {
+      return words('admin.each-name-is-kept-as');
+    },
   },
-  { policy: 'keep', label: 'Keep as text', hint: 'Each name is kept as the file gives it.' },
-  { policy: 'discard', label: 'Discard', hint: 'No name the file carries is kept.' },
+  {
+    policy: 'keep',
+    get label() {
+      return words('admin.keep-as-text');
+    },
+    get hint() {
+      return words('admin.each-name-is-kept-as-2');
+    },
+  },
+  {
+    policy: 'discard',
+    get label() {
+      return words('admin.discard');
+    },
+    get hint() {
+      return words('admin.no-name-the-file-carries');
+    },
+  },
 ];
 
 /**
@@ -57,27 +78,27 @@ export function ImportPolicy({ client, mayChange }: { client: Client; mayChange:
       const { data, error } = await client.PUT('/v1/settings/import', { body: { policy: draft } });
       if (data) {
         setRead(data.policy);
-        setSaid('Saved.');
-      } else setSaid(refusal(error, 'The policy could not be saved.'));
+        setSaid(words('admin.saved'));
+      } else setSaid(refusal(error, words('admin.the-policy-could-not-be')));
     } catch {
-      setSaid('The policy could not be saved.');
+      setSaid(words('admin.the-policy-could-not-be'));
     } finally {
       setBusy(false);
     }
   };
 
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The import settings could not be read.</p>
+        <p>{words('admin.the-import-settings-could-not')}</p>
       </Notice>
     );
   }
   return (
     <form className={styles['settings']} onSubmit={(event) => void save(event)}>
       <fieldset>
-        <legend className={styles['strong']}>The names an imported Word file carries</legend>
+        <legend className={styles['strong']}>{words('admin.the-names-an-imported-word')}</legend>
         {POLICIES.map((each) => (
           <label key={each.policy} className={styles['setting']}>
             <span>
@@ -95,19 +116,16 @@ export function ImportPolicy({ client, mayChange }: { client: Client; mayChange:
           </label>
         ))}
       </fieldset>
-      <p className={styles['muted']}>
-        Suggestions and comments from a file are always made by whoever accepts the import. A name
-        is only ever recorded beside them.
-      </p>
+      <p className={styles['muted']}>{words('admin.suggestions-and-comments-from-a')}</p>
       <p role="status">{said}</p>
       {mayChange ? (
         <div>
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {words('admin.save')}
           </button>
         </div>
       ) : (
-        <p className={styles['muted']}>Only an administrator of the environment may change this.</p>
+        <p className={styles['muted']}>{words('admin.only-an-administrator-of-the-2')}</p>
       )}
     </form>
   );

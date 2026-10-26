@@ -5,6 +5,7 @@ import { apiAs, words } from './testing/api.js';
 import { makeComponent } from './testing/component.js';
 import { allowPageNoise, withPage } from './testing/page.js';
 import { signInFromNode } from './testing/setup.js';
+import type { WordKey } from '../../../apps/web/src/words/make.js';
 import { chooseLanguage, say, unlocalised } from './testing/words.js';
 
 /**
@@ -47,16 +48,47 @@ const surfaces = (component: string): readonly Surface[] => [
       page.getByRole('heading', { level: 1, name: say(language, 'publishing.publications') }),
   },
   {
-    // Its toolbar: the header's dates, reuse and style move with their own folders (UIc, UId).
     name: 'The component editor',
     address: `#/components/${component}`,
-    regions: ['[role="toolbar"]'],
+    regions: ['main'],
     ready: (page, language) =>
       page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
   },
+  ...listed([
+    ['The prompts', '#/prompts', 'prompts.prompts'],
+    ['The bibliography', '#/bibliography', 'bibliography.bibliography'],
+    ['The terms', '#/terms', 'terms.terms'],
+    ['The conversations', '#/conversations', 'conversations.conversations'],
+    ['The connections', '#/connections', 'data.connections'],
+    ['The query definitions', '#/query-definitions', 'data.query-definitions-2'],
+    ['Search', '#/search', 'search.search'],
+  ]),
 ];
 
-/** Each moved surface walked in `language`, its words made over, none cut short, nothing spilling. */
+/** Administration's sections, walked by Ada, who administers the environment. */
+const administration: readonly Surface[] = listed([
+  ['Administration, its overview', '#/admin/overview', 'admin.overview'],
+  ['Administration, its spaces', '#/admin/spaces', 'admin.spaces'],
+  ['Administration, its people', '#/admin/people', 'admin.people'],
+  ['Administration, its groups', '#/admin/groups', 'admin.groups'],
+  ['Administration, its roles', '#/admin/roles', 'admin.roles'],
+]);
+
+/** Pages whose first heading names them, each walked whole. */
+function listed(pages: readonly (readonly [string, string, WordKey])[]): Surface[] {
+  return pages.map(([name, address, heading]) => ({
+    name,
+    address,
+    regions: ['main'],
+    ready: (page, language) =>
+      page.getByRole('heading', { level: 1, name: say(language, heading), exact: true }),
+  }));
+}
+
+/**
+ * Each surface walked in `language` by Grace, and Administration's by Ada, each person's language
+ * chosen for the walk and given back after: words made over, none cut short, nothing spilling.
+ */
 async function walk(language: Language) {
   // The editor asks for the query definitions Grace may not read, for its Value command, and the
   // service answers 403, which the browser reports as a failed load: her permissions, not noise.
@@ -67,30 +99,47 @@ async function walk(language: Language) {
   const component = await makeComponent(await apiAs('grace'), 'Pseudo', [
     { type: 'paragraph', id: 'b1', style: 'body', content: words('The pond survey found newts.') },
   ]);
+  await walkAs(cookie, language, surfaces(component.id));
+  await walkAs(await signInFromNode('ada'), language, administration);
+}
+
+async function walkAs(cookie: string, language: Language, walked: readonly Surface[]) {
   await chooseLanguage(cookie, language);
   try {
     await withPage(
       async (page) => {
-        for (const surface of surfaces(component.id)) {
+        for (const surface of walked) {
           await page.goto(`${SERVICE}/${surface.address}`);
-          await surface.ready(page, language).waitFor();
-          expect(await page.evaluate(() => document.documentElement.lang)).toBe(language);
-          expect(await page.evaluate(() => document.documentElement.dir)).toBe(
-            language === 'ar-XB' ? 'rtl' : 'ltr',
-          );
+          // Every surface walked whatever another finds, so one run names them all.
+          const drawn = await surface
+            .ready(page, language)
+            .waitFor()
+            .then(() => true)
+            .catch(() => false);
+          expect.soft(drawn, `${surface.name}: never drawn in ${language}`).toBe(true);
+          if (!drawn) continue;
+          expect.soft(await page.evaluate(() => document.documentElement.lang)).toBe(language);
+          expect
+            .soft(await page.evaluate(() => document.documentElement.dir))
+            .toBe(language === 'ar-XB' ? 'rtl' : 'ltr');
           const found = await unlocalised(page, surface.regions);
-          expect(found.missed, `${surface.name}: words left in English`).toEqual([]);
-          expect(found.clipped, `${surface.name}: words cut short`).toEqual([]);
-          expect(found.spills, `${surface.name}: wider than the window`).toEqual([]);
-          // An icon's button has no text to walk: its name is what a screen reader says.
+          expect.soft(found.missed, `${surface.name}: words left in English`).toEqual([]);
+          expect.soft(found.clipped, `${surface.name}: words cut short`).toEqual([]);
+          expect.soft(found.spills, `${surface.name}: wider than the window`).toEqual([]);
+          // An icon's button has no text to walk: its name is what a screen reader says. A name that
+          // is content, a space's, is marked `data-content-name`.
           const names = await page.$$eval(
-            surface.regions.map((region) => `${region} [aria-label]`).join(', '),
+            surface.regions
+              .map((region) => `${region} [aria-label]:not([data-content-name])`)
+              .join(', '),
             (labelled) => labelled.map((each) => each.getAttribute('aria-label') ?? ''),
           );
-          expect(
-            names.filter((name) => /[A-Za-z]{2,}/.test(name) && !/[[\]]/.test(name)),
-            `${surface.name}: names left in English`,
-          ).toEqual([]);
+          expect
+            .soft(
+              names.filter((name) => /[A-Za-z]{2,}/.test(name) && !/[[\]]/.test(name)),
+              `${surface.name}: names left in English`,
+            )
+            .toEqual([]);
         }
       },
       { signedInAs: cookie },

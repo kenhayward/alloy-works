@@ -7,7 +7,8 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { entryLink } from './links.js';
-import { authorsShort, authorsTyped, FOUND_BY, TYPES, yearOf, type Csl } from './shape.js';
+import { authorsShort, authorsTyped, TYPES, yearOf, type Csl } from './shape.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,9 +38,24 @@ interface Imported {
 }
 
 const FORMATS = [
-  { value: 'csl-json', label: 'CSL-JSON' },
-  { value: 'bibtex', label: 'BibTeX' },
-  { value: 'ris', label: 'RIS' },
+  {
+    value: 'csl-json',
+    get label() {
+      return words('bibliography.csl-json');
+    },
+  },
+  {
+    value: 'bibtex',
+    get label() {
+      return words('bibliography.bibtex');
+    },
+  },
+  {
+    value: 'ris',
+    get label() {
+      return words('bibliography.ris');
+    },
+  },
 ] as const;
 
 const isSummary = (value: unknown): value is Summary =>
@@ -48,15 +64,26 @@ const isSummary = (value: unknown): value is Summary =>
   typeof value.key === 'string' &&
   isRecord(value.csl);
 
-/** What one record of an import came to, as a sentence. */
+/**
+ * What one record of an import came to, as a sentence, with what of it was not kept. A refusal's
+ * message is the service's, in English for integrators.
+ */
 function importedLine(record: Imported): string {
-  if (record.outcome === 'refused') return `Refused: ${record.message ?? ''}`;
-  const key = record.entry?.key ?? '';
-  if (record.outcome === 'created') return `${key}: made`;
-  const found = `found by ${FOUND_BY[record.by ?? ''] ?? record.by}`;
+  const values = {
+    key: record.entry?.key ?? '',
+    by: record.by ?? '',
+    dropped: record.dropped.length > 0 ? 'some' : 'none',
+    fields: formats().list(record.dropped),
+  };
+  if (record.outcome === 'refused')
+    return words('bibliography.refused', { ...values, message: record.message ?? '' });
+  if (record.outcome === 'created') return words('bibliography.made', values);
   return record.merged.length === 0
-    ? `${key}: already here, ${found}, nothing new`
-    : `${key}: merged, ${found}, and given ${record.merged.join(', ')}`;
+    ? words('bibliography.already-here-nothing-new', values)
+    : words('bibliography.merged-and-given', {
+        ...values,
+        merged: formats().list(record.merged),
+      });
 }
 
 /**
@@ -116,9 +143,9 @@ export function Bibliography({ client }: { readonly client: Client }) {
   if (failed && entries === null) {
     return (
       <section aria-labelledby="bibliography-heading">
-        <h1 id="bibliography-heading">Bibliography</h1>
+        <h1 id="bibliography-heading">{words('bibliography.bibliography')}</h1>
         <Notice tone="failed">
-          <p>The bibliography could not be loaded.</p>
+          <p>{words('bibliography.the-bibliography-could-not-be')}</p>
         </Notice>
       </section>
     );
@@ -128,28 +155,28 @@ export function Bibliography({ client }: { readonly client: Client }) {
   return (
     <section aria-labelledby="bibliography-heading">
       <div className={styles['titleRow']}>
-        <h1 id="bibliography-heading">Bibliography</h1>
+        <h1 id="bibliography-heading">{words('bibliography.bibliography')}</h1>
         {space !== null && (
           <span className={styles['actions']}>
             <button type="button" onClick={() => setOpen(open === 'import' ? null : 'import')}>
-              Import
+              {words('bibliography.import')}
             </button>
             <button
               type="button"
               className="primary"
               onClick={() => setOpen(open === 'new' ? null : 'new')}
             >
-              New entry
+              {words('bibliography.new-entry')}
             </button>
           </span>
         )}
       </div>
       {spaces.length > 1 && (
         <label>
-          Space{' '}
+          {words('bibliography.space')}{' '}
           <select value={space ?? ''} onChange={(event) => setSpace(event.target.value)}>
             {spaces.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
@@ -162,33 +189,39 @@ export function Bibliography({ client }: { readonly client: Client }) {
       )}
       {entries === null ? null : entries.length === 0 ? (
         <Empty>
-          <p>This space holds no bibliography entries you may read.</p>
+          <p>{words('bibliography.this-space-holds-no-bibliography')}</p>
         </Empty>
       ) : (
         <>
           <p className={styles['summary']}>
-            <span>{`${total} ${total === 1 ? 'entry' : 'entries'} you may read.`}</span>
-            {entries.length < total && <span>{`Showing 1 to ${entries.length}.`}</span>}
+            <span>{words('bibliography.you-may-read', { total })}</span>
+            {entries.length < total && (
+              <span>{words('bibliography.showing-1-to', { length: entries.length })}</span>
+            )}
           </p>
           <div className={styles['table']}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Key</th>
-                  <th scope="col">Authors</th>
-                  <th scope="col">Title</th>
-                  <th scope="col">Year</th>
+                  <th scope="col">{words('bibliography.key')}</th>
+                  <th scope="col">{words('bibliography.authors')}</th>
+                  <th scope="col">{words('bibliography.title')}</th>
+                  <th scope="col">{words('bibliography.year')}</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((entry) => (
                   <tr key={entry.id}>
                     <td className={styles['title']}>
-                      <a href={entryLink(entry.id)}>{entry.key}</a>
+                      <a href={entryLink(entry.id)} data-content>
+                        {entry.key}
+                      </a>
                     </td>
-                    <td>{authorsShort(entry.csl)}</td>
-                    <td>{entry.csl.title ?? ''}</td>
-                    <td className={styles['muted']}>{yearOf(entry.csl)}</td>
+                    <td data-content>{authorsShort(entry.csl)}</td>
+                    <td data-content>{entry.csl.title ?? ''}</td>
+                    <td className={styles['muted']} data-content>
+                      {yearOf(entry.csl)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -236,7 +269,7 @@ function NewEntry({ client, space }: { readonly client: Client; readonly space: 
         setProblem(
           isRecord(error) && typeof error.message === 'string'
             ? error.message
-            : 'The entry could not be made.',
+            : words('bibliography.the-entry-could-not-be'),
         );
         return;
       }
@@ -256,9 +289,9 @@ function NewEntry({ client, space }: { readonly client: Client; readonly space: 
   };
 
   return (
-    <form aria-label="New entry" onSubmit={submit}>
+    <form aria-label={words('bibliography.new-entry')} onSubmit={submit}>
       <label>
-        Type{' '}
+        {words('bibliography.type')}{' '}
         <select value={type} onChange={(event) => setType(event.target.value)}>
           {TYPES.map((each) => (
             <option key={each.value} value={each.value}>
@@ -268,21 +301,23 @@ function NewEntry({ client, space }: { readonly client: Client; readonly space: 
         </select>
       </label>
       <label>
-        Title <input value={title} required onChange={(event) => setTitle(event.target.value)} />
+        {words('bibliography.title-2')}
+        <input value={title} required onChange={(event) => setTitle(event.target.value)} />
       </label>
       <label>
-        Authors, one a line, family name first{' '}
+        {words('bibliography.authors-one-a-line-family')}{' '}
         <textarea value={authors} onChange={(event) => setAuthors(event.target.value)} />
       </label>
       <label>
-        Year{' '}
+        {words('bibliography.year')}{' '}
         <input value={year} inputMode="numeric" onChange={(event) => setYear(event.target.value)} />
       </label>
       <label>
-        DOI <input value={doi} onChange={(event) => setDoi(event.target.value)} />
+        {words('bibliography.doi')}{' '}
+        <input value={doi} onChange={(event) => setDoi(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || title.trim() === ''}>
-        Make entry
+        {words('bibliography.make-entry')}
       </button>
       {problem !== null && (
         <Notice tone="failed">
@@ -290,18 +325,28 @@ function NewEntry({ client, space }: { readonly client: Client; readonly space: 
         </Notice>
       )}
       {matches !== null && matches.length > 0 && (
-        <section aria-label="Already in this space">
-          <p>This source is already in the space. Open it, or make another anyway.</p>
+        <section aria-label={words('bibliography.already-in-this-space')}>
+          <p>{words('bibliography.this-source-is-already-in')}</p>
           <ul>
             {matches.map((each) => (
               <li key={each.entry.id}>
-                <a href={entryLink(each.entry.id)}>{each.entry.key}</a> {each.entry.csl.title ?? ''}
-                . Found by {FOUND_BY[each.by] ?? each.by}.
+                {wordsWith(
+                  'bibliography.match-found-by',
+                  { by: each.by },
+                  {
+                    key: (
+                      <a href={entryLink(each.entry.id)} data-content>
+                        {each.entry.key}
+                      </a>
+                    ),
+                    title: <span data-content>{each.entry.csl.title ?? ''}</span>,
+                  },
+                )}
               </li>
             ))}
           </ul>
           <button type="button" disabled={busy} onClick={() => void make(true)}>
-            Make it anyway
+            {words('bibliography.make-it-anyway')}
           </button>
         </section>
       )}
@@ -338,7 +383,7 @@ function ImportRecords({
         setProblem(
           isRecord(error) && typeof error.message === 'string'
             ? error.message
-            : 'The records could not be imported.',
+            : words('bibliography.the-records-could-not-be'),
         );
         return;
       }
@@ -350,9 +395,9 @@ function ImportRecords({
   };
 
   return (
-    <form aria-label="Import" onSubmit={(event) => void submit(event)}>
+    <form aria-label={words('bibliography.import')} onSubmit={(event) => void submit(event)}>
       <label>
-        Format{' '}
+        {words('bibliography.format')}{' '}
         <select value={format} onChange={(event) => setFormat(event.target.value as typeof format)}>
           {FORMATS.map((each) => (
             <option key={each.value} value={each.value}>
@@ -362,10 +407,11 @@ function ImportRecords({
         </select>
       </label>
       <label>
-        Records <textarea value={text} rows={8} onChange={(event) => setText(event.target.value)} />
+        {words('bibliography.records')}
+        <textarea value={text} rows={8} onChange={(event) => setText(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || text.trim() === ''}>
-        Import records
+        {words('bibliography.import-records')}
       </button>
       {problem !== null && (
         <Notice tone="failed">
@@ -373,13 +419,10 @@ function ImportRecords({
         </Notice>
       )}
       {done !== null && (
-        <section aria-label="Imported">
+        <section aria-label={words('bibliography.imported')}>
           <ul>
             {done.map((record, at) => (
-              <li key={at}>
-                {importedLine(record)}
-                {record.dropped.length > 0 && `. Not kept: ${record.dropped.join(', ')}`}
-              </li>
+              <li key={at}>{importedLine(record)}</li>
             ))}
           </ul>
         </section>

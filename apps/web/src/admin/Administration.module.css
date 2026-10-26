@@ -546,6 +546,8 @@
 /* Roles (AD7): a grid that scrolls sideways at narrow widths rather than squeezing its columns. */
 .scroller {
   overflow-x: auto;
+  /* The containing block of the hidden labels in its cells, so they scroll with it, never past the page. */
+  position: relative;
 }
 
 .grid {

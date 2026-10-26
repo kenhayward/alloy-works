@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -46,28 +47,26 @@ export function ReferenceSources({ client, mayChange }: { client: Client; mayCha
         setRead((was) =>
           Array.isArray(was) ? was.map((each) => (each.id === data.id ? data : each)) : was,
         );
-        setSaid(`${data.name} is ${data.enabled ? 'on' : 'off'}.`);
-      } else setSaid(refusal(error, 'The source could not be switched.'));
+        setSaid(words('admin.is', { name: data.name, state: data.enabled ? 'on' : 'off' }));
+      } else setSaid(refusal(error, words('admin.the-source-could-not-be')));
     } catch {
-      setSaid('The source could not be switched.');
+      setSaid(words('admin.the-source-could-not-be'));
     } finally {
       setBusy(false);
     }
   };
 
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'failed') {
     return (
       <Notice tone="failed">
-        <p>The reference sources could not be read.</p>
+        <p>{words('admin.the-reference-sources-could-not')}</p>
       </Notice>
     );
   }
   return (
     <div className={styles['settings']}>
-      <p className={styles['muted']}>
-        Authors search a source that is on from the Cite dialog, and what they type is sent to it.
-      </p>
+      <p className={styles['muted']}>{words('admin.authors-search-a-source-that')}</p>
       {read.map((source) => (
         <label key={source.id} className={styles['setting']}>
           <span>
@@ -77,16 +76,18 @@ export function ReferenceSources({ client, mayChange }: { client: Client; mayCha
               disabled={!mayChange || busy}
               onChange={(event) => void change(source, event.target.checked)}
             />{' '}
-            <span className={styles['strong']}>{source.name}</span>
+            <span className={styles['strong']} data-content>
+              {source.name}
+            </span>
           </span>
-          <span className={styles['muted']}>Reached at {source.host}</span>
+          <span className={styles['muted']}>
+            {words('admin.reached-at', { host: source.host })}
+          </span>
         </label>
       ))}
       <p role="status">{said}</p>
       {!mayChange && (
-        <p className={styles['muted']}>
-          Only an administrator of the environment may switch these.
-        </p>
+        <p className={styles['muted']}>{words('admin.only-an-administrator-of-the-3')}</p>
       )}
     </div>
   );

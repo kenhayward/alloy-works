@@ -3,6 +3,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import { PanelTabs, type PanelTab } from './PanelTabs.js';
 import styles from './parts.module.css';
 import { StateStrip, type StripCell } from './StateStrip.js';
+import { words } from '../words/words.js';
 
 /**
  * A connection's or a query definition's page (ADR-0050): a header - breadcrumb, title, chips, then
@@ -53,7 +54,7 @@ export function DetailPage({
       <header className={styles['detailHead']}>
         <div className={styles['detailTitle']}>
           {trail !== null && (
-            <nav aria-label="Breadcrumb" className={styles['detailTrail']}>
+            <nav aria-label={words('parts.breadcrumb')} className={styles['detailTrail']}>
               {trail}
             </nav>
           )}

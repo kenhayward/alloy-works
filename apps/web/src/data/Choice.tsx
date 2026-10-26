@@ -10,7 +10,7 @@ export function Choice({
   label,
   children,
 }: {
-  readonly label: string;
+  readonly label: React.ReactNode;
   readonly children: (id: string) => React.ReactNode;
 }) {
   const id = useId();

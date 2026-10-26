@@ -69,7 +69,7 @@ const results = {
         field: REVIEWER,
         name: 'Reviewer',
         dataType: 'text',
-        values: [facet('Grace Hopper', 'Grace Hopper', 1000, true)],
+        values: [facet('Grace Moss', 'Grace Moss', 1000, true)],
       },
     ],
   },
@@ -264,12 +264,10 @@ describe('the search page', () => {
 
     const reviewer = screen.getByRole('group', { name: 'Reviewer' });
     const capped = within(reviewer).getByRole('checkbox', {
-      name: 'Grace Hopper (at least 1,000)',
+      name: 'Grace Moss (at least 1,000)',
     });
     await userEvent.click(capped);
-    await waitFor(() =>
-      expect(asked.at(-1)?.getAll('value')).toEqual([`${REVIEWER}:Grace Hopper`]),
-    );
+    await waitFor(() => expect(asked.at(-1)?.getAll('value')).toEqual([`${REVIEWER}:Grace Moss`]));
     expect(asked.at(-1)?.get('kind')).toBe('section');
   });
 

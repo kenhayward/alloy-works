@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import styles from './Hold.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -68,7 +69,7 @@ export function LinesControl({
     <>
       {divergent.length > 0 && (
         <span className={className}>
-          <label htmlFor={chooserId}>Line</label>{' '}
+          <label htmlFor={chooserId}>{words('lifecycle.line')}</label>{' '}
           <select
             id={chooserId}
             value={line ?? ''}
@@ -76,10 +77,14 @@ export function LinesControl({
               onGo(lineAddress(componentId, event.target.value === '' ? null : event.target.value))
             }
           >
-            <option value="">Main line</option>
+            <option value="">{words('lifecycle.main-line')}</option>
             {divergent.map((each) => (
               <option key={each.id} value={each.id}>
-                {`${each.name}, from revision ${each.divergedFrom.revision}${each.closed ? ', brought back' : ''}`}
+                {words('lifecycle.from-revision', {
+                  name: each.name,
+                  revision: each.divergedFrom.revision,
+                  closed: each.closed ? 'yes' : 'no',
+                })}
               </option>
             ))}
           </select>
@@ -87,7 +92,7 @@ export function LinesControl({
       )}
       {mayBegin && (
         <button type="button" className={className} onClick={() => setBeginning(true)}>
-          Begin a line
+          {words('lifecycle.begin-a-line')}
         </button>
       )}
       {beginning && revision !== null && (
@@ -127,7 +132,7 @@ function BeginDialog({
   const begin = async (event: React.FormEvent) => {
     event.preventDefault();
     if (name.trim() === '') {
-      setSaid('A line needs a name.');
+      setSaid(words('lifecycle.a-line-needs-a-name'));
       return;
     }
     setBusy(true);
@@ -139,27 +144,27 @@ function BeginDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onBegun(data.id);
-    else setSaid(refusal(error, 'The line could not be begun.'));
+    else setSaid(refusal(error, words('lifecycle.the-line-could-not-be')));
   };
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void begin(event)}>
-        <h2 id={headingId}>Begin a line</h2>
+        <h2 id={headingId}>{words('lifecycle.begin-a-line')}</h2>
         <p className={styles['muted']}>
-          {`A line of revisions beside the main one, from revision ${revision}: a market's wording, say, with its own drafts and approvals, effective where its scope says.`}
+          {words('lifecycle.a-line-of-revisions-beside', { revision })}
         </p>
         <label>
-          Name
+          {words('lifecycle.name')}
           <input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
         </label>
         {said !== '' && <p role="alert">{said}</p>}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('lifecycle.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
-            Begin
+            {words('lifecycle.begin')}
           </button>
         </div>
       </form>
@@ -212,7 +217,7 @@ export function BringBackButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Bring back
+        {words('lifecycle.bring-back')}
       </button>
       {open && (
         <BringBackDialog
@@ -286,55 +291,61 @@ function BringBackDialog({
       .catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onBack();
-    else setSaid(refusal(error, 'It could not be brought back.'));
+    else setSaid(refusal(error, words('lifecycle.it-could-not-be-brought')));
   };
 
   const legend = {
-    changed: 'Changed on either line',
-    line: `On ${line.name} alone`,
-    main: 'On the main line alone',
+    changed: words('lifecycle.changed-on-either-line'),
+    line: words('lifecycle.on-alone', { name: line.name }),
+    main: words('lifecycle.on-the-main-line-alone'),
   } as const;
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void bring(event)}>
-        <h2 id={headingId}>{`Bring ${line.name} back`}</h2>
+        <h2 id={headingId}>{words('lifecycle.bring-back-2', { name: line.name })}</h2>
         <p className={styles['muted']}>
-          {`Each block that differs keeps the main line's unless ${line.name}'s is taken. The main line gets a new version, ${line.name} is closed, and what was carried and what was left behind are recorded.`}
+          {words('lifecycle.each-block-that-differs-keeps', { name: line.name })}
         </p>
-        {compared === null && <p role="status">Comparing the lines.</p>}
-        {compared === 'unread' && <p role="alert">The lines could not be compared.</p>}
+        {compared === null && <p role="status">{words('lifecycle.comparing-the-lines')}</p>}
+        {compared === 'unread' && <p role="alert">{words('lifecycle.the-lines-could-not-be')}</p>}
         {compared !== null && compared !== 'unread' && compared.differences.length === 0 && (
-          <p>The lines hold the same blocks: bringing it back closes it.</p>
+          <p>{words('lifecycle.the-lines-hold-the-same')}</p>
         )}
         {compared !== null &&
           compared !== 'unread' &&
           compared.differences.map((each) => (
             <fieldset key={each.block}>
               <legend>{legend[each.change]}</legend>
-              {each.mainBlock !== null && <p>{`Main line: ${wordsIn(each.mainBlock)}`}</p>}
-              {each.lineBlock !== null && <p>{`${line.name}: ${wordsIn(each.lineBlock)}`}</p>}
+              {each.mainBlock !== null && (
+                <p>{words('lifecycle.main-line-2', { text: wordsIn(each.mainBlock) })}</p>
+              )}
+              {each.lineBlock !== null && (
+                <p>
+                  {words('lifecycle.line-text', { name: line.name, text: wordsIn(each.lineBlock) })}
+                </p>
+              )}
               <label className={styles['choice']}>
                 <input
                   type="checkbox"
                   checked={carry.has(each.block)}
                   onChange={() => toggle(each.block)}
                 />
-                {`Take ${line.name}'s`}
+                {words('lifecycle.take-s', { name: line.name })}
               </label>
             </fieldset>
           ))}
         {said !== '' && <p role="alert">{said}</p>}
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('lifecycle.cancel')}
           </button>
           <button
             type="submit"
             className="primary"
             disabled={busy || compared === null || compared === 'unread'}
           >
-            Bring back
+            {words('lifecycle.bring-back')}
           </button>
         </div>
       </form>

@@ -18,7 +18,8 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
 import { EraseDialog } from './Erase.js';
-import { NOT_YOURS, Shown, useListing } from './listing.js';
+import { notYours, Shown, useListing } from './listing.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -34,9 +35,27 @@ export interface InvitationRow {
 /** How many people a page of People reads at a time. */
 const PAGE = 50;
 
-const KINDS = { user: 'Member', external: 'Outside', service: 'Service' } as const;
+const KINDS = {
+  get user() {
+    return say('admin.member');
+  },
+  get external() {
+    return say('admin.outside-2');
+  },
+  get service() {
+    return say('admin.service');
+  },
+} as const;
 const FILTERS = ['All', 'Members', 'Outside', 'Services'] as const;
 type Filter = (typeof FILTERS)[number];
+/** A filter's words. */
+const filterName = (filter: Filter): string =>
+  ({
+    All: say('admin.all'),
+    Members: say('admin.members-2'),
+    Outside: say('admin.outside-2'),
+    Services: say('admin.services'),
+  })[filter];
 const FILTERED: Record<Filter, ShownPerson['kind'] | null> = {
   All: null,
   Members: 'user',
@@ -44,7 +63,7 @@ const FILTERED: Record<Filter, ShownPerson['kind'] | null> = {
   Services: 'service',
 };
 
-const nameOf = (person: ShownPerson) => person.name ?? person.email ?? 'Somebody';
+const nameOf = (person: ShownPerson) => person.name ?? person.email ?? say('admin.somebody');
 const initials = (person: ShownPerson) =>
   nameOf(person)
     .split(/[\s.@]+/)
@@ -54,28 +73,36 @@ const initials = (person: ShownPerson) =>
     .join('');
 
 const dayOf = (iso: string, year = true) =>
-  new Date(iso).toLocaleDateString('en-GB', {
+  formats().date(new Date(iso), {
     day: 'numeric',
     month: 'short',
     ...(year ? { year: 'numeric' } : {}),
   });
 const longDay = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 
 /**
  * A person's status: erased, an invitation not yet accepted, a service at work, or somebody who signed
  * in.
  */
 function status(person: ShownPerson, service?: ShownService) {
-  if (person.erased === true) return <Chip>Erased</Chip>;
-  if (person.invited) return <Chip tone="warn">Invited</Chip>;
-  if (service?.disabledAt) return <Chip>Disabled</Chip>;
-  return <Chip tone="ok">{person.kind === 'service' ? 'Active' : 'Signed in'}</Chip>;
+  if (person.erased === true) return <Chip>{say('admin.erased')}</Chip>;
+  if (person.invited) return <Chip tone="warn">{say('admin.invited')}</Chip>;
+  if (service?.disabledAt) return <Chip>{say('admin.disabled')}</Chip>;
+  return (
+    <Chip tone="ok">
+      {person.kind === 'service' ? say('admin.active') : say('admin.signed-in')}
+    </Chip>
+  );
 }
 
 /** What a token may do, in words: reading alone where it holds nothing more. */
 const scopeWords = (scopes: readonly string[]) =>
-  scopes.length === 0 ? 'Reads only' : `May ${scopes.map(permissionName).join(', ')}`;
+  scopes.length === 0
+    ? say('admin.reads-only')
+    : say('admin.may', {
+        permissions: formats().list(scopes.map(permissionName), { type: 'unit' }),
+      });
 
 /** A service identity as People shows it beside its principal (the G8 plan, G8-J). */
 export interface ShownService {
@@ -162,9 +189,9 @@ function PersonTokens({
     <>
       {issuable && (
         <div className={styles['lead']}>
-          <p>{service.description}</p>
+          <p data-content>{service.description}</p>
           <button type="button" onClick={() => setIssuing(true)}>
-            New token
+            {say('admin.new-token')}
           </button>
         </div>
       )}
@@ -231,15 +258,15 @@ function HeldTokens({
       });
       if (response.ok) {
         gone();
-        setSaid(`Revoked ${token.name}.`);
+        setSaid(say('admin.revoked-2', { name: token.name }));
       } else if (response.status === 404) {
         gone();
-        setSaid(`${token.name} had already been revoked.`);
+        setSaid(say('admin.had-already-been-revoked', { name: token.name }));
       } else {
-        setSaid(refusal(error, `${token.name} could not be revoked.`));
+        setSaid(refusal(error, say('admin.could-not-be-revoked', { name: token.name })));
       }
     } catch {
-      setSaid(`${token.name} could not be revoked.`);
+      setSaid(say('admin.could-not-be-revoked', { name: token.name }));
     }
     setAsking(null);
   };
@@ -247,33 +274,35 @@ function HeldTokens({
   return (
     <>
       <p ref={intro} tabIndex={-1} className={styles['muted']}>
-        Revoking a token ends it at once, without waiting for it to expire.
+        {say('admin.revoking-a-token-ends-it')}
       </p>
-      <Shown read={read} failed="The tokens could not be loaded.">
+      <Shown read={read} failed={say('admin.the-tokens-could-not-be-loaded')}>
         {() =>
           live!.length === 0 ? (
             <Empty>
-              <p>{`${name} has no API tokens.`}</p>
+              <p>{say('admin.has-no-api-tokens', { name })}</p>
             </Empty>
           ) : (
-            <ul aria-label={`Tokens of ${name}`} className={styles['cards']}>
+            <ul aria-label={say('admin.tokens-of', { name })} className={styles['cards']}>
               {live!.map((token) => (
                 <li key={token.id}>
                   <div>
-                    <p className={styles['strong']}>{token.name}</p>
+                    <p className={styles['strong']} data-content>
+                      {token.name}
+                    </p>
                     <p className={styles['muted']}>{scopeWords(token.scopes)}</p>
                   </div>
                   <div className={styles['dates']}>
-                    <p>{`Until ${dayOf(token.expiresAt)}`}</p>
+                    <p>{say('admin.until-2', { day: dayOf(token.expiresAt) })}</p>
                     <p>
                       {token.lastUsedAt === null
-                        ? 'Never used'
-                        : `Used ${dayOf(token.lastUsedAt, false)}`}
+                        ? say('admin.never-used')
+                        : say('admin.used', { day: dayOf(token.lastUsedAt, false) })}
                     </p>
                   </div>
                   <IconButton
-                    label={`Revoke ${token.name}`}
-                    tooltip="Revoke"
+                    label={say('admin.revoke', { name: token.name })}
+                    tooltip={say('admin.revoke-3')}
                     className={styles['bin']}
                     onClick={() => setAsking(token)}
                   >
@@ -288,10 +317,10 @@ function HeldTokens({
       <p role="status">{said}</p>
       {asking !== null && (
         <ConfirmDialog
-          question={`Revoke ${asking.name}?`}
-          sentence="Revoking a token ends it at once, without waiting for it to expire."
-          keep="Keep it"
-          act="Revoke token"
+          question={say('admin.revoke-2', { name: asking.name })}
+          sentence={say('admin.revoking-a-token-ends-it')}
+          keep={say('admin.keep-it')}
+          act={say('admin.revoke-token')}
           onKeep={() => setAsking(null)}
           onAct={() => revoke(asking)}
         />
@@ -326,40 +355,44 @@ function WhatTheyMayDo({
       current = false;
     };
   }, [client, person.id]);
-  if (answers === null) return <Waiting>Loading...</Waiting>;
+  if (answers === null) return <Waiting>{say('admin.loading')}</Waiting>;
   if (answers === 'refused') {
     return (
       <Notice tone="refused">
-        <p>{NOT_YOURS}</p>
+        <p>{notYours()}</p>
       </Notice>
     );
   }
   if (answers === 'failed') {
     return (
       <Notice tone="failed">
-        <p>What they may do could not be shown. Try again.</p>
+        <p>{say('admin.what-they-may-do-could')}</p>
       </Notice>
     );
   }
   const places = [
-    { target: 'tenant', label: 'The whole environment', named: 'the whole environment' },
+    {
+      target: 'tenant',
+      label: say('admin.the-whole-environment'),
+      named: say('admin.the-whole-environment-2'),
+    },
   ];
   const byId = new Map(people.map((each) => [each.id, each]));
   return (
     <table className={styles['plain']}>
-      <caption>{`What ${nameOf(person)} may do across the whole environment`}</caption>
+      <caption>{say('admin.what-may-do-across-the', { name: nameOf(person) })}</caption>
       <thead>
         <tr>
-          <th scope="col">Permission</th>
-          <th scope="col">Answer</th>
-          <th scope="col">Why</th>
+          <th scope="col">{say('admin.permission')}</th>
+          <th scope="col">{say('admin.answer')}</th>
+          <th scope="col">{say('admin.why')}</th>
         </tr>
       </thead>
       <tbody>
         {answers.map((answer) => (
           <tr key={answer.permission}>
             <th scope="row">{permissionName(answer.permission)}</th>
-            <td>{answer.allowed ? 'Allowed' : 'Refused'}</td>
+            <td>{answer.allowed ? say('admin.allowed') : say('admin.refused')}</td>
             <td>{explainAnswer(answer, places, byId)}</td>
           </tr>
         ))}
@@ -389,8 +422,11 @@ function PersonPanel({
   const ids = useId();
   const [count, setCount] = useState<number | null>(null);
   const tabs = [
-    { key: 'tokens', label: count === null ? 'API tokens' : `API tokens ${count}` },
-    { key: 'may', label: 'What they may do' },
+    {
+      key: 'tokens',
+      label: count === null ? say('admin.api-tokens') : say('admin.api-tokens-2', { count }),
+    },
+    { key: 'may', label: say('admin.what-they-may-do') },
   ];
   const idsOf = (key: string) => ({ tab: `${ids}-${key}-tab`, panel: `${ids}-${key}-panel` });
   return (
@@ -398,14 +434,16 @@ function PersonPanel({
       heading={nameOf(person)}
       description={
         <>
-          {person.name !== null && person.email !== null && <span>{person.email} </span>}
+          {person.name !== null && person.email !== null && (
+            <span data-content>{person.email} </span>
+          )}
           <Chip>{KINDS[person.kind]}</Chip> {status(person, service)}
         </>
       }
       onClose={onClose}
     >
       <PanelTabs
-        label={`About ${nameOf(person)}`}
+        label={say('admin.about-4', { name: nameOf(person) })}
         tabs={tabs}
         chosen={tab}
         onChoose={(key) => onTab(key as 'tokens' | 'may')}
@@ -442,7 +480,7 @@ function NewService({
   const [sending, setSending] = useState(false);
   const make = async () => {
     if (name.trim() === '') {
-      setSaid('Give the service identity a name.');
+      setSaid(say('admin.give-the-service-identity-a'));
       return;
     }
     setSending(true);
@@ -451,12 +489,12 @@ function NewService({
         body: { name: name.trim(), description: description.trim() },
       });
       if (data) {
-        onDone(`Made ${data.name}. Give it access, then a token from its API tokens.`);
+        onDone(say('admin.made-give-it-access-then', { name: data.name }));
         return;
       }
-      setSaid(refusal(error, 'The service identity could not be made.'));
+      setSaid(refusal(error, say('admin.the-service-identity-could-not')));
     } catch {
-      setSaid('The service identity could not be made.');
+      setSaid(say('admin.the-service-identity-could-not'));
     } finally {
       setSending(false);
     }
@@ -464,17 +502,14 @@ function NewService({
   return (
     <Modal labelledBy={id} onClose={onClose}>
       <section>
-        <h2 id={id}>New service identity</h2>
-        <p>
-          For an integration or an agent: it acts as itself, never as a person, and may do only what
-          it is given access to.
-        </p>
+        <h2 id={id}>{say('admin.new-service-identity')}</h2>
+        <p>{say('admin.for-an-integration-or-an')}</p>
         <label>
-          Name
+          {say('admin.name')}
           <input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} />
         </label>
         <label>
-          What it is for
+          {say('admin.what-it-is-for')}
           <input
             value={description}
             maxLength={500}
@@ -483,10 +518,10 @@ function NewService({
         </label>
         <p role="status">{said}</p>
         <button type="button" onClick={onClose}>
-          Cancel
+          {say('admin.cancel')}
         </button>
         <button type="button" className="primary" disabled={sending} onClick={() => void make()}>
-          Make
+          {say('admin.make')}
         </button>
       </section>
     </Modal>
@@ -510,7 +545,7 @@ function InvitePeople({
   const [sending, setSending] = useState(false);
   const invite = async () => {
     if (address.trim() === '') {
-      setSaid('Give the address to invite.');
+      setSaid(say('admin.give-the-address-to-invite'));
       return;
     }
     setSending(true);
@@ -521,18 +556,18 @@ function InvitePeople({
       if (data) {
         onDone(
           data.renewed
-            ? `Renewed the invitation to ${data.invitation.email}.`
-            : `Invited ${data.invitation.email}.`,
+            ? say('admin.renewed-the-invitation-to', { email: data.invitation.email })
+            : say('admin.invited-2', { email: data.invitation.email }),
         );
         return;
       }
       setSaid(
         response.status === 403
-          ? 'You may not invite anyone to this environment.'
-          : refusal(error, 'That address could not be invited.'),
+          ? say('admin.you-may-not-invite-anyone')
+          : refusal(error, say('admin.that-address-could-not-be')),
       );
     } catch {
-      setSaid('That address could not be invited.');
+      setSaid(say('admin.that-address-could-not-be'));
     } finally {
       setSending(false);
     }
@@ -540,13 +575,10 @@ function InvitePeople({
   return (
     <Modal labelledBy={id} onClose={onClose}>
       <section>
-        <h2 id={id}>Invite people</h2>
-        <p>
-          An invitation becomes a person in the People tab the first time its address signs in. Give
-          them access from the environment&apos;s or a space&apos;s Access.
-        </p>
+        <h2 id={id}>{say('admin.invite-people')}</h2>
+        <p>{say('admin.an-invitation-becomes-a-person')}</p>
         <label>
-          Address
+          {say('admin.address')}
           <input
             type="email"
             value={address}
@@ -560,15 +592,15 @@ function InvitePeople({
               checked={outside}
               onChange={(event) => setOutside(event.target.checked)}
             />
-            From outside the organisation
+            {say('admin.from-outside-the-organisation')}
           </label>
         </div>
         <p role="status">{said}</p>
         <button type="button" onClick={onClose}>
-          Cancel
+          {say('admin.cancel')}
         </button>
         <button type="button" className="primary" disabled={sending} onClick={() => void invite()}>
-          Invite
+          {say('admin.invite')}
         </button>
       </section>
     </Modal>
@@ -635,13 +667,13 @@ export function People({ client }: { client: Client }) {
       });
       setSaid(
         data
-          ? `Withdrew the invitation to ${invitation.email}, and everything granted to them.`
+          ? say('admin.withdrew-the-invitation-to-and', { email: invitation.email })
           : response.status === 404
-            ? 'That invitation is gone already.'
-            : refusal(error, 'The invitation could not be withdrawn.'),
+            ? say('admin.that-invitation-is-gone-already')
+            : refusal(error, say('admin.the-invitation-could-not-be')),
       );
     } catch {
-      setSaid('The invitation could not be withdrawn.');
+      setSaid(say('admin.the-invitation-could-not-be'));
     }
     setWithdrawing(null);
     setGeneration((count) => count + 1);
@@ -654,11 +686,11 @@ export function People({ client }: { client: Client }) {
       });
       setSaid(
         data
-          ? `Disabled ${nameOf(person)}: its tokens no longer work.`
-          : refusal(error, 'The service identity could not be disabled.'),
+          ? say('admin.disabled-its-tokens-no-longer', { name: nameOf(person) })
+          : refusal(error, say('admin.the-service-identity-could-not-2')),
       );
     } catch {
-      setSaid('The service identity could not be disabled.');
+      setSaid(say('admin.the-service-identity-could-not-2'));
     }
     setDisabling(null);
     setGeneration((count) => count + 1);
@@ -677,29 +709,31 @@ export function People({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>Everybody who has signed in to this environment, or been invited to.</p>
+        <p>{say('admin.everybody-who-has-signed-in')}</p>
         <span>
           <button type="button" onClick={() => setMaking(true)}>
-            New service identity
+            {say('admin.new-service-identity')}
           </button>{' '}
           <button type="button" className="primary" onClick={() => setInviting(true)}>
-            <Icon name="Invite people" /> Invite people
+            <Icon name="Invite people" /> {say('admin.invite-people')}
           </button>
         </span>
       </div>
       <PanelTabs
-        label="People and invitations"
+        label={say('admin.people-and-invitations')}
         tabs={[
           {
             key: 'people',
-            label: Array.isArray(people.rows) ? `People ${people.total}` : 'People',
+            label: Array.isArray(people.rows)
+              ? say('admin.people-2', { total: people.total })
+              : say('admin.people'),
           },
           {
             key: 'invitations',
             label:
               waitingCount === undefined
-                ? 'Waiting invitations'
-                : `Waiting invitations ${waitingCount}`,
+                ? say('admin.waiting-invitations')
+                : say('admin.waiting-invitations-2', { waitingCount }),
           },
         ]}
         chosen={tab}
@@ -708,15 +742,15 @@ export function People({ client }: { client: Client }) {
       />
       {tab === 'people' && (
         <div role="tabpanel" id={idsOf('people').panel} aria-labelledby={idsOf('people').tab}>
-          {people.rows === null && <Waiting>Loading...</Waiting>}
+          {people.rows === null && <Waiting>{say('admin.loading')}</Waiting>}
           {people.rows === 'refused' && (
             <Notice tone="refused">
-              <p>{NOT_YOURS}</p>
+              <p>{notYours()}</p>
             </Notice>
           )}
           {people.rows === 'failed' && (
             <Notice tone="failed">
-              <p>The people could not be loaded.</p>
+              <p>{say('admin.the-people-could-not-be')}</p>
             </Notice>
           )}
           {Array.isArray(people.rows) && (
@@ -725,12 +759,12 @@ export function People({ client }: { client: Client }) {
                 <input
                   type="search"
                   className={styles['search']}
-                  aria-label="Name or address"
-                  placeholder="Name or address"
+                  aria-label={say('admin.name-or-address')}
+                  placeholder={say('admin.name-or-address')}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
-                <div role="group" aria-label="Show" className={styles['segments']}>
+                <div role="group" aria-label={say('admin.show')} className={styles['segments']}>
                   {FILTERS.map((each) => (
                     <button
                       key={each}
@@ -738,14 +772,14 @@ export function People({ client }: { client: Client }) {
                       aria-pressed={filter === each}
                       onClick={() => setFilter(each)}
                     >
-                      {each}
+                      {filterName(each)}
                     </button>
                   ))}
                 </div>
               </div>
               <div className={open === null ? undefined : styles['withPanel']}>
                 <div>
-                  <table aria-label="People" className={styles['table']}>
+                  <table aria-label={say('admin.people')} className={styles['table']}>
                     <colgroup>
                       <col />
                       <col className={styles['statusColumn']} />
@@ -754,11 +788,11 @@ export function People({ client }: { client: Client }) {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th scope="col">Person</th>
-                        <th scope="col">Kind</th>
-                        <th scope="col">Status</th>
+                        <th scope="col">{say('admin.person')}</th>
+                        <th scope="col">{say('admin.kind')}</th>
+                        <th scope="col">{say('admin.status')}</th>
                         <th scope="col">
-                          <span className={styles['hidden']}>Actions</span>
+                          <span className={styles['hidden']}>{say('admin.actions')}</span>
                         </th>
                       </tr>
                     </thead>
@@ -774,12 +808,19 @@ export function People({ client }: { client: Client }) {
                                 {initials(person)}
                               </span>
                               <span>
-                                <span className={styles['name']}>{nameOf(person)}</span>{' '}
+                                <span
+                                  className={styles['name']}
+                                  {...((person.name ?? person.email) === null
+                                    ? {}
+                                    : { 'data-content': '' })}
+                                >
+                                  {nameOf(person)}
+                                </span>{' '}
                                 <span className={styles['muted']}>
                                   {person.name !== null && person.email !== null
                                     ? person.email
                                     : person.invited
-                                      ? 'Invited'
+                                      ? say('admin.invited')
                                       : KINDS[person.kind]}
                                 </span>
                               </span>
@@ -792,26 +833,26 @@ export function People({ client }: { client: Client }) {
                               subject={nameOf(person)}
                               shown={[
                                 {
-                                  label: 'API tokens',
-                                  name: `API tokens of ${nameOf(person)}`,
+                                  label: say('admin.api-tokens'),
+                                  name: say('admin.api-tokens-of', { name: nameOf(person) }),
                                   icon: 'API tokens',
                                   onSelect: () => setOpen({ person, tab: 'tokens' }),
                                   ...(person.invited
-                                    ? { unavailable: 'Not signed in yet, so no tokens' }
+                                    ? { unavailable: say('admin.not-signed-in-yet-so') }
                                     : person.erased === true
-                                      ? { unavailable: 'Erased, so no tokens' }
+                                      ? { unavailable: say('admin.erased-so-no-tokens') }
                                       : {}),
                                 },
                               ]}
                               more={[
                                 {
-                                  label: 'What they may do',
+                                  label: say('admin.what-they-may-do'),
                                   onSelect: () => setOpen({ person, tab: 'may' }),
                                 },
                                 ...(services.get(person.id)?.disabledAt === null
                                   ? [
                                       {
-                                        label: 'Disable',
+                                        label: say('admin.disable'),
                                         danger: true,
                                         onSelect: () => setDisabling(person),
                                       },
@@ -820,7 +861,7 @@ export function People({ client }: { client: Client }) {
                                 ...(erasable(person)
                                   ? [
                                       {
-                                        label: 'Erase',
+                                        label: say('admin.erase-2'),
                                         danger: true,
                                         onSelect: () => setErasing(person),
                                       },
@@ -836,10 +877,10 @@ export function People({ client }: { client: Client }) {
                   {people.more !== null && (
                     <div className={styles['more']}>
                       <p className={styles['muted']}>
-                        {`Showing ${listed.length} of ${people.total}`}
+                        {say('admin.showing-of', { shown: listed.length, total: people.total })}
                       </p>
                       <button type="button" onClick={people.more}>
-                        Show more
+                        {say('admin.show-more')}
                       </button>
                     </div>
                   )}
@@ -867,7 +908,7 @@ export function People({ client }: { client: Client }) {
           id={idsOf('invitations').panel}
           aria-labelledby={idsOf('invitations').tab}
         >
-          <Shown read={invitations} failed="Invitations could not be loaded.">
+          <Shown read={invitations} failed={say('admin.invitations-could-not-be-loaded')}>
             {() => {
               const shown = pending!.filter(
                 (each) =>
@@ -879,37 +920,43 @@ export function People({ client }: { client: Client }) {
                     <input
                       type="search"
                       className={styles['search']}
-                      aria-label="Address"
-                      placeholder="Address"
+                      aria-label={say('admin.address')}
+                      placeholder={say('admin.address')}
                       value={address}
                       onChange={(event) => setAddress(event.target.value)}
                     />
-                    <div role="group" aria-label="Show" className={styles['segments']}>
-                      {(['Waiting', 'Lapsed'] as const).map((each) => (
+                    <div role="group" aria-label={say('admin.show')} className={styles['segments']}>
+                      {(['waiting', 'lapsed'] as const).map((each) => (
                         <button
                           key={each}
                           type="button"
-                          aria-pressed={lapsed === (each === 'Lapsed')}
-                          onClick={() => setLapsed(each === 'Lapsed')}
+                          aria-pressed={lapsed === (each === 'lapsed')}
+                          onClick={() => setLapsed(each === 'lapsed')}
                         >
-                          {each}
+                          {each === 'lapsed' ? say('admin.lapsed') : say('admin.waiting')}
                         </button>
                       ))}
                     </div>
                     <p className={styles['counted']}>
-                      {`${shown.length} ${lapsed ? 'lapsed' : 'waiting'}`}
+                      {say('admin.invitations-counted', {
+                        state: lapsed ? 'lapsed' : 'waiting',
+                        count: shown.length,
+                      })}
                     </p>
                   </div>
                   {shown.length === 0 ? (
                     <Empty>
                       <p>
                         {lapsed
-                          ? 'No invitation has lapsed.'
-                          : 'Nobody is waiting to accept an invitation.'}
+                          ? say('admin.no-invitation-has-lapsed')
+                          : say('admin.nobody-is-waiting-to-accept')}
                       </p>
                     </Empty>
                   ) : (
-                    <table aria-label="Waiting invitations" className={styles['table']}>
+                    <table
+                      aria-label={say('admin.waiting-invitations')}
+                      className={styles['table']}
+                    >
                       <colgroup>
                         <col />
                         <col className={styles['accessColumn']} />
@@ -918,23 +965,25 @@ export function People({ client }: { client: Client }) {
                       </colgroup>
                       <thead>
                         <tr>
-                          <th scope="col">Address</th>
-                          <th scope="col">Invited as</th>
-                          <th scope="col">{lapsed ? 'Lapsed on' : 'Waiting until'}</th>
+                          <th scope="col">{say('admin.address')}</th>
+                          <th scope="col">{say('admin.invited-as')}</th>
                           <th scope="col">
-                            <span className={styles['hidden']}>Actions</span>
+                            {lapsed ? say('admin.lapsed-on') : say('admin.waiting-until')}
+                          </th>
+                          <th scope="col">
+                            <span className={styles['hidden']}>{say('admin.actions')}</span>
                           </th>
                         </tr>
                       </thead>
                       <tbody>
                         {shown.map((invitation) => (
                           <tr key={invitation.id}>
-                            <td>{invitation.email}</td>
+                            <td data-content>{invitation.email}</td>
                             <td>
                               {invitation.external ? (
-                                <Chip tone="info">From outside</Chip>
+                                <Chip tone="info">{say('admin.from-outside')}</Chip>
                               ) : (
-                                'Member'
+                                say('admin.member')
                               )}
                             </td>
                             <td>
@@ -945,8 +994,10 @@ export function People({ client }: { client: Client }) {
                                 subject={invitation.email}
                                 shown={[
                                   {
-                                    label: 'Withdraw',
-                                    name: `Withdraw the invitation to ${invitation.email}`,
+                                    label: say('admin.withdraw'),
+                                    name: say('admin.withdraw-the-invitation-to', {
+                                      email: invitation.email,
+                                    }),
                                     icon: 'Withdraw',
                                     onSelect: () => setWithdrawing(invitation),
                                   },
@@ -959,10 +1010,7 @@ export function People({ client }: { client: Client }) {
                       </tbody>
                     </table>
                   )}
-                  <p className={styles['muted']}>
-                    An invitation becomes a person in the People tab the first time its address
-                    signs in.
-                  </p>
+                  <p className={styles['muted']}>{say('admin.an-invitation-becomes-a-person-2')}</p>
                 </>
               );
             }}
@@ -988,7 +1036,7 @@ export function People({ client }: { client: Client }) {
           name={nameOf(erasing)}
           onClose={() => setErasing(null)}
           onErased={() => {
-            setSaid(`Erased ${nameOf(erasing)}.`);
+            setSaid(say('admin.erased-2', { name: nameOf(erasing) }));
             setErasing(null);
             if (open?.person.id === erasing.id) setOpen(null);
             setGeneration((count) => count + 1);
@@ -1009,20 +1057,20 @@ export function People({ client }: { client: Client }) {
       )}
       {disabling !== null && (
         <ConfirmDialog
-          question={`Disable ${nameOf(disabling)}?`}
-          sentence="Its tokens stop working at once, and it is issued no more. What it did still names it."
-          keep="Keep it"
-          act="Disable"
+          question={say('admin.disable-2', { name: nameOf(disabling) })}
+          sentence={say('admin.its-tokens-stop-working-at')}
+          keep={say('admin.keep-it')}
+          act={say('admin.disable')}
           onKeep={() => setDisabling(null)}
           onAct={() => disable(disabling)}
         />
       )}
       {withdrawing !== null && (
         <ConfirmDialog
-          question={`Withdraw the invitation to ${withdrawing.email}?`}
-          sentence="Everything granted to them goes with it."
-          keep="Keep it"
-          act="Withdraw"
+          question={say('admin.withdraw-the-invitation-to-2', { email: withdrawing.email })}
+          sentence={say('admin.everything-granted-to-them-goes')}
+          keep={say('admin.keep-it')}
+          act={say('admin.withdraw')}
           onKeep={() => setWithdrawing(null)}
           onAct={() => withdraw(withdrawing)}
         />

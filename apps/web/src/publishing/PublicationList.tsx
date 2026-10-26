@@ -206,7 +206,7 @@ export function PublicationList({ client }: { client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what="publications" />
+        <More listing={listing} failed={words('publishing.more-failed')} />
       </section>
     </ListLayout>
   );

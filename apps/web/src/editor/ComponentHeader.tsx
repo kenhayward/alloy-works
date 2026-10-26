@@ -54,7 +54,18 @@ const SAID = {
  * it (interface slice 13). Open on click, with the focus on the field; closed by Escape (the focus
  * back on the chip) or by the focus leaving both, the way the header band's menus close.
  */
-function Chip({ name, text, children }: { name: string; text: string; children: ReactNode }) {
+function Chip({
+  name,
+  text,
+  content = false,
+  children,
+}: {
+  readonly name: string;
+  readonly text: string;
+  /** Whether the chip shows a value of the component's own, as a language tag, not a word. */
+  readonly content?: boolean;
+  readonly children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const chip = useRef<HTMLButtonElement>(null);
   const popover = useRef<HTMLDivElement>(null);
@@ -84,7 +95,7 @@ function Chip({ name, text, children }: { name: string; text: string; children: 
         aria-expanded={open}
         onClick={() => setOpen((was) => !was)}
       >
-        {text}
+        {content ? <span data-content>{text}</span> : text}
       </button>
       {open && (
         <div ref={popover} className={styles['popover']} role="group" aria-label={name}>
@@ -173,7 +184,7 @@ export function ComponentHeader({
     <>
       {/* The heading names the article and keeps the component in the page's outline; the field
           beside it is the one title a sighted author sees, so the heading is visually hidden. */}
-      <h2 id="component-title" className={styles['hidden']}>
+      <h2 id="component-title" className={styles['hidden']} data-content>
         {header.title}
       </h2>
       {titled && (
@@ -212,7 +223,11 @@ export function ComponentHeader({
         />
       )}
       {titled && children}
-      <Chip name={`Base language: ${header.language}`} text={header.language}>
+      <Chip
+        name={words('editor.base-language', { tag: header.language })}
+        text={header.language}
+        content
+      >
         <label>
           {words('editor.language')}
           <input
@@ -244,8 +259,8 @@ export function ComponentHeader({
         </label>
       </Chip>
       <Chip
-        name={`Base direction: ${SAID[header.direction]}`}
-        text={header.direction.toUpperCase()}
+        name={words('editor.base-direction', { direction: SAID[header.direction] })}
+        text={words('editor.direction-short', { direction: header.direction })}
       >
         <label>
           {words('editor.direction')}

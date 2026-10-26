@@ -12,6 +12,7 @@ import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { LIBRARIES, NEW_PROMPT, promptLink } from './links.js';
 import { PURPOSES } from './shape.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -32,10 +33,34 @@ interface Facets {
 }
 
 const SORTS: readonly SortOption[] = [
-  { sort: 'title', order: 'asc', label: 'Title, A to Z' },
-  { sort: 'title', order: 'desc', label: 'Title, Z to A' },
-  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
-  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+  {
+    sort: 'title',
+    order: 'asc',
+    get label() {
+      return words('prompts.title-a-to-z');
+    },
+  },
+  {
+    sort: 'title',
+    order: 'desc',
+    get label() {
+      return words('prompts.title-z-to-a');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'desc',
+    get label() {
+      return words('prompts.newest-changed-first');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'asc',
+    get label() {
+      return words('prompts.oldest-changed-first');
+    },
+  },
 ];
 
 function asItems(items: readonly unknown[]): Item[] {
@@ -80,20 +105,20 @@ export function Prompts({ client }: { readonly client: Client }) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="prompts-heading">
-        <h1 id="prompts-heading">Prompts</h1>
+        <h1 id="prompts-heading">{words('prompts.prompts')}</h1>
         {listing.signedOut ? (
           <Notice tone="signedOut">
-            <p>You are signed out. Sign in again to see your prompts.</p>
+            <p>{words('prompts.you-are-signed-out-sign')}</p>
           </Notice>
         ) : (
           <Notice tone="failed">
-            <p>The prompts could not be loaded.</p>
+            <p>{words('prompts.the-prompts-could-not-be')}</p>
             <button
               type="button"
               disabled={listing.loading}
               onClick={() => void listing.load(null)}
             >
-              Try again
+              {words('prompts.try-again')}
             </button>
           </Notice>
         )}
@@ -105,15 +130,15 @@ export function Prompts({ client }: { readonly client: Client }) {
   const filter = (
     <>
       <div className={styles['filterHead']}>
-        <span className={styles['overline']}>Filter</span>
+        <span className={styles['overline']}>{words('prompts.filter')}</span>
         {spaces.length > 0 && (
           <button type="button" className={styles['clear']} onClick={() => setSpaces([])}>
-            Clear
+            {words('prompts.clear')}
           </button>
         )}
       </div>
       <Facet
-        legend="Space"
+        legend={words('prompts.space')}
         values={listing.facets?.spaces ?? []}
         chosen={spaces}
         onToggle={(value) => setSpaces((held) => toggled(held, value))}
@@ -125,7 +150,7 @@ export function Prompts({ client }: { readonly client: Client }) {
     <ListLayout filter={filter}>
       <section aria-labelledby="prompts-heading">
         <div className={styles['titleRow']}>
-          <h1 id="prompts-heading">Prompts</h1>
+          <h1 id="prompts-heading">{words('prompts.prompts')}</h1>
           {places !== null && places.spaces.length > 0 && (
             <button
               type="button"
@@ -134,44 +159,50 @@ export function Prompts({ client }: { readonly client: Client }) {
                 window.location.hash = NEW_PROMPT;
               }}
             >
-              New prompt
+              {words('prompts.new-prompt')}
             </button>
           )}
         </div>
         <p>
-          <a href={LIBRARIES}>Prompt libraries</a>
+          <a href={LIBRARIES}>{words('prompts.prompt-libraries')}</a>
         </p>
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? `${listing.total} ${listing.total === 1 ? 'prompt is' : 'prompts are'} in the spaces chosen.`
-              : `${listing.total} ${listing.total === 1 ? 'prompt' : 'prompts'} you may read.`}
+              ? words('prompts.in-the-spaces-chosen', { total: listing.total })
+              : words('prompts.you-may-read', { total: listing.total })}
           </span>
-          {items.length < listing.total && <span>{`Showing 1 to ${items.length}.`}</span>}
+          {items.length < listing.total && (
+            <span>{words('prompts.showing-1-to', { count: items.length })}</span>
+          )}
         </p>
         {items.length === 0 ? (
           <Empty>
-            <p>There are no prompts you may read.</p>
+            <p>{words('prompts.there-are-no-prompts-you')}</p>
           </Empty>
         ) : (
           <div className={styles['table']}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Title</th>
-                  <th scope="col">Space</th>
-                  <th scope="col">Purpose</th>
-                  <th scope="col">Changed</th>
+                  <th scope="col">{words('prompts.title')}</th>
+                  <th scope="col">{words('prompts.space')}</th>
+                  <th scope="col">{words('prompts.purpose')}</th>
+                  <th scope="col">{words('prompts.changed')}</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td className={styles['title']}>
-                      <a href={promptLink(item.id)}>{item.title}</a>
+                      <a href={promptLink(item.id)} data-content>
+                        {item.title}
+                      </a>
                     </td>
-                    <td className={styles['muted']}>{item.space.name}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.space.name}
+                    </td>
                     <td>{PURPOSES[item.purpose as keyof typeof PURPOSES] ?? item.purpose}</td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
@@ -182,7 +213,7 @@ export function Prompts({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what="prompts" />
+        <More listing={listing} failed={words('prompts.more-failed')} />
       </section>
     </ListLayout>
   );

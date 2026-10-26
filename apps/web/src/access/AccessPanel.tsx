@@ -30,6 +30,7 @@ import {
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -125,47 +126,50 @@ function namedFrom(
   const space = spaceOf(data.space);
   if (space === undefined) return { state: 'failed' };
   const called = title(data);
-  return { title: typeof called === 'string' && called !== '' ? called : 'Untitled', space };
+  return {
+    title: typeof called === 'string' && called !== '' ? called : words('access.untitled'),
+    space,
+  };
 }
 
 /** What the panel is opened on, as it is named inside a sentence before anything is read. */
 function hereOf(at: AccessAt): string {
-  if (at.kind === 'tenant') return 'the whole environment';
-  if (at.kind === 'space') return `the space ${at.name}`;
-  return `this ${at.kind}`;
+  if (at.kind === 'tenant') return words('access.the-whole-environment');
+  if (at.kind === 'space') return words('access.the-space', { name: at.name });
+  return words('access.this', { kind: at.kind });
 }
 
 /** "X could not be loaded", with a Try again that disables and reads "Reading..." while it re-reads. */
 function FailedListing({
-  text,
+  said,
   reading,
   onRetry,
 }: {
-  readonly text: string;
+  /** The whole sentence: what could not be loaded. */
+  readonly said: string;
   readonly reading: boolean;
   readonly onRetry: () => void;
 }) {
   return (
     <Notice tone="failed">
       <p>
-        {text} could not be loaded.{' '}
+        {said}{' '}
         <button type="button" disabled={reading} onClick={onRetry}>
-          {reading ? 'Reading...' : 'Try again'}
+          {reading ? words('access.reading') : words('access.try-again')}
         </button>
       </p>
     </Notice>
   );
 }
 
-const CHANGE_UNKNOWN =
-  'Whether that was done could not be told. What is shown below is what the service now holds.';
+const CHANGE_UNKNOWN = (): string => words('access.whether-that-was-done-could');
 // Unlike a lost response, a 409 or a 400 is the service answering: nothing was done, whatever its
 // own message looked like.
-const REFUSED_UNREADABLE = 'That was refused, for a reason that could not be shown.';
-const SIGNED_OUT = 'You are signed out. Sign in again to manage access.';
-const EXPLAIN_SIGNED_OUT = 'You are signed out. Sign in again to see what they may do.';
-const EXPLAIN_REFUSED = 'You may no longer see what they may do.';
-const EXPLAIN_UNREADABLE = 'What they may do could not be shown. Try again.';
+const REFUSED_UNREADABLE = (): string => words('access.that-was-refused-for-a');
+const SIGNED_OUT = (): string => words('access.you-are-signed-out-sign');
+const EXPLAIN_SIGNED_OUT = (): string => words('access.you-are-signed-out-sign-2');
+const EXPLAIN_REFUSED = (): string => words('access.you-may-no-longer-see');
+const EXPLAIN_UNREADABLE = (): string => words('access.what-they-may-do-could');
 
 /**
  * Access to one thing (access.md, "Routes"; GP-E): a component, a document, a template, a space or the
@@ -365,8 +369,8 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
 
   /** An artifact's name and space from its own route; a space or the environment names itself. */
   const readNamed = useCallback(async (): Promise<Named> => {
-    if (kind === 'tenant') return { title: 'the whole environment' };
-    if (kind === 'space') return { title: `the space ${spaceName!}` };
+    if (kind === 'tenant') return { title: words('access.the-whole-environment') };
+    if (kind === 'space') return { title: words('access.the-space', { name: spaceName! }) };
     const id = atId!;
     if (kind === 'document') {
       const { data, response } = await client.GET('/v1/documents/{id}', {
@@ -491,25 +495,25 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
     </div>
   );
 
-  if (opened.state === 'loading') return hold(<Waiting>Opening...</Waiting>);
+  if (opened.state === 'loading') return hold(<Waiting>{words('access.opening')}</Waiting>);
   if (opened.state === 'missing') {
     return hold(
       <Notice tone="refused">
-        <p>There is nothing here, or nothing you may read.</p>
+        <p>{words('access.there-is-nothing-here-or')}</p>
       </Notice>,
     );
   }
   if (opened.state === 'unauthorized') {
     return hold(
       <Notice tone="signedOut">
-        <p>{SIGNED_OUT}</p>
+        <p>{SIGNED_OUT()}</p>
       </Notice>,
     );
   }
   if (opened.state === 'unmanaged') {
     return hold(
       <Notice tone="refused">
-        <p>{`You may not manage access to ${here}.`}</p>
+        <p>{words('access.you-may-not-manage-access', { here })}</p>
       </Notice>,
     );
   }
@@ -517,9 +521,9 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
     return hold(
       <Notice tone="failed">
         <p>
-          {`Access to ${here} could not be loaded.`}{' '}
+          {words('access.access-to-could-not-be', { here })}{' '}
           <button type="button" onClick={() => void load().then(() => settle(id('heading')))}>
-            Try again
+            {words('access.try-again')}
           </button>
         </p>
       </Notice>,
@@ -543,8 +547,6 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
   const effectiveGroup = groups?.some((each) => each.id === group) ? group : '';
   const named = (target: string) =>
     places.find((place) => place.target === target)?.named ?? target;
-  // "with this component", "in the space General", "in the whole environment".
-  const scope = kind === 'space' || kind === 'tenant' ? `in ${here}` : `with ${here}`;
 
   /**
    * A change, then the lists read again whatever happened: the service is what is shown. Inviting and
@@ -566,7 +568,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
       const said = await run();
       if (mounted.current) setMessage(said);
     } catch {
-      if (mounted.current) setMessage(CHANGE_UNKNOWN);
+      if (mounted.current) setMessage(CHANGE_UNKNOWN());
     } finally {
       pending.current = false;
       if (mounted.current) setBusy(false);
@@ -576,18 +578,18 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
   };
 
   const refusal = (status: number, error: unknown, missing: string) => {
-    if (status === 409 || status === 400) return refusalMessage(error) ?? REFUSED_UNREADABLE;
-    if (status === 401) return SIGNED_OUT;
+    if (status === 409 || status === 400) return refusalMessage(error) ?? REFUSED_UNREADABLE();
+    if (status === 401) return SIGNED_OUT();
     if (status === 404) return missing;
-    if (status === 403) return 'You may not manage access there.';
-    return CHANGE_UNKNOWN;
+    if (status === 403) return words('access.you-may-not-manage-access-2');
+    return CHANGE_UNKNOWN();
   };
 
   const give = (event: React.FormEvent) => {
     event.preventDefault();
     const subject = toGroup ? effectiveGroup : effectivePerson;
     if (subject === '' || role === '' || effectiveWhere === '') {
-      setMessage(`Choose a ${toGroup ? 'group' : 'person'}, a role and where.`);
+      setMessage(words('access.choose-a-a-role-and', { to: toGroup ? 'group' : 'person' }));
       return;
     }
     void change(async () => {
@@ -601,10 +603,13 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
       });
       if (data) {
         return isShownGrant(data.grant)
-          ? `${describeGrant(data.grant)} on ${named(data.grant.level)}.`
-          : 'That was granted, though what exactly could not be shown.';
+          ? words('access.on', {
+              grant: describeGrant(data.grant),
+              place: named(data.grant.level),
+            })
+          : words('access.that-was-granted-though-what');
       }
-      return refusal(response.status, error, 'You may not manage access there.');
+      return refusal(response.status, error, words('access.you-may-not-manage-access-2'));
     });
   };
 
@@ -614,12 +619,12 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
         const { data, error, response } = await client.DELETE('/v1/grants/{id}', {
           params: { path: { id: grant.id } },
         });
-        if (data) return `Removed: ${describeGrant(grant)} on ${named(grant.level)}.`;
-        return refusal(
-          response.status,
-          error,
-          'That grant is gone, or you may no longer manage it.',
-        );
+        if (data)
+          return words('access.removed-on', {
+            grant: describeGrant(grant),
+            place: named(grant.level),
+          });
+        return refusal(response.status, error, words('access.that-grant-is-gone-or'));
       },
       { landing: levelHeading(grant.level) },
     );
@@ -628,7 +633,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
     event.preventDefault();
     const email = address.trim();
     if (email === '') {
-      setMessage('Enter the address to invite.');
+      setMessage(words('access.enter-the-address-to-invite'));
       return;
     }
     void change(
@@ -644,13 +649,15 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
             setOutside(false);
           }
           if (!isShownInvitation(data.invitation) || typeof data.renewed !== 'boolean') {
-            return 'That address was invited, though what exactly could not be shown.';
+            return words('access.that-address-was-invited-though');
           }
           return data.renewed
-            ? `Renewed the invitation to ${describeInvitation(data.invitation).replace(', until ', ', now until ')}.`
-            : `Invited ${data.invitation.email}. Choose them under Give access: what they are given is theirs from their first sign-in.`;
+            ? words('access.renewed-the-invitation-to', {
+                invitation: describeInvitation(data.invitation, true),
+              })
+            : words('access.invited-choose-them-under-give', { email: data.invitation.email });
         }
-        return refusal(response.status, error, 'You may not invite anyone to this environment.');
+        return refusal(response.status, error, words('access.you-may-not-invite-anyone'));
       },
       { people: true },
     );
@@ -663,9 +670,9 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
           params: { path: { id: invitation.id } },
         });
         if (data) {
-          return `Withdrew the invitation to ${invitation.email}, and everything granted to them.`;
+          return words('access.withdrew-the-invitation-to-and', { email: invitation.email });
         }
-        return refusal(response.status, error, 'That invitation is gone already.');
+        return refusal(response.status, error, words('access.that-invitation-is-gone-already'));
       },
       { people: true, landing: id('invite') },
     );
@@ -690,24 +697,27 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
         return;
       }
       if (data) {
-        setExplainMessage(EXPLAIN_UNREADABLE);
+        setExplainMessage(EXPLAIN_UNREADABLE());
         return;
       }
-      if (response.status === 401) setExplainMessage(EXPLAIN_SIGNED_OUT);
+      if (response.status === 401) setExplainMessage(EXPLAIN_SIGNED_OUT());
       else if (response.status === 403 || response.status === 404)
-        setExplainMessage(EXPLAIN_REFUSED);
-      else setExplainMessage(EXPLAIN_UNREADABLE);
+        setExplainMessage(EXPLAIN_REFUSED());
+      else setExplainMessage(EXPLAIN_UNREADABLE());
     } catch {
-      if (mounted.current && mine === explaining.current) setExplainMessage(EXPLAIN_UNREADABLE);
+      if (mounted.current && mine === explaining.current) setExplainMessage(EXPLAIN_UNREADABLE());
     }
   };
 
   const personOptions = offered.map((each) => (
     <option key={each.id} value={each.id}>
-      {personName(each)}
-      {each.name !== null && each.email !== null ? ` (${each.email})` : ''}
-      {each.kind === 'external' ? ', from outside the organisation' : ''}
-      {each.invited ? ', invited and not signed in yet' : ''}
+      {words('access.person-option', {
+        name: personName(each),
+        addressed: each.name !== null && each.email !== null ? 'yes' : 'no',
+        email: each.email ?? '',
+        outside: each.kind === 'external' ? 'yes' : 'no',
+        invited: each.invited ? 'yes' : 'no',
+      })}
     </option>
   ));
 
@@ -718,7 +728,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
         tabIndex={-1}
         className={titled ? styles['title'] : styles['unseen']}
       >
-        Access to {opened.title}
+        {words('access.access-to', { title: opened.title })}
       </Title>
       <div data-column="granted" className={styles['granted']}>
         {places.map((place) => {
@@ -729,27 +739,27 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
               <CardTitle id={heading} tabIndex={-1} className={styles['cardTitle']}>
                 {place.label}
               </CardTitle>
-              {listing.state === 'loading' && <Waiting>Loading...</Waiting>}
+              {listing.state === 'loading' && <Waiting>{words('access.loading')}</Waiting>}
               {listing.state === 'unmanaged' && (
                 <Notice tone="refused">
-                  <p>You may not manage access here.</p>
+                  <p>{words('access.you-may-not-manage-access-3')}</p>
                 </Notice>
               )}
               {listing.state === 'unauthorized' && (
                 <Notice tone="signedOut">
-                  <p>{SIGNED_OUT}</p>
+                  <p>{SIGNED_OUT()}</p>
                 </Notice>
               )}
               {listing.state === 'failed' && (
                 <FailedListing
-                  text="What is granted here"
+                  said={words('access.granted-could-not-be-loaded')}
                   reading={readingGrants}
                   onRetry={() => void readGrants(places).then(() => settle(heading))}
                 />
               )}
               {listing.state === 'loaded' &&
                 (listing.grants.length === 0 ? (
-                  <p>Nothing is granted here.</p>
+                  <p>{words('access.nothing-is-granted-here')}</p>
                 ) : (
                   <ul className={styles['rows']}>
                     {listing.grants.map((grant) => (
@@ -759,10 +769,10 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                           type="button"
                           className="danger"
                           disabled={busy}
-                          aria-label={`Remove: ${describeGrant(grant)}`}
+                          aria-label={words('access.remove', { grant: describeGrant(grant) })}
                           onClick={() => remove(grant)}
                         >
-                          Remove
+                          {words('access.remove-2')}
                         </button>
                       </li>
                     ))}
@@ -774,10 +784,10 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
 
         <section aria-labelledby={id('explain')} className={styles['card']}>
           <CardTitle id={id('explain')} className={styles['cardTitle']}>
-            What someone may do here
+            {words('access.what-someone-may-do-here')}
           </CardTitle>
           <label>
-            Whose access{' '}
+            {words('access.whose-access')}{' '}
             <select
               value={effectiveExplainFor}
               onChange={(event) => {
@@ -787,7 +797,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                 setExplainFor(event.target.value);
               }}
             >
-              <option value="">Choose a person</option>
+              <option value="">{words('access.choose-a-person')}</option>
               {personOptions}
             </select>
           </label>{' '}
@@ -796,27 +806,31 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
             disabled={effectiveExplainFor === ''}
             onClick={() => void explain()}
           >
-            Show
+            {words('access.show')}
           </button>
           {explainMessage !== null && <p role="status">{explainMessage}</p>}
           {explanation && (
             <table>
               <caption>
-                What {personName(byId.get(explanation.principal) ?? { name: null, email: null })}{' '}
-                may do {scope}
+                {/* "with this component", "in the space General", "in the whole environment". */}
+                {words('access.what-may-do', {
+                  name: personName(byId.get(explanation.principal) ?? { name: null, email: null }),
+                  kind,
+                  here,
+                })}
               </caption>
               <thead>
                 <tr>
-                  <th scope="col">Permission</th>
-                  <th scope="col">Answer</th>
-                  <th scope="col">Why</th>
+                  <th scope="col">{words('access.permission')}</th>
+                  <th scope="col">{words('access.answer')}</th>
+                  <th scope="col">{words('access.why')}</th>
                 </tr>
               </thead>
               <tbody>
                 {explanation.answers.map((answer) => (
                   <tr key={answer.permission}>
                     <th scope="row">{permissionName(answer.permission)}</th>
-                    <td>{answer.allowed ? 'Allowed' : 'Refused'}</td>
+                    <td>{answer.allowed ? words('access.allowed') : words('access.refused')}</td>
                     <td>{explainAnswer(answer, places, byId)}</td>
                   </tr>
                 ))}
@@ -828,11 +842,11 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
       <div data-column="giving" className={styles['giving']}>
         <form aria-labelledby={id('give')} onSubmit={give} className={styles['card']}>
           <CardTitle id={id('give')} className={styles['cardTitle']}>
-            Give access
+            {words('access.give-access')}
           </CardTitle>
           {offersGroups && (
             <fieldset>
-              <legend>Give to</legend>
+              <legend>{words('access.give-to')}</legend>
               <label>
                 <input
                   type="radio"
@@ -840,7 +854,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                   checked={!toGroup}
                   onChange={() => setGiveTo('person')}
                 />{' '}
-                A person
+                {words('access.a-person')}
               </label>{' '}
               <label>
                 <input
@@ -849,47 +863,55 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                   checked={toGroup}
                   onChange={() => setGiveTo('group')}
                 />{' '}
-                A group
+                {words('access.a-group')}
               </label>
             </fieldset>
           )}
           {toGroup ? (
             <label>
-              Group{' '}
+              {words('access.group')}{' '}
               <select value={effectiveGroup} onChange={(event) => setGroup(event.target.value)}>
-                <option value="">Choose a group</option>
+                <option value="">{words('access.choose-a-group')}</option>
                 {(groups ?? []).map((each) => (
                   <option key={each.id} value={each.id}>
-                    {each.name}
-                    {each.source === 'provider' ? ", from the organisation's sign-in" : ''}
+                    {words('access.group-option', {
+                      name: each.name,
+                      provider: each.source === 'provider' ? 'yes' : 'no',
+                    })}
                   </option>
                 ))}
               </select>
             </label>
           ) : (
             <label>
-              Person{' '}
+              {words('access.person')}{' '}
               <select value={effectivePerson} onChange={(event) => setPerson(event.target.value)}>
-                <option value="">Choose a person</option>
+                <option value="">{words('access.choose-a-person')}</option>
                 {personOptions}
               </select>
             </label>
           )}{' '}
           <label>
-            Role{' '}
+            {words('access.role')}{' '}
             <select value={role} onChange={(event) => setRole(event.target.value)}>
-              <option value="">Choose a role</option>
+              <option value="">{words('access.choose-a-role')}</option>
               {roles.map((each) => (
                 <option key={each.id} value={each.id}>
-                  {each.name}: {each.permissions.map(permissionName).join(', ')}
+                  {words('access.role-option', {
+                    name: each.name,
+                    permissions: formats().list(each.permissions.map(permissionName), {
+                      type: 'unit',
+                      style: 'short',
+                    }),
+                  })}
                 </option>
               ))}
             </select>
           </label>{' '}
           <label>
-            Where{' '}
+            {words('access.where')}{' '}
             <select value={effectiveWhere} onChange={(event) => setWhere(event.target.value)}>
-              {effectiveWhere === '' && <option value="">Choose where</option>}
+              {effectiveWhere === '' && <option value="">{words('access.choose-where')}</option>}
               {manageable.map((place) => (
                 <option key={place.target} value={place.target}>
                   {place.label}
@@ -898,7 +920,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
             </select>
           </label>{' '}
           <fieldset>
-            <legend>Allow or deny</legend>
+            <legend>{words('access.allow-or-deny')}</legend>
             <label>
               <input
                 type="radio"
@@ -906,7 +928,7 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                 checked={effect === 'allow'}
                 onChange={() => setEffect('allow')}
               />{' '}
-              Allow
+              {words('access.allow')}
             </label>{' '}
             <label>
               <input
@@ -915,19 +937,19 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                 checked={effect === 'deny'}
                 onChange={() => setEffect('deny')}
               />{' '}
-              Deny
+              {words('access.deny')}
             </label>
           </fieldset>
           <button className="primary" type="submit" disabled={busy || manageable.length === 0}>
-            Give
+            {words('access.give')}
           </button>
         </form>
         {message !== null && <p role="status">{message}</p>}
 
-        {invitations.state === 'unauthorized' && <p>{SIGNED_OUT}</p>}
+        {invitations.state === 'unauthorized' && <p>{SIGNED_OUT()}</p>}
         {invitations.state === 'failed' && (
           <FailedListing
-            text="Invitations"
+            said={words('access.invitations-could-not-be-loaded')}
             reading={readingInvitations}
             onRetry={() => void readInvitations().then(() => settle(id('invite')))}
           />
@@ -935,15 +957,12 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
         {invitations.state === 'loaded' && (
           <section aria-labelledby={id('invite')} className={styles['card']}>
             <CardTitle id={id('invite')} tabIndex={-1} className={styles['cardTitle']}>
-              Invite someone
+              {words('access.invite-someone')}
             </CardTitle>
-            <p>
-              Invite somebody who has not signed in yet, then give them access above. What they are
-              given is theirs the first time they sign in with that address.
-            </p>
+            <p>{words('access.invite-somebody-who-has-not')}</p>
             <form aria-labelledby={id('invite')} onSubmit={inviteSomeone}>
               <label>
-                Address{' '}
+                {words('access.address')}{' '}
                 <input
                   type="email"
                   value={address}
@@ -956,18 +975,18 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                   checked={outside}
                   onChange={(event) => setOutside(event.target.checked)}
                 />{' '}
-                From outside the organisation
+                {words('access.from-outside-the-organisation-2')}
               </label>{' '}
               <button type="submit" disabled={busy}>
-                Invite
+                {words('access.invite')}
               </button>
             </form>
             {invitations.waiting.length === 0 ? (
               <Empty>
-                <p>Nobody is waiting to accept an invitation.</p>
+                <p>{words('access.nobody-is-waiting-to-accept')}</p>
               </Empty>
             ) : (
-              <ul aria-label="Waiting invitations" className={styles['rows']}>
+              <ul aria-label={words('access.waiting-invitations')} className={styles['rows']}>
                 {invitations.waiting.map((invitation) => (
                   <li key={invitation.id}>
                     {describeInvitation(invitation)}{' '}
@@ -975,10 +994,12 @@ export function AccessPanel({ at, client, headingLevel = 2, titled = true }: Acc
                       type="button"
                       className="danger"
                       disabled={busy}
-                      aria-label={`Withdraw the invitation to ${invitation.email}`}
+                      aria-label={words('access.withdraw-the-invitation-to', {
+                        email: invitation.email,
+                      })}
                       onClick={() => withdraw(invitation)}
                     >
-                      Withdraw
+                      {words('access.withdraw')}
                     </button>
                   </li>
                 ))}

@@ -11,6 +11,7 @@ import { usePresentation, useZoom, ZOOMS, type Zoom } from './presentation.js';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Notice } from '../states/Notice.js';
+import { formats, words } from '../words/words.js';
 
 /** Points to CSS pixels: a CSS inch is 96 pixels and 72 points. */
 const PX_PER_PT = 96 / 72;
@@ -150,9 +151,7 @@ export function Canvas({ children, sheet = false }: { children: ReactNode; sheet
   );
 }
 
-const LABELS: Record<string, string> = { fit: 'Fit' };
-
-const percent = (zoom: number) => `${Math.round(zoom * 100)}%`;
+const percent = (zoom: number) => formats().number(zoom, { style: 'percent' });
 
 /**
  * How large a reader sees a page's text, at the status bar's right (ADR-0056): Zoom out, a slider and
@@ -169,13 +168,17 @@ export function ZoomControl() {
     if (level !== undefined) zooming.setZoom(level);
   };
   return (
-    <div className="aw-zoom" role="group" aria-label="Zoom controls">
-      <IconButton label="Zoom out" aria-disabled={at === 0} onClick={() => step(at - 1)}>
+    <div className="aw-zoom" role="group" aria-label={words('theme.zoom-controls')}>
+      <IconButton
+        label={words('theme.zoom-out')}
+        aria-disabled={at === 0}
+        onClick={() => step(at - 1)}
+      >
         <Icon name="Zoom out" size={14} />
       </IconButton>
       <input
         type="range"
-        aria-label="Zoom level"
+        aria-label={words('theme.zoom-level')}
         min={0}
         max={ZOOMS.length - 1}
         step={1}
@@ -184,14 +187,14 @@ export function ZoomControl() {
         onChange={(event) => step(Number(event.target.value))}
       />
       <IconButton
-        label="Zoom in"
+        label={words('theme.zoom-in')}
         aria-disabled={at === ZOOMS.length - 1}
         onClick={() => step(at + 1)}
       >
         <Icon name="Zoom in" size={14} />
       </IconButton>
       <select
-        aria-label="Zoom"
+        aria-label={words('theme.zoom')}
         value={String(zooming.zoom)}
         onChange={(event) => {
           const chosen = event.target.value;
@@ -202,7 +205,7 @@ export function ZoomControl() {
       >
         {[...ZOOMS, 'fit' as const].map((each: Zoom) => (
           <option key={each} value={String(each)}>
-            {LABELS[String(each)] ?? percent(each as number)}
+            {each === 'fit' ? words('theme.fit') : percent(each)}
           </option>
         ))}
       </select>
@@ -220,10 +223,10 @@ export function UnheldFaces() {
   return (
     <Notice tone="failed">
       <p>
-        {presentation.unheld.length === 1 ? 'The typeface ' : 'The typefaces '}
-        {presentation.unheld.join(', ')}
-        {presentation.unheld.length === 1 ? ' is' : ' are'} not available here, so the text set in{' '}
-        {presentation.unheld.length === 1 ? 'it' : 'them'} is shown in the application's own face.
+        {words('theme.unheld-faces', {
+          count: presentation.unheld.length,
+          families: formats().list(presentation.unheld),
+        })}
       </p>
     </Notice>
   );

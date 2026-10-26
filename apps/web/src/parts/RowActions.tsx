@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from './IconButton.js';
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 export interface RowAction {
   /** The action, as its tooltip says it: "Rename". */
@@ -97,8 +98,8 @@ export function RowActions({
         <span className={styles['moreAnchor']}>
           <IconButton
             ref={button}
-            label={`More actions for ${subject}`}
-            tooltip="More actions"
+            label={words('parts.more-actions-for', { subject })}
+            tooltip={words('parts.more-actions')}
             className={`${styles['iconButton']} ${styles['rowIcon']}`}
             aria-haspopup="menu"
             aria-expanded={open}
@@ -112,7 +113,7 @@ export function RowActions({
               ref={menu}
               id={menuId}
               role="menu"
-              aria-label={`More actions for ${subject}`}
+              aria-label={words('parts.more-actions-for', { subject })}
               className={styles['menu']}
               onKeyDown={(event) => {
                 const keys: Record<string, () => void> = {

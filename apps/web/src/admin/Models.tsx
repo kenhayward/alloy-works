@@ -6,6 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { EmbeddingPanel } from './EmbeddingPanel.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -33,16 +34,30 @@ interface Route {
 }
 
 const PROTOCOLS: Readonly<Record<Endpoint['protocol'], string>> = {
-  anthropic: 'Anthropic Messages',
-  openai: 'OpenAI chat completions',
+  get anthropic() {
+    return words('admin.anthropic-messages');
+  },
+  get openai() {
+    return words('admin.openai-chat-completions');
+  },
 };
 
 const PURPOSES: Readonly<Record<Route['purpose'], string>> = {
-  drafting: 'Drafting',
-  chat: 'Chat',
-  summarising: 'Summarising',
-  embedding: 'Embedding',
-  translate: 'Machine translation',
+  get drafting() {
+    return words('admin.drafting');
+  },
+  get chat() {
+    return words('admin.chat');
+  },
+  get summarising() {
+    return words('admin.summarising');
+  },
+  get embedding() {
+    return words('admin.embedding');
+  },
+  get translate() {
+    return words('admin.machine-translation');
+  },
 };
 
 /** Whether calls can go to an endpoint: in use, with a key set for where it points. */
@@ -50,7 +65,11 @@ const usable = (endpoint: Endpoint) =>
   endpoint.retiredAt === null && endpoint.key.set && !endpoint.key.needsSetting;
 
 const keyWords = (endpoint: Endpoint) =>
-  !endpoint.key.set ? 'Not set' : endpoint.key.needsSetting ? 'Set it again' : 'Set';
+  !endpoint.key.set
+    ? words('admin.not-set')
+    : endpoint.key.needsSetting
+      ? words('admin.set-it-again')
+      : words('admin.set');
 
 /** The settings a person types, as text, before they are numbers. */
 interface Draft {
@@ -125,7 +144,7 @@ export function Models({ client }: { client: Client }) {
     if (!editing) return;
     const { draft, id } = editing;
     if (draft.boundary === '') {
-      setSaid('Say whether this endpoint sits outside your data boundary.');
+      setSaid(words('admin.say-whether-this-endpoint-sits'));
       return;
     }
     const body = {
@@ -147,10 +166,14 @@ export function Models({ client }: { client: Client }) {
           ? await client.POST('/v1/model-endpoints', { body })
           : await client.PUT('/v1/model-endpoints/{id}', { params: { path: { id } }, body });
       if (data) {
-        setSaid(id === null ? `${body.name} added. Set its key to use it.` : `${body.name} saved.`);
+        setSaid(
+          id === null
+            ? words('admin.added-set-its-key-to', { name: body.name })
+            : words('admin.saved-2', { name: body.name }),
+        );
         setEditing(null);
         again();
-      } else setSaid(refusal(error, 'The endpoint could not be saved.'));
+      } else setSaid(refusal(error, words('admin.the-endpoint-could-not-be')));
     } finally {
       setBusy(false);
     }
@@ -166,10 +189,10 @@ export function Models({ client }: { client: Client }) {
         body: { key },
       });
       if (data) {
-        setSaid(`The key for ${keying.name} is set.`);
+        setSaid(words('admin.the-key-for-is-set', { name: keying.name }));
         setKeying(null);
         again();
-      } else setSaid(refusal(error, 'The key could not be set.'));
+      } else setSaid(refusal(error, words('admin.the-key-could-not-be')));
     } finally {
       // The key is never kept by the page once it is sent.
       setKey('');
@@ -178,26 +201,35 @@ export function Models({ client }: { client: Client }) {
   };
 
   const test = async (endpoint: Endpoint) => {
-    setSaid(`Testing ${endpoint.name}...`);
+    setSaid(words('admin.testing', { name: endpoint.name }));
     setBusy(true);
     const { data, error } = await client
       .POST('/v1/model-endpoints/{id}/test', { params: { path: { id: endpoint.id } } })
       .finally(() => setBusy(false));
     if (!data) {
-      setSaid(refusal(error, 'The endpoint could not be tested.'));
+      setSaid(refusal(error, words('admin.the-endpoint-could-not-be-2')));
       return;
     }
     if (data.outcome === 'failed') {
-      setSaid(`${endpoint.name} failed its test. ${data.failure?.message ?? ''}`.trim());
+      // The failure's own sentence is the service's, said after ours.
+      setSaid(
+        `${words('admin.failed-its-test', { name: endpoint.name })} ${data.failure?.message ?? ''}`.trim(),
+      );
       return;
     }
-    const tokens =
-      data.tokensIn === null
-        ? 'no tokens reported'
-        : `${data.tokensIn} tokens in, ${data.tokensOut} out`;
-    const cost = data.cost === null ? '' : `, ${endpoint.currency} ${data.cost}`;
     setSaid(
-      `${endpoint.name} answered "${data.reply ?? ''}" as ${data.model ?? endpoint.model} in ${data.ms} ms: ${tokens}${cost}.`,
+      words('admin.answered-as-in-ms', {
+        name: endpoint.name,
+        reply: data.reply ?? '',
+        model: data.model ?? endpoint.model,
+        ms: data.ms,
+        counted: data.tokensIn === null ? 'no' : 'yes',
+        tokensIn: data.tokensIn ?? 0,
+        tokensOut: data.tokensOut ?? 0,
+        costed: data.cost === null ? 'no' : 'yes',
+        currency: endpoint.currency,
+        cost: data.cost ?? '',
+      }),
     );
   };
 
@@ -206,9 +238,9 @@ export function Models({ client }: { client: Client }) {
       params: { path: { id: endpoint.id } },
     });
     if (data) {
-      setSaid(`${endpoint.name} retired. Nothing is sent to it now.`);
+      setSaid(words('admin.retired-nothing-is-sent-to', { name: endpoint.name }));
       again();
-    } else setSaid(refusal(error, 'The endpoint could not be retired.'));
+    } else setSaid(refusal(error, words('admin.the-endpoint-could-not-be-3')));
   };
 
   const route = async (purpose: Route['purpose'], endpoint: string | null) => {
@@ -217,9 +249,9 @@ export function Models({ client }: { client: Client }) {
       body: { endpoint },
     });
     if (data) {
-      setSaid(`${PURPOSES[purpose]} ${endpoint === null ? 'is off' : 'route saved'}.`);
+      setSaid(words('admin.route-said', { purpose, state: endpoint === null ? 'off' : 'on' }));
       again();
-    } else setSaid(refusal(error, 'The route could not be saved.'));
+    } else setSaid(refusal(error, words('admin.the-route-could-not-be')));
   };
 
   const field = (name: keyof Draft, label: string, input: 'text' | 'number' | 'url' = 'text') =>
@@ -240,25 +272,25 @@ export function Models({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          The model endpoints this environment calls, each on your own provider account. A
-          self-hosted endpoint speaking either protocol works too. Each endpoint says whether it
-          sits outside your data boundary, as you set it. A key is never shown again once it is set.
-        </p>
+        <p>{words('admin.the-model-endpoints-this-environment')}</p>
         <button type="button" onClick={() => setEditing({ id: null, draft: BLANK })}>
-          Add an endpoint
+          {words('admin.add-an-endpoint')}
         </button>
       </div>
       {editing && (
         <form
           className={styles['toolbar']}
           onSubmit={(event) => void save(event)}
-          aria-label={editing.id === null ? 'Add an endpoint' : `Edit ${editing.draft.name}`}
+          aria-label={
+            editing.id === null
+              ? words('admin.add-an-endpoint')
+              : words('admin.edit', { name: editing.draft.name })
+          }
           noValidate
         >
-          {field('name', 'Name')}
+          {field('name', words('admin.name'))}
           <label className={styles['filter']}>
-            Protocol
+            {words('admin.protocol')}
             <select
               value={editing.draft.protocol}
               disabled={editing.id !== null}
@@ -276,15 +308,15 @@ export function Models({ client }: { client: Client }) {
               <option value="openai">{PROTOCOLS.openai}</option>
             </select>
           </label>
-          {field('baseUrl', 'Base URL', 'url')}
-          {field('model', 'Model')}
-          {field('contextWindow', 'Context window, in tokens', 'number')}
-          {field('priceIn', 'Price per million tokens in', 'number')}
-          {field('priceOut', 'Price per million tokens out', 'number')}
-          {field('priceCached', 'Price per million tokens read from its cache', 'number')}
-          {field('currency', 'Currency')}
+          {field('baseUrl', words('admin.base-url'), 'url')}
+          {field('model', words('admin.model'))}
+          {field('contextWindow', words('admin.context-window-in-tokens'), 'number')}
+          {field('priceIn', words('admin.price-per-million-tokens-in'), 'number')}
+          {field('priceOut', words('admin.price-per-million-tokens-out'), 'number')}
+          {field('priceCached', words('admin.price-per-million-tokens-read'), 'number')}
+          {field('currency', words('admin.currency'))}
           <label className={styles['filter']}>
-            Data boundary
+            {words('admin.data-boundary')}
             <select
               value={editing.draft.boundary}
               onChange={(change) =>
@@ -297,16 +329,16 @@ export function Models({ client }: { client: Client }) {
                 })
               }
             >
-              <option value="">Choose</option>
-              <option value="inside">Inside your data boundary</option>
-              <option value="outside">Outside your data boundary</option>
+              <option value="">{words('admin.choose')}</option>
+              <option value="inside">{words('admin.inside-your-data-boundary')}</option>
+              <option value="outside">{words('admin.outside-your-data-boundary-2')}</option>
             </select>
           </label>
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {words('admin.save')}
           </button>
           <button type="button" onClick={() => setEditing(null)}>
-            Cancel
+            {words('admin.cancel')}
           </button>
         </form>
       )}
@@ -314,11 +346,11 @@ export function Models({ client }: { client: Client }) {
         <form
           className={styles['toolbar']}
           onSubmit={(event) => void saveKey(event)}
-          aria-label={`Set the key for ${keying.name}`}
+          aria-label={words('admin.set-the-key-for', { name: keying.name })}
           noValidate
         >
           <label className={styles['filter']}>
-            Key for {keying.name}
+            {words('admin.key-for', { name: keying.name })}
             <input
               type="password"
               autoComplete="off"
@@ -327,7 +359,7 @@ export function Models({ client }: { client: Client }) {
             />
           </label>
           <button type="submit" className="primary" disabled={busy || key === ''}>
-            Save key
+            {words('admin.save-key')}
           </button>
           <button
             type="button"
@@ -336,26 +368,26 @@ export function Models({ client }: { client: Client }) {
               setKeying(null);
             }}
           >
-            Cancel
+            {words('admin.cancel')}
           </button>
         </form>
       )}
-      <Shown read={read} failed="The model endpoints could not be loaded.">
+      <Shown read={read} failed={words('admin.the-model-endpoints-could-not-be')}>
         {(rows) => (
           <>
             {rows.length === 0 ? (
-              <p className={styles['muted']}>No model endpoint has been added yet.</p>
+              <p className={styles['muted']}>{words('admin.no-model-endpoint-has-been')}</p>
             ) : (
-              <table aria-label="Model endpoints" className={styles['table']}>
+              <table aria-label={words('admin.model-endpoints')} className={styles['table']}>
                 <thead>
                   <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Protocol</th>
-                    <th scope="col">Model</th>
-                    <th scope="col">Data boundary</th>
-                    <th scope="col">Key</th>
+                    <th scope="col">{words('admin.name')}</th>
+                    <th scope="col">{words('admin.protocol')}</th>
+                    <th scope="col">{words('admin.model')}</th>
+                    <th scope="col">{words('admin.data-boundary')}</th>
+                    <th scope="col">{words('admin.key')}</th>
                     <th scope="col">
-                      <span className={styles['hidden']}>Actions</span>
+                      <span className={styles['hidden']}>{words('admin.actions')}</span>
                     </th>
                   </tr>
                 </thead>
@@ -365,16 +397,18 @@ export function Models({ client }: { client: Client }) {
                     return (
                       <tr key={endpoint.id} data-archived={retired ? 'true' : undefined}>
                         <td className={styles['strong']}>
-                          {endpoint.name}
-                          {retired && <span className={styles['muted']}> (retired)</span>}
+                          <span data-content>{endpoint.name}</span>
+                          {retired && (
+                            <span className={styles['muted']}> {words('admin.retired-mark')}</span>
+                          )}
                         </td>
                         <td>{PROTOCOLS[endpoint.protocol]}</td>
-                        <td>{endpoint.model}</td>
+                        <td data-content>{endpoint.model}</td>
                         <td>
                           {endpoint.boundary === 'outside' ? (
-                            <Chip>Outside your data boundary</Chip>
+                            <Chip>{words('admin.outside-your-data-boundary-2')}</Chip>
                           ) : (
-                            'Inside'
+                            words('admin.inside')
                           )}
                         </td>
                         <td>{keyWords(endpoint)}</td>
@@ -383,39 +417,39 @@ export function Models({ client }: { client: Client }) {
                             <span className={styles['actions']}>
                               <button
                                 type="button"
-                                aria-label={`Edit ${endpoint.name}`}
+                                aria-label={words('admin.edit', { name: endpoint.name })}
                                 onClick={() =>
                                   setEditing({ id: endpoint.id, draft: draftOf(endpoint) })
                                 }
                               >
-                                Edit
+                                {words('admin.edit-2')}
                               </button>
                               <button
                                 type="button"
-                                aria-label={`Set the key for ${endpoint.name}`}
+                                aria-label={words('admin.set-the-key-for', { name: endpoint.name })}
                                 onClick={() => {
                                   // A key typed for one endpoint is never sent to another.
                                   setKey('');
                                   setKeying(endpoint);
                                 }}
                               >
-                                Set key
+                                {words('admin.set-key')}
                               </button>
                               <button
                                 type="button"
-                                aria-label={`Test ${endpoint.name}`}
+                                aria-label={words('admin.test', { name: endpoint.name })}
                                 disabled={busy || !usable(endpoint)}
                                 onClick={() => void test(endpoint)}
                               >
-                                Test
+                                {words('admin.test-2')}
                               </button>
                               <button
                                 type="button"
-                                aria-label={`Retire ${endpoint.name}`}
+                                aria-label={words('admin.retire-3', { name: endpoint.name })}
                                 disabled={busy}
                                 onClick={() => void retire(endpoint)}
                               >
-                                Retire
+                                {words('admin.retire-2')}
                               </button>
                             </span>
                           )}
@@ -426,12 +460,12 @@ export function Models({ client }: { client: Client }) {
                 </tbody>
               </table>
             )}
-            <h3>What each purpose uses</h3>
-            <table aria-label="Model routes" className={styles['table']}>
+            <h3>{words('admin.what-each-purpose-uses')}</h3>
+            <table aria-label={words('admin.model-routes')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Purpose</th>
-                  <th scope="col">Endpoint</th>
+                  <th scope="col">{words('admin.purpose')}</th>
+                  <th scope="col">{words('admin.endpoint')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -440,7 +474,7 @@ export function Models({ client }: { client: Client }) {
                     <td className={styles['strong']}>{PURPOSES[each.purpose]}</td>
                     <td>
                       <select
-                        aria-label={`Endpoint for ${PURPOSES[each.purpose]}`}
+                        aria-label={words('admin.endpoint-for', { purpose: each.purpose })}
                         value={each.endpoint ?? ''}
                         onChange={(change) =>
                           void route(
@@ -449,15 +483,15 @@ export function Models({ client }: { client: Client }) {
                           )
                         }
                       >
-                        <option value="">None: off</option>
+                        <option value="">{words('admin.none-off')}</option>
                         {rows
                           .filter((endpoint) => usable(endpoint) || endpoint.id === each.endpoint)
                           .map((endpoint) => (
                             <option key={endpoint.id} value={endpoint.id}>
-                              {endpoint.name}
-                              {endpoint.boundary === 'outside'
-                                ? ', outside your data boundary'
-                                : ''}
+                              {words('admin.outside-your-data-boundary', {
+                                name: endpoint.name,
+                                boundary: endpoint.boundary,
+                              })}
                             </option>
                           ))}
                       </select>

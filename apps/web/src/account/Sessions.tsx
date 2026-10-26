@@ -7,6 +7,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import { moment, refusal } from './TokenTable.js';
 import styles from './Tokens.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Session =
@@ -14,8 +15,12 @@ type Session =
 
 /** How a session signed in, in words. */
 const ROUTE_WORDS: Readonly<Record<Session['route'], string>> = {
-  organisation: "Your organisation's sign-in",
-  google: 'Google',
+  get organisation() {
+    return words('account.your-organisation-s-sign-in');
+  },
+  get google() {
+    return words('account.google');
+  },
 };
 
 type Read = readonly Session[] | 'failed' | null;
@@ -48,10 +53,10 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
       const { response, error } = await client.DELETE('/v1/sessions/{id}', {
         params: { path: { id: session.id } },
       });
-      if (response.ok || response.status === 404) setStatus('Ended that session.');
-      else setStatus(refusal(error, 'That session could not be ended.'));
+      if (response.ok || response.status === 404) setStatus(words('account.ended-that-session'));
+      else setStatus(refusal(error, words('account.that-session-could-not-be')));
     } catch {
-      setStatus('That session could not be ended.');
+      setStatus(words('account.that-session-could-not-be'));
     }
     await load();
   };
@@ -60,12 +65,10 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
     try {
       const { data, error } = await client.DELETE('/v1/sessions');
       if (data) {
-        setStatus(
-          data.ended === 1 ? 'Ended 1 other session.' : `Ended ${data.ended} other sessions.`,
-        );
-      } else setStatus(refusal(error, 'Your other sessions could not be ended.'));
+        setStatus(words('account.ended-other-sessions', { count: data.ended }));
+      } else setStatus(refusal(error, words('account.your-other-sessions-could-not')));
     } catch {
-      setStatus('Your other sessions could not be ended.');
+      setStatus(words('account.your-other-sessions-could-not'));
     }
     await load();
   };
@@ -76,30 +79,27 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
   return (
     <Modal labelledBy="sessions-heading" onClose={onClose}>
       <div className={styles['tokens']}>
-        <h2 id="sessions-heading">Sessions</h2>
-        <p className={styles['muted']}>
-          Everywhere you are signed in. End a session you do not recognise, or have left signed in
-          elsewhere; whatever it was doing stops.
-        </p>
-        {read === null && <Waiting>Loading...</Waiting>}
+        <h2 id="sessions-heading">{words('account.sessions')}</h2>
+        <p className={styles['muted']}>{words('account.everywhere-you-are-signed-in')}</p>
+        {read === null && <Waiting>{words('account.loading')}</Waiting>}
         {read === 'failed' && (
           <Notice tone="failed">
-            <p>Your sessions could not be loaded.</p>
+            <p>{words('account.your-sessions-could-not-be')}</p>
             <button type="button" onClick={() => void load()}>
-              Try again
+              {words('account.try-again')}
             </button>
           </Notice>
         )}
         {sessions !== null && (
           <div className={styles['holder']}>
-            <table aria-label="Your sessions">
+            <table aria-label={words('account.your-sessions')}>
               <thead>
                 <tr>
-                  <th scope="col">Signed in with</th>
-                  <th scope="col">Began</th>
-                  <th scope="col">Last used</th>
+                  <th scope="col">{words('account.signed-in-with')}</th>
+                  <th scope="col">{words('account.began')}</th>
+                  <th scope="col">{words('account.last-used')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('account.actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -111,14 +111,16 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
                     <td>{moment(session.lastActiveAt)}</td>
                     <td className={styles['act']}>
                       {session.current ? (
-                        <Chip tone="accent">This session</Chip>
+                        <Chip tone="accent">{words('account.this-session')}</Chip>
                       ) : (
                         <button
                           type="button"
-                          aria-label={`End the session begun ${moment(session.startedAt)}`}
+                          aria-label={words('account.end-the-session-begun', {
+                            began: moment(session.startedAt),
+                          })}
                           onClick={() => void end(session)}
                         >
-                          End
+                          {words('account.end')}
                         </button>
                       )}
                     </td>
@@ -132,11 +134,11 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
         <div className={styles['actions']}>
           {others > 0 && (
             <button type="button" className="danger" onClick={() => void endOthers()}>
-              End all other sessions
+              {words('account.end-all-other-sessions')}
             </button>
           )}
           <button type="button" onClick={onClose}>
-            Close
+            {words('account.close')}
           </button>
         </div>
       </div>

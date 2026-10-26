@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
+import { words } from '../words/words.js';
 
 /** The access page's sentence, for the same refusal. */
-export const NOT_YOURS = 'You may not manage access here.';
+export const notYours = (): string => words('admin.you-may-not-manage-access');
 
 /** What a section read: its rows, refused, or failed; null while it is being read. */
 export type Read<T> = { readonly rows: readonly T[] } | 'refused' | 'failed' | null;
@@ -51,11 +52,11 @@ export function Shown<T>({
   failed: string;
   children: (rows: readonly T[]) => React.ReactNode;
 }) {
-  if (read === null) return <Waiting>Loading...</Waiting>;
+  if (read === null) return <Waiting>{words('admin.loading')}</Waiting>;
   if (read === 'refused') {
     return (
       <Notice tone="refused">
-        <p>{NOT_YOURS}</p>
+        <p>{notYours()}</p>
       </Notice>
     );
   }

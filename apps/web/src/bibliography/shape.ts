@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /** An entry's CSL as the pages read it: only what they show, each member checked before it is. */
 
 interface Name {
@@ -40,26 +41,62 @@ export function yearOf(csl: Csl): string {
   return /\d{4}/.exec(csl.issued?.literal ?? csl.issued?.raw ?? '')?.[0] ?? '';
 }
 
-/** What found a match, as a person reads it. */
-export const FOUND_BY: Readonly<Record<string, string>> = {
-  doi: 'its DOI',
-  pmid: 'its PubMed identifier',
-  isbn: 'its ISBN',
-  issn: 'its ISSN',
-  work: 'its title, year and first author',
-};
-
 /** The source types the hand-made form offers, by CSL's names. */
 export const TYPES: readonly { readonly value: string; readonly label: string }[] = [
-  { value: 'article-journal', label: 'Journal article' },
-  { value: 'book', label: 'Book' },
-  { value: 'chapter', label: 'Book chapter' },
-  { value: 'paper-conference', label: 'Conference paper' },
-  { value: 'report', label: 'Report' },
-  { value: 'thesis', label: 'Thesis' },
-  { value: 'webpage', label: 'Web page' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'document', label: 'Other document' },
+  {
+    value: 'article-journal',
+    get label() {
+      return words('bibliography.journal-article');
+    },
+  },
+  {
+    value: 'book',
+    get label() {
+      return words('bibliography.book');
+    },
+  },
+  {
+    value: 'chapter',
+    get label() {
+      return words('bibliography.book-chapter');
+    },
+  },
+  {
+    value: 'paper-conference',
+    get label() {
+      return words('bibliography.conference-paper');
+    },
+  },
+  {
+    value: 'report',
+    get label() {
+      return words('bibliography.report');
+    },
+  },
+  {
+    value: 'thesis',
+    get label() {
+      return words('bibliography.thesis');
+    },
+  },
+  {
+    value: 'webpage',
+    get label() {
+      return words('bibliography.web-page');
+    },
+  },
+  {
+    value: 'standard',
+    get label() {
+      return words('bibliography.standard');
+    },
+  },
+  {
+    value: 'document',
+    get label() {
+      return words('bibliography.other-document');
+    },
+  },
 ];
 
 /** Authors typed one a line, family name first: `Smith, Ada`, or a body's name whole. */

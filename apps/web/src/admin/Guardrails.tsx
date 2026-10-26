@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -19,9 +20,15 @@ interface Rule {
 }
 
 const SIDES: Readonly<Record<Side, string>> = {
-  sent: 'What is sent',
-  returned: 'What comes back',
-  both: 'Both',
+  get sent() {
+    return words('admin.what-is-sent');
+  },
+  get returned() {
+    return words('admin.what-comes-back');
+  },
+  get both() {
+    return words('admin.both');
+  },
 };
 
 /**
@@ -52,11 +59,11 @@ export function Guardrails({ client }: { client: Client }) {
         body: { phrase: phrase.trim(), applies, reason: reason.trim() },
       });
       if (data) {
-        setSaid(`"${data.phrase}" is forbidden from the next call.`);
+        setSaid(words('admin.is-forbidden-from-the-next', { phrase: data.phrase }));
         setPhrase('');
         setReason('');
         again();
-      } else setSaid(refusal(error, 'The guardrail could not be added.'));
+      } else setSaid(refusal(error, words('admin.the-guardrail-could-not-be')));
     } finally {
       setBusy(false);
     }
@@ -67,32 +74,28 @@ export function Guardrails({ client }: { client: Client }) {
       params: { path: { id: rule.id } },
     });
     if (data) {
-      setSaid(`"${rule.phrase}" is retired. It refuses nothing now.`);
+      setSaid(words('admin.is-retired-it-refuses-nothing', { phrase: rule.phrase }));
       again();
-    } else setSaid(refusal(error, 'The guardrail could not be retired.'));
+    } else setSaid(refusal(error, words('admin.the-guardrail-could-not-be-2')));
   };
 
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          Phrases this environment forbids in what a model is sent and what it returns, in any case
-          or spacing. A turn or a run meeting one is refused, and says which and why. Where a rule
-          watches what comes back, a reply is shown once it has been checked.
-        </p>
+        <p>{words('admin.phrases-this-environment-forbids-in')}</p>
       </div>
       <form
         className={styles['toolbar']}
         onSubmit={(event) => void add(event)}
-        aria-label="Add a guardrail"
+        aria-label={words('admin.add-a-guardrail')}
         noValidate
       >
         <label className={styles['filter']}>
-          Phrase
+          {words('admin.phrase')}
           <input value={phrase} onChange={(change) => setPhrase(change.target.value)} />
         </label>
         <label className={styles['filter']}>
-          Watches
+          {words('admin.watches')}
           <select value={applies} onChange={(change) => setApplies(change.target.value as Side)}>
             {Object.entries(SIDES).map(([value, name]) => (
               <option key={value} value={value}>
@@ -102,7 +105,7 @@ export function Guardrails({ client }: { client: Client }) {
           </select>
         </label>
         <label className={styles['filter']}>
-          Reason
+          {words('admin.reason')}
           <input value={reason} onChange={(change) => setReason(change.target.value)} />
         </label>
         <button
@@ -110,38 +113,40 @@ export function Guardrails({ client }: { client: Client }) {
           className="primary"
           disabled={busy || phrase.trim() === '' || reason.trim() === ''}
         >
-          Add
+          {words('admin.add')}
         </button>
       </form>
-      <Shown read={read} failed="The guardrails could not be loaded.">
+      <Shown read={read} failed={words('admin.the-guardrails-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
-            <p className={styles['muted']}>No phrase is forbidden.</p>
+            <p className={styles['muted']}>{words('admin.no-phrase-is-forbidden')}</p>
           ) : (
-            <table aria-label="Guardrails" className={styles['table']}>
+            <table aria-label={words('admin.guardrails')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Phrase</th>
-                  <th scope="col">Watches</th>
-                  <th scope="col">Reason</th>
+                  <th scope="col">{words('admin.phrase')}</th>
+                  <th scope="col">{words('admin.watches')}</th>
+                  <th scope="col">{words('admin.reason')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((rule) => (
                   <tr key={rule.id}>
-                    <td className={styles['strong']}>{rule.phrase}</td>
+                    <td className={styles['strong']} data-content>
+                      {rule.phrase}
+                    </td>
                     <td>{SIDES[rule.applies]}</td>
-                    <td>{rule.reason}</td>
+                    <td data-content>{rule.reason}</td>
                     <td>
                       <button
                         type="button"
-                        aria-label={`Retire ${rule.phrase}`}
+                        aria-label={words('admin.retire', { phrase: rule.phrase })}
                         onClick={() => void retire(rule)}
                       >
-                        Retire
+                        {words('admin.retire-2')}
                       </button>
                     </td>
                   </tr>

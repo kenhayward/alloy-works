@@ -3,6 +3,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { isRecord } from '../data/shapes.js';
 import { everyPage } from '../paging.js';
 import { authorsFull, authorsShort, yearOf, type Csl } from './shape.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -19,7 +20,9 @@ export type EntryFlag = 'retracted' | 'corrected';
 
 /** A flag as a dialog says it beside an entry, at the start of a phrase or within one. */
 export const flagSaid = (flag: EntryFlag, start = false): string =>
-  `${start ? flag[0]!.toUpperCase() + flag.slice(1) : flag} by its source`;
+  start
+    ? words('bibliography.flag-said-start', { flag })
+    : words('bibliography.flag-said', { flag });
 
 const flagOf = (value: unknown): EntryFlag | undefined =>
   value === 'retracted' || value === 'corrected' ? value : undefined;

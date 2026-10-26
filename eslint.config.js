@@ -69,24 +69,10 @@ export default tseslint.config(
     },
   },
   {
-    // The renderer's folders moved into the catalogue so far (the UI plan, UI-F): every word a person
-    // reads there is the catalogue's. The list grows each PR until it is the whole renderer.
-    files: [
-      'apps/web/src/App.tsx',
-      'apps/web/src/main.tsx',
-      'apps/web/src/shell/**/*.{ts,tsx}',
-      'apps/web/src/home/**/*.{ts,tsx}',
-      'apps/web/src/words/**/*.{ts,tsx}',
-      'apps/web/src/editor/**/*.{ts,tsx}',
-      'apps/web/src/structure/**/*.{ts,tsx}',
-      'apps/web/src/publishing/**/*.{ts,tsx}',
-      'apps/web/src/translation/**/*.{ts,tsx}',
-      'apps/web/src/imports/**/*.{ts,tsx}',
-      'apps/web/src/listing/**/*.{ts,tsx}',
-      'apps/web/src/layouts/**/*.{ts,tsx}',
-      'apps/web/src/states/**/*.{ts,tsx}',
-    ],
-    ignores: ['**/*.test.{ts,tsx}'],
+    // The whole renderer's words are the catalogue's (the UI plan, UI-F), but the bridge to the
+    // desktop shell, whose words move with the shell's (UIe).
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', 'apps/web/src/test/**', 'apps/web/src/platform/**'],
     plugins: { alloy: { rules: { 'interface-words': interfaceWords } } },
     rules: { 'alloy/interface-words': 'error' },
   },

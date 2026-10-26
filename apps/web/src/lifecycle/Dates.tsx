@@ -5,6 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,11 +38,11 @@ export function datesIn(data: unknown): Dates | undefined {
 
 /** An instant as a day, in the reader's own zone (LIF-062). */
 const dayOfInstant = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 
 /** A calendar day as itself, whatever the reader's zone. */
 const dayOfDate = (day: string) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', {
+  formats().date(new Date(`${day}T00:00:00Z`), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -57,15 +58,25 @@ export function DatesChips({ dates }: { dates: Dates | undefined }) {
   if (!dates) return null;
   return (
     <>
-      {dates.effectiveAt !== null && <Chip>{`Effective ${dayOfInstant(dates.effectiveAt)}`}</Chip>}
+      {dates.effectiveAt !== null && (
+        <Chip>{words('lifecycle.effective', { day: dayOfInstant(dates.effectiveAt) })}</Chip>
+      )}
       {dates.reviewBy !== null && (
         <Chip>
-          {`Review by ${dayOfDate(dates.reviewBy)}${dates.owner?.name ? `, ${dates.owner.name}` : ''}`}
+          {words('lifecycle.review-by', {
+            day: dayOfDate(dates.reviewBy),
+            owned: dates.owner?.name ? 'yes' : 'no',
+            owner: dates.owner?.name ?? '',
+          })}
         </Chip>
       )}
-      {dates.pastReview && <Chip tone="warn">Past review</Chip>}
+      {dates.pastReview && <Chip tone="warn">{words('lifecycle.past-review')}</Chip>}
       {dates.effectiveFrom !== null && (
-        <Chip tone="info">{`Its latest revision takes effect ${dayOfInstant(dates.effectiveFrom)}`}</Chip>
+        <Chip tone="info">
+          {words('lifecycle.its-latest-revision-takes-effect', {
+            day: dayOfInstant(dates.effectiveFrom),
+          })}
+        </Chip>
       )}
     </>
   );
@@ -105,7 +116,7 @@ export function DatesButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Dates
+        {words('lifecycle.dates')}
       </button>
       {open && (
         <DatesDialog
@@ -177,32 +188,30 @@ function DatesDialog({
     ).catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onSaved(data);
-    else setSaid(refusal(error, 'The dates could not be saved.'));
+    else setSaid(refusal(error, words('lifecycle.the-dates-could-not-be')));
   };
 
   // The owner as set stays offered where the first page of people does not hold them.
   const offered =
     dates.owner && !people.some((each) => each.id === dates.owner!.id)
-      ? [{ id: dates.owner.id, name: dates.owner.name ?? 'The owner' }, ...people]
+      ? [{ id: dates.owner.id, name: dates.owner.name ?? words('lifecycle.the-owner') }, ...people]
       : people;
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
       <form className={styles['form']} onSubmit={(event) => void save(event)}>
-        <h2 id={headingId}>{`Dates of ${title}`}</h2>
+        <h2 id={headingId}>{words('lifecycle.dates-of', { title })}</h2>
         <label>
-          Effective from
+          {words('lifecycle.effective-from')}
           <input
             type="datetime-local"
             value={effective}
             onChange={(event) => setEffective(event.target.value)}
           />
         </label>
-        <p className={styles['muted']}>
-          A revision approved before then is served from then. Leave it empty for as it is approved.
-        </p>
+        <p className={styles['muted']}>{words('lifecycle.a-revision-approved-before-then')}</p>
         <label>
-          Review by
+          {words('lifecycle.review-by-2')}
           <input
             type="date"
             value={reviewBy}
@@ -210,9 +219,9 @@ function DatesDialog({
           />
         </label>
         <label>
-          Review owner
+          {words('lifecycle.review-owner')}
           <select value={owner} onChange={(event) => setOwner(event.target.value)}>
-            <option value="">Nobody</option>
+            <option value="">{words('lifecycle.nobody')}</option>
             {offered.map((each) => (
               <option key={each.id} value={each.id}>
                 {each.name}
@@ -223,10 +232,10 @@ function DatesDialog({
         <p role="status">{said}</p>
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Cancel
+            {words('lifecycle.cancel')}
           </button>
           <button type="submit" className="primary" disabled={busy}>
-            Save
+            {words('lifecycle.save')}
           </button>
         </div>
       </form>

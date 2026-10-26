@@ -1,13 +1,22 @@
 import { Choice } from './Choice.js';
 import type { FormatDraft } from './httpDraft.js';
 import styles from './QueryDefinitionPage.module.css';
+import { words } from '../words/words.js';
 
 /** The words for each CSV delimiter, as the format offers it. */
 const DELIMITERS: Readonly<Record<FormatDraft['delimiter'], string>> = {
-  comma: 'Comma',
-  semicolon: 'Semicolon',
-  tab: 'Tab',
-  pipe: 'Vertical bar',
+  get comma() {
+    return words('data.comma');
+  },
+  get semicolon() {
+    return words('data.semicolon');
+  },
+  get tab() {
+    return words('data.tab');
+  },
+  get pipe() {
+    return words('data.vertical-bar');
+  },
 };
 
 /**
@@ -17,36 +26,27 @@ const DELIMITERS: Readonly<Record<FormatDraft['delimiter'], string>> = {
  */
 export function FormatFields<Draft extends FormatDraft>({
   draft,
-  noun,
+  holder,
   onChange,
 }: {
   readonly draft: Draft;
-  /** What holds the rows: "answer" or "file". */
-  readonly noun: string;
+  /** What holds the rows: an HTTP API's answer or a file. */
+  readonly holder: 'answer' | 'file';
   readonly onChange: (draft: Draft) => void;
 }) {
   return (
     <>
       {draft.format === 'xlsx' && (
-        <p className={styles['hint']}>
-          A column is read by its header, or by its letter, A for the first. A date or a time is
-          read from the workbook&apos;s own date system; a formula by the value it last saved.
-        </p>
+        <p className={styles['hint']}>{words('data.a-column-is-read-by')}</p>
       )}
       {draft.format === 'json' && (
-        <p className={styles['hint']}>
-          Each is a JSON Pointer: empty for the whole {noun}, or each name after a /. A stated count
-          is checked against the rows read.
-        </p>
+        <p className={styles['hint']}>{words('data.each-is-a-json-pointer', { holder })}</p>
       )}
       {draft.format === 'csv' && (
-        <p className={styles['hint']}>
-          A column is read by its field&apos;s header, or by its letter, A for the first. Under the
-          first convention, &quot;&quot; is empty text and a field with nothing in it is empty.
-        </p>
+        <p className={styles['hint']}>{words('data.a-column-is-read-by-2')}</p>
       )}
       <div className={styles['formatLine']}>
-        <Choice label={`The ${noun} is`}>
+        <Choice label={words('data.the-is', { holder })}>
           {(id) => (
             <select
               id={id}
@@ -55,21 +55,21 @@ export function FormatFields<Draft extends FormatDraft>({
                 onChange({ ...draft, format: event.target.value as FormatDraft['format'] })
               }
             >
-              <option value="json">JSON</option>
-              <option value="jsonLines">JSON Lines, an object a line</option>
-              <option value="csv">CSV</option>
-              <option value="xlsx">XLSX, one sheet of a workbook</option>
+              <option value="json">{words('data.json')}</option>
+              <option value="jsonLines">{words('data.json-lines-an-object-a')}</option>
+              <option value="csv">{words('data.csv')}</option>
+              <option value="xlsx">{words('data.xlsx-one-sheet-of-a')}</option>
             </select>
           )}
         </Choice>
         {draft.format === 'xlsx' && (
           <>
             <label>
-              Sheet
+              {words('data.sheet')}
               <input
                 value={draft.sheet}
                 spellCheck={false}
-                placeholder="Sheet1"
+                placeholder={words('data.sheet1')}
                 onChange={(event) => onChange({ ...draft, sheet: event.target.value })}
               />
             </label>
@@ -79,14 +79,14 @@ export function FormatFields<Draft extends FormatDraft>({
                 checked={draft.headerRow}
                 onChange={(event) => onChange({ ...draft, headerRow: event.target.checked })}
               />
-              The first row names the columns
+              {words('data.the-first-row-names-the')}
             </label>
           </>
         )}
         {draft.format === 'json' && (
           <>
             <label>
-              Rows at
+              {words('data.rows-at')}
               <input
                 value={draft.rows}
                 spellCheck={false}
@@ -95,7 +95,7 @@ export function FormatFields<Draft extends FormatDraft>({
               />
             </label>
             <label>
-              {`Row count at, where the ${noun} states one`}
+              {words('data.row-count-at-where-the', { holder })}
               <input
                 value={draft.count}
                 spellCheck={false}
@@ -106,7 +106,7 @@ export function FormatFields<Draft extends FormatDraft>({
         )}
         {draft.format === 'csv' && (
           <>
-            <Choice label="Fields are separated by">
+            <Choice label={words('data.fields-are-separated-by')}>
               {(id) => (
                 <select
                   id={id}
@@ -132,9 +132,9 @@ export function FormatFields<Draft extends FormatDraft>({
                 checked={draft.headerRow}
                 onChange={(event) => onChange({ ...draft, headerRow: event.target.checked })}
               />
-              The first record names the fields
+              {words('data.the-first-record-names-the')}
             </label>
-            <Choice label="An empty field">
+            <Choice label={words('data.an-empty-field')}>
               {(id) => (
                 <select
                   id={id}
@@ -143,8 +143,8 @@ export function FormatFields<Draft extends FormatDraft>({
                     onChange({ ...draft, nulls: event.target.value as FormatDraft['nulls'] })
                   }
                 >
-                  <option value="empty">Is empty, unless it is quoted</option>
-                  <option value="never">Is empty text</option>
+                  <option value="empty">{words('data.is-empty-unless-it-is')}</option>
+                  <option value="never">{words('data.is-empty-text')}</option>
                 </select>
               )}
             </Choice>

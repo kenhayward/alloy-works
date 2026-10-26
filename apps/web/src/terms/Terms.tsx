@@ -9,6 +9,7 @@ import { Notice } from '../states/Notice.js';
 import styles from '../structure/DocumentList.module.css';
 import { termLink } from './links.js';
 import { isSummary, said, saveText, type Summary } from './shape.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -32,18 +33,30 @@ interface Unrepresented {
 }
 
 const FORMATS = [
-  { value: 'json-ld', label: 'SKOS JSON-LD' },
-  { value: 'turtle', label: 'SKOS Turtle' },
+  {
+    value: 'json-ld',
+    get label() {
+      return words('terms.skos-json-ld');
+    },
+  },
+  {
+    value: 'turtle',
+    get label() {
+      return words('terms.skos-turtle');
+    },
+  },
 ] as const;
 
 /** What one concept of an import came to, as a sentence. */
 function importedLine(each: Imported): string {
-  if (each.outcome === 'refused') return `${each.key}: refused. ${each.message ?? ''}`;
+  if (each.outcome === 'refused')
+    // The refusal's message is the service's, in English for integrators.
+    return words('terms.refused', { key: each.key, message: each.message ?? '' });
   const label = each.term?.label ?? each.key;
-  if (each.outcome === 'created') return `${label}: made`;
+  if (each.outcome === 'created') return words('terms.made', { label });
   return each.merged.length === 0
-    ? `${label}: already here, nothing new`
-    : `${label}: merged, and given ${each.merged.join(', ')}`;
+    ? words('terms.already-here-nothing-new', { label })
+    : words('terms.merged-and-given', { label, merged: formats().list(each.merged) });
 }
 
 /**
@@ -107,7 +120,7 @@ export function Terms({ client }: { readonly client: Client }) {
       params: { path: { space } },
     });
     if (!data) {
-      setProblem('The terms could not be exported.');
+      setProblem(words('terms.the-terms-could-not-be'));
       return;
     }
     saveText('terms.jsonld', data.text, 'application/ld+json');
@@ -116,9 +129,9 @@ export function Terms({ client }: { readonly client: Client }) {
   if (failed && terms === null) {
     return (
       <section aria-labelledby="terms-heading">
-        <h1 id="terms-heading">Terms</h1>
+        <h1 id="terms-heading">{words('terms.terms')}</h1>
         <Notice tone="failed">
-          <p>The terms could not be loaded.</p>
+          <p>{words('terms.the-terms-could-not-be-2')}</p>
         </Notice>
       </section>
     );
@@ -128,31 +141,31 @@ export function Terms({ client }: { readonly client: Client }) {
   return (
     <section aria-labelledby="terms-heading">
       <div className={styles['titleRow']}>
-        <h1 id="terms-heading">Terms</h1>
+        <h1 id="terms-heading">{words('terms.terms')}</h1>
         {space !== null && (
           <span className={styles['actions']}>
             <button type="button" onClick={() => void exportTerms()}>
-              Export
+              {words('terms.export')}
             </button>
             <button type="button" onClick={() => setOpen(open === 'import' ? null : 'import')}>
-              Import
+              {words('terms.import')}
             </button>
             <button
               type="button"
               className="primary"
               onClick={() => setOpen(open === 'new' ? null : 'new')}
             >
-              New term
+              {words('terms.new-term')}
             </button>
           </span>
         )}
       </div>
       {spaces.length > 1 && (
         <label>
-          Space{' '}
+          {words('terms.space')}{' '}
           <select value={space ?? ''} onChange={(event) => setSpace(event.target.value)}>
             {spaces.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
@@ -170,30 +183,34 @@ export function Terms({ client }: { readonly client: Client }) {
       )}
       {terms === null ? null : terms.length === 0 ? (
         <Empty>
-          <p>This space holds no terms you may read.</p>
+          <p>{words('terms.this-space-holds-no-terms')}</p>
         </Empty>
       ) : (
         <>
           <p className={styles['summary']}>
-            <span>{`${total} ${total === 1 ? 'term' : 'terms'} you may read.`}</span>
-            {terms.length < total && <span>{`Showing 1 to ${terms.length}.`}</span>}
+            <span>{words('terms.you-may-read', { total })}</span>
+            {terms.length < total && (
+              <span>{words('terms.showing-1-to', { length: terms.length })}</span>
+            )}
           </p>
           <div className={styles['table']}>
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Term</th>
-                  <th scope="col">Abbreviation</th>
-                  <th scope="col">Standing</th>
+                  <th scope="col">{words('terms.term')}</th>
+                  <th scope="col">{words('terms.abbreviation')}</th>
+                  <th scope="col">{words('terms.standing')}</th>
                 </tr>
               </thead>
               <tbody>
                 {terms.map((each) => (
                   <tr key={each.id}>
                     <td className={styles['title']}>
-                      <a href={termLink(each.id)}>{each.label}</a>
+                      <a href={termLink(each.id)} data-content>
+                        {each.label}
+                      </a>
                     </td>
-                    <td>{each.abbreviation ?? ''}</td>
+                    <td data-content>{each.abbreviation ?? ''}</td>
                     <td>{each.state && <StateLozenge state={each.state} />}</td>
                   </tr>
                 ))}
@@ -233,7 +250,7 @@ function NewTerm({ client, space }: { readonly client: Client; readonly space: s
         },
       });
       if (!data) {
-        setProblem(said(error, 'The term could not be made.'));
+        setProblem(said(error, words('terms.the-term-could-not-be-3')));
         return;
       }
       window.location.hash = termLink(data.id);
@@ -243,16 +260,17 @@ function NewTerm({ client, space }: { readonly client: Client; readonly space: s
   };
 
   return (
-    <form aria-label="New term" onSubmit={(event) => void submit(event)}>
+    <form aria-label={words('terms.new-term')} onSubmit={(event) => void submit(event)}>
       <label>
-        Preferred label{' '}
+        {words('terms.preferred-label')}{' '}
         <input value={preferred} required onChange={(event) => setPreferred(event.target.value)} />
       </label>
       <label>
-        Language <input value={language} onChange={(event) => setLanguage(event.target.value)} />
+        {words('terms.language-2')}
+        <input value={language} onChange={(event) => setLanguage(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || preferred.trim() === ''}>
-        Make term
+        {words('terms.make-term')}
       </button>
       {problem !== null && (
         <Notice tone="failed">
@@ -293,7 +311,7 @@ function ImportTerms({
         body: { format, text },
       });
       if (!data) {
-        setProblem(said(error, 'The terms could not be imported.'));
+        setProblem(said(error, words('terms.the-terms-could-not-be-3')));
         return;
       }
       setDone({
@@ -308,9 +326,9 @@ function ImportTerms({
   };
 
   return (
-    <form aria-label="Import" onSubmit={(event) => void submit(event)}>
+    <form aria-label={words('terms.import')} onSubmit={(event) => void submit(event)}>
       <label>
-        Format{' '}
+        {words('terms.format')}{' '}
         <select value={format} onChange={(event) => setFormat(event.target.value as typeof format)}>
           {FORMATS.map((each) => (
             <option key={each.value} value={each.value}>
@@ -320,10 +338,11 @@ function ImportTerms({
         </select>
       </label>
       <label>
-        SKOS <textarea value={text} rows={8} onChange={(event) => setText(event.target.value)} />
+        {words('terms.skos')}{' '}
+        <textarea value={text} rows={8} onChange={(event) => setText(event.target.value)} />
       </label>
       <button type="submit" className="primary" disabled={busy || text.trim() === ''}>
-        Import terms
+        {words('terms.import-terms')}
       </button>
       {problem !== null && (
         <Notice tone="failed">
@@ -331,23 +350,32 @@ function ImportTerms({
         </Notice>
       )}
       {done !== null && (
-        <section aria-label="Imported">
+        <section aria-label={words('terms.imported')}>
           <ul>
             {done.concepts.map((each) => (
               <li key={each.key}>{importedLine(each)}</li>
             ))}
           </ul>
           {done.unrepresented.length > 0 && (
-            <ul aria-label="Not represented">
+            <ul aria-label={words('terms.not-represented')}>
               {done.unrepresented.map((each, at) => (
                 <li key={at}>
-                  {`Not represented: ${each.concept === null ? '' : `${each.concept}, `}${each.detail}`}
+                  {/* The concept and what of it, as the service names them. */}
+                  {words('terms.not-represented-2', {
+                    named: each.concept === null ? 'no' : 'yes',
+                    concept: each.concept ?? '',
+                    detail: each.detail,
+                  })}
                 </li>
               ))}
             </ul>
           )}
           {done.total > done.unrepresented.length && (
-            <p>{`And ${done.total - done.unrepresented.length} more not represented.`}</p>
+            <p>
+              {words('terms.and-more-not-represented', {
+                count: done.total - done.unrepresented.length,
+              })}
+            </p>
           )}
         </section>
       )}

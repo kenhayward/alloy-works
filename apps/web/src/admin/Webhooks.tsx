@@ -9,6 +9,7 @@ import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import styles from './Administration.module.css';
 import { Shown, useListing, type Read } from './listing.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -47,14 +48,22 @@ interface Attempt {
 }
 
 const STATES: Readonly<Record<Delivery['state'], string>> = {
-  pending: 'Waiting',
-  delivered: 'Delivered',
-  given_up: 'Given up',
-  dropped: 'Not sent: not readable',
+  get pending() {
+    return words('admin.waiting');
+  },
+  get delivered() {
+    return words('admin.delivered');
+  },
+  get given_up() {
+    return words('admin.given-up');
+  },
+  get dropped() {
+    return words('admin.not-sent-not-readable');
+  },
 };
 
 const moment = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', {
+  formats().date(new Date(iso), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -73,13 +82,10 @@ function SecretShown({ secret, onClose }: { secret: string; onClose: () => void 
   return (
     <Modal labelledBy={id} onClose={onClose}>
       <section>
-        <h2 id={id}>Copy the signing secret</h2>
-        <p className={styles['muted']}>
-          Copy it now: it will not be shown again. The receiver checks each delivery’s signature
-          with it.
-        </p>
+        <h2 id={id}>{words('admin.copy-the-signing-secret')}</h2>
+        <p className={styles['muted']}>{words('admin.copy-it-now-it-will')}</p>
         <label>
-          Signing secret
+          {words('admin.signing-secret')}
           <input ref={field} readOnly value={secret} autoComplete="off" spellCheck={false} />
         </label>
         <p role="status">{copied}</p>
@@ -88,16 +94,14 @@ function SecretShown({ secret, onClose }: { secret: string; onClose: () => void 
           onClick={() =>
             void navigator.clipboard
               .writeText(secret)
-              .then(() => setCopied('Copied.'))
-              .catch(() =>
-                setCopied('The secret could not be copied. Select it and copy it yourself.'),
-              )
+              .then(() => setCopied(words('admin.copied')))
+              .catch(() => setCopied(words('admin.the-secret-could-not-be-2')))
           }
         >
-          Copy
+          {words('admin.copy')}
         </button>
         <button type="button" className="primary" onClick={onClose}>
-          Done
+          {words('admin.done')}
         </button>
       </section>
     </Modal>
@@ -126,38 +130,46 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
       setOpen({ id: delivery.id, tried: data.tried, sent: JSON.stringify(data.payload, null, 2) });
   };
   return (
-    <Shown read={read} failed="The deliveries could not be loaded.">
+    <Shown read={read} failed={words('admin.the-deliveries-could-not-be-loaded')}>
       {(rows) =>
         rows.length === 0 ? (
-          <p className={styles['muted']}>Nothing has been delivered to it yet.</p>
+          <p className={styles['muted']}>{words('admin.nothing-has-been-delivered-to')}</p>
         ) : (
           <>
-            <table aria-label={`Deliveries to ${hook.url}`} className={styles['table']}>
+            <table
+              aria-label={words('admin.deliveries-to', { url: hook.url })}
+              className={styles['table']}
+            >
               <thead>
                 <tr>
-                  <th scope="col">Event</th>
-                  <th scope="col">State</th>
-                  <th scope="col">Attempts</th>
-                  <th scope="col">Queued</th>
+                  <th scope="col">{words('admin.event')}</th>
+                  <th scope="col">{words('admin.state')}</th>
+                  <th scope="col">{words('admin.attempts')}</th>
+                  <th scope="col">{words('admin.queued')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((delivery) => (
                   <tr key={delivery.id}>
-                    <td className={styles['code']}>{delivery.type}</td>
+                    <td className={styles['code']} data-content>
+                      {delivery.type}
+                    </td>
                     <td>{STATES[delivery.state]}</td>
-                    <td>{delivery.attempts}</td>
+                    <td>{formats().number(delivery.attempts)}</td>
                     <td>{moment(delivery.createdAt)}</td>
                     <td>
                       <button
                         type="button"
-                        aria-label={`What was sent for ${delivery.type} at ${moment(delivery.createdAt)}`}
+                        aria-label={words('admin.what-was-sent-for-at', {
+                          type: delivery.type,
+                          at: moment(delivery.createdAt),
+                        })}
                         onClick={() => void show(delivery)}
                       >
-                        What was sent
+                        {words('admin.what-was-sent')}
                       </button>
                     </td>
                   </tr>
@@ -165,21 +177,28 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
               </tbody>
             </table>
             {open !== null && (
-              <section aria-label="What was sent, and what came back">
-                <pre className={styles['code']}>{open.sent}</pre>
+              <section aria-label={words('admin.what-was-sent-and-what')}>
+                <pre className={styles['code']} data-content>
+                  {open.sent}
+                </pre>
                 {open.tried.length === 0 ? (
-                  <p className={styles['muted']}>Not tried yet.</p>
+                  <p className={styles['muted']}>{words('admin.not-tried-yet')}</p>
                 ) : (
-                  <ol aria-label="Attempts">
+                  <ol aria-label={words('admin.attempts')}>
                     {open.tried.map((attempt) => (
                       <li key={attempt.at}>
-                        {moment(attempt.at)}:{' '}
-                        {attempt.status === null
-                          ? `no answer (${attempt.failure ?? 'unknown'})`
-                          : `answered ${attempt.status}`}
-                        , {attempt.latencyMs} ms
+                        {words('admin.attempt-said', {
+                          at: moment(attempt.at),
+                          answered: attempt.status === null ? 'no' : 'yes',
+                          status: attempt.status ?? '',
+                          known: attempt.failure === null ? 'no' : 'yes',
+                          failure: attempt.failure ?? '',
+                          ms: attempt.latencyMs,
+                        })}
                         {attempt.reply ? (
-                          <pre className={styles['code']}>{attempt.reply}</pre>
+                          <pre className={styles['code']} data-content>
+                            {attempt.reply}
+                          </pre>
                         ) : null}
                       </li>
                     ))}
@@ -225,7 +244,7 @@ export function Webhooks({ client }: { client: Client }) {
   const [removing, setRemoving] = useState<Hook | null>(null);
   const again = () => setGeneration((was) => was + 1);
   const nameOf = (id: string) =>
-    services.find((each) => each.id === id)?.name ?? 'A service identity';
+    services.find((each) => each.id === id)?.name ?? words('admin.a-service-identity');
   const active = services.filter((each) => each.disabledAt === null);
 
   const make = async (event: FormEvent) => {
@@ -239,13 +258,13 @@ export function Webhooks({ client }: { client: Client }) {
       },
     });
     if (data) {
-      setSaid(`Made the webhook to ${data.webhook.url}.`);
+      setSaid(words('admin.made-the-webhook-to', { url: data.webhook.url }));
       setUrl('');
       setDescription('');
       setTypes(new Set());
       if (data.secret) setSecret(data.secret);
       again();
-    } else setSaid(refusal(error, 'The webhook could not be made.'));
+    } else setSaid(refusal(error, words('admin.the-webhook-could-not-be')));
   };
 
   const rotate = async (hook: Hook) => {
@@ -254,9 +273,9 @@ export function Webhooks({ client }: { client: Client }) {
     });
     setRotating(null);
     if (data?.secret) {
-      setSaid(`A new secret for ${hook.url}: the old one signs beside it for a day.`);
+      setSaid(words('admin.a-new-secret-for-the', { url: hook.url }));
       setSecret(data.secret);
-    } else setSaid(refusal(error, 'The secret could not be rotated.'));
+    } else setSaid(refusal(error, words('admin.the-secret-could-not-be-3')));
   };
 
   const enable = async (hook: Hook) => {
@@ -266,8 +285,8 @@ export function Webhooks({ client }: { client: Client }) {
     });
     setSaid(
       data
-        ? `Turned on the webhook to ${hook.url}.`
-        : refusal(error, 'The webhook could not be turned on.'),
+        ? words('admin.turned-on-the-webhook-to', { url: hook.url })
+        : refusal(error, words('admin.the-webhook-could-not-be-2')),
     );
     again();
   };
@@ -279,8 +298,8 @@ export function Webhooks({ client }: { client: Client }) {
     setRemoving(null);
     setSaid(
       data
-        ? `Removed the webhook to ${hook.url}.`
-        : refusal(error, 'The webhook could not be removed.'),
+        ? words('admin.removed-the-webhook-to', { url: hook.url })
+        : refusal(error, words('admin.the-webhook-could-not-be-3')),
     );
     again();
   };
@@ -288,34 +307,34 @@ export function Webhooks({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          Events posted to an endpoint as they happen, signed, carrying identifiers and versions and
-          never content, and only about what its service identity may read. A failing endpoint is
-          tried again for a day, and turned off after three days of failures.
-        </p>
+        <p>{words('admin.events-posted-to-an-endpoint')}</p>
       </div>
-      <form onSubmit={(event) => void make(event)} aria-label="New webhook" noValidate>
+      <form
+        onSubmit={(event) => void make(event)}
+        aria-label={words('admin.new-webhook')}
+        noValidate
+      >
         <label className={styles['filter']}>
-          Service identity
+          {words('admin.service-identity')}
           <select value={identity} onChange={(change) => setIdentity(change.target.value)}>
-            <option value="">Choose one</option>
+            <option value="">{words('admin.choose-one')}</option>
             {active.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
           </select>
         </label>
         <label className={styles['filter']}>
-          HTTPS URL
+          {words('admin.https-url')}
           <input value={url} onChange={(change) => setUrl(change.target.value)} />
         </label>
         <label className={styles['filter']}>
-          What receives it
+          {words('admin.what-receives-it')}
           <input value={description} onChange={(change) => setDescription(change.target.value)} />
         </label>
         <fieldset>
-          <legend>Events</legend>
+          <legend>{words('admin.events-2')}</legend>
           {webhookEventTypes.map((type) => (
             <label key={type} className={styles['check']}>
               <input
@@ -328,7 +347,9 @@ export function Webhooks({ client }: { client: Client }) {
                   setTypes(next);
                 }}
               />
-              <span className={styles['code']}>{type}</span>
+              <span className={styles['code']} data-content>
+                {type}
+              </span>
             </label>
           ))}
         </fieldset>
@@ -337,77 +358,79 @@ export function Webhooks({ client }: { client: Client }) {
           className="primary"
           disabled={identity === '' || url.trim() === '' || types.size === 0}
         >
-          Make
+          {words('admin.make')}
         </button>
       </form>
       <p role="status">{said}</p>
-      <Shown read={read} failed="The webhooks could not be loaded.">
+      <Shown read={read} failed={words('admin.the-webhooks-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
-            <p className={styles['muted']}>No webhook is made.</p>
+            <p className={styles['muted']}>{words('admin.no-webhook-is-made')}</p>
           ) : (
-            <table aria-label="Webhooks" className={styles['table']}>
+            <table aria-label={words('admin.webhooks')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">URL</th>
-                  <th scope="col">Service identity</th>
-                  <th scope="col">Events</th>
-                  <th scope="col">Status</th>
+                  <th scope="col">{words('admin.url')}</th>
+                  <th scope="col">{words('admin.service-identity')}</th>
+                  <th scope="col">{words('admin.events-2')}</th>
+                  <th scope="col">{words('admin.status')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((hook) => (
                   <tr key={hook.id}>
-                    <td className={styles['strong']}>{hook.url}</td>
+                    <td className={styles['strong']} data-content>
+                      {hook.url}
+                    </td>
                     <td>{nameOf(hook.serviceIdentity)}</td>
-                    <td>{hook.eventTypes.length}</td>
+                    <td>{formats().number(hook.eventTypes.length)}</td>
                     <td>
                       {hook.disabledAt === null ? (
-                        <Chip tone="ok">Active</Chip>
+                        <Chip tone="ok">{words('admin.active')}</Chip>
                       ) : (
                         <Chip tone="warn">
                           {hook.disabledReason === 'failing'
-                            ? 'Off: failing'
-                            : 'Off: identity disabled'}
+                            ? words('admin.off-failing')
+                            : words('admin.off-identity-disabled')}
                         </Chip>
                       )}
                     </td>
                     <td>
                       <button
                         type="button"
-                        aria-label={`Deliveries to ${hook.url}`}
+                        aria-label={words('admin.deliveries-to', { url: hook.url })}
                         aria-expanded={opened === hook.id}
                         onClick={() => setOpened(opened === hook.id ? null : hook.id)}
                       >
-                        Deliveries
+                        {words('admin.deliveries')}
                       </button>{' '}
                       {hook.disabledAt !== null && (
                         <>
                           <button
                             type="button"
-                            aria-label={`Turn on ${hook.url}`}
+                            aria-label={words('admin.turn-on', { url: hook.url })}
                             onClick={() => void enable(hook)}
                           >
-                            Turn on
+                            {words('admin.turn-on-2')}
                           </button>{' '}
                         </>
                       )}
                       <button
                         type="button"
-                        aria-label={`New secret for ${hook.url}`}
+                        aria-label={words('admin.new-secret-for', { url: hook.url })}
                         onClick={() => setRotating(hook)}
                       >
-                        New secret
+                        {words('admin.new-secret')}
                       </button>{' '}
                       <button
                         type="button"
-                        aria-label={`Remove ${hook.url}`}
+                        aria-label={words('admin.remove-4', { url: hook.url })}
                         onClick={() => setRemoving(hook)}
                       >
-                        Remove
+                        {words('admin.remove-2')}
                       </button>
                     </td>
                   </tr>
@@ -421,20 +444,20 @@ export function Webhooks({ client }: { client: Client }) {
       {secret !== null && <SecretShown secret={secret} onClose={() => setSecret(null)} />}
       {rotating !== null && (
         <ConfirmDialog
-          question={`Make a new secret for ${rotating.url}?`}
-          sentence="The old one goes on signing beside it for a day, so the receiver can change without losing an event."
-          keep="Keep it"
-          act="New secret"
+          question={words('admin.make-a-new-secret-for', { url: rotating.url })}
+          sentence={words('admin.the-old-one-goes-on')}
+          keep={words('admin.keep-it')}
+          act={words('admin.new-secret')}
           onKeep={() => setRotating(null)}
           onAct={() => rotate(rotating)}
         />
       )}
       {removing !== null && (
         <ConfirmDialog
-          question={`Remove the webhook to ${removing.url}?`}
-          sentence="Every delivery waiting for it goes with it."
-          keep="Keep it"
-          act="Remove"
+          question={words('admin.remove-the-webhook-to', { url: removing.url })}
+          sentence={words('admin.every-delivery-waiting-for-it')}
+          keep={words('admin.keep-it')}
+          act={words('admin.remove-2')}
           onKeep={() => setRemoving(null)}
           onAct={() => remove(removing)}
         />
@@ -449,8 +472,8 @@ function OpenedDeliveries({ client, read, id }: { client: Client; read: Read<Hoo
   const hook = rows.find((each) => each.id === id);
   if (!hook) return null;
   return (
-    <section aria-label={`Deliveries of ${hook.url}`}>
-      <h3>Deliveries to {hook.url}</h3>
+    <section aria-label={words('admin.deliveries-of', { url: hook.url })}>
+      <h3>{words('admin.deliveries-to', { url: hook.url })}</h3>
       <Deliveries key={hook.id} client={client} hook={hook} />
     </section>
   );

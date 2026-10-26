@@ -10,6 +10,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
 import { FAMILY_WORDS, kindWords } from './auditWords.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type AuditEventView =
@@ -42,17 +43,18 @@ type Read =
   | 'failed'
   | null;
 
-/** The families, by name, each with its kinds: what the kind filter offers. */
-const FAMILIES = Object.entries(FAMILY_WORDS)
-  .map(([family, name]) => ({
-    family,
-    name,
-    kinds: auditKinds.filter((kind) => kind.startsWith(`${family}.`)),
-  }))
-  .sort((one, other) => one.name.localeCompare(other.name));
+/** The families, by name in the reader's language, each with its kinds: what the kind filter offers. */
+const families = () =>
+  Object.entries(FAMILY_WORDS)
+    .map(([family, name]) => ({
+      family,
+      name,
+      kinds: auditKinds.filter((kind) => kind.startsWith(`${family}.`)),
+    }))
+    .sort((one, other) => formats().compare(one.name, other.name));
 
 const when = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', {
+  formats().date(new Date(iso), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -81,13 +83,17 @@ type Exporting =
   | { readonly state: 'done'; readonly id: string; readonly events: number }
   | { readonly state: 'failed'; readonly said: string };
 
-const eventsCounted = (count: number) => (count === 1 ? '1 event' : `${count} events`);
-
 /** Who acted, in words, where nobody is named. */
 const UNNAMED: Readonly<Record<string, string>> = {
-  system: 'The system',
-  vendor: 'The vendor',
-  anonymous: 'Somebody not signed in',
+  get system() {
+    return words('admin.the-system');
+  },
+  get vendor() {
+    return words('admin.the-vendor');
+  },
+  get anonymous() {
+    return words('admin.somebody-not-signed-in');
+  },
 };
 
 /**
@@ -177,20 +183,20 @@ export function AuditLog({
         .then(({ data }) => {
           if (!live.current) return;
           if (!data) {
-            setExporting({ state: 'failed', said: 'The export could not be checked.' });
+            setExporting({ state: 'failed', said: words('admin.the-export-could-not-be') });
             return;
           }
           if (data.export.state === 'done') {
             setExporting({ state: 'done', id: exporting.id, events: data.export.events ?? 0 });
           } else if (data.export.state === 'failed') {
-            setExporting({ state: 'failed', said: 'The export could not be written.' });
+            setExporting({ state: 'failed', said: words('admin.the-export-could-not-be-2') });
           } else {
             setExporting({ state: 'writing', id: exporting.id });
           }
         })
         .catch(() => {
           if (live.current) {
-            setExporting({ state: 'failed', said: 'The export could not be checked.' });
+            setExporting({ state: 'failed', said: words('admin.the-export-could-not-be') });
           }
         });
     }, followMs);
@@ -205,11 +211,11 @@ export function AuditLog({
       else
         setExporting({
           state: 'failed',
-          said: refusal(error, 'The export could not be asked for.'),
+          said: refusal(error, words('admin.the-export-could-not-be-3')),
         });
     } catch {
       if (live.current)
-        setExporting({ state: 'failed', said: 'The export could not be asked for.' });
+        setExporting({ state: 'failed', said: words('admin.the-export-could-not-be-3') });
     }
   };
 
@@ -221,16 +227,20 @@ export function AuditLog({
       });
       // Only a link the service signed, to the store, over the web.
       if (data && /^https?:\/\//.test(data.download)) follow(data.download);
-      else setDownloadSaid(refusal(error, 'The export could not be downloaded.'));
+      else setDownloadSaid(refusal(error, words('admin.the-export-could-not-be-4')));
     } catch {
-      setDownloadSaid('The export could not be downloaded.');
+      setDownloadSaid(words('admin.the-export-could-not-be-4'));
     }
   };
 
   const who = (event: AuditEventView) => {
     const name = event.labels['actor']?.text;
     if (event.actor === null || name === undefined) {
-      return <span className={styles['muted']}>{UNNAMED[event.actorKind] ?? 'Somebody'}</span>;
+      return (
+        <span className={styles['muted']}>
+          {UNNAMED[event.actorKind] ?? words('admin.somebody')}
+        </span>
+      );
     }
     const actor = { id: event.actor, name };
     return (
@@ -238,12 +248,14 @@ export function AuditLog({
         <button
           type="button"
           className={styles['plainButton']}
-          aria-label={`Only what ${name} did`}
+          aria-label={words('admin.only-what-did', { name })}
           onClick={() => choose({ actor })}
         >
-          {name}
+          <span data-content>{name}</span>
         </button>
-        {event.actorKind === 'token' && <span className={styles['muted']}> by an API token</span>}
+        {event.actorKind === 'token' && (
+          <span className={styles['muted']}> {words('admin.by-an-api-token')}</span>
+        )}
       </>
     );
   };
@@ -252,15 +264,18 @@ export function AuditLog({
     const name = event.labels['subject']?.text;
     const id = event.subject?.id ?? null;
     // Only its subject's own name filters to it; a space's name is said, never offered as the subject.
-    if (name === undefined || id === null) return name ?? event.labels['space']?.text ?? null;
+    if (name === undefined || id === null) {
+      const said = name ?? event.labels['space']?.text;
+      return said === undefined ? null : <span data-content>{said}</span>;
+    }
     return (
       <button
         type="button"
         className={styles['plainButton']}
-        aria-label={`Only events about ${name}`}
+        aria-label={words('admin.only-events-about', { name })}
         onClick={() => choose({ subject: { id, name } })}
       >
-        {name}
+        <span data-content>{name}</span>
       </button>
     );
   };
@@ -269,12 +284,12 @@ export function AuditLog({
     <>
       <div className={styles['toolbar']}>
         <label className={styles['filter']}>
-          What happened
+          {words('admin.what-happened')}
           <select value={filter.kind} onChange={(change) => choose({ kind: change.target.value })}>
-            <option value="">Everything</option>
-            {FAMILIES.map(({ family, name, kinds }) => (
+            <option value="">{words('admin.everything')}</option>
+            {families().map(({ family, name, kinds }) => (
               <optgroup key={family} label={name}>
-                <option value={`${family}.`}>{`Any of ${name.toLocaleLowerCase()}`}</option>
+                <option value={`${family}.`}>{words('admin.any-of', { family: name })}</option>
                 {kinds.map((kind) => (
                   <option key={kind} value={kind}>
                     {kindWords(kind)}
@@ -285,7 +300,7 @@ export function AuditLog({
           </select>
         </label>
         <label className={styles['filter']}>
-          From
+          {words('admin.from')}
           <input
             type="date"
             value={filter.from}
@@ -294,7 +309,7 @@ export function AuditLog({
           />
         </label>
         <label className={styles['filter']}>
-          To
+          {words('admin.to')}
           <input
             type="date"
             value={filter.to}
@@ -308,15 +323,15 @@ export function AuditLog({
           disabled={exporting.state === 'writing'}
           onClick={() => void exportShown()}
         >
-          Export
+          {words('admin.export')}
         </button>
         {filter.actor !== null && (
           <Chip tone="accent">
-            {`Who: ${filter.actor.name} `}
+            {words('admin.who', { name: filter.actor.name })}{' '}
             <button
               type="button"
               className={styles['plainButton']}
-              aria-label={`Stop showing only what ${filter.actor.name} did`}
+              aria-label={words('admin.stop-showing-only-what-did', { name: filter.actor.name })}
               onClick={() => choose({ actor: null })}
             >
               ×
@@ -325,11 +340,13 @@ export function AuditLog({
         )}
         {filter.subject !== null && (
           <Chip tone="accent">
-            {`About: ${filter.subject.name} `}
+            {words('admin.about', { name: filter.subject.name })}{' '}
             <button
               type="button"
               className={styles['plainButton']}
-              aria-label={`Stop showing only events about ${filter.subject.name}`}
+              aria-label={words('admin.stop-showing-only-events-about', {
+                name: filter.subject.name,
+              })}
               onClick={() => choose({ subject: null })}
             >
               ×
@@ -338,39 +355,39 @@ export function AuditLog({
         )}
       </div>
       <p role="status" className={styles['exported']}>
-        {exporting.state === 'writing' && 'Writing the export...'}
+        {exporting.state === 'writing' && words('admin.writing-the-export')}
         {exporting.state === 'failed' && exporting.said}
-        {exporting.state === 'done' &&
-          `The export holds ${eventsCounted(exporting.events)}.${downloadSaid === '' ? '' : ` ${downloadSaid}`}`}
+        {exporting.state === 'done' && words('admin.the-export-holds', { count: exporting.events })}
+        {exporting.state === 'done' && downloadSaid !== '' && ` ${downloadSaid}`}
       </p>
       {exporting.state === 'done' && (
         <p>
           <button type="button" className="primary" onClick={() => void download(exporting.id)}>
-            Download export
+            {words('admin.download-export')}
           </button>
         </p>
       )}
       {read === null ? (
-        <Waiting>Loading...</Waiting>
+        <Waiting>{words('admin.loading')}</Waiting>
       ) : read === 'refused' ? (
         <Notice tone="refused">
-          <p>You may not read the audit log here.</p>
+          <p>{words('admin.you-may-not-read-the')}</p>
         </Notice>
       ) : read === 'signedOut' ? (
         <Notice tone="signedOut">
-          <p>You are signed out. Sign in again to read the audit log.</p>
+          <p>{words('admin.you-are-signed-out-sign')}</p>
         </Notice>
       ) : read === 'failed' ? (
         <Notice tone="failed">
-          <p>The audit log could not be read.</p>
+          <p>{words('admin.the-audit-log-could-not')}</p>
         </Notice>
       ) : read.rows.length === 0 ? (
         <Empty>
-          <p>No events match.</p>
+          <p>{words('admin.no-events-match')}</p>
         </Empty>
       ) : (
         <>
-          <table aria-label="Audit log" className={styles['table']}>
+          <table aria-label={words('admin.audit-log')} className={styles['table']}>
             <colgroup>
               <col className={styles['whenColumn']} />
               <col />
@@ -379,10 +396,10 @@ export function AuditLog({
             </colgroup>
             <thead>
               <tr>
-                <th scope="col">When</th>
-                <th scope="col">Who</th>
-                <th scope="col">What</th>
-                <th scope="col">About</th>
+                <th scope="col">{words('admin.when')}</th>
+                <th scope="col">{words('admin.who-2')}</th>
+                <th scope="col">{words('admin.what')}</th>
+                <th scope="col">{words('admin.about-2')}</th>
               </tr>
             </thead>
             <tbody>
@@ -395,7 +412,7 @@ export function AuditLog({
                     {event.outcome === 'refused' && event.kind !== 'access.refused' && (
                       <>
                         {' '}
-                        <Chip tone="danger">Refused</Chip>
+                        <Chip tone="danger">{words('admin.refused')}</Chip>
                       </>
                     )}
                   </td>
@@ -407,7 +424,7 @@ export function AuditLog({
           {read.next !== null && (
             <div className={styles['showMore']}>
               <button type="button" onClick={() => void load(read.next)}>
-                Show more
+                {words('admin.show-more')}
               </button>
             </div>
           )}

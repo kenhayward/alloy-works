@@ -28,6 +28,7 @@ import {
   type FormatDraft,
   type HttpDraft,
 } from './httpDraft.js';
+import { formats, words } from '../words/words.js';
 
 /**
  * A query definition as its page holds it while it is written (the D2 plan, D2-U): every field as the
@@ -40,26 +41,81 @@ export type Base = ValueType['base'];
 
 /** The bases a parameter or a column may take, in the order a list offers them. */
 export const BASES: readonly { readonly base: Base; readonly label: string }[] = [
-  { base: 'text', label: 'Text' },
-  { base: 'integer', label: 'Integer' },
-  { base: 'decimal', label: 'Decimal' },
-  { base: 'date', label: 'Date' },
-  { base: 'time', label: 'Time' },
-  { base: 'localDateTime', label: 'Local date and time' },
-  { base: 'instant', label: 'Instant' },
-  { base: 'boolean', label: 'Yes or no' },
+  {
+    base: 'text',
+    get label() {
+      return words('data.text');
+    },
+  },
+  {
+    base: 'integer',
+    get label() {
+      return words('data.integer');
+    },
+  },
+  {
+    base: 'decimal',
+    get label() {
+      return words('data.decimal');
+    },
+  },
+  {
+    base: 'date',
+    get label() {
+      return words('data.date');
+    },
+  },
+  {
+    base: 'time',
+    get label() {
+      return words('data.time');
+    },
+  },
+  {
+    base: 'localDateTime',
+    get label() {
+      return words('data.local-date-and-time');
+    },
+  },
+  {
+    base: 'instant',
+    get label() {
+      return words('data.instant');
+    },
+  },
+  {
+    base: 'boolean',
+    get label() {
+      return words('data.yes-or-no');
+    },
+  },
 ];
 
 /** A column's bases: the eight, and an image (D8-A), which a parameter never is (DAT-010). */
 export const COLUMN_BASES: readonly { readonly base: Base | 'image'; readonly label: string }[] = [
   ...BASES,
-  { base: 'image', label: 'Image' },
+  {
+    base: 'image',
+    get label() {
+      return words('data.image');
+    },
+  },
 ];
 
 /** How a source holds an image, in the order a list offers them (D8-A). */
 export const ENCODINGS = [
-  { encoding: 'binary', label: 'Binary' },
-  { encoding: 'base64', label: 'Base64 text' },
+  {
+    encoding: 'binary',
+    get label() {
+      return words('data.binary');
+    },
+  },
+  {
+    encoding: 'base64',
+    get label() {
+      return words('data.base64-text');
+    },
+  },
 ] as const;
 
 /** An image's description: a declared text column, decorative, or not chosen yet (D8-A). */
@@ -95,18 +151,14 @@ export interface ParameterDraft {
 
 /** A parameter in words, as its line shows it: "Text, not required, any value of its type". */
 export function parameterSummary(parameter: ParameterDraft): string {
-  const type = BASES.find((each) => each.base === parameter.type.base)?.label ?? 'No type yet';
-  const takes =
-    parameter.variation.length > 0
-      ? 'chooses a fragment of SQL'
-      : parameter.permitted === 'values'
-        ? 'only the values listed'
-        : parameter.permitted === 'range'
-          ? 'only values in a range'
-          : 'any value of its type';
-  return [type, parameter.required ? 'required' : 'not required', parameter.list && 'a list', takes]
-    .filter(Boolean)
-    .join(', ');
+  const type =
+    BASES.find((each) => each.base === parameter.type.base)?.label ?? words('data.no-type-yet');
+  return words('data.parameter-summary', {
+    type,
+    required: parameter.required ? 'yes' : 'no',
+    list: parameter.list ? 'yes' : 'no',
+    takes: parameter.variation.length > 0 ? 'sql' : parameter.permitted,
+  });
 }
 
 export interface ColumnDraft {
@@ -308,18 +360,18 @@ const WHOLE = /^(0|[1-9][0-9]{0,8})$/;
 export function valueTypeOf(type: TypeDraft): ValueType | string {
   switch (type.base) {
     case '':
-      return 'Choose a type.';
+      return words('data.choose-a-type');
     case 'image':
-      return 'A parameter is never an image.';
+      return words('data.a-parameter-is-never-an');
     case 'decimal':
       if (!WHOLE.test(type.precision) || !WHOLE.test(type.scale)) {
-        return 'A decimal needs its digits and its places, as whole numbers.';
+        return words('data.a-decimal-needs-its-digits');
       }
       return { base: 'decimal', precision: Number(type.precision), scale: Number(type.scale) };
     case 'time':
     case 'localDateTime':
     case 'instant':
-      if (!/^[0-6]$/.test(type.fraction)) return 'A time needs its places of a second, 0 to 6.';
+      if (!/^[0-6]$/.test(type.fraction)) return words('data.a-time-needs-its-places');
       return { base: type.base, fraction: Number(type.fraction) };
     default:
       return { base: type.base };
@@ -335,13 +387,13 @@ export function columnTypeOf(
   columns: readonly ColumnDraft[],
 ): ColumnType | string {
   if (type.base !== 'image') return valueTypeOf(type);
-  if (type.encoding === '') return 'Choose how the source holds the image.';
+  if (type.encoding === '') return words('data.choose-how-the-source-holds');
   const { description } = type;
   const describes =
     description === 'decorative' ||
     (description !== null &&
       columns.some((each) => each.name === description.column && each.type.base === 'text'));
-  if (!describes) return 'Choose the text column that describes it, or mark it decorative.';
+  if (!describes) return words('data.choose-the-text-column-that');
   return { base: 'image', encoding: type.encoding, description };
 }
 
@@ -356,7 +408,10 @@ export function parametersOf(draft: Pick<DefinitionDraft, 'parameters'>): Parame
   const parameters: Parameter[] = [];
   for (const parameter of draft.parameters) {
     const type = valueTypeOf(parameter.type);
-    if (typeof type === 'string') return `The parameter ${parameter.name || '(unnamed)'}: ${type}`;
+    if (typeof type === 'string')
+      return parameter.name === ''
+        ? words('data.the-unnamed-parameter', { reason: type })
+        : words('data.the-parameter', { name: parameter.name, reason: type });
     const permitted =
       parameter.permitted === 'values'
         ? {
@@ -392,17 +447,39 @@ const ORDERED: readonly Base[] = ['integer', 'decimal', 'date', 'time', 'localDa
 
 /** The words for each comparison, as a filter offers it. */
 export const COMPARISON_WORDS: Readonly<Record<Comparison, string>> = {
-  equal: 'is',
-  notEqual: 'is not',
-  less: 'is less than',
-  lessOrEqual: 'is at most',
-  greater: 'is greater than',
-  greaterOrEqual: 'is at least',
-  in: 'is one of',
-  contains: 'contains',
-  startsWith: 'starts with',
-  isNull: 'is empty',
-  isNotNull: 'is not empty',
+  get equal() {
+    return words('data.is');
+  },
+  get notEqual() {
+    return words('data.is-not');
+  },
+  get less() {
+    return words('data.is-less-than');
+  },
+  get lessOrEqual() {
+    return words('data.is-at-most');
+  },
+  get greater() {
+    return words('data.is-greater-than');
+  },
+  get greaterOrEqual() {
+    return words('data.is-at-least');
+  },
+  get in() {
+    return words('data.is-one-of');
+  },
+  get contains() {
+    return words('data.contains');
+  },
+  get startsWith() {
+    return words('data.starts-with');
+  },
+  get isNull() {
+    return words('data.is-empty');
+  },
+  get isNotNull() {
+    return words('data.is-not-empty');
+  },
 };
 
 /**
@@ -511,9 +588,9 @@ const PLACES = /^(0|[1-9][0-9]{0,3})$/;
  * a declared order (D4-B), so over rows in no order it is left out, whatever is typed.
  */
 export function queryOf(builder: BuilderDraft, order: DefinitionDraft['order']): Query | string {
-  if (builder.table === null) return 'Choose a table or view.';
+  if (builder.table === null) return words('data.choose-a-table-or-view-2');
   if (builder.columns.length === 0 && builder.summaries.length === 0) {
-    return 'Choose a column to return.';
+    return words('data.choose-a-column-to-return');
   }
   const { alias } = builder;
   const select: SelectItem[] = builder.columns.map((each) => ({
@@ -523,7 +600,7 @@ export function queryOf(builder: BuilderDraft, order: DefinitionDraft['order']):
   if (builder.grouped) {
     for (const summary of builder.summaries) {
       if (summary.aggregate === 'average' && !PLACES.test(summary.places.trim())) {
-        return `The average ${summary.name}: round it to a whole number of places, 0 to 1000.`;
+        return words('data.the-average-round-it-to', { name: summary.name });
       }
       select.push({
         name: summary.name,
@@ -546,7 +623,7 @@ export function queryOf(builder: BuilderDraft, order: DefinitionDraft['order']):
           : { or: conditions };
   const limit = builder.limit.trim();
   if (order !== 'multiset' && limit !== '' && !WHOLE.test(limit)) {
-    return 'Return at most a whole number of rows.';
+    return words('data.return-at-most-a-whole');
   }
   return {
     sources: [{ alias, table: { schema: builder.table.schema, name: builder.table.name } }],
@@ -571,11 +648,11 @@ export function builderDraftOf(
   order: DefinitionDraft['order'],
 ): BuilderDraft | { readonly reason: string } {
   if (query.sources.length !== 1 || query.joins.length > 0) {
-    return { reason: 'it joins more than one source, which this page does not offer yet' };
+    return { reason: words('data.it-joins-more-than-one') };
   }
   const [source] = query.sources;
   if (source === undefined || !('table' in source)) {
-    return { reason: 'it reads a nested query, which this page does not offer yet' };
+    return { reason: words('data.it-reads-a-nested-query') };
   }
   const comparisonsIn = (where: Condition | undefined): Condition[] | 'nested' => {
     if (where === undefined) return [];
@@ -587,18 +664,18 @@ export function builderDraftOf(
   };
   const found = comparisonsIn(query.where);
   if (found === 'nested') {
-    return { reason: 'its filters are nested, which this page does not offer yet' };
+    return { reason: words('data.its-filters-are-nested-which') };
   }
   const filters: FilterDraft[] = [];
   for (const condition of found) {
     if (!('column' in condition)) continue;
     const { to } = condition;
     if (to !== undefined && 'column' in to) {
-      return { reason: 'it compares two columns, which this page does not offer yet' };
+      return { reason: words('data.it-compares-two-columns-which') };
     }
     if (to !== undefined && 'literal' in to && Array.isArray(to.literal)) {
       return {
-        reason: 'it compares with a list of fixed values, which this page does not offer yet',
+        reason: words('data.it-compares-with-a-list'),
       };
     }
     filters.push({
@@ -640,7 +717,7 @@ export function builderDraftOf(
   };
   const again = queryOf(draft, order);
   if (typeof again === 'string' || JSON.stringify(again) !== JSON.stringify(query)) {
-    return { reason: 'it was written through the API in a form this page does not offer' };
+    return { reason: words('data.it-was-written-through-the') };
   }
   return draft;
 }
@@ -671,12 +748,13 @@ export function extensionRequestOf(text: string): Record<string, unknown> | stri
   try {
     read = JSON.parse(text);
   } catch {
-    return 'The request is not JSON: check its brackets and quotes.';
+    return words('data.the-request-is-not-json');
   }
   if (typeof read !== 'object' || read === null || Array.isArray(read)) {
-    return 'The request is a JSON object, in braces.';
+    return words('data.the-request-is-a-json');
   }
-  if (JSON.stringify(read).length > EXTENSION_REQUEST_MOST) return 'The request is at most 64 KiB.';
+  if (JSON.stringify(read).length > EXTENSION_REQUEST_MOST)
+    return words('data.the-request-is-at-most');
   return read as Record<string, unknown>;
 }
 
@@ -693,7 +771,7 @@ export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs:
   checkTree(query, parameters, (_path, message) => {
     problem ??= message;
   });
-  if (problem !== undefined) return { needs: `${problem}.` };
+  if (problem !== undefined) return { needs: words('data.problem-said', { problem }) };
   const columns = draft.columns.flatMap((column) => {
     const type = columnTypeOf(column.type, draft.columns);
     return typeof type === 'string'
@@ -719,7 +797,7 @@ export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs:
       ).text,
     };
   } catch {
-    return { needs: 'Describe the query, and confirm its columns, to see the order it runs in.' };
+    return { needs: words('data.describe-the-query-and-confirm') };
   }
 }
 
@@ -744,7 +822,7 @@ function whereOf(
   for (const filter of file.filters) {
     const declared = columns.find((each) => each.name === filter.column);
     if (declared === undefined || declared.type.base === 'image') {
-      return `A filter compares a declared column, and ${filter.column} is not one.`;
+      return words('data.a-filter-compares-a-declared', { column: filter.column });
     }
     if (filter.is === 'isNull' || filter.is === 'isNotNull') {
       comparisons.push({ column: filter.column, is: filter.is });
@@ -779,7 +857,8 @@ function parts(draft: DefinitionDraft) {
   const columns = [];
   for (const column of draft.columns) {
     const type = columnTypeOf(column.type, draft.columns);
-    if (typeof type === 'string') return `The column ${column.name}: ${type}`;
+    if (typeof type === 'string')
+      return words('data.the-column', { name: column.name, reason: type });
     // An HTTP response's or a file's column is read as its format reads (the D6 plan, D6-F), and
     // an extension's by a pointer into its row (EX-G).
     const from =
@@ -794,19 +873,19 @@ function parts(draft: DefinitionDraft) {
   }
   if (columns.length === 0) {
     return draft.mode === 'builder' || draft.mode === 'dataset'
-      ? 'Describe the query to propose its columns first.'
+      ? words('data.describe-the-query-to-propose')
       : draft.mode === 'http' || draft.mode === 'extension'
-        ? 'Sample the request to propose its columns first.'
+        ? words('data.sample-the-request-to-propose')
         : draft.mode === 'file'
-          ? 'Sample the file to propose its columns first.'
-          : 'Describe the statement to propose its columns first.';
+          ? words('data.sample-the-file-to-propose')
+          : words('data.describe-the-statement-to-propose');
   }
   const query =
     draft.mode === 'builder' || draft.mode === 'dataset'
       ? queryOf(draft.builder, draft.order)
       : null;
   if (typeof query === 'string') return query;
-  if (draft.mode === 'dataset' && draft.dataset === '') return 'Choose a stored result.';
+  if (draft.mode === 'dataset' && draft.dataset === '') return words('data.choose-a-stored-result');
   const request = draft.mode === 'extension' ? extensionRequestOf(draft.extension) : null;
   if (typeof request === 'string') return request;
   const limits = {
@@ -817,7 +896,7 @@ function parts(draft: DefinitionDraft) {
   if (
     ![draft.limits.rows, draft.limits.bytes, draft.limits.seconds].every((each) => WHOLE.test(each))
   ) {
-    return 'Each limit is a whole number.';
+    return words('data.each-limit-is-a-whole');
   }
   const where = draft.mode === 'file' ? whereOf(draft.file, columns) : undefined;
   if (typeof where === 'string') return where;
@@ -1178,19 +1257,26 @@ export const DATASET_BUILDER: BuilderDraft = { ...NEW_BUILDER, alias: 'd', table
  * filtered as its tree says. It runs in the service, so there is no SQL to show.
  */
 function datasetText(query: Query): string {
+  // Names, the source's own, listed as names are, never as a sentence's "and".
+  const names = (each: readonly string[]) => formats().list(each, { type: 'unit', style: 'short' });
   const returned = query.select.map((each) =>
     'column' in each.of
       ? each.name
-      : `${each.name} (${each.of.aggregate}${
-          'of' in each.of && each.of.of !== undefined ? ` of ${each.of.of.column}` : ''
-        })`,
+      : 'of' in each.of && each.of.of !== undefined
+        ? words('data.summary-of-column', {
+            name: each.name,
+            aggregate: each.of.aggregate,
+            column: each.of.of.column,
+          })
+        : words('data.summary-of-rows', { name: each.name, aggregate: each.of.aggregate }),
   );
   const grouped = query.groupBy.map((each) => each.column);
-  return [
-    `Returns ${returned.join(', ')} from the stored result`,
-    ...(grouped.length === 0 ? [] : [`grouped by ${grouped.join(', ')}`]),
-    ...(query.where === undefined ? [] : ['filtered']),
-  ].join(', ');
+  return words('data.returns-from-the-stored-result', {
+    returned: names(returned),
+    isGrouped: grouped.length === 0 ? 'no' : 'yes',
+    grouped: names(grouped),
+    filtered: query.where === undefined ? 'no' : 'yes',
+  });
 }
 
 /**

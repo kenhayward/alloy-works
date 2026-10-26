@@ -1,4 +1,5 @@
 import { baselineLink, documentLink, documentVersionLink, nodeLink } from '../structure/links.js';
+import { words } from '../words/words.js';
 
 /** A version a result names (SV-G). */
 interface ResultVersion {
@@ -187,18 +188,18 @@ export function whereFound(
   fields: ReadonlyMap<string, string>,
 ): string | null {
   if (place === null) return null;
-  if (place === 'title') return 'In its title';
-  if (place.startsWith('block:')) return 'In its text';
+  if (place === 'title') return words('search.in-its-title');
+  if (place.startsWith('block:')) return words('search.in-its-text');
   if (place.startsWith('field:')) {
     const name = fields.get(place.slice('field:'.length));
-    return name === undefined ? 'In a field' : `In ${name}`;
+    return name === undefined ? words('search.in-a-field') : words('search.in', { name });
   }
-  if (place.startsWith('section:')) return 'In a starting section';
-  if (place === 'description') return 'In its description';
-  if (place === 'fields') return 'In the fields it groups';
-  if (place === 'schemas') return 'In the schemas it assigns';
-  if (place === 'columns') return 'In its column names';
-  if (place.startsWith('message:')) return 'In a message';
-  if (place === 'anchor') return 'In the text it is on';
+  if (place.startsWith('section:')) return words('search.in-a-starting-section');
+  if (place === 'description') return words('search.in-its-description');
+  if (place === 'fields') return words('search.in-the-fields-it-groups');
+  if (place === 'schemas') return words('search.in-the-schemas-it-assigns');
+  if (place === 'columns') return words('search.in-its-column-names');
+  if (place.startsWith('message:')) return words('search.in-a-message');
+  if (place === 'anchor') return words('search.in-the-text-it-is');
   return null;
 }

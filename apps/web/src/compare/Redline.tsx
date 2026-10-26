@@ -1,29 +1,64 @@
 import type { UnitChange, UnitText } from '@alloy-works/domain';
 
 import styles from './Redline.module.css';
+import { formats, words } from '../words/words.js';
 
 /** What a unit is called where it holds no text of its own. */
 const TYPE_WORDS: Record<string, string> = {
-  paragraph: 'Paragraph',
-  list: 'List',
-  item: 'List item',
-  table: 'Table',
-  cell: 'Table cell',
-  footnote: 'Footnote',
-  figure: 'Figure',
-  boundTable: 'Table of results',
-  preformatted: 'Preformatted text',
-  blockquote: 'Quotation',
-  equation: 'Equation',
-  section: 'Section',
-  reference: 'Component',
+  get paragraph() {
+    return words('compare.paragraph');
+  },
+  get list() {
+    return words('compare.list');
+  },
+  get item() {
+    return words('compare.list-item');
+  },
+  get table() {
+    return words('compare.table');
+  },
+  get cell() {
+    return words('compare.table-cell');
+  },
+  get footnote() {
+    return words('compare.footnote');
+  },
+  get figure() {
+    return words('compare.figure');
+  },
+  get boundTable() {
+    return words('compare.table-of-results');
+  },
+  get preformatted() {
+    return words('compare.preformatted-text');
+  },
+  get blockquote() {
+    return words('compare.quotation');
+  },
+  get equation() {
+    return words('compare.equation');
+  },
+  get section() {
+    return words('compare.section');
+  },
+  get reference() {
+    return words('compare.component');
+  },
 };
 
 const ATTRIBUTE_WORDS: Record<string, string> = {
-  style: 'style',
-  marks: 'formatting',
-  shape: 'rows or columns',
-  kind: 'kind of list',
+  get style() {
+    return words('compare.style');
+  },
+  get marks() {
+    return words('compare.formatting');
+  },
+  get shape() {
+    return words('compare.rows-or-columns');
+  },
+  get kind() {
+    return words('compare.kind-of-list');
+  },
 };
 
 /** Each change's text: what an unchanged or an edited unit says now, or what one inserted or deleted said. */
@@ -34,16 +69,25 @@ export interface RedlineTexts {
   readonly names?: ReadonlyMap<string, string>;
 }
 
-const Added = ({ text }: { text: string }) => (
+/** A unit's text, the tenant's, or where it holds none, what it is in the interface's words. */
+interface Named {
+  readonly text: string;
+  readonly content: boolean;
+}
+
+const Shown = ({ text, content }: Named) =>
+  content ? <span data-content>{text}</span> : <>{text}</>;
+
+const Added = ({ text, content = true }: { text: string; content?: boolean }) => (
   <ins className={styles['added']}>
-    <span className={styles['hidden']}>Added: </span>
-    {text}
+    <span className={styles['hidden']}>{words('compare.added')}</span>
+    <Shown text={text} content={content} />
   </ins>
 );
-const Removed = ({ text }: { text: string }) => (
+const Removed = ({ text, content = true }: { text: string; content?: boolean }) => (
   <del className={styles['removed']}>
-    <span className={styles['hidden']}>Removed: </span>
-    {text}
+    <span className={styles['hidden']}>{words('compare.removed')}</span>
+    <Shown text={text} content={content} />
   </del>
 );
 
@@ -72,8 +116,12 @@ export function Redline({
   texts: RedlineTexts;
   label: string;
 }) {
-  const nameOf = (key: string, text: UnitText | undefined) =>
-    text?.text || texts.names?.get(key) || TYPE_WORDS[text?.type ?? ''] || 'Part';
+  const nameOf = (key: string, text: UnitText | undefined): Named => {
+    const own = text?.text || texts.names?.get(key);
+    return own
+      ? { text: own, content: true }
+      : { text: TYPE_WORDS[text?.type ?? ''] || words('compare.part'), content: false };
+  };
   const changed = changes.some(
     (each) =>
       each.change !== 'matched' ||
@@ -82,7 +130,7 @@ export function Redline({
       each.changed.length > 0 ||
       each.matched === 'similarity',
   );
-  if (!changed) return <p className={styles['note']}>Nothing changed.</p>;
+  if (!changed) return <p className={styles['note']}>{words('compare.nothing-changed')}</p>;
   return (
     <ol className={styles['redline']} aria-label={label}>
       {changes.map((change) => {
@@ -95,8 +143,8 @@ export function Redline({
               className={styles['unit']}
               style={{ marginInlineStart: `${depthOf(change.newer, texts.newer) * 16}px` }}
             >
-              <span className={styles['badge']}>Added</span>
-              <Added text={nameOf(change.newer, text)} />
+              <span className={styles['badge']}>{words('compare.added-2')}</span>
+              <Added {...nameOf(change.newer, text)} />
             </li>
           );
         }
@@ -109,8 +157,8 @@ export function Redline({
               className={styles['unit']}
               style={{ marginInlineStart: `${depthOf(change.older, texts.older) * 16}px` }}
             >
-              <span className={styles['badge']}>Removed</span>
-              <Removed text={nameOf(change.older, text)} />
+              <span className={styles['badge']}>{words('compare.removed-2')}</span>
+              <Removed {...nameOf(change.older, text)} />
             </li>
           );
         }
@@ -127,11 +175,18 @@ export function Redline({
           return null;
         }
         const notes = [
-          ...(change.moved ? ['Moved'] : []),
-          ...(change.split ? ['Split'] : []),
-          ...(change.joined ? ['Joined'] : []),
+          ...(change.moved ? [words('compare.moved')] : []),
+          ...(change.split ? [words('compare.split')] : []),
+          ...(change.joined ? [words('compare.joined')] : []),
           ...(change.changed.length > 0
-            ? [`Changed: ${change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name).join(', ')}`]
+            ? [
+                words('compare.changed', {
+                  what: formats().list(
+                    change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name),
+                    { type: 'unit', style: 'short' },
+                  ),
+                }),
+              ]
             : []),
         ];
         return (
@@ -150,10 +205,14 @@ export function Redline({
               </span>
             ))}
             {change.matched === 'similarity' && (
-              <span className={styles['similar']}>Matched by similar wording</span>
+              <span className={styles['similar']}>
+                {words('compare.matched-by-similar-wording')}
+              </span>
             )}
             {change.edited === null ? (
-              <span>{nameOf(change.newer, now)}</span>
+              <span>
+                <Shown {...nameOf(change.newer, now)} />
+              </span>
             ) : 'whole' in change.edited ? (
               <>
                 <Removed text={was?.text ?? ''} /> <Added text={now?.text ?? ''} />
@@ -162,7 +221,9 @@ export function Redline({
               <span>
                 {change.edited.ops.map((op, index) =>
                   op.op === 'keep' ? (
-                    <span key={index}>{op.text}</span>
+                    <span key={index} data-content>
+                      {op.text}
+                    </span>
                   ) : op.op === 'insert' ? (
                     <Added key={index} text={op.text} />
                   ) : (
@@ -189,8 +250,9 @@ export function redlineHtml(title: string, root: HTMLElement): string {
   // without them the redline still reads by its underlining and striking through.
   const token = (name: string) =>
     getComputedStyle(root.ownerDocument.documentElement).getPropertyValue(name).trim() || 'inherit';
+  // In the interface's language, which its words around the tenant's are in.
   return `<!doctype html>
-<html lang="en-GB">
+<html lang="${formats().language.tag}">
 <head>
 <meta charset="utf-8">
 <title>${escape(title)}</title>
@@ -207,8 +269,7 @@ del { color: ${token('--danger')}; background: ${token('--danger-bg')}; text-dec
 <h1>${escape(title)}</h1>
 ${root.innerHTML}
 </body>
-</html>
-`;
+</html>`;
 }
 
 /** Saves `html` as a file without navigating the page (a download never does). */

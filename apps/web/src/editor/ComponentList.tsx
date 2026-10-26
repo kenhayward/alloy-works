@@ -241,7 +241,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
               checked={chosen.includes(space.id)}
               onChange={() => toggle(space.id)}
             />
-            <span className={styles['optionName']}>{space.name}</span>
+            <span className={styles['optionName']} data-content>
+              {space.name}
+            </span>
             <span className={styles['count']}>{space.count}</span>
           </label>
         ))}
@@ -354,11 +356,13 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                         {item.title}
                       </a>
                       {archived && <Chip>{words('editor.archived')}</Chip>}
-                      <span className={styles['where']}>
+                      <span className={styles['where']} data-content>
                         {`${item.space.name}, ${item.language}`}
                       </span>
                     </td>
-                    <td className={styles['muted']}>{item.type ?? ''}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.type ?? ''}
+                    </td>
                     <td className={styles['code']}>{item.version}</td>
                     <td>
                       {item.state && <StateLozenge state={item.state} />}

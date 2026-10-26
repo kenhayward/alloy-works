@@ -4,6 +4,7 @@ import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'reac
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -87,17 +88,17 @@ const Runs = ({ runs }: { runs: readonly Run[] }) => (
 /** The invented sample entries as a style sets them: in the text, then the bibliography. */
 function Sample({ sample }: { sample: NonNullable<Preview['sample']> }) {
   return (
-    <section aria-label="Preview" className={styles['notes']}>
-      <h2>In the text</h2>
-      <ul>
+    <section aria-label={words('admin.preview')} className={styles['notes']}>
+      <h2>{words('admin.in-the-text')}</h2>
+      <ul data-content>
         {sample.citations.map((runs, at) => (
           <li key={at}>
             <Runs runs={runs} />
           </li>
         ))}
       </ul>
-      <h2>Bibliography</h2>
-      <ul>
+      <h2>{words('admin.bibliography')}</h2>
+      <ul data-content>
         {sample.bibliography.map((each) => (
           <li key={each.entry}>
             {each.label && (
@@ -137,7 +138,7 @@ export function CitationStyles({ client }: { client: Client }) {
     const { data, error } = await client.POST('/v1/citation-styles/preview', {
       body: { csl: text },
     });
-    if (!data) setSaid(refusal(error, 'The style could not be previewed.'));
+    if (!data) setSaid(refusal(error, words('admin.the-style-could-not-be')));
     return (data as Preview | undefined) ?? null;
   };
 
@@ -160,7 +161,7 @@ export function CitationStyles({ client }: { client: Client }) {
     try {
       parsed = JSON.parse(requires);
     } catch {
-      setSaid('What each type requires is not JSON.');
+      setSaid(words('admin.what-each-type-requires-is'));
       return;
     }
     setBusy(true);
@@ -176,11 +177,11 @@ export function CitationStyles({ client }: { client: Client }) {
         },
       });
       if (data) {
-        setSaid(`${data.style.name} is added, at ${data.version.number}.`);
+        setSaid(words('admin.is-added-at', { name: data.style.name, number: data.version.number }));
         setCsl(null);
         setShown(null);
         setGeneration((was) => was + 1);
-      } else setSaid(refusal(error, 'The style could not be added.'));
+      } else setSaid(refusal(error, words('admin.the-style-could-not-be-2')));
     } finally {
       setBusy(false);
     }
@@ -193,7 +194,7 @@ export function CitationStyles({ client }: { client: Client }) {
       params: { path: { id: style.id } },
     });
     if (!data) {
-      setSaid(refusal(error, 'The style could not be read.'));
+      setSaid(refusal(error, words('admin.the-style-could-not-be-3')));
       return;
     }
     setShown(await previewOf(data.style.csl));
@@ -202,31 +203,26 @@ export function CitationStyles({ client }: { client: Client }) {
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          The citation styles a theme may name, each a CSL file. CSE, Vancouver and Harvard are
-          given; add any published CSL style by uploading its file, which is previewed with invented
-          sources first. A style says what an entry of each type must hold, and an entry lacking it
-          fails the publish.
-        </p>
+        <p>{words('admin.the-citation-styles-a-theme')}</p>
       </div>
       <form
         className={styles['toolbar']}
         onSubmit={(event) => void add(event)}
-        aria-label="Add a citation style"
+        aria-label={words('admin.add-a-citation-style')}
         noValidate
       >
         <label className={styles['filter']}>
-          CSL file
+          {words('admin.csl-file')}
           <input type="file" accept=".csl,.xml" onChange={(change) => void chosen(change)} />
         </label>
         {csl !== null && (
           <>
             <label className={styles['filter']}>
-              Name
+              {words('admin.name')}
               <input value={name} onChange={(change) => setName(change.target.value)} />
             </label>
             <label className={styles['filter']}>
-              What each type requires
+              {words('admin.what-each-type-requires')}
               <textarea
                 rows={6}
                 value={requires}
@@ -234,45 +230,47 @@ export function CitationStyles({ client }: { client: Client }) {
               />
             </label>
             <button type="submit" className="primary" disabled={busy || name.trim() === ''}>
-              Add style
+              {words('admin.add-style')}
             </button>
           </>
         )}
       </form>
       {shown !== null && shown.problems.length > 0 && (
-        <ul aria-label="Why the style would be refused">
+        <ul aria-label={words('admin.why-the-style-would-be')}>
           {shown.problems.map((problem) => (
             <li key={problem.message}>{problem.message}</li>
           ))}
         </ul>
       )}
       {shown?.sample && <Sample sample={shown.sample} />}
-      <Shown read={read} failed="The citation styles could not be loaded.">
+      <Shown read={read} failed={words('admin.the-citation-styles-could-not-be')}>
         {(rows) => (
-          <table aria-label="Citation styles" className={styles['table']}>
+          <table aria-label={words('admin.citation-styles')} className={styles['table']}>
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Version</th>
-                <th scope="col">Given</th>
+                <th scope="col">{words('admin.name')}</th>
+                <th scope="col">{words('admin.version-2')}</th>
+                <th scope="col">{words('admin.given')}</th>
                 <th scope="col">
-                  <span className={styles['hidden']}>Actions</span>
+                  <span className={styles['hidden']}>{words('admin.actions')}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {rows.map((style) => (
                 <tr key={style.id}>
-                  <td className={styles['strong']}>{style.name}</td>
+                  <td className={styles['strong']} data-content>
+                    {style.name}
+                  </td>
                   <td>{style.version.number}</td>
-                  <td>{style.seeded ? 'Yes' : 'No'}</td>
+                  <td>{style.seeded ? words('admin.yes') : words('admin.no')}</td>
                   <td>
                     <button
                       type="button"
-                      aria-label={`Preview ${style.name}`}
+                      aria-label={words('admin.preview-2', { name: style.name })}
                       onClick={() => void previewHeld(style)}
                     >
-                      Preview
+                      {words('admin.preview')}
                     </button>
                   </td>
                 </tr>

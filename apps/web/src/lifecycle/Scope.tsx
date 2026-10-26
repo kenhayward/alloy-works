@@ -6,6 +6,7 @@ import { declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
 import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -47,7 +48,8 @@ export function scopeIn(data: unknown): ScopeNow | undefined {
   };
 }
 
-const said = (axis: string, value: string) => `${axis} ${value}`;
+/** A scope by its axis and value keys, as a chip says it. */
+const said = (axis: string, value: string) => words('lifecycle.axis-value', { axis, value });
 
 /**
  * What a header says of its scope (LIF-042, LIF-047; R15-B, R15-E): the values a revision approved
@@ -84,21 +86,36 @@ export function ScopeChips({
     setBusy(false);
     // Accepted there, it no longer waits.
     if (data) onAccepted({ ...scope, pending: scope.pending.filter((other) => other !== each) });
-    else setRefused(refusal(error, 'It could not be accepted.'));
+    else setRefused(refusal(error, words('lifecycle.it-could-not-be-accepted')));
   };
   return (
     <>
       {scope.scope.length > 0 && (
-        <Chip>{`Effective for ${scope.scope.map((each) => said(each.axis, each.value)).join(', ')}`}</Chip>
+        <Chip>
+          {words('lifecycle.effective-for', {
+            scopes: formats().list(
+              scope.scope.map((each) => said(each.axis, each.value)),
+              { type: 'unit' },
+            ),
+          })}
+        </Chip>
       )}
       {scope.pending.map((each) => (
         <span key={`${each.axis}:${each.value}`}>
           <Chip tone="info">
-            {`Revision ${each.revision} waits on ${each.party.name ?? 'its party'} for ${said(each.axis, each.value)}; the revision before stays effective there`}
+            {words('lifecycle.revision-waits-on-for-the', {
+              revision: each.revision,
+              named: each.party.name === null ? 'no' : 'yes',
+              party: each.party.name ?? '',
+              scope: said(each.axis, each.value),
+            })}
           </Chip>
           {each.mayAccept && (
             <button type="button" disabled={busy} onClick={() => void accept(each)}>
-              {`Accept revision ${each.revision} for ${said(each.axis, each.value)}`}
+              {words('lifecycle.accept-revision-for', {
+                revision: each.revision,
+                scope: said(each.axis, each.value),
+              })}
             </button>
           )}
         </span>
@@ -140,7 +157,7 @@ export function ScopeButton({
   return (
     <>
       <button type="button" className={className} onClick={() => setOpen(true)}>
-        Effective for
+        {words('lifecycle.effective-for-2')}
       </button>
       {open && (
         <ScopeDialog
@@ -266,28 +283,29 @@ function ScopeDialog({
     ).catch(() => ({ data: undefined, error: undefined }));
     setBusy(false);
     if (data) onSaved(data);
-    else setSaid(refusal(error, 'The scope could not be saved.'));
+    else setSaid(refusal(error, words('lifecycle.the-scope-could-not-be')));
   };
 
   return (
     <Modal labelledBy={headingId} size="narrow" onClose={onClose}>
-      <h2 id={headingId} className={styles['heading']}>{`Effective for: ${title}`}</h2>
+      <h2 id={headingId} className={styles['heading']}>
+        {words('lifecycle.effective-for-3', { title })}
+      </h2>
       {mayEdit && (
         <form className={styles['form']} onSubmit={(event) => void save(event)}>
-          <p className={styles['muted']}>
-            A revision approved from now is effective for the values ticked, and the revision before
-            stays effective everywhere else. Tick none for everywhere.
-          </p>
-          {axes === null && <p role="status">Reading the condition axes.</p>}
-          {axes === 'unread' && <p role="alert">The condition axes could not be read.</p>}
+          <p className={styles['muted']}>{words('lifecycle.a-revision-approved-from-now')}</p>
+          {axes === null && <p role="status">{words('lifecycle.reading-the-condition-axes')}</p>}
+          {axes === 'unread' && (
+            <p role="alert">{words('lifecycle.the-condition-axes-could-not')}</p>
+          )}
           {axes !== null && axes !== 'unread' && axes.length === 0 && (
-            <p>No condition axes are declared yet.</p>
+            <p>{words('lifecycle.no-condition-axes-are-declared')}</p>
           )}
           {axes !== null &&
             axes !== 'unread' &&
             axes.map((axis) => (
               <fieldset key={axis.key}>
-                <legend>{axis.name}</legend>
+                <legend data-content>{axis.name}</legend>
                 {axis.values.map((value) => {
                   const key = `${axis.key}:${value.key}`;
                   return (
@@ -298,19 +316,24 @@ function ScopeDialog({
                           checked={chosen.has(key)}
                           onChange={() => toggle(key)}
                         />
-                        {value.label}
+                        <span data-content>{value.label}</span>
                       </label>
                       {chosen.has(key) && (
                         <label>
-                          {`Accepted in ${value.label} by`}
+                          {words('lifecycle.accepted-in-by', { label: value.label })}
                           <select
                             value={chosen.get(key)}
                             onChange={(event) => accepter(key, event.target.value)}
                           >
-                            <option value="">Nobody, effective as approved</option>
+                            <option value="">
+                              {words('lifecycle.nobody-effective-as-approved')}
+                            </option>
                             {groups.map(([group, name]) => (
                               <option key={group} value={`group:${group}`}>
-                                {`Group: ${name ?? 'unnamed'}`}
+                                {words('lifecycle.group', {
+                                  named: name === null ? 'no' : 'yes',
+                                  name: name ?? '',
+                                })}
                               </option>
                             ))}
                             {people.map((each) => (
@@ -329,10 +352,10 @@ function ScopeDialog({
           {said !== '' && <p role="alert">{said}</p>}
           <div className={styles['buttons']}>
             <button type="button" onClick={onClose}>
-              Cancel
+              {words('lifecycle.cancel')}
             </button>
             <button type="submit" className="primary" disabled={busy}>
-              Save
+              {words('lifecycle.save')}
             </button>
           </div>
         </form>
@@ -341,7 +364,7 @@ function ScopeDialog({
       {!mayEdit && (
         <div className={styles['buttons']}>
           <button type="button" onClick={onClose}>
-            Close
+            {words('lifecycle.close')}
           </button>
         </div>
       )}
@@ -402,7 +425,10 @@ function EffectiveAsk({
     const [axisKey, valueKey] = scope.split(':');
     const axis = axes.find((each) => each.key === axisKey);
     const value = axis?.values.find((each) => each.key === valueKey);
-    return `${axis?.name ?? axisKey}: ${value?.label ?? valueKey}`;
+    return words('lifecycle.axis-named', {
+      axis: axis?.name ?? axisKey ?? '',
+      value: value?.label ?? valueKey ?? '',
+    });
   };
 
   const ask = async (event: React.FormEvent) => {
@@ -420,20 +446,23 @@ function EffectiveAsk({
     ).catch(() => ({ data: undefined }));
     setBusy(false);
     if (!data) {
-      setAnswer('What was effective could not be read.');
+      setAnswer(words('lifecycle.what-was-effective-could-not'));
       return;
     }
     if (data.revision === null) {
-      setAnswer('Nothing was approved by then.');
+      setAnswer(words('lifecycle.nothing-was-approved-by-then'));
       return;
     }
-    const revision = `Revision ${data.revision.number}`;
+    const revision = data.revision.number;
     setAnswer(
       data.why === 'scoped'
-        ? `${revision}, effective for ${named(where)} then.`
+        ? words('lifecycle.effective-for-then', { revision, scope: named(where) })
         : where === ''
-          ? `${revision}, effective everywhere then.`
-          : `${revision}, effective everywhere then: none was effective for ${named(where)}.`,
+          ? words('lifecycle.effective-everywhere-then', { revision })
+          : words('lifecycle.effective-everywhere-then-none-was', {
+              revision,
+              scope: named(where),
+            }),
     );
   };
 
@@ -443,22 +472,22 @@ function EffectiveAsk({
       aria-labelledby={headingId}
       onSubmit={(event) => void ask(event)}
     >
-      <h3 id={headingId}>What was effective</h3>
+      <h3 id={headingId}>{words('lifecycle.what-was-effective')}</h3>
       <label>
-        Where
+        {words('lifecycle.where')}
         <select value={where} onChange={(event) => setWhere(event.target.value)}>
-          <option value="">Everywhere</option>
+          <option value="">{words('lifecycle.everywhere')}</option>
           {axes.flatMap((axis) =>
             axis.values.map((value) => (
               <option key={`${axis.key}:${value.key}`} value={`${axis.key}:${value.key}`}>
-                {`${axis.name}: ${value.label}`}
+                {words('lifecycle.axis-named', { axis: axis.name, value: value.label })}
               </option>
             )),
           )}
         </select>
       </label>
       <label>
-        When
+        {words('lifecycle.when')}
         <input
           type="datetime-local"
           value={when}
@@ -468,7 +497,7 @@ function EffectiveAsk({
       <p role="status">{answer}</p>
       <div className={styles['buttons']}>
         <button type="submit" disabled={busy}>
-          Ask
+          {words('lifecycle.ask')}
         </button>
       </div>
     </form>

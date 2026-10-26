@@ -20,6 +20,7 @@ import { MatchCase } from './MatchCase.js';
 import { partOfKind } from './HttpFields.js';
 import { NEW_PART, type PartDraft } from './httpDraft.js';
 import pageStyles from './QueryDefinitionPage.module.css';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 /** A segment as the path shows it: its text, or its parameter's name in braces. */
 const segmentText = (part: PartDraft) => (part.kind === 'parameter' ? `{${part.text}}` : part.text);
@@ -49,7 +50,9 @@ export function Section({
     <section {...(region ? { 'aria-labelledby': id } : {})} className={styles['section']}>
       <div className={styles['head']}>
         <h3 id={id}>{heading}</h3>
-        {count !== undefined && <Chip>{count}</Chip>}
+        {count !== undefined && (
+          <Chip>{typeof count === 'number' ? formats().number(count) : count}</Chip>
+        )}
         {aside}
         <span className={styles['spacer']} />
         {acts}
@@ -130,17 +133,21 @@ export function FileFields({
   return (
     <>
       <Section
-        heading="Where the file is in the bucket"
-        hint="Each segment is one folder of the path, in order, then the file name: the parts of what S3 calls its key."
+        heading={say('data.where-the-file-is-in-the-bucket')}
+        hint={say('data.each-segment-is-one-folder')}
         acts={
           <>
             {file.key.length > 0 && (
               <span className={styles['reads']}>
-                Reads <code>{file.key.map(segmentText).join('/')}</code>
+                {wordsWith(
+                  'data.reads-key',
+                  {},
+                  { key: <code data-content>{file.key.map(segmentText).join('/')}</code> },
+                )}
               </span>
             )}
             <Act
-              words="Add segment"
+              words={say('data.add-segment')}
               onClick={() => onChange({ ...file, key: [...file.key, NEW_PART] })}
             />
           </>
@@ -148,16 +155,19 @@ export function FileFields({
       >
         {file.key.length > 0 && (
           <RowTable
-            label="Segments of the key"
-            columns={[{ head: 'Fixed or a parameter', width: 200 }, { head: 'Segment' }]}
+            label={say('data.segments-of-the-key')}
+            columns={[
+              { head: say('data.fixed-or-a-parameter'), width: 200 },
+              { head: say('data.segment') },
+            ]}
             rows={file.key.map((part, at) => {
-              const label = `Segment ${at + 1}`;
+              const label = say('data.segment-2', { n: at + 1 });
               return {
                 key: at,
                 cells: [
                   <select
                     key="kind"
-                    aria-label={`${label}: fixed or a parameter`}
+                    aria-label={say('data.fixed-or-a-parameter-2', { label })}
                     value={part.kind}
                     onChange={(event) =>
                       setSegment(
@@ -166,8 +176,8 @@ export function FileFields({
                       )
                     }
                   >
-                    <option value="fixed">Fixed</option>
-                    <option value="parameter">Parameter</option>
+                    <option value="fixed">{say('data.fixed')}</option>
+                    <option value="parameter">{say('data.parameter')}</option>
                   </select>,
                   part.kind === 'fixed' ? (
                     <input
@@ -181,11 +191,13 @@ export function FileFields({
                   ) : (
                     <select
                       key="parameter"
-                      aria-label={`${label} parameter`}
+                      aria-label={say('data.parameter-2', { label })}
                       value={part.text}
                       onChange={(event) => setSegment(at, { ...part, text: event.target.value })}
                     >
-                      {part.text === '' && <option value="">Choose a parameter</option>}
+                      {part.text === '' && (
+                        <option value="">{say('data.choose-a-parameter')}</option>
+                      )}
                       {parameters.map((parameter) => (
                         <option key={parameter.name} value={parameter.name}>
                           {parameter.name}
@@ -194,7 +206,7 @@ export function FileFields({
                     </select>
                   ),
                 ],
-                remove: `Remove segment ${at + 1}`,
+                remove: say('data.remove-segment', { n: at + 1 }),
                 onRemove: () =>
                   onChange({ ...file, key: file.key.filter((_, place) => place !== at) }),
               };
@@ -203,43 +215,41 @@ export function FileFields({
         )}
       </Section>
 
-      <Section heading="Format">
-        <FormatFields draft={file} noun="file" onChange={onChange} />
+      <Section heading={say('data.format')}>
+        <FormatFields draft={file} holder="file" onChange={onChange} />
       </Section>
 
       <Section
-        heading="Filters"
-        hint="A filter compares each row's value as its column's type: a time by its value, text by code point. A value is placed in the key whole, and a segment refuses a slash, . and ..; the key is read in the connection's bucket alone."
+        heading={say('data.filters')}
+        hint={say('data.a-filter-compares-each-rows')}
         acts={
           <>
             {file.filters.length > 1 && (
               <Segmented
-                label="Match"
+                label={say('data.match')}
                 value={file.match}
                 onChange={(match) => onChange({ ...file, match: match as FileDraft['match'] })}
                 options={[
-                  { value: 'all', label: 'Match all', name: 'Match all' },
-                  { value: 'any', label: 'Match any', name: 'Match any' },
+                  { value: 'all', label: say('data.match-all'), name: say('data.match-all') },
+                  { value: 'any', label: say('data.match-any'), name: say('data.match-any') },
                 ]}
               />
             )}
-            {offered.length > 0 && <Act words="Add a filter" onClick={addFilter} />}
+            {offered.length > 0 && <Act words={say('data.add-a-filter')} onClick={addFilter} />}
           </>
         }
       >
         {offered.length === 0 && (
-          <p className={pageStyles['hint']}>
-            Sample the file and confirm its columns to filter its rows.
-          </p>
+          <p className={pageStyles['hint']}>{say('data.sample-the-file-and-confirm')}</p>
         )}
         {file.filters.length > 0 && (
           <RowTable
-            label="Filters"
+            label={say('data.filters')}
             columns={[
-              { head: 'Column', width: 240 },
-              { head: 'Compared with', width: 220 },
-              { head: 'Comparison', width: 200 },
-              { head: 'Value' },
+              { head: say('data.column'), width: 240 },
+              { head: say('data.compared-with'), width: 220 },
+              { head: say('data.comparison'), width: 200 },
+              { head: say('data.value') },
             ]}
             rows={file.filters.map((filter, at) => {
               const n = at + 1;
@@ -249,7 +259,7 @@ export function FileFields({
                 cells: [
                   <select
                     key="column"
-                    aria-label={`Column of filter ${n}`}
+                    aria-label={say('data.column-of-filter', { n })}
                     value={filter.column}
                     onChange={(event) => setFilter(at, { ...filter, column: event.target.value })}
                   >
@@ -261,7 +271,7 @@ export function FileFields({
                   </select>,
                   <select
                     key="to"
-                    aria-label={`Filter ${n} compared with`}
+                    aria-label={say('data.filter-compared-with', { n })}
                     value={'parameter' in filter.to ? `parameter:${filter.to.parameter}` : 'value'}
                     onChange={(event) => {
                       const chosen = event.target.value;
@@ -278,11 +288,11 @@ export function FileFields({
                         {parameter.name}
                       </option>
                     ))}
-                    <option value="value">A fixed value</option>
+                    <option value="value">{say('data.a-fixed-value')}</option>
                   </select>,
                   <select
                     key="is"
-                    aria-label={`Comparison of filter ${n}`}
+                    aria-label={say('data.comparison-of-filter', { n })}
                     value={filter.is}
                     onChange={(event) =>
                       setFilter(at, withComparison(filter, event.target.value as FilterDraft['is']))
@@ -298,7 +308,7 @@ export function FileFields({
                     <span key="value" className={styles['value']}>
                       {'value' in filter.to ? (
                         <input
-                          aria-label={`Value of filter ${n}`}
+                          aria-label={say('data.value-of-filter', { n })}
                           value={filter.to.value}
                           onChange={(event) =>
                             setFilter(at, {
@@ -312,18 +322,18 @@ export function FileFields({
                         />
                       ) : (
                         <span className={pageStyles['hint']}>
-                          {`The value of ${filter.to.parameter}`}
+                          {say('data.the-value-of', { parameter: filter.to.parameter })}
                         </span>
                       )}
                       <MatchCase
                         filter={filter}
-                        name={`Match case of filter ${n}`}
+                        name={say('data.match-case-of-filter', { n })}
                         onChange={(changed) => setFilter(at, changed)}
                       />
                     </span>
                   ),
                 ],
-                remove: `Remove filter ${n}`,
+                remove: say('data.remove-filter', { n }),
                 onRemove: () =>
                   onChange({ ...file, filters: file.filters.filter((_, place) => place !== at) }),
               };

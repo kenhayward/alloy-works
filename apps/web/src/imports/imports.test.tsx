@@ -442,7 +442,7 @@ describe("an import's structure in review (IMc)", () => {
         carries: ['comments'],
         match: 'name',
         member: GENERAL,
-        memberName: 'Grace Hopper',
+        memberName: 'Grace Moss',
         confirmed: false,
       },
       {
@@ -503,7 +503,7 @@ describe("an import's structure in review (IMc)", () => {
     );
     expect(names).toHaveTextContent('Edsger, comments: kept as text');
     expect(screen.getByText(/never made by them/)).toBeInTheDocument();
-    await user.click(within(names).getByRole('button', { name: 'Confirm Grace is Grace Hopper' }));
+    await user.click(within(names).getByRole('button', { name: 'Confirm Grace is Grace Moss' }));
     await waitFor(() =>
       expect(asked.filter((each) => each.path.endsWith('/edits')).map((each) => each.body)).toEqual(
         [{ revision: 0, edit: { edit: 'identity', identity: 'Grace', member: GENERAL } }],
@@ -560,7 +560,7 @@ describe('importing a file again (IMd)', () => {
     match: 'name',
     fileName: 'Pond survey.docx',
     importer: GENERAL,
-    importerName: 'Grace Hopper',
+    importerName: 'Grace Moss',
     at: '2026-10-20T09:00:00.000Z',
     document: DOCUMENT,
     documentTitle: 'Pond survey',
@@ -615,7 +615,7 @@ describe('importing a file again (IMd)', () => {
     render(<ImportPage client={client} id={IMPORT} />);
     const banner = await screen.findByRole('region', { name: 'Imported before' });
     expect(banner).toHaveTextContent(
-      'A file named Pond survey.docx was imported into this space before, by Grace Hopper',
+      'A file named Pond survey.docx was imported into this space before, by Grace Moss',
     );
     expect(within(banner).getByRole('link', { name: 'Pond survey' })).toHaveAttribute(
       'href',

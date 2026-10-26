@@ -12,23 +12,46 @@ import { useEffect, useRef, useState } from 'react';
 import { baselineLink, documentLink } from '../structure/links.js';
 import styles from './BaselineComparisonPage.module.css';
 import { Redline, redlineHtml, saveHtml } from './Redline.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
+/** A bound value as printed: the data's own, or nothing. */
+const Value = ({ value }: { value: string | null }) =>
+  value === null ? <>{words('compare.nothing')}</> : <span data-content>{value}</span>;
+
 /** What made a difference, in words (VER-031, VER-045). */
 const DOCUMENT_CAUSES = {
-  layout: 'the layout changed',
-  theme: 'the theme changed',
-  template: 'the template changed',
-  definition: 'the definitions it is checked against changed',
-  parameters: 'its parameters changed',
+  get layout() {
+    return words('compare.the-layout-changed');
+  },
+  get theme() {
+    return words('compare.the-theme-changed');
+  },
+  get template() {
+    return words('compare.the-template-changed');
+  },
+  get definition() {
+    return words('compare.the-definitions-it-is-checked');
+  },
+  get parameters() {
+    return words('compare.its-parameters-changed');
+  },
 } as const;
 const NODE_CAUSES = {
-  edited: 'Edited',
-  data: 'Its data changed',
-  definition: 'A definition it was written against changed',
+  get edited() {
+    return words('compare.edited');
+  },
+  get data() {
+    return words('compare.its-data-changed');
+  },
+  get definition() {
+    return words('compare.a-definition-it-was-written');
+  },
   // REU-014: the document's own difference, never a fork of the component.
-  overridden: 'Overridden in this document',
+  get overridden() {
+    return words('compare.overridden-in-this-document');
+  },
 } as const;
 
 interface Printed {
@@ -56,6 +79,8 @@ interface Shown {
   readonly components: readonly {
     readonly node: string;
     readonly title: string;
+    /** Whether the title is the component's own, not the interface's word for one. */
+    readonly titled: boolean;
     readonly heading: string;
     readonly changes: readonly UnitChange[];
     readonly older: ContentDocument;
@@ -70,7 +95,9 @@ type Side = {
 };
 
 const sideName = (side: Side) =>
-  side.baseline === null ? `the document now (${side.version.number})` : side.baseline.name;
+  side.baseline === null
+    ? words('compare.the-document-now', { number: side.version.number })
+    : side.baseline.name;
 
 /**
  * Two baselines of a document compared, or one with the document now (VER-024, VER-025, VER-030):
@@ -127,14 +154,18 @@ export function BaselineComparisonPage({
         };
         const titles = new Map(data.titles.map((each) => [each.node, each.title]));
         setShown({
-          title: `${sideName(data.older)} compared with ${sideName(data.newer)}`,
+          title: words('compare.compared-with', {
+            older: sideName(data.older),
+            newer: sideName(data.newer),
+          }),
           structure: data.structure as readonly UnitChange[],
           outlines: { older: outline(data.older), newer: outline(data.newer) },
           titles,
           components: data.components.map((each) => ({
             node: each.node,
-            title: titles.get(each.node) ?? 'A component',
-            heading: `${each.from.number} to ${each.to.number}`,
+            title: titles.get(each.node) ?? words('compare.a-component'),
+            titled: titles.has(each.node),
+            heading: words('compare.to', { from: each.from.number, to: each.to.number }),
             changes: each.changes as readonly UnitChange[],
             older: each.older as unknown as ContentDocument,
             newer: each.newer as unknown as ContentDocument,
@@ -147,17 +178,18 @@ export function BaselineComparisonPage({
     };
   }, [client, document, baseline, against]);
 
-  if (shown === null) return <p className={styles['note']}>Comparing...</p>;
-  if (shown === 'missing') return <p className={styles['note']}>There is no such comparison.</p>;
+  if (shown === null) return <p className={styles['note']}>{words('compare.comparing')}</p>;
+  if (shown === 'missing')
+    return <p className={styles['note']}>{words('compare.there-is-no-such-comparison')}</p>;
   if (shown === 'failed')
-    return <p className={styles['note']}>The comparison could not be read.</p>;
+    return <p className={styles['note']}>{words('compare.the-comparison-could-not-be')}</p>;
   return (
     <article className={styles['page']} aria-labelledby="comparison-heading">
       <header className={styles['head']}>
         <p>
-          <a href={baselineLink(document, baseline)}>Back to the baseline</a>
+          <a href={baselineLink(document, baseline)}>{words('compare.back-to-the-baseline')}</a>
           {' · '}
-          <a href={documentLink(document)}>Open the document</a>
+          <a href={documentLink(document)}>{words('compare.open-the-document')}</a>
         </p>
         <h1 id="comparison-heading" className={styles['title']}>
           {shown.title}
@@ -169,78 +201,110 @@ export function BaselineComparisonPage({
             saveHtml(`${shown.title}.html`, redlineHtml(shown.title, drawn.current))
           }
         >
-          Export
+          {words('compare.export')}
         </button>
       </header>
       <div ref={drawn} className={styles['body']}>
         <section aria-labelledby="comparison-structure">
           <h2 id="comparison-structure" className={styles['section']}>
-            Structure
+            {words('compare.structure')}
           </h2>
           <Redline
             changes={shown.structure}
             texts={{ ...shown.outlines, names: shown.titles }}
-            label="Changes to the structure"
+            label={words('compare.changes-to-the-structure')}
           />
         </section>
         <section aria-labelledby="comparison-content">
           <h2 id="comparison-content" className={styles['section']}>
-            Content
+            {words('compare.content')}
           </h2>
           {shown.components.length === 0 && (
-            <p className={styles['note']}>No component you may read changed.</p>
+            <p className={styles['note']}>{words('compare.no-component-you-may-read')}</p>
           )}
           {shown.components.map((each) => (
             <section key={each.node} aria-label={each.title} className={styles['component']}>
               <h3 className={styles['component-title']}>
-                {each.title} <span className={styles['note']}>{each.heading}</span>
+                {each.titled ? <span data-content>{each.title}</span> : each.title}{' '}
+                <span className={styles['note']}>{each.heading}</span>
               </h3>
               <Redline
                 changes={each.changes}
                 texts={{ older: unitTexts(each.older), newer: unitTexts(each.newer) }}
-                label={`Changes to ${each.title}`}
+                label={words('compare.changes-to', { title: each.title })}
               />
             </section>
           ))}
         </section>
         <section aria-labelledby="comparison-printed">
           <h2 id="comparison-printed" className={styles['section']}>
-            Published output
+            {words('compare.published-output')}
           </h2>
-          {printed === null && <p className={styles['note']}>Comparing what each would print...</p>}
+          {printed === null && (
+            <p className={styles['note']}>{words('compare.comparing-what-each-would-print')}</p>
+          )}
           {printed === 'failed' && (
-            <p className={styles['note']}>What each would print could not be compared.</p>
+            <p className={styles['note']}>{words('compare.what-each-would-print-could')}</p>
           )}
           {printed !== null && printed !== 'failed' && (
             <>
               <p className={styles['note']}>
                 {printed.document.length === 0
-                  ? 'The layout, theme, template and definitions are the same on both sides.'
-                  : `For the whole document, ${printed.document.map((cause) => DOCUMENT_CAUSES[cause]).join(', and ')}.`}
+                  ? words('compare.the-layout-theme-template-and')
+                  : words('compare.for-the-whole-document', {
+                      causes: formats().list(
+                        printed.document.map((cause) => DOCUMENT_CAUSES[cause]),
+                      ),
+                    })}
               </p>
               {printed.nodes.length === 0 && (
-                <p className={styles['note']}>Every component you may read prints the same.</p>
+                <p className={styles['note']}>{words('compare.every-component-you-may-read')}</p>
               )}
-              <ul className={styles['printed']} aria-label="What prints differently">
+              <ul
+                className={styles['printed']}
+                aria-label={words('compare.what-prints-differently')}
+              >
                 {printed.nodes.map((each) => (
                   <li key={each.node}>
-                    <strong>{each.title || 'A component'}</strong>
-                    {': '}
-                    {each.causes.map((cause) => NODE_CAUSES[cause]).join('; ')}
+                    {wordsWith(
+                      'compare.prints-differently-because',
+                      {
+                        causes: formats().list(
+                          each.causes.map((cause) => NODE_CAUSES[cause]),
+                          { type: 'unit', style: 'short' },
+                        ),
+                      },
+                      {
+                        title: each.title ? (
+                          <strong data-content>{each.title}</strong>
+                        ) : (
+                          <strong>{words('compare.a-component')}</strong>
+                        ),
+                      },
+                    )}
                     {each.values.length > 0 && (
                       <ul>
                         {each.values.map((value) => (
                           <li key={value.binding}>
-                            {`${value.binding}: `}
-                            <del>
-                              <span className={styles['hidden']}>Was: </span>
-                              {value.older ?? 'nothing'}
-                            </del>
-                            {' to '}
-                            <ins>
-                              <span className={styles['hidden']}>Now: </span>
-                              {value.newer ?? 'nothing'}
-                            </ins>
+                            {wordsWith(
+                              'compare.value-was-now',
+                              {},
+                              {
+                                binding: <span data-content>{value.binding}</span>,
+                                older: (
+                                  <del>
+                                    <span className={styles['hidden']}>{words('compare.was')}</span>
+                                    <Value value={value.older} />
+                                  </del>
+                                ),
+                                newer: (
+                                  <ins>
+                                    <span className={styles['hidden']}>{words('compare.now')}</span>
+                                    <Value value={value.newer} />
+                                  </ins>
+                                ),
+                              },
+                            )}
                           </li>
                         ))}
                       </ul>

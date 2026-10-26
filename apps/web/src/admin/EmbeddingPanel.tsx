@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -42,15 +43,23 @@ interface Freshness {
 /** Meaning's lag over the last seven days, in whole seconds rounded up (the FR plan, FR-E). */
 const lag = ({ versions, p95Seconds, maxSeconds }: Freshness) =>
   versions === 0 || p95Seconds === null || maxSeconds === null
-    ? 'How long new versions take to be findable by meaning has not been measured in the last 7 days.'
-    : `Findable by meaning within ${Math.ceil(p95Seconds)} s at p95, at most ${Math.ceil(maxSeconds)} s, over ${versions} ${versions === 1 ? 'version' : 'versions'} in the last 7 days.`;
+    ? words('admin.how-long-new-versions-take')
+    : words('admin.findable-by-meaning-within-s', {
+        p95: Math.ceil(p95Seconds),
+        max: Math.ceil(maxSeconds),
+        versions,
+      });
 
+/** Where a model is reached, as the values of a sentence that says so. */
 const where = (endpoint: Endpoint | null) =>
   endpoint === null
-    ? 'an endpoint no longer there'
-    : `${endpoint.name}${endpoint.boundary === 'outside' ? ', outside your data boundary' : ''}${
-        endpoint.retired ? ', retired' : ''
-      }`;
+    ? { known: 'no' }
+    : {
+        known: 'yes',
+        endpoint: endpoint.name,
+        outside: endpoint.boundary === 'outside' ? 'yes' : 'no',
+        retired: endpoint.retired ? 'yes' : 'no',
+      };
 
 /**
  * Models' **Searching by meaning** (generation.md, "Meaning"; the G7 plan, G7-J; GEN-044): the model
@@ -97,34 +106,51 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
       });
       if (data) {
         setRead(data);
-        setSaid(`${model} is confirmed: the parts are being embedded.`);
-      } else setSaid(refusal(error, 'The model could not be confirmed.'));
+        setSaid(words('admin.is-confirmed-the-parts-are', { model }));
+      } else setSaid(refusal(error, words('admin.the-model-could-not-be')));
     } finally {
       setBusy(false);
     }
   };
 
   if (read === null) return null;
-  if (read === 'failed') return <p>Searching by meaning could not be read.</p>;
+  if (read === 'failed') return <p>{words('admin.searching-by-meaning-could-not')}</p>;
   const pending = read.pending;
   return (
-    <section aria-label="Searching by meaning">
-      <h2>Searching by meaning</h2>
+    <section aria-label={words('admin.searching-by-meaning')}>
+      <h2>{words('admin.searching-by-meaning')}</h2>
       <p>
         {read.serving
-          ? `Meaning is searched by ${read.serving.model}, on ${where(read.serving.endpoint)}.`
-          : 'Nothing is searched by meaning: search finds by words alone.'}
+          ? words('admin.meaning-is-searched-by-on', {
+              model: read.serving.model,
+              ...where(read.serving.endpoint),
+            })
+          : words('admin.nothing-is-searched-by-meaning')}
       </p>
       {freshness && <p>{lag(freshness)}</p>}
       {pending && !pending.confirmed && (
         <div className={styles['lead']}>
           <p>
-            {`Embedding is routed to ${pending.model}, on ${where(pending.endpoint)}. Embedding the ${pending.missing} of ${pending.texts} texts it lacks would take about ${pending.estimate.tokens.toLocaleString('en-GB')} tokens`}
-            {pending.estimate.cost === null
-              ? '.'
-              : `, about ${pending.estimate.currency} ${Number(pending.estimate.cost).toFixed(2)}.`}{' '}
-            Nothing is embedded until you confirm it
-            {read.serving ? `, and ${read.serving.model} goes on serving until it is done.` : '.'}
+            {words('admin.embedding-is-routed-to-on', {
+              model: pending.model,
+              ...where(pending.endpoint),
+              missing: pending.missing,
+              texts: pending.texts,
+              tokens: pending.estimate.tokens,
+              costed: pending.estimate.cost === null ? 'no' : 'yes',
+              currency: pending.estimate.currency,
+              cost:
+                pending.estimate.cost === null
+                  ? ''
+                  : formats().number(Number(pending.estimate.cost), {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }),
+            })}{' '}
+            {words('admin.nothing-is-embedded-until-you', {
+              served: read.serving ? 'yes' : 'no',
+              serving: read.serving?.model ?? '',
+            })}
           </p>
           <button
             type="button"
@@ -132,14 +158,20 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
             disabled={busy}
             onClick={() => void confirm(pending.model)}
           >
-            Confirm and embed
+            {words('admin.confirm-and-embed')}
           </button>
         </div>
       )}
       {pending?.confirmed && (
         <p>
-          {`${pending.model} is embedding the parts: ${pending.texts - pending.missing} of ${pending.texts} texts done.`}
-          {read.serving ? ` ${read.serving.model} serves until it is done.` : ''}
+          {words('admin.is-embedding-the-parts-of', {
+            model: pending.model,
+            done: pending.texts - pending.missing,
+            texts: pending.texts,
+          })}
+          {read.serving && (
+            <> {words('admin.serves-until-it-is-done', { model: read.serving.model })}</>
+          )}
         </p>
       )}
       <p role="status">{said}</p>

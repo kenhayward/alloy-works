@@ -1,6 +1,7 @@
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from './IconButton.js';
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 /** How many a page shows (ADR-0050, decision 8). */
 export const PAGE_SIZE = 10;
@@ -34,20 +35,20 @@ export function Pager({
   };
   return (
     <nav aria-label={label} className={styles['pager']}>
-      <span className={styles['pagerRange']}>{`${first} to ${last} of ${total}`}</span>
+      <span className={styles['pagerRange']}>{words('parts.to-of', { first, last, total })}</span>
       {pages > 1 && (
         <>
           <IconButton
-            label="Previous page"
+            label={words('parts.previous-page')}
             className={styles['pagerButton']}
             aria-disabled={page === 0}
             onClick={() => step(page - 1)}
           >
             <Icon name="Previous page" />
           </IconButton>
-          <span>{`Page ${page + 1} of ${pages}`}</span>
+          <span>{words('parts.page-of', { page: page + 1, pages })}</span>
           <IconButton
-            label="Next page"
+            label={words('parts.next-page')}
             className={styles['pagerButton']}
             aria-disabled={page === pages - 1}
             onClick={() => step(page + 1)}

@@ -1,18 +1,31 @@
 import type { ContextSource, Prompt } from '@alloy-works/domain';
+import { words } from '../words/words.js';
 
 /** The purposes a prompt may be routed by, as the page names them; embedding writes no text. */
 export const PURPOSES = {
-  drafting: 'Drafting',
-  chat: 'Chat',
-  summarising: 'Summarising',
+  get drafting() {
+    return words('prompts.drafting');
+  },
+  get chat() {
+    return words('prompts.chat');
+  },
+  get summarising() {
+    return words('prompts.summarising');
+  },
 } as const;
 export type PromptPurpose = keyof typeof PURPOSES;
 
 /** The parts of the outline a prompt may read, as the page names them. */
 export const SCOPES = {
-  part: 'The part it runs on',
-  section: 'The parts of its section',
-  document: 'Every part of the document',
+  get part() {
+    return words('prompts.the-part-it-runs-on');
+  },
+  get section() {
+    return words('prompts.the-parts-of-its-section');
+  },
+  get document() {
+    return words('prompts.every-part-of-the-document');
+  },
 } as const;
 
 /** One source as the page edits it: a list of parameters as the text typed. */

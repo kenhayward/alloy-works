@@ -1,6 +1,7 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 
 import styles from './parts.module.css';
+import { formats, words } from '../words/words.js';
 
 export interface PanelTab {
   readonly key: string;
@@ -84,7 +85,10 @@ export function PanelTabs({
           {...(tab.disabled ? { 'aria-disabled': true } : {})}
           {...(tab.tone ? { 'data-tone': tab.tone } : {})}
           {...(tab.name !== undefined || tab.count !== undefined
-            ? { 'aria-label': tab.name ?? `${tab.label}, ${tab.count}` }
+            ? {
+                'aria-label':
+                  tab.name ?? words('parts.tab-count', { label: tab.label, count: tab.count }),
+              }
             : {})}
           onClick={() => {
             if (!tab.disabled) onChoose(tab.key);
@@ -92,7 +96,9 @@ export function PanelTabs({
         >
           {tab.icon}
           {tab.label}
-          {tab.count !== undefined && <span className={styles['tabCount']}>{tab.count}</span>}
+          {tab.count !== undefined && (
+            <span className={styles['tabCount']}>{formats().number(tab.count)}</span>
+          )}
         </button>
       ))}
     </div>

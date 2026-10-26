@@ -8,6 +8,7 @@ import { PlaceIntoButton } from '../structure/PlaceSection.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
 import { searchSaid, type SearchSaid } from './said.js';
 import styles from './SearchPage.module.css';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -120,11 +121,11 @@ const LATEST: SearchScope = { versions: 'latest', baseline: null };
 /** Which version or baseline a result was found in, or that a thread is resolved; else null. */
 const foundIn = (item: Result): string | null =>
   item.thread?.resolved
-    ? 'Resolved'
+    ? words('search.resolved')
     : item.baseline
-      ? `In baseline ${item.baseline.name}`
+      ? words('search.in-baseline', { name: item.baseline.name })
       : item.version && !item.version.latest
-        ? `Version ${item.version.number}, earlier`
+        ? words('search.version-earlier', { number: item.version.number })
         : null;
 
 const NOTHING_CHOSEN: Chosen = {
@@ -140,37 +141,69 @@ const NOTHING_CHOSEN: Chosen = {
 };
 
 const KINDS: Record<string, string> = {
-  component: 'Component',
-  document: 'Document',
-  section: 'Section',
-  publication: 'Publication',
-  template: 'Template',
-  asset: 'Image',
-  field: 'Field',
-  metadataSchema: 'Metadata schema',
-  componentType: 'Component type',
-  queryDefinition: 'Query definition',
-  thread: 'Thread',
-  term: 'Term',
+  get component() {
+    return words('search.component');
+  },
+  get document() {
+    return words('search.document');
+  },
+  get section() {
+    return words('search.section');
+  },
+  get publication() {
+    return words('search.publication');
+  },
+  get template() {
+    return words('search.template');
+  },
+  get asset() {
+    return words('search.image');
+  },
+  get field() {
+    return words('search.field');
+  },
+  get metadataSchema() {
+    return words('search.metadata-schema');
+  },
+  get componentType() {
+    return words('search.component-type');
+  },
+  get queryDefinition() {
+    return words('search.query-definition');
+  },
+  get thread() {
+    return words('search.thread');
+  },
+  get term() {
+    return words('search.term');
+  },
 };
 
 const RANGES: Record<string, string> = {
-  today: 'Today',
-  week: 'This week',
-  month: 'This month',
-  year: 'This year',
-  earlier: 'Before this year',
+  get today() {
+    return words('search.today');
+  },
+  get week() {
+    return words('search.this-week');
+  },
+  get month() {
+    return words('search.this-month');
+  },
+  get year() {
+    return words('search.this-year');
+  },
+  get earlier() {
+    return words('search.before-this-year');
+  },
 };
-
-/** A count as a reader is told it: exact, or at least the cap where there are more (SCH-073). */
-const countOf = (facet: { readonly count: number; readonly capped: boolean }) =>
-  facet.capped
-    ? `at least ${facet.count.toLocaleString('en-GB')}`
-    : facet.count.toLocaleString('en-GB');
 
 /** A field's value as a reader reads it: a boolean as yes or no, anything else as its label. */
 const valueLabel = (dataType: string, facet: FacetValue) =>
-  dataType === 'boolean' ? (facet.value === 'true' ? 'Yes' : 'No') : facet.label;
+  dataType === 'boolean'
+    ? facet.value === 'true'
+      ? words('search.yes')
+      : words('search.no')
+    : facet.label;
 
 const toggled = (values: readonly string[], value: string) =>
   values.includes(value) ? values.filter((each) => each !== value) : [...values, value];
@@ -211,7 +244,12 @@ function FacetGroup({
             checked={chosen.includes(facet.value)}
             onChange={() => onToggle(facet.value)}
           />
-          {`${label(facet)} (${countOf(facet)})`}
+          {/* Its count exact, or at least the cap where there are more (SCH-073). */}
+          {words('search.facet-value', {
+            label: label(facet),
+            count: facet.count,
+            capped: facet.capped ? 'yes' : 'no',
+          })}
         </label>
       ))}
     </fieldset>
@@ -243,17 +281,29 @@ function SectionMembers({
   return (
     <div className={styles['members']}>
       <p className={styles['about']}>
-        In <a href={`#/documents/${section.document.id}`}>{section.document.title}</a>
+        {wordsWith(
+          'search.in-document',
+          {},
+          {
+            document: (
+              <a href={`#/documents/${section.document.id}`} data-content>
+                {section.document.title}
+              </a>
+            ),
+          },
+        )}
       </p>
       {section.components.length > 0 && (
         <>
           <p id={label} className={styles['about']}>
-            It places
+            {words('search.it-places')}
           </p>
           <ul aria-labelledby={label} className={styles['placed']}>
             {section.components.map((each) => (
               <li key={each.id}>
-                <a href={`#/components/${each.id}`}>{each.title}</a>
+                <a href={`#/components/${each.id}`} data-content>
+                  {each.title}
+                </a>
               </li>
             ))}
           </ul>
@@ -400,7 +450,7 @@ export function SearchPage({
 
   return (
     <section aria-labelledby={headingId}>
-      <h1 id={headingId}>Search</h1>
+      <h1 id={headingId}>{words('search.search')}</h1>
       <form
         role="search"
         className={styles['form']}
@@ -409,19 +459,19 @@ export function SearchPage({
           onSearch(typed);
         }}
       >
-        <label htmlFor={inputId}>Search</label>
+        <label htmlFor={inputId}>{words('search.search')}</label>
         <input
           id={inputId}
           type="search"
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
         />
-        <button type="submit">Search</button>
+        <button type="submit">{words('search.search')}</button>
       </form>
       <div className={styles['scope']}>
         {baseline === null ? (
           <label className={styles['option']}>
-            Versions
+            {words('search.versions')}
             <select
               value={versions}
               onChange={(event) =>
@@ -431,85 +481,85 @@ export function SearchPage({
                 })
               }
             >
-              <option value="latest">Latest</option>
-              <option value="all">All</option>
+              <option value="latest">{words('search.latest')}</option>
+              <option value="all">{words('search.all')}</option>
             </select>
           </label>
         ) : (
           <>
             <Chip tone="accent">
-              {baselineName === null ? 'In a baseline' : `In baseline ${baselineName}`}
+              {baselineName === null
+                ? words('search.in-a-baseline')
+                : words('search.in-baseline-2', { baselineName })}
             </Chip>
             <button type="button" onClick={() => onScope?.(LATEST)}>
-              Search without the baseline
+              {words('search.search-without-the-baseline')}
             </button>
           </>
         )}
       </div>
       {problem === 'signedOut' && (
         <Notice tone="signedOut">
-          <p>You are signed out. Sign in again to search.</p>
+          <p>{words('search.you-are-signed-out-sign')}</p>
         </Notice>
       )}
       {problem === 'noBaseline' && (
         <Notice tone="failed">
-          <p>There is no baseline you can read by that id.</p>
+          <p>{words('search.there-is-no-baseline-you')}</p>
         </Notice>
       )}
       {problem === 'failed' && (
         <Notice tone="failed">
-          <p>The search could not be made.</p>
+          <p>{words('search.the-search-could-not-be')}</p>
           <button type="button" onClick={() => setAttempt((now) => now + 1)}>
-            Try again
+            {words('search.try-again')}
           </button>
         </Notice>
       )}
       {answer !== null && problem === null && <p role="status">{searchSaid(answer)}</p>}
       {answer?.outcome === 'results' && answer.meaning === 'unavailable' && problem === null && (
-        <p className={styles['about']}>
-          Searching by meaning is unavailable just now: these are found by their words alone.
-        </p>
+        <p className={styles['about']}>{words('search.searching-by-meaning-is-unavailable')}</p>
       )}
       {results !== null && problem === null && (
         <div className={styles['layout']}>
           <div className={styles['facets']}>
             <FacetGroup
-              legend="Kind"
+              legend={words('search.kind')}
               values={results.facets.kinds}
               chosen={chosen.kinds}
               label={(facet) => KINDS[facet.value] ?? facet.label}
               onToggle={choose('kinds')}
             />
             <FacetGroup
-              legend="Space"
+              legend={words('search.space')}
               values={results.facets.spaces}
               chosen={chosen.spaces}
               label={(facet) => facet.label}
               onToggle={choose('spaces')}
             />
             <FacetGroup
-              legend="State"
+              legend={words('search.state')}
               values={results.facets.states ?? []}
               chosen={chosen.states}
               label={(facet) => facet.label}
               onToggle={choose('states')}
             />
             <FacetGroup
-              legend="Component type"
+              legend={words('search.component-type')}
               values={results.facets.componentTypes}
               chosen={chosen.componentTypes}
               label={(facet) => facet.label}
               onToggle={choose('componentTypes')}
             />
             <FacetGroup
-              legend="Made by"
+              legend={words('search.made-by')}
               values={results.facets.owners}
               chosen={chosen.owners}
               label={(facet) => facet.label}
               onToggle={choose('owners')}
             />
             <FacetGroup
-              legend="Changed"
+              legend={words('search.changed')}
               values={results.facets.changed.filter(
                 (facet) => facet.count > 0 || chosen.changed === facet.value,
               )}
@@ -537,7 +587,7 @@ export function SearchPage({
             {(results.facets.conditions ?? []).map((axis) => (
               <FacetGroup
                 key={`condition:${axis.axis}`}
-                legend={`Conditioned on ${axis.axis}`}
+                legend={words('search.conditioned-on', { axis: axis.axis })}
                 values={axis.values}
                 chosen={chosen.conditions.filter((value) => value.startsWith(`${axis.axis}:`))}
                 label={(facet) => facet.value.slice(axis.axis.length + 1)}
@@ -548,7 +598,10 @@ export function SearchPage({
             {(results.facets.relations ?? []).map((relation) => (
               <FacetGroup
                 key={`relation:${relation.type}:${relation.field}`}
-                legend={`${relation.typeName}: ${relation.name}`}
+                legend={words('search.relation-field', {
+                  type: relation.typeName,
+                  field: relation.name,
+                })}
                 values={relation.values.map((facet) => ({
                   ...facet,
                   value: `${relation.type}:${relation.field}:${facet.value}`,
@@ -571,21 +624,32 @@ export function SearchPage({
                 <li key={`${item.artifactId}:${item.node ?? ''}:${item.thread?.id ?? ''}`}>
                   <article className={styles['result']}>
                     <p className={styles['about']}>
-                      {KINDS[item.kind] ?? item.kind}
-                      {item.space === null ? '' : ` in ${item.space.name}`}
+                      {words('search.result-kind', {
+                        kind: item.kind,
+                        inSpace: item.space === null ? 'no' : 'yes',
+                        name: item.space?.name ?? '',
+                      })}
                     </p>
-                    <h2>{link === null ? item.title : <a href={link}>{item.title}</a>}</h2>
+                    <h2 data-content>
+                      {link === null ? item.title : <a href={link}>{item.title}</a>}
+                    </h2>
                     {item.state && <StateLozenge state={item.state} />}
                     {(item.lines?.length ?? 0) > 0 && (
-                      <Chip>{`Diverged: ${item.lines!.join(', ')}`}</Chip>
+                      <Chip>
+                        {words('search.diverged', {
+                          lines: formats().list(item.lines!, { type: 'unit', style: 'short' }),
+                        })}
+                      </Chip>
                     )}
                     {/* Found by meaning answers another question than by words (SCH-014). */}
-                    {item.found === 'meaning' && <Chip>Found by meaning</Chip>}
-                    {item.found === 'both' && <Chip>Found by words and meaning</Chip>}
+                    {item.found === 'meaning' && <Chip>{words('search.found-by-meaning')}</Chip>}
+                    {item.found === 'both' && (
+                      <Chip>{words('search.found-by-words-and-meaning')}</Chip>
+                    )}
                     {found !== null && <p className={styles['about']}>{found}</p>}
                     {where !== null && <p className={styles['about']}>{where}</p>}
                     {item.passage.length > 0 && (
-                      <p className={styles['passage']}>
+                      <p className={styles['passage']} data-content>
                         {item.passage.map((piece, index) =>
                           piece.matched ? <mark key={index}>{piece.text}</mark> : piece.text,
                         )}
@@ -603,7 +667,7 @@ export function SearchPage({
       )}
       {results !== null && problem === null && items.length < results.count && (
         <button type="button" disabled={showingMore} onClick={() => void showMore(items.length)}>
-          Show more results
+          {words('search.show-more-results')}
         </button>
       )}
     </section>

@@ -6,6 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { followInFrame } from '../publishing/Preview.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -19,26 +20,35 @@ interface ExportRow {
 }
 
 const STATES: Readonly<Record<ExportRow['state'], string>> = {
-  queued: 'Being written',
-  done: 'Ready',
-  failed: 'Failed',
-  expired: 'Expired',
+  get queued() {
+    return words('admin.being-written');
+  },
+  get done() {
+    return words('admin.ready');
+  },
+  get failed() {
+    return words('admin.failed');
+  },
+  get expired() {
+    return words('admin.expired');
+  },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const when = (at: string) =>
+  formats().date(new Date(at), {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /** A size in words: KB and MB of 1,024, to one place. */
 function sizeOf(bytes: number | null): string {
   if (bytes === null) return '';
-  if (bytes < 1024) return `${bytes} bytes`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return words('admin.bytes-2', { bytes });
+  if (bytes < 1024 * 1024) return words('admin.kb', { kb: bytes / 1024 });
+  return words('admin.mb', { mb: bytes / (1024 * 1024) });
 }
 
 /**
@@ -85,13 +95,11 @@ export function TenantExport({
     try {
       const { data } = await client.POST('/v1/exports');
       setSaid(
-        data
-          ? 'Export asked for. It is listed below while it is written.'
-          : 'The export could not be asked for.',
+        data ? words('admin.export-asked-for-it-is') : words('admin.the-export-could-not-be-3'),
       );
       setGeneration((was) => was + 1);
     } catch {
-      setSaid('The export could not be asked for.');
+      setSaid(words('admin.the-export-could-not-be-3'));
     } finally {
       setAsking(false);
     }
@@ -105,45 +113,40 @@ export function TenantExport({
       });
       // Only a link the service signed, to the store, over the web.
       if (data && /^https?:\/\//.test(data.download)) follow(data.download);
-      else setSaid('The export could not be downloaded.');
+      else setSaid(words('admin.the-export-could-not-be-4'));
     } catch {
-      setSaid('The export could not be downloaded.');
+      setSaid(words('admin.the-export-could-not-be-4'));
     }
   };
 
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          An export holds everything in this environment as it stands when it is asked for: every
-          component, document, template and definition with all their versions, relationships,
-          baselines and publications, and the images and PDFs they hold. Its manifest says what it
-          leaves out, such as people, credentials and the audit log. Each export is kept seven days.
-        </p>
+        <p>{words('admin.an-export-holds-everything-in')}</p>
         <button type="button" disabled={asking} onClick={() => void exportAll()}>
-          Export everything
+          {words('admin.export-everything')}
         </button>
       </div>
-      <Shown read={read} failed="The exports could not be loaded.">
+      <Shown read={read} failed={words('admin.the-exports-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
-            <p className={styles['muted']}>Nothing has been exported yet.</p>
+            <p className={styles['muted']}>{words('admin.nothing-has-been-exported-yet')}</p>
           ) : (
-            <table aria-label="Exports" className={styles['table']}>
+            <table aria-label={words('admin.exports')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Asked for</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Size</th>
-                  <th scope="col">Kept until</th>
+                  <th scope="col">{words('admin.asked-for')}</th>
+                  <th scope="col">{words('admin.status')}</th>
+                  <th scope="col">{words('admin.size')}</th>
+                  <th scope="col">{words('admin.kept-until')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const asked = when.format(new Date(row.requestedAt));
+                  const asked = when(row.requestedAt);
                   return (
                     <tr key={row.id} data-archived={row.state === 'expired' ? 'true' : undefined}>
                       <td>{asked}</td>
@@ -151,15 +154,15 @@ export function TenantExport({
                         <Chip>{STATES[row.state]}</Chip>
                       </td>
                       <td>{sizeOf(row.bytes)}</td>
-                      <td>{row.expiresAt === null ? '' : when.format(new Date(row.expiresAt))}</td>
+                      <td>{row.expiresAt === null ? '' : when(row.expiresAt)}</td>
                       <td>
                         {row.state === 'done' && (
                           <button
                             type="button"
-                            aria-label={`Download the export asked for ${asked}`}
+                            aria-label={words('admin.download-the-export-asked-for', { asked })}
                             onClick={() => void download(row.id)}
                           >
-                            Download
+                            {words('admin.download')}
                           </button>
                         )}
                       </td>

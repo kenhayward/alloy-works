@@ -3,17 +3,20 @@ import { useEffect, useState } from 'react';
 
 import type { Movable } from './Workflow.js';
 import styles from './Hold.module.css';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 interface Decided {
   readonly decision: 'approved' | 'rejected';
   readonly reason: string | null;
-  readonly by: string;
+  readonly by: string | null;
   readonly at: string;
 }
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+/** A day, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * Who approved or rejected it at its gates, when, and a rejection's reason, newest first (LIF-008,
@@ -38,7 +41,7 @@ export function ApprovalsList({ client, kind, id }: { client: Client; kind: Mova
           data.approvals.map((each) => ({
             decision: each.decision,
             reason: each.reason,
-            by: each.by.name ?? 'Someone',
+            by: each.by.name,
             at: each.at,
           })),
         );
@@ -51,10 +54,22 @@ export function ApprovalsList({ client, kind, id }: { client: Client; kind: Mova
 
   if (decided.length === 0) return null;
   return (
-    <ul aria-label="Approvals" className={styles['approvals']}>
+    <ul aria-label={words('lifecycle.approvals')} className={styles['approvals']}>
       {decided.map((each, index) => (
         <li key={index}>
-          {`${each.by} ${each.decision === 'approved' ? 'approved' : 'returned it'}, ${when.format(new Date(each.at))}${each.reason === null ? '' : `: ${each.reason}`}`}
+          {wordsWith(
+            'lifecycle.decided',
+            {
+              named: each.by === null ? 'no' : 'yes',
+              decision: each.decision,
+              at: when(each.at),
+              reasoned: each.reason === null ? 'no' : 'yes',
+            },
+            {
+              who: <span data-content>{each.by}</span>,
+              reason: <span data-content>{each.reason}</span>,
+            },
+          )}
         </li>
       ))}
     </ul>

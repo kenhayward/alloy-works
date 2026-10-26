@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 export interface StripCell {
   readonly key: string;
@@ -21,7 +22,7 @@ export interface StripCell {
  */
 export function StateStrip({ cells }: { cells: readonly StripCell[] }) {
   return (
-    <div role="group" aria-label="State" className={styles['strip']}>
+    <div role="group" aria-label={words('parts.state')} className={styles['strip']}>
       <ul>
         {cells.map((cell) => (
           <li key={cell.key} data-tone={cell.tone}>

@@ -9,6 +9,7 @@ import {
   type FormatDraft,
   type PartDraft,
 } from './httpDraft.js';
+import { words } from '../words/words.js';
 
 /**
  * A file as its page holds it while it is written (the D6 plan, task 2): the object's key, a segment
@@ -44,8 +45,7 @@ function filterOf(condition: FileCondition): FilterDraft | undefined {
 /** A stored file fetch as the page holds it, or why the page cannot show it to edit. */
 export function fileDraftOf(stored: FileFetch): FileDraft | { readonly reason: string } {
   const unshown = {
-    reason:
-      'Its filter holds more than a list of comparisons matched all or any, which this page cannot show to edit.',
+    reason: words('data.its-filter-holds-more-than'),
   };
   let filters: FilterDraft[] = [];
   let match: FileDraft['match'] = 'all';

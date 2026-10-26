@@ -8,6 +8,7 @@ import type { StyleCheck, TextWhere, Unresolved } from '@alloy-works/editor';
 import { covers } from '@alloy-works/fonts';
 import { useEffect, type RefObject } from 'react';
 import { usePresentation } from './presentation.js';
+import { words } from '../words/words.js';
 
 /** Whether a style of one of the theme's catalogues resolves for this target. */
 function resolves(
@@ -90,12 +91,15 @@ export function styleCheckFor(theme: ResolvedTheme, unheld: readonly string[]): 
   };
 }
 
+/** Which catalogue a style that will not resolve is of. */
+type Kind = 'paragraph' | 'table' | 'image';
+
 const LABEL = {
-  missing: (kind: string, style: string) => `${kind} ${style} is not in this theme`,
-  misplaced: (kind: string, style: string) => `${kind} ${style} does not apply here`,
+  missing: (kind: Kind, style: string) => words('theme.is-not-in-this-theme', { kind, style }),
+  misplaced: (kind: Kind, style: string) => words('theme.does-not-apply-here', { kind, style }),
 };
 
-function mark(element: Element, status: Unresolved | null, kind: string, style: string): void {
+function mark(element: Element, status: Unresolved | null, kind: Kind, style: string): void {
   if (status === null) {
     element.removeAttribute('data-unresolved');
     return;
@@ -120,16 +124,16 @@ export function markUnresolved(root: ParentNode, check: StyleCheck): void {
         ? 'footnote'
         : (element.getAttribute('data-place') ?? 'text')
     ) as Place;
-    mark(element, check.paragraph(style, place), 'Style', style);
+    mark(element, check.paragraph(style, place), 'paragraph', style);
   }
   for (const element of root.querySelectorAll('[data-table-style]')) {
     const style = element.getAttribute('data-table-style')!;
-    mark(element, check.table(style), 'Table style', style);
+    mark(element, check.table(style), 'table', style);
   }
   for (const element of root.querySelectorAll('[data-image-style]')) {
     const style = element.getAttribute('data-image-style')!;
     const target = element.tagName === 'FIGURE' ? 'figure' : 'inlineImage';
-    mark(element, check.image(style, target), 'Image style', style);
+    mark(element, check.image(style, target), 'image', style);
   }
 }
 

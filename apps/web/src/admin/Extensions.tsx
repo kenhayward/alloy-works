@@ -9,6 +9,7 @@ import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,19 +39,37 @@ interface Use {
 
 /** What an update changes, in words (API-048). */
 const CHANGES: Readonly<Record<string, string>> = {
-  endpoint: 'its endpoint',
-  settings: 'the settings a connection gives it',
-  authentication: 'the secret it takes',
-  capabilities: 'what it can do',
-  reference: 'where it is searched and fetched',
-  outbound: 'the hosts it sends data to',
-  about: 'what it says it is',
+  get endpoint() {
+    return words('admin.its-endpoint');
+  },
+  get settings() {
+    return words('admin.the-settings-a-connection-gives');
+  },
+  get authentication() {
+    return words('admin.the-secret-it-takes');
+  },
+  get capabilities() {
+    return words('admin.what-it-can-do');
+  },
+  get reference() {
+    return words('admin.where-it-is-searched-and');
+  },
+  get outbound() {
+    return words('admin.the-hosts-it-sends-data');
+  },
+  get about() {
+    return words('admin.what-it-says-it-is');
+  },
 };
 
 /** What kind of extension it is, in words (XR-J). */
 const KINDS: Readonly<Record<ExtensionManifest['kind'], string>> = {
-  source: 'Data source',
-  reference: 'Reference source',
+  get source() {
+    return words('admin.data-source');
+  },
+  get reference() {
+    return words('admin.reference-source');
+  },
 };
 
 /** Everything a manifest declares, in words, read before it is installed or updated (EX-B). */
@@ -62,41 +81,43 @@ function Declared({
   children?: React.ReactNode;
 }) {
   return (
-    <section aria-label={`What ${manifest.name} declares`}>
-      <h3>{manifest.name}</h3>
+    <section aria-label={words('admin.what-declares', { name: manifest.name })}>
+      <h3 data-content>{manifest.name}</h3>
       <dl>
-        <dt>Version</dt>
-        <dd>{manifest.version}</dd>
-        <dt>Publisher</dt>
-        <dd>{manifest.publisher}</dd>
-        <dt>What it is</dt>
-        <dd>{manifest.description}</dd>
-        <dt>Kind</dt>
+        <dt>{words('admin.version-2')}</dt>
+        <dd data-content>{manifest.version}</dd>
+        <dt>{words('admin.publisher')}</dt>
+        <dd data-content>{manifest.publisher}</dd>
+        <dt>{words('admin.what-it-is')}</dt>
+        <dd data-content>{manifest.description}</dd>
+        <dt>{words('admin.kind')}</dt>
         <dd>{KINDS[manifest.kind]}</dd>
-        <dt>Endpoint</dt>
-        <dd className={styles['code']}>{manifest.endpoint}</dd>
+        <dt>{words('admin.endpoint')}</dt>
+        <dd className={styles['code']} data-content>
+          {manifest.endpoint}
+        </dd>
         {manifest.kind === 'source' ? (
           <SourceDeclared manifest={manifest} />
         ) : (
           <>
-            <dt>Reference</dt>
+            <dt>{words('admin.reference')}</dt>
             <dd>{readsAt(manifest.reference)}</dd>
-            <dt>Credential</dt>
+            <dt>{words('admin.credential')}</dt>
             <dd>
               {manifest.authentication === 'none'
-                ? 'Takes no secret'
-                : `Takes one secret: ${manifest.authentication.label}`}
+                ? words('admin.takes-no-secret')
+                : words('admin.takes-one-secret', { label: manifest.authentication.label })}
             </dd>
           </>
         )}
-        <dt>Sends data to</dt>
+        <dt>{words('admin.sends-data-to')}</dt>
         <dd>
           {manifest.outbound.length === 0 ? (
-            'Sends data to no other host, as it says'
+            words('admin.sends-data-to-no-other')
           ) : (
             <ul>
               {manifest.outbound.map((each) => (
-                <li key={each.host}>
+                <li key={each.host} data-content>
                   <span className={styles['code']}>{each.host}</span>: {each.purpose}
                 </li>
               ))}
@@ -118,34 +139,37 @@ function SourceDeclared({
   const { capabilities } = manifest;
   return (
     <>
-      <dt>Settings</dt>
+      <dt>{words('admin.settings')}</dt>
       <dd>
         {manifest.settings.length === 0 ? (
-          'None'
+          words('admin.none')
         ) : (
           <ul>
             {manifest.settings.map((field) => (
               <li key={field.key}>
-                {`${field.label} (${field.type}, ${field.required ? 'required' : 'not required'})`}
+                {words('admin.setting-declared', {
+                  label: field.label,
+                  type: field.type,
+                  required: field.required ? 'yes' : 'no',
+                })}
               </li>
             ))}
           </ul>
         )}
       </dd>
-      <dt>Credential</dt>
+      <dt>{words('admin.credential')}</dt>
       <dd>
         {manifest.authentication === 'none'
-          ? 'Takes no secret, so no connection can be made to it yet'
-          : `Takes one secret: ${manifest.authentication.label}`}
+          ? words('admin.takes-no-secret-so-no')
+          : words('admin.takes-one-secret', { label: manifest.authentication.label })}
       </dd>
-      <dt>Can</dt>
+      <dt>{words('admin.can')}</dt>
       <dd>
-        {[
-          capabilities.parameters ? 'Binds parameters' : 'Binds no parameters',
-          capabilities.keyColumns ? 'Declares key columns' : 'Declares no key columns',
-          capabilities.rowLimit ? 'Takes the row limit' : 'Takes no row limit',
-        ].join('. ')}
-        .
+        {words('admin.capabilities-declared', {
+          parameters: capabilities.parameters ? 'yes' : 'no',
+          keys: capabilities.keyColumns ? 'yes' : 'no',
+          limit: capabilities.rowLimit ? 'yes' : 'no',
+        })}
       </dd>
     </>
   );
@@ -165,7 +189,7 @@ const secretLabel = (manifest: ExtensionManifest): string | undefined =>
  */
 /** Where a reference extension is searched and a record fetched, as its manifest says. */
 function readsAt({ search, fetch: record }: { search: string; fetch: string }): string {
-  return `Searched at ${search}, a record fetched at ${record}`;
+  return words('admin.searched-at-a-record-fetched', { search, record });
 }
 
 export function Extensions({ client }: { client: Client }) {
@@ -197,7 +221,7 @@ export function Extensions({ client }: { client: Client }) {
     if (data) {
       setSaid('');
       setPreview(data);
-    } else setSaid(refusal(error, 'The manifest could not be read.'));
+    } else setSaid(refusal(error, words('admin.the-manifest-could-not-be')));
   };
 
   const install = async (shown: Preview) => {
@@ -205,11 +229,11 @@ export function Extensions({ client }: { client: Client }) {
       body: { url: shown.url, digest: shown.digest },
     });
     if (data) {
-      setSaid(`Installed ${data.manifest.name}.`);
+      setSaid(words('admin.installed', { name: data.manifest.name }));
       setPreview(null);
       setUrl('');
       again();
-    } else setSaid(refusal(error, 'The extension could not be installed.'));
+    } else setSaid(refusal(error, words('admin.the-extension-could-not-be')));
   };
 
   const check = async (extension: Installed) => {
@@ -218,7 +242,7 @@ export function Extensions({ client }: { client: Client }) {
       params: { path: { id: extension.id } },
     });
     if (data) setUpdate({ of: extension, to: data });
-    else setSaid(refusal(error, 'The manifest could not be read again.'));
+    else setSaid(refusal(error, words('admin.the-manifest-could-not-be-2')));
   };
 
   const move = async (extension: Installed, to: Preview) => {
@@ -227,10 +251,15 @@ export function Extensions({ client }: { client: Client }) {
       body: { digest: to.digest },
     });
     if (data) {
-      setSaid(`Updated ${extension.manifest.name} to ${data.manifest.version}.`);
+      setSaid(
+        words('admin.updated-to', {
+          name: extension.manifest.name,
+          version: data.manifest.version,
+        }),
+      );
       setUpdate(null);
       again();
-    } else setSaid(refusal(error, 'The extension could not be updated.'));
+    } else setSaid(refusal(error, words('admin.the-extension-could-not-be-2')));
   };
 
   const listUses = async (extension: Installed) => {
@@ -238,7 +267,7 @@ export function Extensions({ client }: { client: Client }) {
       params: { path: { id: extension.id } },
     });
     if (data) setUses({ of: extension, items: data.items });
-    else setSaid(refusal(error, 'Its uses could not be read.'));
+    else setSaid(refusal(error, words('admin.its-uses-could-not-be')));
   };
 
   const remove = async (extension: Installed) => {
@@ -248,8 +277,8 @@ export function Extensions({ client }: { client: Client }) {
     setRemoving(null);
     setSaid(
       data
-        ? `Removed ${extension.manifest.name}.`
-        : refusal(error, 'The extension could not be removed.'),
+        ? words('admin.removed-2', { name: extension.manifest.name })
+        : refusal(error, words('admin.the-extension-could-not-be-3')),
     );
     again();
   };
@@ -263,24 +292,24 @@ export function Extensions({ client }: { client: Client }) {
     setSecret('');
     if (data) {
       setSecretOf(null);
-      setSaid(`The secret of ${extension.manifest.name} is set.`);
+      setSaid(words('admin.the-secret-of-is-set', { name: extension.manifest.name }));
       again();
-    } else setSaid(refusal(error, 'The secret could not be set.'));
+    } else setSaid(refusal(error, words('admin.the-secret-could-not-be')));
   };
 
   const changed = update?.to.changes ?? [];
   return (
     <>
       <div className={styles['lead']}>
-        <p>
-          A kind of source the product does not build in: a manifest at an HTTPS URL and the service
-          it names, hosted by whoever wrote it. Read what it declares, and where it says it sends
-          data, before installing it.
-        </p>
+        <p>{words('admin.a-kind-of-source-the')}</p>
       </div>
-      <form onSubmit={(event) => void look(event)} aria-label="Install an extension" noValidate>
+      <form
+        onSubmit={(event) => void look(event)}
+        aria-label={words('admin.install-an-extension')}
+        noValidate
+      >
         <label className={styles['filter']}>
-          Manifest URL
+          {words('admin.manifest-url')}
           <input
             value={url}
             inputMode="url"
@@ -289,32 +318,32 @@ export function Extensions({ client }: { client: Client }) {
           />
         </label>
         <button type="submit" disabled={url.trim() === ''}>
-          Preview
+          {words('admin.preview')}
         </button>
       </form>
       <p role="status">{said}</p>
       {preview !== null && (
         <Declared manifest={preview.manifest}>
           <button type="button" className="primary" onClick={() => void install(preview)}>
-            Install
+            {words('admin.install')}
           </button>
         </Declared>
       )}
-      <Shown read={read} failed="The extensions could not be loaded.">
+      <Shown read={read} failed={words('admin.the-extensions-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
-            <p className={styles['muted']}>No extension is installed.</p>
+            <p className={styles['muted']}>{words('admin.no-extension-is-installed')}</p>
           ) : (
-            <table aria-label="Extensions" className={styles['table']}>
+            <table aria-label={words('admin.extensions')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Kind</th>
-                  <th scope="col">Version</th>
-                  <th scope="col">Publisher</th>
-                  <th scope="col">Status</th>
+                  <th scope="col">{words('admin.name')}</th>
+                  <th scope="col">{words('admin.kind')}</th>
+                  <th scope="col">{words('admin.version-2')}</th>
+                  <th scope="col">{words('admin.publisher')}</th>
+                  <th scope="col">{words('admin.status')}</th>
                   <th scope="col">
-                    <span className={styles['hidden']}>Actions</span>
+                    <span className={styles['hidden']}>{words('admin.actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -323,63 +352,67 @@ export function Extensions({ client }: { client: Client }) {
                   const { name } = extension.manifest;
                   return (
                     <tr key={extension.id}>
-                      <td className={styles['strong']}>{name}</td>
+                      <td className={styles['strong']} data-content>
+                        {name}
+                      </td>
                       <td>{KINDS[extension.manifest.kind]}</td>
-                      <td>{extension.manifest.version}</td>
-                      <td>{extension.manifest.publisher}</td>
+                      <td data-content>{extension.manifest.version}</td>
+                      <td data-content>{extension.manifest.publisher}</td>
                       <td>
                         {extension.removedAt === null ? (
-                          <Chip tone="ok">Active</Chip>
+                          <Chip tone="ok">{words('admin.active')}</Chip>
                         ) : (
-                          <Chip>Removed</Chip>
+                          <Chip>{words('admin.removed-3')}</Chip>
                         )}
                       </td>
                       <td>
                         <button
                           type="button"
-                          aria-label={`What ${name} declares`}
+                          aria-label={words('admin.what-declares', { name })}
                           aria-expanded={opened === extension.id}
                           onClick={() => setOpened(opened === extension.id ? null : extension.id)}
                         >
-                          What it declares
+                          {words('admin.what-it-declares')}
                         </button>{' '}
                         <button
                           type="button"
-                          aria-label={`Uses of ${name}`}
+                          aria-label={words('admin.uses-of', { name })}
                           onClick={() => void listUses(extension)}
                         >
-                          Uses
+                          {words('admin.uses')}
                         </button>
                         {extension.removedAt === null && (
                           <>
                             {' '}
                             <button
                               type="button"
-                              aria-label={`Check ${name} for an update`}
+                              aria-label={words('admin.check-for-an-update', { name })}
                               onClick={() => void check(extension)}
                             >
-                              Check for update
+                              {words('admin.check-for-update')}
                             </button>{' '}
                             {secretLabel(extension.manifest) !== undefined && (
                               <>
                                 <button
                                   type="button"
-                                  aria-label={`Set the secret of ${name}`}
+                                  aria-label={words('admin.set-the-secret-of', { name })}
                                   onClick={() => {
                                     setSecret('');
                                     setSecretOf(extension);
                                   }}
                                 >
-                                  {extension.secretSet ? 'Replace secret' : 'Set secret'}
+                                  {extension.secretSet
+                                    ? words('admin.replace-secret')
+                                    : words('admin.set-secret')}
                                 </button>{' '}
                               </>
                             )}
                             <button
                               type="button"
-                              aria-label={`Remove ${name}`}
+                              aria-label={words('admin.remove', { name })}
                               onClick={() => setRemoving(extension)}
                             >
-                              Remove
+                              {words('admin.remove-2')}
                             </button>
                           </>
                         )}
@@ -397,12 +430,12 @@ export function Extensions({ client }: { client: Client }) {
       )}
       {secretOf !== null && (
         <form
-          aria-label={`The secret of ${secretOf.manifest.name}`}
+          aria-label={words('admin.the-secret-of', { name: secretOf.manifest.name })}
           onSubmit={(event) => void keep(event, secretOf)}
           noValidate
         >
           <label className={styles['filter']}>
-            {secretLabel(secretOf.manifest)}
+            <span data-content>{secretLabel(secretOf.manifest)}</span>
             <input
               type="password"
               autoComplete="off"
@@ -411,36 +444,41 @@ export function Extensions({ client }: { client: Client }) {
             />
           </label>
           <button type="submit" className="primary" disabled={secret.trim() === ''}>
-            Set
+            {words('admin.set')}
           </button>{' '}
           <button type="button" onClick={() => setSecretOf(null)}>
-            Cancel
+            {words('admin.cancel')}
           </button>
         </form>
       )}
       {update !== null && (
-        <section aria-label={`Update ${update.of.manifest.name}`}>
-          <h3>Update {update.of.manifest.name}</h3>
+        <section aria-label={words('admin.update', { name: update.of.manifest.name })}>
+          <h3>{words('admin.update', { name: update.of.manifest.name })}</h3>
           {update.to.digest === update.of.digest ? (
-            <p>Its manifest has not changed.</p>
+            <p>{words('admin.its-manifest-has-not-changed')}</p>
           ) : (
             <>
               <p>
                 {changed.length === 0
-                  ? `Version ${update.to.manifest.version} changes nothing a connection reads.`
-                  : `Version ${update.to.manifest.version} changes: ${changed.map((each) => CHANGES[each] ?? each).join(', ')}.`}
+                  ? words('admin.version-changes-nothing-a-connection', {
+                      version: update.to.manifest.version,
+                    })
+                  : words('admin.version-changes', {
+                      version: update.to.manifest.version,
+                      changes: formats().list(
+                        changed.map((each) => CHANGES[each] ?? each),
+                        { type: 'unit' },
+                      ),
+                    })}
               </p>
-              <p className={styles['muted']}>
-                A connection keeps the manifest it was saved against until it is saved again; one
-                whose endpoint moves needs its secret set again.
-              </p>
+              <p className={styles['muted']}>{words('admin.a-connection-keeps-the-manifest')}</p>
               <Declared manifest={update.to.manifest}>
                 <button
                   type="button"
                   className="primary"
                   onClick={() => void move(update.of, update.to)}
                 >
-                  Update
+                  {words('admin.update-3')}
                 </button>
               </Declared>
             </>
@@ -448,16 +486,25 @@ export function Extensions({ client }: { client: Client }) {
         </section>
       )}
       {uses !== null && (
-        <section aria-label={`Uses of ${uses.of.manifest.name}`}>
-          <h3>Connections using {uses.of.manifest.name}</h3>
+        <section aria-label={words('admin.uses-of', { name: uses.of.manifest.name })}>
+          <h3>{words('admin.connections-using-2', { name: uses.of.manifest.name })}</h3>
           {uses.items.length === 0 ? (
-            <p className={styles['muted']}>No connection uses it.</p>
+            <p className={styles['muted']}>{words('admin.no-connection-uses-it')}</p>
           ) : (
-            <ul aria-label={`Connections using ${uses.of.manifest.name}`}>
+            <ul aria-label={words('admin.connections-using-2', { name: uses.of.manifest.name })}>
               {uses.items.map((each) => (
                 <li key={each.connection}>
-                  <a href={connectionLink(each.connection)}>{each.name}</a>
-                  {each.retired ? ', retired' : ''}
+                  {wordsWith(
+                    'admin.connection-used',
+                    { retired: each.retired ? 'yes' : 'no' },
+                    {
+                      connection: (
+                        <a href={connectionLink(each.connection)} data-content>
+                          {each.name}
+                        </a>
+                      ),
+                    },
+                  )}
                 </li>
               ))}
             </ul>
@@ -466,14 +513,14 @@ export function Extensions({ client }: { client: Client }) {
       )}
       {removing !== null && (
         <ConfirmDialog
-          question={`Remove ${removing.manifest.name}?`}
+          question={words('admin.remove-3', { name: removing.manifest.name })}
           sentence={
             removing.manifest.kind === 'reference'
-              ? 'It can no longer be searched, and the entries obtained from it are kept but no longer checked. It must be switched off under Reference sources first.'
-              : 'No connection can be made to it again. Its manifests are kept, so what used it still names it; a connection not retired keeps it installed.'
+              ? words('admin.it-can-no-longer-be')
+              : words('admin.no-connection-can-be-made')
           }
-          keep="Keep it"
-          act="Remove"
+          keep={words('admin.keep-it')}
+          act={words('admin.remove-2')}
           onKeep={() => setRemoving(null)}
           onAct={() => remove(removing)}
         />

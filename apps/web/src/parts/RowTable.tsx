@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from './IconButton.js';
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 export interface RowTableColumn {
   readonly head: string;
@@ -54,7 +55,7 @@ export function RowTable({
           {bins && (
             <th className={styles['rowBin']}>
               <Icon name="Delete" />
-              <span className={styles['hiddenText']}>Remove</span>
+              <span className={styles['hiddenText']}>{words('parts.remove')}</span>
             </th>
           )}
         </tr>
@@ -69,7 +70,7 @@ export function RowTable({
             {bins && (
               <td className={styles['rowBin']}>
                 <IconButton
-                  label={row.remove ?? `Remove ${at + 1}`}
+                  label={row.remove ?? words('parts.remove-row', { row: at + 1 })}
                   className={styles['rowIcon']}
                   onClick={row.onRemove}
                 >

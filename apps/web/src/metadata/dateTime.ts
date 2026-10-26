@@ -22,6 +22,7 @@ const DAY_MS = 86_400_000;
 
 /** The wall-clock time an instant is in a zone, as milliseconds on a clock that knows no zone. */
 function wallClock(ms: number, zone: string): number {
+  // Read back as numbers, never shown: a fixed locale, so its digits are always Latin ones.
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: zone,
     year: 'numeric',

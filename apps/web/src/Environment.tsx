@@ -1,5 +1,6 @@
 import { createApiClient, followStream, type FollowOptions } from '@alloy-works/api-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { words } from './words/words.js';
 
 interface Sample {
   readonly id: string;
@@ -37,7 +38,9 @@ export function Environment({ fetch: given, follow = followStream }: Environment
     });
     void client.GET('/v1/me').then(({ data }) => {
       if (!current) return;
-      setWho(data ? { name: data.displayName ?? data.email ?? 'signed in' } : 'nobody');
+      setWho(
+        data ? { name: data.displayName ?? data.email ?? words('shell.signed-in') } : 'nobody',
+      );
     });
     return () => {
       current = false;
@@ -65,18 +68,22 @@ export function Environment({ fetch: given, follow = followStream }: Environment
 
   return (
     <section>
-      <h2>Environment</h2>
-      <p>{environment ?? 'asking...'}</p>
-      {who === 'nobody' && <a href="/v1/sign-in/organisation">Sign in</a>}
+      <h2>{words('shell.environment')}</h2>
+      {environment === undefined ? (
+        <p>{words('shell.asking')}</p>
+      ) : (
+        <p data-content>{environment}</p>
+      )}
+      {who === 'nobody' && <a href="/v1/sign-in/organisation">{words('shell.signIn')}</a>}
       {who !== undefined && who !== 'nobody' && (
         <>
-          <p>{who.name}</p>
+          <p data-content>{who.name}</p>
           <button type="button" onClick={() => void ask()}>
-            Make a sample
+            {words('shell.make-a-sample')}
           </button>
           <ul>
             {samples.map((sample) => (
-              <li key={sample.id}>
+              <li key={sample.id} data-content>
                 {sample.id}: {sample.state}
               </li>
             ))}

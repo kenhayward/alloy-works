@@ -118,7 +118,9 @@ export function ComponentDock({
           <div ref={onFieldsHost} />
           <dl className={styles['facts']}>
             <dt>{words('editor.identifier')}</dt>
-            <dd className={styles['mono']}>{id}</dd>
+            <dd className={styles['mono']} data-content>
+              {id}
+            </dd>
           </dl>
         </div>
         <div

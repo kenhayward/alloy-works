@@ -8,6 +8,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Inbox.module.css';
 import { moment, refusal } from './TokenTable.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Kind = 'mention' | 'reply' | 'resolution' | 'round';
@@ -67,58 +68,114 @@ interface Thread {
 }
 
 const KINDS: readonly { readonly kind: Kind; readonly name: string }[] = [
-  { kind: 'mention', name: 'When a comment names you' },
-  { kind: 'reply', name: 'Replies on threads you are in' },
-  { kind: 'resolution', name: 'Threads you are in resolved' },
-  { kind: 'round', name: 'When you are named a reviewer' },
+  {
+    kind: 'mention',
+    get name() {
+      return words('account.when-a-comment-names-you');
+    },
+  },
+  {
+    kind: 'reply',
+    get name() {
+      return words('account.replies-on-threads-you-are');
+    },
+  },
+  {
+    kind: 'resolution',
+    get name() {
+      return words('account.threads-you-are-in-resolved');
+    },
+  },
+  {
+    kind: 'round',
+    get name() {
+      return words('account.when-you-are-named-a');
+    },
+  },
 ];
 const CADENCES: Readonly<Record<Cadence, string>> = {
-  at_once: 'At once',
-  daily: 'In a daily digest',
-  never: 'Never',
+  get at_once() {
+    return words('account.at-once');
+  },
+  get daily() {
+    return words('account.in-a-daily-digest');
+  },
+  get never() {
+    return words('account.never');
+  },
 };
 
 /** What it is about, to its reader: the title where they may read it now, else not even that. */
-const placeWords = (place: Place | null) => place?.title ?? 'something you may no longer read';
+const placeWords = (place: Place | null) =>
+  place?.title ?? words('account.something-you-may-no-longer');
 
-const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+/**
+ * What it is about, as a sentence's values: `readable` says whether its reader may read it now, and
+ * `place` its title where they may.
+ */
+const placeValues = (place: Place | null) => ({
+  readable: place?.title == null ? 'no' : 'yes',
+  place: place?.title ?? '',
+});
+
+/** Who did it, as a sentence's values: `named` says whether there is a name to show as `who`. */
+const actorValues = (actor: Notification['actor']) => ({
+  named: actor?.name == null ? 'no' : 'yes',
+  who: actor?.name ?? '',
+});
+
+/** An amount of money in its currency, as a budget alert says it, to the cent. */
+const money = (currency: string, text: string) =>
+  words('account.money', {
+    currency,
+    amount: formats().number(Number(text), { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  });
 
 /** What happened, in words (COL-063): who did what, and where. Never the comment's text (COL-036). */
 function said(each: Notification): string {
-  const who = each.actor?.name ?? 'Somebody';
+  const about = { ...actorValues(each.actor), ...placeValues(each.on) };
   switch (each.kind) {
     case 'mention':
-      return `${who} mentioned you on ${placeWords(each.on)}`;
+      return words('account.mentioned-you-on', about);
     case 'reply':
-      return `${who} replied on ${placeWords(each.on)}`;
+      return words('account.replied-on', about);
     case 'resolution':
-      return `${who} resolved a thread on ${placeWords(each.on)}`;
+      return words('account.resolved-a-thread-on', about);
     case 'round':
-      return `${who} asked you to review ${placeWords(each.on)}`;
+      return words('account.asked-you-to-review', about);
     case 'digest': {
       const counts = each.counts!;
       const parts = [
-        counts.mention > 0 ? plural(counts.mention, 'mention', 'mentions') : null,
-        counts.reply > 0 ? plural(counts.reply, 'reply', 'replies') : null,
-        counts.resolution > 0 ? plural(counts.resolution, 'resolution', 'resolutions') : null,
-        (counts.round ?? 0) > 0
-          ? plural(counts.round!, 'review asked of you', 'reviews asked of you')
+        counts.mention > 0 ? words('account.digest-mentions', { count: counts.mention }) : null,
+        counts.reply > 0 ? words('account.digest-replies', { count: counts.reply }) : null,
+        counts.resolution > 0
+          ? words('account.digest-resolutions', { count: counts.resolution })
           : null,
+        (counts.round ?? 0) > 0 ? words('account.digest-rounds', { count: counts.round! }) : null,
       ].filter((part): part is string => part !== null);
-      return `Your daily digest: ${parts.join(', ')}, on ${counts.places.map(placeWords).join(', ')}`;
+      return words('account.your-daily-digest-on', {
+        counts: formats().list(parts, { type: 'unit' }),
+        places: formats().list(counts.places.map(placeWords), { type: 'unit' }),
+      });
     }
     case 'budget': {
       const budget = each.budget;
-      if (!budget) return 'The model budget crossed a threshold.';
-      const money = (text: string) => `${budget.currency} ${Number(text).toFixed(2)}`;
-      return `Models have cost ${money(budget.spent)} this month, ${budget.threshold}% of the ${money(budget.limit)} budget. Nothing stops.`;
+      if (!budget) return words('account.the-model-budget-crossed-a');
+      return words('account.models-have-cost-this-month', {
+        spent: money(budget.currency, budget.spent),
+        threshold: budget.threshold,
+        limit: money(budget.currency, budget.limit),
+      });
     }
     case 'webhook':
-      return 'A webhook you made was turned off after three days of failed deliveries.';
+      return words('account.a-webhook-you-made-was');
     case 'reference':
-      return `A source cited in ${placeWords(each.on)} was ${each.reference?.outcome ?? 'flagged'} by its source.`;
+      return words('account.a-source-cited-in-was', {
+        ...placeValues(each.on),
+        outcome: each.reference?.outcome ?? 'flagged',
+      });
     case 'import':
-      return 'An import you have not accepted is abandoned in seven days unless you act on it.';
+      return words('account.an-import-you-have-not');
   }
 }
 
@@ -204,7 +261,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
       params: { path: { id: each.thread } },
     });
     if (!data && response.status !== 404) {
-      setStatus('The thread could not be read. Try again.');
+      setStatus(words('account.the-thread-could-not-be'));
       return;
     }
     setOpened({ id: each.id, thread: data ? (data as unknown as Thread) : 'gone' });
@@ -217,8 +274,8 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
     });
     setStatus(
       response.ok || response.status === 404
-        ? 'Deleted.'
-        : refusal(error, 'It could not be deleted.'),
+        ? words('account.deleted')
+        : refusal(error, words('account.it-could-not-be-deleted')),
     );
     if (opened?.id === each.id) setOpened(null);
     await load();
@@ -228,7 +285,11 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
     if (cadences === null) return;
     const { data, error } = await client.PUT('/v1/inbox/preferences', { body: cadences });
     if (data) setCadences(data);
-    setStatus(data ? 'Saved how often you are told.' : refusal(error, 'They could not be saved.'));
+    setStatus(
+      data
+        ? words('account.saved-how-often-you-are')
+        : refusal(error, words('account.they-could-not-be-saved')),
+    );
   };
 
   const notifications = read === null || read === 'failed' ? null : read;
@@ -236,91 +297,106 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
   return (
     <Modal labelledBy={`${ids}-heading`} onClose={onClose}>
       <div className={styles['inbox']}>
-        <h2 id={`${ids}-heading`}>Inbox</h2>
+        <h2 id={`${ids}-heading`}>{words('account.inbox')}</h2>
         <p className={styles['muted']}>
-          {unread === 0 ? 'Nothing unread.' : plural(unread, 'unread', 'unread')}
+          {unread === 0
+            ? words('account.nothing-unread')
+            : words('account.unread-count', { count: unread })}
         </p>
-        {read === null && <Waiting>Loading...</Waiting>}
+        {read === null && <Waiting>{words('account.loading')}</Waiting>}
         {read === 'failed' && (
           <Notice tone="failed">
-            <p>Your inbox could not be loaded.</p>
+            <p>{words('account.your-inbox-could-not-be')}</p>
             <button type="button" onClick={() => void load()}>
-              Try again
+              {words('account.try-again')}
             </button>
           </Notice>
         )}
-        {notifications?.length === 0 && <p className={styles['muted']}>Nothing here yet.</p>}
+        {notifications?.length === 0 && (
+          <p className={styles['muted']}>{words('account.nothing-here-yet')}</p>
+        )}
         {notifications !== null && notifications.length > 0 && (
-          <ul className={styles['rows']} aria-label="Notifications">
+          <ul className={styles['rows']} aria-label={words('account.notifications')}>
             {notifications.map((each) => (
               <li key={each.id} className={styles['row']} data-unread={!each.read}>
                 <span className={styles['said']}>{said(each)}</span>
                 {/* What it is on, in its state now, to a reader of it alone (LIF-005). */}
                 {each.on?.state && <StateLozenge state={each.on.state} />}
                 <span className={styles['muted']}>
-                  {moment(each.at)}
-                  {each.read ? '' : ', unread'}
+                  {words('account.unread', {
+                    at: moment(each.at),
+                    unread: each.read ? 'no' : 'yes',
+                  })}
                 </span>
                 <span className={styles['acts']}>
                   {each.thread !== null && (
                     <button type="button" onClick={() => void open(each)}>
-                      Open
+                      {words('account.open')}
                     </button>
                   )}
                   {/* A round opens its document, in Review, where its rounds are listed (RR-E). */}
                   {each.kind === 'round' && each.round != null && each.on !== null && (
                     <a href={`#/documents/${each.on.id}`} onClick={() => void markRead(each)}>
-                      Open the document
+                      {words('account.open-the-document')}
                     </a>
                   )}
                   {/* A flagged source opens its document, whose Review lists it (XR-G). */}
                   {each.kind === 'reference' && each.on?.title != null && (
                     <a href={`#/documents/${each.on.id}`} onClick={() => void markRead(each)}>
-                      Open the document
+                      {words('account.open-the-document')}
                     </a>
                   )}
                   {each.kind === 'budget' && (
                     <a href="#/admin/spending" onClick={() => void markRead(each)}>
-                      Open Model spending
+                      {words('account.open-model-spending')}
                     </a>
                   )}
                   {each.kind === 'import' && each.import && (
                     <a href={`#/imports/${each.import.id}`} onClick={() => void markRead(each)}>
-                      Open the import
+                      {words('account.open-the-import')}
                     </a>
                   )}
                   {each.kind === 'webhook' && (
                     <a href="#/admin/webhooks" onClick={() => void markRead(each)}>
-                      Open Webhooks
+                      {words('account.open-webhooks')}
                     </a>
                   )}
                   {!each.read && (
                     <button type="button" onClick={() => void markRead(each)}>
-                      Mark read
+                      {words('account.mark-read')}
                     </button>
                   )}
                   <button type="button" onClick={() => void remove(each)}>
-                    Delete
+                    {words('account.delete')}
                   </button>
                 </span>
                 {opened?.id === each.id &&
                   (opened.thread === 'gone' ? (
-                    <p className={styles['muted']}>You may no longer read this thread.</p>
+                    <p className={styles['muted']}>{words('account.you-may-no-longer-read')}</p>
                   ) : (
                     <div className={styles['thread']}>
                       <ol>
                         {opened.thread.comments.map((comment) => (
                           <li key={comment.id}>
                             <span className={styles['muted']}>
-                              {`${comment.author.name ?? 'Somebody'}, ${moment(comment.at)}`}
+                              {wordsWith(
+                                'account.comment-by',
+                                {
+                                  named: comment.author.name === null ? 'no' : 'yes',
+                                  at: moment(comment.at),
+                                },
+                                { who: <span data-content>{comment.author.name}</span> },
+                              )}
                             </span>
-                            <p>
+                            <p data-content>
                               {comment.texts[comment.texts.length - 1]!.parts.map((part, index) =>
                                 'text' in part ? (
                                   <span key={index}>{part.text}</span>
                                 ) : (
                                   <span key={index} className={styles['mention']}>
-                                    {`@${names?.get(part.mention) ?? 'somebody'}`}
+                                    {names?.get(part.mention) === undefined
+                                      ? words('account.at-somebody')
+                                      : `@${names.get(part.mention)}`}
                                   </span>
                                 ),
                               )}
@@ -329,7 +405,7 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                         ))}
                       </ol>
                       <a href={hrefOf(opened.thread.on)} onClick={onClose}>
-                        {`Go to ${placeWords(each.on)}`}
+                        {words('account.go-to', placeValues(each.on))}
                       </a>
                     </div>
                   ))}
@@ -339,12 +415,12 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
         )}
         {next !== null && (
           <button type="button" onClick={() => void more()}>
-            Show more
+            {words('account.show-more')}
           </button>
         )}
         {cadences !== null && (
           <fieldset className={styles['preferences']}>
-            <legend>How often you are told</legend>
+            <legend>{words('account.how-often-you-are-told')}</legend>
             {KINDS.map(({ kind, name }) => (
               <span key={kind} className={styles['preference']}>
                 <label htmlFor={`${ids}-${kind}`}>{name}</label>
@@ -363,16 +439,16 @@ export function Inbox({ client, onClose }: { client: Client; onClose: () => void
                 </select>
               </span>
             ))}
-            <p className={styles['muted']}>A daily digest is made after 07:00 UTC.</p>
+            <p className={styles['muted']}>{words('account.a-daily-digest-is-made')}</p>
             <button type="button" onClick={() => void save()}>
-              Save
+              {words('account.save')}
             </button>
           </fieldset>
         )}
         <p role="status">{status}</p>
         <div className={styles['actions']}>
           <button type="button" onClick={onClose}>
-            Close
+            {words('account.close')}
           </button>
         </div>
       </div>

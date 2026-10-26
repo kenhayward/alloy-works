@@ -7,8 +7,9 @@ import { everyPage } from '../paging.js';
 import { Chip } from '../parts/Chip.js';
 import type { ThreadOn } from '../search/links.js';
 import { reviewThreadLink } from '../structure/links.js';
-import { anchorWords } from './ThreadsPanel.js';
+import { anchorValues, personValues } from './ThreadsPanel.js';
 import styles from './ThreadPage.module.css';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Part = { readonly text: string } | { readonly mention: string };
@@ -30,7 +31,9 @@ interface Thread {
   }[];
 }
 
-const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+/** A moment, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' });
 
 /**
  * A thread at its own address, `#/{components|documents}/{id}/threads/{thread}[/comments/{comment}]`:
@@ -97,7 +100,11 @@ export function ThreadPage({
     )
       .then((all) => {
         if (current && 'items' in all) {
-          setNames(new Map(all.items.map((person) => [person.id, person.name ?? 'Somebody'])));
+          setNames(
+            new Map(
+              all.items.map((person) => [person.id, person.name ?? words('review.somebody')]),
+            ),
+          );
         }
       })
       .catch(() => undefined);
@@ -120,32 +127,35 @@ export function ThreadPage({
     >
       {read !== null && (
         <p className={styles['threadLinks']}>
-          <a href={`#/${read.on.kind}s/${read.on.id}`}>{`Open the ${read.on.kind}`}</a>
+          <a href={`#/${read.on.kind}s/${read.on.id}`}>
+            {words('review.open-the', { kind: read.on.kind })}
+          </a>
           {read.on.kind === 'document' && (
-            <a href={reviewThreadLink(read.on.id, thread)}>Open in Review</a>
+            <a href={reviewThreadLink(read.on.id, thread)}>{words('review.open-in-review')}</a>
           )}
         </p>
       )}
-      {shown === null && <p>Opening...</p>}
-      {shown === 'missing' && <p>There is no such thread, or you may not read it.</p>}
-      {shown === 'failed' && <p>The thread could not be read.</p>}
+      {shown === null && <p>{words('review.opening')}</p>}
+      {shown === 'missing' && <p>{words('review.there-is-no-such-thread')}</p>}
+      {shown === 'failed' && <p>{words('review.the-thread-could-not-be')}</p>}
       {typeof shown === 'object' && shown !== null && (
         <>
           <h1 id="thread-heading" className={styles['threadHeading']}>
-            {`A thread on ${
-              shown.anchor.kind === 'span'
-                ? anchorWords(shown.anchor)
-                : anchorWords(shown.anchor).toLowerCase()
-            }`}
+            {words('review.a-thread-on', anchorValues(shown.anchor))}
           </h1>
           {orphaned && (
             <p>
-              <Chip tone="warn">Its text is no longer there</Chip>
+              <Chip tone="warn">{words('review.its-text-is-no-longer')}</Chip>
             </p>
           )}
           {shown.resolution && (
             <p>
-              <Chip tone="ok">{`Resolved by ${shown.resolution.by.name ?? 'somebody'}, ${when.format(new Date(shown.resolution.at))}`}</Chip>
+              <Chip tone="ok">
+                {words('review.resolved-by', {
+                  ...personValues(shown.resolution.by),
+                  at: when(shown.resolution.at),
+                })}
+              </Chip>
             </p>
           )}
           <ol className={styles['threadMessages']}>
@@ -161,16 +171,23 @@ export function ThreadPage({
                   className={styles['threadMessage']}
                 >
                   <p className={styles['threadWho']}>
-                    {each.author.name ?? 'Somebody'}
-                    <Outside person={each.author} />
-                    {`, ${when.format(new Date(each.at))}`}
+                    {wordsWith(
+                      'review.comment-by',
+                      { named: personValues(each.author).named, at: when(each.at), edited: 'no' },
+                      {
+                        who: <span data-content>{each.author.name}</span>,
+                        outside: <Outside person={each.author} />,
+                      },
+                    )}
                   </p>
-                  <p>
+                  <p data-content>
                     {latest.parts.map((part, index) =>
                       'text' in part ? (
                         <span key={index}>{part.text}</span>
                       ) : (
-                        <span key={index}>{`@${names.get(part.mention) ?? 'Somebody'}`}</span>
+                        <span
+                          key={index}
+                        >{`@${names.get(part.mention) ?? words('review.somebody')}`}</span>
                       ),
                     )}
                   </p>

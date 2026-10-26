@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { Redline } from '../compare/Redline.js';
 import styles from './ThreadsPanel.module.css';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,38 +38,70 @@ interface Opened extends SuggestionSummary {
 }
 
 type Show = 'pending' | 'resolved' | 'all';
-const SHOWN: Record<Show, string> = { pending: 'Pending', resolved: 'Resolved', all: 'All' };
+const SHOWN: Record<Show, string> = {
+  get pending() {
+    return words('review.pending');
+  },
+  get resolved() {
+    return words('review.resolved');
+  },
+  get all() {
+    return words('review.all');
+  },
+};
 const STATE_WORDS: Record<SuggestionSummary['state'], string> = {
-  pending: 'Pending',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
+  get pending() {
+    return words('review.pending');
+  },
+  get accepted() {
+    return words('review.accepted');
+  },
+  get rejected() {
+    return words('review.rejected');
+  },
+  get withdrawn() {
+    return words('review.withdrawn');
+  },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+/** A suggestion's moment, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /** Why a suggestion no longer fits, place by place, in words (COL-052). */
 export function staleWords(stale: readonly StalePlace[]): string {
   const one = (place: StalePlace) => {
-    const where = place.block === null ? `its ${place.member ?? 'whole'}` : 'a block it changes';
+    // Where: a block, a member of the component by its name, or the whole of it.
+    const where = {
+      place: place.block !== null ? 'block' : place.member === undefined ? 'whole' : 'member',
+      member: place.member ?? '',
+    };
     switch (place.why) {
       case 'changed':
-        return `${where} has changed since`;
+        return words('review.has-changed-since', where);
       case 'gone':
-        return `${where} is no longer there`;
+        return words('review.is-no-longer-there', where);
       case 'anchor_gone':
-        return 'the block it follows is no longer there';
+        return words('review.the-block-it-follows-is');
       case 'invalid':
-        return 'the result would not be a document this product can store';
+        return words('review.the-result-would-not-be');
     }
   };
-  return `No longer fits: ${stale.map(one).join('; ')}.`;
+  return words('review.no-longer-fits', {
+    reasons: formats().list(stale.map(one), { type: 'unit' }),
+  });
 }
+
+/** Whose a suggestion is: `named` says whether it has a name to show as `who`. */
+const madeBy = (person: Person) => ({
+  named: person.name === null ? 'no' : 'yes',
+  who: person.name ?? '',
+});
 
 /** What a refusal says, from the service's own words, or a sentence of ours where it sent none. */
 const refusalOf = (error: unknown, fallback: string) =>
@@ -156,16 +189,18 @@ export function SuggestionsPanel({
       setRefused(
         error?.stale
           ? staleWords(error.stale)
-          : refusalOf(answer.error, 'The suggestion could not be resolved.'),
+          : refusalOf(answer.error, words('review.the-suggestion-could-not-be')),
       );
       return;
     }
     // Announced naming whose and where (CNT-137).
     const done = answer.data as unknown as Opened;
     setSaid(
-      `${done.madeBy.name ?? 'Somebody'}'s suggestion on ${placeOf(done.component)} ${
-        what === 'acceptance' ? 'accepted' : what === 'rejection' ? 'rejected' : 'withdrawn'
-      }.`,
+      words('review.s-suggestion-on', {
+        ...madeBy(done.madeBy),
+        place: placeOf(done.component),
+        act: what,
+      }),
     );
     setOpened(done);
     if (what === 'acceptance') onChanged?.();
@@ -183,16 +218,19 @@ export function SuggestionsPanel({
       },
     });
     if (!answer.data) {
-      setRefused(refusalOf(answer.error, 'The suggestions could not be resolved.'));
+      setRefused(refusalOf(answer.error, words('review.the-suggestions-could-not-be')));
       return;
     }
     const { resolved, left } = answer.data;
-    const done = what === 'accept' ? 'Accepted' : 'Rejected';
     // Many at once are counted, not named (CNT-137 names each one acted on alone).
-    const many = (count: number) => `${count} ${count === 1 ? 'suggestion' : 'suggestions'}`;
     setSaid(
-      `${done} ${many(resolved.length)}.` +
-        (left.length === 0 ? '' : ` ${left.length} left pending, which could not be.`),
+      left.length === 0
+        ? words('review.bulk-resolved', { act: what, count: resolved.length })
+        : words('review.bulk-resolved-some-left', {
+            act: what,
+            count: resolved.length,
+            left: left.length,
+          }),
     );
     if (what === 'accept' && resolved.length > 0) onChanged?.();
     await read();
@@ -216,13 +254,16 @@ export function SuggestionsPanel({
       {opened !== null ? (
         <section aria-labelledby={`${ids}-opened`} className={styles['thread']}>
           <button type="button" className={styles['back']} onClick={() => setOpened(null)}>
-            All suggestions
+            {words('review.all-suggestions')}
           </button>
           <h3 id={`${ids}-opened`} className={styles['heading']}>
-            {`${opened.madeBy.name ?? 'Somebody'}'s suggestion on ${placeOf(opened.component)}`}
+            {words('review.s-suggestion-on-2', {
+              ...madeBy(opened.madeBy),
+              place: placeOf(opened.component),
+            })}
           </h3>
           <p className={styles['note']}>
-            {`${STATE_WORDS[opened.state]}, made ${when.format(new Date(opened.madeAt))}`}
+            {words('review.made', { state: opened.state, at: when(opened.madeAt) })}
           </p>
           {opened.stale !== null && opened.stale.length > 0 && (
             <p className={styles['note']}>{staleWords(opened.stale)}</p>
@@ -238,23 +279,23 @@ export function SuggestionsPanel({
               older: unitTexts(opened.drawnOver.content as ContentDocument),
               newer: unitTexts(opened.drawn as ContentDocument),
             }}
-            label="What it changes"
+            label={words('review.what-it-changes')}
           />
           {opened.state === 'pending' && (
             <div className={styles['actions']}>
               {mayResolve(opened.component) && (
                 <>
                   <button type="button" onClick={() => void act(opened.id, 'acceptance')}>
-                    Accept
+                    {words('review.accept')}
                   </button>
                   <button type="button" onClick={() => void act(opened.id, 'rejection')}>
-                    Reject
+                    {words('review.reject')}
                   </button>
                 </>
               )}
               {opened.madeBy.id === principalId && (
                 <button type="button" onClick={() => void act(opened.id, 'withdrawal')}>
-                  Withdraw
+                  {words('review.withdraw')}
                 </button>
               )}
             </div>
@@ -263,7 +304,7 @@ export function SuggestionsPanel({
       ) : (
         <>
           <div className={styles['controls']}>
-            <label htmlFor={`${ids}-show`}>Show</label>
+            <label htmlFor={`${ids}-show`}>{words('review.show')}</label>
             <select
               id={`${ids}-show`}
               value={show}
@@ -278,29 +319,33 @@ export function SuggestionsPanel({
           </div>
           {pending.length > 0 && pending.some((each) => mayResolve(each.component)) && (
             <div className={styles['controls']}>
-              <label htmlFor={`${ids}-author`}>By</label>
+              <label htmlFor={`${ids}-author`}>{words('review.by')}</label>
               <select
                 id={`${ids}-author`}
                 value={author}
                 onChange={(event) => setAuthor(event.target.value)}
               >
-                <option value="">Everybody</option>
+                <option value="">{words('review.everybody')}</option>
                 {authors.map((each) => (
                   <option key={each.id} value={each.id}>
-                    {each.name ?? 'Somebody'}
+                    {each.name ?? words('review.somebody')}
                   </option>
                 ))}
               </select>
               <button type="button" onClick={() => void bulk('accept')}>
-                Accept all
+                {words('review.accept-all')}
               </button>
               <button type="button" onClick={() => void bulk('reject')}>
-                Reject all
+                {words('review.reject-all')}
               </button>
             </div>
           )}
-          {listed === null && <p className={styles['note']}>The suggestions could not be read.</p>}
-          {listed?.length === 0 && <p className={styles['note']}>No suggestions here.</p>}
+          {listed === null && (
+            <p className={styles['note']}>{words('review.the-suggestions-could-not-be-2')}</p>
+          )}
+          {listed?.length === 0 && (
+            <p className={styles['note']}>{words('review.no-suggestions-here')}</p>
+          )}
           {listed && listed.length > 0 && (
             <ul className={styles['rows']}>
               {listed.map((each) => (
@@ -310,11 +355,16 @@ export function SuggestionsPanel({
                     className={styles['open']}
                     onClick={() => void open(each.id)}
                   >
-                    {each.madeBy.name ?? 'Somebody'}
-                    <Outside person={each.madeBy} />
-                    {` on ${placeOf(each.component)}`}
+                    {wordsWith(
+                      'review.on',
+                      { named: madeBy(each.madeBy).named, place: placeOf(each.component) },
+                      {
+                        who: <span data-content>{each.madeBy.name}</span>,
+                        outside: <Outside person={each.madeBy} />,
+                      },
+                    )}
                   </button>
-                  <span className={styles['note']}>{when.format(new Date(each.madeAt))}</span>
+                  <span className={styles['note']}>{when(each.madeAt)}</span>
                   <span className={styles['state']}>{STATE_WORDS[each.state]}</span>
                   {each.stale !== null && each.stale.length > 0 && (
                     <span className={styles['state']}>{staleWords(each.stale)}</span>

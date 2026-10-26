@@ -30,6 +30,7 @@ import {
   type DraftSource,
   type PromptPurpose,
 } from './shape.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -59,10 +60,18 @@ const isShown = (value: unknown): value is Shown =>
   typeof value.mayEdit === 'boolean';
 
 const SOURCE_NAMES: Readonly<Record<DraftSource['source'], string>> = {
-  outline: 'Part of the outline',
-  related: 'Related components',
-  field: 'Parts whose field holds a value',
-  parameters: "The document's parameters",
+  get outline() {
+    return say('prompts.part-of-the-outline');
+  },
+  get related() {
+    return say('prompts.related-components');
+  },
+  get field() {
+    return say('prompts.parts-whose-field-holds-a');
+  },
+  get parameters() {
+    return say('prompts.the-document-s-parameters');
+  },
 };
 
 const blankSource = (source: DraftSource['source'], named: readonly Named[]): DraftSource => {
@@ -86,7 +95,7 @@ function problemsIn(error: unknown): string[] {
     isRecord(each) && typeof each.message === 'string'
       ? [
           typeof each.path === 'string' && each.path !== ''
-            ? `${each.path}: ${each.message}`
+            ? say('prompts.problem-at', { path: each.path, problem: each.message })
             : each.message,
         ]
       : [],
@@ -157,7 +166,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
   if (failed) {
     return (
       <Notice tone="failed">
-        <p>This prompt could not be loaded, or there is none you may read.</p>
+        <p>{say('prompts.this-prompt-could-not-be')}</p>
       </Notice>
     );
   }
@@ -195,15 +204,15 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
         setStanding(standingIn(data));
         setSaid(
           data.version.id === shown.version.id
-            ? 'Nothing changed, so no version was saved.'
-            : `Saved as version ${data.version.number}.`,
+            ? say('prompts.nothing-changed-so-no-version')
+            : say('prompts.saved-as-version', { number: data.version.number }),
         );
         return;
       }
       setProblems(problemsIn(error));
-      setSaid(refusal(error, 'The prompt could not be saved. Try again.'));
+      setSaid(refusal(error, say('prompts.the-prompt-could-not-be')));
     } catch {
-      setSaid('The prompt could not be saved. Try again.');
+      setSaid(say('prompts.the-prompt-could-not-be'));
     } finally {
       setBusy(false);
     }
@@ -212,10 +221,10 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
   const form = (
     <form className={styles['promptForm']} onSubmit={(event) => void save(event)}>
       <fieldset disabled={!mayEdit || busy}>
-        <legend>Prompt</legend>
+        <legend>{say('prompts.prompt')}</legend>
         {isNew && (
           <label>
-            Space
+            {say('prompts.space')}
             <select value={space} onChange={(event) => setSpace(event.target.value)}>
               {(places?.spaces ?? []).map((each) => (
                 <option key={each.id} value={each.id}>
@@ -226,7 +235,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
           </label>
         )}
         <label>
-          Title
+          {say('prompts.title')}
           <input
             value={draft.title}
             required
@@ -234,31 +243,31 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
           />
         </label>
         <label>
-          Description
+          {say('prompts.description')}
           <textarea
             value={draft.description}
             onChange={(event) => change({ description: event.target.value })}
           />
         </label>
         <label>
-          Instructions
+          {say('prompts.instructions')}
           <textarea
             value={draft.instructions}
             required
             onChange={(event) => change({ instructions: event.target.value })}
           />
           <span className={styles['promptHint']}>
-            Place a parameter the context declares as {'{{name}}'}.
+            {say('prompts.place-a-parameter-the-context', { example: '{{name}}' })}
           </span>
         </label>
       </fieldset>
       <fieldset disabled={!mayEdit || busy}>
-        <legend>What it reads</legend>
-        <p className={styles['promptHint']}>Nothing else reaches the model.</p>
+        <legend>{say('prompts.what-it-reads')}</legend>
+        <p className={styles['promptHint']}>{say('prompts.nothing-else-reaches-the-model')}</p>
         {draft.context.map((each, at) => (
           <div key={at} className={styles['source']}>
             <label>
-              {`Source ${at + 1}`}
+              {say('prompts.source', { number: at + 1 })}
               <select
                 value={each.source}
                 onChange={(event) =>
@@ -274,7 +283,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             </label>
             {each.source === 'outline' && (
               <label>
-                Which parts
+                {say('prompts.which-parts')}
                 <select
                   value={each.scope}
                   onChange={(event) =>
@@ -292,7 +301,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             {each.source === 'related' && (
               <>
                 <label>
-                  Relationship type
+                  {say('prompts.relationship-type')}
                   <select
                     value={each.type}
                     onChange={(event) => changeSource(at, { ...each, type: event.target.value })}
@@ -305,15 +314,15 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
                   </select>
                 </label>
                 <label>
-                  Direction
+                  {say('prompts.direction')}
                   <select
                     value={each.direction}
                     onChange={(event) =>
                       changeSource(at, { ...each, direction: event.target.value as 'out' | 'in' })
                     }
                   >
-                    <option value="out">From the part</option>
-                    <option value="in">To the part</option>
+                    <option value="out">{say('prompts.from-the-part')}</option>
+                    <option value="in">{say('prompts.to-the-part')}</option>
                   </select>
                 </label>
               </>
@@ -321,7 +330,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             {each.source === 'field' && (
               <>
                 <label>
-                  Field
+                  {say('prompts.field')}
                   <select
                     value={each.field}
                     onChange={(event) => changeSource(at, { ...each, field: event.target.value })}
@@ -334,7 +343,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
                   </select>
                 </label>
                 <label>
-                  Value
+                  {say('prompts.value')}
                   <input
                     value={each.value}
                     onChange={(event) => changeSource(at, { ...each, value: event.target.value })}
@@ -344,7 +353,7 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             )}
             {each.source === 'parameters' && (
               <label>
-                Parameter names
+                {say('prompts.parameter-names')}
                 <input
                   value={each.names}
                   onChange={(event) => changeSource(at, { ...each, names: event.target.value })}
@@ -353,10 +362,10 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
             )}
             <button
               type="button"
-              aria-label={`Remove source ${at + 1}`}
+              aria-label={say('prompts.remove-source', { number: at + 1 })}
               onClick={() => change({ context: draft.context.filter((_, i) => i !== at) })}
             >
-              Remove
+              {say('prompts.remove-2')}
             </button>
           </div>
         ))}
@@ -364,18 +373,18 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
           type="button"
           onClick={() => change({ context: [...draft.context, blankSource('parameters', named)] })}
         >
-          Add a source
+          {say('prompts.add-a-source')}
         </button>
       </fieldset>
       <fieldset disabled={!mayEdit || busy}>
-        <legend>What it writes</legend>
+        <legend>{say('prompts.what-it-writes')}</legend>
         <label>
-          The text of a part of type
+          {say('prompts.the-text-of-a-part')}
           <select
             value={draft.componentType}
             onChange={(event) => change({ componentType: event.target.value })}
           >
-            <option value="">Any</option>
+            <option value="">{say('prompts.any')}</option>
             {ofKind('componentType').map((type) => (
               <option key={type.id} value={type.id}>
                 {type.name}
@@ -385,9 +394,9 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
         </label>
       </fieldset>
       <fieldset disabled={!mayEdit || busy}>
-        <legend>Models</legend>
+        <legend>{say('prompts.models')}</legend>
         <label>
-          Purpose
+          {say('prompts.purpose')}
           <select
             value={draft.purpose}
             onChange={(event) => change({ purpose: event.target.value as PromptPurpose })}
@@ -398,22 +407,20 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
               </option>
             ))}
           </select>
-          <span className={styles['promptHint']}>
-            It runs on the endpoint this purpose goes to, and fails on any model not accepted.
-          </span>
+          <span className={styles['promptHint']}>{say('prompts.it-runs-on-the-endpoint')}</span>
         </label>
         <label>
-          Models accepted
+          {say('prompts.models-accepted')}
           <textarea
             value={draft.accepts}
             onChange={(event) => change({ accepts: event.target.value })}
           />
-          <span className={styles['promptHint']}>One model identifier a line.</span>
+          <span className={styles['promptHint']}>{say('prompts.one-model-identifier-a-line')}</span>
         </label>
       </fieldset>
       {mayEdit && (
         <button type="submit" className="primary" disabled={busy}>
-          {isNew ? 'Make prompt' : 'Save version'}
+          {isNew ? say('prompts.make-prompt') : say('prompts.save-version')}
         </button>
       )}
       {problems.length > 0 && (
@@ -430,20 +437,29 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
     <DetailPage
       trail={
         <>
-          <a href={PROMPTS}>Prompts</a>
-          {shown !== null && ` / ${shown.space.name}`}
+          <a href={PROMPTS}>{say('prompts.prompts')}</a>
+          {shown !== null && (
+            <>
+              {' / '}
+              <span data-content>{shown.space.name}</span>
+            </>
+          )}
         </>
       }
-      title={isNew ? 'New prompt' : shown!.prompt.title}
+      title={isNew ? say('prompts.new-prompt') : shown!.prompt.title}
       chips={
         shown === null ? undefined : (
           <>
-            <Chip className={styles['mono']}>{`Version ${shown.version.number}`}</Chip>
-            <Chip>{`In ${shown.space.name}`}</Chip>
+            <Chip className={styles['mono']}>
+              {say('prompts.version', { number: shown.version.number })}
+            </Chip>
+            <Chip>{say('prompts.in', { name: shown.space.name })}</Chip>
             {standing && <StateLozenge state={standing.state} />}
             <RevisionChip revision={standing?.revision} />
             {shown.prompt.description !== '' && (
-              <span className={styles['described']}>{shown.prompt.description}</span>
+              <span className={styles['described']} data-content>
+                {shown.prompt.description}
+              </span>
             )}
           </>
         )
@@ -472,13 +488,13 @@ export function PromptPage({ client, id }: { readonly client: Client; readonly i
       }
       strip={[]}
       notice={said === '' ? undefined : <p role="status">{said}</p>}
-      label="Prompt"
+      label={say('prompts.prompt')}
       tabs={
         shown === null
-          ? [{ key: 'prompt', label: 'Prompt' }]
+          ? [{ key: 'prompt', label: say('prompts.prompt') }]
           : [
-              { key: 'prompt', label: 'Prompt' },
-              { key: 'try', label: 'Try it' },
+              { key: 'prompt', label: say('prompts.prompt') },
+              { key: 'try', label: say('prompts.try-it') },
             ]
       }
       chosen={null}

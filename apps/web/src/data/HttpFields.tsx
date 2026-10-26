@@ -3,6 +3,7 @@ import { FormatFields } from './FormatFields.js';
 import type { ParameterDraft } from './definitionDraft.js';
 import { NEW_PAIR, NEW_PART, type HttpDraft, type PairDraft, type PartDraft } from './httpDraft.js';
 import styles from './QueryDefinitionPage.module.css';
+import { words } from '../words/words.js';
 
 /**
  * An HTTP connection's half of a query definition's Query step (the D6 plan, D6-E): the method, each
@@ -31,7 +32,7 @@ export function PartField({
 }) {
   return (
     <>
-      <Choice label={`${label}: fixed or a parameter`}>
+      <Choice label={words('data.fixed-or-a-parameter-2', { label })}>
         {(id) => (
           <select
             id={id}
@@ -40,8 +41,8 @@ export function PartField({
               onChange(partOfKind(event.target.value as PartDraft['kind'], parameters))
             }
           >
-            <option value="fixed">Fixed</option>
-            <option value="parameter">Parameter</option>
+            <option value="fixed">{words('data.fixed')}</option>
+            <option value="parameter">{words('data.parameter')}</option>
           </select>
         )}
       </Choice>
@@ -55,14 +56,14 @@ export function PartField({
           />
         </label>
       ) : (
-        <Choice label={`${label} parameter`}>
+        <Choice label={words('data.parameter-2', { label })}>
           {(id) => (
             <select
               id={id}
               value={part.text}
               onChange={(event) => onChange({ ...part, text: event.target.value })}
             >
-              {part.text === '' && <option value="">Choose a parameter</option>}
+              {part.text === '' && <option value="">{words('data.choose-a-parameter')}</option>}
               {parameters.map((parameter) => (
                 <option key={parameter.name} value={parameter.name}>
                   {parameter.name}
@@ -79,13 +80,13 @@ export function PartField({
 /** A named list of pairs: query pairs, headers or body members. */
 function Pairs({
   legend,
-  noun,
+  kind,
   pairs,
   parameters,
   onChange,
 }: {
   readonly legend: string;
-  readonly noun: string;
+  readonly kind: 'pair' | 'header' | 'member';
   readonly pairs: readonly PairDraft[];
   readonly parameters: readonly ParameterDraft[];
   readonly onChange: (pairs: PairDraft[]) => void;
@@ -98,7 +99,7 @@ function Pairs({
       {pairs.map((pair, at) => (
         <div key={at} className={styles['fragment']}>
           <label>
-            {`${noun} ${at + 1} name`}
+            {words('data.pair-name', { kind, n: at + 1 })}
             <input
               value={pair.name}
               spellCheck={false}
@@ -106,18 +107,18 @@ function Pairs({
             />
           </label>
           <PartField
-            label={`${noun} ${at + 1} value`}
+            label={words('data.pair-value', { kind, n: at + 1 })}
             part={pair.value}
             parameters={parameters}
             onChange={(value) => set(at, { ...pair, value })}
           />
           <button type="button" onClick={() => onChange(pairs.filter((_, place) => place !== at))}>
-            {`Remove ${noun.toLowerCase()} ${at + 1}`}
+            {words('data.remove-pair', { kind, n: at + 1 })}
           </button>
         </div>
       ))}
       <button type="button" onClick={() => onChange([...pairs, NEW_PAIR])}>
-        {`Add ${noun.toLowerCase()}`}
+        {words('data.add-pair', { kind })}
       </button>
     </fieldset>
   );
@@ -136,7 +137,7 @@ export function HttpFields({
     onChange({ ...http, path: http.path.map((held, place) => (place === at ? part : held)) });
   return (
     <div className={styles['form']}>
-      <Choice label="Method">
+      <Choice label={words('data.method')}>
         {(id) => (
           <select
             id={id}
@@ -145,17 +146,17 @@ export function HttpFields({
               onChange({ ...http, method: event.target.value as 'GET' | 'POST' })
             }
           >
-            <option value="GET">GET</option>
-            <option value="POST">POST</option>
+            <option value="GET">{words('data.get')}</option>
+            <option value="POST">{words('data.post')}</option>
           </select>
         )}
       </Choice>
       <fieldset className={styles['parameter']}>
-        <legend>Path, after the connection&apos;s base URL</legend>
+        <legend>{words('data.path-after-the-connection-s')}</legend>
         {http.path.map((part, at) => (
           <div key={at} className={styles['fragment']}>
             <PartField
-              label={`Segment ${at + 1}`}
+              label={words('data.segment-2', { n: at + 1 })}
               part={part}
               parameters={parameters}
               onChange={(changed) => setSegment(at, changed)}
@@ -166,43 +167,39 @@ export function HttpFields({
                 onChange({ ...http, path: http.path.filter((_, place) => place !== at) })
               }
             >
-              {`Remove segment ${at + 1}`}
+              {words('data.remove-segment', { n: at + 1 })}
             </button>
           </div>
         ))}
         <button type="button" onClick={() => onChange({ ...http, path: [...http.path, NEW_PART] })}>
-          Add segment
+          {words('data.add-segment')}
         </button>
       </fieldset>
       <Pairs
-        legend="Query"
-        noun="Pair"
+        legend={words('data.query')}
+        kind="pair"
         pairs={http.query}
         parameters={parameters}
         onChange={(query) => onChange({ ...http, query })}
       />
       <Pairs
-        legend="Headers"
-        noun="Header"
+        legend={words('data.headers')}
+        kind="header"
         pairs={http.headers}
         parameters={parameters}
         onChange={(headers) => onChange({ ...http, headers })}
       />
       {http.method === 'POST' && (
         <Pairs
-          legend="Body, a JSON object"
-          noun="Member"
+          legend={words('data.body-a-json-object')}
+          kind="member"
           pairs={http.body}
           parameters={parameters}
           onChange={(body) => onChange({ ...http, body })}
         />
       )}
-      <FormatFields draft={http} noun="answer" onChange={onChange} />
-      <p className={styles['hint']}>
-        A parameter&apos;s value is placed where it stands and encoded for it: a path segment
-        refuses a slash, . and .., and a header a line break. The connection&apos;s secret is sent
-        in its own header, which a request may not name.
-      </p>
+      <FormatFields draft={http} holder="answer" onChange={onChange} />
+      <p className={styles['hint']}>{words('data.a-parameter-s-value-is')}</p>
     </div>
   );
 }

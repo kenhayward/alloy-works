@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Chip } from '../parts/Chip.js';
 import { documentLink, nodeLink } from '../structure/links.js';
 import styles from './VersionPages.module.css';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -20,13 +21,18 @@ type Read<T> = T | 'missing' | 'deleted' | 'failed' | null;
 
 /** "An earlier version, 1.3, by Ada on 2 October 2026. The latest is 1.7." */
 function versionSentence(version: Heading, latest: { readonly number: string }): string {
-  const when = new Date(version.createdAt).toLocaleDateString('en-GB', {
+  const when = formats().date(new Date(version.createdAt), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
-  const by = version.author === null ? '' : ` by ${version.author.name ?? 'somebody'}`;
-  return `An earlier version, ${version.number},${by} on ${when}. The latest is ${latest.number}.`;
+  return words('versions.an-earlier-version-on-the', {
+    number: version.number,
+    by: version.author === null ? 'nobody' : version.author.name === null ? 'somebody' : 'named',
+    name: version.author?.name ?? '',
+    when,
+    latest: latest.number,
+  });
 }
 
 /** One version read once, and what its answer says when it is not one. */
@@ -52,15 +58,21 @@ function useVersion<T>(read: () => Promise<{ data?: T; response: Response }>, ke
   return shown;
 }
 
-function Unread({ shown, kind }: { shown: 'missing' | 'deleted' | 'failed' | null; kind: string }) {
+function Unread({
+  shown,
+  kind,
+}: {
+  shown: 'missing' | 'deleted' | 'failed' | null;
+  kind: 'component' | 'document';
+}) {
   const said =
     shown === null
-      ? 'Opening...'
+      ? words('versions.opening')
       : shown === 'missing'
-        ? 'There is no such version.'
+        ? words('versions.there-is-no-such-version')
         : shown === 'deleted'
-          ? `This ${kind} has been deleted.`
-          : 'The version could not be read.';
+          ? words('versions.this-has-been-deleted', { kind })
+          : words('versions.the-version-could-not-be');
   return <p className={styles['versionNote']}>{said}</p>;
 }
 
@@ -80,14 +92,14 @@ function Head({
   return (
     <header className={styles['versionHead']}>
       <p>
-        <a href={latestLink}>Open the latest</a>
+        <a href={latestLink}>{words('versions.open-the-latest')}</a>
       </p>
-      <h1 id="version-heading" className={styles['versionTitle']}>
+      <h1 id="version-heading" className={styles['versionTitle']} data-content>
         {title}
       </h1>
       <div className={styles['versionFacts']}>
-        <Chip tone="info">{`Version ${version.number}`}</Chip>
-        {archived && <Chip tone="warn">Archived</Chip>}
+        <Chip tone="info">{words('versions.version', { number: version.number })}</Chip>
+        {archived && <Chip tone="warn">{words('versions.archived')}</Chip>}
       </div>
       <p className={styles['versionNote']}>{versionSentence(version, latest)}</p>
     </header>
@@ -133,7 +145,9 @@ export function ComponentVersionPage({
     if (!host || read === null || isLatest) return;
     const rendered = renderContent(read.content, window.document);
     if (rendered === null) {
-      host.replaceChildren(window.document.createTextNode('This version cannot be shown.'));
+      host.replaceChildren(
+        window.document.createTextNode(words('versions.this-version-cannot-be-shown')),
+      );
       return;
     }
     host.replaceChildren(rendered);
@@ -234,13 +248,19 @@ export function DocumentVersionPage({
             data-node={item.id}
             {...(item.id === node ? { 'data-marked': 'true' } : {})}
           >
-            <span className={item.type === 'reference' ? styles['versionReference'] : undefined}>
-              {item.type === 'reference'
-                ? item.component === null
-                  ? 'A component you cannot open'
-                  : (titles.get(item.id) ?? 'A component')
-                : titleWords(item.title)}
-            </span>
+            {item.type !== 'reference' ? (
+              <span data-content>{titleWords(item.title)}</span>
+            ) : item.component !== null && titles.get(item.id) !== undefined ? (
+              <span className={styles['versionReference']} data-content>
+                {titles.get(item.id)}
+              </span>
+            ) : (
+              <span className={styles['versionReference']}>
+                {item.component === null
+                  ? words('versions.a-component-you-cannot-open')
+                  : words('versions.a-component')}
+              </span>
+            )}
             {list(item.children ?? [])}
           </li>
         ))}

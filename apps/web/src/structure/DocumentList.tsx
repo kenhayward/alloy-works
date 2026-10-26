@@ -438,7 +438,7 @@ export function DocumentList({ client, onOpen }: DocumentListProps) {
             </table>
           </div>
         )}
-        <More listing={listing} what="documents" />
+        <More listing={listing} failed={words('document.more-failed')} />
       </section>
     </ListLayout>
   );
