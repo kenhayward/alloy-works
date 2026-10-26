@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Chip } from '../parts/Chip.js';
 import { documentLink, nodeLink } from '../structure/links.js';
 import styles from './VersionPages.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -21,20 +21,17 @@ type Read<T> = T | 'missing' | 'deleted' | 'failed' | null;
 
 /** "An earlier version, 1.3, by Ada on 2 October 2026. The latest is 1.7." */
 function versionSentence(version: Heading, latest: { readonly number: string }): string {
-  const when = new Date(version.createdAt).toLocaleDateString('en-GB', {
+  const when = formats().date(new Date(version.createdAt), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
-  const by =
-    version.author === null
-      ? ''
-      : words('versions.by', { value1: version.author.name ?? 'somebody' });
   return words('versions.an-earlier-version-on-the', {
     number: version.number,
-    by,
+    by: version.author === null ? 'nobody' : version.author.name === null ? 'somebody' : 'named',
+    name: version.author?.name ?? '',
     when,
-    number4: latest.number,
+    latest: latest.number,
   });
 }
 
@@ -61,7 +58,13 @@ function useVersion<T>(read: () => Promise<{ data?: T; response: Response }>, ke
   return shown;
 }
 
-function Unread({ shown, kind }: { shown: 'missing' | 'deleted' | 'failed' | null; kind: string }) {
+function Unread({
+  shown,
+  kind,
+}: {
+  shown: 'missing' | 'deleted' | 'failed' | null;
+  kind: 'component' | 'document';
+}) {
   const said =
     shown === null
       ? words('versions.opening')
@@ -91,7 +94,7 @@ function Head({
       <p>
         <a href={latestLink}>{words('versions.open-the-latest')}</a>
       </p>
-      <h1 id="version-heading" className={styles['versionTitle']}>
+      <h1 id="version-heading" className={styles['versionTitle']} data-content>
         {title}
       </h1>
       <div className={styles['versionFacts']}>
@@ -245,13 +248,19 @@ export function DocumentVersionPage({
             data-node={item.id}
             {...(item.id === node ? { 'data-marked': 'true' } : {})}
           >
-            <span className={item.type === 'reference' ? styles['versionReference'] : undefined}>
-              {item.type === 'reference'
-                ? item.component === null
+            {item.type !== 'reference' ? (
+              <span data-content>{titleWords(item.title)}</span>
+            ) : item.component !== null && titles.get(item.id) !== undefined ? (
+              <span className={styles['versionReference']} data-content>
+                {titles.get(item.id)}
+              </span>
+            ) : (
+              <span className={styles['versionReference']}>
+                {item.component === null
                   ? words('versions.a-component-you-cannot-open')
-                  : (titles.get(item.id) ?? words('versions.a-component'))
-                : titleWords(item.title)}
-            </span>
+                  : words('versions.a-component')}
+              </span>
+            )}
             {list(item.children ?? [])}
           </li>
         ))}

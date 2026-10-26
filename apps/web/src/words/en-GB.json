@@ -4875,11 +4875,10 @@
   "metadata.add-to": "Add to {name}",
   "metadata.failure": "{name}: {detail}",
   "metadata.which-at": "{which, select, first {The first} other {The second}}, at UTC{offset}",
-  "versions.by": " by {value1}",
-  "versions.an-earlier-version-on-the": "An earlier version, {number},{by} on {when}. The latest is {number4}.",
+  "versions.an-earlier-version-on-the": "{by, select, nobody {An earlier version, {number}, on {when}. The latest is {latest}.} named {An earlier version, {number}, by {name} on {when}. The latest is {latest}.} other {An earlier version, {number}, by somebody on {when}. The latest is {latest}.}}",
   "versions.opening": "Opening...",
   "versions.there-is-no-such-version": "There is no such version.",
-  "versions.this-has-been-deleted": "This {kind} has been deleted.",
+  "versions.this-has-been-deleted": "{kind, select, document {This document has been deleted.} other {This component has been deleted.}}",
   "versions.the-version-could-not-be": "The version could not be read.",
   "versions.open-the-latest": "Open the latest",
   "versions.version": "Version {number}",
@@ -4892,5 +4891,6 @@
   "conversations.on-documents": "On documents",
   "shell.signed-in": "signed in",
   "shell.environment": "Environment",
-  "shell.make-a-sample": "Make a sample"
+  "shell.make-a-sample": "Make a sample",
+  "shell.asking": "asking..."
 }
