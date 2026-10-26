@@ -7,9 +7,9 @@ import { everyPage } from '../paging.js';
 import { Chip } from '../parts/Chip.js';
 import type { ThreadOn } from '../search/links.js';
 import { reviewThreadLink } from '../structure/links.js';
-import { anchorWords } from './ThreadsPanel.js';
+import { anchorValues, personValues } from './ThreadsPanel.js';
 import styles from './ThreadPage.module.css';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Part = { readonly text: string } | { readonly mention: string };
@@ -31,7 +31,9 @@ interface Thread {
   }[];
 }
 
-const when = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+/** A moment, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), { dateStyle: 'medium', timeStyle: 'short' });
 
 /**
  * A thread at its own address, `#/{components|documents}/{id}/threads/{thread}[/comments/{comment}]`:
@@ -139,12 +141,7 @@ export function ThreadPage({
       {typeof shown === 'object' && shown !== null && (
         <>
           <h1 id="thread-heading" className={styles['threadHeading']}>
-            {words('review.a-thread-on', {
-              value1:
-                shown.anchor.kind === 'span'
-                  ? anchorWords(shown.anchor)
-                  : anchorWords(shown.anchor).toLowerCase(),
-            })}
+            {words('review.a-thread-on', anchorValues(shown.anchor))}
           </h1>
           {orphaned && (
             <p>
@@ -155,8 +152,8 @@ export function ThreadPage({
             <p>
               <Chip tone="ok">
                 {words('review.resolved-by', {
-                  value1: shown.resolution.by.name ?? 'somebody',
-                  value2: when.format(new Date(shown.resolution.at)),
+                  ...personValues(shown.resolution.by),
+                  at: when(shown.resolution.at),
                 })}
               </Chip>
             </p>
@@ -174,11 +171,16 @@ export function ThreadPage({
                   className={styles['threadMessage']}
                 >
                   <p className={styles['threadWho']}>
-                    {each.author.name ?? words('review.somebody')}
-                    <Outside person={each.author} />
-                    {`, ${when.format(new Date(each.at))}`}
+                    {wordsWith(
+                      'review.comment-by',
+                      { named: personValues(each.author).named, at: when(each.at), edited: 'no' },
+                      {
+                        who: <span data-content>{each.author.name}</span>,
+                        outside: <Outside person={each.author} />,
+                      },
+                    )}
                   </p>
-                  <p>
+                  <p data-content>
                     {latest.parts.map((part, index) =>
                       'text' in part ? (
                         <span key={index}>{part.text}</span>

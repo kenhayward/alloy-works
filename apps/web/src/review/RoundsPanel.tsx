@@ -3,7 +3,7 @@ import { Outside } from '../parts/Outside.js';
 import { useCallback, useEffect, useId, useState } from 'react';
 
 import styles from './ThreadsPanel.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -49,21 +49,15 @@ const STATE_WORDS = {
     return words('review.done');
   },
 } as const;
-const OUTCOME_WORDS = {
-  get commented() {
-    return words('review.with-comments');
-  },
-  get nothing_to_say() {
-    return words('review.nothing-to-say');
-  },
-} as const;
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+/** A round's moment, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 const refusalOf = (error: unknown, fallback: string) =>
   typeof error === 'object' && error !== null && 'message' in error
@@ -74,21 +68,19 @@ const refusalOf = (error: unknown, fallback: string) =>
 function stateWords(reviewer: Round['reviewers'][number]): string {
   const state =
     reviewer.state === 'complete' && reviewer.outcome !== undefined
-      ? words('review.done-2', { value1: OUTCOME_WORDS[reviewer.outcome] })
+      ? words('review.done-2', { outcome: reviewer.outcome })
       : STATE_WORDS[reviewer.state];
-  const said = [
-    reviewer.threads > 0
-      ? `${reviewer.threads} ${words('review.threads', { count: reviewer.threads })}`
-      : '',
-    reviewer.suggestions > 0
-      ? `${reviewer.suggestions} ${words('review.suggestions', { count: reviewer.suggestions })}`
-      : '',
-  ].filter((each) => each !== '');
-  return [
-    state,
-    ...said,
-    ...(reviewer.mayReview ? [] : [words('review.may-no-longer-review')]),
-  ].join(', ');
+  return formats().list(
+    [
+      state,
+      ...(reviewer.threads > 0 ? [words('review.threads', { count: reviewer.threads })] : []),
+      ...(reviewer.suggestions > 0
+        ? [words('review.suggestions', { count: reviewer.suggestions })]
+        : []),
+      ...(reviewer.mayReview ? [] : [words('review.may-no-longer-review')]),
+    ],
+    { type: 'unit' },
+  );
 }
 
 /**
@@ -216,16 +208,23 @@ export function RoundsPanel({
         const heading = `${ids}-${round.id}`;
         return (
           <section key={round.id} aria-labelledby={heading} className={styles['thread']}>
-            <h3 id={heading} className={styles['heading']}>
+            <h3 id={heading} className={styles['heading']} data-content>
               {round.title}
             </h3>
             <p className={styles['note']}>
               {round.closed !== null
-                ? words('review.closed-2', { value1: when.format(new Date(round.closed.at)) })
-                : words('review.due', { value1: when.format(new Date(round.dueAt)) })}
-              {round.scope.length > 0
-                ? words('review.on-of-its-sections', { length: round.scope.length })
-                : ''}
+                ? round.scope.length > 0
+                  ? words('review.closed-on-sections', {
+                      at: when(round.closed.at),
+                      count: round.scope.length,
+                    })
+                  : words('review.closed-2', { at: when(round.closed.at) })
+                : round.scope.length > 0
+                  ? words('review.due-on-sections', {
+                      at: when(round.dueAt),
+                      count: round.scope.length,
+                    })
+                  : words('review.due', { at: when(round.dueAt) })}
             </p>
             <p className={styles['state']}>
               {round.everybody
@@ -249,7 +248,11 @@ export function RoundsPanel({
               {round.reviewers.map((each) => (
                 <li key={each.person.id} className={styles['row']}>
                   <span>
-                    {each.person.name ?? words('review.somebody')}
+                    {each.person.name === null ? (
+                      words('review.somebody')
+                    ) : (
+                      <span data-content>{each.person.name}</span>
+                    )}
                     <Outside person={each.person} />
                   </span>
                   <span className={styles['state']}>{stateWords(each)}</span>
@@ -407,7 +410,7 @@ function OpenRound({
               checked={reviewers.includes(person.id)}
               onChange={() => setReviewers(toggle(reviewers, person.id))}
             />{' '}
-            {person.name}
+            <span data-content>{person.name}</span>
             <Outside person={person} />
           </label>
         ))}
@@ -421,7 +424,7 @@ function OpenRound({
               checked={scope.includes(section.id)}
               onChange={() => setScope(toggle(scope, section.id))}
             />{' '}
-            {section.label}
+            <span data-content>{section.label}</span>
           </label>
         ))}
       </fieldset>

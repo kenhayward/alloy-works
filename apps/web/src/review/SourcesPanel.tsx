@@ -1,10 +1,22 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 
-import { flagSaid } from '../bibliography/entries.js';
 import { entryLink } from '../bibliography/links.js';
 import { Notice } from '../states/Notice.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
+
+/** Elements listed as the person's language lists things, each element where its item stands. */
+function listOf(elements: readonly ReactNode[]): ReactNode[] {
+  return formats()
+    .list(
+      elements.map((_, i) => `\u{E010}${i}\u{E011}`),
+      { type: 'unit' },
+    )
+    .split(/\u{E010}(\d+)\u{E011}/u)
+    .map((part, i) =>
+      i % 2 === 0 ? part : <Fragment key={`item-${part}`}>{elements[Number(part)]}</Fragment>,
+    );
+}
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -62,32 +74,38 @@ export function SourcesPanel({
   if (items.length === 0) return <p>{words('review.no-cited-source-is-retracted')}</p>;
   return (
     <ul aria-label={words('review.flagged-sources')}>
-      {items.map((each, at) => {
-        const named = each.entry && [each.entry.key, each.entry.title].filter(Boolean).join(', ');
-        return (
-          <li key={each.entry?.id ?? `unread-${at}`}>
-            {`${flagSaid(each.flag, true)}: `}
-            {each.entry ? (
-              <a href={entryLink(each.entry.id)}>{named}</a>
-            ) : (
-              words('review.a-source-you-may-not')
-            )}
-            {each.components.length > 0 && (
-              <>
-                {words('review.cited-in')}
-                {each.components.map((component, index) => (
-                  <span key={component.id}>
-                    {index > 0 && ', '}
-                    <a href={`#/components/${component.id}`}>{component.title}</a>
-                  </span>
-                ))}
-                .
-              </>
-            )}
-            {each.unreadable && words('review.cited-in-components-you-may')}
-          </li>
-        );
-      })}
+      {items.map((each, at) => (
+        <li key={each.entry?.id ?? `unread-${at}`}>
+          {wordsWith(
+            'review.flagged-source',
+            {
+              flag: each.flag,
+              readable: each.entry ? 'yes' : 'no',
+              cited: each.components.length > 0 ? 'yes' : 'no',
+              unreadable: each.unreadable ? 'yes' : 'no',
+            },
+            {
+              source: each.entry && (
+                <a href={entryLink(each.entry.id)} data-content>
+                  {formats().list(
+                    [each.entry.key, each.entry.title].filter((part): part is string =>
+                      Boolean(part),
+                    ),
+                    { type: 'unit' },
+                  )}
+                </a>
+              ),
+              components: listOf(
+                each.components.map((component) => (
+                  <a key={component.id} href={`#/components/${component.id}`} data-content>
+                    {component.title}
+                  </a>
+                )),
+              ),
+            },
+          )}
+        </li>
+      ))}
     </ul>
   );
 }
