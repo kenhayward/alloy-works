@@ -324,6 +324,7 @@ describe('translation (the TR plan, TRa)', () => {
       fallback: 'source',
       outOfDate: 'publish',
       note: {},
+      conflict: 'review',
     });
     expect(
       (
