@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 
 import styles from './parts.module.css';
+import { words } from '../words/words.js';
 
 /**
  * A button whose face is an icon, named in words (ADR-0046, decision 6): `label` is its name for a
@@ -32,7 +33,7 @@ export function IconButton({
       type="button"
       className={className ?? styles['iconButton']}
       aria-label={label}
-      title={tooltip ?? (shortcut === undefined ? label : `${label} (${shortcut})`)}
+      title={tooltip ?? (shortcut === undefined ? label : words('parts.with-shortcut', { label, shortcut }))}
       {...(pressed === undefined ? {} : { 'aria-pressed': pressed })}
       {...rest}
     >

@@ -48,7 +48,7 @@ export function RowActions({
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
-  if (shown.length > 2) throw new Error(words('parts.a-row-shows-at-most'));
+  if (shown.length > 2) throw new Error('A row shows at most two actions as icons');
   const items = () => [...(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export function RowActions({
           <IconButton
             ref={button}
             label={words('parts.more-actions-for', { subject })}
-            tooltip="More actions"
+            tooltip={words('parts.more-actions')}
             className={`${styles['iconButton']} ${styles['rowIcon']}`}
             aria-haspopup="menu"
             aria-expanded={open}
