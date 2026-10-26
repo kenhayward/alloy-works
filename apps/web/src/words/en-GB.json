@@ -2739,9 +2739,9 @@
   "admin.what-the-environment-means-to": "What the environment means to spend on models a month, and the percents of it at which the people named here are told, in their inbox.",
   "admin.when-it-is-spent-nothing": "When it is spent, nothing stops: every capability continues.",
   "admin.the-budget-could-not-be-3": "The budget could not be loaded.",
-  "admin.of-spent-in": "{value1} of {value2} spent in {month}.",
-  "admin.no-budget-is-set-spent": "No budget is set. {value1} spent in {month}.",
-  "admin.runs-cost-something-in-another": " {otherCurrencyRuns} runs cost something in another currency, counted in no budget.",
+  "admin.of-spent-in": "{currency} {spent} of {currency} {limit} spent in {month}.",
+  "admin.no-budget-is-set-spent": "No budget is set. {currency} {spent} spent in {month}.",
+  "admin.runs-cost-something-in-another": "{runs, plural, one {# run costs} other {# runs cost}} something in another currency, counted in no budget.",
   "admin.set-the-budget": "Set the budget",
   "admin.currency": "Currency",
   "admin.monthly-limit": "Monthly limit",
@@ -2773,10 +2773,10 @@
   "admin.bytes": "Bytes",
   "admin.a-limit-is-a-whole": "A limit is a whole number of runs, 1 or more. Leave it empty for none.",
   "admin.nobody-is-limited-now": "Nobody is limited now.",
-  "admin.each-person-may-start-runs": "Each person may start {perHour} runs an hour.",
+  "admin.each-person-may-start-runs": "{perHour, plural, one {Each person may start # run an hour.} other {Each person may start # runs an hour.}}",
   "admin.the-limit-could-not-be": "The limit could not be saved.",
   "admin.has-the-environment-s-limit": "{name} has the environment''s limit again.",
-  "admin.may-start-runs-an-hour": "{name} may start {perHour} runs an hour.",
+  "admin.may-start-runs-an-hour": "{perHour, plural, one {{name} may start # run an hour.} other {{name} may start # runs an hour.}}",
   "admin.their-limit-could-not-be": "Their limit could not be saved.",
   "admin.rate-limits": "Rate limits",
   "admin.how-many-model-runs-each": "How many model runs each person may start an hour. A run over it is refused, saying when one is free again. Testing an endpoint is never counted.",
@@ -4923,5 +4923,6 @@
   "admin.connection-used": "{retired, select, yes {{connection}, retired} other {{connection}}}",
   "admin.failed-its-test": "{name} failed its test.",
   "admin.route-said": "{state, select, off {{purpose, select, drafting {Drafting is off.} chat {Chat is off.} summarising {Summarising is off.} embedding {Embedding is off.} translate {Machine translation is off.} other {{purpose} is off.}}} other {{purpose, select, drafting {Drafting route saved.} chat {Chat route saved.} summarising {Summarising route saved.} embedding {Embedding route saved.} translate {Machine translation route saved.} other {{purpose} route saved.}}}}",
-  "admin.retired-mark": "(retired)"
+  "admin.retired-mark": "(retired)",
+  "admin.cost-in": "{currency} {amount}"
 }

@@ -5,9 +5,13 @@ import { refusal } from '../account/TokenTable.js';
 import { isShownPerson, personName, type ShownPerson } from '../access/describe.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
+
+/** An amount of money to the cent, in the reader's language. */
+const cents = (amount: string | number) =>
+  formats().number(Number(amount), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 interface Limits {
   readonly perHour: number | null;
@@ -152,7 +156,6 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
     } else setSaid(refusal(error, words('admin.who-is-told-could-not')));
   };
 
-  const money = (amount: string | number) => `${currency} ${Number(amount).toFixed(2)}`;
   return (
     <section aria-label={words('admin.budget')}>
       <h2>{words('admin.budget')}</h2>
@@ -166,18 +169,22 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
           <p>
             {read.budget
               ? words('admin.of-spent-in', {
-                  value1: money(read.spent),
-                  value2: money(read.budget.limit),
+                  currency,
+                  spent: cents(read.spent),
+                  limit: cents(read.budget.limit),
                   month: read.month,
                 })
               : words('admin.no-budget-is-set-spent', {
-                  value1: money(read.spent),
+                  currency,
+                  spent: cents(read.spent),
                   month: read.month,
                 })}
-            {read.otherCurrencyRuns > 0 &&
-              words('admin.runs-cost-something-in-another', {
-                otherCurrencyRuns: read.otherCurrencyRuns,
-              })}
+            {read.otherCurrencyRuns > 0 && (
+              <>
+                {' '}
+                {words('admin.runs-cost-something-in-another', { runs: read.otherCurrencyRuns })}
+              </>
+            )}
           </p>
           <form
             className={styles['toolbar']}
@@ -226,7 +233,7 @@ function MonthlyBudget({ client, people }: { client: Client; people: readonly Sh
                     setTold(next);
                   }}
                 />
-                {personName(one)}
+                <span data-content>{personName(one)}</span>
               </label>
             ))}
             <button type="button" onClick={() => void name()}>
@@ -297,7 +304,7 @@ function Trend({ client }: { client: Client }) {
       current = false;
     };
   }, [client]);
-  const count = (value: number) => value.toLocaleString('en-GB');
+  const count = (value: number) => formats().number(value);
   return (
     <section aria-label={words('admin.twelve-months')}>
       <h2>{words('admin.twelve-months')}</h2>
@@ -329,9 +336,12 @@ function Trend({ client }: { client: Client }) {
                     <td>{count(row.tokensCached)}</td>
                     <td>{count(row.tokensOut)}</td>
                     <td>
-                      {row.costs
-                        .map((each) => `${each.currency} ${Number(each.cost).toFixed(2)}`)
-                        .join(', ')}
+                      {formats().list(
+                        row.costs.map((each) =>
+                          words('admin.cost-in', { currency: each.currency, amount: cents(each.cost) }),
+                        ),
+                        { type: 'unit' },
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -482,8 +492,13 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
                   const name = row.person.name ?? words('admin.someone-with-no-name');
                   return (
                     <tr key={row.person.id}>
-                      <td className={styles['strong']}>{name}</td>
-                      <td>{row.perHour}</td>
+                      <td
+                        className={styles['strong']}
+                        {...(row.person.name === null ? {} : { 'data-content': '' })}
+                      >
+                        {name}
+                      </td>
+                      <td>{formats().number(row.perHour)}</td>
                       <td>
                         <button
                           type="button"
@@ -513,7 +528,7 @@ function RateLimits({ client, people }: { client: Client; people: readonly Shown
               {words('admin.person')}
               <select value={person} onChange={(change) => setPerson(change.target.value)}>
                 {people.map((one) => (
-                  <option key={one.id} value={one.id}>
+                  <option key={one.id} value={one.id} data-content>
                     {personName(one)}
                   </option>
                 ))}
