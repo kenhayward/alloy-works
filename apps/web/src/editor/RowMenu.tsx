@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isAccessAnswers } from '../access/describe.js';
 import { archivalSaid, setArchived } from '../lifecycle/Archive.js';
 import styles from './RowMenu.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -77,7 +78,7 @@ export function RowMenu({
       return;
     }
     copying.then(
-      () => onNotice(`Copied the link to ${title}.`),
+      () => onNotice(words('editor.copied-the-link-to', { title })),
       () => onNotice(NOT_COPIED),
     );
   };
@@ -100,8 +101,8 @@ export function RowMenu({
         ref={trigger}
         type="button"
         className={styles['kebab']}
-        aria-label={`Actions for ${title}`}
-        title={`Actions for ${title}`}
+        aria-label={words('editor.actions-for', { title })}
+        title={words('editor.actions-for', { title })}
         aria-expanded={open}
         onClick={() => (open ? close() : setOpen(true))}
       >
@@ -111,25 +112,25 @@ export function RowMenu({
         <ul className={styles['menu']}>
           <li>
             <a className={styles['item']} href={`#/components/${id}`}>
-              Open
+              {words('editor.open')}
             </a>
           </li>
           <li>
             <button type="button" className={styles['item']} onClick={copy}>
-              Copy link
+              {words('editor.copy-link')}
             </button>
           </li>
           {administers && (
             <li>
               <a className={styles['item']} href={`#/components/${id}/access`}>
-                Manage access
+                {words('editor.manage-access')}
               </a>
             </li>
           )}
           {retires && (
             <li>
               <button type="button" className={styles['item']} onClick={() => void archive()}>
-                {archived ? 'Unarchive' : 'Archive'}
+                {archived ? words('editor.unarchive') : words('editor.archive')}
               </button>
             </li>
           )}

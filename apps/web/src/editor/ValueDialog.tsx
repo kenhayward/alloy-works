@@ -20,28 +20,53 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Identity = 'service' | 'endUser';
 
 /** Whose identity a definition's query runs as, in words (DAT-022; bindings.md, "Placing"). */
 export const RUNS_AS = {
-  service: 'the service account',
-  endUser: "each reader's own view, as the source sees them",
+  get service() {
+    return words('editor.the-service-account');
+  },
+  get endUser() {
+    return words('editor.each-reader-s-own-view');
+  },
 } as const satisfies Record<Identity, string>;
 
 /** What a value refused by its parameter broke, beside its field (D2-R). */
 export const PARAMETER_WORDS = {
-  required: 'needs a value',
-  type: 'is not of its type',
-  permitted: 'is not one of its permitted values',
-  range: 'is outside its range',
-  list: 'is not a list as its parameter declares',
-  precision: 'has more digits than its type holds',
-  scale: 'has more places than its type holds',
-  zone: 'needs its time zone',
-  variation: 'is not one of its keys',
-  position: 'cannot stand where the request places it',
+  get required() {
+    return words('editor.needs-a-value');
+  },
+  get type() {
+    return words('editor.is-not-of-its-type');
+  },
+  get permitted() {
+    return words('editor.is-not-one-of-its');
+  },
+  get range() {
+    return words('editor.is-outside-its-range');
+  },
+  get list() {
+    return words('editor.is-not-a-list-as');
+  },
+  get precision() {
+    return words('editor.has-more-digits-than-its');
+  },
+  get scale() {
+    return words('editor.has-more-places-than-its');
+  },
+  get zone() {
+    return words('editor.needs-its-time-zone');
+  },
+  get variation() {
+    return words('editor.is-not-one-of-its-2');
+  },
+  get position() {
+    return words('editor.cannot-stand-where-the-request');
+  },
 } as const satisfies Record<ParameterRule, string>;
 
 /**
@@ -55,12 +80,24 @@ export type DocumentOffer =
 
 /** Why no document parameter is offered, before the dialog takes a typed name instead. */
 const NONE_OFFERED = {
-  alone: 'A component alone has no document to offer parameters.',
-  blank: 'This document holds no parameters to offer.',
-  unreadable: "You may not read this document's template, so its parameters cannot be offered.",
-  unread: "This document's parameters could not be read, so none can be offered.",
-  reading: "Reading this document's parameters.",
-  unfit: "None of this document's parameters is given to values of this type, so none is offered.",
+  get alone() {
+    return words('editor.a-component-alone-has-no');
+  },
+  get blank() {
+    return words('editor.this-document-holds-no-parameters');
+  },
+  get unreadable() {
+    return words('editor.you-may-not-read-this');
+  },
+  get unread() {
+    return words('editor.this-document-s-parameters-could');
+  },
+  get reading() {
+    return words('editor.reading-this-document-s-parameters');
+  },
+  get unfit() {
+    return words('editor.none-of-this-document-s');
+  },
 } as const;
 
 const TYPE_A_NAME = 'Type the name of the one this value takes.';
@@ -70,8 +107,12 @@ const NOT_A_NAME =
   'takes a name of lower-case letters, digits and underscores, beginning with a letter';
 
 const MODES = {
-  checked: 'Checked - looked for each time the document is opened',
-  pinned: 'Pinned - never looked for',
+  get checked() {
+    return words('editor.checked-looked-for-each-time');
+  },
+  get pinned() {
+    return words('editor.pinned-never-looked-for');
+  },
 } as const satisfies Record<Binding['mode'], string>;
 
 /** One definition as the listing offers it. */
@@ -157,8 +198,10 @@ function typedOf(binding: AnyBinding | null): Record<string, string> {
 /** `Site report, Annual review and 2 more`: readable titles, the rest counted. */
 function holdersSaid({ readable, others }: Holders): string {
   const names = [...readable.map((each) => each.title)];
-  if (others > 0) names.push(`${others} you cannot read`);
-  return names.length === 1 ? names[0]! : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+  if (others > 0) names.push(words('editor.you-cannot-read', { others }));
+  return names.length === 1
+    ? names[0]!
+    : words('editor.and', { value1: names.slice(0, -1).join(', '), value2: names.at(-1) });
 }
 
 /**
@@ -169,9 +212,15 @@ export type PlaceAs = 'line' | 'figure' | 'table';
 
 /** The words each place is offered by. */
 export const PLACE_AS = {
-  line: 'In the line',
-  figure: 'As a figure',
-  table: 'As a table',
+  get line() {
+    return words('editor.in-the-line');
+  },
+  get figure() {
+    return words('editor.as-a-figure');
+  },
+  get table() {
+    return words('editor.as-a-table');
+  },
 } as const satisfies Record<PlaceAs, string>;
 
 const NOTHING_READ: DocumentOffer = { none: 'unread' };
@@ -501,15 +550,18 @@ export function ValueDialog({
   const holding = holders === null ? 0 : holders.readable.length + holders.others;
   const warning =
     current !== null && holders !== null && holding > 0 && !sameQuestion
-      ? `${holding === 1 ? 'One document' : `${holding} documents`} will hold no value for it until resolved again: ${holdersSaid(holders)}.`
+      ? words('editor.will-hold-no-value-for', {
+          value1: holding === 1 ? 'One document' : `${holding} documents`,
+          value2: holdersSaid(holders),
+        })
       : null;
   const note =
     inDocument === null
-      ? 'The value will show in each document that resolves it.'
+      ? words('editor.the-value-will-show-in')
       : inDocument.pinned
-        ? 'It shows in this document once the node takes a version holding it.'
+        ? words('editor.it-shows-in-this-document')
         : ready !== null && !ready.mayUse
-          ? "You may not use this definition's connection: it holds no value here until somebody who may use it resolves it."
+          ? words('editor.you-may-not-use-this')
           : null;
 
   const shown = (listed ?? []).filter((each) =>
@@ -577,7 +629,7 @@ export function ValueDialog({
               (problems.length > 0 || unnamed.length > 0) &&
               (asTable ? tableChoice : choice) !== null
             ) {
-              setSaid('A value does not fit its parameter.');
+              setSaid(words('editor.a-value-does-not-fit'));
               return;
             }
             if (asTable && tableChoice !== null) {
@@ -591,10 +643,10 @@ export function ValueDialog({
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Value" size={22} />
             </span>
-            Value
+            {words('editor.value')}
           </h2>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-search`}>Find a query definition by title</label>
+            <label htmlFor={`${id}-search`}>{words('editor.find-a-query-definition-by')}</label>
             <input
               id={`${id}-search`}
               ref={search}
@@ -603,18 +655,20 @@ export function ValueDialog({
             />
           </div>
           <fieldset className={own['group']}>
-            <legend>Query definition</legend>
+            <legend>{words('editor.query-definition')}</legend>
             <div className={own['targets']}>
-              {listed === null && <p className={styles['note']}>Finding query definitions.</p>}
+              {listed === null && (
+                <p className={styles['note']}>{words('editor.finding-query-definitions')}</p>
+              )}
               {listed !== null && shownWithCurrent.length === 0 && !unreadableCurrent && (
-                <p className={styles['note']}>No query definition you may read has that title.</p>
+                <p className={styles['note']}>{words('editor.no-query-definition-you-may')}</p>
               )}
               {unreadableCurrent && current !== null && (
                 <label className={own['choice']}>
                   {radio('definition', current.query, chosenId === current.query, () =>
                     choose(current.query),
                   )}
-                  a query definition you cannot read
+                  {words('editor.a-query-definition-you-cannot')}
                 </label>
               )}
               {shownWithCurrent.map((each) => (
@@ -624,46 +678,50 @@ export function ValueDialog({
                   <span className={styles['hint']}>
                     {' '}
                     - {each.space}
-                    {each.identity !== null && ` - Runs as ${RUNS_AS[each.identity]}`}
+                    {each.identity !== null &&
+                      words('editor.runs-as', { value1: RUNS_AS[each.identity] })}
                   </span>
                 </label>
               ))}
             </div>
           </fieldset>
           {chosen === 'unreadable' && (
-            <p className={styles['note']}>
-              You may not read this query definition: keep the binding as it is, or choose another.
-            </p>
+            <p className={styles['note']}>{words('editor.you-may-not-read-this-2')}</p>
           )}
           {ready !== null && (
             <>
               {ready.identity !== null && (
-                <p className={styles['note']}>Runs as {RUNS_AS[ready.identity]}.</p>
+                <p className={styles['note']}>
+                  {words('editor.runs-as-2')}
+                  {RUNS_AS[ready.identity]}.
+                </p>
               )}
               <fieldset className={own['group']}>
-                <legend>Version</legend>
+                <legend>{words('editor.version')}</legend>
                 <div className={own['forms']}>
                   <label className={own['choice']}>
                     {radio('version', 'latest', pin === 'latest', () => setPin('latest'))}
-                    Always the latest
+                    {words('editor.always-the-latest')}
                   </label>
                   <label className={own['choice']}>
                     {radio('version', ready.version.id, pin === ready.version.id, () =>
                       setPin(ready.version.id),
                     )}
-                    Version {ready.version.number}, the latest now
+                    {words('editor.version-2')}
+                    {ready.version.number}
+                    {words('editor.the-latest-now')}
                   </label>
                   {pin !== 'latest' && pin !== ready.version.id && (
                     <label className={own['choice']}>
                       {radio('version', pin, true, () => undefined)}
-                      The version it pins now
+                      {words('editor.the-version-it-pins-now')}
                     </label>
                   )}
                 </div>
               </fieldset>
               {ready.parameters.length > 0 && (
                 <fieldset className={own['group']}>
-                  <legend>Parameters</legend>
+                  <legend>{words('editor.parameters')}</legend>
                   {ready.parameters.map((parameter) => {
                     const problem = problemOf(parameter.name);
                     const field = `${id}-parameter-${parameter.name}`;
@@ -693,12 +751,14 @@ export function ValueDialog({
                               );
                             }}
                           />
-                          Take {parameter.name} from the document
+                          {words('editor.take')}
+                          {parameter.name} {words('editor.from-the-document')}
                         </label>
                         {choosing && (
                           <>
                             <label htmlFor={`${field}-document`}>
-                              Document parameter for {parameter.name}
+                              {words('editor.document-parameter-for')}
+                              {parameter.name}
                             </label>
                             <select
                               id={`${field}-document`}
@@ -724,7 +784,8 @@ export function ValueDialog({
                               {noneOffered} {TYPE_A_NAME}
                             </p>
                             <label htmlFor={`${field}-document`}>
-                              Name of the document parameter for {parameter.name}
+                              {words('editor.name-of-the-document-parameter')}
+                              {parameter.name}
                             </label>
                             <input
                               id={`${field}-document`}
@@ -747,7 +808,7 @@ export function ValueDialog({
                         {!fromDocument && (
                           <label htmlFor={field}>
                             {parameter.name}
-                            {parameter.list ? ', one to a line' : ''}
+                            {parameter.list ? words('editor.one-to-a-line') : ''}
                           </label>
                         )}
                         {fromDocument ? null : parameter.list ? (
@@ -784,9 +845,9 @@ export function ValueDialog({
               )}
               {!asTable && (
                 <fieldset className={own['group']}>
-                  <legend>Value</legend>
+                  <legend>{words('editor.value')}</legend>
                   <div className={styles['field']}>
-                    <label htmlFor={`${id}-column`}>Column</label>
+                    <label htmlFor={`${id}-column`}>{words('editor.column')}</label>
                     <select
                       id={`${id}-column`}
                       value={column}
@@ -795,28 +856,25 @@ export function ValueDialog({
                       {ready.columns.map((each) => (
                         <option key={each.name} value={each.name}>
                           {each.name}
-                          {each.type.base === 'image' ? ', an image' : ''}
+                          {each.type.base === 'image' ? words('editor.an-image') : ''}
                         </option>
                       ))}
                     </select>
                   </div>
                   {place === 'figure' && ready.columns.length === 0 && (
-                    <p className={styles['note']}>
-                      This query definition has no image column, so it cannot give a figure its
-                      image.
-                    </p>
+                    <p className={styles['note']}>{words('editor.this-query-definition-has-no')}</p>
                   )}
                   <div className={own['forms']}>
                     <label className={own['choice']}>
                       {radio('row', 'only', row === 'only' || ready.key.length === 0, () =>
                         setRow('only'),
                       )}
-                      The only row
+                      {words('editor.the-only-row')}
                     </label>
                     {ready.key.length > 0 && (
                       <label className={own['choice']}>
                         {radio('row', 'key', row === 'key', () => setRow('key'))}
-                        The row whose key is
+                        {words('editor.the-row-whose-key-is')}
                       </label>
                     )}
                   </div>
@@ -837,7 +895,7 @@ export function ValueDialog({
               )}
               {place === 'offer' && (
                 <fieldset className={own['group']}>
-                  <legend>Place as</legend>
+                  <legend>{words('editor.place-as')}</legend>
                   <div className={own['forms']}>
                     {(imageColumn
                       ? (['line', 'figure', 'table'] as const)
@@ -852,7 +910,7 @@ export function ValueDialog({
                 </fieldset>
               )}
               <fieldset className={own['group']}>
-                <legend>Mode</legend>
+                <legend>{words('editor.mode')}</legend>
                 <div className={own['forms']}>
                   {(['checked', 'pinned'] as const).map((each) => (
                     <label key={each} className={own['choice']}>
@@ -877,7 +935,7 @@ export function ValueDialog({
           )}
           <div className={styles['footer']}>
             <button type="button" onClick={onCancel}>
-              Cancel
+              {words('editor.cancel')}
             </button>
             {(asTable ? tableChoice : choice) !== null && (
               <button
@@ -885,7 +943,7 @@ export function ValueDialog({
                 className="primary"
                 {...(warning === null ? {} : { 'aria-describedby': `${id}-warning` })}
               >
-                {current === null ? 'Insert' : 'Change'}
+                {current === null ? words('editor.insert') : words('editor.change')}
               </button>
             )}
           </div>
@@ -893,8 +951,8 @@ export function ValueDialog({
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -15,17 +16,31 @@ const TOO_LARGE =
  * upload's reason: the author needs what the file was, never where it was caught.
  */
 const SAID: Readonly<Record<string, string>> = {
-  asset_format_not_permitted: 'This is not a PNG or a JPEG image.',
-  not_permitted: 'This is not a PNG or a JPEG image.',
+  get asset_format_not_permitted() {
+    return words('editor.this-is-not-a-png');
+  },
+  get not_permitted() {
+    return words('editor.this-is-not-a-png');
+  },
   asset_too_large: TOO_LARGE,
   too_large: TOO_LARGE,
   too_many_pixels: TOO_LARGE,
-  asset_unreadable: 'This is not a complete PNG or JPEG image.',
-  malformed: 'This is not a complete PNG or JPEG image.',
-  undecodable: 'This image could not be read all the way through, so it may be damaged.',
-  unchecked: 'The image could not be checked. Try again.',
+  get asset_unreadable() {
+    return words('editor.this-is-not-a-complete');
+  },
+  get malformed() {
+    return words('editor.this-is-not-a-complete');
+  },
+  get undecodable() {
+    return words('editor.this-image-could-not-be');
+  },
+  get unchecked() {
+    return words('editor.the-image-could-not-be-2');
+  },
   // Editing a component does not by itself let its author add to the space it is in.
-  forbidden: 'You may not add an image to this space.',
+  get forbidden() {
+    return words('editor.you-may-not-add-an');
+  },
 };
 
 const FAILED = 'The image could not be uploaded. Try again.';

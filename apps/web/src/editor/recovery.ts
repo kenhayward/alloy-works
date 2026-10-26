@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /**
  * The words Recovery says (component-editor.md, "Recovery, as W11 builds it"), in the reader's own
  * time and in en-GB, as `heldSentence` says when a holder is expected back: the time alone where it is
@@ -7,19 +8,22 @@
 /** When something was saved: `14:02`, or `14:02:07` with `seconds`, and the day where not today. */
 export function savedTime(at: string, now: Date = new Date(), seconds = false): string {
   const when = new Date(at);
-  if (Number.isNaN(when.getTime())) return 'an unknown time';
+  if (Number.isNaN(when.getTime())) return words('editor.an-unknown-time');
   const time = when.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     ...(seconds ? { second: '2-digit' } : {}),
   });
   if (when.toDateString() === now.toDateString()) return time;
-  return `${time} on ${when.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`;
+  return words('editor.on-3', {
+    time,
+    value2: when.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }),
+  });
 }
 
 /** What a component opened after a closed tab says above its text, beside Recover (RC-F). */
 export function unsavedSentence(savedAt: string, now: Date = new Date()): string {
-  return `Changes you saved at ${savedTime(savedAt, now)} were never made a version.`;
+  return words('editor.changes-you-saved-at-were', { value1: savedTime(savedAt, now) });
 }
 
 /**
@@ -27,7 +31,7 @@ export function unsavedSentence(savedAt: string, now: Date = new Date()): string
  * the minute alone would name several at once.
  */
 export function iterationLabel(savedAt: string, now: Date = new Date()): string {
-  return `the text saved at ${savedTime(savedAt, now, true)}`;
+  return words('editor.the-text-saved-at', { value1: savedTime(savedAt, now, true) });
 }
 
 /** A label begun as a sentence. */

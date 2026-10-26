@@ -12,6 +12,7 @@ import {
 import { Icon } from './Icon.js';
 import { IconButton } from '../parts/IconButton.js';
 import { ImageStyle } from '../theme/StyleChoice.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -42,15 +43,15 @@ function alternativeSaid(
   { bound, described, kind }: FigureSettingsState,
 ): { words: string; needed?: string } {
   const held = figure.alternative.kind;
-  if (held === 'own') return { words: 'Described here' };
-  if (held === 'decorative') return { words: 'Decorative' };
-  if (bound) return { words: 'From its data' };
+  if (held === 'own') return { words: words('editor.described-here') };
+  if (held === 'decorative') return { words: words('editor.decorative') };
+  if (bound) return { words: words('editor.from-its-data') };
   if (described.state === 'none')
     return {
-      words: 'Needed',
-      needed: `The image has no description of its own, so this ${kind} cannot be published until it is given one here.`,
+      words: words('editor.needed'),
+      needed: words('editor.the-image-has-no-description', { kind }),
     };
-  return { words: 'From the image' };
+  return { words: words('editor.from-the-image') };
 }
 
 /**
@@ -75,9 +76,10 @@ export function FigurePanel({
   const tipId = useId();
   const [tipShown, setTipShown] = useState(false);
   const said = alternativeSaid(figure, settings);
-  const named = kind === 'figure' ? 'Figure' : 'Image';
-  const settingsNamed = `${named} settings`;
-  const removeNamed = kind === 'figure' ? 'Delete figure' : 'Delete image';
+  const named = kind === 'figure' ? words('editor.figure') : words('editor.image');
+  const settingsNamed = words('editor.settings', { named });
+  const removeNamed =
+    kind === 'figure' ? words('editor.delete-figure') : words('editor.delete-image');
 
   return (
     <div ref={ref} role="group" aria-label={named} tabIndex={-1} className={styles['panel']}>
@@ -102,7 +104,7 @@ export function FigurePanel({
             aria-disabled={!enabled}
             onChange={(event) => settings.number(event.target.checked)}
           />
-          Numbered
+          {words('editor.numbered')}
         </label>
       )}
       <span className={styles['rule']} aria-hidden="true" />
@@ -111,7 +113,7 @@ export function FigurePanel({
           type="button"
           className={styles['chip']}
           data-tone={said.needed === undefined ? undefined : 'warn'}
-          aria-label={`Alternative text: ${said.words}. Change it`}
+          aria-label={words('editor.alternative-text-change-it', { words: said.words })}
           aria-haspopup="dialog"
           {...(said.needed === undefined ? {} : { 'aria-describedby': tipId })}
           onClick={() => setOpen(true)}
@@ -127,7 +129,7 @@ export function FigurePanel({
         >
           {said.needed !== undefined && <Icon name="Needs attention" size={13} />}
           {said.words === 'From its data' && <Icon name="Data" size={13} />}
-          <span className={styles['chipLabel']}>Alt text</span>
+          <span className={styles['chipLabel']}>{words('editor.alt-text')}</span>
           <span className={styles['chipWords']}>{said.words}</span>
         </button>
         {said.needed !== undefined && (
@@ -138,7 +140,7 @@ export function FigurePanel({
       </span>
       <span className={styles['actions']}>
         <IconButton
-          label="Replace image"
+          label={words('editor.replace-image')}
           className={styles['icon']}
           aria-disabled={!enabled}
           onMouseDown={(event) => event.preventDefault()}

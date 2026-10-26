@@ -5,6 +5,7 @@ import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
 import type { TermChoice } from './terming.js';
+import { words } from '../words/words.js';
 
 /** What the dialog says where the space holds no term to offer. */
 export const NO_TERMS = 'This space holds no approved terms you may read.';
@@ -113,10 +114,12 @@ export function TermDialog({
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Term" size={22} />
             </span>
-            Term
+            {words('editor.term')}
           </h2>
-          {selected !== null && <p className={styles['note']}>{`On: ${selected}`}</p>}
-          {terms === null && <p role="status">Reading the terms.</p>}
+          {selected !== null && (
+            <p className={styles['note']}>{words('editor.on-4', { selected })}</p>
+          )}
+          {terms === null && <p role="status">{words('editor.reading-the-terms')}</p>}
           {terms === 'unread' && <p role="alert">{TERMS_UNREAD}</p>}
           {truncated && <p className={styles['note']}>{TERMS_TRUNCATED}</p>}
           {Array.isArray(terms) && offered.length === 0 && (
@@ -125,7 +128,7 @@ export function TermDialog({
           {offered.length > 0 && (
             <>
               <label className={styles['field']}>
-                Find a term
+                {words('editor.find-a-term')}
                 <input
                   ref={search}
                   type="search"
@@ -135,11 +138,11 @@ export function TermDialog({
                 />
               </label>
               <p id={`${id}-found`} className={styles['note']} aria-live="polite">
-                {found.length === 1 ? '1 term found.' : `${found.length} terms found.`}
+                {words('editor.terms-found', { count: found.length })}
               </p>
               {found.length > 0 && (
                 <fieldset className={own['group']}>
-                  <legend>Term</legend>
+                  <legend>{words('editor.term')}</legend>
                   <div className={own['targets']}>
                     {found.map((each) => (
                       <label key={each.id} className={own['choice']}>
@@ -151,7 +154,7 @@ export function TermDialog({
                           onChange={() => setChosen(each.id)}
                         />
                         {named(each)}
-                        {each.standing === 'deprecated' && ', deprecated'}
+                        {each.standing === 'deprecated' && words('editor.deprecated')}
                       </label>
                     ))}
                   </div>
@@ -162,8 +165,11 @@ export function TermDialog({
           {choice?.standing === 'deprecated' && (
             <div role="alert" className={styles['complaint']}>
               {instead === undefined
-                ? `${choice.label} is deprecated.`
-                : `${choice.label} is deprecated. Use ${instead.label} instead.`}
+                ? words('editor.is-deprecated', { label: choice.label })
+                : words('editor.is-deprecated-use-instead', {
+                    label: choice.label,
+                    label2: instead.label,
+                  })}
             </div>
           )}
           {instead !== undefined && (
@@ -174,21 +180,21 @@ export function TermDialog({
                 setChosen(instead.id);
               }}
             >
-              {`Use ${instead.label}`}
+              {words('editor.use', { label: instead.label })}
             </button>
           )}
           <div className={styles['footer']}>
             {removable && (
               <button type="button" onClick={onRemove}>
-                Remove term
+                {words('editor.remove-term')}
               </button>
             )}
             <button type="button" onClick={onCancel}>
-              Cancel
+              {words('editor.cancel')}
             </button>
             {choice !== undefined && (
               <button type="submit" className="primary">
-                Apply
+                {words('editor.apply')}
               </button>
             )}
           </div>
@@ -196,8 +202,8 @@ export function TermDialog({
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

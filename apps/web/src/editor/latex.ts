@@ -1,5 +1,6 @@
 import { admitTemmlMathml, type TemmlRefusal } from '@alloy-works/domain';
 import temml from 'temml';
+import { words as say } from '../words/words.js';
 
 /**
  * How Temml is asked, and nothing else (equations 1, ruling R1; publishing.md's EQ-C):
@@ -175,31 +176,33 @@ function breaksALine(latex: string): boolean {
  */
 function temmlSaid(error: unknown): string {
   if (!(error instanceof temml.ParseError)) {
-    return 'That LaTeX could not be read. Check that nothing is missing from it.';
+    return say('editor.that-latex-could-not-be');
   }
   const message = (error as unknown as Error).message;
   const position = (error as unknown as { position?: number }).position;
   const at = message.search(/ at (?:position \d+|end of input):/);
   const words = (at === -1 ? message : message.slice(0, at)).trim();
-  if (message.includes(' at end of input:')) return `At the end: ${words}`;
-  return position === undefined ? words : `At character ${position + 1}: ${words}`;
+  if (message.includes(' at end of input:')) return say('editor.at-the-end', { words });
+  return position === undefined
+    ? words
+    : say('editor.at-character', { value1: position + 1, words });
 }
 
 /** What the dialog says for each of the domain's refusals: what was refused, and what to do instead. */
 function refusalSaid(refusal: TemmlRefusal): string {
   switch (refusal.reason) {
     case 'construct':
-      return `An equation here cannot keep ${refusal.construct}. Write it another way.`;
+      return say('editor.an-equation-here-cannot-keep', { construct: refusal.construct });
     // A block's number is the product's (ruling R8's Numbered), never text inside the maths.
     case 'number':
-      return "An equation's number is not written in its LaTeX. Make it a block and choose Numbered, and use a starred environment such as align*.";
+      return say('editor.an-equation-s-number-is');
     case 'lineBreak':
-      return 'A line cannot be broken with \\\\ on its own. For several lines, use an environment such as aligned.';
+      return say('editor.a-line-cannot-be-broken');
     case 'unkept':
-      return `Part of this equation could not be kept (${refusal.detail}). Write it another way.`;
+      return say('editor.part-of-this-equation-could', { detail: refusal.detail });
     // An empty group, a space, empty text: nothing a publication could tag to carry the words the
     // equation is spoken by (the final review of equations 2, M1).
     case 'empty':
-      return 'An equation has to show something: this one draws nothing. Write what it is to show.';
+      return say('editor.an-equation-has-to-show');
   }
 }

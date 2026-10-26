@@ -7,14 +7,35 @@ import { PanelTabs } from '../parts/PanelTabs.js';
 import styles from './ComponentDock.module.css';
 import type { Mine } from './ComponentEditor.js';
 import { VersionsPanel } from './VersionsPanel.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 export const COMPONENT_PANELS = [
-  { key: 'table', label: 'Table' },
-  { key: 'attributes', label: 'Attributes' },
-  { key: 'versions', label: 'Versions' },
-  { key: 'access', label: 'Access' },
+  {
+    key: 'table',
+    get label() {
+      return words('editor.table');
+    },
+  },
+  {
+    key: 'attributes',
+    get label() {
+      return words('editor.attributes');
+    },
+  },
+  {
+    key: 'versions',
+    get label() {
+      return words('editor.versions');
+    },
+  },
+  {
+    key: 'access',
+    get label() {
+      return words('editor.access');
+    },
+  },
 ] as const;
 
 type PanelKey = (typeof COMPONENT_PANELS)[number]['key'];
@@ -66,14 +87,14 @@ export function ComponentDock({
       {/* The tabs stay where they are while the body under them scrolls. */}
       <div className={styles['strip']}>
         <PanelTabs
-          label="Component panels"
+          label={words('editor.component-panels')}
           tabs={panels}
           chosen={shown}
           onChoose={(key) => setChosen(key as PanelKey)}
           ids={ids}
         />
         <span className={styles['spacer']} />
-        {pane && <PaneToggle label="component panels" pane={pane} edge="end" />}
+        {pane && <PaneToggle label={words('editor.component-panels-2')} pane={pane} edge="end" />}
       </div>
       <div className={styles['body']}>
         {table.holds && (
@@ -96,7 +117,7 @@ export function ComponentDock({
         >
           <div ref={onFieldsHost} />
           <dl className={styles['facts']}>
-            <dt>Identifier</dt>
+            <dt>{words('editor.identifier')}</dt>
             <dd className={styles['mono']}>{id}</dd>
           </dl>
         </div>
@@ -126,9 +147,7 @@ export function ComponentDock({
         >
           {shown === 'access' && (
             <>
-              <p className={styles['muted']}>
-                Who may read, change and publish this component is set on its access page.
-              </p>
+              <p className={styles['muted']}>{words('editor.who-may-read-change-and')}</p>
               <ManageAccessLink
                 client={client}
                 target={`artifact:${id}`}

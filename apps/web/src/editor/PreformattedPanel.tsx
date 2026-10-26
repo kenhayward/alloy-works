@@ -3,6 +3,7 @@ import { setPreformattedLanguage, type EditorView } from '@alloy-works/editor';
 import { useState, type Ref } from 'react';
 
 import line from './ListPanel.module.css';
+import { words } from '../words/words.js';
 
 const HINT = 'preformatted-panel-label-hint';
 const REFUSAL = 'preformatted-panel-label-refused';
@@ -66,12 +67,12 @@ export function PreformattedPanel({ view, block, enabled, ref }: PreformattedPan
     <div
       ref={ref}
       role="group"
-      aria-label="Preformatted text"
+      aria-label={words('editor.preformatted-text')}
       tabIndex={-1}
       className={line['panel']}
     >
       <label>
-        Language label
+        {words('editor.language-label')}
         <input
           type="text"
           value={label.typed}

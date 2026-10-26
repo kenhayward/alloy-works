@@ -7,6 +7,7 @@ import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
 import { FORM_WORDS, type ReferenceOption } from './referenceChoices.js';
+import { words } from '../words/words.js';
 
 export interface ReferenceDialogProps {
   /** What may be referred to, in the order the author reads it (`referenceOptions`). */
@@ -129,18 +130,18 @@ export function ReferenceDialog({
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Reference" size={22} />
             </span>
-            Reference
+            {words('editor.reference')}
           </h2>
           {options.length === 0 ? (
             <p className={styles['note']}>
               {inDocument
-                ? 'Nothing in this document can be referred to yet.'
-                : 'Nothing in this component can be referred to yet.'}
+                ? words('editor.nothing-in-this-document-can')
+                : words('editor.nothing-in-this-component-can')}
             </p>
           ) : (
             <>
               <fieldset className={own['group']}>
-                <legend>Refer to</legend>
+                <legend>{words('editor.refer-to')}</legend>
                 <div className={own['targets']}>
                   {options.map((each) => (
                     <label key={each.key} className={own['choice']}>
@@ -160,7 +161,7 @@ export function ReferenceDialog({
               {/* An entry shows its style's in-text form alone (STR-069), so no form is asked. */}
               {option !== undefined && option.target.kind !== 'entry' && (
                 <fieldset className={own['group']}>
-                  <legend>Show as</legend>
+                  <legend>{words('editor.show-as')}</legend>
                   <div className={own['forms']}>
                     {option.forms.map((form) => (
                       <label key={form} className={own['choice']}>
@@ -179,7 +180,8 @@ export function ReferenceDialog({
               )}
               {shows !== null && (
                 <p id={`${id}-shows`} className={styles['note']} aria-live="polite">
-                  It will show: <strong className={own['shows']}>{shows}</strong>
+                  {words('editor.it-will-show')}
+                  <strong className={own['shows']}>{shows}</strong>
                 </p>
               )}
             </>
@@ -191,11 +193,11 @@ export function ReferenceDialog({
           )}
           <div className={styles['footer']}>
             <button type="button" onClick={onCancel}>
-              Cancel
+              {words('editor.cancel')}
             </button>
             {option !== undefined && (
               <button type="submit" className="primary" aria-describedby={`${id}-shows`}>
-                {current === null ? 'Insert' : 'Change'}
+                {current === null ? words('editor.insert') : words('editor.change')}
               </button>
             )}
           </div>
@@ -203,8 +205,8 @@ export function ReferenceDialog({
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

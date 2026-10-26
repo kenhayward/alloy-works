@@ -3,18 +3,40 @@ import { useState, type Ref } from 'react';
 
 import { Icon } from './Icon.js';
 import styles from './ListPanel.module.css';
+import { words } from '../words/words.js';
 
 /** What moves an item a level, set here beside the list's options (ADR-0053). */
 const MOVES = [
-  { action: 'nestItem', label: 'Nest item', said: 'Ctrl or Cmd and right square bracket' },
-  { action: 'liftItem', label: 'Lift item', said: 'Ctrl or Cmd and left square bracket' },
+  {
+    action: 'nestItem',
+    get label() {
+      return words('editor.nest-item');
+    },
+    get said() {
+      return words('editor.ctrl-or-cmd-and-right');
+    },
+  },
+  {
+    action: 'liftItem',
+    get label() {
+      return words('editor.lift-item');
+    },
+    get said() {
+      return words('editor.ctrl-or-cmd-and-left');
+    },
+  },
 ] as const;
 
 /** What the stored model calls each numbering, and what an author is shown instead. */
 const NUMBERINGS = [
   { format: 'decimal', label: '1, 2, 3' },
   { format: 'alphabetic', label: 'a, b, c' },
-  { format: 'roman', label: 'i, ii, iii' },
+  {
+    format: 'roman',
+    get label() {
+      return words('editor.i-ii-iii');
+    },
+  },
 ];
 
 const HINT = 'list-panel-start-hint';
@@ -128,7 +150,13 @@ export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanel
     setListAttributes(attrs)(view.state, view.dispatch.bind(view));
 
   return (
-    <div ref={ref} role="group" aria-label="List" tabIndex={-1} className={styles['panel']}>
+    <div
+      ref={ref}
+      role="group"
+      aria-label={words('editor.list')}
+      tabIndex={-1}
+      className={styles['panel']}
+    >
       {/* Nest and Lift, for every list: an item a level in, or out. Unavailable where the command
           declines - the first item, or a definition list's top level - as the toolbar's are. */}
       <span className={styles['moves']}>
@@ -155,13 +183,13 @@ export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanel
       {numbered && (
         <>
           <label>
-            Start at
+            {words('editor.start-at')}
             <input
               type="number"
               min={0}
               step={1}
               value={start.typed}
-              title="The number the first item takes"
+              title={words('editor.the-number-the-first-item')}
               disabled={!enabled}
               aria-describedby={blamed('start') ? `${HINT} ${REFUSAL}` : HINT}
               aria-invalid={blamed('start')}
@@ -192,7 +220,7 @@ export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanel
             />
           </label>
           <p id={HINT} className={styles['hint']}>
-            The number the first item takes
+            {words('editor.the-number-the-first-item')}
           </p>
           {refused !== null && (
             <p id={REFUSAL} role="alert">
@@ -200,7 +228,7 @@ export function ListPanel({ view, list, enabled, newIdentifier, ref }: ListPanel
             </p>
           )}
           <label>
-            Numbering
+            {words('editor.numbering')}
             <select
               value={list.format ?? 'decimal'}
               disabled={!enabled}

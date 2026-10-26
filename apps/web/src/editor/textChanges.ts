@@ -1,4 +1,5 @@
 import { wordsByBlock, type BlockWords, type ContentDocument } from '@alloy-works/domain';
+import { words } from '../words/words.js';
 
 /** A run of an edited block's words: kept, or taken out, or put in. */
 export interface WordRun {
@@ -13,18 +14,34 @@ export type TextChange =
 
 /** What a block with no words of its own is called instead. */
 const NAMED: Partial<Record<BlockWords['kind'], string>> = {
-  figure: 'A figure',
-  table: 'A table',
-  boundTable: 'A bound table',
-  equation: 'An equation',
-  list: 'A list',
-  blockquote: 'A quotation',
-  preformatted: 'Preformatted text',
-  paragraph: 'An empty paragraph',
+  get figure() {
+    return words('editor.a-figure');
+  },
+  get table() {
+    return words('editor.a-table');
+  },
+  get boundTable() {
+    return words('editor.a-bound-table');
+  },
+  get equation() {
+    return words('editor.an-equation');
+  },
+  get list() {
+    return words('editor.a-list');
+  },
+  get blockquote() {
+    return words('editor.a-quotation');
+  },
+  get preformatted() {
+    return words('editor.preformatted-text');
+  },
+  get paragraph() {
+    return words('editor.an-empty-paragraph');
+  },
 };
 
 const said = (block: BlockWords) =>
-  block.text === '' ? (NAMED[block.kind] ?? 'A block') : block.text;
+  block.text === '' ? (NAMED[block.kind] ?? words('editor.a-block')) : block.text;
 
 /** Past this many word pairs an edit is said as the whole block out and the whole block in. */
 const MOST_PAIRS = 40_000;

@@ -13,21 +13,77 @@ import type { Ref } from 'react';
 import { BOUND_TABLE_WORDS } from './BoundTablePanel.js';
 import styles from './TablePanel.module.css';
 import { TableStyle } from '../theme/StyleChoice.js';
+import { words } from '../words/words.js';
 
 /** What the panel offers, in the order it shows them (tables 1, ruling R4). */
 const ACTIONS: readonly { readonly action: TableAction; readonly label: string }[] = [
-  { action: 'rowAbove', label: 'Row above' },
-  { action: 'rowBelow', label: 'Row below' },
-  { action: 'columnBefore', label: 'Column before' },
-  { action: 'columnAfter', label: 'Column after' },
-  { action: 'deleteRow', label: 'Delete row' },
-  { action: 'deleteColumn', label: 'Delete column' },
-  { action: 'merge', label: 'Merge cells' },
-  { action: 'split', label: 'Split cell' },
-  { action: 'deleteTable', label: 'Delete table' },
+  {
+    action: 'rowAbove',
+    get label() {
+      return words('editor.row-above');
+    },
+  },
+  {
+    action: 'rowBelow',
+    get label() {
+      return words('editor.row-below');
+    },
+  },
+  {
+    action: 'columnBefore',
+    get label() {
+      return words('editor.column-before');
+    },
+  },
+  {
+    action: 'columnAfter',
+    get label() {
+      return words('editor.column-after');
+    },
+  },
+  {
+    action: 'deleteRow',
+    get label() {
+      return words('editor.delete-row');
+    },
+  },
+  {
+    action: 'deleteColumn',
+    get label() {
+      return words('editor.delete-column');
+    },
+  },
+  {
+    action: 'merge',
+    get label() {
+      return words('editor.merge-cells');
+    },
+  },
+  {
+    action: 'split',
+    get label() {
+      return words('editor.split-cell');
+    },
+  },
+  {
+    action: 'deleteTable',
+    get label() {
+      return words('editor.delete-table');
+    },
+  },
   // A note on the table as a whole, beneath it (CNT-038, footnotes 1, ruling R11).
-  { action: 'addNote', label: 'Add note' },
-  { action: 'removeNote', label: 'Remove note' },
+  {
+    action: 'addNote',
+    get label() {
+      return words('editor.add-note');
+    },
+  },
+  {
+    action: 'removeNote',
+    get label() {
+      return words('editor.remove-note');
+    },
+  },
 ];
 
 export interface TablePanelProps {
@@ -63,10 +119,16 @@ export function TablePanel({ view, table, enabled, ref }: TablePanelProps) {
   };
 
   return (
-    <div ref={ref} role="group" aria-label="Table" tabIndex={-1} className={styles['panel']}>
+    <div
+      ref={ref}
+      role="group"
+      aria-label={words('editor.table')}
+      tabIndex={-1}
+      className={styles['panel']}
+    >
       <TableStyle view={view} value={table.style} enabled={enabled} />
       <label className={styles['count']}>
-        Header rows
+        {words('editor.header-rows')}
         <input
           type="number"
           min={0}
@@ -77,7 +139,7 @@ export function TablePanel({ view, table, enabled, ref }: TablePanelProps) {
         />
       </label>
       <label className={styles['count']}>
-        Header columns
+        {words('editor.header-columns')}
         <input
           type="number"
           min={0}
@@ -96,7 +158,7 @@ export function TablePanel({ view, table, enabled, ref }: TablePanelProps) {
             if (enabled) setTableNumbered(event.target.checked)(view.state, view.dispatch);
           }}
         />
-        Numbered
+        {words('editor.numbered')}
       </label>
       <label className={styles['count']}>
         {BOUND_TABLE_WORDS.wide}

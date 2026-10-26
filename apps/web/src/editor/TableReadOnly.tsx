@@ -6,9 +6,10 @@ import { usePresentation } from '../theme/presentation.js';
 import { tableChoices } from '../theme/StyleChoice.js';
 import { BOUND_TABLE_WORDS, Fold, noteOnWords } from './BoundTablePanel.js';
 import styles from './BoundTablePanel.module.css';
+import { words } from '../words/words.js';
 
 /** Yes or no, in words. */
-const yes = (value: boolean) => (value ? 'Yes' : 'No');
+const yes = (value: boolean) => (value ? words('editor.yes') : words('editor.no'));
 
 /** A table style by its name in the theme, or its identifier where the theme has none for it. */
 function useStyleName(style: string): string {
@@ -74,7 +75,7 @@ export function BoundTableReadOnly({
         <h3 className={styles['heading']}>{BOUND_TABLE_WORDS.table}</h3>
         <Facts
           rows={[
-            ['Table style', styleName],
+            [words('editor.table-style'), styleName],
             [BOUND_TABLE_WORDS.wide, BOUND_TABLE_WORDS.wides[table.wide ?? 'style']],
             [
               BOUND_TABLE_WORDS.shows,
@@ -179,7 +180,7 @@ export function BoundTableReadOnly({
                 .map((note, at) => {
                   const letter = shownNotes[at]?.letter;
                   const on = header(note.anchor.column);
-                  return letter ? `${letter} on ${on}` : `On ${on}`;
+                  return letter ? words('editor.on', { letter, on }) : words('editor.on-2', { on });
                 })
                 .join(', ')
         }
@@ -209,12 +210,15 @@ export function TableReadOnly({ table }: { readonly table: TableAt }) {
         <h3 className={styles['heading']}>{BOUND_TABLE_WORDS.table}</h3>
         <Facts
           rows={[
-            ['Table style', styleName],
+            [words('editor.table-style'), styleName],
             [BOUND_TABLE_WORDS.wide, BOUND_TABLE_WORDS.wides[table.wide ?? 'style']],
             [BOUND_TABLE_WORDS.numbered, yes(table.numbered)],
-            ['Header rows', String(table.headerRows)],
-            ['Header columns', String(table.headerColumns)],
-            ['Size', `${table.rows} rows, ${table.columns} columns`],
+            [words('editor.header-rows'), String(table.headerRows)],
+            [words('editor.header-columns'), String(table.headerColumns)],
+            [
+              words('editor.size'),
+              words('editor.rows-columns', { rows: table.rows, columns: table.columns }),
+            ],
           ]}
         />
       </section>

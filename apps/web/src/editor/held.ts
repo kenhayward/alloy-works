@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /** Who holds a component, as the service says: a name where it has one, and when it lapses. */
 export interface Held {
   readonly name: string | null;
@@ -10,11 +11,11 @@ export interface Held {
  * that failed without naming a holder - it says who, and no more.
  */
 export function heldSentence(held: Held, now: Date = new Date()): string {
-  const who = `${held.name ?? 'Someone else'} is editing this component`;
+  const who = words('editor.is-editing-this-component', { value1: held.name ?? 'Someone else' });
   const back = new Date(held.expectedRelease);
   if (held.expectedRelease === '' || Number.isNaN(back.getTime())) return `${who}.`;
   const time = back.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const today = back.toDateString() === now.toDateString();
   const day = back.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
-  return `${who}, expected back at ${time}${today ? '' : ` on ${day}`}.`;
+  return words('editor.expected-back-at', { who, time, value3: today ? '' : ` on ${day}` });
 }

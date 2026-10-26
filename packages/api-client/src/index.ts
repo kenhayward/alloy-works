@@ -41,17 +41,17 @@ export type PresentationView =
 export function createApiClient(
   options: { readonly baseUrl?: string; readonly fetch?: typeof fetch } = {},
 ): Client<paths> {
-  const client = createOpenApiClient<paths>({
+  // The interface's language said on the request itself, in the same tick, as middleware would not be.
+  const given = options.fetch;
+  const saying: typeof fetch = (input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init);
+    const said = saidLanguage();
+    if (said !== undefined) request.headers.set('accept-language', said);
+    return (given ?? globalThis.fetch)(request);
+  };
+  return createOpenApiClient<paths>({
     baseUrl: options.baseUrl ?? '',
     credentials: 'include',
-    ...(options.fetch ? { fetch: options.fetch } : {}),
+    fetch: saying,
   });
-  client.use({
-    onRequest({ request }) {
-      const said = saidLanguage();
-      if (said !== undefined) request.headers.set('accept-language', said);
-      return request;
-    },
-  });
-  return client;
 }

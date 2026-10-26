@@ -1,5 +1,6 @@
 import styles from './SaveIndicator.module.css';
 import type { SaveState } from './session.js';
+import { words } from '../words/words.js';
 
 export interface SaveIndicatorProps {
   readonly save: SaveState;
@@ -22,13 +23,20 @@ const localTime = (at: number) =>
  */
 export function SaveIndicator({ save, savedAt, formatTime = localTime }: SaveIndicatorProps) {
   const dot = save === 'saving' ? 'saving' : save === 'saved' ? 'saved' : 'notSaved';
-  const text = dot === 'saving' ? 'Saving' : dot === 'saved' ? 'Saved' : 'Not saved';
+  const text =
+    dot === 'saving'
+      ? words('editor.saving')
+      : dot === 'saved'
+        ? words('editor.saved')
+        : words('editor.not-saved');
   return (
     <span
       className={styles['chip']}
       data-save={save}
       data-dot-state={dot}
-      {...(savedAt === null ? {} : { title: `Saved at ${formatTime(savedAt)}` })}
+      {...(savedAt === null
+        ? {}
+        : { title: words('editor.saved-at', { value1: formatTime(savedAt) }) })}
     >
       <span className={styles['dot']} data-dot={dot} aria-hidden="true" />
       {text}

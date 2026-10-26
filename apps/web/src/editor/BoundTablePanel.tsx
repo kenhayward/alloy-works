@@ -49,118 +49,276 @@ import { Icon } from './Icon.js';
 import { FormatDialog } from './FormatDialog.js';
 import { TableStyle } from '../theme/StyleChoice.js';
 import { usePresentation } from '../theme/presentation.js';
+import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 /** The words the panel uses, each without a fancy dash (the TB2 plan, TB2-F). */
 export const BOUND_TABLE_WORDS = {
-  panel: 'Bound table',
+  get panel() {
+    return say('editor.bound-table');
+  },
   /** The Table tab while the cursor is in no table (ADR-0052). */
-  panelReadOnly: 'Bound table, read only',
-  tableReadOnly: 'Table, read only',
-  readOnly:
-    'Read only. Edit the component and put the cursor in the table to change its formatting.',
-  formatSet: 'Set for this column',
-  numbered: 'Numbered',
-  headerColumn: 'First column heads its row',
+  get panelReadOnly() {
+    return say('editor.bound-table-read-only');
+  },
+  get tableReadOnly() {
+    return say('editor.table-read-only');
+  },
+  get readOnly() {
+    return say('editor.read-only-edit-the-component');
+  },
+  get formatSet() {
+    return say('editor.set-for-this-column');
+  },
+  get numbered() {
+    return say('editor.numbered');
+  },
+  get headerColumn() {
+    return say('editor.first-column-heads-its-row');
+  },
   parts: {
-    empty: 'Empty statement',
-    note: 'Note',
-    source: 'Source',
+    get empty() {
+      return say('editor.empty-statement');
+    },
+    get note() {
+      return say('editor.note');
+    },
+    get source() {
+      return say('editor.source');
+    },
   } satisfies Record<BoundTablePart, string>,
-  columns: 'Columns',
-  column: 'Column',
-  header: 'Header',
-  unit: 'Unit',
-  unitPlace: 'Unit stands',
-  unitPlaces: { header: 'In the header', value: 'After each value' },
-  align: 'Alignment',
+  get columns() {
+    return say('editor.columns');
+  },
+  get column() {
+    return say('editor.column');
+  },
+  get header() {
+    return say('editor.header');
+  },
+  get unit() {
+    return say('editor.unit');
+  },
+  get unitPlace() {
+    return say('editor.unit-stands');
+  },
+  unitPlaces: {
+    get header() {
+      return say('editor.in-the-header');
+    },
+    get value() {
+      return say('editor.after-each-value');
+    },
+  },
+  get align() {
+    return say('editor.alignment');
+  },
   aligns: {
-    style: "The table style's",
-    start: 'Start',
-    centre: 'Centre',
-    end: 'End',
-    decimal: 'On the decimal separator',
+    get style() {
+      return say('editor.the-table-style-s');
+    },
+    get start() {
+      return say('editor.start');
+    },
+    get centre() {
+      return say('editor.centre');
+    },
+    get end() {
+      return say('editor.end');
+    },
+    get decimal() {
+      return say('editor.on-the-decimal-separator');
+    },
   } satisfies Record<ColumnAlignment | 'style', string>,
-  wrap: 'Wrap',
-  wraps: 'Wraps',
-  noWrap: 'Does not wrap',
-  text: 'Text',
-  left: 'Move left',
-  right: 'Move right',
-  table: 'Table',
+  get wrap() {
+    return say('editor.wrap');
+  },
+  get wraps() {
+    return say('editor.wraps');
+  },
+  get noWrap() {
+    return say('editor.does-not-wrap');
+  },
+  get text() {
+    return say('editor.text');
+  },
+  get left() {
+    return say('editor.move-left');
+  },
+  get right() {
+    return say('editor.move-right');
+  },
+  get table() {
+    return say('editor.table');
+  },
   of: 'of',
-  none: 'None',
-  shows: 'Shows',
-  follows: 'Follows the column the cursor is in.',
-  remove: 'Remove',
-  format: 'Format',
-  addColumn: 'Add column',
-  sort: 'Sort',
-  directions: { ascending: 'Ascending', descending: 'Descending' },
-  nulls: { first: 'No value first', last: 'No value last' },
-  addSort: 'Add sort',
-  sortHint:
-    'Rows are sorted by the first key, then by each next key where the earlier ones are equal. A table takes up to four.',
-  transposeBy: 'Transpose by',
-  notTransposed: 'Not transposed',
-  groups: 'Group',
-  groupedBy: 'Grouped by',
-  addGroup: 'Add group',
-  subtotal: 'Subtotal rows',
-  noSubtotal: 'No subtotal rows',
-  groupHint:
-    "Rows are grouped under a heading for each value, the first group outermost, and sorted within each group. Subtotal rows are the query's own, marked by a column holding true or false, and stand last in their group. A table takes up to three.",
-  newNoteOn: 'New note on',
-  deleteTable: 'Delete table',
-  unreadable:
-    'You may not read its query definition, so only the columns it shows now are offered.',
-  needsHeader: 'A column needs a header.',
-  lastColumn: 'A table shows at least one column.',
-  allShown: 'Every column is shown.',
-  wide: 'Wide',
+  get none() {
+    return say('editor.none');
+  },
+  get shows() {
+    return say('editor.shows');
+  },
+  get follows() {
+    return say('editor.follows-the-column-the-cursor');
+  },
+  get remove() {
+    return say('editor.remove');
+  },
+  get format() {
+    return say('editor.format');
+  },
+  get addColumn() {
+    return say('editor.add-column');
+  },
+  get sort() {
+    return say('editor.sort');
+  },
+  directions: {
+    get ascending() {
+      return say('editor.ascending');
+    },
+    get descending() {
+      return say('editor.descending');
+    },
+  },
+  nulls: {
+    get first() {
+      return say('editor.no-value-first');
+    },
+    get last() {
+      return say('editor.no-value-last');
+    },
+  },
+  get addSort() {
+    return say('editor.add-sort');
+  },
+  get sortHint() {
+    return say('editor.rows-are-sorted-by-the');
+  },
+  get transposeBy() {
+    return say('editor.transpose-by');
+  },
+  get notTransposed() {
+    return say('editor.not-transposed');
+  },
+  get groups() {
+    return say('editor.group');
+  },
+  get groupedBy() {
+    return say('editor.grouped-by');
+  },
+  get addGroup() {
+    return say('editor.add-group');
+  },
+  get subtotal() {
+    return say('editor.subtotal-rows');
+  },
+  get noSubtotal() {
+    return say('editor.no-subtotal-rows');
+  },
+  get groupHint() {
+    return say('editor.rows-are-grouped-under-a');
+  },
+  get newNoteOn() {
+    return say('editor.new-note-on');
+  },
+  get deleteTable() {
+    return say('editor.delete-table');
+  },
+  get unreadable() {
+    return say('editor.you-may-not-read-its');
+  },
+  get needsHeader() {
+    return say('editor.a-column-needs-a-header');
+  },
+  get lastColumn() {
+    return say('editor.a-table-shows-at-least');
+  },
+  get allShown() {
+    return say('editor.every-column-is-shown');
+  },
+  get wide() {
+    return say('editor.wide');
+  },
   wides: {
-    style: "The table style's",
-    scale: 'Scale to fit',
-    rotate: 'Rotate onto landscape pages',
+    get style() {
+      return say('editor.the-table-style-s');
+    },
+    get scale() {
+      return say('editor.scale-to-fit');
+    },
+    get rotate() {
+      return say('editor.rotate-onto-landscape-pages');
+    },
   } satisfies Record<Wide | 'style', string>,
-  notes: 'Notes',
-  noteOn: 'Note on',
-  noteOns: { column: 'A column', cell: 'A cell, by its row' },
-  noteColumn: 'Column',
-  keyIs: (column: string) => `Where ${column} is`,
-  addNote: 'Add note',
-  editNote: 'Edit',
-  removeNote: 'Remove',
-  noKey: 'Its query definition declares no key, so a note can stand on a column alone.',
-  keyUnknown:
-    'The key of its query definition is not known here, so a note can stand on a column alone.',
-  keyNeeded: (column: string) => `Type a value of ${column} for the row the note is on.`,
+  get notes() {
+    return say('editor.notes');
+  },
+  get noteOn() {
+    return say('editor.note-on');
+  },
+  noteOns: {
+    get column() {
+      return say('editor.a-column');
+    },
+    get cell() {
+      return say('editor.a-cell-by-its-row');
+    },
+  },
+  get noteColumn() {
+    return say('editor.column');
+  },
+  keyIs: (column: string) => say('editor.where-is', { column }),
+  get addNote() {
+    return say('editor.add-note');
+  },
+  get editNote() {
+    return say('editor.edit');
+  },
+  get removeNote() {
+    return say('editor.remove');
+  },
+  get noKey() {
+    return say('editor.its-query-definition-declares-no');
+  },
+  get keyUnknown() {
+    return say('editor.the-key-of-its-query');
+  },
+  keyNeeded: (column: string) => say('editor.type-a-value-of-for', { column }),
   tooManyNotes: `A table holds at most ${BOUND_TABLE_NOTES_MAX} notes.`,
-  noteStands: (column: string) =>
-    `A note stands on ${column}. Remove the note before taking the column out of the table.`,
+  noteStands: (column: string) => say('editor.a-note-stands-on-remove', { column }),
 } as const;
 
 /** Each alignment's glyph on its segment, its name in full the segment's name. */
 const ALIGN_ICONS: Readonly<Record<ColumnAlignment, string>> = {
-  start: 'Align start',
-  centre: 'Align centre',
-  end: 'Align end',
-  decimal: 'Align decimal',
+  get start() {
+    return say('editor.align-start');
+  },
+  get centre() {
+    return say('editor.align-centre');
+  },
+  get end() {
+    return say('editor.align-end');
+  },
+  get decimal() {
+    return say('editor.align-decimal');
+  },
 };
 
 /** A note as the panel lists it: what it stands on, in words. */
 export function noteOnWords(anchor: BoundNoteAnchor, header: (column: string) => string): string {
-  if (anchor.kind === 'column') return `On the column ${header(anchor.column)}`;
+  if (anchor.kind === 'column')
+    return say('editor.on-the-column', { value1: header(anchor.column) });
   const key = Object.entries(anchor.key)
-    .map(([column, value]) => `${column} is ${String(value)}`)
+    .map(([column, value]) => say('editor.is', { column, value2: String(value) }))
     .join(' and ');
-  return `On ${header(anchor.column)} where ${key}`;
+  return say('editor.on-where', { value1: header(anchor.column), key });
 }
 
 /** A column shown twice under one header, in the walk's words (TAB-048, `column_repeated`). */
 export const repeatedWords = (column: string) =>
-  `This table shows ${column} twice under one header. Give each a header of its own.`;
+  say('editor.this-table-shows-twice-under', { column });
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -232,7 +390,11 @@ export function BoundTablePanel({
   const where =
     focused === null
       ? BOUND_TABLE_WORDS.table
-      : `${BOUND_TABLE_WORDS.table}, column ${focused + 1} of ${table.columns.length}`;
+      : say('editor.column-of', {
+          table: BOUND_TABLE_WORDS.table,
+          value2: focused + 1,
+          length: table.columns.length,
+        });
   useEffect(() => {
     status?.place(where);
   }, [status, where]);
@@ -673,7 +835,7 @@ export function BoundTablePanel({
                 ))}
               </select>
               <Segmented
-                label={`Direction of ${label}`}
+                label={say('editor.direction-of', { label })}
                 value={key.direction}
                 disabled={!enabled}
                 onChange={(direction) => set({ direction: direction as SortKey['direction'] })}
@@ -681,17 +843,17 @@ export function BoundTablePanel({
                   {
                     value: 'ascending',
                     name: BOUND_TABLE_WORDS.directions.ascending,
-                    icon: 'Move up',
+                    icon: say('editor.move-up'),
                   },
                   {
                     value: 'descending',
                     name: BOUND_TABLE_WORDS.directions.descending,
-                    icon: 'Move down',
+                    icon: say('editor.move-down'),
                   },
                 ]}
               />
               <select
-                aria-label={`No value in ${label}`}
+                aria-label={say('editor.no-value-in', { label })}
                 className={styles['nulls']}
                 value={key.nulls}
                 disabled={!enabled}
@@ -791,7 +953,7 @@ export function BoundTablePanel({
                 ))}
               </select>
               <select
-                aria-label={`${BOUND_TABLE_WORDS.subtotal} in ${label}`}
+                aria-label={say('editor.in', { subtotal: BOUND_TABLE_WORDS.subtotal, label })}
                 className={styles['nulls']}
                 value={group.subtotal ?? ''}
                 disabled={!enabled}
@@ -840,7 +1002,7 @@ export function BoundTablePanel({
                 .map((note, at) => {
                   const letter = tableShown?.notes?.[at]?.letter;
                   const on = header(note.anchor.column);
-                  return letter ? `${letter} on ${on}` : `On ${on}`;
+                  return letter ? say('editor.on', { letter, on }) : say('editor.on-2', { on });
                 })
                 .join(', ')
         }
@@ -1003,7 +1165,7 @@ function NotesFields({
       <legend className={styles['hidden']}>{BOUND_TABLE_WORDS.notes}</legend>
       {table.notes.map((note, at) => {
         const each = shown[at];
-        const label = `Note ${each?.letter ?? at + 1}`;
+        const label = say('editor.note-2', { value1: each?.letter ?? at + 1 });
         return (
           <div key={note.id ?? at} role="group" aria-label={label} className={styles['row']}>
             <span className={styles['letter']} aria-hidden="true">
@@ -1201,8 +1363,16 @@ function ColumnFields({ column, offered, enabled, onColumns, onFormat }: ColumnF
               )
             }
             options={[
-              { value: 'header', label: 'Header', name: BOUND_TABLE_WORDS.unitPlaces.header },
-              { value: 'value', label: 'Value', name: BOUND_TABLE_WORDS.unitPlaces.value },
+              {
+                value: 'header',
+                label: say('editor.header'),
+                name: BOUND_TABLE_WORDS.unitPlaces.header,
+              },
+              {
+                value: 'value',
+                label: say('editor.value'),
+                name: BOUND_TABLE_WORDS.unitPlaces.value,
+              },
             ]}
           />
         </span>
@@ -1222,7 +1392,7 @@ function ColumnFields({ column, offered, enabled, onColumns, onFormat }: ColumnF
           }}
           options={(['style', ...COLUMN_ALIGNMENTS] as const).map((each) =>
             each === 'style'
-              ? { value: each, label: 'Style', name: BOUND_TABLE_WORDS.aligns.style }
+              ? { value: each, label: say('editor.style'), name: BOUND_TABLE_WORDS.aligns.style }
               : { value: each, name: BOUND_TABLE_WORDS.aligns[each], icon: ALIGN_ICONS[each] },
           )}
         />

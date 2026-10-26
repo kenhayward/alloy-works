@@ -24,6 +24,7 @@ import { Icon } from './Icon.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
 import { RowMenu } from './RowMenu.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -37,10 +38,34 @@ type Item = Page['items'][number];
 type SpaceCount = Page['spaces'][number];
 
 const SORTS: readonly SortOption[] = [
-  { sort: 'title', order: 'asc', label: 'Title, A to Z' },
-  { sort: 'title', order: 'desc', label: 'Title, Z to A' },
-  { sort: 'changed', order: 'desc', label: 'Newest changed first' },
-  { sort: 'changed', order: 'asc', label: 'Oldest changed first' },
+  {
+    sort: 'title',
+    order: 'asc',
+    get label() {
+      return words('editor.title-a-to-z');
+    },
+  },
+  {
+    sort: 'title',
+    order: 'desc',
+    get label() {
+      return words('editor.title-z-to-a');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'desc',
+    get label() {
+      return words('editor.newest-changed-first');
+    },
+  },
+  {
+    sort: 'changed',
+    order: 'asc',
+    get label() {
+      return words('editor.oldest-changed-first');
+    },
+  },
 ];
 
 /**
@@ -146,11 +171,11 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
     if (failed === undefined) return null;
     return (
       <section aria-labelledby="components-heading">
-        <h1 id="components-heading">Components</h1>
+        <h1 id="components-heading">{words('editor.components')}</h1>
         <Notice tone="failed">
-          <p>The components could not be loaded.</p>
+          <p>{words('editor.the-components-could-not-be')}</p>
           <button type="button" disabled={loading} onClick={() => void load(failed)}>
-            Try again
+            {words('editor.try-again')}
           </button>
         </Notice>
       </section>
@@ -178,7 +203,9 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
       name: type,
       remove: () => setTypesChosen((held) => toggled(held, type)),
     })),
-    ...(archived ? [{ key: 'archived', name: 'Archived', remove: () => setArchived(false) }] : []),
+    ...(archived
+      ? [{ key: 'archived', name: words('editor.archived'), remove: () => setArchived(false) }]
+      : []),
   ];
   const shownItem = items.find((item) => item.id === shown) ?? null;
   const closeShown = () => {
@@ -190,7 +217,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
   const filter = (
     <>
       <div className={styles['filterHead']}>
-        <span className={styles['overline']}>Filter</span>
+        <span className={styles['overline']}>{words('editor.filter')}</span>
         {(chosen.length > 0 || typesChosen.length > 0 || archived) && (
           <button
             type="button"
@@ -201,12 +228,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
               setArchived(false);
             }}
           >
-            Clear
+            {words('editor.clear')}
           </button>
         )}
       </div>
       <fieldset className={styles['facet']}>
-        <legend className={styles['overline']}>Space</legend>
+        <legend className={styles['overline']}>{words('editor.space')}</legend>
         {spaces.map((space) => (
           <label key={space.id} className={styles['option']}>
             <input
@@ -245,12 +272,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
     >
       <section aria-labelledby="components-heading">
         <div className={styles['titleRow']}>
-          <h1 id="components-heading">Components</h1>
+          <h1 id="components-heading">{words('editor.components')}</h1>
           {/* A space's translations, by component (LOC-016; the TR plan, TR-M). */}
-          <a href="#/translations">Translations</a>
+          <a href="#/translations">{words('editor.translations')}</a>
           {mayCreate && (
             <button type="button" className="primary" onClick={() => setCreating(true)}>
-              New component
+              {words('editor.new-component')}
             </button>
           )}
         </div>
@@ -270,16 +297,21 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         )}
         <SortChooser options={SORTS} chosen={sort} onChoose={setSort} />
         <p className={styles['summary']}>
-          {`${total} ${archived ? 'archived ' : ''}${total === 1 ? 'component' : 'components'} you may read. Showing 1 to ${items.length}.`}
+          {words('editor.you-may-read-showing-1', {
+            total,
+            value2: archived ? 'archived ' : '',
+            value3: total === 1 ? 'component' : 'components',
+            length: items.length,
+          })}
         </p>
         {filters.length > 0 && (
-          <ul className={styles['chosen']} aria-label="Filtered by">
+          <ul className={styles['chosen']} aria-label={words('editor.filtered-by')}>
             {filters.map((each) => (
               <li key={each.key}>
                 <Chip tone="accent">
                   {each.name}
                   <IconButton
-                    label={`Remove ${each.name}`}
+                    label={words('editor.remove-2', { name: each.name })}
                     className={styles['unchoose']}
                     onClick={each.remove}
                   >
@@ -297,8 +329,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
           <Empty>
             <p>
               {archived
-                ? 'There are no archived components you may read.'
-                : 'There are no components you may read.'}
+                ? words('editor.there-are-no-archived-components')
+                : words('editor.there-are-no-components-you')}
             </p>
           </Empty>
         ) : (
@@ -306,12 +338,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Title</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Version</th>
-                  <th scope="col">State</th>
-                  <th scope="col">Changed</th>
-                  <th scope="col">By</th>
+                  <th scope="col">{words('editor.title')}</th>
+                  <th scope="col">{words('editor.type')}</th>
+                  <th scope="col">{words('editor.version')}</th>
+                  <th scope="col">{words('editor.state')}</th>
+                  <th scope="col">{words('editor.changed')}</th>
+                  <th scope="col">{words('editor.by')}</th>
                   <td aria-hidden="true" />
                 </tr>
               </thead>
@@ -322,7 +354,7 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       <a className={styles['title']} href={`#/components/${item.id}`}>
                         {item.title}
                       </a>
-                      {archived && <Chip>Archived</Chip>}
+                      {archived && <Chip>{words('editor.archived')}</Chip>}
                       <span className={styles['where']}>
                         {`${item.space.name}, ${item.language}`}
                       </span>
@@ -332,10 +364,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                     <td>
                       {item.state && <StateLozenge state={item.state} />}
                       {/* Past its review-by day (LIF-018; WF5-H). */}
-                      {item.pastReview === true && <Chip tone="warn">Past review</Chip>}
+                      {item.pastReview === true && (
+                        <Chip tone="warn">{words('editor.past-review')}</Chip>
+                      )}
                       {/* Diverged, naming its lines (LIF-046; the R16 plan, R16-E). */}
                       {(item.lines?.length ?? 0) > 0 && (
-                        <Chip>{`Diverged: ${item.lines!.join(', ')}`}</Chip>
+                        <Chip>{words('editor.diverged', { value1: item.lines!.join(', ') })}</Chip>
                       )}
                     </td>
                     <td className={styles['muted']}>
@@ -345,12 +379,12 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       {item.changedBy === null
                         ? ''
                         : item.changedBy.id === principalId
-                          ? 'You'
+                          ? words('editor.you')
                           : (item.changedBy.name ?? '')}
                     </td>
                     <td className={styles['actions']}>
                       <IconButton
-                        label={`Show ${item.title} here`}
+                        label={words('editor.show-here', { title: item.title })}
                         pressed={item.id === shown}
                         ref={(element) => {
                           if (element) showButtons.current.set(item.id, element);
@@ -377,16 +411,16 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
         )}
         {failed !== undefined ? (
           <Notice tone="failed">
-            <p>The components could not be loaded.</p>
+            <p>{words('editor.the-components-could-not-be')}</p>
             <button type="button" disabled={loading} onClick={() => void load(failed)}>
-              Try again
+              {words('editor.try-again')}
             </button>
           </Notice>
         ) : (
           next !== null && (
             <div className={styles['more']}>
               <button type="button" disabled={loading} onClick={() => void load(next)}>
-                Show more
+                {words('editor.show-more')}
               </button>
             </div>
           )

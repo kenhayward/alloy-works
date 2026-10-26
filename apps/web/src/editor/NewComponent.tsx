@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCreatableSpaces } from '../spaces.js';
 import { DirectionSelect } from './DirectionSelect.js';
 import { everyPage } from '../paging.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -140,11 +141,11 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   const create = useCallback(async () => {
     if (pending.current) return;
     if (title.trim() === '') {
-      setNotice('A component needs a title.');
+      setNotice(words('editor.a-component-needs-a-title'));
       return;
     }
     if (!language.safeParse(languageTag).success) {
-      setNotice('A language tag looks like en-GB.');
+      setNotice(words('editor.a-language-tag-looks-like'));
       return;
     }
     pending.current = true;
@@ -167,20 +168,20 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
         // sent, each with something the author can actually act on rather than a bare "Try again"
         // that only resends the same now-refused request (review round 1, item 5).
         if (response.status === 401) {
-          setNotice('You are signed out. Sign in again to create a component.');
+          setNotice(words('editor.you-are-signed-out-sign-2'));
         } else if (response.status === 403) {
-          setNotice('You may not create a component here.');
+          setNotice(words('editor.you-may-not-create-a'));
           // A withdrawn create grant answers 403 rather than 404 - the space is still readable - and
           // the chooser went on offering it, so every retry was refused again (final review). Read
           // the spaces afresh, exactly as the 404 branch does.
           void loadSpaces();
         } else if (response.status === 404) {
-          setNotice('This space is no longer open to you. Choose another.');
+          setNotice(words('editor.this-space-is-no-longer'));
           void loadSpaces();
         } else if (response.status === 409 && error?.code === 'space_archived') {
           // Archived since the spaces were read: nothing new is made there (the SP1 plan, SP-C), and
           // the re-read stops offering it.
-          setNotice('This space has been archived. Choose another.');
+          setNotice(words('editor.this-space-has-been-archived'));
           void loadSpaces();
         } else if (response.status === 409) {
           // The re-read decides which sentence is true: "Choose another" beside an empty chooser -
@@ -189,19 +190,19 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
           const chooser = await loadTypes(where);
           setNotice(
             chooser
-              ? 'That component type is no longer available. Choose another.'
-              : 'That component type is no longer available.',
+              ? words('editor.that-component-type-is-no')
+              : words('editor.that-component-type-is-no-2'),
           );
         } else if (response.status === 400) {
-          setNotice('The title, language or direction was not accepted. Check them and try again.');
+          setNotice(words('editor.the-title-language-or-direction'));
         } else {
-          setNotice('The component could not be created. Try again.');
+          setNotice(words('editor.the-component-could-not-be-2'));
         }
         return;
       }
       onCreated(id);
     } catch {
-      setNotice('The component could not be created. Try again.');
+      setNotice(words('editor.the-component-could-not-be-2'));
     } finally {
       pending.current = false;
       setSending(false);
@@ -226,14 +227,14 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   if (spacesProblem !== null) {
     return (
       <section aria-labelledby="new-component-heading">
-        <h2 id="new-component-heading">New component</h2>
+        <h2 id="new-component-heading">{words('editor.new-component')}</h2>
         <p>
           {spacesProblem === 'signedOut'
-            ? 'You are signed out. Sign in again to create a component.'
-            : 'The spaces you may create in could not be loaded.'}
+            ? words('editor.you-are-signed-out-sign-2')
+            : words('editor.the-spaces-you-may-create')}
         </p>
         <button type="button" onClick={() => void loadSpaces()}>
-          Try again
+          {words('editor.try-again')}
         </button>
         {status}
       </section>
@@ -248,16 +249,16 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
     if (notice === null) return null;
     return (
       <section aria-labelledby="new-component-heading">
-        <h2 id="new-component-heading">New component</h2>
-        <p role="status">There is nowhere left for you to create a component.</p>
+        <h2 id="new-component-heading">{words('editor.new-component')}</h2>
+        <p role="status">{words('editor.there-is-nowhere-left-for')}</p>
       </section>
     );
   }
   return (
     <section aria-labelledby="new-component-heading">
-      <h2 id="new-component-heading">New component</h2>
+      <h2 id="new-component-heading">{words('editor.new-component')}</h2>
       <label>
-        Where
+        {words('editor.where')}
         <select value={where} onChange={(event) => setWhere(event.target.value)}>
           {spaces.map((space) => (
             <option key={space.id} value={space.id}>
@@ -267,19 +268,19 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
         </select>
       </label>
       <label>
-        Title
+        {words('editor.title')}
         <input value={title} onChange={(event) => setTitle(event.target.value)} />
       </label>
       <label>
-        Language
+        {words('editor.language')}
         <input value={languageTag} onChange={(event) => setLanguageTag(event.target.value)} />
       </label>
       <label>
-        Direction
+        {words('editor.direction')}
         <DirectionSelect value={direction} onChange={setDirection} />
       </label>
       <label>
-        Component type
+        {words('editor.component-type')}
         <select value={componentType} onChange={(event) => setComponentType(event.target.value)}>
           {types.map((type) => (
             <option key={type.id} value={type.id}>
@@ -292,16 +293,16 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
         <>
           <p>
             {typesProblem === 'signedOut'
-              ? 'You are signed out. Sign in again to choose a component type.'
-              : 'The component types could not be loaded.'}
+              ? words('editor.you-are-signed-out-sign-3')
+              : words('editor.the-component-types-could-not')}
           </p>
           <button type="button" onClick={() => void loadTypes(where)}>
-            Try again
+            {words('editor.try-again')}
           </button>
         </>
       )}
       <button className="primary" type="button" disabled={sending} onClick={() => void create()}>
-        Create
+        {words('editor.create')}
       </button>
       {status}
     </section>

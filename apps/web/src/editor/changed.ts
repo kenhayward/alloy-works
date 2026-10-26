@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /**
  * Months as the lists abbreviate them, spelled here rather than asked of `Intl`: engines disagree
  * (one writes "Sept" where another writes "Sep"), and a list whose dates change with the browser is a
@@ -8,7 +9,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const twoDigits = (value: number) => String(value).padStart(2, '0');
 const clock = (at: Date) => `${twoDigits(at.getHours())}:${twoDigits(at.getMinutes())}`;
 const startOfDay = (at: Date) => new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime();
-const plural = (count: number, one: string) => `${count} ${one}${count === 1 ? '' : 's'} ago`;
+const plural = (count: number, one: string) =>
+  words('editor.ago', { count, one, value3: count === 1 ? '' : 's' });
 
 /**
  * When something last changed, in the reader's own time, as near as is useful: minutes and hours
@@ -17,11 +19,12 @@ const plural = (count: number, one: string) => `${count} ${one}${count === 1 ? '
 export function whenChanged(iso: string, now: Date = new Date()): string {
   const at = new Date(iso);
   const minutes = Math.floor((now.getTime() - at.getTime()) / 60_000);
-  if (minutes < 1) return 'Just now';
+  if (minutes < 1) return words('editor.just-now');
   if (minutes < 60) return plural(minutes, 'minute');
   if (startOfDay(at) === startOfDay(now)) return plural(Math.floor(minutes / 60), 'hour');
   const yesterday = startOfDay(now) - 86_400_000;
-  if (startOfDay(at) === startOfDay(new Date(yesterday))) return `Yesterday, ${clock(at)}`;
+  if (startOfDay(at) === startOfDay(new Date(yesterday)))
+    return words('editor.yesterday', { value1: clock(at) });
   const day = `${at.getDate()} ${MONTHS[at.getMonth()] ?? ''}`;
   if (at.getFullYear() === now.getFullYear()) return `${day}, ${clock(at)}`;
   return `${day} ${at.getFullYear()}`;

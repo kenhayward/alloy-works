@@ -15,6 +15,7 @@ import { CitationSearch, type Picked } from './CitationSearch.js';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ReferenceDialog.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -95,10 +96,12 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
       });
       const entry = data?.entry?.id ?? data?.matches[0]?.entry.id;
       setSaid(
-        entry === undefined ? 'The entry could not be made.' : onDone({ entry, locator: trimmed }),
+        entry === undefined
+          ? words('editor.the-entry-could-not-be')
+          : onDone({ entry, locator: trimmed }),
       );
     } catch {
-      setSaid('The entry could not be made.');
+      setSaid(words('editor.the-entry-could-not-be'));
     } finally {
       setMaking(false);
     }
@@ -154,13 +157,13 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Cite" size={22} />
             </span>
-            Cite
+            {words('editor.cite')}
           </h2>
           <PanelTabs
-            label="Cite from"
+            label={words('editor.cite-from')}
             tabs={[
-              { key: 'entries', label: 'Entries' },
-              { key: 'search', label: 'Search' },
+              { key: 'entries', label: words('editor.entries') },
+              { key: 'search', label: words('editor.search') },
             ]}
             chosen={tab}
             onChoose={(key) => {
@@ -178,7 +181,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
             >
               <CitationSearch client={client} space={space} onPick={setPicked} />
               <label className={styles['field']}>
-                Locator, such as a page (optional)
+                {words('editor.locator-such-as-a-page')}
                 <input
                   type="text"
                   value={locator}
@@ -194,7 +197,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
               aria-labelledby={tabIds('entries').tab}
               className={styles['form']}
             >
-              {entries === null && <p role="status">Reading the bibliography.</p>}
+              {entries === null && <p role="status">{words('editor.reading-the-bibliography')}</p>}
               {entries === 'unread' && <p role="alert">{ENTRIES_UNREAD}</p>}
               {Array.isArray(entries) && entries.length === 0 && (
                 <p className={styles['note']}>{NO_ENTRIES}</p>
@@ -202,7 +205,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
               {Array.isArray(entries) && entries.length > 0 && (
                 <>
                   <label className={styles['field']}>
-                    Find an entry
+                    {words('editor.find-an-entry')}
                     <input
                       ref={search}
                       type="search"
@@ -212,11 +215,11 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
                     />
                   </label>
                   <p id={`${id}-found`} className={styles['note']} aria-live="polite">
-                    {found.length === 1 ? '1 entry found.' : `${found.length} entries found.`}
+                    {words('editor.entries-found', { count: found.length })}
                   </p>
                   {found.length > 0 && (
                     <fieldset className={own['group']}>
-                      <legend>Entry</legend>
+                      <legend>{words('editor.entry')}</legend>
                       <div className={own['targets']}>
                         {found.map((each) => (
                           <label key={each.id} className={own['choice']}>
@@ -235,7 +238,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
                     </fieldset>
                   )}
                   <label className={styles['field']}>
-                    Locator, such as a page (optional)
+                    {words('editor.locator-such-as-a-page')}
                     <input
                       type="text"
                       value={locator}
@@ -253,11 +256,11 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
           )}
           <div className={styles['footer']}>
             <button type="button" onClick={onCancel}>
-              Cancel
+              {words('editor.cancel')}
             </button>
             {insertable && (
               <button type="submit" className="primary" disabled={making}>
-                {current === null ? 'Insert' : 'Change'}
+                {current === null ? words('editor.insert') : words('editor.change')}
               </button>
             )}
           </div>
@@ -265,8 +268,8 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

@@ -17,6 +17,7 @@ import { iterationLabel, savedTime, sentenceCase } from './recovery.js';
 import styles from './RecoveryPanel.module.css';
 import type { IterationPage, SavedIteration } from './session.js';
 import { changesBetween, type TextChange } from './textChanges.js';
+import { words } from '../words/words.js';
 
 export interface RecoveryPanelProps {
   /** A page of the author's own saved iterations, newest first: the first, or the one after `cursor`. */
@@ -50,10 +51,10 @@ type Preview =
 /** Why a page could not be listed, in the author's words. */
 const failure = (code: Extract<IterationPage, { ok: false }>['code']): string =>
   code === 'lock_held' || code === 'lock_required'
-    ? 'This session no longer holds the component, so its saved text cannot be listed.'
+    ? words('editor.this-session-no-longer-holds')
     : code === 'signed_out'
-      ? 'You are signed out. Sign in again to list your saved text.'
-      : 'Your saved text could not be listed.';
+      ? words('editor.you-are-signed-out-sign-4')
+      : words('editor.your-saved-text-could-not');
 
 /**
  * **Saved text** (component-editor.md, "Recovery, as W11 builds it"; CNT-090; the R1 plan): a modal of
@@ -134,7 +135,7 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
       const now = currentRef.current();
       if (typeof read === 'string') setPreview({ state: 'failed', message: read });
       else if (now === null)
-        setPreview({ state: 'failed', message: 'The text on screen could not be read.' });
+        setPreview({ state: 'failed', message: words('editor.the-text-on-screen-could') });
       else setPreview({ state: 'shown', changes: changesBetween(now, read) });
     });
     return () => {
@@ -201,15 +202,14 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
       >
         <div className={styles['panel']}>
           <h2 id={heading} className={styles['heading']}>
-            Saved text
+            {words('editor.saved-text')}
           </h2>
-          <p className={styles['about']}>
-            Choose saved text to see what recovering it changes. Recover puts it in place of what is
-            on screen; anything on screen not yet saved is saved first, so it can be recovered too.
-          </p>
+          <p className={styles['about']}>{words('editor.choose-saved-text-to-see')}</p>
           <div className={styles['columns']}>
             <div className={styles['side']}>
-              {listing.state === 'loading' && <p className={styles['about']}>Listing...</p>}
+              {listing.state === 'loading' && (
+                <p className={styles['about']}>{words('editor.listing')}</p>
+              )}
               {listing.state === 'failed' && (
                 <p className={styles['about']}>
                   {listing.message}{' '}
@@ -220,12 +220,12 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
                       setAttempt((count) => count + 1);
                     }}
                   >
-                    Try again
+                    {words('editor.try-again')}
                   </button>
                 </p>
               )}
               {listing.state === 'ready' && listing.items.length === 0 && (
-                <p className={styles['about']}>There is no saved text to recover.</p>
+                <p className={styles['about']}>{words('editor.there-is-no-saved-text')}</p>
               )}
               {listing.state === 'ready' && listing.items.length > 0 && (
                 <ul className={styles['list']}>
@@ -249,10 +249,13 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
                           {savedTime(iteration.savedAt, new Date(), true)}
                         </span>
                         <span className={styles['detail']}>
-                          {iteration.thisWindow ? 'This window' : 'Another window'}
+                          {iteration.thisWindow
+                            ? words('editor.this-window')
+                            : words('editor.another-window')}
                         </span>
                         <span className={styles['detail']}>
-                          Version {iteration.openedFrom.number}
+                          {words('editor.version-2')}
+                          {iteration.openedFrom.number}
                         </span>
                       </button>
                     </li>
@@ -261,18 +264,23 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
               )}
               {listing.state === 'ready' && listing.next !== null && (
                 <button type="button" disabled={busy} onClick={() => void older()}>
-                  Show older
+                  {words('editor.show-older')}
                 </button>
               )}
             </div>
-            <section className={styles['changes']} aria-label="What restoring it changes">
+            <section
+              className={styles['changes']}
+              aria-label={words('editor.what-restoring-it-changes')}
+            >
               {chosen === null && (
-                <p className={styles['about']}>Choose saved text to see it here.</p>
+                <p className={styles['about']}>{words('editor.choose-saved-text-to-see-2')}</p>
               )}
-              {preview?.state === 'reading' && <p className={styles['about']}>Reading...</p>}
+              {preview?.state === 'reading' && (
+                <p className={styles['about']}>{words('editor.reading')}</p>
+              )}
               {preview?.state === 'failed' && <p className={styles['about']}>{preview.message}</p>}
               {preview?.state === 'shown' && preview.changes.length === 0 && (
-                <p className={styles['about']}>It is the same as the text on screen.</p>
+                <p className={styles['about']}>{words('editor.it-is-the-same-as')}</p>
               )}
               {preview?.state === 'shown' && preview.changes.length > 0 && (
                 <ul className={styles['changeList']}>
@@ -280,10 +288,10 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
                     <li key={at} className={styles['change']} data-change={change.kind}>
                       <span className={styles['kind']}>
                         {change.kind === 'added'
-                          ? 'Added'
+                          ? words('editor.added')
                           : change.kind === 'removed'
-                            ? 'Removed'
-                            : 'Changed'}
+                            ? words('editor.removed')
+                            : words('editor.changed')}
                       </span>
                       {change.kind === 'added' && <ins>{change.text}</ins>}
                       {change.kind === 'removed' && <del>{change.text}</del>}
@@ -312,7 +320,7 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
           {refused !== null && <p className={styles['refused']}>{refused}</p>}
           <div className={styles['actions']}>
             <button type="button" onClick={onCancel}>
-              Cancel
+              {words('editor.cancel')}
             </button>
             <button
               type="button"
@@ -320,15 +328,15 @@ export function RecoveryPanel({ load, peek, current, restore, onCancel, ref }: R
               aria-disabled={chosen === null || busy}
               onClick={() => void recover()}
             >
-              Recover
+              {words('editor.recover')}
             </button>
           </div>
         </div>
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

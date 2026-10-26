@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { componentVersionLink } from '../search/links.js';
 import { documentVersionLink } from '../structure/links.js';
 import styles from './VersionList.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -82,54 +83,58 @@ export function VersionList({
   }, [client, id, limit, read, of]);
 
   if (versions === undefined) return null;
-  if (versions === null) return <p className={styles['muted']}>The versions could not be read.</p>;
+  if (versions === null)
+    return <p className={styles['muted']}>{words('editor.the-versions-could-not-be')}</p>;
   if (versions.length === 0)
-    return <p className={styles['muted']}>No version has been saved yet.</p>;
+    return <p className={styles['muted']}>{words('editor.no-version-has-been-saved')}</p>;
   return (
-    <ul className={styles['versions']} aria-label="Versions">
+    <ul className={styles['versions']} aria-label={words('editor.versions')}>
       {versions.map((version) => (
         <li key={version.number} className={styles['version']}>
           <span className={styles['number']}>{version.number}</span>
           <span className={styles['who']}>
-            {`${version.author ?? 'Unknown'}, ${day.format(new Date(version.createdAt))}`}
+            {`${version.author ?? words('editor.unknown')}, ${day.format(new Date(version.createdAt))}`}
             {version.note !== null && <span className={styles['note']}>{version.note}</span>}
             {version.restoredFrom !== null && (
-              <span
-                className={styles['note']}
-              >{`Restored from version ${version.restoredFrom}`}</span>
+              <span className={styles['note']}>
+                {words('editor.restored-from-version', { restoredFrom: version.restoredFrom })}
+              </span>
             )}
           </span>
           {opens && version !== versions[0] && (
             <a
               className={styles['open']}
-              aria-label={`Open ${version.number}`}
+              aria-label={words('editor.open-2', { number: version.number })}
               href={
                 of === 'document'
                   ? documentVersionLink(id, version.id)
                   : componentVersionLink(id, version.id)
               }
             >
-              Open
+              {words('editor.open')}
             </a>
           )}
           {onCompare && version !== versions[0] && (
             <button
               type="button"
               className={styles['compare']}
-              aria-label={`Compare ${version.number} with ${versions[0]!.number}`}
+              aria-label={words('editor.compare-with', {
+                number: version.number,
+                number2: versions[0]!.number,
+              })}
               onClick={() => onCompare(version, versions[0]!)}
             >
-              Compare
+              {words('editor.compare')}
             </button>
           )}
           {onRestore && version !== versions[0] && (
             <button
               type="button"
               className={styles['restore']}
-              aria-label={`Restore ${version.number}`}
+              aria-label={words('editor.restore', { number: version.number })}
               onClick={() => onRestore(version, versions[0]!)}
             >
-              Restore
+              {words('editor.restore-2')}
             </button>
           )}
         </li>

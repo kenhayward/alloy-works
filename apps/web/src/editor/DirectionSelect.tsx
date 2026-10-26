@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 export interface DirectionSelectProps {
   readonly value: 'ltr' | 'rtl';
   readonly disabled?: boolean;
@@ -17,8 +18,8 @@ export function DirectionSelect({ value, disabled = false, onChange }: Direction
       disabled={disabled}
       onChange={(event) => onChange(event.target.value === 'rtl' ? 'rtl' : 'ltr')}
     >
-      <option value="ltr">Left to right</option>
-      <option value="rtl">Right to left</option>
+      <option value="ltr">{words('editor.left-to-right-2')}</option>
+      <option value="rtl">{words('editor.right-to-left-2')}</option>
     </select>
   );
 }

@@ -2,6 +2,7 @@ import type { ReportEntry } from '@alloy-works/domain';
 import { useId, type Ref } from 'react';
 
 import styles from './PasteReport.module.css';
+import { words } from '../words/words.js';
 
 /**
  * What a paste report lists: everything but the new identifiers. The pipeline gives every pasted
@@ -44,15 +45,9 @@ export function PasteReport({ entries, onClose, held, ref }: PasteReportProps) {
   return (
     <section ref={ref} className={styles['report']} aria-labelledby={heading} tabIndex={-1}>
       <h3 id={heading} className={styles['heading']}>
-        Paste report
+        {words('editor.paste-report')}
       </h3>
-      {held && (
-        <p className={styles['held']}>
-          This paste holds headings. Keep it as one component, its headings made paragraphs, or
-          break it out into sections and components, reviewed as an import before anything is made.
-          Nothing is pasted until you choose.
-        </p>
-      )}
+      {held && <p className={styles['held']}>{words('editor.this-paste-holds-headings-keep')}</p>}
       <ul className={styles['entries']}>
         {entries.map((entry, index) => (
           <li key={index}>
@@ -72,15 +67,15 @@ export function PasteReport({ entries, onClose, held, ref }: PasteReportProps) {
       {held && (
         <>
           <button type="button" disabled={held.busy} onClick={held.onKeep}>
-            Keep as one component
+            {words('editor.keep-as-one-component')}
           </button>
           <button type="button" disabled={held.busy} onClick={held.onBreakOut}>
-            Break out into sections and components
+            {words('editor.break-out-into-sections-and')}
           </button>
         </>
       )}
       <button type="button" onClick={onClose}>
-        Close
+        {words('editor.close')}
       </button>
     </section>
   );

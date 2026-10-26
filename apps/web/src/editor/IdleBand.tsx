@@ -1,13 +1,41 @@
 import styles from './ComponentEditor.module.css';
 import { EditorToolbar, type ToolbarAct } from './EditorToolbar.js';
+import { words } from '../words/words.js';
 
 const nothing = () => undefined;
 
 /** The acts a component open in place leads its toolbar with, none of them pressable yet. */
 const IDLE_ACTS: readonly ToolbarAct[] = [
-  { label: 'Done editing', icon: 'Done editing', disabled: true, onPress: nothing },
-  { label: 'Save version', icon: 'Save version', disabled: true, onPress: nothing },
-  { label: 'Saved text', icon: 'Saved text', disabled: true, onPress: nothing },
+  {
+    get label() {
+      return words('editor.done-editing');
+    },
+    get icon() {
+      return words('editor.done-editing');
+    },
+    disabled: true,
+    onPress: nothing,
+  },
+  {
+    get label() {
+      return words('editor.save-version');
+    },
+    get icon() {
+      return words('editor.save-version');
+    },
+    disabled: true,
+    onPress: nothing,
+  },
+  {
+    get label() {
+      return words('editor.saved-text');
+    },
+    get icon() {
+      return words('editor.saved-text');
+    },
+    disabled: true,
+    onPress: nothing,
+  },
 ];
 
 /**
@@ -29,7 +57,7 @@ export function IdleBand() {
         onInsertImage={nothing}
       />
       <div className={styles['toolbarLine']} data-toolbar-line="">
-        <p className={styles['bandHint']}>Click a component&apos;s text to edit it.</p>
+        <p className={styles['bandHint']}>{words('editor.click-a-component-s-text')}</p>
       </div>
     </div>
   );

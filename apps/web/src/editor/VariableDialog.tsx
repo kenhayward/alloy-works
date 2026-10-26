@@ -5,6 +5,7 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './VariableDialog.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -103,13 +104,13 @@ export function VariableDialog({ client, onChoose, onCancel }: VariableDialogPro
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Variable" size={22} />
             </span>
-            Variable
+            {words('editor.variable')}
           </h2>
-          {offered === null && <p role="status">Reading the variables.</p>}
+          {offered === null && <p role="status">{words('editor.reading-the-variables')}</p>}
           {offered === 'unread' && <p role="alert">{VARIABLES_UNREAD}</p>}
           {Array.isArray(offered) && offered.length === 0 && <p>{NO_VARIABLES}</p>}
           {Array.isArray(offered) && offered.length > 0 && (
-            <ul className={own['list']} aria-label="Declared variables">
+            <ul className={own['list']} aria-label={words('editor.declared-variables')}>
               {offered.map((each) => (
                 <li key={each.key}>
                   <button
@@ -128,8 +129,8 @@ export function VariableDialog({ client, onChoose, onCancel }: VariableDialogPro
         <button
           type="button"
           className={shell['close']}
-          aria-label="Close"
-          title="Close"
+          aria-label={words('editor.close')}
+          title={words('editor.close')}
           onClick={onCancel}
         >
           <Icon name="Close" size={13} />

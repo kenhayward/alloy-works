@@ -15,6 +15,7 @@ import { Icon } from './Icon.js';
 import styles from './EditorToolbar.module.css';
 
 import { pressCommand, type AskForValue, type MarkCommand, type OpenDialog } from './press.js';
+import { words } from '../words/words.js';
 
 /** The commands a divider follows: the last mark, and the last list action. */
 const GROUP_ENDS = new Set(['Term', 'Definition list']);
@@ -222,7 +223,7 @@ export function EditorToolbar({
   return (
     // One tab stop, the arrows, Home and End along it: the shared toolbar's (LG5). The registry's
     // buttons, then Paste as Markdown, Figure and Image where they are offered: one ring either way.
-    <Toolbar ref={ref} label="Formatting" className={styles['toolbar']}>
+    <Toolbar ref={ref} label={words('editor.formatting')} className={styles['toolbar']}>
       {leading && leading.length > 0 && (
         <>
           {leading.map((act) => (
@@ -274,7 +275,7 @@ export function EditorToolbar({
           <button
             type="button"
             className={styles['button']}
-            aria-label="Paste as Markdown"
+            aria-label={words('editor.paste-as-markdown')}
             aria-disabled={!enabled || view === null}
             data-tip="Paste as Markdown"
             onMouseDown={(event) => event.preventDefault()}
@@ -290,7 +291,7 @@ export function EditorToolbar({
         <button
           type="button"
           className={styles['button']}
-          aria-label="Figure"
+          aria-label={words('editor.figure')}
           aria-disabled={!enabled || view === null || !figurePlaceable}
           data-tip="Figure"
           onMouseDown={(event) => event.preventDefault()}
@@ -305,7 +306,7 @@ export function EditorToolbar({
         <button
           type="button"
           className={styles['button']}
-          aria-label="Image"
+          aria-label={words('editor.image')}
           aria-disabled={!enabled || view === null || !imagePlaceable}
           data-tip="Image"
           onMouseDown={(event) => event.preventDefault()}

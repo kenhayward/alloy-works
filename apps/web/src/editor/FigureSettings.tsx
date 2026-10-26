@@ -14,6 +14,7 @@ import styles from './FigureSettings.module.css';
 import { Icon } from './Icon.js';
 import { Modal } from '../layouts/Modal.js';
 import { ImageStyle } from '../theme/StyleChoice.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -149,14 +150,11 @@ export type FigureSettingsState = ReturnType<typeof useFigureSettings>;
 
 /** The note under "Use the image's description": the description, or why there is none to show. */
 function inheritedNote({ bound, described, kind }: FigureSettingsState): string {
-  if (bound)
-    return 'Each document shows the description its row holds in the column its query definition names.';
+  if (bound) return words('editor.each-document-shows-the-description');
   if (described.state === 'described') return `${described.text} (${described.language})`;
-  if (described.state === 'none')
-    return `The image has no description of its own, so this ${kind} cannot be published until it is given one here.`;
-  if (described.state === 'unknown')
-    return 'The image cannot be read, so its description cannot be shown.';
-  return 'Reading the image';
+  if (described.state === 'none') return words('editor.the-image-has-no-description', { kind });
+  if (described.state === 'unknown') return words('editor.the-image-cannot-be-read');
+  return words('editor.reading-the-image');
 }
 
 /**
@@ -180,7 +178,8 @@ export function FigureSettings({
 }) {
   const id = useId();
   const { kind, enabled, bound, choice, own } = settings;
-  const named = kind === 'figure' ? 'Figure settings' : 'Image settings';
+  const named =
+    kind === 'figure' ? words('editor.figure-settings') : words('editor.image-settings');
   const card = (chosen: Alternative['kind'], label: React.ReactNode, note?: React.ReactNode) => (
     <div className={styles['card']} data-chosen={choice === chosen}>
       <label>
@@ -215,7 +214,7 @@ export function FigureSettings({
         />
         {kind === 'figure' && (
           <label>
-            Numbered
+            {words('editor.numbered')}
             <input
               type="checkbox"
               role="switch"
@@ -228,10 +227,14 @@ export function FigureSettings({
         )}
       </div>
       <fieldset className={styles['alternatives']}>
-        <legend>Alternative text</legend>
+        <legend>{words('editor.alternative-text')}</legend>
         {card(
           'inherited',
-          bound ? 'Use the description its data gives' : <>Use the image&apos;s description</>,
+          bound ? (
+            words('editor.use-the-description-its-data')
+          ) : (
+            <>{words('editor.use-the-image-s-description')}</>
+          ),
           <p
             className={styles['note']}
             data-tone={!bound && settings.described.state === 'none' ? 'warn' : undefined}
@@ -242,11 +245,11 @@ export function FigureSettings({
         {!bound &&
           card(
             'own',
-            'Describe it here',
+            words('editor.describe-it-here'),
             choice === 'own' && (
               <>
                 <label className={styles['own']}>
-                  Its own description
+                  {words('editor.its-own-description')}
                   <textarea
                     value={own}
                     disabled={!enabled}
@@ -255,13 +258,14 @@ export function FigureSettings({
                 </label>
                 {own.trim() === '' && (
                   <p className={styles['note']}>
-                    Until something is typed here, the {kind} keeps what it had.
+                    {words('editor.until-something-is-typed-here')}
+                    {kind} {words('editor.keeps-what-it-had')}
                   </p>
                 )}
               </>
             ),
           )}
-        {card('decorative', 'Decorative')}
+        {card('decorative', words('editor.decorative'))}
       </fieldset>
       <div className={styles['footer']}>
         {enabled ? (
@@ -274,7 +278,7 @@ export function FigureSettings({
               }}
             >
               <Icon name="Replace image" />
-              Replace image
+              {words('editor.replace-image')}
             </button>
             <button
               type="button"
@@ -286,15 +290,15 @@ export function FigureSettings({
               }}
             >
               <Icon name="Delete" />
-              {kind === 'figure' ? 'Delete figure' : 'Delete image'}
+              {kind === 'figure' ? words('editor.delete-figure') : words('editor.delete-image')}
             </button>
             <button type="button" className={`primary ${styles['end']}`} onClick={onClose}>
-              Done
+              {words('editor.done')}
             </button>
           </>
         ) : (
           <button type="button" className={styles['end']} data-autofocus onClick={onClose}>
-            Close
+            {words('editor.close')}
           </button>
         )}
       </div>

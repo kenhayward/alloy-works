@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { PaneToggle, type Pane } from '../layouts/PaneWidth.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import styles from './SpacePane.module.css';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 type Item = Page['items'][number];
@@ -46,7 +47,7 @@ export function SpacePane({
         <p className={styles['overline']} aria-hidden="true">
           {space.name}
         </p>
-        {pane && <PaneToggle label="space pane" pane={pane} />}
+        {pane && <PaneToggle label={words('editor.space-pane')} pane={pane} />}
       </div>
       <ul className={styles['items']}>
         {items.map((item) => (

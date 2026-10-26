@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import styles from './ComponentHeader.module.css';
 import { DirectionSelect } from './DirectionSelect.js';
+import { words } from '../words/words.js';
 
 /** The same tag rule the model applies (see `NewComponent.tsx`, which reuses it for the same reason). */
 const language = contentDocumentSchema.shape.language;
@@ -39,7 +40,14 @@ export interface ComponentHeaderProps {
 }
 
 /** A direction as a chip's name says it. */
-const SAID = { ltr: 'left to right', rtl: 'right to left' } as const;
+const SAID = {
+  get ltr() {
+    return words('editor.left-to-right');
+  },
+  get rtl() {
+    return words('editor.right-to-left');
+  },
+} as const;
 
 /**
  * A chip on the title strip showing a value, and the popover it opens holding the field that edits
@@ -171,8 +179,8 @@ export function ComponentHeader({
       {titled && (
         <input
           className={styles['title']}
-          aria-label="Title"
-          title="Click to rename"
+          aria-label={words('editor.title')}
+          title={words('editor.click-to-rename')}
           value={title.typed}
           disabled={!editable}
           onChange={(event) => {
@@ -198,7 +206,7 @@ export function ComponentHeader({
             // read-only, sitting beside a heading that still shows the real title with nothing left in
             // the page able to correct it (final re-review).
             if (titleAccepted(title.typed)) return;
-            if (editable) onRefused('A component needs a title.');
+            if (editable) onRefused(words('editor.a-component-needs-a-title'));
             setTitle({ typed: header.title, inModel: header.title });
           }}
         />
@@ -206,7 +214,7 @@ export function ComponentHeader({
       {titled && children}
       <Chip name={`Base language: ${header.language}`} text={header.language}>
         <label>
-          Language
+          {words('editor.language')}
           <input
             value={tag.typed}
             disabled={!editable}
@@ -229,7 +237,7 @@ export function ComponentHeader({
               // reporting a refusal there writes over the notice that just said what happened.
               if (!editable) return;
               if (!language.safeParse(tag.typed).success) {
-                onRefused('A language tag looks like en-GB.');
+                onRefused(words('editor.a-language-tag-looks-like'));
               }
             }}
           />
@@ -240,7 +248,7 @@ export function ComponentHeader({
         text={header.direction.toUpperCase()}
       >
         <label>
-          Direction
+          {words('editor.direction')}
           <DirectionSelect
             value={header.direction}
             disabled={!editable}

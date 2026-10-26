@@ -7,6 +7,7 @@ import styles from './MarkPrompt.module.css';
 import type { UploadOutcome } from './upload.js';
 import { imageChoices, StyleSelect } from '../theme/StyleChoice.js';
 import { usePresentation } from '../theme/presentation.js';
+import { words } from '../words/words.js';
 
 /** The language rule a component's own base language is held to, which an asset's is too. */
 const languageTag = contentDocumentSchema.shape.language;
@@ -80,17 +81,17 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
   const submit = async () => {
     if (busy) return;
     if (file === null) {
-      setSaid('Choose an image, a PNG or a JPEG.');
+      setSaid(words('editor.choose-an-image-a-png'));
       return;
     }
     const text = description.trim();
     if (!decorative && text === '') {
-      setSaid('Describe the image, or say it is decorative.');
+      setSaid(words('editor.describe-the-image-or-say'));
       return;
     }
     const language = tag.trim();
     if (!decorative && !languageTag.safeParse(language).success) {
-      setSaid('Give the language as a tag, such as en-GB.');
+      setSaid(words('editor.give-the-language-as-a'));
       return;
     }
     setBusy(true);
@@ -138,10 +139,16 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
             <span className={styles['tile']} aria-hidden="true">
               <Icon name="Figure" size={22} />
             </span>
-            {title}
+            {words(
+              title === 'Figure'
+                ? 'editor.figure'
+                : title === 'Image'
+                  ? 'editor.image'
+                  : 'editor.replace-image',
+            )}
           </h2>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-image`}>Image</label>
+            <label htmlFor={`${id}-image`}>{words('editor.image')}</label>
             <input
               id={`${id}-image`}
               ref={first}
@@ -151,7 +158,7 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
             />
           </div>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-description`}>Description</label>
+            <label htmlFor={`${id}-description`}>{words('editor.description')}</label>
             <textarea
               id={`${id}-description`}
               value={description}
@@ -160,11 +167,11 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
               onChange={(event) => setDescription(event.target.value)}
             />
             <p id={`${id}-description-hint`} className={styles['hint']}>
-              What the image shows, for someone who cannot see it.
+              {words('editor.what-the-image-shows-for')}
             </p>
           </div>
           <div className={styles['field']}>
-            <label htmlFor={`${id}-language`}>Language</label>
+            <label htmlFor={`${id}-language`}>{words('editor.language')}</label>
             <input
               id={`${id}-language`}
               type="text"
@@ -179,19 +186,19 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
               checked={decorative}
               onChange={(event) => setDecorative(event.target.checked)}
             />
-            It is decorative
+            {words('editor.it-is-decorative')}
           </label>
           {offered.length > 0 && placedIn !== undefined && (
             <StyleSelect
               className={styles['field']}
-              label="Image style"
+              label={words('editor.image-style')}
               value={placedIn}
               choices={offered}
               enabled={!busy}
               onChoose={setImageStyle}
             />
           )}
-          {busy && <p role="status">Checking the image</p>}
+          {busy && <p role="status">{words('editor.checking-the-image')}</p>}
           {said !== null && (
             <p role="alert" className={styles['complaint']}>
               {said}
@@ -199,10 +206,10 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
           )}
           <div className={styles['footer']}>
             <button type="button" onClick={onCancel} disabled={busy}>
-              Cancel
+              {words('editor.cancel')}
             </button>
             <button type="submit" aria-disabled={busy}>
-              Upload
+              {words('editor.upload')}
             </button>
           </div>
         </form>

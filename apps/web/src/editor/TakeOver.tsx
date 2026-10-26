@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { TakeResult } from './session.js';
+import { words } from '../words/words.js';
 
 /** A time as a person reads it, to the minute, or to the second within the next few minutes. */
 const timeOf = (iso: string, seconds = false) =>
@@ -52,7 +53,7 @@ export function TakeOver({
     [],
   );
   useEffect(() => setAskable(takeableAt), [takeableAt]);
-  const name = holder ?? 'Its holder';
+  const name = holder ?? words('editor.its-holder');
 
   const ask = async () => {
     setBusy(true);
@@ -72,12 +73,12 @@ export function TakeOver({
     }
     setSaid(
       answer.code === 'lock_active'
-        ? `${name} is working on it again.`
+        ? words('editor.is-working-on-it-again', { name })
         : answer.code === 'lock_taking'
-          ? `${answer.by ?? 'Somebody else'} has asked for it already.`
+          ? words('editor.has-asked-for-it-already', { value1: answer.by ?? 'Somebody else' })
           : answer.code === 'lock_free'
-            ? 'Nobody holds it now: begin editing to claim it.'
-            : 'It could not be asked for.',
+            ? words('editor.nobody-holds-it-now-begin')
+            : words('editor.it-could-not-be-asked'),
     );
   };
 
@@ -102,7 +103,7 @@ export function TakeOver({
   if (asked !== null) {
     return (
       <p role="status">
-        {`${name} has been asked for it. It is yours at ${timeOf(asked.until, true)} unless they go on working.`}
+        {words('editor.has-been-asked-for-it', { name, value2: timeOf(asked.until, true) })}
       </p>
     );
   }
@@ -110,10 +111,10 @@ export function TakeOver({
     <>
       {wait <= 0 ? (
         <button type="button" disabled={busy} onClick={() => void ask()}>
-          Take over
+          {words('editor.take-over')}
         </button>
       ) : (
-        <p>{`You may ask ${name} for it from ${timeOf(askable)}.`}</p>
+        <p>{words('editor.you-may-ask-for-it', { name, value2: timeOf(askable) })}</p>
       )}
       <p role="status">{said}</p>
     </>

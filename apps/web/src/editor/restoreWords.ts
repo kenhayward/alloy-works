@@ -1,3 +1,4 @@
+import { words } from '../words/words.js';
 /** A refusal of a restore, as the preview or the write gives it (the RS plan, RS-E). */
 export interface RestoreRefusal {
   readonly code: string;
@@ -16,45 +17,51 @@ export type RestoreAnswer =
 /** What a restore answered, in words, for its live region; nothing before it has. */
 export function restoreAnswerText(answer: RestoreAnswer): string {
   if (answer === null || answer === 'sending') return '';
-  return 'restored' in answer ? `Restored as version ${answer.restored}.` : answer.refused;
+  return 'restored' in answer
+    ? words('editor.restored-as-version', { restored: answer.restored })
+    : answer.refused;
 }
 
 /** Why a version cannot be restored, in words. */
 export function restoreRefusalWords(refusal: RestoreRefusal): string {
   switch (refusal.code) {
     case 'restore_locked':
-      return `${refusal.holder?.name ?? 'Somebody'} is editing this component. It can be restored once they choose Done editing.`;
+      return words('editor.is-editing-this-component-it', {
+        value1: refusal.holder?.name ?? 'Somebody',
+      });
     case 'restore_unchanged':
-      return 'The latest version already holds this, so restoring it would change nothing.';
+      return words('editor.the-latest-version-already-holds');
     case 'restore_unreadable':
-      return 'This version can no longer be read, so it cannot be restored.';
+      return words('editor.this-version-can-no-longer');
     case 'values_invalid':
-      return 'A value this version holds is now fixed at another by its field, so it cannot be restored.';
+      return words('editor.a-value-this-version-holds');
     // A save's checks on what it would bring back (the RS final review).
     case 'content_invalid':
-      return 'This version holds content that can no longer be saved, so it cannot be restored.';
+      return words('editor.this-version-holds-content-that');
     case 'definition_unreadable':
-      return 'A table in this version shows a column of a query you may not read, so only someone who may read it can restore this version.';
+      return words('editor.a-table-in-this-version');
     // A document's, refused by its outline's own guards (RS-F).
     case 'outline_invalid':
       return refusal.reason === undefined
-        ? 'This version no longer fits the outline as it stands, so it cannot be restored.'
-        : `${refusal.reason}, so this version cannot be restored.`;
+        ? words('editor.this-version-no-longer-fits')
+        : words('editor.so-this-version-cannot-be', { reason: refusal.reason });
     // VER-044: a component since deleted, by its last title.
     case 'reference_deleted':
-      return `${refusal.title || 'A component it references'} has been deleted, so this version cannot be restored.`;
+      return words('editor.has-been-deleted-so-this', {
+        value1: refusal.title || 'A component it references',
+      });
     case 'values_unresolved':
-      return "This document's template names a field that no longer resolves, so this version's values cannot be checked.";
+      return words('editor.this-document-s-template-names');
     case 'version_precondition':
-      return 'A newer version was saved since this was shown. Look at it again before restoring.';
+      return words('editor.a-newer-version-was-saved');
     default:
-      return 'This version could not be restored.';
+      return words('editor.this-version-could-not-be');
   }
 }
 
 /** Why a document's version cannot be restored, in words: its values by any field rule, not fixed alone. */
 export function documentRestoreWords(refusal: RestoreRefusal): string {
   return refusal.code === 'values_invalid'
-    ? 'A value this version holds no longer fits its field, so it cannot be restored.'
+    ? words('editor.a-value-this-version-holds-2')
     : restoreRefusalWords(refusal);
 }
