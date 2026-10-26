@@ -36,12 +36,9 @@ export async function setArchived(
 /** What an archival act says once done, or that it was not. */
 export function archivalSaid(title: string, archived: boolean | undefined, asked: boolean): string {
   if (archived === undefined) {
-    return words('lifecycle.could-not-be-try-again', {
-      title,
-      value2: asked ? 'archived' : 'unarchived',
-    });
+    return words('lifecycle.could-not-be-try-again', { title, asked: asked ? 'yes' : 'no' });
   }
-  return `${archived ? words('lifecycle.archived') : words('lifecycle.unarchived')} ${title}.`;
+  return words('lifecycle.archival-said', { title, archived: archived ? 'yes' : 'no' });
 }
 
 /**

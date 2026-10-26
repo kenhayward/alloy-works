@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './Delete.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -31,38 +31,36 @@ export interface Remains {
   readonly events: number;
 }
 
-const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-const counted = (count: number, one: string, many: string) =>
-  `${count} ${count === 1 ? one : many}`;
-
-/** A list in words: a, b and c. */
-const listed = (parts: readonly string[]) =>
-  parts.length <= 1
-    ? (parts[0] ?? '')
-    : words('lifecycle.and', { value1: parts.slice(0, -1).join(', '), value2: parts.at(-1) });
-
 /**
  * What stays, in words: every count but an empty one, versions and events always. Unsaved changes
  * still expire by their window (VER-003), deleted or not.
  */
 export function remainsWords(remains: Remains): string {
   const parts = [
-    counted(remains.versions, 'version', 'versions'),
-    ...(remains.threads > 0 ? [counted(remains.threads, 'thread', 'threads')] : []),
-    ...(remains.suggestions > 0 ? [counted(remains.suggestions, 'suggestion', 'suggestions')] : []),
-    ...(remains.rounds > 0
-      ? [counted(remains.rounds, words('lifecycle.review-round'), words('lifecycle.review-rounds'))]
+    words('lifecycle.remains-versions', { count: remains.versions }),
+    ...(remains.threads > 0
+      ? [words('lifecycle.remains-threads', { count: remains.threads })]
       : []),
-    counted(remains.events, words('lifecycle.audit-event'), words('lifecycle.audit-events')),
+    ...(remains.suggestions > 0
+      ? [words('lifecycle.remains-suggestions', { count: remains.suggestions })]
+      : []),
+    ...(remains.rounds > 0 ? [words('lifecycle.remains-rounds', { count: remains.rounds })] : []),
+    words('lifecycle.remains-events', { count: remains.events }),
   ];
-  const kept = words('lifecycle.nothing-is-removed-its-are', { value1: listed(parts) });
-  if (remains.iterations === 0) return kept;
-  const expiring = words('lifecycle.its-unsaved-changes-still-expire', {
-    count: remains.iterations,
+  return words('lifecycle.nothing-is-removed-its-are', {
+    kept: formats().list(parts),
+    unsaved: remains.iterations,
   });
-  return `${kept} ${expiring}`;
 }
+
+/** The codes whose refusal names its dependants, each with its own sentences. */
+const NAMING = {
+  baselined: ['lifecycle.refused-baselined', 'lifecycle.refused-baselined-unseen'],
+  published: ['lifecycle.refused-published', 'lifecycle.refused-published-unseen'],
+  publishing: ['lifecycle.refused-publishing', 'lifecycle.refused-publishing-unseen'],
+  referenced: ['lifecycle.refused-referenced', 'lifecycle.refused-referenced-unseen'],
+  in_review: ['lifecycle.refused-in-review', 'lifecycle.refused-in-review-unseen'],
+} as const;
 
 /**
  * Why it may not be deleted, in words: each dependant named that may be read, and of any other only
@@ -70,56 +68,36 @@ export function remainsWords(remains: Remains): string {
  */
 export function deletionRefusalWords(refusal: DeletionRefusal): string {
   const names = (refusal.named ?? []).map((each) => each.title || words('lifecycle.untitled'));
-  const of = (one: string, many: string, unseen: string) => {
-    if (names.length === 0) return words('lifecycle.something-you-may-not-read', { unseen });
-    const named = `${names.length === 1 ? one : many}: ${listed(names)}.`;
-    return refusal.unreadable === true
-      ? words('lifecycle.something-you-may-not-read-2', { named })
-      : named;
-  };
+  if (refusal.code in NAMING) {
+    const [named, unseen] = NAMING[refusal.code as keyof typeof NAMING];
+    return names.length === 0
+      ? words(unseen)
+      : words(named, {
+          count: names.length,
+          names: formats().list(names),
+          unreadable: refusal.unreadable === true ? 'yes' : 'no',
+        });
+  }
   switch (refusal.code) {
-    case 'baselined':
-      return of(
-        words('lifecycle.a-baseline-pins-it'),
-        words('lifecycle.baselines-pin-it'),
-        words('lifecycle.pins-it'),
-      );
-    case 'published':
-      return of(
-        words('lifecycle.a-publication-placed-it'),
-        words('lifecycle.publications-placed-it'),
-        words('lifecycle.placed-it'),
-      );
-    case 'publishing':
-      return of(
-        words('lifecycle.a-publication-waiting-to-be'),
-        words('lifecycle.publications-waiting-to-be-made'),
-        words('lifecycle.is-waiting-to-be-made'),
-      );
-    case 'referenced':
-      return of(
-        words('lifecycle.a-document-references-it'),
-        words('lifecycle.documents-reference-it'),
-        words('lifecycle.references-it'),
-      );
-    case 'in_review':
-      return of(
-        words('lifecycle.a-review-round-is-open'),
-        words('lifecycle.review-rounds-are-open-on'),
-        words('lifecycle.is-reviewing-it'),
-      );
     case 'held':
       return words('lifecycle.a-legal-hold-is-on');
     case 'kept':
       return refusal.until === undefined
         ? words('lifecycle.a-retention-keep-holds-it')
         : words('lifecycle.a-retention-keep-holds-it-2', {
-            value1: day.format(new Date(refusal.until)),
+            day: formats().date(new Date(refusal.until), {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
           });
     case 'locked':
       return refusal.yours === true
         ? words('lifecycle.you-are-editing-it-choose')
-        : words('lifecycle.is-editing-it', { value1: refusal.holder?.name ?? 'Somebody' });
+        : words('lifecycle.is-editing-it', {
+            named: refusal.holder?.name ? 'yes' : 'no',
+            who: refusal.holder?.name ?? '',
+          });
     default:
       return words('lifecycle.something-depends-on-it');
   }

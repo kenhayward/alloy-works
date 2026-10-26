@@ -5,7 +5,7 @@ import type { ThreadAnchor } from '@alloy-works/domain';
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import styles from './ThreadsPanel.module.css';
-import { words as say } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -68,11 +68,19 @@ const SHOWN: Record<Show, string> = {
   },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
+/** A thread's moment, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+/** Whose something is: `named` says whether there is a name to show as `who`. */
+export const personValues = (person: Person) => ({
+  named: person.name === null ? 'no' : 'yes',
+  who: person.name ?? '',
 });
 
 /** What a refusal says, from the service's own words, or a sentence of ours where it sent none. */
@@ -81,28 +89,28 @@ const refusalOf = (error: unknown, fallback: string) =>
     ? String((error as { message: unknown }).message)
     : fallback;
 
-/** Where a thread stands, in words. */
-export function anchorWords(anchor: ThreadAnchor): string {
-  switch (anchor.kind) {
-    case 'span':
-      return `“${anchor.quote.length > 60 ? `${anchor.quote.slice(0, 60)}...` : anchor.quote}”`;
-    case 'cell':
-      return say('review.a-table-cell');
-    case 'component':
-      return say('review.the-whole-component');
-    case 'node':
-      return say('review.the-section');
-  }
-}
+/**
+ * Where a thread stands, as a message's values: `anchor` its kind, for a `select`, and `quote` the
+ * text it quotes, cut short, where it is on a span.
+ */
+export const anchorValues = (anchor: ThreadAnchor) => ({
+  anchor: anchor.kind,
+  quote:
+    anchor.kind !== 'span'
+      ? ''
+      : anchor.quote.length > 60
+        ? `${anchor.quote.slice(0, 60)}...`
+        : anchor.quote,
+});
 
-/** Where a thread stands, as a sentence says it: a quote as it is, anything else lower-cased. */
-const annotation = (anchor: ThreadAnchor) =>
-  anchor.kind === 'span' ? anchorWords(anchor) : anchorWords(anchor).toLowerCase();
+/** Where a thread stands, in words. */
+export const anchorWords = (anchor: ThreadAnchor): string =>
+  say('review.anchor', anchorValues(anchor));
 
 /** A comment's text: its words, and each person it names. */
 function Said({ parts, nameOf }: { parts: readonly Part[]; nameOf: (id: string) => string }) {
   return (
-    <p className={styles['said']}>
+    <p className={styles['said']} data-content>
       {parts.map((part, index) =>
         'text' in part ? (
           <span key={index}>{part.text}</span>
@@ -169,10 +177,10 @@ function Composer({
         <ul className={styles['named']} aria-label={say('review.mentioned')}>
           {named.map((id) => (
             <li key={id}>
-              {`@${nameOf(id)}`}
+              <span data-content>{`@${nameOf(id)}`}</span>
               <button
                 type="button"
-                aria-label={say('review.remove', { value1: nameOf(id) })}
+                aria-label={say('review.remove', { name: nameOf(id) })}
                 onClick={() => setNamed(named.filter((each) => each !== id))}
               >
                 x
@@ -332,15 +340,21 @@ export function ThreadsPanel({
     const missed = (answer as { untold?: string[] }).untold ?? [];
     const notTold =
       missed.length > 0
-        ? say('review.not-told-as-they-may', { value1: missed.map(nameOf).join(', ') })
+        ? say('review.not-told-as-they-may', { names: formats().list(missed.map(nameOf)) })
         : '';
     if (done !== '' || notTold !== '') setSaid([done, notTold].filter(Boolean).join(' '));
   };
 
   const summaryOf = (id: string) => threads?.find((each) => each.id === id);
-  /** Where a listed thread stands, as an announcement says it; nothing where it is not listed. */
-  const where = (summary: ThreadSummary | undefined) =>
-    summary === undefined ? '' : say('review.in', { value1: placeOf(summary) });
+  /**
+   * Which thread and where it stands, as an announcement's values: `placed` says whether it is listed
+   * and so has a `place` in the outline.
+   */
+  const which = (anchor: ThreadAnchor, summary: ThreadSummary | undefined) => ({
+    ...anchorValues(anchor),
+    placed: summary === undefined ? 'no' : 'yes',
+    place: summary === undefined ? '' : placeOf(summary),
+  });
 
   const chosen = targets.find((each) => each.key === target) ?? targets[0];
 
@@ -375,10 +389,13 @@ export function ThreadsPanel({
     // Announced naming which and where (CNT-137), in the region there from the start.
     untold(
       answer.data,
-      say('review.thread-started-on', {
-        value1: annotation(chosen.anchor),
-        value2: where(listed?.find((each) => each.id === started)),
-      }),
+      say(
+        'review.thread-started-on',
+        which(
+          chosen.anchor,
+          listed?.find((each) => each.id === started),
+        ),
+      ),
     );
     return true;
   };
@@ -429,10 +446,10 @@ export function ThreadsPanel({
       return;
     }
     setSaid(
-      say('review.thread-on-made-internal-nobody', {
-        value1: annotation((answer.data as unknown as Thread).anchor),
-        value2: where(summaryOf(thread)),
-      }),
+      say(
+        'review.thread-on-made-internal-nobody',
+        which((answer.data as unknown as Thread).anchor, summaryOf(thread)),
+      ),
     );
     setOpened(answer.data as unknown as Thread);
     await read();
@@ -449,10 +466,10 @@ export function ThreadsPanel({
       return;
     }
     setSaid(
-      say('review.thread-on-resolved', {
-        value1: annotation((answer.data as unknown as Thread).anchor),
-        value2: where(summaryOf(thread)),
-      }),
+      say(
+        'review.thread-on-resolved',
+        which((answer.data as unknown as Thread).anchor, summaryOf(thread)),
+      ),
     );
     setOpened(answer.data as unknown as Thread);
     await read();
@@ -489,7 +506,7 @@ export function ThreadsPanel({
           )}
           <Composer
             label={say('review.comment')}
-            action="Start thread"
+            action={say('review.start-thread')}
             people={people}
             onSend={start}
           />
@@ -523,8 +540,8 @@ export function ThreadsPanel({
           {opened.resolution && (
             <p className={styles['note']}>
               {say('review.resolved-by', {
-                value1: opened.resolution.by.name ?? 'somebody',
-                value2: when.format(new Date(opened.resolution.at)),
+                ...personValues(opened.resolution.by),
+                at: when(opened.resolution.at),
               })}
             </p>
           )}
@@ -536,15 +553,23 @@ export function ThreadsPanel({
               return (
                 <li key={comment.id} className={styles['comment']}>
                   <span className={styles['who']}>
-                    {comment.author.name ?? say('review.somebody')}
-                    <Outside person={comment.author} />
-                    {`, ${when.format(new Date(comment.at))}`}
-                    {earlier.length > 0 && ' (edited)'}
+                    {wordsWith(
+                      'review.comment-by',
+                      {
+                        named: personValues(comment.author).named,
+                        at: when(comment.at),
+                        edited: earlier.length > 0 ? 'yes' : 'no',
+                      },
+                      {
+                        who: <span data-content>{comment.author.name}</span>,
+                        outside: <Outside person={comment.author} />,
+                      },
+                    )}
                   </span>
                   {editing === comment.id ? (
                     <Composer
                       label={say('review.your-comment')}
-                      action="Save"
+                      action={say('review.save')}
                       people={people}
                       initial={latest.parts}
                       onSend={(parts) => edit(opened.id, comment.id, parts)}
@@ -558,7 +583,7 @@ export function ThreadsPanel({
                       <summary>{say('review.earlier-texts')}</summary>
                       {earlier.map((text, index) => (
                         <div key={index}>
-                          <span className={styles['who']}>{when.format(new Date(text.at))}</span>
+                          <span className={styles['who']}>{when(text.at)}</span>
                           <Said parts={text.parts} nameOf={nameOf} />
                         </div>
                       ))}
@@ -577,7 +602,7 @@ export function ThreadsPanel({
             <>
               <Composer
                 label={say('review.reply')}
-                action="Reply"
+                action={say('review.reply')}
                 people={people}
                 onSend={(parts) => reply(opened.id, parts)}
               />
@@ -630,9 +655,18 @@ export function ThreadsPanel({
                   </button>
                   <span className={styles['note']}>{placeOf(thread)}</span>
                   <span className={styles['note']}>
-                    {thread.startedBy.name ?? say('review.somebody')}
-                    <Outside person={thread.startedBy} />
-                    {`, ${when.format(new Date(thread.startedAt))}; ${thread.comments} ${say('review.comments', { count: thread.comments })}`}
+                    {wordsWith(
+                      'review.started-by',
+                      {
+                        named: personValues(thread.startedBy).named,
+                        at: when(thread.startedAt),
+                        count: thread.comments,
+                      },
+                      {
+                        who: <span data-content>{thread.startedBy.name}</span>,
+                        outside: <Outside person={thread.startedBy} />,
+                      },
+                    )}
                   </span>
                   {thread.internal === true && <Chip>{say('review.internal')}</Chip>}
                   {thread.resolvedAt !== null && (

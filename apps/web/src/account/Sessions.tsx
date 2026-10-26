@@ -116,7 +116,7 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
                         <button
                           type="button"
                           aria-label={words('account.end-the-session-begun', {
-                            value1: moment(session.startedAt),
+                            began: moment(session.startedAt),
                           })}
                           onClick={() => void end(session)}
                         >

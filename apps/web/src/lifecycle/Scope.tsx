@@ -6,7 +6,7 @@ import { declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
 import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -48,7 +48,8 @@ export function scopeIn(data: unknown): ScopeNow | undefined {
   };
 }
 
-const said = (axis: string, value: string) => `${axis} ${value}`;
+/** A scope by its axis and value keys, as a chip says it. */
+const said = (axis: string, value: string) => words('lifecycle.axis-value', { axis, value });
 
 /**
  * What a header says of its scope (LIF-042, LIF-047; R15-B, R15-E): the values a revision approved
@@ -92,7 +93,10 @@ export function ScopeChips({
       {scope.scope.length > 0 && (
         <Chip>
           {words('lifecycle.effective-for', {
-            value1: scope.scope.map((each) => said(each.axis, each.value)).join(', '),
+            scopes: formats().list(
+              scope.scope.map((each) => said(each.axis, each.value)),
+              { type: 'unit' },
+            ),
           })}
         </Chip>
       )}
@@ -101,15 +105,16 @@ export function ScopeChips({
           <Chip tone="info">
             {words('lifecycle.revision-waits-on-for-the', {
               revision: each.revision,
-              value2: each.party.name ?? 'its party',
-              value3: said(each.axis, each.value),
+              named: each.party.name === null ? 'no' : 'yes',
+              party: each.party.name ?? '',
+              scope: said(each.axis, each.value),
             })}
           </Chip>
           {each.mayAccept && (
             <button type="button" disabled={busy} onClick={() => void accept(each)}>
               {words('lifecycle.accept-revision-for', {
                 revision: each.revision,
-                value2: said(each.axis, each.value),
+                scope: said(each.axis, each.value),
               })}
             </button>
           )}
@@ -300,7 +305,7 @@ function ScopeDialog({
             axes !== 'unread' &&
             axes.map((axis) => (
               <fieldset key={axis.key}>
-                <legend>{axis.name}</legend>
+                <legend data-content>{axis.name}</legend>
                 {axis.values.map((value) => {
                   const key = `${axis.key}:${value.key}`;
                   return (
@@ -311,7 +316,7 @@ function ScopeDialog({
                           checked={chosen.has(key)}
                           onChange={() => toggle(key)}
                         />
-                        {value.label}
+                        <span data-content>{value.label}</span>
                       </label>
                       {chosen.has(key) && (
                         <label>
@@ -325,7 +330,10 @@ function ScopeDialog({
                             </option>
                             {groups.map(([group, name]) => (
                               <option key={group} value={`group:${group}`}>
-                                {words('lifecycle.group', { value1: name ?? 'unnamed' })}
+                                {words('lifecycle.group', {
+                                  named: name === null ? 'no' : 'yes',
+                                  name: name ?? '',
+                                })}
                               </option>
                             ))}
                             {people.map((each) => (
@@ -417,7 +425,10 @@ function EffectiveAsk({
     const [axisKey, valueKey] = scope.split(':');
     const axis = axes.find((each) => each.key === axisKey);
     const value = axis?.values.find((each) => each.key === valueKey);
-    return `${axis?.name ?? axisKey}: ${value?.label ?? valueKey}`;
+    return words('lifecycle.axis-named', {
+      axis: axis?.name ?? axisKey ?? '',
+      value: value?.label ?? valueKey ?? '',
+    });
   };
 
   const ask = async (event: React.FormEvent) => {
@@ -442,15 +453,15 @@ function EffectiveAsk({
       setAnswer(words('lifecycle.nothing-was-approved-by-then'));
       return;
     }
-    const revision = words('lifecycle.revision', { number: data.revision.number });
+    const revision = data.revision.number;
     setAnswer(
       data.why === 'scoped'
-        ? words('lifecycle.effective-for-then', { revision, value2: named(where) })
+        ? words('lifecycle.effective-for-then', { revision, scope: named(where) })
         : where === ''
           ? words('lifecycle.effective-everywhere-then', { revision })
           : words('lifecycle.effective-everywhere-then-none-was', {
               revision,
-              value2: named(where),
+              scope: named(where),
             }),
     );
   };
@@ -469,7 +480,7 @@ function EffectiveAsk({
           {axes.flatMap((axis) =>
             axis.values.map((value) => (
               <option key={`${axis.key}:${value.key}`} value={`${axis.key}:${value.key}`}>
-                {`${axis.name}: ${value.label}`}
+                {words('lifecycle.axis-named', { axis: axis.name, value: value.label })}
               </option>
             )),
           )}

@@ -52,7 +52,9 @@ export function Conversations({ client }: { readonly client: Client }) {
           <ul>
             {onDocuments.map((each) => (
               <li key={each.id}>
-                <a href={documentLink(each.document)}>{each.title}</a>
+                <a href={documentLink(each.document)} data-content>
+                  {each.title}
+                </a>
               </li>
             ))}
           </ul>

@@ -83,7 +83,7 @@ export function LinesControl({
                 {words('lifecycle.from-revision', {
                   name: each.name,
                   revision: each.divergedFrom.revision,
-                  value3: each.closed ? ', brought back' : '',
+                  closed: each.closed ? 'yes' : 'no',
                 })}
               </option>
             ))}
@@ -318,9 +318,13 @@ function BringBackDialog({
             <fieldset key={each.block}>
               <legend>{legend[each.change]}</legend>
               {each.mainBlock !== null && (
-                <p>{words('lifecycle.main-line-2', { value1: wordsIn(each.mainBlock) })}</p>
+                <p>{words('lifecycle.main-line-2', { text: wordsIn(each.mainBlock) })}</p>
               )}
-              {each.lineBlock !== null && <p>{`${line.name}: ${wordsIn(each.lineBlock)}`}</p>}
+              {each.lineBlock !== null && (
+                <p>
+                  {words('lifecycle.line-text', { name: line.name, text: wordsIn(each.lineBlock) })}
+                </p>
+              )}
               <label className={styles['choice']}>
                 <input
                   type="checkbox"

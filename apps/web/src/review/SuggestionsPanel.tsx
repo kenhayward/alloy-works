@@ -5,7 +5,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { Redline } from '../compare/Redline.js';
 import styles from './ThreadsPanel.module.css';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -64,33 +64,44 @@ const STATE_WORDS: Record<SuggestionSummary['state'], string> = {
   },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+/** A suggestion's moment, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
 /** Why a suggestion no longer fits, place by place, in words (COL-052). */
 export function staleWords(stale: readonly StalePlace[]): string {
   const one = (place: StalePlace) => {
-    const where =
-      place.block === null
-        ? words('review.its', { value1: place.member ?? 'whole' })
-        : words('review.a-block-it-changes');
+    // Where: a block, a member of the component by its name, or the whole of it.
+    const where = {
+      place: place.block !== null ? 'block' : place.member === undefined ? 'whole' : 'member',
+      member: place.member ?? '',
+    };
     switch (place.why) {
       case 'changed':
-        return words('review.has-changed-since', { where });
+        return words('review.has-changed-since', where);
       case 'gone':
-        return words('review.is-no-longer-there', { where });
+        return words('review.is-no-longer-there', where);
       case 'anchor_gone':
         return words('review.the-block-it-follows-is');
       case 'invalid':
         return words('review.the-result-would-not-be');
     }
   };
-  return words('review.no-longer-fits', { value1: stale.map(one).join('; ') });
+  return words('review.no-longer-fits', {
+    reasons: formats().list(stale.map(one), { type: 'unit' }),
+  });
 }
+
+/** Whose a suggestion is: `named` says whether it has a name to show as `who`. */
+const madeBy = (person: Person) => ({
+  named: person.name === null ? 'no' : 'yes',
+  who: person.name ?? '',
+});
 
 /** What a refusal says, from the service's own words, or a sentence of ours where it sent none. */
 const refusalOf = (error: unknown, fallback: string) =>
@@ -186,10 +197,9 @@ export function SuggestionsPanel({
     const done = answer.data as unknown as Opened;
     setSaid(
       words('review.s-suggestion-on', {
-        value1: done.madeBy.name ?? 'Somebody',
-        value2: placeOf(done.component),
-        value3:
-          what === 'acceptance' ? 'accepted' : what === 'rejection' ? 'rejected' : 'withdrawn',
+        ...madeBy(done.madeBy),
+        place: placeOf(done.component),
+        act: what,
       }),
     );
     setOpened(done);
@@ -212,14 +222,15 @@ export function SuggestionsPanel({
       return;
     }
     const { resolved, left } = answer.data;
-    const done = what === 'accept' ? words('review.accepted') : words('review.rejected');
     // Many at once are counted, not named (CNT-137 names each one acted on alone).
-    const many = (count: number) => `${count} ${words('review.suggestions', { count: count })}`;
     setSaid(
-      `${done} ${many(resolved.length)}.` +
-        (left.length === 0
-          ? ''
-          : words('review.left-pending-which-could-not', { length: left.length })),
+      left.length === 0
+        ? words('review.bulk-resolved', { act: what, count: resolved.length })
+        : words('review.bulk-resolved-some-left', {
+            act: what,
+            count: resolved.length,
+            left: left.length,
+          }),
     );
     if (what === 'accept' && resolved.length > 0) onChanged?.();
     await read();
@@ -247,15 +258,12 @@ export function SuggestionsPanel({
           </button>
           <h3 id={`${ids}-opened`} className={styles['heading']}>
             {words('review.s-suggestion-on-2', {
-              value1: opened.madeBy.name ?? 'Somebody',
-              value2: placeOf(opened.component),
+              ...madeBy(opened.madeBy),
+              place: placeOf(opened.component),
             })}
           </h3>
           <p className={styles['note']}>
-            {words('review.made', {
-              value1: STATE_WORDS[opened.state],
-              value2: when.format(new Date(opened.madeAt)),
-            })}
+            {words('review.made', { state: opened.state, at: when(opened.madeAt) })}
           </p>
           {opened.stale !== null && opened.stale.length > 0 && (
             <p className={styles['note']}>{staleWords(opened.stale)}</p>
@@ -347,11 +355,16 @@ export function SuggestionsPanel({
                     className={styles['open']}
                     onClick={() => void open(each.id)}
                   >
-                    {each.madeBy.name ?? words('review.somebody')}
-                    <Outside person={each.madeBy} />
-                    {words('review.on', { value1: placeOf(each.component) })}
+                    {wordsWith(
+                      'review.on',
+                      { named: madeBy(each.madeBy).named, place: placeOf(each.component) },
+                      {
+                        who: <span data-content>{each.madeBy.name}</span>,
+                        outside: <Outside person={each.madeBy} />,
+                      },
+                    )}
                   </button>
-                  <span className={styles['note']}>{when.format(new Date(each.madeAt))}</span>
+                  <span className={styles['note']}>{when(each.madeAt)}</span>
                   <span className={styles['state']}>{STATE_WORDS[each.state]}</span>
                   {each.stale !== null && each.stale.length > 0 && (
                     <span className={styles['state']}>{staleWords(each.stale)}</span>

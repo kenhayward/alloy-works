@@ -46,7 +46,7 @@ export function HoldDialog({
       return;
     }
     if (trimmed.length > MAX_REASON) {
-      setSaid(words('lifecycle.a-reason-is-at-most', { MAX_REASON }));
+      setSaid(words('lifecycle.a-reason-is-at-most', { max: MAX_REASON }));
       return;
     }
     setBusy(true);
@@ -176,7 +176,7 @@ export function PlaceHoldDialog({
           ? words('lifecycle.everything-in-this-space-is')
           : words('lifecycle.it-is-held-until-the')
       }
-      submit="Place hold"
+      submit={words('lifecycle.place-hold')}
       act={(reason) => placeHold(client, target, title, reason)}
       onDone={onDone}
       onClose={onClose}

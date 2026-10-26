@@ -5,7 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -38,11 +38,11 @@ export function datesIn(data: unknown): Dates | undefined {
 
 /** An instant as a day, in the reader's own zone (LIF-062). */
 const dayOfInstant = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 
 /** A calendar day as itself, whatever the reader's zone. */
 const dayOfDate = (day: string) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', {
+  formats().date(new Date(`${day}T00:00:00Z`), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -59,13 +59,14 @@ export function DatesChips({ dates }: { dates: Dates | undefined }) {
   return (
     <>
       {dates.effectiveAt !== null && (
-        <Chip>{words('lifecycle.effective', { value1: dayOfInstant(dates.effectiveAt) })}</Chip>
+        <Chip>{words('lifecycle.effective', { day: dayOfInstant(dates.effectiveAt) })}</Chip>
       )}
       {dates.reviewBy !== null && (
         <Chip>
           {words('lifecycle.review-by', {
-            value1: dayOfDate(dates.reviewBy),
-            value2: dates.owner?.name ? `, ${dates.owner.name}` : '',
+            day: dayOfDate(dates.reviewBy),
+            owned: dates.owner?.name ? 'yes' : 'no',
+            owner: dates.owner?.name ?? '',
           })}
         </Chip>
       )}
@@ -73,7 +74,7 @@ export function DatesChips({ dates }: { dates: Dates | undefined }) {
       {dates.effectiveFrom !== null && (
         <Chip tone="info">
           {words('lifecycle.its-latest-revision-takes-effect', {
-            value1: dayOfInstant(dates.effectiveFrom),
+            day: dayOfInstant(dates.effectiveFrom),
           })}
         </Chip>
       )}

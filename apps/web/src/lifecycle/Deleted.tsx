@@ -6,7 +6,7 @@ import { usePagedListing } from '../listing/usePagedListing.js';
 import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import styles from './Deleted.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -23,13 +23,14 @@ interface Row {
   readonly mayUndelete: boolean;
 }
 
-const PLURAL: Readonly<Record<Kind, string>> = { component: 'components', document: 'documents' };
 const LINK: Readonly<Record<Kind, (id: string) => string>> = {
   component: (id) => `#/components/${id}`,
   document: (id) => `#/documents/${id}`,
 };
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+/** A day, as the person's language writes it. */
+const when = (iso: string) =>
+  formats().date(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * The deleted components or documents the reader may read, the latest deleted first, a page at a
@@ -50,7 +51,8 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
   const [undone, setUndone] = useState<readonly Row[]>([]);
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
-  const plural = PLURAL[kind];
+  // The one undeleted last, offered to open while what is said is its undeleting.
+  const [back, setBack] = useState<Row | null>(null);
 
   const undelete = async (row: Row) => {
     setBusy(true);
@@ -63,18 +65,22 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
     setBusy(false);
     if (answer?.data) {
       setUndone((held) => [...held, row]);
+      setBack(row);
       setSaid(words('lifecycle.undeleted', { title: row.title }));
-    } else setSaid(words('lifecycle.could-not-be-undeleted-try', { title: row.title }));
+    } else {
+      setBack(null);
+      setSaid(words('lifecycle.could-not-be-undeleted-try', { title: row.title }));
+    }
   };
 
-  const heading = <h1 id="deleted-heading">{words('lifecycle.deleted', { plural })}</h1>;
+  const heading = <h1 id="deleted-heading">{words('lifecycle.deleted', { kind })}</h1>;
   if (listing.items === null) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="deleted-heading">
         {heading}
         <Notice tone="failed">
-          <p>{words('lifecycle.the-deleted-could-not-be', { plural })}</p>
+          <p>{words('lifecycle.the-deleted-could-not-be', { kind })}</p>
           <button type="button" disabled={listing.loading} onClick={() => void listing.load(null)}>
             {words('lifecycle.try-again')}
           </button>
@@ -85,28 +91,27 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
   const gone = new Set(undone.map((each) => each.id));
   const rows = listing.items.filter((each) => !gone.has(each.id));
   const total = listing.total - undone.length;
-  const back = undone.at(-1);
   return (
     <section aria-labelledby="deleted-heading">
       {heading}
       <p className={styles['summary']}>
-        {words('lifecycle.deleted-you-may-read', { total, value2: total === 1 ? kind : plural })}
+        {words('lifecycle.deleted-you-may-read', { total, kind })}
       </p>
       <p role="status" className={styles['said']}>
         {said}
       </p>
-      {back !== undefined && said === `Undeleted ${back.title}.` && (
+      {back !== null && (
         <p>
           <a href={LINK[kind](back.id)}>{words('lifecycle.open', { title: back.title })}</a>
         </p>
       )}
       {rows.length === 0 ? (
         <Empty>
-          <p>{words('lifecycle.there-are-no-deleted-you', { plural })}</p>
+          <p>{words('lifecycle.there-are-no-deleted-you', { kind })}</p>
         </Empty>
       ) : (
         <div className={styles['deletedTable']}>
-          <table aria-label={words('lifecycle.deleted', { plural })}>
+          <table aria-label={words('lifecycle.deleted', { kind })}>
             <thead>
               <tr>
                 <th scope="col">{words('lifecycle.title')}</th>
@@ -119,13 +124,21 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td className={styles['deletedTitle']}>{row.title}</td>
-                  <td className={styles['quiet']}>{row.space.name}</td>
-                  <td className={styles['quiet']}>
-                    {row.deletedBy.name ?? words('lifecycle.somebody')}
+                  <td className={styles['deletedTitle']} data-content>
+                    {row.title}
                   </td>
+                  <td className={styles['quiet']} data-content>
+                    {row.space.name}
+                  </td>
+                  {row.deletedBy.name === null ? (
+                    <td className={styles['quiet']}>{words('lifecycle.somebody')}</td>
+                  ) : (
+                    <td className={styles['quiet']} data-content>
+                      {row.deletedBy.name}
+                    </td>
+                  )}
                   <td className={styles['quiet']}>
-                    <time dateTime={row.deletedAt}>{when.format(new Date(row.deletedAt))}</time>
+                    <time dateTime={row.deletedAt}>{when(row.deletedAt)}</time>
                   </td>
                   <td className={styles['undo']}>
                     {row.mayUndelete && (
@@ -145,7 +158,7 @@ export function DeletedList({ client, kind }: { client: Client; kind: Kind }) {
           </table>
         </div>
       )}
-      <More listing={listing} what={words('lifecycle.deleted-3', { plural })} />
+      <More listing={listing} what={words('lifecycle.deleted-3', { kind })} />
     </section>
   );
 }
