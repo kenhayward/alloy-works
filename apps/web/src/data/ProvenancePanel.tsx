@@ -27,7 +27,7 @@ import { whoseView } from '../structure/ownView.js';
 import { usePresentation } from '../theme/presentation.js';
 import { longDate } from './shapes.js';
 import styles from './ProvenancePanel.module.css';
-import { words } from '../words/words.js';
+import { formats as interfaceFormats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -36,19 +36,6 @@ export const ROWS_SHOWN = 200;
 
 /** How many characters of a checksum are shown until the whole is asked for. */
 const CHECKSUM_SHOWN = 12;
-
-/** How a person whose own view a value is signed in, in words (DAT-024). */
-const SIGNED_IN: Readonly<Record<string, string>> = {
-  get organisation() {
-    return words('data.signed-in-through-the-organisation');
-  },
-  get google() {
-    return words('data.signed-in-with-google');
-  },
-  get token() {
-    return words('data.acting-through-a-personal-api');
-  },
-};
 
 /**
  * Whose view a value is (DAT-024; bindings.md, "Provenance, from the value"): the service account, or
@@ -59,15 +46,13 @@ function whoseViewSaid(
   by: { readonly id: string; readonly displayName: string | null },
 ): string {
   if (provenance.identity === 'service') return words('data.the-service-account');
-  const whose = whoseView(provenance, by) ?? words('data.a-person-s-own-view');
-  const route = provenance.signInRoute ? SIGNED_IN[provenance.signInRoute] : undefined;
-  return [
-    whose,
-    ...(route === undefined ? [] : [route]),
-    provenance.asSeen
-      ? words('data.seen-by-the-source-as', { asSeen: provenance.asSeen })
-      : words('data.as-the-source-showed-it'),
-  ].join(', ');
+  // How they signed in (DAT-024): a route the service names and this page does not is left out.
+  return words('data.whose-view-said', {
+    whose: whoseView(provenance, by) ?? words('data.a-person-s-own-view'),
+    route: provenance.signInRoute ?? 'none',
+    seen: provenance.asSeen ? 'yes' : 'no',
+    asSeen: provenance.asSeen ?? '',
+  });
 }
 
 const MODES = {
@@ -100,7 +85,7 @@ export function said(
 function returned(taken: Taken | null): string | null {
   if (taken === null || !('value' in taken)) return null;
   return words('data.from-the-column', {
-    value1: String(taken.value),
+    value: String(taken.value),
     name: taken.column.name,
     base: taken.column.type.base,
   });
@@ -255,7 +240,7 @@ export function ProvenancePanel({
     stops[event.shiftKey ? stops.length - 1 : 0]?.focus();
   };
 
-  const by = held.by.displayName ?? 'somebody';
+  const by = held.by.displayName ?? words('data.somebody');
   return createPortal(
     <div className={shell['scrim']}>
       <div
@@ -313,13 +298,15 @@ export function ProvenancePanel({
                     <dt>{words('data.revised-by-hand')}</dt>
                     <dd data-revision={each.id}>
                       {words('data.by', {
-                        value1: String(each.value),
-                        value2:
-                          each.cell === null
-                            ? ''
-                            : ` in ${each.cell.column}, the row ${Object.values(each.cell.key).map(String).join(', ')}`,
-                        value3: each.by.displayName ?? 'somebody',
-                        value4: longDate(each.at),
+                        value: String(each.value),
+                        inCell: each.cell === null ? 'no' : 'yes',
+                        column: each.cell?.column ?? '',
+                        row: interfaceFormats().list(
+                          Object.values(each.cell?.key ?? {}).map(String),
+                          { type: 'unit', style: 'short' },
+                        ),
+                        name: each.by.displayName ?? words('data.somebody'),
+                        date: longDate(each.at),
                         reason: each.reason,
                       })}
                     </dd>
@@ -329,8 +316,9 @@ export function ProvenancePanel({
                 <>
                   <dt>{words('data.waiting')}</dt>
                   <dd>
-                    {words('data.a-newer-result-is-waiting')}
-                    {said(state.waiting.taken, formats, binding)}
+                    {words('data.a-newer-result-is-waiting', {
+                      value: said(state.waiting.taken, formats, binding),
+                    })}
                   </dd>
                 </>
               )}
@@ -346,15 +334,22 @@ export function ProvenancePanel({
               {state.connection !== null && (
                 <>
                   <dt>{words('data.connection')}</dt>
-                  <dd>{state.connection.name}</dd>
+                  <dd data-content>{state.connection.name}</dd>
                 </>
               )}
               <dt>{words('data.parameters')}</dt>
-              <dd>
-                {parameters.length === 0
-                  ? words('data.none')
-                  : parameters.map(([name, value]) => `${name}: ${String(value)}`).join(', ')}
-              </dd>
+              {parameters.length === 0 ? (
+                <dd>{words('data.none')}</dd>
+              ) : (
+                <dd data-content>
+                  {interfaceFormats().list(
+                    parameters.map(([name, value]) =>
+                      words('data.parameter-value', { name, value: String(value) }),
+                    ),
+                    { type: 'unit', style: 'short' },
+                  )}
+                </dd>
+              )}
               <dt>{words('data.whose-view')}</dt>
               <dd>{whoseViewSaid(provenance, held.by)}</dd>
               <dt>{words('data.fetched')}</dt>
@@ -363,7 +358,7 @@ export function ProvenancePanel({
               <dd>{words('data.rows-2', { count: provenance.rowCount })}</dd>
               <dt>{words('data.checksum')}</dt>
               <dd>
-                <code>
+                <code data-content>
                   {whole ? provenance.checksum : provenance.checksum.slice(0, CHECKSUM_SHOWN)}
                 </code>{' '}
                 {!whole && (
@@ -375,25 +370,22 @@ export function ProvenancePanel({
               <dt>{words('data.dataset')}</dt>
               <dd>
                 {words('data.version-3', {
-                  value1: held.name ?? 'An unnamed dataset',
+                  named: held.name === null ? 'no' : 'yes',
+                  name: held.name ?? '',
                   number: held.number,
                 })}
               </dd>
               <dt>{held.act === 'accept' ? words('data.accepted') : words('data.resolved')}</dt>
-              <dd>
-                {words('data.by-on-2', {
-                  value1: held.act === 'accept' ? 'Accepted' : 'Resolved',
-                  by,
-                  value3: longDate(held.at),
-                })}
-              </dd>
+              <dd>{words('data.by-on-2', { act: held.act, by, date: longDate(held.at) })}</dd>
               <dt>{words('data.mode')}</dt>
               <dd>{MODES[binding.mode]}</dd>
               {provenance.sql !== null && (
                 <>
                   <dt>{words('data.what-ran')}</dt>
                   <dd>
-                    <pre className={styles['sql']}>{provenance.sql}</pre>
+                    <pre className={styles['sql']} data-content>
+                      {provenance.sql}
+                    </pre>
                   </dd>
                 </>
               )}
@@ -417,7 +409,7 @@ export function ProvenancePanel({
                     <thead>
                       <tr>
                         {result.columns.map((column, at) => (
-                          <th key={at} scope="col">
+                          <th key={at} scope="col" data-content>
                             {column}
                           </th>
                         ))}
@@ -427,17 +419,16 @@ export function ProvenancePanel({
                       {result.rows.slice(0, ROWS_SHOWN).map((row, at) => (
                         <tr key={at}>
                           {row.map((cell, column) => (
-                            <td key={column}>{cell === null ? 'null' : String(cell)}</td>
+                            <td key={column} data-content>
+                              {cell === null ? 'null' : String(cell)}
+                            </td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   {result.rows.length > ROWS_SHOWN && (
-                    <p>
-                      and {result.rows.length - ROWS_SHOWN} more{' '}
-                      {words('data.rows-3', { count: result.rows.length - ROWS_SHOWN })}
-                    </p>
+                    <p>{words('data.and-more-rows', { count: result.rows.length - ROWS_SHOWN })}</p>
                   )}
                 </div>
               )}

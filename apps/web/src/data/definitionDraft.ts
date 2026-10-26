@@ -28,7 +28,7 @@ import {
   type FormatDraft,
   type HttpDraft,
 } from './httpDraft.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 /**
  * A query definition as its page holds it while it is written (the D2 plan, D2-U): every field as the
@@ -153,22 +153,12 @@ export interface ParameterDraft {
 export function parameterSummary(parameter: ParameterDraft): string {
   const type =
     BASES.find((each) => each.base === parameter.type.base)?.label ?? words('data.no-type-yet');
-  const takes =
-    parameter.variation.length > 0
-      ? words('data.chooses-a-fragment-of-sql')
-      : parameter.permitted === 'values'
-        ? words('data.only-the-values-listed')
-        : parameter.permitted === 'range'
-          ? words('data.only-values-in-a-range')
-          : words('data.any-value-of-its-type');
-  return [
+  return words('data.parameter-summary', {
     type,
-    parameter.required ? 'required' : words('data.not-required'),
-    parameter.list && words('data.a-list'),
-    takes,
-  ]
-    .filter(Boolean)
-    .join(', ');
+    required: parameter.required ? 'yes' : 'no',
+    list: parameter.list ? 'yes' : 'no',
+    takes: parameter.variation.length > 0 ? 'sql' : parameter.permitted,
+  });
 }
 
 export interface ColumnDraft {
@@ -419,7 +409,9 @@ export function parametersOf(draft: Pick<DefinitionDraft, 'parameters'>): Parame
   for (const parameter of draft.parameters) {
     const type = valueTypeOf(parameter.type);
     if (typeof type === 'string')
-      return words('data.the-parameter', { value1: parameter.name || '(unnamed)', type });
+      return parameter.name === ''
+        ? words('data.the-unnamed-parameter', { reason: type })
+        : words('data.the-parameter', { name: parameter.name, reason: type });
     const permitted =
       parameter.permitted === 'values'
         ? {
@@ -455,7 +447,9 @@ const ORDERED: readonly Base[] = ['integer', 'decimal', 'date', 'time', 'localDa
 
 /** The words for each comparison, as a filter offers it. */
 export const COMPARISON_WORDS: Readonly<Record<Comparison, string>> = {
-  equal: 'is',
+  get equal() {
+    return words('data.is');
+  },
   get notEqual() {
     return words('data.is-not');
   },
@@ -474,7 +468,9 @@ export const COMPARISON_WORDS: Readonly<Record<Comparison, string>> = {
   get in() {
     return words('data.is-one-of');
   },
-  contains: 'contains',
+  get contains() {
+    return words('data.contains');
+  },
   get startsWith() {
     return words('data.starts-with');
   },
@@ -775,7 +771,7 @@ export function generatedSql(draft: DefinitionDraft): { sql: string } | { needs:
   checkTree(query, parameters, (_path, message) => {
     problem ??= message;
   });
-  if (problem !== undefined) return { needs: `${problem}.` };
+  if (problem !== undefined) return { needs: words('data.problem-said', { problem }) };
   const columns = draft.columns.flatMap((column) => {
     const type = columnTypeOf(column.type, draft.columns);
     return typeof type === 'string'
@@ -861,7 +857,8 @@ function parts(draft: DefinitionDraft) {
   const columns = [];
   for (const column of draft.columns) {
     const type = columnTypeOf(column.type, draft.columns);
-    if (typeof type === 'string') return words('data.the-column', { name: column.name, type });
+    if (typeof type === 'string')
+      return words('data.the-column', { name: column.name, reason: type });
     // An HTTP response's or a file's column is read as its format reads (the D6 plan, D6-F), and
     // an extension's by a pointer into its row (EX-G).
     const from =
@@ -1260,21 +1257,26 @@ export const DATASET_BUILDER: BuilderDraft = { ...NEW_BUILDER, alias: 'd', table
  * filtered as its tree says. It runs in the service, so there is no SQL to show.
  */
 function datasetText(query: Query): string {
+  // Names, the source's own, listed as names are, never as a sentence's "and".
+  const names = (each: readonly string[]) => formats().list(each, { type: 'unit', style: 'short' });
   const returned = query.select.map((each) =>
     'column' in each.of
       ? each.name
-      : `${each.name} (${each.of.aggregate}${
-          'of' in each.of && each.of.of !== undefined
-            ? words('data.of-3', { column: each.of.of.column })
-            : ''
-        })`,
+      : 'of' in each.of && each.of.of !== undefined
+        ? words('data.summary-of-column', {
+            name: each.name,
+            aggregate: each.of.aggregate,
+            column: each.of.of.column,
+          })
+        : words('data.summary-of-rows', { name: each.name, aggregate: each.of.aggregate }),
   );
   const grouped = query.groupBy.map((each) => each.column);
-  return [
-    words('data.returns-from-the-stored-result', { value1: returned.join(', ') }),
-    ...(grouped.length === 0 ? [] : [words('data.grouped-by', { value1: grouped.join(', ') })]),
-    ...(query.where === undefined ? [] : ['filtered']),
-  ].join(', ');
+  return words('data.returns-from-the-stored-result', {
+    returned: names(returned),
+    isGrouped: grouped.length === 0 ? 'no' : 'yes',
+    grouped: names(grouped),
+    filtered: query.where === undefined ? 'no' : 'yes',
+  });
 }
 
 /**

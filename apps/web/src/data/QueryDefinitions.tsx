@@ -171,17 +171,11 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? words('data.in-the-spaces-chosen', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'query definition is' : 'query definitions are',
-                })
-              : words('data.you-may-read', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'query definition' : 'query definitions',
-                })}
+              ? words('data.definitions-in-the-spaces-chosen', { total: listing.total })
+              : words('data.definitions-you-may-read', { total: listing.total })}
           </span>
           {items.length < listing.total && (
-            <span>{words('data.showing-1-to', { length: items.length })}</span>
+            <span>{words('data.showing-1-to', { shown: items.length })}</span>
           )}
         </p>
         {items.length === 0 ? (
@@ -203,19 +197,25 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td className={styles['title']}>
-                      <a href={queryDefinitionLink(item.id)}>{item.title}</a>
+                      <a href={queryDefinitionLink(item.id)} data-content>
+                        {item.title}
+                      </a>
                       {item.retired && (
-                        <span className={styles['muted']}> {words('data.retired-2')}</span>
+                        <span className={styles['muted']}> {words('data.retired')}</span>
                       )}
                     </td>
-                    <td className={styles['muted']}>{item.space.name}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.space.name}
+                    </td>
                     <td>
                       {item.connection === null ? (
                         words('data.none')
                       ) : item.connection.name === null ? (
                         words('data.a-connection-you-may-not')
                       ) : (
-                        <a href={connectionLink(item.connection.id)}>{item.connection.name}</a>
+                        <a href={connectionLink(item.connection.id)} data-content>
+                          {item.connection.name}
+                        </a>
                       )}
                     </td>
                     <td className={styles['muted']}>
@@ -227,7 +227,7 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what="query definitions" />
+        <More listing={listing} what={words('data.query-definitions')} />
       </section>
     </ListLayout>
   );

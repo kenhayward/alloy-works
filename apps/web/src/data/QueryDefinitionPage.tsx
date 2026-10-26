@@ -66,12 +66,15 @@ import { Tooltip } from '../parts/Tooltip.js';
 import styles from './QueryDefinitionPage.module.css';
 import { isConnectionView, isRecord, isRelations, refusalText, type Described } from './shapes.js';
 import { isUses, PagedUses, type Uses } from './uses.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith, type WordKey } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 /** What a connection the person may not read is called, where its name is withheld. */
 const UNREADABLE_CONNECTION = (): string => words('data.a-connection-you-may-not');
+
+/** A connection the definition may run on, named, or with its name withheld from the person. */
+type Offered = Place & { readonly withheld?: boolean };
 
 /** A definition as the service answers it, checked before it is read. */
 interface DefinitionView {
@@ -170,26 +173,37 @@ const FORMAT_WORDS = { png: 'PNG', jpeg: 'JPEG' } as const;
 
 /** A size in bytes, in words: bytes, then KB and MB of 1,024, to one place. */
 function sizeWords(bytes: number): string {
-  if (bytes < 1024) return `${bytes} ${words('data.bytes', { count: bytes })}`;
-  const [size, unit] = bytes < 1024 * 1024 ? [bytes / 1024, 'KB'] : [bytes / 1024 / 1024, 'MB'];
-  return `${Number(size.toFixed(1))} ${unit}`;
+  if (bytes < 1024) return words('data.bytes', { count: bytes });
+  const [size, unit] = bytes < 1024 * 1024 ? [bytes / 1024, 'kb'] : [bytes / 1024 / 1024, 'mb'];
+  return words('data.size-in', { size: Number(size.toFixed(1)), unit });
 }
 
-/** A sample's cell in words: an image by its header, an empty cell, or the value as it is. */
-function cellWords(
-  value: string | boolean | null,
-  base: string | undefined,
-  images: Readonly<Record<string, SampledImage>> | undefined,
-): string {
-  if (value === null) return words('data.empty');
+/**
+ * A sample's cell: an image by its header or an empty cell in words, or the value as it is, the
+ * source's own, never the interface's.
+ */
+function Cell({
+  value,
+  base,
+  images,
+}: {
+  readonly value: string | boolean | null;
+  readonly base: string | undefined;
+  readonly images: Readonly<Record<string, SampledImage>> | undefined;
+}) {
+  if (value === null) return <>{words('data.empty')}</>;
   const image = base === 'image' && typeof value === 'string' ? images?.[value] : undefined;
-  if (image === undefined) return String(value);
-  return words('data.image-by-pixels', {
-    value1: FORMAT_WORDS[image.format],
-    value2: sizeWords(image.bytes),
-    width: image.width,
-    height: image.height,
-  });
+  if (image === undefined) return <span data-content>{String(value)}</span>;
+  return (
+    <>
+      {words('data.image-by-pixels', {
+        format: FORMAT_WORDS[image.format],
+        size: sizeWords(image.bytes),
+        width: image.width,
+        height: image.height,
+      })}
+    </>
+  );
 }
 
 function isSampled(value: unknown): value is Sampled {
@@ -213,37 +227,6 @@ function isSampled(value: unknown): value is Sampled {
   );
 }
 
-/** What a value refused by its declaration broke, in words (D2-R). */
-const PARAMETER_RULES: Readonly<Record<string, string>> = {
-  get type() {
-    return words('data.is-not-of-its-type');
-  },
-  get permitted() {
-    return words('data.is-not-one-of-its');
-  },
-  get range() {
-    return words('data.is-outside-its-range');
-  },
-  get list() {
-    return words('data.is-not-a-list-as');
-  },
-  get precision() {
-    return words('data.has-more-digits-than-its');
-  },
-  get scale() {
-    return words('data.has-more-places-than-its');
-  },
-  get zone() {
-    return words('data.needs-its-time-zone');
-  },
-  get variation() {
-    return words('data.is-not-one-of-its-2');
-  },
-  get position() {
-    return words('data.cannot-stand-where-the-request');
-  },
-};
-
 /**
  * A refusal in words: the service's message, and each problem it named - a definition's rule broken,
  * or a value refused by its declaration, with the parameter and the value (DAT-020).
@@ -257,19 +240,30 @@ function refusalLines(error: unknown, fallback: string): string[] {
         lines.push(
           problem.rule === 'required'
             ? words('data.needs-a-value', { parameter: problem.parameter })
-            : `${problem.parameter}: ${String(problem.value)} ${PARAMETER_RULES[problem.rule] ?? words('data.is-refused')}.`,
+            : words('data.value-refused', {
+                parameter: problem.parameter,
+                value: String(problem.value),
+                rule: problem.rule,
+              }),
         );
       } else if (typeof problem.path === 'string' && typeof problem.message === 'string') {
-        lines.push(`${problem.path}: ${problem.message}.`);
+        // Where the service found it and what it said, its English kept (UI-L).
+        lines.push(words('data.problem-at', { path: problem.path, message: problem.message }));
       }
     }
   }
   return lines;
 }
 
-/** "1 component", "2 documents". */
-const counted = (count: number, one: string, many: string) =>
-  `${count} ${count === 1 ? one : many}`;
+/** A type's fields, each in words alone ("Digits") and naming what it types ("Digits of depth"). */
+const TYPE_FIELDS = {
+  type: ['data.type', 'data.type-of'],
+  digits: ['data.digits', 'data.digits-of'],
+  places: ['data.places', 'data.places-of'],
+  fraction: ['data.places-of-a-second', 'data.places-of-a-second-of'],
+  encoding: ['data.encoding', 'data.encoding-of'],
+  description: ['data.description', 'data.description-of'],
+} as const satisfies Readonly<Record<string, readonly [WordKey, WordKey]>>;
 
 /**
  * A type chosen from the eight bases, with the digits, places or fraction the base needs; or, for a
@@ -297,13 +291,15 @@ function TypeFields({
    */
   readonly part?: 'base' | 'own';
 }) {
-  const of = (label: string) => (name === undefined ? label : words('data.of-4', { label, name }));
-  const shown = (label: string) => (part === undefined ? of(label) : label);
-  const named = (label: string) => (part === undefined ? {} : { 'aria-label': of(label) });
+  type Field = keyof typeof TYPE_FIELDS;
+  const of = (field: Field) =>
+    name === undefined ? words(TYPE_FIELDS[field][0]) : words(TYPE_FIELDS[field][1], { name });
+  const shown = (field: Field) => (part === undefined ? of(field) : words(TYPE_FIELDS[field][0]));
+  const named = (field: Field) => (part === undefined ? {} : { 'aria-label': of(field) });
   const bases = textColumns === undefined ? BASES : COLUMN_BASES;
   const base = (id?: string) => (
     <select
-      {...(id === undefined ? { 'aria-label': of(words('data.type')) } : { id })}
+      {...(id === undefined ? { 'aria-label': of('type') } : { id })}
       value={type.base}
       disabled={disabled}
       onChange={(event) => onChange({ ...type, base: event.target.value as TypeDraft['base'] })}
@@ -319,13 +315,13 @@ function TypeFields({
   if (part === 'base') return base();
   return (
     <span className={styles[part === 'own' ? 'ownFields' : 'type']}>
-      {part !== 'own' && <Choice label={of(words('data.type'))}>{(id) => base(id)}</Choice>}
+      {part !== 'own' && <Choice label={of('type')}>{(id) => base(id)}</Choice>}
       {type.base === 'decimal' && (
         <>
           <label>
-            {shown(words('data.digits'))}
+            {shown('digits')}
             <input
-              {...named(words('data.digits'))}
+              {...named('digits')}
               inputMode="numeric"
               value={type.precision}
               disabled={disabled}
@@ -333,9 +329,9 @@ function TypeFields({
             />
           </label>
           <label>
-            {shown(words('data.places'))}
+            {shown('places')}
             <input
-              {...named(words('data.places'))}
+              {...named('places')}
               inputMode="numeric"
               value={type.scale}
               disabled={disabled}
@@ -346,9 +342,9 @@ function TypeFields({
       )}
       {(type.base === 'time' || type.base === 'localDateTime' || type.base === 'instant') && (
         <label>
-          {shown(words('data.places-of-a-second'))}
+          {shown('fraction')}
           <input
-            {...named(words('data.places-of-a-second'))}
+            {...named('fraction')}
             inputMode="numeric"
             value={type.fraction}
             disabled={disabled}
@@ -358,11 +354,11 @@ function TypeFields({
       )}
       {type.base === 'image' && textColumns !== undefined && (
         <>
-          <Choice label={shown(words('data.encoding'))}>
+          <Choice label={shown('encoding')}>
             {(id) => (
               <select
                 id={id}
-                {...named(words('data.encoding'))}
+                {...named('encoding')}
                 value={type.encoding}
                 disabled={disabled}
                 onChange={(event) =>
@@ -380,11 +376,11 @@ function TypeFields({
               </select>
             )}
           </Choice>
-          <Choice label={shown(words('data.description'))}>
+          <Choice label={shown('description')}>
             {(id) => (
               <select
                 id={id}
-                {...named(words('data.description'))}
+                {...named('description')}
                 value={
                   type.description === null
                     ? ''
@@ -464,7 +460,7 @@ function ParameterFields({
   return (
     <div
       role="group"
-      aria-label={words('data.parameter-3', { value1: index + 1 })}
+      aria-label={words('data.parameter-3', { n: index + 1 })}
       className={styles['band']}
     >
       <div className={styles['bandLine']}>
@@ -574,28 +570,28 @@ function ParameterFields({
       {variation && (
         <div className={styles['bandFragments']}>
           <RowTable
-            label={words('data.fragments-of-parameter', { value1: index + 1 })}
+            label={words('data.fragments-of-parameter', { n: index + 1 })}
             columns={[{ head: words('data.key'), width: 230 }, { head: words('data.fragment') }]}
             rows={parameter.variation.map((each, at) => ({
               key: at,
               cells: [
                 <input
                   key="key"
-                  aria-label={words('data.key-2', { value1: at + 1 })}
+                  aria-label={words('data.key-2', { n: at + 1 })}
                   value={each.key}
                   spellCheck={false}
                   onChange={(event) => setFragment(at, { key: event.target.value })}
                 />,
                 <input
                   key="sql"
-                  aria-label={words('data.fragment-2', { value1: at + 1 })}
+                  aria-label={words('data.fragment-2', { n: at + 1 })}
                   className={styles['code']}
                   value={each.sql}
                   spellCheck={false}
                   onChange={(event) => setFragment(at, { sql: event.target.value })}
                 />,
               ],
-              remove: words('data.remove-fragment', { value1: at + 1 }),
+              remove: words('data.remove-fragment', { n: at + 1 }),
               onRemove: () =>
                 onChange({
                   ...parameter,
@@ -604,7 +600,7 @@ function ParameterFields({
             }))}
           />
           <Act
-            words="Add a fragment"
+            words={words('data.add-a-fragment')}
             onClick={() =>
               onChange({ ...parameter, variation: [...parameter.variation, { key: '', sql: '' }] })
             }
@@ -652,15 +648,19 @@ function ParameterLines({
                 />
               ) : (
                 <span key="said" className={styles['parameterSaid']}>
-                  <span className={styles['parameterName']}>
-                    {parameter.name === '' ? words('data.not-named-yet') : parameter.name}
-                  </span>
+                  {parameter.name === '' ? (
+                    <span className={styles['parameterName']}>{words('data.not-named-yet')}</span>
+                  ) : (
+                    <span className={styles['parameterName']} data-content>
+                      {parameter.name}
+                    </span>
+                  )}
                   <span className={styles['hint']}>{parameterSummary(parameter)}</span>
                 </span>
               )}
               <IconButton
                 key="edit"
-                label={words('data.edit-parameter', { value1: at + 1 })}
+                label={words('data.edit-parameter', { n: at + 1 })}
                 className={styles['lineIcon']}
                 aria-expanded={open}
                 onClick={() => onOpen(at)}
@@ -669,7 +669,7 @@ function ParameterLines({
               </IconButton>
               <IconButton
                 key="remove"
-                label={words('data.remove-parameter', { value1: at + 1 })}
+                label={words('data.remove-parameter', { n: at + 1 })}
                 className={styles['lineIcon']}
                 onClick={() => onRemove(at)}
               >
@@ -701,7 +701,7 @@ function ValueField({
         : null;
   if (choices !== null) {
     return (
-      <Choice label={parameter.name}>
+      <Choice label={<span data-content>{parameter.name}</span>}>
         {(id) => (
           <select id={id} value={value} onChange={(event) => onChange(event.target.value)}>
             <option value="">{words('data.no-value')}</option>
@@ -716,7 +716,7 @@ function ValueField({
     );
   }
   return parameter.list ? (
-    <Choice label={parameter.name}>
+    <Choice label={<span data-content>{parameter.name}</span>}>
       {(id) => (
         <textarea
           id={id}
@@ -728,7 +728,7 @@ function ValueField({
     </Choice>
   ) : (
     <label>
-      {parameter.name}
+      <span data-content>{parameter.name}</span>
       <input value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
@@ -740,7 +740,13 @@ function GeneratedSql({ shown }: { readonly shown: { sql: string } | { needs: st
   return (
     <figure className={styles['generated']} aria-labelledby={id}>
       <figcaption id={id}>{words('data.the-sql-it-runs')}</figcaption>
-      <pre className={styles['sql']}>{'sql' in shown ? shown.sql : shown.needs}</pre>
+      {'sql' in shown ? (
+        <pre className={styles['sql']} data-content>
+          {shown.sql}
+        </pre>
+      ) : (
+        <pre className={styles['sql']}>{shown.needs}</pre>
+      )}
     </figure>
   );
 }
@@ -749,12 +755,11 @@ function GeneratedSql({ shown }: { readonly shown: { sql: string } | { needs: st
 function typeName(type: ColumnType) {
   const label = COLUMN_BASES.find((each) => each.base === type.base)?.label ?? type.base;
   if (type.base !== 'image') return label;
-  const held = type.encoding === 'binary' ? 'binary' : words('data.base64-text-2');
-  const described =
-    type.description === 'decorative'
-      ? 'decorative'
-      : words('data.described-by', { column: type.description.column });
-  return `${label}, ${held}, ${described}`;
+  return words('data.image-type-said', {
+    encoding: type.encoding,
+    decorative: type.description === 'decorative' ? 'yes' : 'no',
+    column: type.description === 'decorative' ? '' : type.description.column,
+  });
 }
 
 /** The SQL, request or object of a definition the person may only read. */
@@ -763,22 +768,34 @@ function ReadOnlyStatement({ definition }: { readonly definition: QueryDefinitio
   return statement.kind === 'http' ? (
     <figure className={styles['generated']}>
       <figcaption>{words('data.the-request-it-sends-after')}</figcaption>
-      <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+      <pre className={styles['sql']} data-content>
+        {sqlOf(definition)}
+      </pre>
     </figure>
   ) : statement.kind === 'extension' ? (
     <figure className={styles['generated']}>
       <figcaption>{words('data.the-request-it-sends-to')}</figcaption>
-      <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+      <pre className={styles['sql']} data-content>
+        {sqlOf(definition)}
+      </pre>
     </figure>
   ) : statement.kind === 'file' ? (
     <figure className={styles['generated']}>
       <figcaption>{words('data.the-object-it-reads-in')}</figcaption>
-      <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+      <pre className={styles['sql']} data-content>
+        {sqlOf(definition)}
+      </pre>
     </figure>
   ) : statement.kind === 'builder' ? (
     <GeneratedSql shown={{ sql: sqlOf(definition) }} />
   ) : (
-    <pre className={styles['sql']}>{sqlOf(definition)}</pre>
+    // A query over a stored result is said in words; SQL is the source's own.
+    <pre
+      className={styles['sql']}
+      {...(statement.kind === 'dataset' ? {} : { 'data-content': true })}
+    >
+      {sqlOf(definition)}
+    </pre>
   );
 }
 
@@ -796,7 +813,7 @@ function ReadOnlyColumns({ definition }: { readonly definition: QueryDefinition 
       <tbody>
         {definition.columns.map((column) => (
           <tr key={column.name}>
-            <td>{column.name}</td>
+            <td data-content>{column.name}</td>
             <td>{typeName(column.type)}</td>
           </tr>
         ))}
@@ -1060,12 +1077,18 @@ export function QueryDefinitionPage({
     });
   const setColumn = (at: number, column: ColumnDraft) =>
     change({ columns: draft.columns.map((held, place) => (place === at ? column : held)) });
-  const connections: readonly Place[] = [
+  const connections: readonly Offered[] = [
     ...(places?.connections ?? []),
     ...(shown !== null &&
     shown.connection !== null &&
     !(places?.connections ?? []).some((each) => each.id === shown.connection!.id)
-      ? [{ id: shown.connection.id, name: shown.connection.name ?? UNREADABLE_CONNECTION() }]
+      ? [
+          {
+            id: shown.connection.id,
+            name: shown.connection.name ?? UNREADABLE_CONNECTION(),
+            withheld: shown.connection.name === null,
+          },
+        ]
       : []),
   ];
 
@@ -1121,12 +1144,7 @@ export function QueryDefinitionPage({
               ? 'multiset'
               : held.order.filter((each) => proposed.some((column) => column.name === each.column)),
         }));
-        setDescribed([
-          words('data.proposed-confirm-the-type-of', {
-            length: proposed.length,
-            value2: proposed.length === 1 ? 'column' : 'columns',
-          }),
-        ]);
+        setDescribed([words('data.proposed-confirm-the-type-of', { count: proposed.length })]);
         return;
       }
       if (draft.connection === '') {
@@ -1207,12 +1225,7 @@ export function QueryDefinitionPage({
                     proposed.some((column) => column.name === each.column),
                   ),
           }));
-          setDescribed([
-            words('data.proposed-confirm-the-type-of', {
-              length: proposed.length,
-              value2: proposed.length === 1 ? 'column' : 'columns',
-            }),
-          ]);
+          setDescribed([words('data.proposed-confirm-the-type-of', { count: proposed.length })]);
           return;
         }
         setDescribed(refusalLines(error, words('data.the-query-could-not-be')));
@@ -1348,20 +1361,13 @@ export function QueryDefinitionPage({
   const confirmed = draft.columns.filter((column) => column.confirmed).length;
   const toConfirm = draft.columns.length - confirmed;
   const held = editable && !everyColumnConfirmed(draft);
-  const connectionName = connections.find((each) => each.id === draft.connection)?.name ?? null;
-  const kind =
-    draft.mode === 'http'
-      ? words('data.an-http-api')
-      : draft.mode === 'file'
-        ? words('data.an-s3-bucket')
-        : draft.mode === 'extension'
-          ? words('data.an-extension')
-          : words('data.a-postgresql');
+  const chosenConnection = connections.find((each) => each.id === draft.connection);
+  const connectionName = chosenConnection?.name ?? null;
+  // A stored result's own name, where the person may read it.
+  const storedOwnName =
+    draft.mode === 'dataset' ? stored?.find((each) => each.id === draft.dataset)?.name : undefined;
   const storedName =
-    draft.mode === 'dataset'
-      ? (stored?.find((each) => each.id === draft.dataset)?.name ??
-        words('data.a-stored-result-you-may'))
-      : null;
+    draft.mode === 'dataset' ? (storedOwnName ?? words('data.a-stored-result-you-may')) : null;
   const usedBy =
     uses === null || uses === 'failed'
       ? null
@@ -1400,8 +1406,10 @@ export function QueryDefinitionPage({
     storedName !== null ? (
       draft.dataset === '' ? (
         words('data.no-stored-result-chosen')
-      ) : (
+      ) : storedOwnName === undefined ? (
         storedName
+      ) : (
+        <span data-content>{storedOwnName}</span>
       )
     ) : shown !== null && !editable ? (
       shown.connection === null ? (
@@ -1409,19 +1417,23 @@ export function QueryDefinitionPage({
       ) : shown.connection.name === null ? (
         words('data.a-connection-you-may-not-2')
       ) : (
-        <a href={connectionLink(shown.connection.id)}>{shown.connection.name}</a>
+        <a href={connectionLink(shown.connection.id)} data-content>
+          {shown.connection.name}
+        </a>
       )
     ) : connectionName === null ? (
       words('data.no-connection-chosen')
-    ) : connectionName === UNREADABLE_CONNECTION() ? (
+    ) : chosenConnection?.withheld === true ? (
       words('data.a-connection-you-may-not-2')
     ) : (
-      <a href={connectionLink(draft.connection)}>{connectionName}</a>
+      <a href={connectionLink(draft.connection)} data-content>
+        {connectionName}
+      </a>
     );
   const strip: StripCell[] = [
     {
       key: 'runs-against',
-      icon: words('data.connection'),
+      icon: 'Connection',
       tone: 'muted',
       label: words('data.runs-against'),
       value: runsAgainst,
@@ -1429,12 +1441,12 @@ export function QueryDefinitionPage({
         ? { detail: words('data.a-stored-result-queried-in') }
         : connectionName === null
           ? {}
-          : { detail: words('data.connection-2', { kind }) }),
+          : { detail: words('data.connection-2', { mode: draft.mode }) }),
     },
     draft.columns.length === 0
       ? {
           key: 'columns',
-          icon: words('data.needs-attention'),
+          icon: 'Needs attention',
           tone: 'muted',
           label: words('data.columns-2'),
           value: words('data.none-yet'),
@@ -1443,18 +1455,18 @@ export function QueryDefinitionPage({
       : toConfirm === 0 || !editable
         ? {
             key: 'columns',
-            icon: words('data.done-editing'),
+            icon: 'Done editing',
             tone: 'ok',
             label: words('data.columns-2'),
-            value: words('data.of-confirmed', { length: draft.columns.length }),
+            value: words('data.of-confirmed', { count: draft.columns.length }),
             detail: words('data.every-type-confirmed'),
           }
         : {
             key: 'columns',
-            icon: words('data.needs-attention'),
+            icon: 'Needs attention',
             tone: 'warn',
             label: words('data.columns-2'),
-            value: words('data.of-confirmed-2', { confirmed, length: draft.columns.length }),
+            value: words('data.of-confirmed-2', { confirmed, count: draft.columns.length }),
             detail: words('data.confirm-the-rest-to-save'),
           },
     ...(shown === null
@@ -1462,7 +1474,7 @@ export function QueryDefinitionPage({
       : [
           {
             key: 'used-by',
-            icon: words('data.used-by'),
+            icon: 'Used by',
             tone: 'muted' as const,
             label: words('data.used-by'),
             value:
@@ -1470,14 +1482,10 @@ export function QueryDefinitionPage({
                 ? words('data.could-not-be-read')
                 : usedBy === null
                   ? ''
-                  : counted(usedBy.components, 'component', 'components'),
+                  : words('data.components-counted', { count: usedBy.components }),
             ...(usedBy === null
               ? {}
-              : {
-                  detail: words('data.and', {
-                    value1: counted(usedBy.documents, 'document', 'documents'),
-                  }),
-                }),
+              : { detail: words('data.and-documents', { count: usedBy.documents }) }),
           },
         ]),
   ];
@@ -1487,7 +1495,12 @@ export function QueryDefinitionPage({
       trail={
         <>
           <a href="#/query-definitions">{words('data.query-definitions-2')}</a>
-          {shown !== null && ` / ${shown.space.name}`}
+          {shown !== null && (
+            <>
+              {' / '}
+              <span data-content>{shown.space.name}</span>
+            </>
+          )}
         </>
       }
       title={isNew ? words('data.new-query-definition') : shown!.definition.title}
@@ -1502,7 +1515,9 @@ export function QueryDefinitionPage({
             <RevisionChip revision={standing?.revision} />
             {retired && <Chip tone="warn">{words('data.retired')}</Chip>}
             {shown.definition.description !== '' && (
-              <span className={styles['described']}>{shown.definition.description}</span>
+              <span className={styles['described']} data-content>
+                {shown.definition.description}
+              </span>
             )}
           </>
         )
@@ -1612,15 +1627,12 @@ export function QueryDefinitionPage({
         aria-label={words('data.details')}
       >
         {unshown !== null && <p>{words('data.this-query-definition-can-be', { unshown })}</p>}
-        <p>
-          {words('data.runs-against-2')}
-          {runsAgainst}.
-        </p>
-        <p>
-          {shown.definition.description === ''
-            ? words('data.no-description')
-            : shown.definition.description}
-        </p>
+        <p>{wordsWith('data.runs-against-2', {}, { against: runsAgainst })}</p>
+        {shown.definition.description === '' ? (
+          <p>{words('data.no-description')}</p>
+        ) : (
+          <p data-content>{shown.definition.description}</p>
+        )}
       </section>
     );
   }
@@ -1785,9 +1797,9 @@ export function QueryDefinitionPage({
             onChange={(file) => changeStatement({ file })}
           />
           <Section
-            heading="Parameters"
+            heading={words('data.parameters')}
             count={draft.parameters.length}
-            acts={<Act words="Add parameter" onClick={addParameter} />}
+            acts={<Act words={words('data.add-parameter')} onClick={addParameter} />}
           >
             {parameterLines}
           </Section>
@@ -1835,9 +1847,9 @@ export function QueryDefinitionPage({
             }
           />
           <Section
-            heading="Parameters"
+            heading={words('data.parameters')}
             count={draft.parameters.length}
-            acts={<Act words="Add parameter" onClick={addParameter} />}
+            acts={<Act words={words('data.add-parameter')} onClick={addParameter} />}
           >
             {parameterLines}
           </Section>
@@ -1854,7 +1866,7 @@ export function QueryDefinitionPage({
           onChange={(mode) => changeStatement({ mode: mode as 'builder' | 'sql' })}
           options={[
             { value: 'builder', label: words('data.builder'), name: words('data.builder') },
-            { value: 'sql', label: 'SQL', name: 'SQL' },
+            { value: 'sql', label: words('data.sql'), name: words('data.sql') },
           ]}
         />
       ) : (
@@ -1880,7 +1892,7 @@ export function QueryDefinitionPage({
           ) : (
             <>
               <Section
-                heading="Write the query with"
+                heading={words('data.write-the-query-with')}
                 aside={<span className={styles['queryLine']}>{head}</span>}
                 acts={
                   named !== undefined && (
@@ -1891,16 +1903,9 @@ export function QueryDefinitionPage({
                 }
               />
               <Section
-                heading="SQL text"
+                heading={words('data.sql-text')}
                 region={false}
-                hint={
-                  <>
-                    {words('data.write-a-value-as')}
-                    {'{{name}}'} {words('data.and-a-fragment-as')}
-                    {'{{#name}}'}
-                    {words('data.each-naming-a-parameter-a')}
-                  </>
-                }
+                hint={words('data.write-a-value-as', { value: '{{name}}', fragment: '{{#name}}' })}
               >
                 <textarea
                   aria-label={words('data.sql-text')}
@@ -1914,16 +1919,16 @@ export function QueryDefinitionPage({
             </>
           )}
           <Section
-            heading="Parameters"
+            heading={words('data.parameters')}
             count={draft.parameters.length}
-            acts={<Act words="Add parameter" onClick={addParameter} />}
+            acts={<Act words={words('data.add-parameter')} onClick={addParameter} />}
           >
             {parameterLines}
           </Section>
           {/* SQL the author writes, so offered where SQL is (DAT-073; the FR plan, FR-B). */}
           {(sqlOffered || draft.revision !== '') && (
             <Section
-              heading="Revision statement"
+              heading={words('data.revision-statement')}
               region={false}
               hint={<>{words('data.optional-sql-answering-one-value')}</>}
             >
@@ -1955,9 +1960,9 @@ export function QueryDefinitionPage({
           aria-label={words('data.query')}
         >
           <Section
-            heading="Request"
+            heading={words('data.request')}
             region={false}
-            hint="Sent to the extension as it is written, with the values bound beside it by name. What it means is the extension's own: at most 64 KiB."
+            hint={words('data.sent-to-the-extension-as-it-is-written')}
           >
             <textarea
               aria-label={words('data.request-a-json-object')}
@@ -1970,9 +1975,11 @@ export function QueryDefinitionPage({
           </Section>
           {binds === true || draft.parameters.length > 0 ? (
             <Section
-              heading="Parameters"
+              heading={words('data.parameters')}
               count={draft.parameters.length}
-              acts={binds === true && <Act words="Add parameter" onClick={addParameter} />}
+              acts={
+                binds === true && <Act words={words('data.add-parameter')} onClick={addParameter} />
+              }
             >
               {parameterLines}
             </Section>
@@ -2005,9 +2012,9 @@ export function QueryDefinitionPage({
           </div>
         </div>
         <Section
-          heading="Parameters"
+          heading={words('data.parameters')}
           count={draft.parameters.length}
-          acts={<Act words="Add parameter" onClick={addParameter} />}
+          acts={<Act words={words('data.add-parameter')} onClick={addParameter} />}
         >
           {parameterLines}
         </Section>
@@ -2025,7 +2032,7 @@ export function QueryDefinitionPage({
     return (
       <div className={`${styles['card']} ${styles['fileCard']}`}>
         <Section
-          heading="Columns"
+          heading={words('data.columns-2')}
           count={draft.columns.length}
           aside={
             <span className={styles['statusChip']}>
@@ -2060,7 +2067,7 @@ export function QueryDefinitionPage({
                   {left > 0 && (
                     <>
                       {' '}
-                      <Chip>{left}</Chip>
+                      <Chip>{formats().number(left)}</Chip>
                     </>
                   )}
                 </button>
@@ -2093,12 +2100,18 @@ export function QueryDefinitionPage({
                   key: column.name,
                   held: !column.confirmed,
                   cells: [
-                    <span key="name" className={styles['mono']}>
+                    <span key="name" className={styles['mono']} data-content>
                       {column.name}
                     </span>,
-                    <span key="source" className={styles['source']}>
-                      {column.sourceType ?? words('data.not-described')}
-                    </span>,
+                    column.sourceType === null ? (
+                      <span key="source" className={styles['source']}>
+                        {words('data.not-described')}
+                      </span>
+                    ) : (
+                      <span key="source" className={styles['source']} data-content>
+                        {column.sourceType}
+                      </span>
+                    ),
                     <TypeFields
                       key="type"
                       part="base"
@@ -2175,7 +2188,7 @@ export function QueryDefinitionPage({
                     })
                   }
                 />
-                {name}
+                <span data-content>{name}</span>
               </label>
             ))}
           </fieldset>
@@ -2238,7 +2251,7 @@ export function QueryDefinitionPage({
                         <td className={styles['index']}>{at + 1}</td>
                         <td>
                           <label className={styles['hidden']} htmlFor={`${ids}-order-${at}`}>
-                            {words('data.order-column', { value1: at + 1 })}
+                            {words('data.order-column', { n: at + 1 })}
                           </label>
                           <select
                             id={`${ids}-order-${at}`}
@@ -2260,7 +2273,7 @@ export function QueryDefinitionPage({
                         </td>
                         <td>
                           <label className={styles['hidden']} htmlFor={`${ids}-direction-${at}`}>
-                            {words('data.direction-2', { value1: at + 1 })}
+                            {words('data.direction-2', { n: at + 1 })}
                           </label>
                           <select
                             id={`${ids}-direction-${at}`}
@@ -2284,8 +2297,8 @@ export function QueryDefinitionPage({
                         </td>
                         <td>
                           <IconButton
-                            label={words('data.remove-order-column', { value1: at + 1 })}
-                            tooltip="Remove"
+                            label={words('data.remove-order-column', { n: at + 1 })}
+                            tooltip={words('data.remove-2')}
                             className={styles['bin']}
                             onClick={() => setOrder(declared.filter((_, place) => place !== at))}
                           >
@@ -2403,7 +2416,7 @@ export function QueryDefinitionPage({
           <Status lines={lines} />
           {/* Said once a sample has run, for a reader who cannot see the rows arrive. */}
           <p role="status" className={styles['hidden']}>
-            {ok === null ? '' : `${ok.rowCount} ${words('data.rows-3', { count: ok.rowCount })}.`}
+            {ok === null ? '' : words('data.rows-counted-said', { count: ok.rowCount })}
           </p>
         </section>
         {ok !== null && (
@@ -2411,7 +2424,7 @@ export function QueryDefinitionPage({
             <section className={styles['card']} aria-labelledby={`${ids}-first`}>
               <div className={styles['cardHead']}>
                 <h2 id={`${ids}-first`}>{words('data.the-first-rows')}</h2>
-                <Chip tone="ok">{`${ok.rowCount} ${words('data.rows-3', { count: ok.rowCount })}`}</Chip>
+                <Chip tone="ok">{words('data.rows-3', { count: ok.rowCount })}</Chip>
                 <Tooltip tip={ok.checksum}>
                   <Icon name="Checksum" />
                   {words('data.checksum')}
@@ -2422,7 +2435,12 @@ export function QueryDefinitionPage({
                 <thead>
                   <tr>
                     {ok.columns.map(([name, base]) => (
-                      <th key={name} scope="col" data-number={NUMBERS.has(base) || undefined}>
+                      <th
+                        key={name}
+                        scope="col"
+                        data-number={NUMBERS.has(base) || undefined}
+                        data-content
+                      >
                         {name}
                       </th>
                     ))}
@@ -2436,7 +2454,7 @@ export function QueryDefinitionPage({
                           key={place}
                           data-number={NUMBERS.has(ok.columns[place]?.[1] ?? '') || undefined}
                         >
-                          {cellWords(value, ok.columns[place]?.[1], ok.images)}
+                          <Cell value={value} base={ok.columns[place]?.[1]} images={ok.images} />
                         </td>
                       ))}
                     </tr>
@@ -2456,12 +2474,17 @@ export function QueryDefinitionPage({
                         : words('data.the-request-that-was-sent')}
                 </h2>
               </div>
-              <pre className={styles['sql']}>
+              <pre
+                className={styles['sql']}
+                // What ran is the source's own text, never the interface's; a stored result is said.
+                {...('dataset' in ok.ran ? {} : { 'data-content': true })}
+              >
                 {'sql' in ok.ran
                   ? ok.ran.sql
                   : 'dataset' in ok.ran
                     ? words('data.version-4', {
-                        value1: storedName ?? 'A stored result',
+                        named: storedName === null ? 'no' : 'yes',
+                        name: storedName ?? '',
                         version: ok.ran.dataset.version,
                       })
                     : 'object' in ok.ran
@@ -2493,26 +2516,18 @@ export function QueryDefinitionPage({
         ) : (
           <div className={styles['lists']}>
             <PagedUses
-              heading="Components"
+              heading={words('data.components')}
+              pages={words('data.pages-of-components')}
               uses={uses.components}
               link={(component) => `#/components/${component}`}
-              counted={(others) =>
-                words('data.bound-by-you-may-not', {
-                  others,
-                  value2: others === 1 ? 'component' : 'components',
-                })
-              }
+              counted={(others) => words('data.bound-by-you-may-not', { others })}
             />
             <PagedUses
-              heading="Documents"
+              heading={words('data.documents')}
+              pages={words('data.pages-of-documents')}
               uses={uses.documents}
               link={documentLink}
-              counted={(others) =>
-                words('data.held-by-you-may-not', {
-                  others,
-                  value2: others === 1 ? 'document' : 'documents',
-                })
-              }
+              counted={(others) => words('data.held-by-you-may-not', { others })}
             />
           </div>
         )}

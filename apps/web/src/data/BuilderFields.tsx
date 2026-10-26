@@ -21,8 +21,8 @@ import {
 import fileStyles from './FileFields.module.css';
 import { Act, Section } from './FileFields.js';
 import styles from './QueryDefinitionPage.module.css';
-import { isRecord, type Described } from './shapes.js';
-import { words } from '../words/words.js';
+import { isRecord, leftOutText, type Described } from './shapes.js';
+import { formats, words } from '../words/words.js';
 
 /**
  * The builder's half of a query definition's Query step (the D4 plan, D4-O): one table or view from
@@ -75,14 +75,8 @@ function listedLines(described: Described): string[] {
   if (described.truncated) {
     lines.push(words('data.the-list-was-cut-short'));
   }
-  const { relations, columns } = described.leftOut;
-  const parts = [
-    relations > 0 && `${relations} ${words('data.tables-or-views', { count: relations })}`,
-    columns > 0 && `${columns} ${words('data.columns', { count: columns })}`,
-  ].filter((part): part is string => typeof part === 'string');
-  if (parts.length > 0) {
-    lines.push(words('data.left-out-because-their-names', { value1: parts.join(', and ') }));
-  }
+  const left = leftOutText(described.leftOut);
+  if (left !== null) lines.push(left);
   return lines;
 }
 
@@ -218,7 +212,7 @@ export function BuilderFields({
   return (
     <>
       <Section
-        heading="Write the query with"
+        heading={words('data.write-the-query-with')}
         aside={
           <span className={styles['queryLine']}>
             {head}
@@ -247,7 +241,10 @@ export function BuilderFields({
                       <option value="">{words('data.choose-a-table-or-view')}</option>
                     )}
                     {builder.table !== null && chosen === undefined && (
-                      <option value={tableKey(builder.table.schema, builder.table.name)}>
+                      <option
+                        value={tableKey(builder.table.schema, builder.table.name)}
+                        data-content
+                      >
                         {`${builder.table.schema}.${builder.table.name}`}
                       </option>
                     )}
@@ -263,7 +260,11 @@ export function BuilderFields({
                                 value={tableKey(each.schema, each.name)}
                                 disabled={!holdable}
                               >
-                                {`${each.schema}.${each.name}${holdable ? '' : words('data.not-offered')}`}
+                                {holdable
+                                  ? `${each.schema}.${each.name}`
+                                  : words('data.relation-not-offered', {
+                                      name: `${each.schema}.${each.name}`,
+                                    })}
                               </option>
                             );
                           })}
@@ -296,9 +297,8 @@ export function BuilderFields({
         {unoffered.length > 0 && (
           <p className={styles['hint']}>
             {words('data.not-offered-as-not-in', {
-              value1: unoffered.length === 1 ? 'its name is' : 'their names are',
-              value2: unoffered.join(', '),
-              value3: unoffered.length === 1 ? 'it' : 'each',
+              count: unoffered.length,
+              names: formats().list(unoffered, { type: 'unit', style: 'short' }),
             })}
           </p>
         )}
@@ -307,8 +307,8 @@ export function BuilderFields({
       {builder.table !== null && (
         <>
           <Section
-            heading="Columns to return"
-            count={words('data.of', { length: builder.columns.length, length2: offered.length })}
+            heading={words('data.columns-to-return')}
+            count={words('data.of', { picked: builder.columns.length, offered: offered.length })}
             aside={
               <label className={styles['check']}>
                 <input
@@ -356,7 +356,9 @@ export function BuilderFields({
                           })
                         }
                       />
-                      <span className={styles['mono']}>{column.name}</span>
+                      <span className={styles['mono']} data-content>
+                        {column.name}
+                      </span>
                     </label>
                     {held !== undefined && (
                       <input
@@ -385,8 +387,8 @@ export function BuilderFields({
           </Section>
 
           <Section
-            heading="Filters"
-            hint="Text is compared by code point, so a filter matches the text exactly as it is written. A value is always sent apart from the SQL, never placed in it."
+            heading={words('data.filters')}
+            hint={words('data.text-is-compared-by-code-point')}
             acts={
               <>
                 {builder.filters.length > 1 && (
@@ -410,7 +412,9 @@ export function BuilderFields({
                     ]}
                   />
                 )}
-                {offered.length > 0 && <Act words="Add a filter" onClick={addFilter} />}
+                {offered.length > 0 && (
+                  <Act words={words('data.add-a-filter')} onClick={addFilter} />
+                )}
               </>
             }
           >
@@ -515,7 +519,7 @@ export function BuilderFields({
                           )}
                           <MatchCase
                             filter={filter}
-                            name={`Match case of filter ${n}`}
+                            name={words('data.match-case-of-filter', { n })}
                             onChange={(changed) => setFilter(at, changed)}
                           />
                         </span>
@@ -534,7 +538,7 @@ export function BuilderFields({
           </Section>
 
           <Section
-            heading="Summaries"
+            heading={words('data.summaries')}
             aside={
               <label className={styles['check']}>
                 <input
@@ -556,7 +560,9 @@ export function BuilderFields({
                 ? words('data.rows-are-grouped-by-the')
                 : words('data.rows-are-grouped-by-the-2')
             }
-            acts={builder.grouped && <Act words="Add a summary" onClick={addSummary} />}
+            acts={
+              builder.grouped && <Act words={words('data.add-a-summary')} onClick={addSummary} />
+            }
           >
             {builder.grouped && builder.summaries.length > 0 && (
               <RowTable

@@ -20,7 +20,7 @@ import { MatchCase } from './MatchCase.js';
 import { partOfKind } from './HttpFields.js';
 import { NEW_PART, type PartDraft } from './httpDraft.js';
 import pageStyles from './QueryDefinitionPage.module.css';
-import { words as say } from '../words/words.js';
+import { formats, words as say, wordsWith } from '../words/words.js';
 
 /** A segment as the path shows it: its text, or its parameter's name in braces. */
 const segmentText = (part: PartDraft) => (part.kind === 'parameter' ? `{${part.text}}` : part.text);
@@ -50,7 +50,9 @@ export function Section({
     <section {...(region ? { 'aria-labelledby': id } : {})} className={styles['section']}>
       <div className={styles['head']}>
         <h3 id={id}>{heading}</h3>
-        {count !== undefined && <Chip>{count}</Chip>}
+        {count !== undefined && (
+          <Chip>{typeof count === 'number' ? formats().number(count) : count}</Chip>
+        )}
         {aside}
         <span className={styles['spacer']} />
         {acts}
@@ -131,18 +133,21 @@ export function FileFields({
   return (
     <>
       <Section
-        heading="Where the file is in the bucket"
-        hint="Each segment is one folder of the path, in order, then the file name: the parts of what S3 calls its key."
+        heading={say('data.where-the-file-is-in-the-bucket')}
+        hint={say('data.each-segment-is-one-folder')}
         acts={
           <>
             {file.key.length > 0 && (
               <span className={styles['reads']}>
-                {say('data.reads')}
-                <code>{file.key.map(segmentText).join('/')}</code>
+                {wordsWith(
+                  'data.reads-key',
+                  {},
+                  { key: <code data-content>{file.key.map(segmentText).join('/')}</code> },
+                )}
               </span>
             )}
             <Act
-              words="Add segment"
+              words={say('data.add-segment')}
               onClick={() => onChange({ ...file, key: [...file.key, NEW_PART] })}
             />
           </>
@@ -156,7 +161,7 @@ export function FileFields({
               { head: say('data.segment') },
             ]}
             rows={file.key.map((part, at) => {
-              const label = say('data.segment-2', { value1: at + 1 });
+              const label = say('data.segment-2', { n: at + 1 });
               return {
                 key: at,
                 cells: [
@@ -201,7 +206,7 @@ export function FileFields({
                     </select>
                   ),
                 ],
-                remove: say('data.remove-segment', { value1: at + 1 }),
+                remove: say('data.remove-segment', { n: at + 1 }),
                 onRemove: () =>
                   onChange({ ...file, key: file.key.filter((_, place) => place !== at) }),
               };
@@ -210,13 +215,13 @@ export function FileFields({
         )}
       </Section>
 
-      <Section heading="Format">
-        <FormatFields draft={file} noun="file" onChange={onChange} />
+      <Section heading={say('data.format')}>
+        <FormatFields draft={file} holder="file" onChange={onChange} />
       </Section>
 
       <Section
-        heading="Filters"
-        hint="A filter compares each row's value as its column's type: a time by its value, text by code point. A value is placed in the key whole, and a segment refuses a slash, . and ..; the key is read in the connection's bucket alone."
+        heading={say('data.filters')}
+        hint={say('data.a-filter-compares-each-rows')}
         acts={
           <>
             {file.filters.length > 1 && (
@@ -230,7 +235,7 @@ export function FileFields({
                 ]}
               />
             )}
-            {offered.length > 0 && <Act words="Add a filter" onClick={addFilter} />}
+            {offered.length > 0 && <Act words={say('data.add-a-filter')} onClick={addFilter} />}
           </>
         }
       >
@@ -322,7 +327,7 @@ export function FileFields({
                       )}
                       <MatchCase
                         filter={filter}
-                        name={`Match case of filter ${n}`}
+                        name={say('data.match-case-of-filter', { n })}
                         onChange={(changed) => setFilter(at, changed)}
                       />
                     </span>

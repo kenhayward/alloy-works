@@ -1,5 +1,7 @@
 import type { ConnectionSettings } from '@alloy-works/domain';
 
+import { formats, words } from '../words/words.js';
+
 /**
  * The connection routes' answers as the pages read them, checked rather than trusted, as the access
  * page's are (access/describe.ts): a page that trusted one would crash on the first member a service
@@ -184,6 +186,20 @@ export interface Described {
   readonly leftOut: { readonly relations: number; readonly columns: number };
 }
 
+/**
+ * What a describe left out, in a sentence, or null where it left out nothing: a table or column whose
+ * name holds a control character, or whose type is longer than any PostgreSQL names, is never listed.
+ */
+export function leftOutText(leftOut: Described['leftOut']): string | null {
+  const { relations, columns } = leftOut;
+  if (relations === 0 && columns === 0) return null;
+  return words('data.left-out-because-their-names', {
+    which: relations > 0 && columns > 0 ? 'both' : relations > 0 ? 'relations' : 'columns',
+    relations,
+    columns,
+  });
+}
+
 export function isRelations(value: unknown): value is Described {
   return (
     isRecord(value) &&
@@ -211,18 +227,12 @@ export function refusalText(error: unknown, fallback: string): string {
   return isRecord(error) && typeof error.message === 'string' ? error.message : fallback;
 }
 
-const LONG_DATE = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
-/** A day as a sentence says it: 30 September 2026. */
+/** A day as a sentence says it, in the interface's language: 30 September 2026. */
 export function longDate(iso: string): string {
-  return LONG_DATE.format(new Date(iso));
+  return formats().date(new Date(iso), { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 /** Somebody by name, or as somebody where the service knows none. */
 export function nameOf(person: Named): string {
-  return person.name ?? 'somebody';
+  return person.name ?? words('data.somebody');
 }

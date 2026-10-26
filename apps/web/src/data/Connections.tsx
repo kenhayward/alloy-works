@@ -319,17 +319,11 @@ export function Connections({ client }: { readonly client: Client }) {
         <p className={styles['summary']}>
           <span>
             {spaces.length > 0
-              ? words('data.in-the-spaces-chosen', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'connection is' : 'connections are',
-                })
-              : words('data.you-may-read', {
-                  total: listing.total,
-                  value2: listing.total === 1 ? 'connection' : 'connections',
-                })}
+              ? words('data.connections-in-the-spaces-chosen', { total: listing.total })
+              : words('data.connections-you-may-read', { total: listing.total })}
           </span>
           {items.length < listing.total && (
-            <span>{words('data.showing-1-to', { length: items.length })}</span>
+            <span>{words('data.showing-1-to', { shown: items.length })}</span>
           )}
         </p>
         {items.length === 0 ? (
@@ -352,12 +346,16 @@ export function Connections({ client }: { readonly client: Client }) {
                 {items.map((item) => (
                   <tr key={item.id}>
                     <td className={styles['title']}>
-                      <a href={connectionLink(item.id)}>{item.name}</a>
+                      <a href={connectionLink(item.id)} data-content>
+                        {item.name}
+                      </a>
                       {item.retired && (
-                        <span className={styles['muted']}> {words('data.retired-2')}</span>
+                        <span className={styles['muted']}> {words('data.retired')}</span>
                       )}
                     </td>
-                    <td className={styles['muted']}>{item.space.name}</td>
+                    <td className={styles['muted']} data-content>
+                      {item.space.name}
+                    </td>
                     <td>{item.credentialSet ? words('data.set-2') : words('data.not-set-2')}</td>
                     <td>
                       {item.lastTest === null
@@ -379,7 +377,7 @@ export function Connections({ client }: { readonly client: Client }) {
             </table>
           </div>
         )}
-        <More listing={listing} what="connections" />
+        <More listing={listing} what={words('data.connections-what')} />
       </section>
     </ListLayout>
   );
