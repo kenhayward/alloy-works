@@ -13,6 +13,7 @@ import { impactReportJob } from './jobs/impact-report.js';
 import { cohortJob } from './jobs/cohort.js';
 import { embedJob } from './jobs/embed.js';
 import { importJob } from './jobs/import.js';
+import { translationReturnJob } from './jobs/translation-return.js';
 import { connectorDeliverer } from './deliverer.js';
 import { nightDue, recheckEntries } from './rechecks.js';
 import { connectorReferencer } from './referencer.js';
@@ -100,6 +101,12 @@ const handlers: Record<string, JobHandler> = {
   embed: embedJob({ db, embedder }),
   // A read within a third of the lease, in a thread of its own (the IM plan, IM-C).
   import: importJob({ db, stores, budget: { timeMs: config.leaseMs / 3, memoryMb: 512 } }),
+  // A translation job's returned file, read as an import's is (the XL plan, XL-F).
+  translation_return: translationReturnJob({
+    db,
+    stores,
+    budget: { timeMs: config.leaseMs / 3, memoryMb: 512 },
+  }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
