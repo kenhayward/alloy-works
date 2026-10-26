@@ -87,6 +87,9 @@ const referencer =
   config.connector?.referenceKey === undefined
     ? undefined
     : connectorReferencer({ url: config.connector.url, key: config.connector.referenceKey });
+/** A returned file read within a third of the lease, as an import's is. */
+const returnBudget = { timeMs: config.leaseMs / 3, memoryMb: 512 };
+
 const handlers: Record<string, JobHandler> = {
   sample_pdf: sampleJob({ db, stores, typst }),
   publish,
@@ -102,11 +105,7 @@ const handlers: Record<string, JobHandler> = {
   // A read within a third of the lease, in a thread of its own (the IM plan, IM-C).
   import: importJob({ db, stores, budget: { timeMs: config.leaseMs / 3, memoryMb: 512 } }),
   // A translation job's returned file, read as an import's is (the XL plan, XL-F).
-  translation_return: translationReturnJob({
-    db,
-    stores,
-    budget: { timeMs: config.leaseMs / 3, memoryMb: 512 },
-  }),
+  translation_return: translationReturnJob({ db, stores, budget: returnBudget }),
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
