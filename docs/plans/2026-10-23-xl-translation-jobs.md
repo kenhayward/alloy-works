@@ -45,7 +45,7 @@ accepts it.
 
 ## Built
 
-XL in three PRs: XLa #782, XLb #783 and the close {PR}, which holds XLc. Departures:
+XL in three PRs: XLa #782, XLb #783 and the close #784, which holds XLc. Departures:
 
 - Downloading a job's file needs edit on the document, not read: it is what goes to the vendor.
 - A job lists its components in the document's order (`position`), and one whose source is in another
