@@ -62,6 +62,17 @@ describe('a translation status', () => {
     ).toEqual({ status: 'outOfDate', retranslate: true });
   });
 
+  it('LOC-024 is machine drafted, over every other status, while a draft is not accepted', () => {
+    expect(
+      translationStatus({
+        translates: 'v1',
+        laterSource: [],
+        machineDrafted: true,
+        inTranslation: true,
+      }),
+    ).toEqual({ status: 'machineDrafted' });
+  });
+
   it('is in translation while a job is out, over untranslated and out of date but not translated', () => {
     const out = { inTranslation: true };
     expect(translationStatus({ translates: null, laterSource: [], ...out })).toEqual({

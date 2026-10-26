@@ -27,7 +27,13 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { beginTranslation, setTranslationPolicy, translationPolicy } from './translation.js';
+import { acceptMachineDrafts, recordMachineDraft } from './machine-drafts.js';
+import {
+  beginTranslation,
+  setTranslationPolicy,
+  translationPolicy,
+  translationsOf,
+} from './translation.js';
 import { recordVersion, type StoredVersion } from './versions.js';
 import { moveArtifact } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
@@ -494,6 +500,80 @@ describe('publishing in a language (the TR plan, TRb)', () => {
     expect(await failuresOf(asked.request.id)).toEqual([
       expect.objectContaining({ code: 'occurrence_unresolved', node: pinned.id }),
     ]);
+  });
+
+  it('LOC-024 LOC-041 never publishes a translation a machine drafted until a person with approve accepts its line, the mark carried to every later version', async () => {
+    const created = await component('Glossary');
+    const source = await cut(created, [para('b1', 'Ponds.')], 'en-GB');
+    await approve(source);
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: created.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    const drafted = await as((trx) =>
+      recordMachineDraft(trx, {
+        artifactId: created.artifactId,
+        line: begun.line.id,
+        content: parseContentDocument({
+          ...parseContentDocument(source.content),
+          language: 'fr-FR',
+          content: [para('b1', 'Étangs.')],
+        }),
+        translates: source.id,
+        runs: [randomUUID()],
+        missedTerms: [],
+        by: ada,
+      }),
+    );
+    if (drafted.answer !== 'recorded') throw new Error(drafted.answer);
+    const status = async () =>
+      (await as((trx) => translationsOf(trx, [created.artifactId]))).get(created.artifactId)![0]!
+        .status;
+    expect(await status()).toEqual({ status: 'machineDrafted' });
+    // A person's edit after it is still the machine's until accepted.
+    await cut(drafted.version, [para('b1', 'Les étangs.')], 'fr-FR', {
+      line: begun.line.id,
+      translates: source.id,
+    });
+    expect(await status()).toEqual({ status: 'machineDrafted' });
+    const latest = reference(created.artifactId, { kind: 'latest' });
+    const version = await document([latest]);
+    const refused = await publish(version, 'fr-FR');
+    if (refused.answer !== 'requested') throw new Error(refused.answer);
+    expect(await failuresOf(refused.request.id)).toEqual([
+      expect.objectContaining({ code: 'translation_machine_drafted', node: latest.id }),
+    ]);
+
+    expect(
+      await as((trx) =>
+        acceptMachineDrafts(trx, {
+          artifactId: created.artifactId,
+          line: begun.line.id,
+          by: grace,
+        }),
+      ),
+    ).toEqual({ answer: 'accepted', drafts: 1 });
+    expect(await status()).toEqual({ status: 'translated' });
+    const published = await publish(version, 'fr-FR');
+    if (published.answer !== 'requested') throw new Error(published.answer);
+    expect(await failuresOf(published.request.id)).toEqual([]);
+    expect(
+      await as((trx) =>
+        acceptMachineDrafts(trx, {
+          artifactId: created.artifactId,
+          line: begun.line.id,
+          by: grace,
+        }),
+      ),
+    ).toEqual({ answer: 'translation.nothing_drafted' });
+    const event = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select('detail')
+        .where('kind', '=', 'translation.machine_accepted')
+        .executeTakeFirstOrThrow(),
+    );
+    expect(event.detail).toEqual({ line: begun.line.id, language: 'fr-FR', drafts: 1 });
   });
 
   it('never reads an approved reference as a variant translating source words newer than its approved revision', async () => {

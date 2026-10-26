@@ -659,6 +659,12 @@ export const auditKindSpecs = {
     }),
     'packages/db/src/translation-jobs.ts',
   ),
+  // A line's machine drafts accepted by a person with approve (LOC-024, LOC-041; XL-I): how many.
+  'translation.machine_accepted': kind(
+    ['LOC-041'],
+    z.strictObject({ line: Id, language: z.string().min(2).max(35), drafts: z.int().positive() }),
+    'packages/db/src/machine-drafts.ts',
+  ),
   // A held item decided by a person (LOC-035; XL-G): accepted as a translation of the version sent,
   // and the version it made, or rejected.
   'translation.job_decided': kind(

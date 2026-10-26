@@ -25,6 +25,8 @@ export const TRANSLATION_FALLBACKS = ['source', 'refuse'] as const;
 export const TRANSLATION_OUT_OF_DATE = ['publish', 'refuse'] as const;
 /** Placed for review, accepted as a translation of the version sent, or rejected (LOC-035). */
 export const TRANSLATION_CONFLICTS = ['review', 'accept', 'reject'] as const;
+/** Whether content goes to machine translation, and to which endpoints (XL-K; LOC-026). */
+export const TRANSLATION_MACHINE = ['off', 'inside', 'any'] as const;
 
 /** The most languages a note is given in, and the most characters it says in each. */
 export const TRANSLATION_NOTE_LIMITS = { languages: 50, characters: 80 } as const;
@@ -40,18 +42,21 @@ export const translationPolicySchema = z.strictObject({
     ),
   // Absent from a policy stored before XLb, which placed nothing for review: read as the default.
   conflict: z.enum(TRANSLATION_CONFLICTS).default('review'),
+  // Absent before XLc, which sent nothing: read as the default, off.
+  machine: z.enum(TRANSLATION_MACHINE).default('off'),
 });
 export type TranslationPolicy = z.infer<typeof translationPolicySchema>;
 
 /**
  * What a tenant starts with (LOC-036): fall back, marked; publish what is out of date; place a
- * conflicted return for review.
+ * conflicted return for review; send nothing to machine translation.
  */
 export const DEFAULT_TRANSLATION_POLICY: TranslationPolicy = {
   fallback: 'source',
   outOfDate: 'publish',
   note: {},
   conflict: 'review',
+  machine: 'off',
 };
 
 /**

@@ -28,7 +28,7 @@ interface Endpoint {
 }
 
 interface Route {
-  readonly purpose: 'drafting' | 'chat' | 'summarising' | 'embedding';
+  readonly purpose: 'drafting' | 'chat' | 'summarising' | 'embedding' | 'translate';
   readonly endpoint: string | null;
 }
 
@@ -42,6 +42,7 @@ const PURPOSES: Readonly<Record<Route['purpose'], string>> = {
   chat: 'Chat',
   summarising: 'Summarising',
   embedding: 'Embedding',
+  translate: 'Machine translation',
 };
 
 /** Whether calls can go to an endpoint: in use, with a key set for where it points. */

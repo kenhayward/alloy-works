@@ -799,6 +799,18 @@ export interface TranslationJobItemTable {
   held_content: ColumnType<unknown, never, string | null>;
 }
 
+/** A version a machine drafted (0165; XL-I), marked until a person with approve accepts its line. */
+export interface MachineDraftTable {
+  version_id: ColumnType<string, string, never>;
+  line_id: ColumnType<string, string, never>;
+  runs: ColumnType<string[], string[], never>;
+  missed_terms: ColumnType<string[], string[] | undefined, never>;
+  by: ColumnType<string, string, never>;
+  at: ColumnType<Date, never, never>;
+  accepted_by: ColumnType<string | null, never, string>;
+  accepted_at: ColumnType<Date | null, never, Date>;
+}
+
 /** A job's file returned (0164; XL-F): kept by its hash, read by the worker. */
 export interface TranslationJobReturnTable {
   id: ColumnType<string, string | undefined, never>;
@@ -1239,6 +1251,7 @@ export interface TenantTables {
   translation_job: TranslationJobTable;
   translation_job_item: TranslationJobItemTable;
   translation_job_return: TranslationJobReturnTable;
+  machine_draft: MachineDraftTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;

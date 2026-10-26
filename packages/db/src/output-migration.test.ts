@@ -315,6 +315,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0162_untranslated_note',
       '0163_translation_jobs',
       '0164_translation_returns',
+      '0165_machine_drafts',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

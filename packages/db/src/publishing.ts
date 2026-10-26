@@ -1,3 +1,4 @@
+import { machineMarked } from './machine-drafts.js';
 import {
   bindingDigestInput,
   bindingsIn,
@@ -977,7 +978,25 @@ export async function resolvePublishable(
   const translationFailures: PublishFailure[] = [];
   const translationWarnings: TranslationWarning[] = [];
   const untranslatedNotes = new Map<string, string>();
+  // A variant a machine drafted and no person with approve accepted is never published (XL-I; LOC-024).
+  const marked = await machineMarked(
+    trx,
+    [...translations.values()].flatMap((shown) =>
+      shown.translation === 'translated' || shown.translation === 'outOfDate'
+        ? [shown.version]
+        : [],
+    ),
+  );
   for (const [node, shown] of translations) {
+    if (marked.has(shown.version)) {
+      translationFailures.push({
+        stage: 'resolve',
+        code: 'translation_machine_drafted',
+        node,
+        block: null,
+        detail: null,
+      });
+    }
     if (shown.translation === 'untranslated') {
       if (fallback === 'refuse') {
         translationFailures.push({

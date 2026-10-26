@@ -89,7 +89,7 @@ export const promptSchema = z.strictObject({
   output: z.strictObject({ componentType: z.uuid().nullable() }),
   /** The purpose its runs route by, and the models it accepts (G4-D; GEN-005). */
   models: z.strictObject({
-    purpose: z.enum(ROUTED_PURPOSES).exclude(['embedding']),
+    purpose: z.enum(ROUTED_PURPOSES).exclude(['embedding', 'translate']),
     accepts: z
       .array(
         z.string().regex(MODEL, { message: "A model is its provider's identifier, with no space" }),

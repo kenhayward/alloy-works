@@ -1030,6 +1030,17 @@ describe('the domain package', () => {
         'xliffUnits',
         // XLb: what a conflicted return is offered first.
         'TRANSLATION_CONFLICTS',
+        // XLc: machine drafts and the policy that sends them.
+        'TRANSLATE_INSTRUCTIONS',
+        'TRANSLATE_INSTRUCTIONS_VERSION',
+        'TRANSLATE_MAX_TOKENS',
+        'TRANSLATE_PIECE_BYTES',
+        'TRANSLATION_MACHINE',
+        'machineAllowed',
+        'missedTerms',
+        'translationCall',
+        'translationPieces',
+        'xliffInReply',
       ].sort(),
     );
   });

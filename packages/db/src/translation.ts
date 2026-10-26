@@ -260,6 +260,14 @@ export async function jobsStored(trx: TenantTransaction): Promise<boolean> {
 }
 const jobsKnown = new WeakMap<TenantTransaction, boolean>();
 
+/** Whether 0165 has run, so lines may be marked machine drafted (XL-I). */
+async function machineDraftsKnown(trx: TenantTransaction): Promise<boolean> {
+  const { rows } = await sql<{
+    present: boolean;
+  }>`select to_regclass('machine_draft') is not null as present`.execute(trx);
+  return rows[0]?.present === true;
+}
+
 /** A component's translation into one language, as read (TR-E). */
 export interface Translation {
   readonly line: string;
@@ -291,6 +299,7 @@ export async function translationsOf(
     translates: string | null;
     later: boolean[];
     in_translation: boolean;
+    machine_drafted: boolean;
   }>`
     select l.id as line, l.artifact_id, l.language, s.version_id as head, s.translates,
            coalesce((
@@ -310,7 +319,12 @@ export async function translationsOf(
                     where i.line_id = l.id and (i.outcome is null or i.outcome = 'held')
                       and j.closed_at is null)`
                : sql`false`
-           } as in_translation
+           } as in_translation,
+           ${
+             (await machineDraftsKnown(trx))
+               ? sql`exists (select 1 from machine_draft d where d.line_id = l.id and d.accepted_at is null)`
+               : sql`false`
+           } as machine_drafted
       from artifact_line l
       left join lateral (
         select version_id, translates from translation_state
@@ -330,6 +344,7 @@ export async function translationsOf(
         translates: row.translates,
         laterSource: row.later.map((retranslate) => ({ retranslate })),
         inTranslation: row.in_translation,
+        machineDrafted: row.machine_drafted,
       }),
     };
     found.set(row.artifact_id, [...(found.get(row.artifact_id) ?? []), translation]);
@@ -391,7 +406,9 @@ export async function translationPolicy(trx: TenantTransaction): Promise<Transla
     out_of_date: TranslationPolicy['outOfDate'];
     note: Record<string, string>;
     conflict: TranslationPolicy['conflict'] | null;
-  }>`select fallback, out_of_date, note, to_jsonb(p) ->> 'conflict' as conflict
+    machine: TranslationPolicy['machine'] | null;
+  }>`select fallback, out_of_date, note, to_jsonb(p) ->> 'conflict' as conflict,
+            to_jsonb(p) ->> 'machine' as machine
        from translation_policy p`.execute(trx);
   const row = found.rows[0];
   return row
@@ -401,6 +418,8 @@ export async function translationPolicy(trx: TenantTransaction): Promise<Transla
         note: row.note,
         // Before 0164, a conflicted return was not yet a thing: placed for review, its default.
         conflict: row.conflict ?? DEFAULT_TRANSLATION_POLICY.conflict,
+        // Before 0165, nothing was sent to a machine: off, its default.
+        machine: row.machine ?? DEFAULT_TRANSLATION_POLICY.machine,
       }
     : DEFAULT_TRANSLATION_POLICY;
 }
@@ -411,8 +430,9 @@ export async function translationPolicy(trx: TenantTransaction): Promise<Transla
  */
 export async function setTranslationPolicy(
   trx: TenantTransaction,
-  policy: Omit<TranslationPolicy, 'conflict'> & {
+  policy: Omit<TranslationPolicy, 'conflict' | 'machine'> & {
     readonly conflict?: TranslationPolicy['conflict'];
+    readonly machine?: TranslationPolicy['machine'];
   },
 ): Promise<TranslationPolicy> {
   await sql`update translation_policy
@@ -420,6 +440,9 @@ export async function setTranslationPolicy(
                    note = ${JSON.stringify(policy.note)}::jsonb`.execute(trx);
   if (policy.conflict !== undefined) {
     await sql`update translation_policy set conflict = ${policy.conflict}`.execute(trx);
+  }
+  if (policy.machine !== undefined) {
+    await sql`update translation_policy set machine = ${policy.machine}`.execute(trx);
   }
   return translationPolicy(trx);
 }

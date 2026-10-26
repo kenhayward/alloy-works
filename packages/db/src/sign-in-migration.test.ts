@@ -174,6 +174,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0162_untranslated_note',
       '0163_translation_jobs',
       '0164_translation_returns',
+      '0165_machine_drafts',
     ]);
 
     const read = async () =>

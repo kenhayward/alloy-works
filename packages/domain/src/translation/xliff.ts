@@ -317,6 +317,8 @@ export interface XliffFile {
   readonly title: string;
   readonly type: string;
   readonly content: ContentDocument;
+  /** Only these units, where a machine draft sends a component in pieces (XL-H); each still has its neighbours as context. */
+  readonly units?: ReadonlySet<string> | undefined;
 }
 
 /** A term's labels for a job's glossary: its source label and, where given, its target's (XL-B). */
@@ -404,7 +406,8 @@ export function writeXliff(input: {
 }): string {
   const files = input.files.map((file) => {
     const units = xliffUnits(file.content);
-    const body = units.map((unit, index) => {
+    const body = units.flatMap((unit, index) => {
+      if (file.units !== undefined && !file.units.has(unit.id)) return [];
       const glossary = unit.terms.flatMap((term) => {
         const labels = input.terms.get(term);
         if (labels === undefined) return [];
