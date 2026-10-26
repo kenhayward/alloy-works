@@ -44,27 +44,21 @@ const SECTIONS = [
     get title() {
       return words('admin.overview');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   {
     slug: 'spaces',
     get title() {
       return words('admin.spaces');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   {
     slug: 'editing',
     get title() {
       return words('admin.editing');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // What an accepted import keeps of the names a file carries (IMP-010; the IM plan, IM-I).
   {
@@ -72,27 +66,21 @@ const SECTIONS = [
     get title() {
       return words('admin.imports');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   {
     slug: 'translation',
     get title() {
       return words('admin.translation');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   {
     slug: 'workflows',
     get title() {
       return words('admin.workflows');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // The model endpoints the environment calls, and what each purpose uses (GEN-027; the G1 plan).
   {
@@ -100,9 +88,7 @@ const SECTIONS = [
     get title() {
       return words('admin.models');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // Phrases forbidden in what a model is sent and returns (GEN-049; the G5 plan, G5-F).
   {
@@ -110,9 +96,7 @@ const SECTIONS = [
     get title() {
       return words('admin.guardrails');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // The CSL styles a theme may name, CSE, Vancouver and Harvard given (the CI plan, CI-D).
   {
@@ -120,9 +104,7 @@ const SECTIONS = [
     get title() {
       return words('admin.citation-styles');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // Crossref and PubMed, each searched from the Cite dialog unless switched off (the XR plan, XR-C).
   {
@@ -130,9 +112,7 @@ const SECTIONS = [
     get title() {
       return words('admin.reference-sources');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // How often each person may call a model, the budget, and what models cost (the G6 plan).
   {
@@ -140,9 +120,7 @@ const SECTIONS = [
     get title() {
       return words('admin.model-spending');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // Events posted to a service identity's endpoint, and every delivery (the WB plan, WB-J).
   {
@@ -150,9 +128,7 @@ const SECTIONS = [
     get title() {
       return words('admin.webhooks');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   // Source types installed from their manifests, read first (the EX plan, EXc).
   {
@@ -160,36 +136,28 @@ const SECTIONS = [
     get title() {
       return words('admin.extensions');
     },
-    get group() {
-      return words('admin.environment');
-    },
+    group: 'environment',
   },
   {
     slug: 'people',
     get title() {
       return words('admin.people');
     },
-    get group() {
-      return words('admin.people-and-access');
-    },
+    group: 'people',
   },
   {
     slug: 'groups',
     get title() {
       return words('admin.groups');
     },
-    get group() {
-      return words('admin.people-and-access');
-    },
+    group: 'people',
   },
   {
     slug: 'roles',
     get title() {
       return words('admin.roles');
     },
-    get group() {
-      return words('admin.people-and-access');
-    },
+    group: 'people',
   },
   // Everybody from outside and what each can reach (IAM-051; the R13 plan, R13-F).
   {
@@ -197,27 +165,21 @@ const SECTIONS = [
     get title() {
       return words('admin.from-outside');
     },
-    get group() {
-      return words('admin.people-and-access');
-    },
+    group: 'people',
   },
   {
     slug: 'holds',
     get title() {
       return words('admin.legal-holds');
     },
-    get group() {
-      return words('admin.system');
-    },
+    group: 'system',
   },
   {
     slug: 'retention',
     get title() {
       return words('admin.retention');
     },
-    get group() {
-      return words('admin.system');
-    },
+    group: 'system',
   },
   // How many queries run at once, and what they cost (DAT-053, DAT-071; the R18 plan).
   {
@@ -225,18 +187,14 @@ const SECTIONS = [
     get title() {
       return words('admin.query-usage');
     },
-    get group() {
-      return words('admin.system');
-    },
+    group: 'system',
   },
   {
     slug: 'audit',
     get title() {
       return words('admin.audit-log');
     },
-    get group() {
-      return words('admin.system');
-    },
+    group: 'system',
   },
   // The whole environment exported as a job, each kept seven days (API-044; the R21 plan, R21-B).
   {
@@ -244,22 +202,26 @@ const SECTIONS = [
     get title() {
       return words('admin.export');
     },
-    get group() {
-      return words('admin.system');
-    },
+    group: 'system',
   },
   {
     slug: 'about',
     get title() {
       return words('admin.about-and-release-notes');
     },
-    get group() {
-      return words('admin.system');
-    },
+    group: 'system',
   },
 ] as const;
 type Section = (typeof SECTIONS)[number]['slug'];
-const GROUPS = ['Environment', 'People and access', 'System'] as const;
+const GROUPS = ['environment', 'people', 'system'] as const;
+
+/** A group's name, in the menu and the trail. */
+const groupName = (group: (typeof GROUPS)[number]): string =>
+  ({
+    environment: words('admin.environment'),
+    people: words('admin.people-and-access'),
+    system: words('admin.system'),
+  })[group];
 
 /** The section an address names: Overview for `#/admin` and for anything it does not know. */
 export function sectionOf(hash: string): Section {
@@ -430,13 +392,17 @@ export function Administration({
     <section className={styles['administration']} aria-label={words('admin.administration')}>
       <nav className={styles['menu']} aria-label={words('admin.sections-of-administration')}>
         <p className={styles['menuTitle']}>{words('admin.administration')}</p>
-        {environment !== null && <p className={styles['environment']}>{environment}</p>}
+        {environment !== null && (
+          <p className={styles['environment']} data-content>
+            {environment}
+          </p>
+        )}
         {GROUPS.map((group) => (
           <div key={group} className={styles['menuGroup']}>
-            <p className={styles['menuGroupName']} id={`admin-group-${group.replace(/ /g, '-')}`}>
-              {group}
+            <p className={styles['menuGroupName']} id={`admin-group-${group}`}>
+              {groupName(group)}
             </p>
-            <ul aria-labelledby={`admin-group-${group.replace(/ /g, '-')}`}>
+            <ul aria-labelledby={`admin-group-${group}`}>
               {SECTIONS.filter((each) => each.group === group).map((section) => (
                 <li key={section.slug}>
                   <a
@@ -458,7 +424,7 @@ export function Administration({
       <div className={styles['shown']}>
         <nav aria-label={words('admin.breadcrumb')} className={styles['trail']}>
           <a href="#/admin/overview">{words('admin.administration')}</a>
-          <span>{` / ${title.group}`}</span>
+          <span>{` / ${groupName(title.group)}`}</span>
         </nav>
         <h1 ref={sectionHeading} tabIndex={-1}>
           {title.title}

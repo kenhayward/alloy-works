@@ -15,6 +15,10 @@ type Client = ReturnType<typeof createApiClient>;
 const SHOWS = ['All', 'Active', 'Archived'] as const;
 type Show = (typeof SHOWS)[number];
 
+/** A segment's words. */
+const showName = (show: Show): string =>
+  ({ All: say('admin.all'), Active: say('admin.active'), Archived: say('admin.archived') })[show];
+
 /**
  * Administration's Spaces, in the one shape (ADR-0049, decision 3; the AD plan, AD4): a sentence and
  * New space; a search, All, Active or Archived, and how many are shown; a table with a head, each row
@@ -38,7 +42,7 @@ export function Spaces({
   onChanged: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const [show, setShow] = useState<Show>(say('admin.all'));
+  const [show, setShow] = useState<Show>('All');
   const [act, setAct] = useState<SpaceAct | null>(null);
   const [said, setSaid] = useState('');
   const [access, setAccess] = useState<SpaceRow | null>(null);
@@ -57,7 +61,7 @@ export function Spaces({
       shown.push({
         label: say('admin.access'),
         name: say('admin.access-to-the-space', { name: space.name }),
-        icon: say('admin.access'),
+        icon: 'Access',
         onSelect: () => setAccess(space),
       });
     }
@@ -68,7 +72,7 @@ export function Spaces({
         shown.push({
           label: say('admin.restore'),
           name: say('admin.restore-2', { name: space.name }),
-          icon: say('admin.restore'),
+          icon: 'Restore',
           slot: 'change',
           onSelect: () => setAct({ kind: 'restore', space }),
         });
@@ -77,7 +81,7 @@ export function Spaces({
         shown.push({
           label: say('admin.rename-2'),
           name: say('admin.rename', { name: space.name }),
-          icon: say('admin.rename-2'),
+          icon: 'Rename',
           slot: 'change',
           onSelect: rename,
         });
@@ -105,7 +109,7 @@ export function Spaces({
           </button>
         )}
       </div>
-      <Shown read={read} failed="The spaces could not be loaded.">
+      <Shown read={read} failed={say('admin.the-spaces-could-not-be-loaded')}>
         {(rows) => {
           const shown = shownOf(rows);
           return (
@@ -127,12 +131,12 @@ export function Spaces({
                       aria-pressed={show === each}
                       onClick={() => setShow(each)}
                     >
-                      {each}
+                      {showName(each)}
                     </button>
                   ))}
                 </div>
                 <p className={styles['counted']}>
-                  {`${shown.length} ${say('admin.spaces-2', { count: shown.length })}`}
+                  {say('admin.spaces-2', { count: shown.length })}
                 </p>
               </div>
               <div className={access === null ? undefined : styles['withPanel']}>
@@ -160,7 +164,9 @@ export function Spaces({
                         data-current={access?.id === space.id ? 'true' : undefined}
                         data-archived={space.archived ? 'true' : undefined}
                       >
-                        <td className={styles['strong']}>{space.name}</td>
+                        <td className={styles['strong']} data-content>
+                          {space.name}
+                        </td>
                         <td>
                           {space.archived ? (
                             <Chip>{say('admin.archived')}</Chip>
@@ -186,7 +192,7 @@ export function Spaces({
                   <SidePanel
                     key={access.id}
                     heading={say('admin.access-to', { name: access.name })}
-                    description="Space. Grants here add to the environment's."
+                    description={say('admin.space-grants-here-add')}
                     icon="Access"
                     onClose={() => setAccess(null)}
                   >

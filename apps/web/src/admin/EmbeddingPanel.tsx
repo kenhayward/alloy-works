@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -45,18 +45,21 @@ const lag = ({ versions, p95Seconds, maxSeconds }: Freshness) =>
   versions === 0 || p95Seconds === null || maxSeconds === null
     ? words('admin.how-long-new-versions-take')
     : words('admin.findable-by-meaning-within-s', {
-        value1: Math.ceil(p95Seconds),
-        value2: Math.ceil(maxSeconds),
+        p95: Math.ceil(p95Seconds),
+        max: Math.ceil(maxSeconds),
         versions,
-        value4: versions === 1 ? 'version' : 'versions',
       });
 
+/** Where a model is reached, as the values of a sentence that says so. */
 const where = (endpoint: Endpoint | null) =>
   endpoint === null
-    ? words('admin.an-endpoint-no-longer-there')
-    : `${endpoint.name}${endpoint.boundary === 'outside' ? words('admin.outside-your-data-boundary') : ''}${
-        endpoint.retired ? words('admin.retired') : ''
-      }`;
+    ? { known: 'no' }
+    : {
+        known: 'yes',
+        endpoint: endpoint.name,
+        outside: endpoint.boundary === 'outside' ? 'yes' : 'no',
+        retired: endpoint.retired ? 'yes' : 'no',
+      };
 
 /**
  * Models' **Searching by meaning** (generation.md, "Meaning"; the G7 plan, G7-J; GEN-044): the model
@@ -120,7 +123,7 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
         {read.serving
           ? words('admin.meaning-is-searched-by-on', {
               model: read.serving.model,
-              value2: where(read.serving.endpoint),
+              ...where(read.serving.endpoint),
             })
           : words('admin.nothing-is-searched-by-meaning')}
       </p>
@@ -130,21 +133,24 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
           <p>
             {words('admin.embedding-is-routed-to-on', {
               model: pending.model,
-              value2: where(pending.endpoint),
+              ...where(pending.endpoint),
               missing: pending.missing,
               texts: pending.texts,
-              value5: pending.estimate.tokens.toLocaleString('en-GB'),
+              tokens: pending.estimate.tokens,
+              costed: pending.estimate.cost === null ? 'no' : 'yes',
+              currency: pending.estimate.currency,
+              cost:
+                pending.estimate.cost === null
+                  ? ''
+                  : formats().number(Number(pending.estimate.cost), {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }),
+            })}{' '}
+            {words('admin.nothing-is-embedded-until-you', {
+              served: read.serving ? 'yes' : 'no',
+              serving: read.serving?.model ?? '',
             })}
-            {pending.estimate.cost === null
-              ? '.'
-              : words('admin.about-3', {
-                  currency: pending.estimate.currency,
-                  value2: Number(pending.estimate.cost).toFixed(2),
-                })}{' '}
-            {words('admin.nothing-is-embedded-until-you')}
-            {read.serving
-              ? words('admin.and-goes-on-serving-until', { model: read.serving.model })
-              : '.'}
           </p>
           <button
             type="button"
@@ -160,12 +166,12 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
         <p>
           {words('admin.is-embedding-the-parts-of', {
             model: pending.model,
-            value2: pending.texts - pending.missing,
+            done: pending.texts - pending.missing,
             texts: pending.texts,
           })}
-          {read.serving
-            ? words('admin.serves-until-it-is-done', { model: read.serving.model })
-            : ''}
+          {read.serving && (
+            <> {words('admin.serves-until-it-is-done', { model: read.serving.model })}</>
+          )}
         </p>
       )}
       <p role="status">{said}</p>

@@ -18,7 +18,7 @@ import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
 import { EraseDialog } from './Erase.js';
-import { NOT_YOURS, Shown, useListing } from './listing.js';
+import { notYours, Shown, useListing } from './listing.js';
 import { words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -347,7 +347,7 @@ function WhatTheyMayDo({
   if (answers === 'refused') {
     return (
       <Notice tone="refused">
-        <p>{NOT_YOURS}</p>
+        <p>{notYours()}</p>
       </Notice>
     );
   }
@@ -731,7 +731,7 @@ export function People({ client }: { client: Client }) {
           {people.rows === null && <Waiting>{say('admin.loading')}</Waiting>}
           {people.rows === 'refused' && (
             <Notice tone="refused">
-              <p>{NOT_YOURS}</p>
+              <p>{notYours()}</p>
             </Notice>
           )}
           {people.rows === 'failed' && (
@@ -814,7 +814,7 @@ export function People({ client }: { client: Client }) {
                                 {
                                   label: say('admin.api-tokens'),
                                   name: say('admin.api-tokens-of', { value1: nameOf(person) }),
-                                  icon: say('admin.api-tokens'),
+                                  icon: 'API tokens',
                                   onSelect: () => setOpen({ person, tab: 'tokens' }),
                                   ...(person.invited
                                     ? { unavailable: say('admin.not-signed-in-yet-so') }
@@ -974,7 +974,7 @@ export function People({ client }: { client: Client }) {
                                     name: say('admin.withdraw-the-invitation-to', {
                                       email: invitation.email,
                                     }),
-                                    icon: say('admin.withdraw'),
+                                    icon: 'Withdraw',
                                     onSelect: () => setWithdrawing(invitation),
                                   },
                                 ]}

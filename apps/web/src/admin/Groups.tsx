@@ -445,7 +445,7 @@ export function Groups({ client }: { client: Client }) {
                           {
                             label: words('admin.members-2'),
                             name: words('admin.members-of', { name: group.name }),
-                            icon: words('admin.members-2'),
+                            icon: 'Members',
                             onSelect: () => setFilling(group),
                             ...(group.source === 'tenant'
                               ? {}

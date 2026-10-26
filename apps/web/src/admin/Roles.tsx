@@ -6,7 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { Icon } from '../editor/Icon.js';
 import styles from './Administration.module.css';
 import { Shown, type Read } from './listing.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 export interface RoleRow {
   readonly id: string;
@@ -15,10 +15,8 @@ export interface RoleRow {
 }
 
 /** People from outside the organisation are refused these, whatever they are granted (IAM-049). */
-const OUTSIDE = `People from outside the organisation are refused ${externalCap
-  .map(permissionName)
-  .join(', ')
-  .replace(/, ([^,]+)$/, ' and $1')}, whatever their roles say.`;
+const outside = (): string =>
+  words('admin.outside-refused', { permissions: formats().list(externalCap.map(permissionName)) });
 
 /**
  * Administration's Roles (ADR-0049, decision 7; the AD plan, AD-B): the environment's own roles - a
@@ -33,7 +31,7 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
       <div className={styles['lead']}>
         <p>{words('admin.a-role-is-a-set')}</p>
       </div>
-      <Shown read={read} failed="The roles could not be loaded.">
+      <Shown read={read} failed={words('admin.the-roles-could-not-be-loaded')}>
         {(rows) => {
           const shown = rows.filter((role) =>
             role.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
@@ -55,9 +53,8 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                   </span>{' '}
                   {words('admin.holds-the-permission')}{' '}
                   {words('admin.permissions', {
-                    length: rows.length,
-                    value2: rows.length === 1 ? 'role' : 'roles',
-                    length3: permissions.length,
+                    roles: rows.length,
+                    permissions: permissions.length,
                   })}
                 </p>
               </div>
@@ -88,7 +85,7 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                     {shown.map((role) => (
                       <tr key={role.id}>
                         <th scope="row">
-                          {role.name}
+                          <span data-content>{role.name}</span>
                           {!allowable(role.permissions as Permission[]) && (
                             <>
                               {' '}
@@ -111,7 +108,7 @@ export function Roles({ read }: { read: Read<RoleRow> }) {
                   </tbody>
                 </table>
               </div>
-              <p className={styles['muted']}>{OUTSIDE}</p>
+              <p className={styles['muted']}>{outside()}</p>
             </>
           );
         }}
