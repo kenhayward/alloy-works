@@ -11,6 +11,7 @@ import { moduleOf } from './shell/moduleOf.js';
 import { Rail } from './shell/Rail.js';
 import { RegionKeys } from './shell/regions.js';
 import { StatusProvider } from './shell/Status.js';
+import { localeDataVersion } from './words/locale-data.js';
 import { useWords } from './words/words.js';
 
 interface AppProps {
@@ -67,6 +68,7 @@ export function App({
                 ? words('app.delivery.checking')
                 : words('app.delivery', { delivery: platform.delivery, runtime: platform.runtime })}
             </p>
+            <p>{words('app.localeData', { version: localeDataVersion() })}</p>
           </div>
         }
       >

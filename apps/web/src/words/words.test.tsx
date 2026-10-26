@@ -2,9 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from '@formatjs/icu-messageformat-parser';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import enGB from './en-GB.json';
+import { loadLocaleData } from './polyfills.js';
 import { WordsProvider, makeWords, useWords } from './words.js';
 
 const SOURCE = join(process.cwd(), 'src');
@@ -24,6 +25,10 @@ function Greeting() {
 }
 
 describe('the interface’s words (the UI plan, UI-C)', () => {
+  beforeAll(async () => {
+    await loadLocaleData('ar');
+  });
+
   it('LOC-005 reads each word in the person’s language, English with no provider', () => {
     render(<Greeting />);
     expect(screen.getByText('Interface language')).toBeInTheDocument();
@@ -35,7 +40,7 @@ describe('the interface’s words (the UI plan, UI-C)', () => {
     expect(screen.getByText(/^\[Îñţéŕƒåçé ļåñĝûåĝé/)).toBeInTheDocument();
   });
 
-  it('LOC-038 formats a date, a number and a list from the bundled locale data, in the person’s language', () => {
+  it('formats a date, a number and a list from the bundled locale data, in the person’s language', () => {
     const english = makeWords('en-GB');
     const day = new Date(Date.UTC(2026, 9, 26, 12));
     expect(
@@ -47,7 +52,7 @@ describe('the interface’s words (the UI plan, UI-C)', () => {
     expect(makeWords('ar-XB').list(['Ada', 'Grace'])).toContain('و');
   });
 
-  it('LOC-003 compares text as the person’s language orders it, not by its bytes', () => {
+  it('compares text as the person’s language orders it, not by its bytes', () => {
     const { compare } = makeWords('en-GB');
     expect(['zebra', 'Écrit', 'apple'].sort(compare)).toEqual(['apple', 'Écrit', 'zebra']);
   });

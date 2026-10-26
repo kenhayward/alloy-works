@@ -66,7 +66,15 @@ export async function withPage<T>(
   if (signedInAs !== undefined) {
     const [name, ...value] = signedInAs.split('=');
     await context.addCookies([
-      { name: name!, value: value.join('='), url: SERVICE, secure: true, sameSite: 'Lax' },
+      {
+        name: name!,
+        value: value.join('='),
+        domain: new URL(SERVICE).hostname,
+        path: '/',
+        secure: true,
+        httpOnly: true,
+        sameSite: 'Lax',
+      },
     ]);
   }
   const noise: string[] = [];

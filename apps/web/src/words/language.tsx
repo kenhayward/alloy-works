@@ -2,6 +2,7 @@ import { createApiClient } from '@alloy-works/api-client';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { chosenLanguage, localeOf } from './locales.js';
+import { loadLocaleData } from './polyfills.js';
 import { WordsProvider } from './words.js';
 
 /** A person's own choice of interface language, and how to change it (the UI plan, UI-E). */
@@ -56,7 +57,18 @@ export function InterfaceLanguage({
     };
   }, [client]);
 
-  const language = chosenLanguage(chosen, browser);
+  const wanted = chosenLanguage(chosen, browser);
+  // The language shown once its locale data is loaded: English, bundled, is always ready.
+  const [language, setLanguage] = useState('en-GB');
+  useEffect(() => {
+    let current = true;
+    void loadLocaleData(localeOf(wanted).formats).then(() => {
+      if (current) setLanguage(wanted);
+    });
+    return () => {
+      current = false;
+    };
+  }, [wanted]);
   useEffect(() => {
     const root = document.documentElement;
     root.lang = language;

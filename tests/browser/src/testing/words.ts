@@ -28,8 +28,8 @@ export interface Unlocalised {
   readonly missed: readonly string[];
   /** Interface words cut short where they stand. */
   readonly clipped: readonly string[];
-  /** Whether the page is wider than the window, so it scrolls sideways. */
-  readonly spills: boolean;
+  /** What stands past the window's edge, so the page scrolls sideways: each element and its words. */
+  readonly spills: readonly string[];
 }
 
 /**
@@ -64,7 +64,25 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
     return {
       missed,
       clipped,
-      spills: document.documentElement.scrollWidth > window.innerWidth + 1,
+      spills:
+        document.documentElement.scrollWidth > window.innerWidth + 1
+          ? [...document.querySelectorAll('body *')]
+              .filter((each) => {
+                const box = each.getBoundingClientRect();
+                return box.width > 0 && (box.right > window.innerWidth + 1 || box.left < -1);
+              })
+              .filter(
+                (each) =>
+                  ![...each.children].some((child) => {
+                    const box = child.getBoundingClientRect();
+                    return box.right > window.innerWidth + 1 || box.left < -1;
+                  }),
+              )
+              .map(
+                (each) =>
+                  `${each.tagName.toLowerCase()}.${each.className}: ${(each.textContent ?? '').trim().slice(0, 60)}`,
+              )
+          : [],
     };
   }, regions);
 }

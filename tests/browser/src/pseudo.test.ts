@@ -37,7 +37,7 @@ async function walk(language: 'en-XA' | 'ar-XB') {
           const found = await unlocalised(page, surface.regions);
           expect(found.missed, `${surface.name}: words left in English`).toEqual([]);
           expect(found.clipped, `${surface.name}: words cut short`).toEqual([]);
-          expect(found.spills, `${surface.name}: wider than the window`).toBe(false);
+          expect(found.spills, `${surface.name}: wider than the window`).toEqual([]);
         }
       },
       { signedInAs: cookie },
@@ -48,11 +48,11 @@ async function walk(language: 'en-XA' | 'ar-XB') {
 }
 
 describe('the interface in pseudo-locales (the UI plan, UI-J)', () => {
-  it('LOC-042 LOC-029 shows every moved surface expanded and accented, each word made over and none cut short', async () => {
+  it('shows every moved surface expanded and accented, each word made over and none cut short', async () => {
     await walk('en-XA');
   });
 
-  it('LOC-042 LOC-004 shows every moved surface right to left, each word made over and none cut short', async () => {
+  it('shows every moved surface right to left, each word made over and none cut short', async () => {
     await walk('ar-XB');
   });
 });

@@ -84,5 +84,6 @@
   "home.untitled.document": "A document",
   "home.untitled.component": "A component",
   "home.untitled.connection": "A connection",
-  "shell.product": "Alloy Works"
+  "shell.product": "Alloy Works",
+  "app.localeData": "Locale data: {version}"
 }

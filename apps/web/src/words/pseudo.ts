@@ -98,6 +98,10 @@ export function pseudolocalise(message: string, locale: 'en-XA' | 'ar-XB'): stri
   // Padded to half again as long, or twice under twenty characters (LOC-029).
   const target = Math.ceil(message.length * (message.length < 20 ? 2 : 1.5));
   const room = target - (printed.length + PSEUDO_OPEN.length + PSEUDO_CLOSE.length + 1);
-  const padded = `${PSEUDO_OPEN}${printed} ${'~'.repeat(Math.max(0, room))}${PSEUDO_CLOSE}`;
+  // Padding in words of four, so it breaks across lines as a longer language does.
+  const padding = Array.from({ length: Math.max(0, room) }, (_, at) =>
+    at % 5 === 4 ? ' ' : '~',
+  ).join('');
+  const padded = `${PSEUDO_OPEN}${printed} ${padding}${PSEUDO_CLOSE}`;
   return locale === 'ar-XB' ? `${RTL_OVERRIDE}${padded}${POP}` : padded;
 }

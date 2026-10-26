@@ -4,7 +4,7 @@ import { INTERFACE_LOCALES, chosenLanguage, localeOf } from './locales.js';
 import { pseudolocalise } from './pseudo.js';
 
 describe('the interface languages (the UI plan, UI-B, UI-D)', () => {
-  it('LOC-038 declares its languages, each its direction and the locale its formats use', () => {
+  it('declares its languages, each its direction and the locale its formats use', () => {
     expect(
       INTERFACE_LOCALES.map((each) => [each.tag, each.direction, each.formats, each.pseudo]),
     ).toEqual([
@@ -23,7 +23,7 @@ describe('the interface languages (the UI plan, UI-B, UI-D)', () => {
     expect(chosenLanguage('xx-YY', [])).toBe('en-GB');
   });
 
-  it('LOC-042 LOC-029 accents and brackets every word, half again longer, twice under twenty characters, its placeholders and plurals untouched', () => {
+  it('accents and brackets every word, half again longer, twice under twenty characters, its placeholders and plurals untouched', () => {
     const short = pseudolocalise('Save', 'en-XA');
     expect(short.startsWith('[')).toBe(true);
     expect(short.endsWith(']')).toBe(true);
@@ -38,7 +38,7 @@ describe('the interface languages (the UI plan, UI-B, UI-D)', () => {
     expect(pseudo).not.toContain('{ñåɱé}');
   });
 
-  it('LOC-004 marks the right-to-left pseudo-locale’s words, reversed in direction, so a left-to-right string shows', () => {
+  it('marks the right-to-left pseudo-locale’s words, reversed in direction, so a left-to-right string shows', () => {
     const rtl = pseudolocalise('Save {name}', 'ar-XB');
     expect(rtl.startsWith('‮')).toBe(true);
     expect(rtl).toContain('{name}');
