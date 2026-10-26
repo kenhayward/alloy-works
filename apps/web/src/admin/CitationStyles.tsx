@@ -90,7 +90,7 @@ function Sample({ sample }: { sample: NonNullable<Preview['sample']> }) {
   return (
     <section aria-label={words('admin.preview')} className={styles['notes']}>
       <h2>{words('admin.in-the-text')}</h2>
-      <ul>
+      <ul data-content>
         {sample.citations.map((runs, at) => (
           <li key={at}>
             <Runs runs={runs} />
@@ -98,7 +98,7 @@ function Sample({ sample }: { sample: NonNullable<Preview['sample']> }) {
         ))}
       </ul>
       <h2>{words('admin.bibliography')}</h2>
-      <ul>
+      <ul data-content>
         {sample.bibliography.map((each) => (
           <li key={each.entry}>
             {each.label && (
@@ -243,7 +243,7 @@ export function CitationStyles({ client }: { client: Client }) {
         </ul>
       )}
       {shown?.sample && <Sample sample={shown.sample} />}
-      <Shown read={read} failed="The citation styles could not be loaded.">
+      <Shown read={read} failed={words('admin.the-citation-styles-could-not-be')}>
         {(rows) => (
           <table aria-label={words('admin.citation-styles')} className={styles['table']}>
             <thead>
@@ -259,7 +259,9 @@ export function CitationStyles({ client }: { client: Client }) {
             <tbody>
               {rows.map((style) => (
                 <tr key={style.id}>
-                  <td className={styles['strong']}>{style.name}</td>
+                  <td className={styles['strong']} data-content>
+                    {style.name}
+                  </td>
                   <td>{style.version.number}</td>
                   <td>{style.seeded ? words('admin.yes') : words('admin.no')}</td>
                   <td>

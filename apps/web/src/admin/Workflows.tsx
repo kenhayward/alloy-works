@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -54,44 +54,6 @@ type Condition =
   | 'trial'
   | 'noRetracted';
 
-/** Each condition, as a transition's row offers it: "Submit requires no open threads". */
-const CONDITIONS: Readonly<Record<Condition, string>> = {
-  get suggestions() {
-    return words('admin.no-unresolved-suggestions');
-  },
-  get threads() {
-    return words('admin.no-open-threads');
-  },
-  get bindings() {
-    return words('admin.every-binding-resolved');
-  },
-  get sections() {
-    return words('admin.no-required-section-missing');
-  },
-  get revisions() {
-    return words('admin.no-value-revised-by-hand');
-  },
-  get components() {
-    return words('admin.every-component-approved');
-  },
-  // LIF-065 (the R11 plan, R11-G): every axis what the document keeps depends on, set.
-  get profile() {
-    return words('admin.every-condition-set-in-the');
-  },
-  // GEN-025 (the G3 plan, G3-B): a part of "no unresolved suggestions", the generated ones alone.
-  get generated() {
-    return words('admin.no-generated-content-waiting-to');
-  },
-  // GEN-045 (the G4 plan, G4-E): a prompt's approval attests a trial of it.
-  get trial() {
-    return words('admin.a-finished-trial-run-of');
-  },
-  // LIB-036 (the XR plan, XR-H): a source its source says is retracted, cited by what is placed.
-  get noRetracted() {
-    return words('admin.no-retracted-sources-cited');
-  },
-};
-
 /** What each kind's transitions may require: a query definition has nothing to (WF3-A). */
 const CONDITIONS_OF: Readonly<Record<Kind, readonly Condition[]>> = {
   component: ['suggestions', 'threads', 'generated'],
@@ -140,46 +102,21 @@ interface Listed {
 /** A row being edited, with the name it is labelled by: what it was read or added as. */
 type Edited<T> = T & { readonly label: string };
 
-const KINDS: Readonly<Record<Kind, { heading: string; one: string }>> = {
-  component: {
-    get heading() {
-      return words('admin.components');
-    },
-    get one() {
-      return words('admin.component');
-    },
+const KINDS: Readonly<Record<Kind, string>> = {
+  get component() {
+    return words('admin.components');
   },
-  document: {
-    get heading() {
-      return words('admin.documents');
-    },
-    get one() {
-      return words('admin.document');
-    },
+  get document() {
+    return words('admin.documents');
   },
-  queryDefinition: {
-    get heading() {
-      return words('admin.query-definitions');
-    },
-    get one() {
-      return words('admin.query-definition');
-    },
+  get queryDefinition() {
+    return words('admin.query-definitions');
   },
-  prompt: {
-    get heading() {
-      return words('admin.prompts');
-    },
-    get one() {
-      return words('admin.prompt');
-    },
+  get prompt() {
+    return words('admin.prompts');
   },
-  term: {
-    get heading() {
-      return words('admin.terms');
-    },
-    get one() {
-      return words('admin.term');
-    },
+  get term() {
+    return words('admin.terms');
   },
 };
 
@@ -192,7 +129,8 @@ const PERMISSIONS: Readonly<Record<Permission, string>> = {
   },
 };
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = (at: string) =>
+  formats().date(new Date(at), { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** A stable key from a name: lower snake, starting with a letter, unique among `taken`. */
 export function keyOf(name: string, taken: readonly string[]): string {
@@ -228,7 +166,7 @@ export function Workflows({ client }: { client: Client }) {
       <div className={styles['lead']}>
         <p>{words('admin.every-component-and-document-is')}</p>
       </div>
-      <Shown read={read} failed="The workflows could not be loaded.">
+      <Shown read={read} failed={words('admin.the-workflows-could-not-be-loaded')}>
         {(rows) =>
           rows.map((listed) => (
             <KindWorkflow
@@ -254,7 +192,7 @@ function KindWorkflow({
   onSaved: () => void;
 }) {
   const { kind, version, body, by, at } = listed.definition;
-  const { heading, one } = KINDS[kind];
+  const heading = KINDS[kind];
   const headingId = useId();
   const [states, setStates] = useState(() => labelled(body.states));
   const [transitions, setTransitions] = useState(() => labelled(body.transitions));
@@ -349,7 +287,7 @@ function KindWorkflow({
   };
 
   const stateOptions = states.map((each) => (
-    <option key={each.key} value={each.key}>
+    <option key={each.key} value={each.key} data-content>
       {each.name}
     </option>
   ));
@@ -362,11 +300,12 @@ function KindWorkflow({
           ? words('admin.version-as-seeded', { version })
           : words('admin.version-saved-by-on', {
               version,
-              value2: by.name ?? 'somebody',
-              value3: when.format(new Date(at)),
+              named: by.name === null ? 'no' : 'yes',
+              name: by.name ?? '',
+              day: when(at),
             })}
       </p>
-      <table aria-label={words('admin.states', { one })} className={styles['table']}>
+      <table aria-label={words('admin.states', { kind })} className={styles['table']}>
         <thead>
           <tr>
             <th scope="col">{words('admin.state')}</th>
@@ -409,7 +348,7 @@ function KindWorkflow({
                   onChange={(change) => changeState(state.key, { approved: change.target.checked })}
                 />
               </td>
-              <td>{listed.counts[state.key] ?? 0}</td>
+              <td>{formats().number(listed.counts[state.key] ?? 0)}</td>
               <td>
                 <button
                   type="button"
@@ -439,7 +378,7 @@ function KindWorkflow({
           {words('admin.add-state')}
         </button>
       </div>
-      <table aria-label={words('admin.transitions', { one })} className={styles['table']}>
+      <table aria-label={words('admin.transitions', { kind })} className={styles['table']}>
         <thead>
           <tr>
             <th scope="col">{words('admin.transition')}</th>
@@ -533,7 +472,7 @@ function KindWorkflow({
                           type="checkbox"
                           aria-label={words('admin.requires-2', {
                             label: transition.label,
-                            value2: CONDITIONS[condition],
+                            condition,
                           })}
                           checked={transition.requires?.includes(condition) ?? false}
                           onChange={(change) => {
@@ -546,7 +485,7 @@ function KindWorkflow({
                             });
                           }}
                         />
-                        {`${CONDITIONS[condition][0]!.toUpperCase()}${CONDITIONS[condition].slice(1)}`}
+                        {words('admin.condition', { condition })}
                       </label>
                     ))}
                   </div>
@@ -580,7 +519,7 @@ function KindWorkflow({
       </div>
       {kind !== 'queryDefinition' && kind !== 'prompt' && kind !== 'term' && (
         <ReviewPolicy
-          one={one}
+          kind={kind}
           review={review ?? NO_REVIEW}
           states={states}
           people={people}
@@ -596,7 +535,7 @@ function KindWorkflow({
       )}
       <div className={styles['toolbar']}>
         <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
-          {words('admin.save-as-version', { value1: version + 1 })}
+          {words('admin.save-as-version', { version: version + 1 })}
         </button>
       </div>
       <p role="status">{said}</p>
@@ -667,7 +606,7 @@ function GateCell({
             >
               {Array.from({ length: 10 }, (_, index) => index + 1).map((count) => (
                 <option key={count} value={count}>
-                  {count}
+                  {formats().number(count)}
                 </option>
               ))}
             </select>
@@ -750,14 +689,14 @@ function GateCell({
  * or an escalation to a person.
  */
 function ReviewPolicy({
-  one,
+  kind,
   review,
   states,
   people,
   onPeople,
   onChange,
 }: {
-  one: string;
+  kind: Kind;
   review: Review;
   states: readonly State[];
   people: readonly { id: string; name: string }[];
@@ -770,7 +709,7 @@ function ReviewPolicy({
   }, [lapse.kind, onPeople]);
   return (
     <fieldset className={styles['gate']}>
-      <legend>{words('admin.reviews', { one })}</legend>
+      <legend>{words('admin.reviews', { kind })}</legend>
       <label>
         {words('admin.days-before-a-review-its')}
         <input
@@ -817,7 +756,7 @@ function ReviewPolicy({
           }
         >
           {states.map((each) => (
-            <option key={each.key} value={each.key}>
+            <option key={each.key} value={each.key} data-content>
               {each.name}
             </option>
           ))}
@@ -832,7 +771,7 @@ function ReviewPolicy({
           }
         >
           {people.map((each) => (
-            <option key={each.id} value={each.id}>
+            <option key={each.id} value={each.id} data-content>
               {each.name}
             </option>
           ))}

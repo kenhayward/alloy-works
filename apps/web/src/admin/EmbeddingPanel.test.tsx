@@ -49,13 +49,13 @@ describe("Models' searching by meaning", () => {
     const panel = await screen.findByRole('region', { name: 'Searching by meaning' });
     expect(panel).toHaveTextContent('Meaning is searched by embed-small-768, on Our embedder.');
     expect(panel).toHaveTextContent(
-      'Embedding is routed to embed-large-1024, on Bigger embedder. Embedding the 12000 of 12000 texts it lacks would take about 3,400,000 tokens, about USD 0.44. Nothing is embedded until you confirm it, and embed-small-768 goes on serving until it is done.',
+      'Embedding is routed to embed-large-1024, on Bigger embedder. Embedding the 12,000 of 12,000 texts it lacks would take about 3,400,000 tokens, about USD 0.44. Nothing is embedded until you confirm it, and embed-small-768 goes on serving until it is done.',
     );
     await user.click(within(panel).getByRole('button', { name: 'Confirm and embed' }));
     expect(sent).toEqual([{ model: 'embed-large-1024' }]);
     expect(
       await within(panel).findByText(
-        'embed-large-1024 is embedding the parts: 1000 of 12000 texts done. embed-small-768 serves until it is done.',
+        'embed-large-1024 is embedding the parts: 1,000 of 12,000 texts done. embed-small-768 serves until it is done.',
       ),
     ).toBeInTheDocument();
   });

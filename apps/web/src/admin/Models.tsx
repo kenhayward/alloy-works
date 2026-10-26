@@ -211,22 +211,24 @@ export function Models({ client }: { client: Client }) {
       return;
     }
     if (data.outcome === 'failed') {
-      setSaid(`${endpoint.name} failed its test. ${data.failure?.message ?? ''}`.trim());
+      // The failure's own sentence is the service's, said after ours.
+      setSaid(
+        `${words('admin.failed-its-test', { name: endpoint.name })} ${data.failure?.message ?? ''}`.trim(),
+      );
       return;
     }
-    const tokens =
-      data.tokensIn === null
-        ? words('admin.no-tokens-reported')
-        : words('admin.tokens-in-out', { tokensIn: data.tokensIn, tokensOut: data.tokensOut });
-    const cost = data.cost === null ? '' : `, ${endpoint.currency} ${data.cost}`;
     setSaid(
       words('admin.answered-as-in-ms', {
         name: endpoint.name,
-        value2: data.reply ?? '',
-        value3: data.model ?? endpoint.model,
+        reply: data.reply ?? '',
+        model: data.model ?? endpoint.model,
         ms: data.ms,
-        tokens,
-        cost,
+        counted: data.tokensIn === null ? 'no' : 'yes',
+        tokensIn: data.tokensIn ?? 0,
+        tokensOut: data.tokensOut ?? 0,
+        costed: data.cost === null ? 'no' : 'yes',
+        currency: endpoint.currency,
+        cost: data.cost ?? '',
       }),
     );
   };
@@ -247,9 +249,7 @@ export function Models({ client }: { client: Client }) {
       body: { endpoint },
     });
     if (data) {
-      setSaid(
-        `${PURPOSES[purpose]} ${endpoint === null ? words('admin.is-off') : words('admin.route-saved')}.`,
-      );
+      setSaid(words('admin.route-said', { purpose, state: endpoint === null ? 'off' : 'on' }));
       again();
     } else setSaid(refusal(error, words('admin.the-route-could-not-be')));
   };
@@ -350,8 +350,7 @@ export function Models({ client }: { client: Client }) {
           noValidate
         >
           <label className={styles['filter']}>
-            {words('admin.key-for')}
-            {keying.name}
+            {words('admin.key-for', { name: keying.name })}
             <input
               type="password"
               autoComplete="off"
@@ -373,7 +372,7 @@ export function Models({ client }: { client: Client }) {
           </button>
         </form>
       )}
-      <Shown read={read} failed="The model endpoints could not be loaded.">
+      <Shown read={read} failed={words('admin.the-model-endpoints-could-not-be')}>
         {(rows) => (
           <>
             {rows.length === 0 ? (
@@ -398,11 +397,13 @@ export function Models({ client }: { client: Client }) {
                     return (
                       <tr key={endpoint.id} data-archived={retired ? 'true' : undefined}>
                         <td className={styles['strong']}>
-                          {endpoint.name}
-                          {retired && <span className={styles['muted']}> (retired)</span>}
+                          <span data-content>{endpoint.name}</span>
+                          {retired && (
+                            <span className={styles['muted']}> {words('admin.retired-mark')}</span>
+                          )}
                         </td>
                         <td>{PROTOCOLS[endpoint.protocol]}</td>
-                        <td>{endpoint.model}</td>
+                        <td data-content>{endpoint.model}</td>
                         <td>
                           {endpoint.boundary === 'outside' ? (
                             <Chip>{words('admin.outside-your-data-boundary-2')}</Chip>
@@ -473,7 +474,7 @@ export function Models({ client }: { client: Client }) {
                     <td className={styles['strong']}>{PURPOSES[each.purpose]}</td>
                     <td>
                       <select
-                        aria-label={words('admin.endpoint-for', { value1: PURPOSES[each.purpose] })}
+                        aria-label={words('admin.endpoint-for', { purpose: each.purpose })}
                         value={each.endpoint ?? ''}
                         onChange={(change) =>
                           void route(
@@ -487,10 +488,10 @@ export function Models({ client }: { client: Client }) {
                           .filter((endpoint) => usable(endpoint) || endpoint.id === each.endpoint)
                           .map((endpoint) => (
                             <option key={endpoint.id} value={endpoint.id}>
-                              {endpoint.name}
-                              {endpoint.boundary === 'outside'
-                                ? words('admin.outside-your-data-boundary')
-                                : ''}
+                              {words('admin.outside-your-data-boundary', {
+                                name: endpoint.name,
+                                boundary: endpoint.boundary,
+                              })}
                             </option>
                           ))}
                       </select>

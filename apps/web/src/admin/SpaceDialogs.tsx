@@ -73,7 +73,7 @@ function Naming({
         onDone(
           space === null
             ? words('admin.made-the-space', { name: data.name })
-            : words('admin.renamed-to', { name: space.name, name2: data.name }),
+            : words('admin.renamed-to', { from: space.name, to: data.name }),
         );
       } else setSaid(refusal(error, failed));
     } catch {
@@ -130,7 +130,7 @@ function Archiving({
   const [busy, setBusy] = useState(false);
   const failed = words('admin.could-not-be', {
     name: space.name,
-    value2: restore ? 'restored' : 'archived',
+    change: restore ? 'restore' : 'archive',
   });
 
   const change = async () => {
@@ -141,7 +141,12 @@ function Archiving({
         body: { archived: !restore },
       });
       if (data)
-        onDone(`${restore ? words('admin.restored') : words('admin.archived')} ${data.name}.`);
+        onDone(
+          words('admin.space-changed', {
+            change: restore ? 'restore' : 'archive',
+            name: data.name,
+          }),
+        );
       else onDone(refusal(error, failed));
     } catch {
       onDone(failed);
@@ -151,7 +156,12 @@ function Archiving({
   return (
     <Modal labelledBy="space-archive-heading" onClose={onClose}>
       <section aria-labelledby="space-archive-heading" className={styles['dialog']}>
-        <h2 id="space-archive-heading">{`${restore ? words('admin.restore') : words('admin.archive')} ${space.name}?`}</h2>
+        <h2 id="space-archive-heading">
+          {words('admin.space-change-question', {
+            change: restore ? 'restore' : 'archive',
+            name: space.name,
+          })}
+        </h2>
         {restore ? (
           <p>{words('admin.new-components-documents-and-the')}</p>
         ) : (

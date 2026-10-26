@@ -5,8 +5,8 @@ import { AccessPanel } from '../access/AccessPanel.js';
 import { everyPage } from '../paging.js';
 import { SidePanel } from '../parts/SidePanel.js';
 import styles from './Administration.module.css';
-import { NOT_YOURS } from './listing.js';
-import { words as say } from '../words/words.js';
+import { notYours } from './listing.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -28,11 +28,14 @@ interface Granted {
 
 /** Who a grant names, as a sentence would: a person by name, a group as the group. */
 const holderOf = (grant: Granted) => {
-  const who =
-    'group' in grant.subject
-      ? say('admin.the-group-2', { name: grant.subject.group.name })
-      : (grant.subject.principal.name ?? grant.subject.principal.email ?? say('admin.somebody'));
-  return grant.effect === 'deny' ? say('admin.denied-2', { who }) : who;
+  const { effect } = grant;
+  if ('group' in grant.subject) {
+    return say('admin.the-group-2', { effect, name: grant.subject.group.name });
+  }
+  const name = grant.subject.principal.name ?? grant.subject.principal.email;
+  return name === null
+    ? say('admin.somebody-holds', { effect })
+    : say('admin.denied-2', { effect, name });
 };
 
 /** Reads one fact, keeping the others, and nothing where it cannot be read. */
@@ -207,13 +210,15 @@ export function Overview({
             <h2 id="this-environment">{say('admin.this-environment')}</h2>
             <dl>
               <dt>{say('admin.name')}</dt>
-              <dd>{environment ?? ''}</dd>
+              <dd data-content>{environment ?? ''}</dd>
               <dt>{say('admin.address')}</dt>
               <dd>
                 <code>{window.location.host}</code>
               </dd>
               <dt>{say('admin.spaces')}</dt>
-              <dd>{facts.spaces?.names.join(', ') ?? ''}</dd>
+              <dd data-content>
+                {facts.spaces ? formats().list(facts.spaces.names, { type: 'unit' }) : ''}
+              </dd>
             </dl>
           </section>
           <section aria-labelledby="environment-access" className={styles['card']}>
@@ -229,7 +234,7 @@ export function Overview({
                 </button>
               )}
             </div>
-            {grants === 'refused' && <p className={styles['muted']}>{NOT_YOURS}</p>}
+            {grants === 'refused' && <p className={styles['muted']}>{notYours()}</p>}
             {grants === 'failed' && (
               <p className={styles['muted']}>{say('admin.what-is-granted-here-could')}</p>
             )}
@@ -241,8 +246,10 @@ export function Overview({
                   <tbody>
                     {[...byRole].map(([role, holders]) => (
                       <tr key={role}>
-                        <th scope="row">{role}</th>
-                        <td>{holders.join(', ')}</td>
+                        <th scope="row" data-content>
+                          {role}
+                        </th>
+                        <td>{formats().list(holders, { type: 'unit' })}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -262,8 +269,8 @@ export function Overview({
         </div>
         {managing && (
           <SidePanel
-            heading="Access to the whole environment"
-            description="The environment. Grants here reach every space."
+            heading={say('admin.access-to-the-whole-environment')}
+            description={say('admin.the-environment-grants-here-reach')}
             icon="Access"
             onClose={() => setManaging(false)}
           >

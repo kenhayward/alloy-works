@@ -9,7 +9,7 @@ import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import styles from './Administration.module.css';
 import { Shown, useListing, type Read } from './listing.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -63,7 +63,7 @@ const STATES: Readonly<Record<Delivery['state'], string>> = {
 };
 
 const moment = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', {
+  formats().date(new Date(iso), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -130,7 +130,7 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
       setOpen({ id: delivery.id, tried: data.tried, sent: JSON.stringify(data.payload, null, 2) });
   };
   return (
-    <Shown read={read} failed="The deliveries could not be loaded.">
+    <Shown read={read} failed={words('admin.the-deliveries-could-not-be-loaded')}>
       {(rows) =>
         rows.length === 0 ? (
           <p className={styles['muted']}>{words('admin.nothing-has-been-delivered-to')}</p>
@@ -154,16 +154,18 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
               <tbody>
                 {rows.map((delivery) => (
                   <tr key={delivery.id}>
-                    <td className={styles['code']}>{delivery.type}</td>
+                    <td className={styles['code']} data-content>
+                      {delivery.type}
+                    </td>
                     <td>{STATES[delivery.state]}</td>
-                    <td>{delivery.attempts}</td>
+                    <td>{formats().number(delivery.attempts)}</td>
                     <td>{moment(delivery.createdAt)}</td>
                     <td>
                       <button
                         type="button"
                         aria-label={words('admin.what-was-sent-for-at', {
                           type: delivery.type,
-                          value2: moment(delivery.createdAt),
+                          at: moment(delivery.createdAt),
                         })}
                         onClick={() => void show(delivery)}
                       >
@@ -176,20 +178,27 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
             </table>
             {open !== null && (
               <section aria-label={words('admin.what-was-sent-and-what')}>
-                <pre className={styles['code']}>{open.sent}</pre>
+                <pre className={styles['code']} data-content>
+                  {open.sent}
+                </pre>
                 {open.tried.length === 0 ? (
                   <p className={styles['muted']}>{words('admin.not-tried-yet')}</p>
                 ) : (
                   <ol aria-label={words('admin.attempts')}>
                     {open.tried.map((attempt) => (
                       <li key={attempt.at}>
-                        {moment(attempt.at)}:{' '}
-                        {attempt.status === null
-                          ? words('admin.no-answer', { value1: attempt.failure ?? 'unknown' })
-                          : words('admin.answered', { status: attempt.status })}
-                        , {attempt.latencyMs} ms
+                        {words('admin.attempt-said', {
+                          at: moment(attempt.at),
+                          answered: attempt.status === null ? 'no' : 'yes',
+                          status: attempt.status ?? '',
+                          known: attempt.failure === null ? 'no' : 'yes',
+                          failure: attempt.failure ?? '',
+                          ms: attempt.latencyMs,
+                        })}
                         {attempt.reply ? (
-                          <pre className={styles['code']}>{attempt.reply}</pre>
+                          <pre className={styles['code']} data-content>
+                            {attempt.reply}
+                          </pre>
                         ) : null}
                       </li>
                     ))}
@@ -310,7 +319,7 @@ export function Webhooks({ client }: { client: Client }) {
           <select value={identity} onChange={(change) => setIdentity(change.target.value)}>
             <option value="">{words('admin.choose-one')}</option>
             {active.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
@@ -338,7 +347,9 @@ export function Webhooks({ client }: { client: Client }) {
                   setTypes(next);
                 }}
               />
-              <span className={styles['code']}>{type}</span>
+              <span className={styles['code']} data-content>
+                {type}
+              </span>
             </label>
           ))}
         </fieldset>
@@ -351,7 +362,7 @@ export function Webhooks({ client }: { client: Client }) {
         </button>
       </form>
       <p role="status">{said}</p>
-      <Shown read={read} failed="The webhooks could not be loaded.">
+      <Shown read={read} failed={words('admin.the-webhooks-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{words('admin.no-webhook-is-made')}</p>
@@ -359,7 +370,7 @@ export function Webhooks({ client }: { client: Client }) {
             <table aria-label={words('admin.webhooks')} className={styles['table']}>
               <thead>
                 <tr>
-                  <th scope="col">URL</th>
+                  <th scope="col">{words('admin.url')}</th>
                   <th scope="col">{words('admin.service-identity')}</th>
                   <th scope="col">{words('admin.events-2')}</th>
                   <th scope="col">{words('admin.status')}</th>
@@ -371,9 +382,11 @@ export function Webhooks({ client }: { client: Client }) {
               <tbody>
                 {rows.map((hook) => (
                   <tr key={hook.id}>
-                    <td className={styles['strong']}>{hook.url}</td>
+                    <td className={styles['strong']} data-content>
+                      {hook.url}
+                    </td>
                     <td>{nameOf(hook.serviceIdentity)}</td>
-                    <td>{hook.eventTypes.length}</td>
+                    <td>{formats().number(hook.eventTypes.length)}</td>
                     <td>
                       {hook.disabledAt === null ? (
                         <Chip tone="ok">{words('admin.active')}</Chip>
@@ -460,10 +473,7 @@ function OpenedDeliveries({ client, read, id }: { client: Client; read: Read<Hoo
   if (!hook) return null;
   return (
     <section aria-label={words('admin.deliveries-of', { url: hook.url })}>
-      <h3>
-        {words('admin.deliveries-to-2')}
-        {hook.url}
-      </h3>
+      <h3>{words('admin.deliveries-to', { url: hook.url })}</h3>
       <Deliveries key={hook.id} client={client} hook={hook} />
     </section>
   );

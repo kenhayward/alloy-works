@@ -47,7 +47,7 @@ export function ReferenceSources({ client, mayChange }: { client: Client; mayCha
         setRead((was) =>
           Array.isArray(was) ? was.map((each) => (each.id === data.id ? data : each)) : was,
         );
-        setSaid(words('admin.is', { name: data.name, value2: data.enabled ? 'on' : 'off' }));
+        setSaid(words('admin.is', { name: data.name, state: data.enabled ? 'on' : 'off' }));
       } else setSaid(refusal(error, words('admin.the-source-could-not-be')));
     } catch {
       setSaid(words('admin.the-source-could-not-be'));
@@ -76,11 +76,12 @@ export function ReferenceSources({ client, mayChange }: { client: Client; mayCha
               disabled={!mayChange || busy}
               onChange={(event) => void change(source, event.target.checked)}
             />{' '}
-            <span className={styles['strong']}>{source.name}</span>
+            <span className={styles['strong']} data-content>
+              {source.name}
+            </span>
           </span>
           <span className={styles['muted']}>
-            {words('admin.reached-at')}
-            {source.host}
+            {words('admin.reached-at', { host: source.host })}
           </span>
         </label>
       ))}

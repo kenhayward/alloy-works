@@ -5,7 +5,7 @@ import { refusal } from '../account/TokenTable.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
-import { words as say } from '../words/words.js';
+import { formats, words as say } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -31,16 +31,18 @@ const KINDS: Readonly<Record<Kind, string>> = {
 const BOTH = (): string => say('admin.components-and-documents');
 const MAX_DAYS = 36_500;
 
-const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = (at: string) =>
+  formats().date(new Date(at), { day: 'numeric', month: 'short', year: 'numeric' });
 
-/** What a keep keeps, in words: "components in Clinical", "documents in every space". */
-const keptWords = (kind: Kind | null, space: string | null) =>
-  say('admin.in-2', {
-    value1: (kind === null ? BOTH : KINDS[kind]).toLowerCase(),
-    value2: space ?? 'every space',
-  });
-
-const sentence = (words: string) => `${words.charAt(0).toUpperCase()}${words.slice(1)}`;
+/**
+ * What a keep keeps, as the values of a sentence saying so: "components in Clinical", "documents in
+ * every space".
+ */
+const kept = (kind: Kind | null, space: string | null) => ({
+  kind: kind ?? 'both',
+  everywhere: space === null ? 'yes' : 'no',
+  space: space ?? '',
+});
 
 /**
  * Administration's Retention (the DL plan, DL-G): the keeps in force, each the least time content is
@@ -81,15 +83,17 @@ export function Retention({ client }: { client: Client }) {
     setBusy(true);
     try {
       const { data, error } = await client.PUT('/v1/retention', { body });
-      const words = keptWords(
+      const keeps = kept(
         body.kind,
-        spaces.find((each) => each.id === body.space)?.name ?? null,
+        body.space === null
+          ? null
+          : (spaces.find((each) => each.id === body.space)?.name ?? body.space),
       );
       if (data) {
         setSaid(
           body.days === null
-            ? say('admin.cleared-the-keep-on', { words })
-            : say('admin.are-kept-for-at-least', { value1: sentence(words), days: body.days }),
+            ? say('admin.cleared-the-keep-on', keeps)
+            : say('admin.are-kept-for-at-least', { ...keeps, days: body.days }),
         );
         setGeneration((count) => count + 1);
       } else setSaid(refusal(error, say('admin.the-keep-could-not-be')));
@@ -108,7 +112,7 @@ export function Retention({ client }: { client: Client }) {
     }
     const count = Number(days);
     if (!/^\d+$/.test(days.trim()) || count < 1 || count > MAX_DAYS) {
-      setSaid(say('admin.give-whole-days-from-1', { MAX_DAYS }));
+      setSaid(say('admin.give-whole-days-from-1', { most: MAX_DAYS }));
       return;
     }
     void put({ kind: kind === '' ? null : kind, space: space === '' ? null : space, days: count });
@@ -138,7 +142,7 @@ export function Retention({ client }: { client: Client }) {
           <select value={space} onChange={(change) => setSpace(change.target.value)}>
             <option value="">{say('admin.every-space')}</option>
             {spaces.map((each) => (
-              <option key={each.id} value={each.id}>
+              <option key={each.id} value={each.id} data-content>
                 {each.name}
               </option>
             ))}
@@ -160,7 +164,7 @@ export function Retention({ client }: { client: Client }) {
         </button>
       </form>
       <p role="status">{said}</p>
-      <Shown read={read} failed="The keeps could not be loaded.">
+      <Shown read={read} failed={say('admin.the-keeps-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{say('admin.no-keep-is-set-anything')}</p>
@@ -183,20 +187,25 @@ export function Retention({ client }: { client: Client }) {
                     <td className={styles['strong']}>
                       {keep.kind === null ? BOTH() : KINDS[keep.kind]}
                     </td>
-                    <td>{keep.space?.name ?? say('admin.every-space')}</td>
-                    <td>{`${keep.days} ${say('admin.days-2', { count: keep.days })}`}</td>
+                    <td {...(keep.space === null ? {} : { 'data-content': '' })}>
+                      {keep.space?.name ?? say('admin.every-space')}
+                    </td>
+                    <td>{say('admin.days-2', { count: keep.days })}</td>
                     <td>
-                      {keep.by.name ?? say('admin.somebody')}
+                      <span {...(keep.by.name === null ? {} : { 'data-content': '' })}>
+                        {keep.by.name ?? say('admin.somebody')}
+                      </span>
                       <br />
-                      <span className={styles['muted']}>{when.format(new Date(keep.at))}</span>
+                      <span className={styles['muted']}>{when(keep.at)}</span>
                     </td>
                     <td>
                       <button
                         type="button"
                         disabled={busy}
-                        aria-label={say('admin.clear-the-keep-on', {
-                          value1: keptWords(keep.kind, keep.space?.name ?? null),
-                        })}
+                        aria-label={say(
+                          'admin.clear-the-keep-on',
+                          kept(keep.kind, keep.space?.name ?? null),
+                        )}
                         onClick={() =>
                           void put({ kind: keep.kind, space: keep.space?.id ?? null, days: null })
                         }

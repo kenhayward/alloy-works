@@ -3,7 +3,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import styles from './Administration.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -26,12 +26,8 @@ interface Reached {
   readonly reads: { readonly spaces: readonly { readonly id: string; readonly name: string }[] };
 }
 
-const day = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
+const day = (at: Date) =>
+  formats().date(at, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** The day a date picker holds for an instant, in UTC. */
 const isoDay = (at: string) => at.slice(0, 10);
@@ -67,16 +63,25 @@ export function Outside({ client }: { client: Client }) {
 
   const nameOf = (person: Reached['principal']) =>
     person.name ?? person.email ?? words('admin.somebody');
+  /** Who a person is, as the values of a sentence naming them. */
+  const whoOf = (person: Reached['principal']) => {
+    const who = person.name ?? person.email;
+    return who === null ? { named: 'no' } : { named: 'yes', who };
+  };
+  /** Where a grant reaches, as the values of a sentence naming it. */
   const whereOf = (grant: Reached['grants'][number], reads: Reached['reads']) => {
     const [kind, id] = grant.level.split(':');
-    if (kind === 'space')
-      return reads.spaces.find((each) => each.id === id)?.name ?? words('admin.a-space');
+    if (kind === 'space') {
+      const name = reads.spaces.find((each) => each.id === id)?.name;
+      return name === undefined ? { at: 'someSpace' } : { at: 'space', where: name };
+    }
     // A share names its publication (the R17 plan); a grant before R17 names nothing.
     const on = (grant as { on?: { kind: string; title: string | null } | null }).on;
-    return on?.title ? `${on.title} (${on.kind})` : words('admin.one-item');
+    return on?.title ? { at: 'item', where: on.title, kind: on.kind } : { at: 'oneItem' };
   };
+  type Where = ReturnType<typeof whereOf>;
 
-  const extend = async (person: Reached, grant: Reached['grants'][number], where: string) => {
+  const extend = async (person: Reached, grant: Reached['grants'][number], where: Where) => {
     setSaid('');
     setRefused('');
     const chosen = days[grant.id] ?? nextDay(grant.expiresAt);
@@ -91,10 +96,10 @@ export function Outside({ client }: { client: Client }) {
     }
     setSaid(
       words('admin.extended-in-for-to', {
-        name: grant.role.name,
-        where,
-        value3: nameOf(person.principal),
-        value4: day.format(new Date(`${chosen}T00:00:00.000Z`)),
+        role: grant.role.name,
+        ...where,
+        ...whoOf(person.principal),
+        day: day(new Date(`${chosen}T00:00:00.000Z`)),
       }),
     );
     await read();
@@ -118,16 +123,24 @@ export function Outside({ client }: { client: Client }) {
             aria-labelledby={`${ids}-${person.principal.id}`}
             className={styles['card']}
           >
-            <h3 id={`${ids}-${person.principal.id}`}>{nameOf(person.principal)}</h3>
-            {person.principal.email !== null && <p>{person.principal.email}</p>}
+            <h3
+              id={`${ids}-${person.principal.id}`}
+              {...(whoOf(person.principal).named === 'yes' ? { 'data-content': '' } : {})}
+            >
+              {nameOf(person.principal)}
+            </h3>
+            {person.principal.email !== null && <p data-content>{person.principal.email}</p>}
             <p>
               {person.reads.spaces.length === 0
                 ? words('admin.may-read-nothing-yet')
                 : words('admin.may-read', {
-                    value1: person.reads.spaces.map((each) => each.name).join(', '),
+                    spaces: formats().list(
+                      person.reads.spaces.map((each) => each.name),
+                      { type: 'unit' },
+                    ),
                   })}
             </p>
-            <table aria-label={words('admin.what-reaches', { value1: nameOf(person.principal) })}>
+            <table aria-label={words('admin.what-reaches', whoOf(person.principal))}>
               <thead>
                 <tr>
                   <th scope="col">{words('admin.role')}</th>
@@ -144,10 +157,9 @@ export function Outside({ client }: { client: Client }) {
                   return (
                     <tr key={grant.id}>
                       <td>
-                        {grant.role.name}
-                        {grant.effect === 'deny' ? words('admin.denied') : ''}
+                        {words('admin.denied', { effect: grant.effect, role: grant.role.name })}
                       </td>
-                      <td>{where}</td>
+                      <td>{words('admin.where-reached', where)}</td>
                       <td>
                         {grant.group === null
                           ? words('admin.directly')
@@ -156,13 +168,16 @@ export function Outside({ client }: { client: Client }) {
                       <td>
                         {grant.expiresAt === null
                           ? words('admin.no-end')
-                          : `${grant.expired === true ? words('admin.ended-2') : ''}${day.format(new Date(grant.expiresAt))}`}
+                          : words('admin.ended-2', {
+                              expired: grant.expired === true ? 'yes' : 'no',
+                              day: day(new Date(grant.expiresAt)),
+                            })}
                       </td>
                       <td>
                         {extendable && (
                           <>
                             <label htmlFor={`${ids}-${grant.id}`} className={styles['hidden']}>
-                              {words('admin.extend-in-to', { name: grant.role.name, where })}
+                              {words('admin.extend-in-to', { role: grant.role.name, ...where })}
                             </label>
                             <input
                               id={`${ids}-${grant.id}`}

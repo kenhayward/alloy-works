@@ -9,7 +9,7 @@ import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import styles from './Administration.module.css';
 import { Shown, useListing } from './listing.js';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -82,18 +82,20 @@ function Declared({
 }) {
   return (
     <section aria-label={words('admin.what-declares', { name: manifest.name })}>
-      <h3>{manifest.name}</h3>
+      <h3 data-content>{manifest.name}</h3>
       <dl>
         <dt>{words('admin.version-2')}</dt>
-        <dd>{manifest.version}</dd>
+        <dd data-content>{manifest.version}</dd>
         <dt>{words('admin.publisher')}</dt>
-        <dd>{manifest.publisher}</dd>
+        <dd data-content>{manifest.publisher}</dd>
         <dt>{words('admin.what-it-is')}</dt>
-        <dd>{manifest.description}</dd>
+        <dd data-content>{manifest.description}</dd>
         <dt>{words('admin.kind')}</dt>
         <dd>{KINDS[manifest.kind]}</dd>
         <dt>{words('admin.endpoint')}</dt>
-        <dd className={styles['code']}>{manifest.endpoint}</dd>
+        <dd className={styles['code']} data-content>
+          {manifest.endpoint}
+        </dd>
         {manifest.kind === 'source' ? (
           <SourceDeclared manifest={manifest} />
         ) : (
@@ -115,7 +117,7 @@ function Declared({
           ) : (
             <ul>
               {manifest.outbound.map((each) => (
-                <li key={each.host}>
+                <li key={each.host} data-content>
                   <span className={styles['code']}>{each.host}</span>: {each.purpose}
                 </li>
               ))}
@@ -145,7 +147,11 @@ function SourceDeclared({
           <ul>
             {manifest.settings.map((field) => (
               <li key={field.key}>
-                {`${field.label} (${field.type}, ${field.required ? 'required' : words('admin.not-required')})`}
+                {words('admin.setting-declared', {
+                  label: field.label,
+                  type: field.type,
+                  required: field.required ? 'yes' : 'no',
+                })}
               </li>
             ))}
           </ul>
@@ -159,18 +165,11 @@ function SourceDeclared({
       </dd>
       <dt>{words('admin.can')}</dt>
       <dd>
-        {[
-          capabilities.parameters
-            ? words('admin.binds-parameters')
-            : words('admin.binds-no-parameters'),
-          capabilities.keyColumns
-            ? words('admin.declares-key-columns')
-            : words('admin.declares-no-key-columns'),
-          capabilities.rowLimit
-            ? words('admin.takes-the-row-limit')
-            : words('admin.takes-no-row-limit'),
-        ].join('. ')}
-        .
+        {words('admin.capabilities-declared', {
+          parameters: capabilities.parameters ? 'yes' : 'no',
+          keys: capabilities.keyColumns ? 'yes' : 'no',
+          limit: capabilities.rowLimit ? 'yes' : 'no',
+        })}
       </dd>
     </>
   );
@@ -330,7 +329,7 @@ export function Extensions({ client }: { client: Client }) {
           </button>
         </Declared>
       )}
-      <Shown read={read} failed="The extensions could not be loaded.">
+      <Shown read={read} failed={words('admin.the-extensions-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
             <p className={styles['muted']}>{words('admin.no-extension-is-installed')}</p>
@@ -353,10 +352,12 @@ export function Extensions({ client }: { client: Client }) {
                   const { name } = extension.manifest;
                   return (
                     <tr key={extension.id}>
-                      <td className={styles['strong']}>{name}</td>
+                      <td className={styles['strong']} data-content>
+                        {name}
+                      </td>
                       <td>{KINDS[extension.manifest.kind]}</td>
-                      <td>{extension.manifest.version}</td>
-                      <td>{extension.manifest.publisher}</td>
+                      <td data-content>{extension.manifest.version}</td>
+                      <td data-content>{extension.manifest.publisher}</td>
                       <td>
                         {extension.removedAt === null ? (
                           <Chip tone="ok">{words('admin.active')}</Chip>
@@ -434,7 +435,7 @@ export function Extensions({ client }: { client: Client }) {
           noValidate
         >
           <label className={styles['filter']}>
-            {secretLabel(secretOf.manifest)}
+            <span data-content>{secretLabel(secretOf.manifest)}</span>
             <input
               type="password"
               autoComplete="off"
@@ -452,10 +453,7 @@ export function Extensions({ client }: { client: Client }) {
       )}
       {update !== null && (
         <section aria-label={words('admin.update', { name: update.of.manifest.name })}>
-          <h3>
-            {words('admin.update-2')}
-            {update.of.manifest.name}
-          </h3>
+          <h3>{words('admin.update', { name: update.of.manifest.name })}</h3>
           {update.to.digest === update.of.digest ? (
             <p>{words('admin.its-manifest-has-not-changed')}</p>
           ) : (
@@ -467,7 +465,10 @@ export function Extensions({ client }: { client: Client }) {
                     })
                   : words('admin.version-changes', {
                       version: update.to.manifest.version,
-                      value2: changed.map((each) => CHANGES[each] ?? each).join(', '),
+                      changes: formats().list(
+                        changed.map((each) => CHANGES[each] ?? each),
+                        { type: 'unit' },
+                      ),
                     })}
               </p>
               <p className={styles['muted']}>{words('admin.a-connection-keeps-the-manifest')}</p>
@@ -486,18 +487,24 @@ export function Extensions({ client }: { client: Client }) {
       )}
       {uses !== null && (
         <section aria-label={words('admin.uses-of', { name: uses.of.manifest.name })}>
-          <h3>
-            {words('admin.connections-using')}
-            {uses.of.manifest.name}
-          </h3>
+          <h3>{words('admin.connections-using-2', { name: uses.of.manifest.name })}</h3>
           {uses.items.length === 0 ? (
             <p className={styles['muted']}>{words('admin.no-connection-uses-it')}</p>
           ) : (
             <ul aria-label={words('admin.connections-using-2', { name: uses.of.manifest.name })}>
               {uses.items.map((each) => (
                 <li key={each.connection}>
-                  <a href={connectionLink(each.connection)}>{each.name}</a>
-                  {each.retired ? words('admin.retired') : ''}
+                  {wordsWith(
+                    'admin.connection-used',
+                    { retired: each.retired ? 'yes' : 'no' },
+                    {
+                      connection: (
+                        <a href={connectionLink(each.connection)} data-content>
+                          {each.name}
+                        </a>
+                      ),
+                    },
+                  )}
                 </li>
               ))}
             </ul>

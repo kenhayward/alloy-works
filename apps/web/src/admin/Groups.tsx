@@ -18,7 +18,7 @@ import { Empty } from '../states/Empty.js';
 import { Notice } from '../states/Notice.js';
 import { Waiting } from '../states/Waiting.js';
 import styles from './Administration.module.css';
-import { words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -27,16 +27,19 @@ type Client = ReturnType<typeof createApiClient>;
  */
 type Read = { readonly rows: readonly ShownGroup[] } | 'refused' | 'signedOut' | 'failed' | null;
 
-const counted = (count: number) =>
-  count === 0 ? words('admin.no-members') : words('admin.members', { count: count });
-const Counted = (count: number) => counted(count).replace(/^n/, 'N');
-
 /** A group's members in words: how many, and who, the first three named and the rest counted. */
 const membersOf = (group: ShownGroup, named = group.members.length) => {
   if (group.members.length === 0) return words('admin.no-members-2');
   const names = group.members.slice(0, named).map(personName);
   const rest = group.members.length - names.length;
-  return `${Counted(group.members.length)}: ${names.join(', ')}${rest > 0 ? words('admin.and-more', { rest }) : ''}`;
+  const values = {
+    count: group.members.length,
+    names: formats().list(names, { type: 'unit' }),
+    rest,
+  };
+  return rest > 0
+    ? words('admin.members-named-more', values)
+    : words('admin.members-named', values);
 };
 
 const initials = (name: string) =>
@@ -189,7 +192,7 @@ function Members({
       heading={words('admin.members-of', { name: group.name })}
       description={
         Array.isArray(people)
-          ? words('admin.of-people-chosen', { size: chosen.size, length: people.length })
+          ? words('admin.of-people-chosen', { chosen: chosen.size, people: people.length })
           : undefined
       }
       icon="Members"
@@ -245,10 +248,11 @@ function Members({
                 <span className={styles['initials']} aria-hidden="true">
                   {initials(personName(person))}
                 </span>{' '}
-                {personName(person)}
-                {person.name !== null && person.email !== null ? ` (${person.email})` : ''}
+                {person.name !== null && person.email !== null
+                  ? words('admin.person-with-email', { name: person.name, email: person.email })
+                  : personName(person)}
                 {person.kind === 'external' && (
-                  <span className={styles['muted']}> {words('admin.outside')}</span>
+                  <span className={styles['muted']}> {words('admin.outside-2')}</span>
                 )}
               </label>
             ))}
@@ -383,9 +387,7 @@ export function Groups({ client }: { client: Client }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <p className={styles['counted']}>
-              {`${shown.length} ${words('admin.groups-2', { count: shown.length })}`}
-            </p>
+            <p className={styles['counted']}>{words('admin.groups-2', { count: shown.length })}</p>
           </div>
           <div className={filling === null ? undefined : styles['withPanel']}>
             <table aria-label={words('admin.groups')} className={styles['table']}>
@@ -408,16 +410,17 @@ export function Groups({ client }: { client: Client }) {
               <tbody>
                 {shown.map((group) => (
                   <tr key={group.id} data-current={filling?.id === group.id ? 'true' : undefined}>
-                    <td className={styles['strong']}>{group.name}</td>
+                    <td className={styles['strong']} data-content>
+                      {group.name}
+                    </td>
                     <td className={styles['muted']}>
-                      {group.source === 'tenant' ? (
-                        words('admin.this-environment')
-                      ) : (
-                        <>
-                          {words('admin.sign-in')}
-                          <code>{group.providerValue ?? ''}</code>
-                        </>
-                      )}
+                      {group.source === 'tenant'
+                        ? words('admin.this-environment')
+                        : wordsWith(
+                            'admin.sign-in',
+                            {},
+                            { value: <code data-content>{group.providerValue ?? ''}</code> },
+                          )}
                     </td>
                     <td>
                       {group.members.length === 0 && group.source !== 'tenant' ? (
@@ -432,7 +435,7 @@ export function Groups({ client }: { client: Client }) {
                             ))}{' '}
                             {group.members.length === 0
                               ? words('admin.no-members-2')
-                              : group.members.length}
+                              : formats().number(group.members.length)}
                           </span>
                           <span className={styles['hidden']}>{membersOf(group)}</span>
                         </span>
@@ -445,7 +448,7 @@ export function Groups({ client }: { client: Client }) {
                           {
                             label: words('admin.members-2'),
                             name: words('admin.members-of', { name: group.name }),
-                            icon: words('admin.members-2'),
+                            icon: 'Members',
                             onSelect: () => setFilling(group),
                             ...(group.source === 'tenant'
                               ? {}
@@ -472,7 +475,7 @@ export function Groups({ client }: { client: Client }) {
                 group={filling}
                 onClose={() => setFilling(null)}
                 onSet={(count) => {
-                  setStatus(words('admin.now-has', { name: filling.name, value2: counted(count) }));
+                  setStatus(words('admin.now-has', { name: filling.name, count }));
                   setFilling(null);
                   void load();
                 }}
