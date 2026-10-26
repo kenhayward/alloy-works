@@ -25468,7 +25468,7 @@
     {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 382,
+      "line": 380,
       "kind": "title"
     },
     {
@@ -25486,25 +25486,25 @@
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 382,
+      "line": 380,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 441,
+      "line": 439,
       "kind": "title"
     },
     {
       "id": "SCH-061",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 276,
+      "line": 274,
       "kind": "title"
     },
     {
       "id": "SCH-063",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 276,
+      "line": 274,
       "kind": "title"
     },
     {

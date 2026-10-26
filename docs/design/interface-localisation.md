@@ -33,13 +33,19 @@ whole interface moved, sorted in the person's collation and laid out right to le
 - `wordsWith(key, values, elements)` places an element, a link, a `<time>` or a lozenge, where a whole
   message holds its placeholder, so a sentence around one stays one message.
 - Text that is the tenant's, a title, a space's or a person's name, a workflow state's, carries
-  `data-content`, so the pseudo walk tells it from the interface's words.
+  `data-content`, so the pseudo walk tells it from the interface's words; an element named by content,
+  a pane by its space's name, carries `data-content-name`.
 - A table of words at module scope holds keys, never words, read where it is shown.
 - `en-XA` and `ar-XB` are made from English by `pseudolocalise`: letters accented, words bracketed,
   padded in breakable groups half again as long, twice under twenty characters; placeholders and
   plurals untouched.
 - English locale data is bundled; another language's loads before it is shown.
-- The ESLint rule `alloy/interface-words` refuses words written in place in the folders moved so far.
+- The ESLint rule `alloy/interface-words` refuses words written in place anywhere in the renderer but
+  `platform/`, the desktop shell's bridge (UIe). It sees JSX text and the props that say something; a
+  word in a variable or a table is review's to catch, and the pseudo walk's. An icon is named, never
+  worded (`icons-named.test.ts`).
+- The pseudo walk (`tests/browser/src/pseudo.test.ts`) walks Home, each module's page and the component
+  editor as Grace, and Administration's sections as Ada.
 - `packages/editor` keeps its own words in `EDITOR_WORDS`, said through `say`; the renderer merges them
   into its catalogue as `pm.<key>` and gives them back through `sayWith`, so the views ProseMirror draws
   speak the person's language. With none given, as in the package's tests, English.

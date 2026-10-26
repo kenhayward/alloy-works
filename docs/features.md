@@ -1276,10 +1276,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   kept as the person's own and never the content's, or follows the browser. English is the one real
   language; two test languages, one stretched and accented and one right to left, show what is not
   yet translated or does not fit. Dates and numbers come from pinned locale data, named in About.
-  Lists sort in the person's language, the service's listings among them, and the component editor,
-  its toolbar and the marks it draws in the text speak it, as do the document pages, publishing,
-  translation and imports, and the service's own sentences: search's summary, the assistant's steps
-  and refusals, a restore's reasons and what a paste or an import kept differently.
+  Lists sort in the person's language, the service's listings among them, and the whole interface
+  speaks it, the service's own sentences among them (search's summary, the assistant's steps and
+  refusals, a restore's reasons, what a paste or an import kept differently); the desktop app's own
+  menus and its right-to-left layout are still to come, as is any refusal the service words itself.
 - **Revisions effective by scope.** A component's or document's header offers **Effective for**: the
   markets or sites, condition axis values, its next revision is effective for, while another revision
   stays effective elsewhere; a document reads, publishes and baselines the revision effective under its

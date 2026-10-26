@@ -267,9 +267,7 @@ describe('the search page', () => {
       name: 'Grace Moss (at least 1,000)',
     });
     await userEvent.click(capped);
-    await waitFor(() =>
-      expect(asked.at(-1)?.getAll('value')).toEqual([`${REVIEWER}:Grace Moss`]),
-    );
+    await waitFor(() => expect(asked.at(-1)?.getAll('value')).toEqual([`${REVIEWER}:Grace Moss`]));
     expect(asked.at(-1)?.get('kind')).toBe('section');
   });
 
