@@ -133,6 +133,8 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   'translation.marked_current': 'Translation marked current',
   'translation.job_sent': 'Translation job sent',
   'translation.job_closed': 'Translation job closed',
+  'translation.job_returned': 'Translation job returned',
+  'translation.job_decided': 'Held translation decided',
   'webhook.changed': 'Webhook changed',
   'workflow.defined': 'Workflow saved',
   'workflow.transitioned': 'Workflow moved on',

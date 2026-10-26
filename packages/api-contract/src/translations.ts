@@ -1,4 +1,4 @@
-import { TRANSLATION_STATUSES } from '@alloy-works/domain';
+import { TRANSLATION_CONFLICTS, TRANSLATION_STATUSES } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -177,14 +177,79 @@ export const TranslationJobView = z.object({
         outcome: z
           .enum(['returned', 'held', 'refused'])
           .nullable()
-          .describe('What came back of it; null while it is out'),
+          .describe(
+            'What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out',
+          ),
       }),
     )
     .describe(
       'Each component the job lists that the caller may read, in the order the document places them',
     ),
+  returns: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        by: z.uuid(),
+        at: z.iso.datetime({ offset: true }),
+        state: z
+          .enum(['reading', 'read', 'failed'])
+          .describe('Waiting for the worker to read it, read and applied, or refused whole'),
+        failure: z
+          .string()
+          .nullable()
+          .describe(
+            'Why it was refused whole: file_unreadable, file_unsafe, file_too_large, file_not_xliff, language_mismatch, unknown_file, translation_job_closed or reading_failed',
+          ),
+        returned: z.number().int().nullable(),
+        held: z.number().int().nullable(),
+        refused: z.number().int().nullable(),
+      }),
+    )
+    .describe('Each file returned to it, newest first'),
 });
 export type TranslationJobView = z.infer<typeof TranslationJobView>;
+
+export const TranslationJobItemParams = z.object({
+  id: z.uuid(),
+  job: z.uuid(),
+  component: z.uuid(),
+});
+export type TranslationJobItemParams = z.infer<typeof TranslationJobItemParams>;
+
+export const HeldTranslationView = z.object({
+  component: z.object({ id: z.uuid(), title: z.string() }),
+  sent: z
+    .object({ id: z.uuid(), number: z.string() })
+    .describe('The source version the job sent, which the words returned translate'),
+  current: z
+    .object({ id: z.uuid(), number: z.string() })
+    .describe('The source version a translation is made against now'),
+  changes: z
+    .array(
+      z.object({
+        block: z.string(),
+        change: z.enum(['added', 'changed', 'removed']),
+        words: z.string(),
+      }),
+    )
+    .describe('Each source block changed between the two, to review the returned words against'),
+  returned: z
+    .array(z.object({ block: z.string(), words: z.string() }))
+    .describe("The returned words, block by block, in the source's order"),
+  offered: z
+    .enum(TRANSLATION_CONFLICTS)
+    .describe("The decision the environment's policy offers first (LOC-036); a person decides"),
+});
+export type HeldTranslationView = z.infer<typeof HeldTranslationView>;
+
+export const HeldDecisionBody = z.strictObject({
+  decision: z
+    .enum(['accept', 'reject'])
+    .describe(
+      '`accept` cuts the returned words as a translation of the source version sent, out of date at once where the source moved since; `reject` drops them',
+    ),
+});
+export type HeldDecisionBody = z.infer<typeof HeldDecisionBody>;
 
 export const TranslationJobsView = z.object({
   jobs: z.array(TranslationJobView).describe("The document's jobs, newest first, at most 50"),
@@ -205,6 +270,12 @@ const forbiddenEdit = {
 } as const;
 const documentEdit = {
   description: 'The caller may read the document but may not edit it',
+  schema: ErrorBody,
+} as const;
+/** The most bytes a returned file may hold (XL-F), an import's. */
+const RETURN_MAX_BYTES = 25 * 1024 * 1024;
+const itemMissing = {
+  description: 'No such document, job, or held item of it, the caller may read',
   schema: ErrorBody,
 } as const;
 const jobMissing = {
@@ -405,6 +476,67 @@ export const translationRoutes = {
       403: documentEdit,
       404: jobMissing,
       409: { description: 'translation_job_closed: it is closed already', schema: ErrorBody },
+    },
+  },
+  returnDocumentTranslationJob: {
+    operationId: 'returnDocumentTranslationJob',
+    method: 'PUT',
+    path: '/v1/documents/{id}/translation-jobs/{job}/return',
+    summary: "Return a translation job's translated XLIFF file, which the worker then reads back",
+    tenantScoped: true,
+    access: edit,
+    params: TranslationJobParams,
+    rawBody: { contentType: 'application/octet-stream', maxBytes: RETURN_MAX_BYTES },
+    responses: {
+      200: { description: 'The job, its return being read', schema: TranslationJobView },
+      401: unauthenticated,
+      403: documentEdit,
+      404: jobMissing,
+      409: { description: 'translation_job_closed: it is closed', schema: ErrorBody },
+      413: { description: 'translation_return_too_large: more than 25 MB', schema: ErrorBody },
+      415: {
+        description: 'translation_return_bytes_expected: the body is not application/octet-stream',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getDocumentTranslationJobHeld: {
+    operationId: 'getDocumentTranslationJobHeld',
+    method: 'GET',
+    path: '/v1/documents/{id}/translation-jobs/{job}/items/{component}/held',
+    summary: 'Show a held translation beside the source changes since it was sent',
+    tenantScoped: true,
+    access: edit,
+    params: TranslationJobItemParams,
+    responses: {
+      200: { description: 'The held item, to review', schema: HeldTranslationView },
+      401: unauthenticated,
+      403: documentEdit,
+      404: itemMissing,
+    },
+  },
+  decideDocumentTranslationJobItem: {
+    operationId: 'decideDocumentTranslationJobItem',
+    method: 'POST',
+    path: '/v1/documents/{id}/translation-jobs/{job}/items/{component}/decision',
+    summary: 'Accept or reject a held translation',
+    tenantScoped: true,
+    access: edit,
+    params: TranslationJobItemParams,
+    body: HeldDecisionBody,
+    responses: {
+      200: { description: 'Decided, and the job now', schema: TranslationJobView },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may not edit the document, or the component held',
+        schema: ErrorBody,
+      },
+      404: itemMissing,
+      409: {
+        description:
+          'translation_job_closed: the job is closed; lock_held: somebody is editing the translation',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

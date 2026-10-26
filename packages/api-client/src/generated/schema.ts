@@ -3079,6 +3079,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/translation-jobs/{job}/items/{component}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept or reject a held translation
+         * @description Decides a held translation: accepted, its words cut as a translation of the source version sent, so out of date at once where the source moved since; or rejected, its words dropped. Refused while somebody is editing the translation. It needs edit on the document and on the component.
+         */
+        post: operations["decideDocumentTranslationJobItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/translation-jobs/{job}/items/{component}/held": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show a held translation beside the source changes since it was sent
+         * @description Shows a held translation: the source version sent and the one a translation is made against now, each source block changed between them, and the words returned, block by block, with the decision the environment's policy offers first. It needs edit on the document.
+         */
+        get: operations["getDocumentTranslationJobHeld"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/documents/{id}/translation-jobs/{job}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Return a translation job's translated XLIFF file, which the worker then reads back
+         * @description Returns a translation job's file, translated, as its bytes: XLIFF 2, UTF-8 or UTF-16, at most 25 MB, kept as it came. The worker reads it and, acting for the caller, makes each component it translates a version of its translation, translating the source version sent. A component whose source or translation moved since it was sent, or that somebody is editing, is held for a person to decide; one that does not read back, with a code or placeholder missing, repeated or invented, or that the caller may no longer edit, is refused, and a later file may return it again. A file in another language, or naming a component the job did not send, is refused whole. Read the job to see what came back. It needs edit on the document.
+         */
+        put: operations["returnDocumentTranslationJob"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -62747,8 +62807,27 @@ export interface operations {
                                 } | null;
                                 /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
                                 notSent: ("needs_revision" | "not_editable") | null;
-                                /** @description What came back of it; null while it is out */
+                                /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                                 outcome: ("returned" | "held" | "refused") | null;
+                            }[];
+                            /** @description Each file returned to it, newest first */
+                            returns: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                by: string;
+                                /** Format: date-time */
+                                at: string;
+                                /**
+                                 * @description Waiting for the worker to read it, read and applied, or refused whole
+                                 * @enum {string}
+                                 */
+                                state: "reading" | "read" | "failed";
+                                /** @description Why it was refused whole: file_unreadable, file_unsafe, file_too_large, file_not_xliff, language_mismatch, unknown_file, translation_job_closed or reading_failed */
+                                failure: string | null;
+                                returned: number | null;
+                                held: number | null;
+                                refused: number | null;
                             }[];
                         }[];
                     };
@@ -62887,7 +62966,8 @@ export interface operations {
                      *         "by": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
-                     *       "items": []
+                     *       "items": [],
+                     *       "returns": []
                      *     }
                      */
                     "application/json": {
@@ -62923,8 +63003,27 @@ export interface operations {
                             } | null;
                             /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
                             notSent: ("needs_revision" | "not_editable") | null;
-                            /** @description What came back of it; null while it is out */
+                            /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                             outcome: ("returned" | "held" | "refused") | null;
+                        }[];
+                        /** @description Each file returned to it, newest first */
+                        returns: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * @description Waiting for the worker to read it, read and applied, or refused whole
+                             * @enum {string}
+                             */
+                            state: "reading" | "read" | "failed";
+                            /** @description Why it was refused whole: file_unreadable, file_unsafe, file_too_large, file_not_xliff, language_mismatch, unknown_file, translation_job_closed or reading_failed */
+                            failure: string | null;
+                            returned: number | null;
+                            held: number | null;
+                            refused: number | null;
                         }[];
                     };
                 };
@@ -63089,7 +63188,8 @@ export interface operations {
                      *         "by": "00000000-0000-4000-8000-000000000001",
                      *         "at": "2026-01-01T00:00:00.000Z"
                      *       },
-                     *       "items": []
+                     *       "items": [],
+                     *       "returns": []
                      *     }
                      */
                     "application/json": {
@@ -63125,8 +63225,27 @@ export interface operations {
                             } | null;
                             /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
                             notSent: ("needs_revision" | "not_editable") | null;
-                            /** @description What came back of it; null while it is out */
+                            /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
                             outcome: ("returned" | "held" | "refused") | null;
+                        }[];
+                        /** @description Each file returned to it, newest first */
+                        returns: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * @description Waiting for the worker to read it, read and applied, or refused whole
+                             * @enum {string}
+                             */
+                            state: "reading" | "read" | "failed";
+                            /** @description Why it was refused whole: file_unreadable, file_unsafe, file_too_large, file_not_xliff, language_mismatch, unknown_file, translation_job_closed or reading_failed */
+                            failure: string | null;
+                            returned: number | null;
+                            held: number | null;
+                            refused: number | null;
                         }[];
                     };
                 };
@@ -63301,6 +63420,633 @@ export interface operations {
             };
             /** @description No such document, or job of it, the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    decideDocumentTranslationJobItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+                job: string;
+                component: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "decision": "accept"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * @description `accept` cuts the returned words as a translation of the source version sent, out of date at once where the source moved since; `reject` drops them
+                     * @enum {string}
+                     */
+                    decision: "accept" | "reject";
+                };
+            };
+        };
+        responses: {
+            /** @description Decided, and the job now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "language": "en",
+                     *       "vendor": "example",
+                     *       "by": "00000000-0000-4000-8000-000000000001",
+                     *       "at": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "items": [],
+                     *       "returns": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        language: string;
+                        vendor: string | null;
+                        /** Format: uuid */
+                        by: string;
+                        /** Format: date-time */
+                        at: string;
+                        /** @description Who closed it and when, ending what was still out; null while open */
+                        closed: {
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Each component the job lists that the caller may read, in the order the document places them */
+                        items: {
+                            component: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            };
+                            /** @description Its translation, a line of the component; null where not sent */
+                            line: string | null;
+                            /** @description The source version sent, which what comes back translates */
+                            source: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
+                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
+                            outcome: ("returned" | "held" | "refused") | null;
+                        }[];
+                        /** @description Each file returned to it, newest first */
+                        returns: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * @description Waiting for the worker to read it, read and applied, or refused whole
+                             * @enum {string}
+                             */
+                            state: "reading" | "read" | "failed";
+                            /** @description Why it was refused whole: file_unreadable, file_unsafe, file_too_large, file_not_xliff, language_mismatch, unknown_file, translation_job_closed or reading_failed */
+                            failure: string | null;
+                            returned: number | null;
+                            held: number | null;
+                            refused: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not edit the document, or the component held */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, job, or held item of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description translation_job_closed: the job is closed; lock_held: somebody is editing the translation */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getDocumentTranslationJobHeld: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string;
+                job: string;
+                component: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The held item, to review */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "component": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "title": "example"
+                     *       },
+                     *       "sent": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "current": {
+                     *         "id": "00000000-0000-4000-8000-000000000001",
+                     *         "number": "example"
+                     *       },
+                     *       "changes": [],
+                     *       "returned": [],
+                     *       "offered": "review"
+                     *     }
+                     */
+                    "application/json": {
+                        component: {
+                            /** Format: uuid */
+                            id: string;
+                            title: string;
+                        };
+                        /** @description The source version the job sent, which the words returned translate */
+                        sent: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The source version a translation is made against now */
+                        current: {
+                            /** Format: uuid */
+                            id: string;
+                            number: string;
+                        };
+                        /** @description Each source block changed between the two, to review the returned words against */
+                        changes: {
+                            block: string;
+                            /** @enum {string} */
+                            change: "added" | "changed" | "removed";
+                            words: string;
+                        }[];
+                        /** @description The returned words, block by block, in the source's order */
+                        returned: {
+                            block: string;
+                            words: string;
+                        }[];
+                        /**
+                         * @description The decision the environment's policy offers first (LOC-036); a person decides
+                         * @enum {string}
+                         */
+                        offered: "review" | "accept" | "reject";
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, job, or held item of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    returnDocumentTranslationJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string;
+                job: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description The job, its return being read */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "language": "en",
+                     *       "vendor": "example",
+                     *       "by": "00000000-0000-4000-8000-000000000001",
+                     *       "at": "2026-01-01T00:00:00.000Z",
+                     *       "closed": {
+                     *         "by": "00000000-0000-4000-8000-000000000001",
+                     *         "at": "2026-01-01T00:00:00.000Z"
+                     *       },
+                     *       "items": [],
+                     *       "returns": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        language: string;
+                        vendor: string | null;
+                        /** Format: uuid */
+                        by: string;
+                        /** Format: date-time */
+                        at: string;
+                        /** @description Who closed it and when, ending what was still out; null while open */
+                        closed: {
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                        } | null;
+                        /** @description Each component the job lists that the caller may read, in the order the document places them */
+                        items: {
+                            component: {
+                                /** Format: uuid */
+                                id: string;
+                                title: string;
+                            };
+                            /** @description Its translation, a line of the component; null where not sent */
+                            line: string | null;
+                            /** @description The source version sent, which what comes back translates */
+                            source: {
+                                /** Format: uuid */
+                                id: string;
+                                number: string;
+                            } | null;
+                            /** @description Why it was listed and not sent: the source has no designated revision to translate from, or the maker may not edit it */
+                            notSent: ("needs_revision" | "not_editable") | null;
+                            /** @description What came back of it: made a version of its translation, held for a person because the source or the translation moved since it was sent, or refused because it did not read back, the uploader may not edit it or a person rejected it; null while it is out */
+                            outcome: ("returned" | "held" | "refused") | null;
+                        }[];
+                        /** @description Each file returned to it, newest first */
+                        returns: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            by: string;
+                            /** Format: date-time */
+                            at: string;
+                            /**
+                             * @description Waiting for the worker to read it, read and applied, or refused whole
+                             * @enum {string}
+                             */
+                            state: "reading" | "read" | "failed";
+                            /** @description Why it was refused whole: file_unreadable, file_unsafe, file_too_large, file_not_xliff, language_mismatch, unknown_file, translation_job_closed or reading_failed */
+                            failure: string | null;
+                            returned: number | null;
+                            held: number | null;
+                            refused: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document, or job of it, the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description translation_job_closed: it is closed */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description translation_return_too_large: more than 25 MB */
+            413: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description translation_return_bytes_expected: the body is not application/octet-stream */
+            415: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -94438,7 +95184,8 @@ export interface operations {
                      * @example {
                      *       "fallback": "source",
                      *       "outOfDate": "publish",
-                     *       "note": {}
+                     *       "note": {},
+                     *       "conflict": "review"
                      *     }
                      */
                     "application/json": {
@@ -94449,6 +95196,11 @@ export interface operations {
                         note: {
                             [key: string]: string;
                         };
+                        /**
+                         * @default review
+                         * @enum {string}
+                         */
+                        conflict: "review" | "accept" | "reject";
                     };
                 };
             };
@@ -94523,6 +95275,11 @@ export interface operations {
                     note: {
                         [key: string]: string;
                     };
+                    /**
+                     * @default review
+                     * @enum {string}
+                     */
+                    conflict?: "review" | "accept" | "reject";
                 };
             };
         };
@@ -94541,7 +95298,8 @@ export interface operations {
                      * @example {
                      *       "fallback": "source",
                      *       "outOfDate": "publish",
-                     *       "note": {}
+                     *       "note": {},
+                     *       "conflict": "review"
                      *     }
                      */
                     "application/json": {
@@ -94552,6 +95310,11 @@ export interface operations {
                         note: {
                             [key: string]: string;
                         };
+                        /**
+                         * @default review
+                         * @enum {string}
+                         */
+                        conflict: "review" | "accept" | "reject";
                     };
                 };
             };

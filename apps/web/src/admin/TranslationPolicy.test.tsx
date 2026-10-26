@@ -9,7 +9,12 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 function service() {
-  let settings: unknown = { fallback: 'source', outOfDate: 'publish', note: {} };
+  let settings: unknown = {
+    fallback: 'source',
+    outOfDate: 'publish',
+    note: {},
+    conflict: 'review',
+  };
   const put: unknown[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -35,6 +40,8 @@ describe("Administration's Translation", () => {
       screen.getByRole('textbox', { name: 'What the mark says, by language' }),
       'fr: Non traduit{Enter}de: Nicht übersetzt',
     );
+    expect(screen.getByRole('radio', { name: /Hold it for review/ })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: /Offer to accept it/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(put).toEqual([
@@ -42,6 +49,7 @@ describe("Administration's Translation", () => {
           fallback: 'refuse',
           outOfDate: 'publish',
           note: { fr: 'Non traduit', de: 'Nicht übersetzt' },
+          conflict: 'accept',
         },
       ]),
     );

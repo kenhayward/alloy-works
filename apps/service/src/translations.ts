@@ -1,5 +1,8 @@
+import { createHash } from 'node:crypto';
 import type {
   DocumentParams,
+  HeldDecisionBody,
+  HeldTranslationView,
   LineParams,
   MarkCurrentBody,
   SourceChangeBody,
@@ -9,6 +12,7 @@ import type {
   SpaceTranslationsView,
   TranslationBody,
   TranslationJobBody,
+  TranslationJobItemParams,
   TranslationJobParams,
   TranslationJobsView,
   TranslationJobView,
@@ -17,9 +21,17 @@ import type {
   TransitionParams,
 } from '@alloy-works/api-contract';
 import {
+  RETURN_MAX_BYTES,
   artifactPlace,
   beginTranslation,
   closeTranslationJob,
+  decideHeld,
+  holdObject,
+  readHeld,
+  receiveReturn,
+  releaseObject,
+  translationPolicy,
+  type Tenant,
   declareSourceChange,
   jobFileParts,
   loadFactsFor,
@@ -43,8 +55,10 @@ import {
   type Translation,
 } from '@alloy-works/db';
 import {
+  blockText,
   decide,
   parseContentDocument,
+  sourceChangesBetween,
   readOutline,
   selectOutline,
   speaksFor,
@@ -54,8 +68,10 @@ import {
   xliffUnits,
   type XliffTerm,
 } from '@alloy-works/domain';
+import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
+import { AppError, storageUnavailable } from './errors.js';
 import { shownVersionView, versionView } from './components.js';
 import { refused } from './wire-codes.js';
 
@@ -188,6 +204,16 @@ async function jobView(
       notSent: item.notSent,
       outcome: item.outcome,
     })),
+    returns: job.returns.map((each) => ({
+      id: each.id,
+      by: each.by,
+      at: each.at.toISOString(),
+      state: each.state,
+      failure: each.failure,
+      returned: each.returned,
+      held: each.held,
+      refused: each.refused,
+    })),
   };
 }
 
@@ -227,7 +253,10 @@ async function jobTerms(
   return terms;
 }
 
-export function translationHandlers() {
+export function translationHandlers(
+  tenantOf: (request: FastifyRequest) => Tenant,
+  objects: ObjectStores | undefined,
+) {
   return {
     getSpaceTranslations: async (
       request: FastifyRequest,
@@ -466,6 +495,122 @@ export function translationHandlers() {
           throw notFound();
         case 'translation.job_closed':
           throw refused(409, answer.answer, 'This job is closed already.');
+      }
+    },
+
+    /**
+     * The file kept by its hash as it came and the worker's read queued (XL-F): whatever it says is
+     * read there, in a thread within an import's budget, never here.
+     */
+    returnDocumentTranslationJob: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TranslationJobView> => {
+      const { id, job } = request.params as TranslationJobParams;
+      const bytes =
+        Buffer.isBuffer(request.body) &&
+        request.headers['content-type']?.split(';')[0]?.trim() === 'application/octet-stream'
+          ? request.body
+          : undefined;
+      if (bytes === undefined) {
+        throw new AppError(
+          415,
+          'translation_return_bytes_expected',
+          "Send the file's bytes as application/octet-stream.",
+        );
+      }
+      if (bytes.length > RETURN_MAX_BYTES) {
+        throw new AppError(413, 'translation_return_too_large', 'A file may hold at most 25 MB.');
+      }
+      const known = await readTranslationJob(trx, id, job);
+      if (!known) throw notFound();
+      if (known.closed !== null) {
+        throw refused(409, 'translation.job_closed', 'This job is closed already.');
+      }
+      if (!objects) throw storageUnavailable();
+      const sha256 = createHash('sha256').update(bytes).digest('hex');
+      await holdObject(trx, sha256);
+      const store = await objects.forTenant(trx, tenantOf(request));
+      const stored = await store.put(bytes, 'application/octet-stream');
+      const answer = await receiveReturn(trx, {
+        documentId: id,
+        job,
+        key: stored.key,
+        sha256,
+        bytes: stored.size,
+        by: principalId,
+      });
+      if (answer.answer !== 'received') {
+        await releaseObject(trx, { key: stored.key, sha256 }, (key) => store.remove(key));
+        if (answer.answer === 'job.missing') throw notFound();
+        throw refused(409, answer.answer, 'This job is closed already.');
+      }
+      return jobView(trx, principalId, answer.job);
+    },
+
+    getDocumentTranslationJobHeld: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<HeldTranslationView> => {
+      const { id, job, component } = request.params as TranslationJobItemParams;
+      const readable = await readableComponents(trx, principalId, [component]);
+      const held = readable.has(component)
+        ? await readHeld(trx, { documentId: id, job, component })
+        : undefined;
+      if (!held) throw notFound();
+      const sent = await readVersion(trx, held.item.sourceVersion!);
+      const current = (await translationSource(trx, component)) ?? sent;
+      if (!sent || !current) throw notFound();
+      const before = parseContentDocument(sent.content);
+      const after = parseContentDocument(current.content);
+      const blocks = new Map(
+        [...before.content, ...after.content].map((block) => [block.id, block]),
+      );
+      const shownBy = await shownMany(trx, [sent.id, current.id]);
+      return {
+        component: { id: component, title: after.title },
+        sent: shownBy.get(sent.id)!,
+        current: shownBy.get(current.id)!,
+        changes: sourceChangesBetween(before, after).map((each) => ({
+          ...each,
+          words: blockText(blocks.get(each.block)!),
+        })),
+        returned: held.content.content.map((block) => ({
+          block: block.id,
+          words: blockText(block),
+        })),
+        offered: (await translationPolicy(trx)).conflict,
+      };
+    },
+
+    decideDocumentTranslationJobItem: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<TranslationJobView> => {
+      const { id, job, component } = request.params as TranslationJobItemParams;
+      const { decision } = request.body as HeldDecisionBody;
+      // Edit on the component held, as well as on the document the route decided (XL-G).
+      await authoriseAt(trx, callerOf(request), 'edit', { kind: 'artifact', id: component });
+      const answer = await decideHeld(trx, {
+        documentId: id,
+        job,
+        component,
+        decision,
+        by: principalId,
+      });
+      switch (answer.answer) {
+        case 'decided':
+          return jobView(trx, principalId, answer.job);
+        case 'item.missing':
+          throw notFound();
+        case 'translation.job_closed':
+          throw refused(409, answer.answer, 'This job is closed already.');
+        case 'lock.held':
+          throw refused(
+            409,
+            answer.answer,
+            'Somebody is editing this translation. Try again later.',
+          );
       }
     },
   };

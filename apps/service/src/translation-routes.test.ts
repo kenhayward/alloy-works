@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { findRole } from '@alloy-works/db';
+import { applyReturn, findRole } from '@alloy-works/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { startHarness, type Harness } from './test/bindings-harness.js';
+import { HOST, startHarness, type Harness } from './test/bindings-harness.js';
 
 type Version = { id: string; number: string };
 
@@ -440,6 +440,101 @@ describe('translation (the TR plan, TRa)', () => {
     expect(after.json()).toMatchObject({
       translations: [{ language: 'de-DE', status: { status: 'untranslated' } }],
     });
+  });
+
+  it('LOC-033 LOC-035 takes a returned file for the worker, and a translation whose source moved since is held for a person, shown beside the changes, and decided', async () => {
+    const source = await approvedComponent('Lakes');
+    const made = await h.call('grace', 'POST', `/v1/spaces/${h.general}/documents`, {
+      title: 'Lake survey',
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+    const doc = made.json<{ id: string; version: { id: string } }>();
+    const placed = await h.call('grace', 'POST', `/v1/documents/${doc.id}/outline`, {
+      openedFrom: doc.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: source.id, mode: { kind: 'latest' } },
+      },
+    });
+    expect(placed.statusCode, placed.body).toBe(200);
+    const sent = await h.call('grace', 'POST', `/v1/documents/${doc.id}/translation-jobs`, {
+      language: 'de-DE',
+    });
+    const job = sent.json<{ id: string }>();
+    const jobs = `/v1/documents/${doc.id}/translation-jobs/${job.id}`;
+
+    const put = (who: string, body: Buffer, type = 'application/octet-stream') =>
+      h.app.inject({
+        method: 'PUT',
+        url: `${jobs}/return`,
+        headers: { host: HOST, cookie: h.cookies[who]!, 'content-type': type },
+        payload: body,
+      });
+    const file = Buffer.from('<xliff version="2.1"/>');
+    expect((await put('alice', file)).statusCode).toBe(403);
+    expect((await put('grace', file, 'text/plain')).statusCode).toBe(415);
+    const returned = await put('grace', file);
+    expect(returned.statusCode, returned.body).toBe(200);
+    const view = returned.json<{ returns: { id: string; state: string }[] }>();
+    expect(view.returns).toMatchObject([{ state: 'reading', by: h.ids.grace }]);
+
+    // The source approved again since, and the file read back as the worker reads it.
+    const revised = await cut(
+      'grace',
+      source.id,
+      source.version.id,
+      [para('b1', 'Lakes, twice.')],
+      'en-GB',
+    );
+    const version = revised.json<{ version: { id: string } }>().version;
+    await h.call('grace', 'POST', `/v1/components/${source.id}/transitions`, {
+      transition: 'submit',
+      from: 'draft',
+    });
+    await h.call('ada', 'POST', `/v1/components/${source.id}/approvals`, {
+      transition: 'approve',
+      version: version.id,
+      decision: 'approved',
+    });
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      applyReturn(trx, {
+        id: view.returns[0]!.id,
+        target: 'de-DE',
+        files: new Map([
+          [`f.${source.id}`, new Map([['b.b1', [{ kind: 'text', text: 'Seen.' }]]])],
+        ]),
+        mayEdit: async () => true,
+      }),
+    );
+
+    const held = await h.call('grace', 'GET', `${jobs}/items/${source.id}/held`);
+    expect(held.statusCode, held.body).toBe(200);
+    expect(held.json()).toMatchObject({
+      sent: { id: source.version.id },
+      current: { id: version.id },
+      changes: [{ block: 'b1', change: 'changed', words: 'Lakes, twice.' }],
+      returned: [{ block: 'b1', words: 'Seen.' }],
+      offered: 'review',
+    });
+    expect((await h.call('alice', 'GET', `${jobs}/items/${source.id}/held`)).statusCode).toBe(403);
+
+    const decide = (who: string, decision: string) =>
+      h.call(who, 'POST', `${jobs}/items/${source.id}/decision`, { decision });
+    expect((await decide('alice', 'accept')).statusCode).toBe(403);
+    const accepted = await decide('grace', 'accept');
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    expect(accepted.json()).toMatchObject({ items: [{ outcome: 'returned' }] });
+    const translations = await h.call('alice', 'GET', `/v1/components/${source.id}/translations`);
+    expect(translations.json()).toMatchObject({
+      translations: [{ language: 'de-DE', status: { status: 'outOfDate' } }],
+    });
+    expect((await decide('grace', 'reject')).statusCode).toBe(404);
+
+    await h.call('grace', 'POST', `${jobs}/close`);
+    expect((await put('grace', file)).json()).toMatchObject({ code: 'translation_job_closed' });
   });
 
   it('keeps a lock per line: the author and a translator hold one each, at once', async () => {
