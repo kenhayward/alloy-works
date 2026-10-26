@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
 import { PersonalPrompts } from './PersonalPrompts.js';
-import { formats, words } from '../words/words.js';
+import { formats, words, wordsWith } from '../words/words.js';
+import { failedWords, proposedNothingWords, stepWords, type StepSaid } from './runWords.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -13,6 +14,7 @@ interface Step {
   readonly id: string;
   readonly name: string;
   readonly summary?: string;
+  readonly said?: StepSaid | undefined;
   readonly ok?: boolean;
   readonly result?: string;
 }
@@ -50,7 +52,8 @@ interface Ended {
   readonly currency: string;
   readonly citations: readonly Citation[];
   readonly dropped: readonly Citation[];
-  /** A prompt run's reply that could not be proposed, and why (G4-I). */
+  /** A prompt run's reply that could not be proposed, and why, by code and in words (G4-I). */
+  readonly refusal?: string;
   readonly refused?: string;
 }
 
@@ -80,6 +83,17 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
     return words('document.declined-an-instruction');
   },
 };
+
+/** A step: the tool, and what it did where it said. */
+function stepLine(step: Step) {
+  const tool = (
+    <span className={styles['strong']}>
+      {TOOL_WORDS[step.name] ?? words('document.asked-for', { name: step.name })}
+    </span>
+  );
+  const said = stepWords(step.said, step.summary);
+  return said === undefined ? tool : wordsWith('assistant.step-said', { said }, { tool });
+}
 
 /**
  * A proposal's text, a block a line, as it would read: paragraphs and list items, a proposed
@@ -401,6 +415,7 @@ export function AssistantPanel({
                       ...step,
                       ok: Boolean(frame.ok),
                       summary: String(frame.summary),
+                      said: frame.said as StepSaid | undefined,
                       result: String(frame.result),
                     }
                   : step,
@@ -437,7 +452,7 @@ export function AssistantPanel({
             setEnded(frame as unknown as Ended);
             break;
           case 'failed':
-            setSaid(String(frame.message));
+            setSaid(failedWords(frame));
             break;
         }
       },
@@ -512,8 +527,7 @@ export function AssistantPanel({
           ? words('document.the-assistant-reads-what-you')
           : words('document.using', {
               name: endpoint.name,
-              value2:
-                endpoint.boundary === 'outside' ? ', which is outside your data boundary' : '',
+              boundary: endpoint.boundary,
             })}
       </p>
       <div className={styles['actions']}>
@@ -736,7 +750,9 @@ export function AssistantPanel({
           ))}
         </ol>
       )}
-      {ended?.refused !== undefined && <p role="status">{ended.refused}</p>}
+      {ended?.refused !== undefined && (
+        <p role="status">{proposedNothingWords(ended.refusal, ended.refused)}</p>
+      )}
       {ended !== null && ended.dropped.length > 0 && (
         <p className={styles['muted']}>
           {words('document.citations-were', { count: ended.dropped.length })}{' '}
@@ -745,17 +761,11 @@ export function AssistantPanel({
       )}
       {steps.length > 0 && (
         <details className={styles['steps']}>
-          <summary>
-            {words('document.what-it-did')}
-            {steps.length} {words('document.steps', { count: steps.length })})
-          </summary>
+          <summary>{words('document.what-it-did', { count: steps.length })}</summary>
           <ol>
             {steps.map((step) => (
               <li key={step.id}>
-                <span className={styles['strong']}>
-                  {TOOL_WORDS[step.name] ?? words('document.asked-for', { name: step.name })}
-                </span>
-                {step.summary !== undefined && `: ${step.summary}`}
+                {stepLine(step)}
                 {step.result !== undefined && <pre className={styles['result']}>{step.result}</pre>}
               </li>
             ))}

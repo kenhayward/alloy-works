@@ -38,7 +38,13 @@ export {
   outlineOperationSchema,
   repointsBetween,
 } from './operations.js';
-export type { OutlineApplied, OutlineOperation, OutlineRules, Repoint } from './operations.js';
+export type {
+  OutlineApplied,
+  OutlineChangeRefused,
+  OutlineOperation,
+  OutlineRules,
+  Repoint,
+} from './operations.js';
 
 export { contributionsOf, inlineContributions } from './contributions.js';
 export type { Contribution } from './contributions.js';

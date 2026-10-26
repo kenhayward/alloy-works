@@ -2,6 +2,7 @@ import type { ReportEntry } from '@alloy-works/domain';
 import { useId, type Ref } from 'react';
 
 import styles from './PasteReport.module.css';
+import { reportWords } from './reportWords.js';
 import { words } from '../words/words.js';
 
 /**
@@ -51,7 +52,7 @@ export function PasteReport({ entries, onClose, held, ref }: PasteReportProps) {
       <ul className={styles['entries']}>
         {entries.map((entry, index) => (
           <li key={index}>
-            {entry.message}
+            {reportWords(entry)}
             {entry.count !== undefined && entry.count > 1 && (
               <span className={styles['count']}>
                 {' '}

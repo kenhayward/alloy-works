@@ -66327,6 +66327,11 @@ export interface operations {
                              * @enum {string}
                              */
                             code: "restore_unreadable" | "restore_unchanged" | "outline_invalid" | "values_invalid" | "values_unresolved" | "reference_deleted";
+                            /**
+                             * @description outline_invalid: which guard, by code: a component the outline may not reference; sections the template does not allow added, removed or reordered; or a section it requires removed, which a restore cannot give a reason for
+                             * @enum {string}
+                             */
+                            why?: "reference_refused" | "sections_added" | "sections_removed" | "sections_reordered" | "required_removed";
                             /** @description outline_invalid: why, in words */
                             reason?: string;
                             /** @description reference_deleted: the reference, by its node */
@@ -66540,6 +66545,11 @@ export interface operations {
                             schemas: string[];
                             detail: string;
                         }[];
+                        /**
+                         * @description outline_invalid: which guard, by code: a component the outline may not reference; sections the template does not allow added, removed or reordered; or a section it requires removed, which a restore cannot give a reason for
+                         * @enum {string}
+                         */
+                        why?: "reference_refused" | "sections_added" | "sections_removed" | "sections_reordered" | "required_removed";
                         /** @description outline_invalid: why, in words */
                         reason?: string;
                         /** @description reference_deleted: the reference, by its node */
@@ -66658,6 +66668,11 @@ export interface operations {
                             schemas: string[];
                             detail: string;
                         }[];
+                        /**
+                         * @description outline_invalid: which guard, by code: a component the outline may not reference; sections the template does not allow added, removed or reordered; or a section it requires removed, which a restore cannot give a reason for
+                         * @enum {string}
+                         */
+                        why?: "reference_refused" | "sections_added" | "sections_removed" | "sections_reordered" | "required_removed";
                         /** @description outline_invalid: why, in words */
                         reason?: string;
                         /** @description reference_deleted: the reference, by its node */

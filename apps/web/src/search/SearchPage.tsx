@@ -6,6 +6,7 @@ import { Chip } from '../parts/Chip.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import { PlaceIntoButton } from '../structure/PlaceSection.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
+import { searchSaid, type SearchSaid } from './said.js';
 import styles from './SearchPage.module.css';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -86,12 +87,13 @@ interface Facets {
 }
 
 type Answer =
-  | { readonly outcome: 'empty' | 'nothing_to_match' | 'unknown_field'; readonly message: string }
+  | Exclude<SearchSaid, { readonly outcome: 'results' }>
   | {
       readonly outcome: 'results';
       readonly message: string;
       readonly count: number;
       readonly capped: boolean;
+      readonly facetsBounded?: boolean;
       readonly items: readonly Result[];
       readonly facets: Facets;
       /** Whether meaning was searched beside the words (the G7 plan, G7-I). */
@@ -462,7 +464,7 @@ export function SearchPage({
           </button>
         </Notice>
       )}
-      {answer !== null && problem === null && <p role="status">{answer.message}</p>}
+      {answer !== null && problem === null && <p role="status">{searchSaid(answer)}</p>}
       {answer?.outcome === 'results' && answer.meaning === 'unavailable' && problem === null && (
         <p className={styles['about']}>
           Searching by meaning is unavailable just now: these are found by their words alone.

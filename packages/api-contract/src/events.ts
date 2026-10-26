@@ -180,7 +180,17 @@ export const assistantEvents = {
       id: z.string(),
       name: z.string(),
       ok: z.boolean(),
-      summary: z.string(),
+      summary: z.string().describe('What the step did, in English'),
+      said: z
+        .object({
+          code: z.string(),
+          count: z.number().int().optional(),
+          number: z.number().int().optional(),
+          version: z.string().optional(),
+        })
+        .describe(
+          'What the step did, by code for the reader’s language: `found`, `components` and `values` with a `count`; `blocks` with a `count` and the `version` read; `proposal` with its `number`; `not_yours_to_change`, `not_yours_to_make`, `no_such_component`, `no_such_type`, `no_such_tool`, `citation_refused`, `arguments_refused`, `edit_refused`, `text_refused`, `changes_nothing`, `too_many_calls` or `declined`; or a refusal’s own code',
+        ),
       result: z.string(),
     }),
   },
@@ -235,6 +245,13 @@ export const assistantEvents = {
       currency: z.string(),
       citations: z.array(Citation),
       dropped: z.array(Citation),
+      refusal: z
+        .enum(['nothing_written', 'edit_refused'])
+        .optional()
+        .describe(
+          "A prompt's run that proposes nothing, by code: `nothing_written`, the model wrote nothing; `edit_refused`, what it wrote is not text the part can take",
+        ),
+      refused: z.string().optional().describe('Why nothing is proposed, in words'),
     }),
   },
   failed: {

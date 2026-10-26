@@ -426,6 +426,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       expect(refused.find((frame) => frame.event === 'tool_result')!.data).toMatchObject({
         ok: false,
         summary: 'Not yours to make',
+        said: { code: 'not_yours_to_make' },
       });
       expect(refused.map((frame) => frame.event)).not.toContain('proposal');
     } finally {

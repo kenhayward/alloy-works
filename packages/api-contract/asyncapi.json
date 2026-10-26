@@ -725,7 +725,34 @@
               "type": "boolean"
             },
             "summary": {
-              "type": "string"
+              "type": "string",
+              "description": "What the step did, in English"
+            },
+            "said": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "number": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "additionalProperties": false,
+              "description": "What the step did, by code for the reader’s language: `found`, `components` and `values` with a `count`; `blocks` with a `count` and the `version` read; `proposal` with its `number`; `not_yours_to_change`, `not_yours_to_make`, `no_such_component`, `no_such_type`, `no_such_tool`, `citation_refused`, `arguments_refused`, `edit_refused`, `text_refused`, `changes_nothing`, `too_many_calls` or `declined`; or a refusal’s own code"
             },
             "result": {
               "type": "string"
@@ -736,6 +763,7 @@
             "name",
             "ok",
             "summary",
+            "said",
             "result"
           ],
           "additionalProperties": false
@@ -1023,6 +1051,18 @@
                 ],
                 "additionalProperties": false
               }
+            },
+            "refusal": {
+              "description": "A prompt's run that proposes nothing, by code: `nothing_written`, the model wrote nothing; `edit_refused`, what it wrote is not text the part can take",
+              "type": "string",
+              "enum": [
+                "nothing_written",
+                "edit_refused"
+              ]
+            },
+            "refused": {
+              "description": "Why nothing is proposed, in words",
+              "type": "string"
             }
           },
           "required": [

@@ -31,9 +31,10 @@ function service(options: { failFirst?: boolean } = {}) {
     pages: 40,
     images: [12, 13, 14].map((page) => ({
       page,
-      alternative: `Page ${page} of 40, an untagged picture of the preview. For assistive technology, choose Preview, which makes the tagged PDF.`,
+      // The service's English, which the pane words for itself (the UI plan, UI-L).
+      alternative: 'In English',
     })),
-    untagged: UNTAGGED,
+    untagged: 'In English',
     failure: null,
   });
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
@@ -127,10 +128,12 @@ describe('the pages as you edit (the R22 plan, R22b)', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     const pages = await within(pane).findAllByRole('img');
     expect(pages).toHaveLength(3);
-    for (const page of pages) {
-      expect(page.getAttribute('alt')).toMatch(/untagged picture of the preview/);
-      expect(page.getAttribute('alt')).toMatch(/choose Preview, which makes the tagged PDF/);
-    }
+    expect(pages.map((page) => page.getAttribute('alt'))).toEqual(
+      [12, 13, 14].map(
+        (page) =>
+          `Page ${page}, an untagged picture of the preview. For assistive technology, choose Preview, which makes the tagged PDF.`,
+      ),
+    );
     await user.click(within(pane).getByRole('button', { name: 'Preview' }));
     expect(onPreview).toHaveBeenCalledOnce();
   });

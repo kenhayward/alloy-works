@@ -545,7 +545,7 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
     expect(asked.length - tried).toBe(2);
   });
 
-  it('proposes nothing from a blank reply, saying so, and never empties the part', async () => {
+  it('proposes nothing from a blank reply, saying so by code, and never empties the part', async () => {
     const one = await approved({ title: 'Says nothing' });
     const report = await bound([one.id]);
     const was = h.connector.modelFor;
@@ -560,7 +560,10 @@ describe('a prompt run through the service (the G4 plan, G4-H and G4-I)', () => 
       });
       const frames = framesOf(ran.body);
       expect(frames.map((frame) => frame.event)).toEqual(['run', 'text', 'ended']);
-      expect(frames.at(-1)!.data.refused).toBe('The model wrote nothing, so nothing is proposed.');
+      expect(frames.at(-1)!.data).toMatchObject({
+        refusal: 'nothing_written',
+        refused: 'The model wrote nothing, so nothing is proposed.',
+      });
       // A run that proposed nothing is never reused: the next calls again (G6-E).
       const before = asked.length;
       await h.call('grace', 'POST', `/v1/documents/${report.id}/prompt-runs`, {

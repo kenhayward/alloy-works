@@ -142,6 +142,7 @@ import { Chip } from '../parts/Chip.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { ListPanel } from './ListPanel.js';
 import { PasteReport, shownOfPaste } from './PasteReport.js';
+import { reportWords } from './reportWords.js';
 import { importFile } from '../imports/ImportFile.js';
 import { importLink } from '../imports/links.js';
 import { PreformattedPanel } from './PreformattedPanel.js';
@@ -474,7 +475,10 @@ function pasteSentence(
     ? beside.length > 0
       ? PASTED_WITH_REPORT()
       : PASTED()
-    : (report.at(-1)?.message ?? '');
+    : (() => {
+        const last = report.at(-1);
+        return last === undefined ? '' : reportWords(last);
+      })();
   return { beside, said };
 }
 

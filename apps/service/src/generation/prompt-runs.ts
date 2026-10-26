@@ -326,7 +326,9 @@ export function promptRunHandlers(
       let failure: GenerationFailure | undefined;
       let refusedBy: GuardrailRule | undefined;
       let proposal: GenerationProposal | undefined;
-      let problem: string | undefined;
+      // Why nothing is proposed: by code, for its reader's language (UI-L), and in words.
+      let problem:
+        { readonly code: 'nothing_written' | 'edit_refused'; readonly words: string } | undefined;
       try {
         // A reused run's words are its earlier run's, checked again; it calls nothing (G6-E).
         const answer = reused
@@ -372,7 +374,12 @@ export function promptRunHandlers(
             // requester, who must still read the document and suggest on the part.
             const made =
               said.trim() === ''
-                ? { problem: 'The model wrote nothing, so nothing is proposed.' }
+                ? {
+                    problem: {
+                      code: 'nothing_written' as const,
+                      words: 'The model wrote nothing, so nothing is proposed.',
+                    },
+                  }
                 : await db.withTenant(
                     tenant,
                     async (inner) => {
@@ -389,7 +396,11 @@ export function promptRunHandlers(
                         wholeText(part.content, said.trim()),
                         markdownReader(part.content),
                       );
-                      if (!edited.ok) return { problem: edited.problem };
+                      if (!edited.ok) {
+                        return {
+                          problem: { code: 'edit_refused' as const, words: edited.problem },
+                        };
+                      }
                       // Nothing written is no text to propose: a part is never emptied by a blank reply.
                       return {
                         proposal: await makeProposal(inner, {
@@ -428,7 +439,7 @@ export function promptRunHandlers(
                     output: refusedBy ? '' : said,
                     ...(refusedBy ? { refused: 'guardrail', rule: refusedBy.id } : {}),
                     ...(proposal ? { proposal: proposal.id } : {}),
-                    ...(problem ? { refused: problem } : {}),
+                    ...(problem ? { refused: problem.words } : {}),
                   },
                 ],
               });
@@ -476,7 +487,7 @@ export function promptRunHandlers(
             currency: endpoint.currency,
             citations: [],
             dropped: [],
-            ...(problem ? { refused: problem } : {}),
+            ...(problem ? { refusal: problem.code, refused: problem.words } : {}),
           });
         }
       }

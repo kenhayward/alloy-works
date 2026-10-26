@@ -151,10 +151,10 @@ export function assistantHandlers(
     return { outline, readable };
   }
 
-  /** A refusal said to the model as the route would say it: its words, and its code as the summary. */
+  /** A refusal said to the model as the route would say it: its words, and its code as what the step said. */
   const refusedTool = (error: unknown): ToolAnswer => {
     if (error instanceof AppError)
-      return { ok: false, content: error.message, summary: error.code };
+      return { ok: false, content: error.message, said: { code: error.code } };
     throw error;
   };
 
@@ -170,7 +170,7 @@ export function assistantHandlers(
         : {
             ok: false,
             content: `This run has searched reference sources ${REFERENCE_SEARCHES_PER_RUN} times, as many as it may. Cite from what was found.`,
-            summary: 'reference_searches_spent',
+            said: { code: 'reference_searches_spent' },
           };
   };
 
@@ -196,7 +196,7 @@ export function assistantHandlers(
           null,
           capped(referencesAsText(input.source, results)),
         ),
-        summary: `${results.length} found`,
+        said: { code: 'found', count: results.length },
       };
     } catch (error) {
       return refusedTool(error);
@@ -231,7 +231,7 @@ export function assistantHandlers(
       return {
         ok: false,
         content: 'You may not suggest changes to this component.',
-        summary: 'Not yours to change',
+        said: { code: 'not_yours_to_change' },
       };
     }
     const read = (await versionContents(trx, [version])).get(version);
@@ -239,14 +239,19 @@ export function assistantHandlers(
     try {
       content = parseContentDocument(read?.content);
     } catch {
-      return { ok: false, content: 'There is no such component.', summary: 'No such component' };
+      return {
+        ok: false,
+        content: 'There is no such component.',
+        said: { code: 'no_such_component' },
+      };
     }
     const outcome = citeIn(content, {
       block: input.block,
       ...(input.after === undefined ? {} : { after: input.after }),
       ...(input.locator === undefined ? {} : { locator: input.locator }),
     });
-    if (!outcome.ok) return { ok: false, content: outcome.problem, summary: 'Citation refused' };
+    if (!outcome.ok)
+      return { ok: false, content: outcome.problem, said: { code: 'citation_refused' } };
     let record;
     try {
       const source = await sourceSwitchedOn(trx, input.source);
@@ -263,7 +268,7 @@ export function assistantHandlers(
       return {
         ok: false,
         content: 'The source holds no record by that identifier.',
-        summary: 'reference_missing',
+        said: { code: 'reference_missing' },
       };
     }
     const proposal = await makeProposal(trx, {
@@ -281,7 +286,7 @@ export function assistantHandlers(
     return {
       ok: true,
       content: `Proposal ${proposal.number} made. Nothing changes, and no entry is made, until the author accepts it.`,
-      summary: `Proposal ${proposal.number}`,
+      said: { code: 'proposal', number: proposal.number },
       proposal,
     };
   }
@@ -304,19 +309,19 @@ export function assistantHandlers(
     const missing = (what: string): ToolAnswer => ({
       ok: false,
       content: `There is no ${what} in this document that you can read.`,
-      summary: `No such ${what}`,
+      said: { code: `no_such_${what}` },
     });
 
     return async (name: string, input: unknown): Promise<ToolAnswer> => {
       if (!isAssistantTool(name)) {
-        return { ok: false, content: `There is no tool ${name}.`, summary: 'No such tool' };
+        return { ok: false, content: `There is no tool ${name}.`, said: { code: 'no_such_tool' } };
       }
       const parsed = toolInputSchemas[name].safeParse(input);
       if (!parsed.success) {
         return {
           ok: false,
           content: 'The arguments are not what this tool takes.',
-          summary: 'Arguments refused',
+          said: { code: 'arguments_refused' },
         };
       }
       try {
@@ -370,7 +375,7 @@ export function assistantHandlers(
               return {
                 ok: true,
                 content: asData(`document:${document}`, null, lines.join('\n')),
-                summary: `${found.readable.size} components`,
+                said: { code: 'components', count: found.readable.size },
               };
             });
           case 'read_component': {
@@ -387,7 +392,7 @@ export function assistantHandlers(
               return {
                 ok: true,
                 content: asData(`component:${component}`, number, capped(componentAsText(content))),
-                summary: `${content.content.length} blocks, version ${number}`,
+                said: { code: 'blocks', count: content.content.length, version: number },
                 read: { component, version, blocks: content.content.map((block) => block.id) },
               };
             });
@@ -415,7 +420,7 @@ export function assistantHandlers(
                   null,
                   text === '' ? 'Nothing matched.' : capped(text),
                 ),
-                summary: `${hits.length} found`,
+                said: { code: 'found', count: hits.length },
               };
             });
           }
@@ -443,7 +448,7 @@ export function assistantHandlers(
                   null,
                   values.length === 0 ? 'The document binds no values.' : capped(values.join('\n')),
                 ),
-                summary: `${values.length} values`,
+                said: { code: 'values', count: values.length },
               };
             });
           case 'propose_edit': {
@@ -461,7 +466,7 @@ export function assistantHandlers(
                 return {
                   ok: false,
                   content: 'You may not suggest changes to this component.',
-                  summary: 'Not yours to change',
+                  said: { code: 'not_yours_to_change' },
                 };
               }
               const read = (await versionContents(trx, [version])).get(version);
@@ -474,12 +479,12 @@ export function assistantHandlers(
               }
               const outcome = applyEdits(content, edits, markdownReader(content));
               if (!outcome.ok)
-                return { ok: false, content: outcome.problem, summary: 'Edit refused' };
+                return { ok: false, content: outcome.problem, said: { code: 'edit_refused' } };
               if (JSON.stringify(outcome.content) === JSON.stringify(content)) {
                 return {
                   ok: false,
                   content: 'These edits change nothing.',
-                  summary: 'Changes nothing',
+                  said: { code: 'changes_nothing' },
                 };
               }
               const proposal = await makeProposal(trx, {
@@ -491,7 +496,7 @@ export function assistantHandlers(
               return {
                 ok: true,
                 content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it.`,
-                summary: `Proposal ${proposal.number}`,
+                said: { code: 'proposal', number: proposal.number },
                 proposal,
               };
             });
@@ -572,7 +577,7 @@ export function assistantHandlers(
       return {
         ok: false,
         content: 'You may not make a component in that space, or there is none by that identifier.',
-        summary: 'Not yours to make',
+        said: { code: 'not_yours_to_make' },
       };
     }
     if (input.type !== undefined) {
@@ -581,7 +586,7 @@ export function assistantHandlers(
         return {
           ok: false,
           content: 'There is no component type by that identifier.',
-          summary: 'No such type',
+          said: { code: 'no_such_type' },
         };
       }
     }
@@ -593,7 +598,8 @@ export function assistantHandlers(
       content: [],
     } as unknown as ContentDocument;
     const blocks = markdownReader(blank)(input.markdown);
-    if (typeof blocks === 'string') return { ok: false, content: blocks, summary: 'Text refused' };
+    if (typeof blocks === 'string')
+      return { ok: false, content: blocks, said: { code: 'text_refused' } };
     const proposal = await makeCreationProposal(trx, {
       run,
       creates: {
@@ -608,7 +614,7 @@ export function assistantHandlers(
     return {
       ok: true,
       content: `Proposal ${proposal.number} made. Nothing is made until the author accepts it.`,
-      summary: `Proposal ${proposal.number}`,
+      said: { code: 'proposal', number: proposal.number },
       proposal,
     };
   }
@@ -628,7 +634,7 @@ export function assistantHandlers(
         return {
           ok: false,
           content: 'The arguments are not what this tool takes.',
-          summary: 'Arguments refused',
+          said: { code: 'arguments_refused' },
         };
       }
       return db.withTenant(
@@ -657,7 +663,7 @@ export function assistantHandlers(
     const missing: ToolAnswer = {
       ok: false,
       content: 'There is no component by that identifier that you can read.',
-      summary: 'No such component',
+      said: { code: 'no_such_component' },
     };
     const readable = async (trx: TenantTransaction, component: string) => {
       try {
@@ -670,14 +676,14 @@ export function assistantHandlers(
     };
     return async (name: string, input: unknown): Promise<ToolAnswer> => {
       if (!isConversationTool(name)) {
-        return { ok: false, content: `There is no tool ${name}.`, summary: 'No such tool' };
+        return { ok: false, content: `There is no tool ${name}.`, said: { code: 'no_such_tool' } };
       }
       const parsed = conversationToolInputSchemas[name].safeParse(input);
       if (!parsed.success) {
         return {
           ok: false,
           content: 'The arguments are not what this tool takes.',
-          summary: 'Arguments refused',
+          said: { code: 'arguments_refused' },
         };
       }
       return db.withTenant(
@@ -703,7 +709,7 @@ export function assistantHandlers(
               return {
                 ok: true,
                 content: asData('search', null, text === '' ? 'Nothing matched.' : capped(text)),
-                summary: `${hits.length} found`,
+                said: { code: 'found', count: hits.length },
               };
             }
             case 'read_component': {
@@ -715,7 +721,7 @@ export function assistantHandlers(
               return {
                 ok: true,
                 content: asData(`component:${component}`, number, capped(componentAsText(content))),
-                summary: `${content.content.length} blocks, version ${number}`,
+                said: { code: 'blocks', count: content.content.length, version: number },
                 read: {
                   component,
                   version: latest.id,
@@ -740,7 +746,11 @@ export function assistantHandlers(
             }
             case 'declined':
               // The run's loop answers it, and streams its notice (GC-E): never reached.
-              return { ok: false, content: `There is no tool ${name}.`, summary: 'No such tool' };
+              return {
+                ok: false,
+                content: `There is no tool ${name}.`,
+                said: { code: 'no_such_tool' },
+              };
             case 'propose_component':
               return proposeComponent(
                 trx,
@@ -762,7 +772,7 @@ export function assistantHandlers(
                 return {
                   ok: false,
                   content: 'You may not suggest changes to this component.',
-                  summary: 'Not yours to change',
+                  said: { code: 'not_yours_to_change' },
                 };
               }
               let content: ContentDocument;
@@ -773,12 +783,12 @@ export function assistantHandlers(
               }
               const outcome = applyEdits(content, edits, markdownReader(content));
               if (!outcome.ok)
-                return { ok: false, content: outcome.problem, summary: 'Edit refused' };
+                return { ok: false, content: outcome.problem, said: { code: 'edit_refused' } };
               if (JSON.stringify(outcome.content) === JSON.stringify(content)) {
                 return {
                   ok: false,
                   content: 'These edits change nothing.',
-                  summary: 'Changes nothing',
+                  said: { code: 'changes_nothing' },
                 };
               }
               const proposal = await makeProposal(trx, {
@@ -790,7 +800,7 @@ export function assistantHandlers(
               return {
                 ok: true,
                 content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it.`,
-                summary: `Proposal ${proposal.number}`,
+                said: { code: 'proposal', number: proposal.number },
                 proposal,
               };
             }

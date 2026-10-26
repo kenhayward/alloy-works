@@ -652,6 +652,7 @@ describe('a document made from a template', () => {
     expect(answer.refusals).toEqual([
       {
         answer: 'outline.invalid',
+        why: 'required_removed',
         reason:
           "This restore removes a section the document's template requires: remove it first, with a reason",
       },

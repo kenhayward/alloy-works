@@ -55,3 +55,8 @@ language it was made in, refusing one from another. The renderer's own sorts use
 
 `GET` and `PUT /v1/me/preferences` read and choose `interfaceLanguage`, a declared tag or null; `GET
 /v1/me` carries it, so the first render is in it. A refusal's `message` stays English for integrators.
+
+The service's sentences in a successful answer are worded by the renderer from codes beside them (UI-L),
+the English kept for integrators: the assistant's `tool_result.said`, a prompt's `ended.refusal` and a
+restore's `why`, and what search's answer, the admission report's action and subject and a range
+preview's page already hold. A code the renderer has no words for shows the service's English.

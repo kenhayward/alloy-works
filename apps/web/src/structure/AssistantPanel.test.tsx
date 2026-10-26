@@ -230,6 +230,88 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     );
   });
 
+  it("words each step, a prompt's refusal and a failure by its code, never the service's English", async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const said = (id: string, name: string, code: Record<string, unknown>) => [
+      ['tool_call', { id, name, input: {} }],
+      ['tool_result', { id, name, ok: true, summary: 'In English', said: code, result: '' }],
+    ];
+    const stream = running([
+      ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+      ...(said('t1', 'read_component', { code: 'blocks', count: 2001, version: '1.4' }) as [
+        string,
+        unknown,
+      ][]),
+      ...(said('t2', 'propose_edit', { code: 'proposal', number: 3 }) as [string, unknown][]),
+      // A refusal's own code it has no words for: the service's summary.
+      ...(said('t3', 'search_references', { code: 'reference_source_off' }) as [string, unknown][]),
+      ended({ refusal: 'nothing_written', refused: 'In English' }),
+    ]);
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Tidy it.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(
+      await screen.findByText('The model wrote nothing, so nothing is proposed.'),
+    ).toBeVisible();
+    await user.click(screen.getByText('What it did (3 steps)'));
+    const steps = screen.getAllByRole('listitem').filter((each) => each.closest('details'));
+    expect(steps.map((each) => each.textContent)).toEqual([
+      'Read a part: 2,001 blocks, version 1.4',
+      'Proposed an edit: Proposal 3',
+      'Searched a reference source: In English',
+    ]);
+  });
+
+  it('words a failed run by its code, and when a run is free again by the time it names', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const failing = (data: Record<string, unknown>) =>
+      running([
+        ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+        ['failed', { ...data, message: 'In English' }],
+      ]);
+    const { rerender } = render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={failing({ code: 'timeout' })}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Tidy it.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(await screen.findByText('The model did not finish in time.')).toBeVisible();
+    rerender(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={failing({ code: 'model_rate_limited', resetsAt: '2026-10-18T10:00:00.000Z' })}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Again.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(
+      await screen.findByText(
+        /^You have started as many model runs this hour as you may\. One is free again at /,
+      ),
+    ).not.toHaveTextContent('In English');
+  });
+
   it('GEN-011 links each citation it kept to the part it names, and says when one was left out', async () => {
     const user = userEvent.setup();
     const { client } = service();

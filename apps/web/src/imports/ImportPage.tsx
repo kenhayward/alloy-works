@@ -6,6 +6,7 @@ import { Waiting } from '../states/Waiting.js';
 import styles from './Import.module.css';
 import { fileTypeOf } from './ImportFile.js';
 import { IMPORT_HELP, keptBy } from './ImportHelp.js';
+import { reportWords } from '../editor/reportWords.js';
 import { formats, words as say, wordsWith } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -368,14 +369,15 @@ function reasonOf(part: Pick<Part, 'reason' | 'title' | 'kind'>): string {
     : say('imports.what-stands-under-before-its', { heading });
 }
 
-const entryWords = (entry: Entry) => {
-  const what =
-    entry.subject === 'notYetRead' && entry.detail
-      ? `${KINDS[entry.detail] ?? entry.detail}: `
-      : '';
-  const times = entry.count !== undefined && entry.count > 1 ? ` (${entry.count})` : '';
-  return `${what}${entry.message}${times}`;
-};
+const entryWords = (entry: Entry) =>
+  say('imports.entry', {
+    about:
+      entry.subject === 'notYetRead' && entry.detail
+        ? (KINDS[entry.detail] ?? entry.detail)
+        : 'none',
+    said: reportWords(entry),
+    count: entry.count ?? 1,
+  });
 
 /** A file's name, its last dot on, left off. */
 const stem = (name: string) => name.replace(/\.[^.]*$/, '').trim() || name;

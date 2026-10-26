@@ -41,11 +41,54 @@ import { microsText } from './money.js';
  * transcript kept. The assistant's, and a conversation's turn.
  */
 
-/** What a tool answers the model, the step it records, and a short summary for the page. */
+/**
+ * A step said for a person, by code and its values, worded in their language by the renderer (the UI
+ * plan, UI-L). A tool's own refusal is its error's code.
+ */
+export interface ToolSaid {
+  readonly code: string;
+  readonly count?: number;
+  readonly number?: number;
+  readonly version?: string;
+}
+
+/** A step's summary in English, for an integrator: the code itself where it has no words. */
+export function toolSummary(said: ToolSaid): string {
+  const fixed: Record<string, string> = {
+    not_yours_to_change: 'Not yours to change',
+    not_yours_to_make: 'Not yours to make',
+    no_such_component: 'No such component',
+    no_such_type: 'No such type',
+    no_such_tool: 'No such tool',
+    citation_refused: 'Citation refused',
+    arguments_refused: 'Arguments refused',
+    edit_refused: 'Edit refused',
+    text_refused: 'Text refused',
+    changes_nothing: 'Changes nothing',
+    too_many_calls: 'Too many calls',
+    declined: 'Declined',
+  };
+  switch (said.code) {
+    case 'found':
+      return `${said.count} found`;
+    case 'components':
+      return `${said.count} components`;
+    case 'blocks':
+      return `${said.count} blocks, version ${said.version}`;
+    case 'values':
+      return `${said.count} values`;
+    case 'proposal':
+      return `Proposal ${said.number}`;
+    default:
+      return fixed[said.code] ?? said.code;
+  }
+}
+
+/** What a tool answers the model, the step it records, and what it did said for the page. */
 export interface ToolAnswer {
   readonly ok: boolean;
   readonly content: string;
-  readonly summary: string;
+  readonly said: ToolSaid;
   /** The blocks a read answered, which a citation may name (G2-G). */
   readonly read?: {
     readonly component: string;
@@ -278,7 +321,7 @@ export function streamedRun(input: {
               ? {
                   ok: false,
                   content: 'This run has made all the tool calls it may.',
-                  summary: 'Too many calls',
+                  said: { code: 'too_many_calls' },
                 }
               : each.name === DECLINED.name && offersDeclined
                 ? declined(each.input, send)
@@ -305,7 +348,8 @@ export function streamedRun(input: {
             id: each.id,
             name: each.name,
             ok: answered.ok,
-            summary: answered.summary,
+            summary: toolSummary(answered.said),
+            said: answered.said,
             result: answered.content,
           });
           if (answered.proposal) {
@@ -415,11 +459,11 @@ function declined(input: unknown, send: (event: string, data: unknown) => void):
     return {
       ok: false,
       content: 'The arguments are not what this tool takes.',
-      summary: 'Arguments refused',
+      said: { code: 'arguments_refused' },
     };
   }
   send('notice', { where: parsed.data.where, instruction: parsed.data.instruction });
-  return { ok: true, content: 'noted', summary: 'Declined' };
+  return { ok: true, content: 'noted', said: { code: 'declined' } };
 }
 
 /** Everything a call sends but the product's own instructions: the words, tool calls and results. */
