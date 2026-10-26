@@ -4235,6 +4235,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The caller’s own preferences
+         * @description Returns the caller’s own preferences: the language the interface is in, independent of the language of any content they work on, or null where it follows their browser. It needs a signed-in session.
+         */
+        get: operations["getMyPreferences"];
+        /**
+         * Choose the caller’s own preferences
+         * @description Chooses the caller’s own interface language, one of the declared languages, or null to follow their browser’s first declared language, else English. It changes nothing of any content’s language. It needs a signed-in session.
+         */
+        put: operations["setMyPreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/prompts": {
         parameters: {
             query?: never;
@@ -76796,7 +76820,8 @@ export interface operations {
                      *       "email": "example",
                      *       "environment": "example",
                      *       "outside": false,
-                     *       "sharesOnly": false
+                     *       "sharesOnly": false,
+                     *       "interfaceLanguage": "en-GB"
                      *     }
                      */
                     "application/json": {
@@ -76810,6 +76835,8 @@ export interface operations {
                         outside: boolean;
                         /** @description Whether they are from outside and may read no space: shared publications alone, never what they came from */
                         sharesOnly: boolean;
+                        /** @description The language they chose for the interface, or null for their browser’s; never the content’s */
+                        interfaceLanguage: ("en-GB" | "en-XA" | "ar-XB") | null;
                     };
                 };
             };
@@ -77035,6 +77062,224 @@ export interface operations {
                 };
             };
             /** @description token_not_allowed: what waits is a signed-in person’s, never a token’s, whose scopes it could not keep */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getMyPreferences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Their preferences */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "interfaceLanguage": "en-GB"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The language the interface is in, independent of any content’s; null follows the browser’s first declared language, else English */
+                        interfaceLanguage: ("en-GB" | "en-XA" | "ar-XB") | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token: preferences are a signed-in person’s */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setMyPreferences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "interfaceLanguage": "en-GB"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The language the interface is in, independent of any content’s; null follows the browser’s first declared language, else English */
+                    interfaceLanguage: ("en-GB" | "en-XA" | "ar-XB") | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Their preferences, as now chosen */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "interfaceLanguage": "en-GB"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The language the interface is in, independent of any content’s; null follows the browser’s first declared language, else English */
+                        interfaceLanguage: ("en-GB" | "en-XA" | "ar-XB") | null;
+                    };
+                };
+            };
+            /** @description Not a declared interface language */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token: preferences are a signed-in person’s */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

@@ -5,18 +5,25 @@ import { useEffect, useId, useState } from 'react';
 import { connectionLink } from '../data/links.js';
 import { failureSummary } from '../publishing/failures.js';
 import { ModuleIcon } from '../shell/ModuleIcon.js';
-import { MODULE_GROUPS, type Module } from '../shell/modules.js';
+import {
+  MODULE_GROUPS,
+  groupWords,
+  moduleAbout,
+  moduleWords,
+  type Module,
+} from '../shell/modules.js';
 import { publishingLink } from '../structure/links.js';
 import styles from './Home.module.css';
+import { words, type WordKey } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
 /** The modules whose list says how many there are, and how a total is said of each. */
 const COUNTED = {
-  Components: { one: 'component you may read', many: 'components you may read' },
-  Documents: { one: 'document you may read', many: 'documents you may read' },
-  Publications: { one: 'publication you may read', many: 'publications you may read' },
-} as const satisfies Partial<Record<Module['name'], { one: string; many: string }>>;
+  Components: 'home.counted.components',
+  Documents: 'home.counted.documents',
+  Publications: 'home.counted.publications',
+} as const satisfies Partial<Record<Module['name'], WordKey>>;
 
 type Counted = keyof typeof COUNTED;
 
@@ -56,7 +63,11 @@ type Attending =
   | { readonly state: 'unread' }
   | { readonly state: 'read'; readonly items: readonly Waiting[]; readonly total: number };
 
-const UNTITLED = { document: 'A document', component: 'A component', connection: 'A connection' };
+const UNTITLED = {
+  document: 'home.untitled.document',
+  component: 'home.untitled.component',
+  connection: 'home.untitled.connection',
+} as const satisfies Record<string, WordKey>;
 
 /**
  * What each kind says and where its one link goes (home.md, Needs your attention): a failed publish's
@@ -64,35 +75,35 @@ const UNTITLED = { document: 'A document', component: 'A component', connection:
  * says nothing.
  */
 function wordsFor(item: Waiting) {
-  const title = item.artifact.title ?? UNTITLED[item.artifact.kind];
+  const title = item.artifact.title ?? words(UNTITLED[item.artifact.kind]);
   const { id } = item.artifact;
   switch (item.kind) {
     case 'publish_failed':
       return {
-        headline: `${title} cannot publish`,
+        headline: words('home.cannot-publish', { title }),
         detail: failureSummary(item.reason ?? ''),
-        action: 'Open publishing',
+        action: words('home.open-publishing'),
         href: publishingLink(id, item.request),
       };
     case 'changes_not_in_version':
       return {
-        headline: `${title} holds changes of yours not in a version`,
-        detail: 'Open it to recover them, or to discard them.',
-        action: 'Open',
+        headline: words('home.holds-changes-of-yours-not', { title }),
+        detail: words('home.open-it-to-recover-them'),
+        action: words('home.open'),
         href: `#/components/${id}`,
       };
     case 'published_earlier':
       return {
-        headline: `${title} was published from an earlier version`,
-        detail: 'Its latest publication is of an older version than the document is now.',
-        action: 'Open publishing',
+        headline: words('home.was-published-from-an-earlier', { title }),
+        detail: words('home.its-latest-publication-is-of'),
+        action: words('home.open-publishing'),
         href: publishingLink(id),
       };
     case 'connection_untested':
       return {
-        headline: `${title} has not been tested since its credential was set`,
-        detail: 'Test it with the credential it has now.',
-        action: 'Open',
+        headline: words('home.has-not-been-tested-since', { title }),
+        detail: words('home.test-it-with-the-credential'),
+        action: words('home.open'),
         href: connectionLink(id),
       };
     // A review (LIF-017, LIF-059): its day, as a day, whatever the reader's zone.
@@ -107,15 +118,15 @@ function wordsFor(item: Waiting) {
       const href = item.artifact.kind === 'document' ? `#/documents/${id}` : `#/components/${id}`;
       return item.kind === 'review_due'
         ? {
-            headline: `${title} is due for review`,
-            detail: `Review it by ${day}.`,
-            action: 'Open',
+            headline: words('home.is-due-for-review', { title }),
+            detail: words('home.review-it-by', { day }),
+            action: words('home.open'),
             href,
           }
         : {
-            headline: `${title} is overdue for review`,
-            detail: `It was to be reviewed by ${day}.`,
-            action: 'Open',
+            headline: words('home.is-overdue-for-review', { title }),
+            detail: words('home.it-was-to-be-reviewed', { day }),
+            action: words('home.open'),
             href,
           };
     }
@@ -209,19 +220,19 @@ function Attention({ client }: { client: Client }) {
     <section className={styles['attention']} aria-labelledby="home-attention">
       <div className={styles['attentionHead']}>
         <h2 id="home-attention" className={styles['attentionHeading']}>
-          Needs your attention
+          {words('home.needs-your-attention')}
         </h2>
         {attending.state === 'read' && attending.total > 0 && (
           <span className={styles['attentionCount']}>
-            {attending.total === 1 ? '1 item' : `${attending.total} items`}
+            {words('home.other', { count: attending.total })}
           </span>
         )}
       </div>
       {attending.state === 'unread' && (
-        <p className={styles['attentionSaid']}>What needs your attention could not be read.</p>
+        <p className={styles['attentionSaid']}>{words('home.what-needs-your-attention-could')}</p>
       )}
       {attending.state === 'read' && attending.items.length === 0 && (
-        <p className={styles['attentionSaid']}>Nothing needs your attention.</p>
+        <p className={styles['attentionSaid']}>{words('home.nothing-needs-your-attention')}</p>
       )}
       {attending.state === 'read' && attending.items.length > 0 && (
         <ul className={styles['attentionItems']}>
@@ -270,7 +281,7 @@ export function Home({ client }: { client: Client }) {
   return (
     <div className={styles['home']}>
       <h1 id="home-heading" className={styles['greeting']}>
-        {name === null ? 'Welcome back' : `Welcome back, ${name}`}
+        {name === null ? words('home.welcome-back') : words('home.welcome-back-2', { name })}
       </h1>
       {environment !== null && <p className={styles['environment']}>{environment}</p>}
       <div className={styles['columns']}>
@@ -279,7 +290,7 @@ export function Home({ client }: { client: Client }) {
           {MODULE_GROUPS.map(({ group, modules }) => (
             <section key={group} className={styles['group']} aria-labelledby={`home-${group}`}>
               <h2 id={`home-${group}`} className={styles['groupName']}>
-                {group}
+                {groupWords(group)}
               </h2>
               <ul className={styles['modules']}>
                 {modules.map((each) => {
@@ -292,15 +303,13 @@ export function Home({ client }: { client: Client }) {
                           <ModuleIcon name={each.name} />
                         </span>
                         <span className={styles['words']}>
-                          <span className={styles['name']}>{each.name}</span>
-                          <span className={styles['about']}>{each.about}</span>
+                          <span className={styles['name']}>{moduleWords(each.name)}</span>
+                          <span className={styles['about']}>{moduleAbout(each.name)}</span>
                         </span>
                         {count !== null && said !== null && (
                           <span className={styles['total']}>
                             <span className={styles['number']}>{count}</span>{' '}
-                            <span className={styles['unit']}>
-                              {count === 1 ? said.one : said.many}
-                            </span>
+                            <span className={styles['unit']}>{words(said, { count })}</span>
                           </span>
                         )}
                       </a>

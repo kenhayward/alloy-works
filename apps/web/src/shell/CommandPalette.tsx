@@ -2,27 +2,34 @@ import { useEffect, useId, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './CommandPalette.module.css';
-import { MODULES } from './modules.js';
+import { MODULES, moduleWords } from './modules.js';
+import { words } from '../words/words.js';
 
-/** One thing the palette offers: what it says, and the address it goes to. */
+/** One thing the palette offers: what it says, and the address it goes to; a place by its name. */
 interface Command {
+  readonly place?: string;
   readonly label: string;
   readonly href: string;
 }
 
-const GO: readonly Command[] = [
-  { label: 'Go to Home', href: '#/' },
-  ...MODULES.map((each) => ({ label: `Go to ${each.name}`, href: each.href })),
+/** Each place to go, in the interface's language as it is asked for. */
+const go = (): readonly Command[] => [
+  { label: words('shell.go-to-home'), place: words('module.Home'), href: '#/' },
+  ...MODULES.map((each) => ({
+    label: words('shell.go-to', { name: moduleWords(each.name) }),
+    place: moduleWords(each.name),
+    href: each.href,
+  })),
 ];
 
 /** What is offered for `typed`: a search for it first, then each place whose name holds it. */
 export function commandsFor(typed: string): readonly Command[] {
   const text = typed.trim();
-  if (text === '') return GO;
+  if (text === '') return go();
   const wanted = text.toLowerCase();
   return [
-    { label: `Search for "${text}"`, href: `#/search?q=${encodeURIComponent(text)}` },
-    ...GO.filter((each) => each.label.slice('Go to '.length).toLowerCase().includes(wanted)),
+    { label: words('shell.search-for', { text }), href: `#/search?q=${encodeURIComponent(text)}` },
+    ...go().filter((each) => (each.place ?? '').toLowerCase().includes(wanted)),
   ];
 }
 
@@ -69,13 +76,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     <Modal labelledBy={`${ids}-heading`} onClose={onClose}>
       <div className={styles['palette']}>
         <h2 id={`${ids}-heading`} className={styles['heading']}>
-          Search and commands
+          {words('shell.search-and-commands')}
         </h2>
         <input
           className={styles['box']}
           type="text"
           role="combobox"
-          aria-label="Search or go to"
+          aria-label={words('shell.search-or-go-to')}
           aria-expanded="true"
           aria-controls={`${ids}-list`}
           aria-activedescendant={offered.length > 0 ? option(at) : undefined}
@@ -98,7 +105,12 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
             }
           }}
         />
-        <ul id={`${ids}-list`} className={styles['list']} role="listbox" aria-label="Commands">
+        <ul
+          id={`${ids}-list`}
+          className={styles['list']}
+          role="listbox"
+          aria-label={words('shell.commands')}
+        >
           {offered.map((each, index) => (
             <li
               key={each.label}

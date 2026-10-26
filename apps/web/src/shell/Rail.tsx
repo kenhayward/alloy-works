@@ -1,8 +1,9 @@
 import { ModuleIcon } from './ModuleIcon.js';
 import type { ModuleName } from './moduleOf.js';
-import { MODULE_GROUPS } from './modules.js';
+import { MODULE_GROUPS, groupWords, moduleWords } from './modules.js';
 import { useLeftAt } from './places.js';
 import styles from './Rail.module.css';
+import { words } from '../words/words.js';
 
 export interface RailProps {
   /** The module the page is in; null on Home. */
@@ -24,13 +25,13 @@ export function Rail({ module }: RailProps) {
   const administering = module === 'Administration';
 
   return (
-    <nav className={styles['rail']} aria-label="Modules" data-app-region>
+    <nav className={styles['rail']} aria-label={words('shell.modules')} data-app-region>
       <a className={styles['item']} href="#/" aria-current={module === null ? 'page' : undefined}>
         <ModuleIcon name="Home" />
-        <span className={styles['label']}>Home</span>
+        <span className={styles['label']}>{words('shell.home')}</span>
       </a>
       {MODULE_GROUPS.map(({ group, modules }) => (
-        <ul key={group} className={styles['group']} aria-label={group}>
+        <ul key={group} className={styles['group']} aria-label={groupWords(group)}>
           {modules.map((each) => (
             <li key={each.name}>
               <a
@@ -39,7 +40,7 @@ export function Rail({ module }: RailProps) {
                 aria-current={module === each.name ? 'page' : undefined}
               >
                 <ModuleIcon name={each.name} />
-                <span className={styles['label']}>{each.name}</span>
+                <span className={styles['label']}>{moduleWords(each.name)}</span>
               </a>
             </li>
           ))}
@@ -48,11 +49,11 @@ export function Rail({ module }: RailProps) {
       <a
         className={`${styles['item']} ${styles['foot']}`}
         href={administering ? ADMINISTRATION : (leftAt.get('Administration') ?? ADMINISTRATION)}
-        title="Administration"
+        title={words('shell.administration')}
         aria-current={administering ? 'page' : undefined}
       >
         <ModuleIcon name="Admin" />
-        <span className={styles['label']}>Admin</span>
+        <span className={styles['label']}>{words('shell.admin')}</span>
       </a>
     </nav>
   );
