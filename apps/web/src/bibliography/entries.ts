@@ -20,9 +20,9 @@ export type EntryFlag = 'retracted' | 'corrected';
 
 /** A flag as a dialog says it beside an entry, at the start of a phrase or within one. */
 export const flagSaid = (flag: EntryFlag, start = false): string =>
-  words('bibliography.by-its-source', {
-    value1: start ? flag[0]!.toUpperCase() + flag.slice(1) : flag,
-  });
+  start
+    ? words('bibliography.flag-said-start', { flag })
+    : words('bibliography.flag-said', { flag });
 
 const flagOf = (value: unknown): EntryFlag | undefined =>
   value === 'retracted' || value === 'corrected' ? value : undefined;
