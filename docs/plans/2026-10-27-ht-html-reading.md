@@ -44,3 +44,18 @@ AA. It is the first format without pages, so STR-050 and STR-055 become observab
   exhaustive switch failing a kind added later.
 - **The stored shapes**: layout 9's write paths and words, 0168's constraints; migration tests run
   current code on old schemas.
+
+## Built
+
+HT in three PRs: HTa #801, HTb #802 and the close #803. Departures: the inline variant is
+`?disposition=inline`, an outsider given the attachment and any other format refused
+`output_not_shown`; `PlatformBridge.opensServedPages` says where **Open** is offered, and the shell
+still lets the window go to a `/v1/` route that saves or signs in, refusing it only the bridge. The
+writer settles HT-C's parity with `data-block` on every block and `data-image-style` from
+`HtmlInput.imageStyles`, writing a stored `body` resolved, and adds the editor stylesheet's table and
+figure rules; the walks found two violations, fixed: each table region is named by the layout's word
+and its caption (`aria-labelledby`), and the contents' links are padded to WCAG 2.5.8's size.
+`html/2` was not bumped, nothing having been released at it. HT-P compares by `readPdf`'s structure
+order rather than `pdfText`, which holds the artifacts; table cells as their characters, since a row a
+page breaks is told in two halves, and equations by their words. The corpus makes HTML wherever its
+layout does and no page lacks a form: 23 files in 18 of its 31 cases.
