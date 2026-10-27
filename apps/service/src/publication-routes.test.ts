@@ -964,7 +964,11 @@ describe('publishing a document through the service', () => {
     const document = await documentReferencing([]);
     const answer = await publish('grace', document, ['pdf', 'html']);
     const id = await published(answer.json<{ id: string }>().id, ['pdf', 'html']);
-    const shown = await call('alice', 'GET', `/v1/publications/${id}/outputs/html?disposition=inline`);
+    const shown = await call(
+      'alice',
+      'GET',
+      `/v1/publications/${id}/outputs/html?disposition=inline`,
+    );
     expect(shown.statusCode, shown.body).toBe(200);
     expect(shown.headers['content-disposition']).toBeUndefined();
     expect(shown.headers['content-type']).toBe(OUTPUT_CONTENT_TYPES.html);
@@ -984,7 +988,11 @@ describe('publishing a document through the service', () => {
       expect(refused.json(), format).toMatchObject({ code: 'output_not_shown' });
     }
     // Asked as an attachment, it is one.
-    const saved = await call('alice', 'GET', `/v1/publications/${id}/outputs/html?disposition=attachment`);
+    const saved = await call(
+      'alice',
+      'GET',
+      `/v1/publications/${id}/outputs/html?disposition=attachment`,
+    );
     expect(saved.headers['content-disposition']).toBe(`attachment; filename="${id}.html"`);
   });
 

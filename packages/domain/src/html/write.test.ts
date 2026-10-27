@@ -388,7 +388,11 @@ describe('the HTML writer (the HT plan, HTa)', () => {
       'data-role': 'attribution',
     });
     const [pre] = all(tree, 'pre');
-    expect(pre!.attrs).toEqual({ 'data-role': 'preformatted', 'data-language': 'python', 'data-block': 'c1' });
+    expect(pre!.attrs).toEqual({
+      'data-role': 'preformatted',
+      'data-language': 'python',
+      'data-block': 'c1',
+    });
     expect(textOf(pre!)).toBe('a < b\n  c');
   });
 

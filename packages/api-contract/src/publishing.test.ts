@@ -257,7 +257,10 @@ describe('the publishing contract for HTML (the HT plan, HT-E)', () => {
   it("shows an HTML output as made by the HTML writer, claiming no PDF standard, shown only by the service's own route", () => {
     const view = PublicationView.parse(viewWith([pdf, html], { formats: ['pdf', 'html'] }));
     expect(view.outputs).toEqual([pdf, html]);
-    const shown = { ...html, view: `/v1/publications/${'a'.repeat(8)}/outputs/html?disposition=inline` };
+    const shown = {
+      ...html,
+      view: `/v1/publications/${'a'.repeat(8)}/outputs/html?disposition=inline`,
+    };
     expect(PublicationView.parse(viewWith([pdf, shown])).outputs[1]).toEqual(shown);
     for (const wrong of [
       { standard: 'ua-1' },

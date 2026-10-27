@@ -92,7 +92,12 @@ beforeAll(async () => {
     await published(
       client,
       'Arabic',
-      [paragraph('ar1', [text(`${ARABIC} `), text('Ada', [{ type: 'language', id: 'k1', tag: 'en-GB' }])])],
+      [
+        paragraph('ar1', [
+          text(`${ARABIC} `),
+          text('Ada', [{ type: 'language', id: 'k1', tag: 'en-GB' }]),
+        ]),
+      ],
       [],
       { language: 'ar', direction: 'rtl' },
     ),

@@ -18260,6 +18260,10 @@
       "document": "publishing.md",
       "owns": [
         {
+          "id": "PUB-056",
+          "howItIsMet": "HTML is a third output from the same published document, one self-contained file to read on a screen, held to WCAG 2.2 AA in pinned Chromium (axe, reflow at 320 px and 200% text, every passage's language and direction), as the PDF is to PDF/UA-1 ([HTML](#html))"
+        },
+        {
           "id": "PUB-057",
           "howItIsMet": "A publication is shared outside the organisation only with a named address: somebody from outside who signed in with it, verified, or the address invited as such; never one of the organisation's own, and nothing reads without a sign-in ([Shares](#shares))"
         },
@@ -21002,13 +21006,13 @@
     {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 169,
+      "line": 170,
       "kind": "title"
     },
     {
       "id": "LOC-005",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 241,
+      "line": 242,
       "kind": "title"
     },
     {
@@ -23192,31 +23196,31 @@
     {
       "id": "PUB-057",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 204,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "PUB-058",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 312,
+      "line": 356,
       "kind": "title"
     },
     {
       "id": "PUB-059",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 347,
+      "line": 391,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 294,
+      "line": 338,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/service/src/share-routes.test.ts",
-      "line": 241,
+      "line": 285,
       "kind": "title"
     },
     {
@@ -24692,7 +24696,7 @@
     {
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
-      "line": 833,
+      "line": 834,
       "kind": "title"
     },
     {
@@ -25226,37 +25230,37 @@
     {
       "id": "PUB-004",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 78,
+      "line": 79,
       "kind": "title"
     },
     {
       "id": "PUB-045",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 52,
+      "line": 53,
       "kind": "title"
     },
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 772,
+      "line": 830,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 833,
+      "line": 891,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 796,
+      "line": 854,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 499,
+      "line": 557,
       "kind": "title"
     },
     {
@@ -25286,13 +25290,13 @@
     {
       "id": "LOC-010",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1668,
+      "line": 1680,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1721,
+      "line": 1733,
       "kind": "title"
     },
     {
@@ -27098,31 +27102,31 @@
     {
       "id": "PUB-087",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 493,
+      "line": 675,
       "kind": "title"
     },
     {
       "id": "PUB-098",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1014,
+      "line": 1196,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 188,
+      "line": 191,
       "kind": "title"
     },
     {
       "id": "PUB-106",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1313,
+      "line": 1495,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1321,
+      "line": 1503,
       "kind": "title"
     },
     {
@@ -27386,7 +27390,7 @@
     {
       "id": "LIB-036",
       "file": "packages/api-contract/src/publishing.test.ts",
-      "line": 326,
+      "line": 337,
       "kind": "title"
     },
     {
@@ -30830,13 +30834,13 @@
     {
       "id": "STR-050",
       "file": "packages/domain/src/html/write.test.ts",
-      "line": 687,
+      "line": 695,
       "kind": "title"
     },
     {
       "id": "STR-055",
       "file": "packages/domain/src/html/write.test.ts",
-      "line": 638,
+      "line": 646,
       "kind": "title"
     },
     {
@@ -33285,6 +33289,12 @@
       "id": "LIF-022",
       "file": "tests/browser/src/holds.test.ts",
       "line": 28,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-056",
+      "file": "tests/browser/src/html.test.ts",
+      "line": 139,
       "kind": "title"
     },
     {

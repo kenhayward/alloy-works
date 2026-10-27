@@ -369,7 +369,9 @@ export function Publishing({
               {formatsWords([format])}
             </label>
           ))}
-          {chosen.length === 0 && <p id={`${choiceId}-none`}>{say('publishing.choose-a-format')}</p>}
+          {chosen.length === 0 && (
+            <p id={`${choiceId}-none`}>{say('publishing.choose-a-format')}</p>
+          )}
         </fieldset>
       )}
       {mayPublish && others.length > 0 && (

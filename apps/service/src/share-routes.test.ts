@@ -272,7 +272,11 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
       view: null,
     });
     // Asked to show it, the service still saves it.
-    const asked = await call('iris', 'GET', `/v1/publications/${shared}/outputs/html?disposition=inline`);
+    const asked = await call(
+      'iris',
+      'GET',
+      `/v1/publications/${shared}/outputs/html?disposition=inline`,
+    );
     expect(asked.statusCode, asked.body).toBe(200);
     expect(asked.headers['content-disposition']).toBe(`attachment; filename="${shared}.html"`);
     expect(asked.headers['content-security-policy']).toBe('sandbox');

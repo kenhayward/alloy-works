@@ -501,7 +501,10 @@ const heldAsHtml = async (
   stored: ReadonlyMap<string, Uint8Array>,
   pdf: Uint8Array,
 ): Promise<void> => {
-  const assembled = assemble({ ...input, formats: [...new Set([...input.formats, 'html'])] } as Laid);
+  const assembled = assemble({
+    ...input,
+    formats: [...new Set([...input.formats, 'html'])],
+  } as Laid);
   if (!assembled.ok) {
     for (const each of assembled.failures) {
       expect(['format_unsupported', 'page_reference_without_pages']).toContain(each.code);
@@ -526,10 +529,14 @@ const heldAsHtml = async (
   const read = await readPdf(pdf);
   const printed = spokenIn(read);
   const shown = shownIn(html);
-  expect(differing(squeezed(shown.flow), squeezed(printed.flow)), 'the same text in order').toBeNull();
-  expect(shown.notes.map((each) => each.map(squeezed).sort()), 'the same notes').toEqual(
-    printed.notes.map((each) => each.map(squeezed).sort()),
-  );
+  expect(
+    differing(squeezed(shown.flow), squeezed(printed.flow)),
+    'the same text in order',
+  ).toBeNull();
+  expect(
+    shown.notes.map((each) => each.map(squeezed).sort()),
+    'the same notes',
+  ).toEqual(printed.notes.map((each) => each.map(squeezed).sort()));
   expect(shown.tables.map(characters), "the same tables' cells").toEqual(
     printed.tables.map(characters),
   );
@@ -590,7 +597,7 @@ function spokenIn(read: Awaited<ReturnType<typeof readPdf>>): {
       if (roles.includes('Lbl')) {
         note = '';
         notes.at(-1)!.push(note);
-      } else notes.at(-1)![notes.at(-1)!.length - 1] = (note = `${note ?? ''}${text}`);
+      } else notes.at(-1)![notes.at(-1)!.length - 1] = note = `${note ?? ''}${text}`;
       continue;
     }
     // A list's markers, which HTML's stylesheet draws.
