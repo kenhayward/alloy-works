@@ -29,6 +29,7 @@ import { CHAPTERS, PAGES, seedReferenceDocument } from './testing/reference-docu
 import { publishJob } from './jobs/publish.js';
 import { suiteChecker } from './testing/verapdf.js';
 import { TYPST_RELEASE } from './typst-release.js';
+import { loadSubsetter } from './subset.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
@@ -324,102 +325,99 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
 
 describe("an HTML publication's faces, measured (the HT plan, HT-B)", () => {
   /**
-   * HTML embeds every face its text is set in, and each one's fallbacks, whole, in base64 (HT-A,
-   * HT-B). Measured on a short document in the default theme setting text and code, beside what the
-   * maths face would add where an equation is set (HTb). The plan takes up subsetting in this slice
-   * where the default theme's corpus case passes 3 MB; this records the figure it is judged by.
+   * HTa measured faces embedded whole: a short document in the default theme setting text and code past
+   * 3 MB, so HTb subsets each face to the characters it sets (HT-B). This records both, for that
+   * document and for one setting an equation too, which is what the plan's HT-B row is judged by.
    */
-  it('measures one HTML file in the default theme, its faces inline whole, and what maths would add', async ({
+  it('measures one HTML file in the default theme, its faces whole and subset, with maths and without', async ({
     task,
   }) => {
     const fonts = await loadPinnedFonts();
     const faces = await pinnedFacesByHash(fonts.directory);
+    const subset = await loadSubsetter();
     const id = (name: string) => name.padEnd(26, 'a');
-    const made = assemble({
-      formats: ['html'],
-      outline: parseOutlineDocument({
-        schemaVersion: OUTLINE_SCHEMA_VERSION,
-        title: 'The dosing report',
-        language: 'en-GB',
-        direction: 'ltr',
-        nodes: [
-          {
-            type: 'reference',
-            id: id('calib'),
-            component: '00000000-0000-4000-8000-000000000001',
-            mode: { kind: 'latest' },
-            numbered: true,
-            matter: 'body',
-            pageBreak: 'none',
-            values: {},
-            children: [],
-          },
-        ],
-      }),
-      occurrences: new Map([
-        [
-          id('calib'),
-          parseContentDocument({
-            schemaVersion: 1,
-            title: 'Calibration',
-            language: 'en-GB',
-            direction: 'ltr',
-            content: [
-              {
-                type: 'paragraph',
-                id: 'p1',
-                style: 'body',
-                content: [
-                  { type: 'text', value: 'Ada sets ', marks: [] },
-                  { type: 'text', value: 'tray.cfg', marks: [{ type: 'inlineCode', id: 'k1' }] },
-                  { type: 'text', value: ' before every run.', marks: [] },
-                ],
-              },
-              { type: 'preformatted', id: 'c1', text: 'tray = 3' },
-            ],
-          }),
-        ],
-      ]),
-      refused: [],
-      layout: defaultLayout,
-      theme: defaultTheme,
-      revision: '0.1',
-      covers: fonts.covers,
-      assets: new Map(),
-    });
-    if (!made.ok || made.html === null) throw new Error(JSON.stringify(made));
-    const written = writeHtml({ document: made.document, html: made.html, faces });
-    if (!written.ok) throw new Error(JSON.stringify(written.failures));
-    const html = new TextDecoder().decode(written.bytes);
-    const base64 = (bytes: number) => 4 * Math.ceil(bytes / 3);
-    const embedded = [...defaultTheme.typefaces.values()].map((face) => {
-      const bytes = face.files.reduce(
-        (sum, file) => sum + (faces.get(file.sha256)?.length ?? 0),
-        0,
-      );
-      return {
-        family: face.family,
-        inline: html.includes(`@font-face { font-family: "aw-face-${face.id}"; src: url("data:`),
-        megabytes: Number((base64(bytes) / 2 ** 20).toFixed(2)),
+    const SUM = String.fromCodePoint(0x2211);
+    const made = (withMaths: boolean) => {
+      const assembled = assemble({
+        formats: ['html'],
+        outline: parseOutlineDocument({
+          schemaVersion: OUTLINE_SCHEMA_VERSION,
+          title: 'The dosing report',
+          language: 'en-GB',
+          direction: 'ltr',
+          nodes: [
+            {
+              type: 'reference',
+              id: id('calib'),
+              component: '00000000-0000-4000-8000-000000000001',
+              mode: { kind: 'latest' },
+              numbered: true,
+              matter: 'body',
+              pageBreak: 'none',
+              values: {},
+              children: [],
+            },
+          ],
+        }),
+        occurrences: new Map([
+          [
+            id('calib'),
+            parseContentDocument({
+              schemaVersion: 1,
+              title: 'Calibration',
+              language: 'en-GB',
+              direction: 'ltr',
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'p1',
+                  style: 'body',
+                  content: [
+                    { type: 'text', value: 'Ada sets ', marks: [] },
+                    { type: 'text', value: 'tray.cfg', marks: [{ type: 'inlineCode', id: 'k1' }] },
+                    { type: 'text', value: ' before every run.', marks: [] },
+                  ],
+                },
+                { type: 'preformatted', id: 'c1', text: 'tray = 3' },
+                ...(withMaths
+                  ? [
+                      {
+                        type: 'equation',
+                        id: 'e1',
+                        numbered: false,
+                        mathml:
+                          '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="the sum of x i">' +
+                          `<munderover><mo movablelimits="true">${SUM}</mo><mrow><mi>i</mi><mo>=</mo>` +
+                          '<mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>x</mi><mi>i</mi></msub></math>',
+                      },
+                    ]
+                  : []),
+              ],
+            }),
+          ],
+        ]),
+        refused: [],
+        layout: defaultLayout,
+        theme: defaultTheme,
+        revision: '0.1',
+        covers: fonts.covers,
+        assets: new Map(),
+      });
+      if (!assembled.ok || assembled.html === null) throw new Error(JSON.stringify(assembled));
+      const { document, html } = assembled;
+      const megabytes = (kept: typeof subset) => {
+        const written = writeHtml({ document, html, faces, images: new Map(), subset: kept });
+        if (!written.ok) throw new Error(JSON.stringify(written.failures));
+        return Number((written.bytes.length / 2 ** 20).toFixed(3));
       };
-    });
-    const measured = {
-      fileMegabytes: Number((written.bytes.length / 2 ** 20).toFixed(2)),
-      faces: embedded,
-      // The faces a document setting maths too would carry: every face the default theme names.
-      withMathsMegabytes: Number(
-        (
-          embedded.reduce((sum, each) => sum + each.megabytes, 0) +
-          written.bytes.length / 2 ** 20 -
-          embedded.filter((each) => each.inline).reduce((sum, each) => sum + each.megabytes, 0)
-        ).toFixed(2),
-      ),
+      return { whole: megabytes((bytes) => bytes), subset: megabytes(subset) };
     };
+    const measured = { textAndCode: made(false), withMaths: made(true) };
     Object.assign(task.meta, { htmlFaces: measured });
     console.info(`HTML faces report
 ${JSON.stringify(measured, null, 2)}`);
-    // The text's faces are inline, each file once; the maths face, which nothing here sets, is not.
-    expect(embedded.filter((each) => each.inline).length).toBeGreaterThan(1);
-    expect(embedded.find((each) => each.family === defaultTheme.maths.family)!.inline).toBe(false);
+    // Subset, each is far below the 3 MB line the plan judges a file by.
+    expect(measured.textAndCode.subset).toBeLessThan(0.5);
+    expect(measured.withMaths.subset).toBeLessThan(1);
   });
 });

@@ -42,6 +42,7 @@ import {
 } from '../fonts.js';
 import { JobRefused } from '../refusal.js';
 import { leakedFrom } from '../scan.js';
+import { loadSubsetter } from '../subset.js';
 import {
   PUBLICATION_TEMPLATE,
   PUBLISHING_SCHEMA_CURRENT,
@@ -138,6 +139,10 @@ export async function rootImages(
  * no node, no block, no detail - so a face changed under a running worker, a crash or a lost
  * connection never reads as something wrong with the document.
  */
+/** HarfBuzz's subsetter, instantiated once, on the first HTML publish (HT-B). */
+let subsetting: ReturnType<typeof loadSubsetter> | undefined;
+const subsetter = () => (subsetting ??= loadSubsetter());
+
 const platformFailure = (stage: 'engine' | 'store'): PublishFailure => ({
   stage,
   code: stage === 'store' ? 'store_failed' : 'engine_failed',
@@ -474,9 +479,16 @@ export function publishJob(deps: {
         if (bound !== undefined) placed.set(value.image.assetVersion, bound);
       }
       const images = await rootImages(placed, (key) => read.store.get(key));
-      // HTML first, where it is asked for (the HT plan, HTa): written from the document and the faces
-      // alone, so a kind its writer does not write yet fails the publish by name before the PDF is
-      // compiled or anything is kept.
+      const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
+      // Asked of the template before anything is made (TB3-I): a table it cannot set whole fails the
+      // publish by name, and Word sets each table as the PDF does. Template 1 sets no wide table.
+      const wide =
+        schema === PUBLISHING_SCHEMA_1
+          ? []
+          : await wideTables(deps.typst, template.file, data, request.compiledAt, images);
+      // HTML first, where it is asked for (the HT plan): written from the document, its faces and its
+      // images, each face subset by HarfBuzz to what it sets (HT-B), and the tables the PDF set too wide
+      // for its measure, which HTML reflows (HT-K).
       if (formats.includes('html')) {
         const { document, html } = assembled;
         if (html === null || document.schema === PUBLISHING_SCHEMA_1) {
@@ -487,6 +499,15 @@ export function publishJob(deps: {
           html,
           // The theme's faces were held to exactly these files above, as Word's are.
           faces: await pinnedFacesByHash(deps.fonts.directory),
+          images: new Map(images.map((image) => [image.path, image.bytes])),
+          wide: wide.flatMap(({ node, table, scale, rotate }): WideTable[] =>
+            rotate
+              ? [{ node, block: table, set: 'rotated' }]
+              : scale === null
+                ? []
+                : [{ node, block: table, set: 'scaled' }],
+          ),
+          subset: await subsetter(),
         });
         if (!written.ok) throw new PublishRefused(written.failures);
         made.push({
@@ -503,13 +524,6 @@ export function publishJob(deps: {
             }),
         });
       }
-      const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
-      // Asked of the template before anything is made (TB3-I): a table it cannot set whole fails the
-      // publish by name, and Word sets each table as the PDF does. Template 1 sets no wide table.
-      const wide =
-        schema === PUBLISHING_SCHEMA_1
-          ? []
-          : await wideTables(deps.typst, template.file, data, request.compiledAt, images);
       if (formats.includes('pdf')) {
         // At the request's time, or a baseline's own, so every publish of one is the same bytes (BL-F).
         const pdf = await deps.typst.compile(template.file, data, request.compiledAt, images);
