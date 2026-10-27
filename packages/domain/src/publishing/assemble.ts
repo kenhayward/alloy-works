@@ -86,6 +86,7 @@ import {
   characterProblems,
   codePointName,
   settingFaces,
+  facePieces,
   type Chain,
   type Covers,
   type Setting,
@@ -307,6 +308,8 @@ export interface WordInput {
   readonly images: ReadonlyMap<string, WordImage>;
   readonly references: ReadonlyMap<string, WordReference>;
   readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
+  /** What each family covers, as the glyph check asked: the writer splits a run by it (UF-G). */
+  readonly covers: Covers;
 }
 
 /**
@@ -2129,21 +2132,9 @@ export function assemble(given: AssembleInput): Assembled {
     };
   };
 
-  /** `text` cut where the face of `chain` setting it changes; one setting nothing takes the first. */
-  const piecesOf = (text: string, chain: readonly Typeface[]) => {
-    if (chain.length === 1) return [{ face: chain[0]!, text }];
-    const faces = settingFaces(text, input.covers, unset({ chain }));
-    const pieces: { face: Typeface; text: string }[] = [];
-    let at = 0;
-    for (const character of text) {
-      const face = chain.find((each) => each.family === faces[at]) ?? chain[0]!;
-      const last = pieces[pieces.length - 1];
-      if (last?.face === face) last.text += character;
-      else pieces.push({ face, text: character });
-      at += 1;
-    }
-    return pieces;
-  };
+  /** `text` cut where the face of `chain` setting it changes. */
+  const piecesOf = (text: string, chain: readonly Typeface[]) =>
+    facePieces(text, input.covers, chain);
   /**
    * How a face of a style's chain sets its characters, bold and slanted as asked, from the pinned files
    * (TG3). A face with no italic sets its upright at the weight asked, as the engine does (UF-E).
@@ -2756,6 +2747,7 @@ export function assemble(given: AssembleInput): Assembled {
             images: wordImages,
             references: wordReferences,
             titles: wordTitles,
+            covers: input.covers,
           }
         : null,
     document: {

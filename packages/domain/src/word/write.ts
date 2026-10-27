@@ -45,6 +45,7 @@ import { sectionNumbers, type NumberingTable } from '../structure/numbering.js';
 import type { OutlineMatter } from '../structure/outline.js';
 import { formatCounter, type NumberingScheme } from '../structure/scheme.js';
 import {
+  complexScriptFace,
   headingDepths,
   hex,
   markStyleId,
@@ -62,6 +63,8 @@ import {
 import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
 import { runFormat, wordRun, type WordRun } from '../theme/runs.js';
 import type { Role, StyledMark, TableStyle, Typeface } from '../theme/schema.js';
+
+import { facePieces, type Covers } from '../publishing/glyphs.js';
 
 import { faceAdvances, type FaceAdvances } from './advances.js';
 import { fontKey, obfuscateFont } from './fonts.js';
@@ -122,9 +125,11 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * would meet with an empty paragraph, and names a table whose caption is below it where it begins,
  * and `word/6` is W15.2's, which sets the page in the theme's paper, states a style's want of a fill
  * so none is inherited, stands a panel's text at its padding and its fill at its indents, and draws
- * a header column's rule on both sides of its line.
+ * a header column's rule on both sides of its line, and `word/7` is UIf's, which splits a run where
+ * the face of its style's chain setting it changes and names a style's Arabic face as its complex
+ * script's in a document in Arabic script.
  */
-export const WORD_WRITER_VERSION = 'word/6';
+export const WORD_WRITER_VERSION = 'word/7';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
@@ -625,6 +630,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
     references: word.references,
     titles: word.titles,
     wide: input.wide ?? [],
+    covers: word.covers,
   });
 
   // The page's furniture: the cover's header and footer, the running ones, and the contents' where its
@@ -1062,6 +1068,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       { language: document.language, direction: document.direction },
       {
         headingList: HEADING_LISTS.body,
+        covers: word.covers,
         extraStyles: [
           ...ownHeadingStyles(theme),
           ...(contents === null ? [] : contentsStyles(theme, contents.depth)),
@@ -1222,6 +1229,7 @@ class Writer {
       readonly references: ReadonlyMap<string, WordReference>;
       readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
       readonly wide: readonly WideTable[];
+      readonly covers: Covers;
     },
   ) {
     this.bookmarks = bookmarksOf(
@@ -1251,6 +1259,12 @@ class Writer {
   ): Paragraph & { readonly xml: string } {
     const style = this.style(styleId);
     this.use(style.typeface, style.properties.bold, style.properties.italic);
+    // In a document in Arabic script, the face its style names for the complex script (`ooxml.ts`).
+    const cs =
+      styleId === this.theme.roles.preformatted
+        ? undefined
+        : complexScriptFace(style.chain, this.document.tag, this.numbers.covers);
+    if (cs !== undefined) this.use(cs, style.properties.bold, style.properties.italic);
     const paragraph = { style: wordStyle, theme: styleId, content, ...stated };
     return { ...paragraph, xml: paragraphXml(paragraph) };
   }
@@ -2645,12 +2659,27 @@ class Writer {
     };
   }
 
-  /** How a style's face sets its characters, read from the file its weight and posture are set in. */
+  /**
+   * How a style's chain sets its characters, each in the face that sets it (UF-G), read from the file
+   * its weight and posture are set in.
+   */
   private advancesOf(style: ResolvedParagraphStyle): FaceAdvances {
-    const { typeface } = style;
+    const { bold, italic } = style.properties;
+    if (style.chain.length < 2) return this.faceAdvancesOf(style.typeface, bold, italic);
+    return {
+      width: (text) =>
+        facePieces(text, this.numbers.covers, style.chain).reduce(
+          (sum, piece) => sum + this.faceAdvancesOf(piece.face, bold, italic).width(piece.text),
+          0,
+        ),
+    };
+  }
+
+  /** How one face sets its characters at a weight and posture: upright where it has no italic. */
+  private faceAdvancesOf(typeface: Typeface, bold: boolean, italic: boolean): FaceAdvances {
     const key = fileKey(
-      style.properties.bold ? 'bold' : 'regular',
-      style.properties.italic ? 'italic' : 'normal',
+      bold ? 'bold' : 'regular',
+      italic && slants(typeface, bold) ? 'italic' : 'normal',
     );
     const file =
       typeface.files.find((each) => fileKey(each.weight, each.posture) === key) ??
@@ -3288,6 +3317,10 @@ class Writer {
     return ltr(side === 'start' ? form.label : form.title);
   }
 
+  /**
+   * A run of text, split where the face of its chain setting it changes (the UI plan, UF-G; UF-D's
+   * rule, `facePieces`): each piece a run of its own in its face. Code is its first face alone (UF-C).
+   */
   private textRun(
     text: string,
     marks: readonly StyledMark[],
@@ -3297,10 +3330,36 @@ class Writer {
     strong = false,
     closer = 0,
   ): string {
-    return runXml(text, this.runProperties(marks, styleId, passage, language, strong, closer));
+    const code = marks.includes('inlineCode') || styleId === this.theme.roles.preformatted;
+    const chain = this.chainOf(this.style(styleId), marks);
+    return facePieces(text, this.numbers.covers, code ? chain.slice(0, 1) : chain)
+      .map((piece) =>
+        runXml(
+          piece.text,
+          this.runProperties(marks, styleId, passage, language, strong, closer, piece),
+        ),
+      )
+      .join('');
   }
 
-  /** What a run of text states over its paragraph's style, the face it is set in counted as used. */
+  /** The chain a run is set in: its innermost mark's that names a face, else its paragraph's. */
+  private chainOf(style: ResolvedParagraphStyle, marks: readonly StyledMark[]) {
+    let chain = style.chain;
+    for (const mark of marks) {
+      const { typeface, chain: own } = this.theme.characterStyles[mark];
+      if (typeface !== undefined) chain = own ?? [typeface];
+    }
+    return chain;
+  }
+
+  /**
+   * What a run of text states over its paragraph's style, the face it is set in counted as used. A
+   * `piece` of a chain in a face other than the run's names it (UF-G), and so does any piece of a
+   * right-to-left run whose styles name another face for the complex script, which Word sets such a
+   * run in (a field's runs, not split, are left in that face, Word's to recompute); in a face with no
+   * italic file it is upright, as the engine sets it (UF-E); and Arabic carries its language as the
+   * complex script's, which Word reads of it.
+   */
   private runProperties(
     marks: readonly StyledMark[],
     styleId: string,
@@ -3308,19 +3367,33 @@ class Writer {
     language: PublishedLanguage | null,
     strong = false,
     closer = 0,
+    piece?: { readonly face: Typeface; readonly text: string },
   ): string {
     const style = this.style(styleId);
     const rendered = runFormat(this.theme, style, marks);
-    this.use(rendered.typeface, rendered.bold || strong, rendered.italic);
-    // A definition list's term, which the engine sets bold whatever its style and marks say.
+    const face = piece?.face ?? rendered.typeface;
+    const italic = rendered.italic && slants(face, rendered.bold || strong);
+    this.use(face, rendered.bold || strong, italic);
     const own = wordRun(this.theme, style, marks);
-    const run = this.colour === null ? own : { ...own, pins: { ...own.pins, colour: this.colour } };
+    const pins = { ...own.pins };
+    if (this.colour !== null) pins.colour = this.colour;
+    // A definition list's term, which the engine sets bold whatever its style and marks say.
+    if (strong) pins.bold = true;
+    const complex =
+      passage.rtl && piece !== undefined
+        ? complexScriptFace(this.chainOf(style, marks), this.document.tag, this.numbers.covers)
+        : undefined;
+    if (face.id !== rendered.typeface.id || (complex !== undefined && complex.id !== face.id)) {
+      pins.typeface = face;
+    }
+    if (rendered.italic && !italic) pins.italic = false;
     return (
-      pinned(strong ? { ...run, pins: { ...run.pins, bold: true } } : run, closer) +
+      pinned({ ...own, pins }, closer) +
       languageProperties(
         passage,
         language === null ? null : wordLanguage(language),
         this.document.tag,
+        ARABIC.test(piece?.text ?? ''),
       )
     );
   }
@@ -3351,7 +3424,7 @@ class Writer {
 
   private use(face: Typeface, bold: boolean, italic: boolean) {
     const at = this.used.get(face.id) ?? new Set<string>();
-    at.add(fileKey(bold ? 'bold' : 'regular', italic ? 'italic' : 'normal'));
+    at.add(fileKey(bold ? 'bold' : 'regular', italic && slants(face, bold) ? 'italic' : 'normal'));
     this.used.set(face.id, at);
   }
 }
@@ -3637,12 +3710,37 @@ function pinned(run: WordRun, closer = 0): string {
 /**
  * A run's language and direction (R9; measured, M12): in a right-to-left passage, `w:rtl` and its
  * language as a complex script's, which is what Word reads of such a run; elsewhere its language only
- * where it is not the document's, which the defaults carry. `own` is a language mark's.
+ * where it is not the document's, which the defaults carry, and Arabic's as the complex script's
+ * too, which Word reads of an Arabic letter (UF-G). `own` is a language mark's. No `w:rtl` on Arabic
+ * in a left-to-right passage: Word shapes it and orders it by its characters, as the PDF's bidi
+ * algorithm does, and the run's direction is the passage's, as the PDF's.
  */
-function languageProperties(passage: Passage, own: string | null, documentTag: string): string {
+function languageProperties(
+  passage: Passage,
+  own: string | null,
+  documentTag: string,
+  arabic = false,
+): string {
   const tag = own ?? passage.tag;
   if (passage.rtl) return `<w:rtl/><w:lang w:bidi="${tag}"/>`;
+  if (arabic) {
+    return tag === documentTag
+      ? `<w:lang w:bidi="${tag}"/>`
+      : `<w:lang w:val="${tag}" w:bidi="${tag}"/>`;
+  }
   return tag === documentTag ? '' : `<w:lang w:val="${tag}"/>`;
+}
+
+/** Arabic script, a piece of which carries its language as the complex script's. */
+const ARABIC = /\p{Script=Arabic}/u;
+
+/**
+ * Whether a face sets italic at this weight from a file of its own: a face with none sets it upright,
+ * as the engine does (measured in the worker's `fallback.test.ts`), and Word is told so (UF-G).
+ */
+function slants(face: Typeface, bold: boolean): boolean {
+  const weight = bold ? 'bold' : 'regular';
+  return face.files.some((file) => file.posture === 'italic' && file.weight === weight);
 }
 
 /** A field's start: its instruction, then the separator its result follows. */

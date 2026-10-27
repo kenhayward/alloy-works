@@ -60,7 +60,8 @@ describe("the presentation a page's text is set in", () => {
       expect(url, pinned!.file).toContain(pinned!.file.replace(/\.(ttf|otf)$/, ''));
       expect(faces()).toContain(`src: url("${url}")`);
     }
-    expect(faces().match(/@font-face/g)).toHaveLength(files.length);
+    // And the maths face's one upright file again under italic, as a face with none is (UF-F).
+    expect(faces().match(/@font-face/g)).toHaveLength(files.length + 1);
   });
 
   it("places each block's baseline from its face's cap height, which the renderer's copy of the pinned files states", async () => {

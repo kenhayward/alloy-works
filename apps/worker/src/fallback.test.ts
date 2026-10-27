@@ -9,12 +9,16 @@ import {
   parseOutlineDocument,
   PUBLISHING_SCHEMA,
   readTheme,
+  writeDocx,
   type AssembleInput,
+  type Layout,
   type ResolvedTheme,
 } from '@alloy-works/domain';
+import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
-import { loadPinnedFonts } from './fonts.js';
+import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
+import { checkOoxml } from './testing/ooxml.js';
 import { readPaint, type Paint } from './testing/pdf.js';
 import { NASKH, naskhTheme } from './testing/theme.js';
 import { createTypst, typstBinaryPath } from './typst.js';
@@ -49,8 +53,12 @@ const bare = parseLayout({
   matter: { cover: false, contents: null, appendices: { newPage: false }, lists: [] },
 });
 
-const inputOf = (theme: ResolvedTheme, content: unknown[]): AssembleInput => ({
-  formats: ['pdf'],
+const inputOf = (
+  theme: ResolvedTheme,
+  content: unknown[],
+  formats: AssembleInput['formats'] = ['pdf'],
+): AssembleInput & { readonly layout: Layout } => ({
+  formats,
   outline: parseOutlineDocument({
     schemaVersion: OUTLINE_SCHEMA_VERSION,
     title: 'Fallback',
@@ -209,5 +217,44 @@ describe("a style's face falling back, in the pinned engine (the UI plan, UF-D, 
         code,
       ).rejects.toThrow();
     }
+  });
+});
+
+describe("a style's face falling back, in Word (the UI plan, UF-G)", () => {
+  it("splits a run by the worker's own coverage and embeds the Naskh, in a file the Open XML SDK finds nothing wrong with", async () => {
+    /** "Shalom", in Hebrew, which the serif sets. */
+    const SHALOM = String.fromCodePoint(0x05e9, 0x05dc, 0x05d5, 0x05dd);
+    const words = `Ada ${PEACE} ${SHALOM} ${PERSIAN}.`;
+    const made = assemble(inputOf(naskhTheme, [paragraph('w1', text(words))], ['docx']));
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const { bytes } = writeDocx({
+      document: made.document,
+      numbering: made.numbering,
+      word: made.word!,
+      formats: ['docx'],
+      faces: await pinnedFacesByHash(FONT_DIRECTORY),
+      images: new Map(),
+    });
+    expect(await checkOoxml(bytes)).toEqual([]);
+    const parts = unzipSync(bytes);
+    // The paragraph's runs: each piece in its face, the Persian word whole, its ZWNJ in it; the
+    // spaces, the Hebrew and the full stop the serif's.
+    const [, written] = /<w:p>((?:(?!<w:p>).)*?Ada.*?)<\/w:p>/s.exec(
+      strFromU8(parts['word/document.xml']!),
+    )!;
+    const runs = [...written!.matchAll(/<w:r>(.*?)<\/w:r>/gs)].map(([, run]) => [
+      [...run!.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(([, each]) => each).join(''),
+      run!.includes('w:ascii="Noto Naskh Arabic"'),
+    ]);
+    expect(runs).toEqual([
+      ['Ada ', false],
+      [PEACE, true],
+      [` ${SHALOM} `, false],
+      [PERSIAN, true],
+      ['.', false],
+    ]);
+    expect(strFromU8(parts['word/fontTable.xml']!)).toMatch(
+      /w:name="Noto Naskh Arabic">(?:(?!<\/w:font>).)*<w:embedRegular /s,
+    );
   });
 });

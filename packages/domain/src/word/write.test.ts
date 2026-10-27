@@ -23,7 +23,7 @@ import type { PublishedDocument } from '../publishing/published.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outline.js';
 import type { ResolvedTheme } from '../theme/read.js';
 import type { Typeface } from '../theme/schema.js';
-import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
+import { defaultInputs, naskhInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
 
 import { syntheticFace } from './face.fixture.js';
 import { fontKey, obfuscateFont } from './fonts.js';
@@ -531,8 +531,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/6', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/6');
+  it('is the Word writer at word/7', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/7');
   });
 });
 
@@ -5569,5 +5569,149 @@ describe('a component published in its source language, in Word (the TR plan, TR
     expect(first(said, 'w:lang')?.attrs['w:val']).not.toBe('de-DE');
     // Nothing else is marked.
     expect(all.filter((each) => textOf(each).startsWith('Untranslated'))).toHaveLength(1);
+  });
+});
+
+describe("writeDocx: a run split by the face of its style's chain that sets each piece (the UI plan, UF-G)", () => {
+  const NASKH = 'Noto Naskh Arabic';
+  const SERIF = 'Liberation Serif';
+  /** "Peace", in Arabic. */
+  const PEACE = U(0x0633, 0x0644, 0x0627, 0x0645);
+  /** "I want", in Persian: a ZWNJ between its prefix and its stem. */
+  const PERSIAN = U(0x0645, 0x06cc, 0x200c, 0x062e, 0x0648, 0x0627, 0x0647, 0x0645);
+  /** An Arabic letter with a fatha, a harakah, and one a ZWJ asks to join. */
+  const MARKED_LETTERS = U(0x0628, 0x064e, 0x0639, 0x200d);
+  // As the pinned faces are: the serif sets Latin, Hebrew, the joiners, spaces and full stops, and no
+  // Arabic; the Naskh sets Arabic, the joiners and a space, and no Latin or Hebrew.
+  const covers = (codePoint: number, family: string) =>
+    family === NASKH
+      ? (codePoint >= 0x600 && codePoint <= 0x6ff) || [0x20, 0x200c, 0x200d].includes(codePoint)
+      : codePoint < 0x600 || codePoint === 0x200c || codePoint === 0x200d;
+  const theme = resolved(naskhInputs());
+
+  /** One component of these paragraphs, in a document of this language and direction. */
+  const writtenWith = (content: unknown[], language = 'en-GB', direction = 'ltr') =>
+    written({
+      theme,
+      covers,
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'Peace',
+        language,
+        direction,
+        nodes: [reference('words', 1)],
+      }),
+      occurrences: new Map([[id('words'), component('Words', content, { language, direction })]]),
+    });
+  /** Each run of the paragraph printing `text`: its text and its properties as written. */
+  const runsOf = (docx: Package, text: string) =>
+    all(paragraphSaying(docx, text), 'w:r').map((run) => {
+      const rPr = kids(run, 'w:rPr')[0];
+      return [textOf(run), rPr === undefined ? '' : serialise(rPr)];
+    });
+  /** An element written back as the XML it was read from, enough to compare a run's properties. */
+  const serialise = (element: Element): string =>
+    element.children
+      .map((child) =>
+        typeof child === 'string'
+          ? child
+          : `<${child.name}${Object.entries(child.attrs)
+              .map(([name, value]) => ` ${name}="${value}"`)
+              .join('')}/>`,
+      )
+      .join('');
+  const naskhFonts = `<w:rFonts w:ascii="${NASKH}" w:hAnsi="${NASKH}" w:cs="${NASKH}" w:eastAsia="${NASKH}"/>`;
+  const embeds = (docx: Package, family: string) =>
+    kids(
+      all(docx.xml('word/fontTable.xml'), 'w:font').find(
+        (font) => font.attrs['w:name'] === family,
+      )!,
+    )
+      .filter((each) => each.name.startsWith('w:embed'))
+      .map((each) => each.name);
+
+  it('sets an Arabic word between Latin ones in the Naskh, its language its complex script, and Hebrew in the serif', () => {
+    const { docx } = writtenWith([paragraph('p1', text(`Ada ${PEACE} and ${SHALOM}.`))]);
+    expect(runsOf(docx, `Ada ${PEACE} and ${SHALOM}.`)).toEqual([
+      ['Ada ', ''],
+      [PEACE, `${naskhFonts}<w:lang w:bidi="en-GB"/>`],
+      [` and ${SHALOM}.`, ''],
+    ]);
+  });
+
+  it("keeps a language mark's language beside its complex script's", () => {
+    const { docx } = writtenWith([
+      paragraph('p1', text('Ada '), text(PEACE, { type: 'language', id: 'k1', tag: 'ar' })),
+    ]);
+    expect(runsOf(docx, `Ada ${PEACE}`)[1]).toEqual([
+      PEACE,
+      `${naskhFonts}<w:lang w:val="ar" w:bidi="ar"/>`,
+    ]);
+  });
+
+  it('keeps a joiner and a harakah in the Naskh, and sets a space and a full stop between Arabic words in the serif, as the engine does', () => {
+    const words = `${PERSIAN} ${MARKED_LETTERS} ${PEACE}.`;
+    const { docx } = writtenWith([paragraph('p1', text(words))]);
+    expect(
+      runsOf(docx, words).map(([text, properties]) => [text, properties!.includes(NASKH)]),
+    ).toEqual([
+      [PERSIAN, true],
+      [' ', false],
+      [MARKED_LETTERS, true],
+      [' ', false],
+      [PEACE, true],
+      ['.', false],
+    ]);
+  });
+
+  it('sets emphasised Arabic upright, as the engine does in a face with no italic, and Latin beside it italic', () => {
+    const { docx } = writtenWith([
+      paragraph('p1', text(`Ada ${PEACE}`, { type: 'emphasis', id: 'k1' })),
+    ]);
+    expect(runsOf(docx, `Ada ${PEACE}`)).toEqual([
+      ['Ada ', '<w:rStyle w:val="mark-emphasis"/>'],
+      [
+        PEACE,
+        `<w:rStyle w:val="mark-emphasis"/>${naskhFonts}<w:i w:val="0"/><w:iCs w:val="0"/><w:lang w:bidi="en-GB"/>`,
+      ],
+    ]);
+  });
+
+  it('embeds the fallback where a piece is set in it, at the weights it is set at, and not where none is', () => {
+    const { docx } = writtenWith([
+      paragraph(
+        'p1',
+        text(PEACE, { type: 'emphasis', id: 'k1' }),
+        text(' '),
+        text(PEACE, { type: 'strong', id: 'k2' }),
+      ),
+    ]);
+    expect(embeds(docx, NASKH)).toEqual(['w:embedRegular', 'w:embedBold']);
+    expect(embeds(writtenWith([paragraph('p1', text('Ada'))]).docx, NASKH)).toEqual([]);
+  });
+
+  it("names the chain's Arabic face as the styles' complex script's in a document in Arabic script, and the face's own elsewhere", () => {
+    const csOf = (docx: Package, style: string) =>
+      first(
+        all(docx.xml('word/styles.xml'), 'w:style').find(
+          (each) => each.attrs['w:styleId'] === style,
+        )!,
+        'w:rFonts',
+      )!.attrs;
+    const arabic = writtenWith([paragraph('p1', text(`${PEACE} Ada`))], 'ar', 'rtl').docx;
+    // A right-to-left run is set in its complex script's face, so a Latin piece names its own.
+    const serifFonts = `<w:rFonts w:ascii="${SERIF}" w:hAnsi="${SERIF}" w:cs="${SERIF}" w:eastAsia="${SERIF}"/>`;
+    expect(runsOf(arabic, `${PEACE} Ada`)).toEqual([
+      [PEACE, `${naskhFonts}<w:rtl/><w:lang w:bidi="ar"/>`],
+      [' Ada', `${serifFonts}<w:rtl/><w:lang w:bidi="ar"/>`],
+    ]);
+    expect(csOf(arabic, 'body')).toMatchObject({ 'w:ascii': SERIF, 'w:cs': NASKH });
+    // Code keeps its face: the mono falls back to nothing.
+    expect(csOf(arabic, 'preformatted')['w:cs']).toBe('Liberation Mono');
+    const docDefaults = first(first(arabic.xml('word/styles.xml'), 'w:docDefaults')!, 'w:rFonts')!;
+    expect(docDefaults.attrs['w:cs']).toBe(NASKH);
+    expect(embeds(arabic, NASKH)).toContain('w:embedRegular');
+    const latin = writtenWith([paragraph('p1', text('Ada'))]).docx;
+    expect(csOf(latin, 'body')['w:cs']).toBe(SERIF);
   });
 });

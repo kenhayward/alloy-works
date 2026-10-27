@@ -1191,7 +1191,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/6',
+      producer_version: 'word/7',
       report: [
         // The titles the PDF tags as headings, which Word sets as body text (W14.6's final review).
         { kind: 'titles_not_headings', titles: ['document', 'contents'] },
@@ -1234,7 +1234,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/6',
+      producer_version: 'word/7',
       report: [
         { kind: 'titles_not_headings', titles: ['document', 'contents'] },
         { kind: 'pages_cite_the_pdf' },

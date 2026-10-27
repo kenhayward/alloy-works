@@ -5775,8 +5775,8 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       references: new Map(),
       titles: new Map(),
     };
-    expect(docx.word).toEqual(word);
-    expect(both.word).toEqual(word);
+    expect(docx.word).toEqual({ ...word, covers: expect.any(Function) });
+    expect(both.word).toEqual({ ...word, covers: expect.any(Function) });
     // The published document is the PDF's whatever else is asked for (ruling R1): the same bytes, and
     // the same numbering beside them.
     expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));

@@ -113,6 +113,33 @@ export function settingFaces(text: string, covers: Covers, chain: Chain): (strin
 }
 
 /**
+ * `text` cut where the face of `chain` setting it changes (`settingFaces`), each piece with its face; a
+ * character no face sets takes the first. One piece where the chain is one face.
+ */
+export function facePieces<Face extends { readonly family: string }>(
+  text: string,
+  covers: Covers,
+  chain: readonly Face[],
+): { face: Face; text: string }[] {
+  if (chain.length === 1) return [{ face: chain[0]!, text }];
+  const faces = settingFaces(
+    text,
+    covers,
+    chain.map((face) => face.family),
+  );
+  const pieces: { face: Face; text: string }[] = [];
+  let at = 0;
+  for (const character of text) {
+    const face = chain.find((each) => each.family === faces[at]) ?? chain[0]!;
+    const last = pieces[pieces.length - 1];
+    if (last?.face === face) last.text += character;
+    else pieces.push({ face, text: character });
+    at += 1;
+  }
+  return pieces;
+}
+
+/**
  * Each character of `text` the engine would refuse, once each, in the order they first appear:
  * disallowed anywhere, or missing from every family of the chain that sets it (`covers`), as the engine
  * treats a character with no glyph in that `setting`. Code and an equation ask the chain's first family
