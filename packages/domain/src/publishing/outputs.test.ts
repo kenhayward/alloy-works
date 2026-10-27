@@ -38,7 +38,19 @@ describe("an output's report", () => {
       'titles_not_headings',
       'list_not_linked',
       'table_reflowed',
+      'pages_not_carried',
+      'running_matter_not_carried',
     ]);
+  });
+
+  it('names what HTML, which has no pages, does not carry of the PDF, each once (HT-K)', () => {
+    const report: OutputReport = [
+      { kind: 'pages_not_carried' },
+      { kind: 'running_matter_not_carried' },
+      { kind: 'table_reflowed', node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: null },
+    ];
+    expect(parseOutputReport(JSON.parse(JSON.stringify(report)))).toEqual(report);
+    expect(() => parseOutputReport([{ kind: 'pages_not_carried', page: 1 }])).toThrow();
   });
 
   it("names what Word cannot carry of the PDF's structure (W14.6, W-J): a quotation, preformatted text, a definition list and an image's description in another language by their place; a quoted phrase and inline code by the block of their runs, since a heading carries no mark; a numbered equation by its place and label; and the maths once, its alternatives and the Word face's characters", () => {

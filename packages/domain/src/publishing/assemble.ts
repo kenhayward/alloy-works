@@ -111,7 +111,7 @@ import {
   type MeasuredCell,
   type MeasuredParagraph,
 } from './widths.js';
-import type { DocxFormat, Layout, PdfFormat, PublishingFormat } from './layout.js';
+import { HTML_WORDS, type DocxFormat, type Layout, type PdfFormat, type PublishingFormat } from './layout.js';
 import { mathsText, mathsTree, type MathsRefusal } from './maths.js';
 import {
   DRAFT_NOTICE,
@@ -332,6 +332,10 @@ export interface HtmlInput {
   readonly theme: ResolvedTheme;
   readonly capHeights: ReadonlyMap<string, number>;
   readonly references: ReadonlyMap<string, string>;
+  /** The layout's words HTML alone sets (HT-D): its notes' heading, each note's link back, a wide table's region. */
+  readonly words: { readonly notes: string; readonly backToReference: string; readonly scrollRegion: string };
+  /** What each family covers, as the glyph check asked: a fallback is embedded only where it sets a character (HT-B). */
+  readonly covers: Covers;
 }
 
 /**
@@ -2799,6 +2803,13 @@ export function assemble(given: AssembleInput): Assembled {
           theme: theme!,
           capHeights: capHeights(theme!, input.capHeight),
           references: htmlReferences,
+          // Required from layout schema 9, which a layout making HTML is; English where it predates it.
+          words: {
+            notes: words.notes ?? HTML_WORDS.en!.notes ?? '',
+            backToReference: words.backToReference ?? HTML_WORDS.en!.backToReference ?? '',
+            scrollRegion: words.scrollRegion ?? HTML_WORDS.en!.scrollRegion ?? '',
+          },
+          covers: input.covers,
         }
       : null,
     document: {
