@@ -15,6 +15,12 @@ export interface PlatformInfo {
 export interface PlatformBridge {
   getPlatformInfo(): Promise<PlatformInfo>;
   /**
+   * Whether a page the service shows - a publication's HTML - can be opened in a new tab, which
+   * carries the session (the HT plan, HT-N): the browser's. The desktop's new windows open in the
+   * system browser, which has none, so it offers such a page to save alone.
+   */
+  readonly opensServedPages: boolean;
+  /**
    * The languages the spelling checker checks against: the base languages of the components open
    * (CNT-178). The desktop shell sets the dictionaries Electron has for them - except on macOS, whose
    * system checker chooses its own; the browser checks with its own dictionaries, which a page cannot

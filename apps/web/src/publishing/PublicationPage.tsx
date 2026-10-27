@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import { DRAFT_NOTICE } from '@alloy-works/domain';
 import { useEffect, useState, type ReactNode } from 'react';
+import { resolveBridge, type PlatformBridge } from '../platform/bridge.js';
 import { Notice } from '../states/Notice.js';
 import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
@@ -144,8 +145,12 @@ function shownIn(data: unknown): Shown | undefined {
           {
             format: each.format,
             download: each.download,
-            // Only a PDF is shown in the page: a browser saves a Word document whatever it is given.
-            view: each.format === 'pdf' && typeof each.view === 'string' ? each.view : null,
+            // A PDF is shown in the page, and HTML in a tab of its own through the service's route
+            // (HT-N): a browser saves a Word document whatever it is given.
+            view:
+              (each.format === 'pdf' || each.format === 'html') && typeof each.view === 'string'
+                ? each.view
+                : null,
             bytes: typeof each.bytes === 'number' ? each.bytes : null,
             producerVersion: typeof each.producerVersion === 'string' ? each.producerVersion : null,
             report: each.format === 'docx' || each.format === 'html' ? reportIn(each.report) : [],
@@ -190,7 +195,16 @@ const published = (iso: string) =>
  * sentences. A publication the reader may not read is answered as nothing here, as every other address
  * is.
  */
-export function PublicationPage({ client, id }: { readonly client: Client; readonly id: string }) {
+export function PublicationPage({
+  client,
+  id,
+  bridge = resolveBridge(),
+}: {
+  readonly client: Client;
+  readonly id: string;
+  /** Whether a page the service shows opens in a new tab with the session (HT-N). */
+  readonly bridge?: PlatformBridge;
+}) {
   const [shown, setShown] = useState<Shown | 'missing' | 'failed' | null>(null);
   const [attempt, setAttempt] = useState(0);
   // Whether the reader is from outside and shared this publication alone (the R17 plan): they are
@@ -297,6 +311,16 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
                 {words('publishing.open-the-document')}
               </a>
             )}
+            {html?.view != null && bridge.opensServedPages && (
+              <a
+                className={styles['button']}
+                href={html.view}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {words('publishing.open-the-html-file')}
+              </a>
+            )}
             {html !== undefined && (
               <a className={styles['button']} href={html.download}>
                 {words('publishing.download-the-html-file')}
@@ -357,7 +381,11 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <p className={styles['unshown']}>{words('publishing.a-word-document-is-not')}</p>
         )}
         {pdf === undefined && word === undefined && html !== undefined && (
-          <p className={styles['unshown']}>{words('publishing.an-html-file-is-not')}</p>
+          <p className={styles['unshown']}>
+            {html.view != null && bridge.opensServedPages
+              ? words('publishing.an-html-file-opens-in-a-tab')
+              : words('publishing.an-html-file-is-not')}
+          </p>
         )}
       </div>
       <aside className={styles['record']} aria-labelledby="publication-record">

@@ -63,10 +63,36 @@ function fileAddress(path: string): string {
   return encodeURI(forward.startsWith('/') ? `file://${forward}` : `file:///${forward}`);
 }
 
+/** Whether an address is on the served renderer's origin, whatever its path. */
+function onServedOrigin(address: URL, target: RendererTarget): boolean {
+  if (target.kind !== 'url') return false;
+  try {
+    return address.origin === new URL(target.value).origin;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Whether an address is the renderer itself (issue #309): served, its origin; loaded from disk, its
- * own file, whatever fragment the renderer's routing is at. Anything else - another site, another
- * file, something that is not an address - is not, and is refused the bridge and the window.
+ * Whether a path is the service's API, which shows stored content - a publication's HTML among it -
+ * rather than the renderer (the HT plan, HT-N): read decoded and in any case, as a server might.
+ */
+function isServiceRoute(pathname: string): boolean {
+  let path = pathname;
+  try {
+    path = decodeURIComponent(pathname);
+  } catch {
+    return true;
+  }
+  const lower = path.toLowerCase();
+  return lower === '/v1' || lower.startsWith('/v1/');
+}
+
+/**
+ * Whether an address is the renderer itself (issue #309): served, its origin but never the service's
+ * routes (HT-N); loaded from disk, its own file, whatever fragment the renderer's routing is at.
+ * Anything else - another site, another file, something that is not an address - is not, and is
+ * refused the bridge and the window.
  */
 export function isRenderer(url: string, target: RendererTarget): boolean {
   let address: URL;
@@ -76,11 +102,7 @@ export function isRenderer(url: string, target: RendererTarget): boolean {
     return false;
   }
   if (target.kind === 'url') {
-    try {
-      return address.origin === new URL(target.value).origin;
-    } catch {
-      return false;
-    }
+    return onServedOrigin(address, target) && !isServiceRoute(address.pathname);
   }
   if (address.protocol !== 'file:') return false;
   // `file://host/path` is a network share, whatever its path: the renderer's file has no host.
@@ -113,8 +135,30 @@ export function navigationDecision(
   from: string,
   target: RendererTarget,
 ): NavigationDecision {
-  if (isRenderer(url, target)) return { allow: true };
-  if (!isRenderer(from, target)) return { allow: true };
+  if (isHome(url, target)) return { allow: true };
+  if (!isHome(from, target)) return { allow: true };
+  return opensExternally(url) ? { allow: false, openExternally: url } : { allow: false };
+}
+
+/**
+ * Whether the window is at home: the renderer, or the service's own route a download or a sign-in
+ * goes through - which saves what it serves, or sends the window on, and is refused the bridge.
+ */
+function isHome(url: string, target: RendererTarget): boolean {
+  if (isRenderer(url, target)) return true;
+  try {
+    return onServedOrigin(new URL(url), target);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * What the window does when a page asks for a new one: never one of the app's own. The web and mail
+ * open in the system browser, which holds no session, so a publication's HTML is a download in the
+ * desktop app (HT-N).
+ */
+export function windowOpenDecision(url: string): Extract<NavigationDecision, { allow: false }> {
   return opensExternally(url) ? { allow: false, openExternally: url } : { allow: false };
 }
 
@@ -130,6 +174,16 @@ export function isTrustedFrame(url: string | undefined, target: RendererTarget |
 /** Where the service's sign-in routes live: each sends the window on to the identity provider. */
 export const SIGN_IN_PATH = '/v1/sign-in/';
 
+/** Whether an address is the served renderer's own sign-in route. */
+function isSignIn(url: string, target: RendererTarget): boolean {
+  try {
+    const address = new URL(url);
+    return onServedOrigin(address, target) && address.pathname.startsWith(SIGN_IN_PATH);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * What the window does when a navigation that asked for `requested` is redirected to `url`, the
  * window still showing `from` (issue #309). A sign-in's redirects go: one the service's own sign-in
@@ -143,11 +197,9 @@ export function redirectDecision(
   from: string,
   target: RendererTarget,
 ): NavigationDecision {
-  if (isRenderer(url, target)) return { allow: true };
-  if (!isRenderer(from, target)) return { allow: true };
-  if (isRenderer(requested, target) && new URL(requested).pathname.startsWith(SIGN_IN_PATH)) {
-    return { allow: true };
-  }
+  if (isHome(url, target)) return { allow: true };
+  if (!isHome(from, target)) return { allow: true };
+  if (isSignIn(requested, target)) return { allow: true };
   return opensExternally(url) ? { allow: false, openExternally: url } : { allow: false };
 }
 

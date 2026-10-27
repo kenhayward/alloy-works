@@ -8,6 +8,7 @@ function recording(): { bridge: PlatformBridge; asked: string[][] } {
   const asked: string[][] = [];
   const bridge: PlatformBridge = {
     getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+    opensServedPages: false,
     setSpellCheckLanguages: async (languages) => {
       asked.push([...languages]);
     },
@@ -77,6 +78,7 @@ describe('the languages of the components open', () => {
   it('leaves a bridge that refuses to its refusal, unheard', async () => {
     const bridge: PlatformBridge = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+      opensServedPages: false,
       setSpellCheckLanguages: () => Promise.reject(new Error('refused')),
       setInterfaceLanguage: async () => {},
     };

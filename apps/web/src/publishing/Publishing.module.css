@@ -6,3 +6,24 @@
   gap: var(--space-8);
   margin-block: var(--space-12);
 }
+
+/* A box per format the layout makes (HT-N), on one line where it fits. */
+.formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.formats legend {
+  padding: 0;
+  margin-inline-end: var(--space-8);
+  float: inline-start;
+}
+
+.formats p {
+  flex-basis: 100%;
+  margin: 0;
+}

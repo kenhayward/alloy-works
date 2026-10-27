@@ -19,6 +19,8 @@ declare global {
 
 export const browserBridge: PlatformBridge = {
   getPlatformInfo: async () => ({ delivery: 'web', runtime: 'Browser' }),
+  // A new tab is the same browser's, signed in as this one is.
+  opensServedPages: true,
   // The browser's own checker marks the surface, which sets `spellcheck`, with the dictionaries the
   // author's browser has enabled: a page cannot choose them.
   setSpellCheckLanguages: async () => {},
