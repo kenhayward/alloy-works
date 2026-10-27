@@ -86,6 +86,18 @@ export function labelFits({
 }
 
 /**
+ * How far a component's words reach from its inline start (UI-G; LOC-004): from its left edge left to
+ * right, from its right edge right to left, where its label stands at the other end.
+ */
+export function textExtent(
+  component: { readonly left: number; readonly right: number },
+  words: { readonly left: number; readonly right: number },
+  direction: 'ltr' | 'rtl',
+): number {
+  return direction === 'rtl' ? component.right - words.left : words.right - component.left;
+}
+
+/**
  * Each component's label placed beside its text or above it (`labelFits`), again as the column or
  * the text's measure changes size. Decided from widths that placing the label does not change, so it
  * never flips back and forth, and never on hover, so showing a label moves no text.
@@ -105,18 +117,23 @@ function useLabelsPlaced(column: RefObject<HTMLElement | null>) {
         const text = sheet
           ? component.querySelector<HTMLElement>('h1, h2, h3, h4, h5, h6')
           : component.querySelector<HTMLElement>('.aw-text');
-        let right = text?.getBoundingClientRect().right ?? 0;
+        let words = text?.getBoundingClientRect();
         if (sheet && text) {
-          const words = document.createRange();
-          words.selectNodeContents(text);
-          right = words.getBoundingClientRect().right;
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          words = range.getBoundingClientRect();
         }
         const above =
           label !== null &&
           text !== null &&
+          words !== undefined &&
           !labelFits({
             column: component.clientWidth,
-            text: right - component.getBoundingClientRect().left,
+            text: textExtent(
+              component.getBoundingClientRect(),
+              words,
+              getComputedStyle(component).direction === 'rtl' ? 'rtl' : 'ltr',
+            ),
             label: label.offsetWidth,
           });
         // Both, every time: a label placed before the sheet arrived must not keep the line it took.

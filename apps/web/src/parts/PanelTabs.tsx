@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 
 import styles from './parts.module.css';
 import { formats, words } from '../words/words.js';
+import { inlineKey } from './inline.js';
 
 export interface PanelTab {
   readonly key: string;
@@ -46,14 +47,15 @@ export function PanelTabs({
     const open = tabs.flatMap((tab, index) => (tab.disabled ? [] : [index]));
     const from = open.indexOf(tabs.findIndex((tab) => tab.key === chosen));
     const count = open.length;
+    const key = inlineKey(event.key);
     const at =
-      event.key === 'ArrowRight'
+      key === 'ArrowRight'
         ? (from + 1) % count
-        : event.key === 'ArrowLeft'
+        : key === 'ArrowLeft'
           ? (from - 1 + count) % count
-          : event.key === 'Home'
+          : key === 'Home'
             ? 0
-            : event.key === 'End'
+            : key === 'End'
               ? count - 1
               : null;
     if (at === null || count === 0) return;

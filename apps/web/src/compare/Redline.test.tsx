@@ -68,4 +68,37 @@ describe('a comparison drawn as a redline', () => {
     expect(html).toContain('Beta');
     expect(html).toContain('<ins');
   });
+
+  it("LOC-004 carries its content's language and direction, in the page and in the file, the file in the interface's (the UI plan, UI-G)", () => {
+    const older = { ...docOf(['a', 'Alpha']), language: 'ar', direction: 'rtl' as const };
+    const newer = {
+      ...docOf(['a', 'Alpha'], ['b', 'Beta']),
+      language: 'ar',
+      direction: 'rtl' as const,
+    };
+    const { container } = render(
+      <Redline
+        changes={compareContent(older, newer).changes}
+        texts={{ older: unitTexts(older), newer: unitTexts(newer) }}
+        label="Changes"
+        content={{ language: 'ar', direction: 'rtl' }}
+      />,
+    );
+    const content = [...container.querySelectorAll('[data-content]')];
+    expect(content.map((each) => each.textContent)).toEqual(['Alpha', 'Beta']);
+    for (const each of content) {
+      expect(each).toHaveAttribute('lang', 'ar');
+      expect(each).toHaveAttribute('dir', 'rtl');
+    }
+    const html = redlineHtml('Changes', container);
+    expect(html).toContain('<html lang="en-GB" dir="ltr">');
+    expect(html).toContain('lang="ar" dir="rtl"');
+  });
+
+  it('marks content of no known language to be read in its own direction', () => {
+    drawn(docOf(['a', 'Alpha']), docOf(['a', 'Alpha'], ['b', 'Beta']));
+    const content = [...document.querySelectorAll('[data-content]')];
+    expect(content.length).toBeGreaterThan(0);
+    for (const each of content) expect(each).toHaveAttribute('dir', 'auto');
+  });
 });

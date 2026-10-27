@@ -5,6 +5,7 @@ import { StrictMode, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
 import { OutlinePanel } from './OutlinePanel.js';
+import { WordsProvider } from '../words/words.js';
 import {
   outline,
   open,
@@ -1152,5 +1153,38 @@ describe("the Part tab's rows (ADR-0054)", () => {
       `#/components/${PRINTER}`,
     );
     expect(within(part()).getByRole('button', { name: 'Remove component' })).toBeInTheDocument();
+  });
+});
+
+describe('the outline right to left (the UI plan, UI-G)', () => {
+  it('LOC-004 demotes with Alt+Left and expands with Left when the interface is right to left', async () => {
+    const fake = service(
+      outline([
+        section(METHOD, 'Method', [section(SCOPE, 'Scope')]),
+        section(INTRODUCTION, 'Introduction'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Introduction' });
+    // The interface now right to left: each key reads the direction as it is pressed, and a title
+    // drawn again is drawn in the pseudo-locale's brackets.
+    render(
+      <WordsProvider language="ar-XB">
+        <span />
+      </WordsProvider>,
+    );
+
+    await userEvent.click(item(/Method/));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(item(/Method/)).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(item(/Method/)).toHaveAttribute('aria-expanded', 'true');
+
+    await userEvent.click(item(/Introduction/));
+    await userEvent.keyboard('{Alt>}{ArrowLeft}{/Alt}');
+    await waitFor(() => expect(fake.edits()).toHaveLength(1));
+    expect(fake.edits()[0]?.body).toMatchObject({
+      operation: { operation: 'move', node: INTRODUCTION, parent: METHOD, position: 1 },
+    });
   });
 });

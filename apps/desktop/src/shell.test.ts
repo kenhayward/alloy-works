@@ -7,6 +7,7 @@ import {
   BRIDGE_GLOBAL,
   DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
+  INTERFACE_LANGUAGE_CHANNEL,
   SPELL_CHECK_LANGUAGES_CHANNEL,
   describePlatform,
   isRenderer,
@@ -19,6 +20,7 @@ import {
   spellCheckerChoice,
   spellCheckerLanguages,
   spellingMenu,
+  trayMenu,
   windowBackground,
 } from './shell.js';
 
@@ -104,6 +106,16 @@ describe('the bridge contract', () => {
   it('namespaces the spelling channel, apart from the platform channel', () => {
     expect(SPELL_CHECK_LANGUAGES_CHANNEL).toBe('alloy-works:spell-check-languages');
     expect(SPELL_CHECK_LANGUAGES_CHANNEL).not.toBe(PLATFORM_INFO_CHANNEL);
+  });
+
+  // Pinned too: a rename on one side is a tray and a spelling menu left in the language they
+  // started in.
+  it('namespaces the interface language channel, apart from the others (the UI plan, UI-I)', () => {
+    expect(INTERFACE_LANGUAGE_CHANNEL).toBe('alloy-works:interface-language');
+    expect(
+      new Set([PLATFORM_INFO_CHANNEL, SPELL_CHECK_LANGUAGES_CHANNEL, INTERFACE_LANGUAGE_CHANNEL])
+        .size,
+    ).toBe(3);
   });
 });
 
@@ -217,10 +229,33 @@ describe('spellCheckerChoice', () => {
   });
 });
 
+/** The desktop's words in English, as `desktopWords('en-GB')` gives them. */
+const ENGLISH = {
+  'desktop.show': 'Show Alloy Works',
+  'desktop.quit': 'Quit',
+  'desktop.no-suggestions': 'No suggestions',
+  'desktop.add-to-dictionary': 'Add to dictionary',
+} as const;
+
 describe('spellingMenu', () => {
+  it('LOC-005 says its own words in the language it is given (the UI plan, UI-I)', () => {
+    const menu = spellingMenu(
+      { misspelledWord: 'x', dictionarySuggestions: [] },
+      { ...ENGLISH, 'desktop.no-suggestions': '[Ñö ~]', 'desktop.add-to-dictionary': '[Åðð ~]' },
+    );
+    expect(menu).toEqual([
+      { kind: 'none', label: '[Ñö ~]' },
+      { kind: 'separator' },
+      { kind: 'add', label: '[Åðð ~]', word: 'x' },
+    ]);
+  });
+
   it('offers the suggestions for a misspelled word, then to add it to the dictionary', () => {
     expect(
-      spellingMenu({ misspelledWord: 'recieve', dictionarySuggestions: ['receive', 'relieve'] }),
+      spellingMenu(
+        { misspelledWord: 'recieve', dictionarySuggestions: ['receive', 'relieve'] },
+        ENGLISH,
+      ),
     ).toEqual([
       { kind: 'replace', label: 'receive', text: 'receive' },
       { kind: 'replace', label: 'relieve', text: 'relieve' },
@@ -230,7 +265,7 @@ describe('spellingMenu', () => {
   });
 
   it('says there are no suggestions where there are none, and still offers to add the word', () => {
-    expect(spellingMenu({ misspelledWord: 'Zyxwv', dictionarySuggestions: [] })).toEqual([
+    expect(spellingMenu({ misspelledWord: 'Zyxwv', dictionarySuggestions: [] }, ENGLISH)).toEqual([
       { kind: 'none', label: 'No suggestions' },
       { kind: 'separator' },
       { kind: 'add', label: 'Add to dictionary', word: 'Zyxwv' },
@@ -239,7 +274,7 @@ describe('spellingMenu', () => {
 
   it('offers at most five suggestions', () => {
     const suggestions = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-    const menu = spellingMenu({ misspelledWord: 'x', dictionarySuggestions: suggestions });
+    const menu = spellingMenu({ misspelledWord: 'x', dictionarySuggestions: suggestions }, ENGLISH);
     expect(menu.filter((item) => item.kind === 'replace').map((item) => item.text)).toEqual([
       'a',
       'b',
@@ -250,7 +285,19 @@ describe('spellingMenu', () => {
   });
 
   it('offers nothing where nothing is misspelled', () => {
-    expect(spellingMenu({ misspelledWord: '', dictionarySuggestions: ['a'] })).toEqual([]);
+    expect(spellingMenu({ misspelledWord: '', dictionarySuggestions: ['a'] }, ENGLISH)).toEqual([]);
+  });
+});
+
+describe('trayMenu', () => {
+  it('LOC-005 shows the window and quits, in the language it is given (the UI plan, UI-I)', () => {
+    expect(
+      trayMenu({ ...ENGLISH, 'desktop.show': '[Šĥöŵ ~]', 'desktop.quit': '[Ǫûîţ ~]' }),
+    ).toEqual([
+      { kind: 'show', label: '[Šĥöŵ ~]' },
+      { kind: 'separator' },
+      { kind: 'quit', label: '[Ǫûîţ ~]' },
+    ]);
   });
 });
 
@@ -295,6 +342,20 @@ describe('the built preload', () => {
     expect(preload()).toContain(BRIDGE_GLOBAL);
     expect(preload()).toContain(PLATFORM_INFO_CHANNEL);
     expect(preload()).toContain(SPELL_CHECK_LANGUAGES_CHANNEL);
+    expect(preload()).toContain(INTERFACE_LANGUAGE_CHANNEL);
+  });
+});
+
+describe('the built main process', () => {
+  const main = (): string => readFileSync(join(process.cwd(), 'dist', 'main.js'), 'utf8');
+
+  // Bundled, as the preload is (the UI plan, UI-I): the catalogue its words come from is the
+  // renderer's, a workspace the packaged app does not hold, so it arrives inside the one file.
+  it('is one file, holding the catalogue its tray and spelling menu are worded from', () => {
+    expect(main()).not.toMatch(/require\(['"]\.{1,2}[/\\]/);
+    expect(main()).not.toMatch(/require\(['"]@alloy-works\//);
+    expect(main()).toContain('Add to dictionary');
+    expect(main()).toContain(INTERFACE_LANGUAGE_CHANNEL);
   });
 });
 

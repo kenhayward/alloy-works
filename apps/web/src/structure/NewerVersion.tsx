@@ -96,6 +96,7 @@ export function NewerVersion({
               number: pinned.number,
               number2: newer.number,
             })}
+            content={shown.newer}
           />
         </div>
       )}

@@ -42,3 +42,9 @@
   display: block;
   flex-shrink: 0;
 }
+
+/* An icon that points along the line, mirrored right to left (Icon.tsx; the UI plan, UI-G). Its scale
+   rather than a transform, so a triangle's own turn is kept. */
+:global(:root[dir='rtl']) .path[data-mirrored] {
+  scale: -1 1;
+}

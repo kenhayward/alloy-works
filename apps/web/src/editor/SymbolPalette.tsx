@@ -7,6 +7,7 @@ import styles from './MarkPrompt.module.css';
 import own from './SymbolPalette.module.css';
 import { SYMBOL_GROUPS } from './symbols.js';
 import { words } from '../words/words.js';
+import { inlineKey } from '../parts/inline.js';
 
 /** How many symbols stand in a row, which the up and down arrows move by. */
 export const PALETTE_COLUMNS = 12;
@@ -86,7 +87,7 @@ export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPal
     if (from < 0) return;
     const last = (SYMBOL_GROUPS[group]?.symbols.length ?? 1) - 1;
     const to = (() => {
-      switch (event.key) {
+      switch (inlineKey(event.key)) {
         case 'ArrowRight':
           return Math.min(from + 1, last);
         case 'ArrowLeft':

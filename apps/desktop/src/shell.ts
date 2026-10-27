@@ -1,4 +1,7 @@
 import type { PlatformInfo } from '@alloy-works/web/platform' with { 'resolution-mode': 'import' };
+import type { DesktopWord } from '@alloy-works/web/desktop-words' with {
+  'resolution-mode': 'import',
+};
 
 /**
  * Pure decisions the shell makes, kept out of main.ts so they can be tested without booting
@@ -253,6 +256,30 @@ export function spellCheckerChoice(
   return languages.length === 0 ? { kind: 'unchanged' } : { kind: 'set', languages };
 }
 
+/**
+ * The interface's language (the UI plan, UI-I): the renderer says it as it turns to it, and the main
+ * process words the tray and the spelling menu in it. One declared tag, checked there.
+ */
+export const INTERFACE_LANGUAGE_CHANNEL = 'alloy-works:interface-language';
+
+/** The desktop's own words, in one language: `desktopWords` in the renderer's catalogue. */
+export type DesktopWords = Readonly<Record<DesktopWord, string>>;
+
+/** One item of the tray's menu, as main.ts turns it into Electron's. */
+export type TrayMenuItem =
+  | { readonly kind: 'show'; readonly label: string }
+  | { readonly kind: 'separator' }
+  | { readonly kind: 'quit'; readonly label: string };
+
+/** The tray's menu: show the window, and quit, in the interface's language. */
+export function trayMenu(words: DesktopWords): TrayMenuItem[] {
+  return [
+    { kind: 'show', label: words['desktop.show'] },
+    { kind: 'separator' },
+    { kind: 'quit', label: words['desktop.quit'] },
+  ];
+}
+
 /** The most suggestions the menu offers. */
 const MOST_SUGGESTIONS = 5;
 
@@ -265,22 +292,26 @@ export type SpellingMenuItem =
 
 /**
  * The window's context menu over a misspelled word (W-K): its suggestions, each replacing the word, or
- * a line saying there are none; then **Add to dictionary**. Nothing where no word is misspelled, and
- * then no menu opens, as none did before. What it reads is the `context-menu` event's own `params`.
+ * a line saying there are none; then **Add to dictionary**, in the interface's language (UI-I). Nothing
+ * where no word is misspelled, and then no menu opens, as none did before. What it reads is the
+ * `context-menu` event's own `params`.
  */
-export function spellingMenu(params: {
-  readonly misspelledWord: string;
-  readonly dictionarySuggestions: readonly string[];
-}): SpellingMenuItem[] {
+export function spellingMenu(
+  params: {
+    readonly misspelledWord: string;
+    readonly dictionarySuggestions: readonly string[];
+  },
+  words: DesktopWords,
+): SpellingMenuItem[] {
   const word = params.misspelledWord;
   if (word === '') return [];
   const suggestions = params.dictionarySuggestions.slice(0, MOST_SUGGESTIONS);
   return [
     ...(suggestions.length === 0
-      ? [{ kind: 'none', label: 'No suggestions' } as const]
+      ? [{ kind: 'none', label: words['desktop.no-suggestions'] } as const]
       : suggestions.map((text) => ({ kind: 'replace', label: text, text }) as const)),
     { kind: 'separator' },
-    { kind: 'add', label: 'Add to dictionary', word },
+    { kind: 'add', label: words['desktop.add-to-dictionary'], word },
   ];
 }
 

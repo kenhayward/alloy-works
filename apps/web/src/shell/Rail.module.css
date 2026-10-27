@@ -12,7 +12,7 @@
   /* 2px a side: the widest label, Components, is 69px in Plex at 12px, and must not break. */
   padding: var(--space-12) 2px;
   overflow: hidden auto;
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
   background: var(--chrome);
 }
 

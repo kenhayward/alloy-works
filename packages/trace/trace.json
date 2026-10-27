@@ -18099,6 +18099,10 @@
       "document": "interface-localisation.md",
       "owns": [
         {
+          "id": "LOC-004",
+          "howItIsMet": "Laid out right to left in a right-to-left language: [below](#right-to-left)"
+        },
+        {
           "id": "LOC-005",
           "howItIsMet": "A person's interface language is theirs, stored apart from and never read from any content's"
         }
@@ -20968,7 +20972,13 @@
     {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 157,
+      "line": 169,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/desktop/src/shell.test.ts",
+      "line": 241,
       "kind": "title"
     },
     {
@@ -24218,6 +24228,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-004",
+      "file": "apps/web/src/compare/Redline.test.tsx",
+      "line": 72,
+      "kind": "title"
+    },
+    {
       "id": "VER-029",
       "file": "apps/web/src/compare/Redline.test.tsx",
       "line": 53,
@@ -24646,7 +24662,7 @@
     {
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
-      "line": 832,
+      "line": 833,
       "kind": "title"
     },
     {
@@ -24707,6 +24723,12 @@
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
       "line": 666,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-004",
+      "file": "apps/web/src/editor/Icon.test.tsx",
+      "line": 9,
       "kind": "title"
     },
     {
@@ -25052,6 +25074,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-004",
+      "file": "apps/web/src/layouts/PaneWidth.test.tsx",
+      "line": 87,
+      "kind": "title"
+    },
+    {
       "id": "LIF-008",
       "file": "apps/web/src/lifecycle/Approvals.test.tsx",
       "line": 21,
@@ -25151,6 +25179,12 @@
       "id": "MET-021",
       "file": "apps/web/src/metadata/FieldsForm.test.tsx",
       "line": 52,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-004",
+      "file": "apps/web/src/parts/inline.test.tsx",
+      "line": 18,
       "kind": "title"
     },
     {
@@ -25966,37 +26000,43 @@
     {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 592,
+      "line": 593,
       "kind": "title"
     },
     {
       "id": "LIF-024",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 606,
+      "line": 607,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-004",
+      "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
+      "line": 1160,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 526,
+      "line": 527,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 33,
+      "line": 34,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 413,
+      "line": 414,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 717,
+      "line": 718,
       "kind": "title"
     },
     {
@@ -26096,15 +26136,21 @@
       "kind": "title"
     },
     {
-      "id": "REU-011",
+      "id": "LOC-004",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
       "line": 505,
       "kind": "title"
     },
     {
+      "id": "REU-011",
+      "file": "apps/web/src/structure/DocumentText.test.tsx",
+      "line": 512,
+      "kind": "title"
+    },
+    {
       "id": "REU-015",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 505,
+      "line": 512,
       "kind": "title"
     },
     {
@@ -26336,6 +26382,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-004",
+      "file": "apps/web/src/theme/logical.test.ts",
+      "line": 25,
+      "kind": "title"
+    },
+    {
       "id": "STY-039",
       "file": "apps/web/src/theme/presentation.test.tsx",
       "line": 45,
@@ -26381,6 +26433,12 @@
       "id": "SCH-058",
       "file": "apps/web/src/versions/VersionPages.test.tsx",
       "line": 42,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/web/src/words/desktop.test.ts",
+      "line": 6,
       "kind": "title"
     },
     {

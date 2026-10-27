@@ -232,6 +232,7 @@ export function BaselineComparisonPage({
                 changes={each.changes}
                 texts={{ older: unitTexts(each.older), newer: unitTexts(each.newer) }}
                 label={words('compare.changes-to', { title: each.title })}
+                content={each.newer}
               />
             </section>
           ))}

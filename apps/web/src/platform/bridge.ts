@@ -22,6 +22,7 @@ export const browserBridge: PlatformBridge = {
   // The browser's own checker marks the surface, which sets `spellcheck`, with the dictionaries the
   // author's browser has enabled: a page cannot choose them.
   setSpellCheckLanguages: async () => {},
+  setInterfaceLanguage: async () => {},
 };
 
 export function resolveBridge(host: BridgeHost = window): PlatformBridge {

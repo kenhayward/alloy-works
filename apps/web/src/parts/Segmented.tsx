@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent } from 'react';
 
 import { Icon } from '../editor/Icon.js';
 import styles from './parts.module.css';
+import { inlineKey } from './inline.js';
 
 export interface Segment {
   readonly value: string;
@@ -45,14 +46,15 @@ export function Segmented({
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const count = options.length;
+    const key = inlineKey(event.key);
     const to =
-      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+      key === 'ArrowRight' || key === 'ArrowDown'
         ? (at + 1) % count
-        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        : key === 'ArrowLeft' || key === 'ArrowUp'
           ? (at - 1 + count) % count
-          : event.key === 'Home'
+          : key === 'Home'
             ? 0
-            : event.key === 'End'
+            : key === 'End'
               ? count - 1
               : null;
     if (to === null) return;

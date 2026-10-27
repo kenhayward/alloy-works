@@ -69,10 +69,9 @@ export default tseslint.config(
     },
   },
   {
-    // The whole renderer's words are the catalogue's (the UI plan, UI-F), but the bridge to the
-    // desktop shell, whose words move with the shell's (UIe).
+    // The whole renderer's words are the catalogue's (the UI plan, UI-F).
     files: ['apps/web/src/**/*.{ts,tsx}'],
-    ignores: ['**/*.test.{ts,tsx}', 'apps/web/src/test/**', 'apps/web/src/platform/**'],
+    ignores: ['**/*.test.{ts,tsx}', 'apps/web/src/test/**'],
     plugins: { alloy: { rules: { 'interface-words': interfaceWords } } },
     rules: { 'alloy/interface-words': 'error' },
   },

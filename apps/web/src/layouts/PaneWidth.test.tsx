@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { PaneSeparator, PaneToggle, usePaneWidth } from './PaneWidth.js';
+import { WordsProvider } from '../words/words.js';
 
 const BOUNDS = { storageKey: 'aw.test.width', min: 220, max: 520, initial: 300 };
 
@@ -79,5 +80,25 @@ describe('a pane whose width the reader sets', () => {
     expect(screen.getByText('hidden')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Show the outline' }));
     expect(screen.getByText('300px')).toBeInTheDocument();
+  });
+});
+
+describe('a pane whose width the reader sets, right to left (the UI plan, UI-G)', () => {
+  it("LOC-004 widens a pane at the page's start leftwards, by the keys and by a drag", async () => {
+    render(
+      <WordsProvider language="ar-XB">
+        <Page />
+      </WordsProvider>,
+    );
+    const separator = screen.getByRole('separator');
+    separator.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(screen.getByText('310px')).toBeInTheDocument();
+    await userEvent.pointer([
+      { keys: '[MouseLeft>]', target: separator, coords: { clientX: 500 } },
+      { target: separator, coords: { clientX: 460 } },
+      { keys: '[/MouseLeft]' },
+    ]);
+    expect(screen.getByText('350px')).toBeInTheDocument();
   });
 });

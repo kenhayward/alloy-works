@@ -23,7 +23,7 @@
 .menu {
   position: absolute;
   top: calc(100% + var(--space-4));
-  right: 0;
+  inset-inline-end: 0;
   z-index: var(--z-dropdown);
   min-width: 190px;
   margin: 0;

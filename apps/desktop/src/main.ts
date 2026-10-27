@@ -1,3 +1,4 @@
+import { desktopLanguage, desktopWords, isInterfaceLanguage } from '@alloy-works/web/desktop-words';
 import { BrowserWindow, Menu, Tray, app, ipcMain, nativeTheme, shell } from 'electron';
 import path from 'node:path';
 
@@ -10,6 +11,7 @@ import {
 } from './icons.js';
 import {
   DEV_SERVER_URL,
+  INTERFACE_LANGUAGE_CHANNEL,
   PLATFORM_INFO_CHANNEL,
   SPELL_CHECK_LANGUAGES_CHANNEL,
   describePlatform,
@@ -20,6 +22,7 @@ import {
   resolveRendererTarget,
   spellCheckerChoice,
   spellingMenu,
+  trayMenu,
   windowBackground,
   type RendererTarget,
 } from './shell.js';
@@ -35,6 +38,9 @@ let mainWindow: BrowserWindow | null = null;
 // Where the renderer is, once the first window has worked it out: what the navigation guard and every
 // IPC handler hold a page to (issue #309).
 let rendererTarget: RendererTarget | null = null;
+// The interface's language (UI-I): the system's until the renderer says, matched against the list
+// once the app is ready, since `app.getLocale()` is empty before.
+let language = 'en-GB';
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -57,7 +63,7 @@ function createWindow(): void {
 
   // The spelling checker's suggestions (W-K): the menu is decided in shell.ts, and carried out here.
   window.webContents.on('context-menu', (_event, params) => {
-    const items = spellingMenu(params);
+    const items = spellingMenu(params, desktopWords(language));
     if (items.length === 0) return;
     Menu.buildFromTemplate(
       items.map((item) => {
@@ -147,18 +153,30 @@ function currentTrayIcon(): string {
 function createTray(): void {
   tray = new Tray(currentTrayIcon());
   tray.setToolTip('Alloy Works');
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: 'Show Alloy Works', click: showWindow },
-      { type: 'separator' },
-      { label: 'Quit', role: 'quit' },
-    ]),
-  );
+  setTrayMenu();
   tray.on('click', showWindow);
 
   // Windows and Linux cannot invert the glyph themselves, so follow the system theme and swap
   // the file. On macOS this recomputes to the same template image and costs nothing.
   nativeTheme.on('updated', () => tray?.setImage(currentTrayIcon()));
+}
+
+/** The tray's menu in the interface's language, again whenever it changes (UI-I). */
+function setTrayMenu(): void {
+  tray?.setContextMenu(
+    Menu.buildFromTemplate(
+      trayMenu(desktopWords(language)).map((item) => {
+        switch (item.kind) {
+          case 'separator':
+            return { type: 'separator' };
+          case 'show':
+            return { label: item.label, click: showWindow };
+          case 'quit':
+            return { label: item.label, role: 'quit' };
+        }
+      }),
+    ),
+  );
 }
 
 /** Whether an IPC call comes from the renderer, and no page the window was taken to (issue #309). */
@@ -189,7 +207,20 @@ ipcMain.handle(SPELL_CHECK_LANGUAGES_CHANNEL, (event, requested: unknown) => {
   }
 });
 
+// The interface's language (UI-I): a declared tag alone, else refused and logged without what was sent.
+ipcMain.handle(INTERFACE_LANGUAGE_CHANNEL, (event, requested: unknown) => {
+  if (!fromRenderer(event)) throw new Error('Refused: not the renderer.');
+  if (!isInterfaceLanguage(requested)) {
+    console.warn('Refused an interface language that was not a declared tag.');
+    return;
+  }
+  language = requested;
+  setTrayMenu();
+});
+
 void app.whenReady().then(() => {
+  language = desktopLanguage(app.getLocale());
+
   // Unpackaged on macOS the Dock shows Electron's icon, because there is no bundle to read one
   // from. Packaged, the bundle wins and this is a no-op.
   if (process.platform === 'darwin' && !app.isPackaged) {

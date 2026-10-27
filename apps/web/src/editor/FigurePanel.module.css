@@ -91,7 +91,7 @@
 .tip {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  inset-inline-start: 0;
   z-index: var(--z-dropdown);
   width: 320px;
   padding: var(--space-8) var(--space-12);

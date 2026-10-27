@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import { DocumentText, labelFits } from './DocumentText.js';
+import { DocumentText, labelFits, textExtent } from './DocumentText.js';
 
 const PRINTER = '6a0c1b8e-6f3e-4d2a-9d36-2a4f1c9e7b10';
 
@@ -500,6 +500,13 @@ describe("a component's label", () => {
     expect(labelFits({ column: 900, text: 800, label: 250 })).toBe(false);
     // Room for the label but not its gap.
     expect(labelFits({ column: 900, text: 645, label: 250 })).toBe(false);
+  });
+
+  it('LOC-004 measures the text from the inline start, the right edge right to left (the UI plan, UI-G)', () => {
+    const component = { left: 100, right: 1000 };
+    // Left to right the words run from 100 to 700; right to left, from 1000 to 400: 600 each way.
+    expect(textExtent(component, { left: 100, right: 700 }, 'ltr')).toBe(600);
+    expect(textExtent(component, { left: 400, right: 1000 }, 'rtl')).toBe(600);
   });
 
   it('REU-011 REU-015 marks a reference overridden here, says where an override no longer applies, and offers Overrides', async () => {

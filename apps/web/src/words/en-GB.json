@@ -4926,5 +4926,9 @@
   "shell.asking": "asking...",
   "editor.base-language": "Base language: {tag}",
   "editor.base-direction": "Base direction: {direction}",
-  "editor.direction-short": "{direction, select, rtl {RTL} other {LTR}}"
+  "editor.direction-short": "{direction, select, rtl {RTL} other {LTR}}",
+  "desktop.show": "Show Alloy Works",
+  "desktop.quit": "Quit",
+  "desktop.no-suggestions": "No suggestions",
+  "desktop.add-to-dictionary": "Add to dictionary"
 }

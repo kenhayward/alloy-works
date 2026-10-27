@@ -825,6 +825,7 @@ describe("the spelling checker's languages (W14.7)", () => {
       setSpellCheckLanguages: async (languages) => {
         asked.push([...languages]);
       },
+      setInterfaceLanguage: async () => {},
     };
     return { bridge, asked };
   };

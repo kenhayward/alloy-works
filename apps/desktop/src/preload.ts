@@ -3,9 +3,14 @@ import type { PlatformBridge } from '@alloy-works/web/platform' with {
 };
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { BRIDGE_GLOBAL, PLATFORM_INFO_CHANNEL, SPELL_CHECK_LANGUAGES_CHANNEL } from './shell.js';
+import {
+  BRIDGE_GLOBAL,
+  INTERFACE_LANGUAGE_CHANNEL,
+  PLATFORM_INFO_CHANNEL,
+  SPELL_CHECK_LANGUAGES_CHANNEL,
+} from './shell.js';
 
-// Two methods, two channels. Anything added here needs a matching main-process handler that
+// Three methods, three channels. Anything added here needs a matching main-process handler that
 // validates its own arguments - never a general "run this for me" bridge. Typed as the renderer's own
 // contract, so a method the contract gains and the shell does not answer fails the build.
 const bridge: PlatformBridge = {
@@ -13,6 +18,9 @@ const bridge: PlatformBridge = {
   // A copy of the list, never the renderer's own object: only plain data crosses.
   setSpellCheckLanguages: async (languages) => {
     await ipcRenderer.invoke(SPELL_CHECK_LANGUAGES_CHANNEL, [...languages]);
+  },
+  setInterfaceLanguage: async (language) => {
+    await ipcRenderer.invoke(INTERFACE_LANGUAGE_CHANNEL, language);
   },
 };
 
