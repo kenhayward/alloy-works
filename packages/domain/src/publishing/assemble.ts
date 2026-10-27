@@ -82,7 +82,14 @@ const titleTexts = (nodes: readonly OutlineNode[]): string[] =>
   ]);
 import { isLaidOut } from './bound.js';
 import type { PublishFailure } from './failures.js';
-import { characterProblems, codePointName, type Covers, type Setting } from './glyphs.js';
+import {
+  characterProblems,
+  codePointName,
+  settingFaces,
+  type Chain,
+  type Covers,
+  type Setting,
+} from './glyphs.js';
 import {
   captionHeight,
   columnsAt,
@@ -804,12 +811,40 @@ export function assemble(given: AssembleInput): Assembled {
     theme!.paragraphStyles.get(theme!.roles[role])!;
   const placeStyle = (place: Place): ResolvedParagraphStyle =>
     theme!.paragraphStyles.get(theme!.places[place])!;
-  /** The families text in these roles is set in, each face set by; template 1's without a theme. */
-  const roles = (...names: readonly Role[]): string[] =>
-    theme === null ? [SLICE_ONE_FAMILY] : names.map((name) => setBy(roleStyle(name).typeface));
-  /** The family text in a place's default style is set in; template 1's without a theme. */
-  const inPlace = (place: Place): string[] =>
-    theme === null ? [SLICE_ONE_FAMILY] : [setBy(placeStyle(place).typeface)];
+  /**
+   * The chain a style or a mark sets text in, by family (the UI plan, UF-D): its own face set by, as
+   * ever, and each fallback set by only where `check` finds a character falling to it, so a Latin
+   * document never asks whether its Naskh may be embedded.
+   */
+  const chainOf = (style: {
+    readonly typeface: Typeface;
+    readonly chain: readonly Typeface[];
+  }): Chain => [setBy(style.typeface), ...style.chain.slice(1).map((face) => face.family)];
+  /** A chain asked of without being set by. */
+  const unset = (style: { readonly chain: readonly Typeface[] }): Chain =>
+    style.chain.map((face) => face.family);
+  /** Each face by its family, the theme's first where two share one. */
+  const byFamily = new Map(
+    [...(theme?.typefaces.values() ?? [])].reverse().map((face) => [face.family, face]),
+  );
+  /** Sets by each fallback of `chain` a character of `text` falls to. */
+  const fallsTo = (text: string, chain: Chain) => {
+    if (chain.length < 2) return;
+    for (const family of new Set(settingFaces(text, input.covers, chain))) {
+      const face = family === null || family === chain[0] ? undefined : byFamily.get(family);
+      if (face !== undefined) setBy(face);
+    }
+  };
+  /** Each chain once, by its families in order. */
+  const distinct = (chains: readonly Chain[]): Chain[] => [
+    ...new Map(chains.map((chain) => [chain.join('\n'), chain])).values(),
+  ];
+  /** The chains text in these roles is set in, each face set by; template 1's without a theme. */
+  const roles = (...names: readonly Role[]): Chain[] =>
+    theme === null ? [[SLICE_ONE_FAMILY]] : names.map((name) => chainOf(roleStyle(name)));
+  /** The chain text in a place's default style is set in; template 1's without a theme. */
+  const inPlace = (place: Place): Chain[] =>
+    theme === null ? [[SLICE_ONE_FAMILY]] : [chainOf(placeStyle(place))];
 
   // What the layout sets in its running heads and feet, and which sequences it lists after the
   // contents: where the document's title, a section's title and a caption are set again.
@@ -826,7 +861,7 @@ export function assemble(given: AssembleInput): Assembled {
    * the running slots' for a first-level node where a slot prints the section, which names the first
    * level alone (template 11's `section`).
    */
-  const titleFamilies = (depth: number): string[] => {
+  const titleFamilies = (depth: number): Chain[] => {
     if (layout === null) return roles();
     const contents = layout.matter.contents;
     return roles(
@@ -836,26 +871,28 @@ export function assemble(given: AssembleInput): Assembled {
     );
   };
   /** A table's or a figure's caption and label: the caption's, and the list entry's where it is listed. */
-  const captionFamilies = (sequence: 'table' | 'figure'): string[] =>
+  const captionFamilies = (sequence: 'table' | 'figure'): Chain[] =>
     roles('caption', ...(listed(sequence) ? (['listEntry'] as const) : []));
 
   /**
    * **The glyph check asks the face that sets the text** (themes 1, ruling R6; decision A before it):
-   * each of `families`, by name - a paragraph style's, a role's, a mark's - where `setting` says how the
-   * engine sets it, as body text, as code or in an equation. A character missing from a family setting
-   * code is `code_glyph_missing`, as it always was, so the author is not told no face has it. Each
-   * character is said once for the text, however many of its families lack it.
+   * each chain of `families`, by name - a paragraph style's, a role's, a mark's - where `setting` says
+   * how the engine sets it, as body text, as code or in an equation (the chain's first face alone, UF-C).
+   * A character missing from a family setting code is `code_glyph_missing`, as it always was, so the
+   * author is not told no face has it. Each character is said once for the text, however many of its
+   * chains lack it.
    */
   const check = (
     text: string,
     node: string | null,
     block: string | null,
-    families: readonly string[],
+    families: readonly Chain[],
     setting: Setting = 'body',
   ) => {
     const said = new Set<string>();
-    for (const family of new Set(families)) {
-      for (const { problem, codePoint } of characterProblems(text, input.covers, family, setting)) {
+    for (const chain of distinct(families)) {
+      if (setting === 'body') fallsTo(text, chain);
+      for (const { problem, codePoint } of characterProblems(text, input.covers, chain, setting)) {
         const code =
           problem === 'glyph_missing' && setting === 'code' ? 'code_glyph_missing' : problem;
         if (said.has(`${code} ${codePoint}`)) continue;
@@ -864,15 +901,20 @@ export function assemble(given: AssembleInput): Assembled {
       }
     }
   };
-  /** The layout's own words, asked of the families they are set in: a failure is the layout's. */
+  /**
+   * The layout's own words, asked of the chains they are set in: a failure is the layout's. Words
+   * asked of a face that may set nothing are not `set`, so no fallback is set by for them.
+   */
   const checkWords = (
     words: string,
-    families: readonly string[],
+    families: readonly Chain[],
     record: (next: PublishFailure) => void,
+    set = true,
   ) => {
     const said = new Set<number>();
-    for (const family of new Set(families)) {
-      for (const { codePoint } of characterProblems(words, input.covers, family, 'body')) {
+    for (const chain of distinct(families)) {
+      if (set) fallsTo(words, chain);
+      for (const { codePoint } of characterProblems(words, input.covers, chain, 'body')) {
         if (said.has(codePoint)) continue;
         said.add(codePoint);
         record(failure('compose', 'layout_glyph_missing', null, null, codePointName(codePoint)));
@@ -940,32 +982,33 @@ export function assemble(given: AssembleInput): Assembled {
     const relative = [above, below].flatMap((words) => (words === undefined ? [] : [words]));
     const push = (next: PublishFailure) => failures.push(next);
     // Asked without being set by: running text's face may set nothing in this document.
-    const text = [placeStyle('text').typeface.family];
+    const text = [unset(placeStyle('text'))];
     // The running slots' face sets the page's number and the revision where no word does.
     const running = slotParts.length > 0 ? roles('running') : [];
     // The contents' title is set only where the layout declares a contents, and asked where it is not
     // as it always was, of running text's family, since nothing sets it.
-    checkWords(title, layout.matter.contents === null ? text : roles('contents'), push);
+    if (layout.matter.contents === null) checkWords(title, text, push, false);
+    else checkWords(title, roles('contents'), push);
     if (notice !== null) checkWords(notice, roles('notice'), push);
     if (noticeSentence !== null) checkWords(noticeSentence, roles('noticeSentence'), push);
     for (const words of slotWords) checkWords(words, running, push);
     for (const words of listTitles) checkWords(words, roles('list'), push);
-    for (const words of relative) checkWords(words, text, push);
+    for (const words of relative) checkWords(words, text, push, false);
     // What a continued table's label adds (themes 2, ruling R2), set after the label in the caption
     // role's style: asked of its family whether or not a table in the document asks for a label, as
     // the contents' title is asked where there is no contents, and without being set by, since it may
     // set nothing.
     if (continued !== undefined) {
-      checkWords(continued, [roleStyle('caption').typeface.family], push);
+      checkWords(continued, [unset(roleStyle('caption'))], push, false);
     }
     // What a bound table prints (TB1-G): no rows and a null in a table cell's face, and the word
     // before its source in a table note's - asked where the layout has them, whether or not the
     // document holds a bound table, as `continued` is.
     const { noRows, notAvailable, source } = layout.words;
     for (const words of [noRows, notAvailable]) {
-      if (words !== undefined) checkWords(words, [placeStyle('tableCell').typeface.family], push);
+      if (words !== undefined) checkWords(words, [unset(placeStyle('tableCell'))], push, false);
     }
-    if (source !== undefined) checkWords(source, [roleStyle('tableNote').typeface.family], push);
+    if (source !== undefined) checkWords(source, [unset(roleStyle('tableNote'))], push, false);
   }
 
   // Every cross-reference in the document, resolved before anything is projected (cross-references 2):
@@ -1108,7 +1151,7 @@ export function assemble(given: AssembleInput): Assembled {
     content: readonly InlineNode[],
     node: string,
     block: string,
-    families: readonly string[],
+    families: readonly Chain[],
     size: number,
     indent: Indent,
     site: RunsSite,
@@ -1270,12 +1313,15 @@ export function assemble(given: AssembleInput): Assembled {
    */
   const runFamilies = (
     marks: readonly PublishedMark[],
-    families: readonly string[],
-  ): readonly string[] => {
+    families: readonly Chain[],
+  ): readonly Chain[] => {
     if (theme === null) return families;
-    let face: Typeface | undefined;
-    for (const mark of marks) face = theme.characterStyles[mark.kind].typeface ?? face;
-    return face === undefined ? families : [setBy(face)];
+    let face: { readonly typeface: Typeface; readonly chain: readonly Typeface[] } | undefined;
+    for (const mark of marks) {
+      const { typeface, chain } = theme.characterStyles[mark.kind];
+      if (typeface !== undefined) face = { typeface, chain: chain ?? [typeface] };
+    }
+    return face === undefined ? families : [chainOf(face)];
   };
 
   /**
@@ -1291,10 +1337,10 @@ export function assemble(given: AssembleInput): Assembled {
     place: Place,
     node: string,
     block: string,
-  ): { readonly id: string; readonly families: readonly string[]; readonly size: number } => {
+  ): { readonly id: string; readonly families: readonly Chain[]; readonly size: number } => {
     if (theme === null) {
       if (stored !== BODY) failures.push(failure('compose', 'style_missing', node, block, stored));
-      return { id: BODY, families: [SLICE_ONE_FAMILY], size: BODY_SIZE };
+      return { id: BODY, families: [[SLICE_ONE_FAMILY]], size: BODY_SIZE };
     }
     const id = stored === BODY ? theme.places[place] : stored;
     const style = theme.paragraphStyles.get(id);
@@ -1305,7 +1351,7 @@ export function assemble(given: AssembleInput): Assembled {
       failures.push(failure('compose', 'style_not_applicable', node, block, id));
     }
     const setIn = style !== undefined && applies ? style : placeStyle(place);
-    return { id, families: [setBy(setIn.typeface)], size: setIn.properties.size };
+    return { id, families: [chainOf(setIn)], size: setIn.properties.size };
   };
 
   /**
@@ -1389,7 +1435,7 @@ export function assemble(given: AssembleInput): Assembled {
     node: string,
     block: string,
     table: TableNode | null,
-    families: readonly string[],
+    families: readonly Chain[],
   ): PublishedInline | null => {
     const { anchor } = footnote;
     // Every reason at once, never the first alone (PUB-052), so each is said before any returns.
@@ -1596,7 +1642,7 @@ export function assemble(given: AssembleInput): Assembled {
         const lines = block.text.split('\n').map(expandTabs);
         const most = columnsAt(publishedPdf(layout.formats.pdf), indent.pdf, preformatted);
         lines.forEach((line, index) => {
-          check(line, node, block.id, [family], 'code');
+          check(line, node, block.id, [[family]], 'code');
           const width = columnsOf(line);
           if (width > most) {
             failures.push(
@@ -2083,14 +2129,38 @@ export function assemble(given: AssembleInput): Assembled {
     };
   };
 
-  /** How a style's face sets its characters, bold and slanted as asked, from the pinned files (TG3). */
+  /** `text` cut where the face of `chain` setting it changes; one setting nothing takes the first. */
+  const piecesOf = (text: string, chain: readonly Typeface[]) => {
+    if (chain.length === 1) return [{ face: chain[0]!, text }];
+    const faces = settingFaces(text, input.covers, unset({ chain }));
+    const pieces: { face: Typeface; text: string }[] = [];
+    let at = 0;
+    for (const character of text) {
+      const face = chain.find((each) => each.family === faces[at]) ?? chain[0]!;
+      const last = pieces[pieces.length - 1];
+      if (last?.face === face) last.text += character;
+      else pieces.push({ face, text: character });
+      at += 1;
+    }
+    return pieces;
+  };
+  /**
+   * How a face of a style's chain sets its characters, bold and slanted as asked, from the pinned files
+   * (TG3). A face with no italic sets its upright at the weight asked, as the engine does (UF-E).
+   */
   const advances = new Map<string, FaceAdvances | null>();
-  const advancesOf = (style: ResolvedParagraphStyle, strong: boolean, slanted: boolean) => {
+  const advancesOf = (
+    face: Typeface,
+    style: ResolvedParagraphStyle,
+    strong: boolean,
+    slanted: boolean,
+  ) => {
     const weight = strong || style.properties.bold ? 'bold' : 'regular';
     const posture = slanted !== style.properties.italic ? 'italic' : 'normal';
-    const { files } = style.typeface;
+    const { files } = face;
     const file =
       files.find((each) => each.weight === weight && each.posture === posture) ??
+      files.find((each) => each.weight === weight && each.posture === 'normal') ??
       files.find((each) => each.weight === 'regular' && each.posture === 'normal') ??
       files[0]!;
     if (!advances.has(file.sha256)) {
@@ -2200,9 +2270,15 @@ export function assemble(given: AssembleInput): Assembled {
       ...(wrap === undefined ? {} : { noWrap: wrap.map((each) => !each) }),
       width: (text, paragraphStyle, run) => {
         if (run.points !== undefined) return run.points;
-        const face = advancesOf(paragraphStyle, run.strong, run.slanted);
-        if (face === null) unreadable = true;
-        return (face?.width(text) ?? 0) * paragraphStyle.properties.size;
+        // Each character in the face of the chain that sets it (UF-D), unshaped: approximate for
+        // Arabic, whose joined forms are narrower than the isolated ones measured.
+        let width = 0;
+        for (const piece of piecesOf(text, paragraphStyle.chain)) {
+          const face = advancesOf(piece.face, paragraphStyle, run.strong, run.slanted);
+          if (face === null) unreadable = true;
+          width += face?.width(piece.text) ?? 0;
+        }
+        return width * paragraphStyle.properties.size;
       },
     });
     return unreadable ? null : columnWidths(extents, measure);
@@ -2391,7 +2467,7 @@ export function assemble(given: AssembleInput): Assembled {
     const faceless = characterProblems(
       mathsText(converted.tree),
       input.covers,
-      setBy(theme!.maths),
+      [setBy(theme!.maths)],
       'math',
     );
     for (const { problem, codePoint } of faceless) {

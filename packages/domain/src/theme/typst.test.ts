@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolved, defaultInputs } from './theme.fixture.js';
+import { resolved, defaultInputs, naskhInputs } from './theme.fixture.js';
 import { projectTypst, projectTypst12 } from './typst.js';
 
 /**
@@ -156,19 +156,41 @@ describe("publishing/12's projection, kept as template 12 reads it", () => {
 describe('projectTypst, for publishing/13 to publishing/15', () => {
   const current = projectTypst(resolved());
 
-  it("states every paragraph style as publishing/12's does, with its identifier and its contextual spacing", () => {
+  it("states every paragraph style as publishing/12's does, with its identifier and its contextual spacing, and its face as a chain", () => {
     // The identifier is what template 13 asks of two consecutive blocks: contextual spacing is between
-    // paragraphs of one style, and two styles stating the same values are still two styles.
+    // paragraphs of one style, and two styles stating the same values are still two styles. Since
+    // `publishing/26` a face is a list, the chain (the UI plan, UF-E): one family where it has no fallback.
     for (const [id, style] of Object.entries(typst.styles)) {
       const contextualSpacing = id === 'quotation';
-      expect(current.styles[id], id).toEqual({ ...style, id, contextualSpacing });
+      expect(current.styles[id], id).toEqual({
+        ...style,
+        font: [style.font],
+        id,
+        contextualSpacing,
+      });
     }
     expect(Object.keys(current.styles)).toEqual(Object.keys(typst.styles));
-    expect(current.marks).toEqual(typst.marks);
+    expect(current.marks).toEqual(
+      Object.fromEntries(
+        Object.entries(typst.marks).map(([mark, look]) => [
+          mark,
+          look.font === undefined ? look : { ...look, font: [look.font] },
+        ]),
+      ),
+    );
     const rest: Record<string, unknown> = { ...current };
     delete rest['tables'];
     delete rest['images'];
-    expect(rest).toEqual({ ...typst, styles: current.styles });
+    expect(rest).toEqual({ ...typst, styles: current.styles, marks: current.marks });
+  });
+
+  it("gives a face falling back its chain, in order, and leaves template 12's projection one family", () => {
+    const theme = resolved(naskhInputs());
+    expect(projectTypst(theme).styles[theme.places.text]!.font).toEqual([
+      'Liberation Serif',
+      'Noto Naskh Arabic',
+    ]);
+    expect(projectTypst12(theme).styles[theme.places.text]!.font).toBe('Liberation Serif');
   });
 
   it("carries every table style by identifier, in the engine's terms: fills, weights and strokes or null, an inset, and its breaks", () => {

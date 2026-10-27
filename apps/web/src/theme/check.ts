@@ -63,7 +63,7 @@ export function typefaceAt(
   return {
     family,
     lacks: (character) =>
-      characterProblems(character, covers, family, where.code ? 'code' : 'body').length > 0,
+      characterProblems(character, covers, [family], where.code ? 'code' : 'body').length > 0,
   };
 }
 
@@ -83,7 +83,7 @@ export function styleCheckFor(theme: ResolvedTheme, unheld: readonly string[]): 
       const family = familyAt(theme, where);
       if (family === undefined || unheld.includes(family)) return new Set();
       return new Set(
-        characterProblems(text, covers, family, where.code ? 'code' : 'body').map(
+        characterProblems(text, covers, [family], where.code ? 'code' : 'body').map(
           (each) => each.codePoint,
         ),
       );

@@ -3,6 +3,7 @@ import {
   DEFAULT_THEME,
   readTheme,
   type ResolvedTheme,
+  type Typeface,
 } from '@alloy-works/domain';
 
 /**
@@ -18,5 +19,48 @@ import {
 export const defaultTheme: ResolvedTheme = (() => {
   const read = readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
   if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('\n'));
+  return read.theme;
+})();
+
+/**
+ * Noto Naskh Arabic as a theme declares it (the UI plan, UF-A), its metrics its own `hhea`'s. No default
+ * theme names it until UIg.
+ */
+export const NASKH: Typeface = {
+  id: 'naskh',
+  family: 'Noto Naskh Arabic',
+  files: [
+    {
+      sha256: 'c34fdbd98af4dbc45ca192a23d2eeb77032add83086f5fe32957d23b3f36b221',
+      weight: 'regular',
+      posture: 'normal',
+    },
+    {
+      sha256: '380ac34b249d336e1a43c21053df440594e1e3db8f75fabd4d85b649ca1ea4c6',
+      weight: 'bold',
+      posture: 'normal',
+    },
+  ],
+  licence: 'OFL-1.1',
+  embedding: { pdf: true, word: true },
+  ascent: 1.069,
+  descent: 0.634,
+};
+
+/** The default theme with the Naskh declared and the serif falling back to it (UF-B). */
+export const naskhTheme: ResolvedTheme = (() => {
+  const read = readTheme(
+    {
+      ...DEFAULT_THEME,
+      typefaces: [
+        ...DEFAULT_THEME.typefaces.map((face) =>
+          face.id === 'serif' ? { ...face, fallback: ['naskh'] } : face,
+        ),
+        NASKH,
+      ],
+    },
+    DEFAULT_CATALOGUES_BY_VERSION,
+  );
+  if (!read.ok) throw new Error(read.refusals.map((each) => each.message).join('; '));
   return read.theme;
 })();

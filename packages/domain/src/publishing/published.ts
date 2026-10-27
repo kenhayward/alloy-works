@@ -47,8 +47,17 @@ import type { MathsTree } from './maths.js';
  * generated lists after the contents, which `apps/worker/templates/publication/16/` reads. It is never
  * stored - only its digest is, on the publication - so a later shape is a new schema string and a new
  * template version, not a migration.
+ *
+ * Since `publishing/26` (the UI plan, UF-E) a paragraph style's and a mark's `font` in the theme is a
+ * list, the face and its fallbacks, which template 26 hands the engine to try in order.
  */
-export const PUBLISHING_SCHEMA = 'publishing/25';
+export const PUBLISHING_SCHEMA = 'publishing/26';
+
+/**
+ * The document as it stood before a style's face could fall back to others, frozen by UIf for the
+ * reason `publishing/16` is: `apps/worker/templates/publication/25/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_25 = 'publishing/25';
 
 /**
  * The document as it stood before a component could be marked untranslated, frozen by TRb for the

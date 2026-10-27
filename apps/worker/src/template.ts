@@ -18,6 +18,7 @@ import {
   PUBLISHING_SCHEMA_22,
   PUBLISHING_SCHEMA_23,
   PUBLISHING_SCHEMA_24,
+  PUBLISHING_SCHEMA_25,
   type PublishedDocument,
   type PublishedDocument1,
 } from '@alloy-works/domain';
@@ -28,15 +29,15 @@ export type PublishedSchema = (PublishedDocument | PublishedDocument1)['schema']
 /**
  * `PUBLISHING_SCHEMA` frozen at the schema this worker's newest template was written for, and the one
  * key the maps below take for it. The annotation is the whole point: the day `PUBLISHING_SCHEMA` is
- * repointed at `publishing/25`, THIS LINE stops typechecking, where a key computed from the moving
- * constant would have moved with it and left `publishing/25` read by template 24 with the typecheck
+ * repointed at `publishing/27`, THIS LINE stops typechecking, where a key computed from the moving
+ * constant would have moved with it and left `publishing/27` read by template 26 with the typecheck
  * clean (the schema-keyed map trap, which cost three slices before it was pinned by literals in
- * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_24` beside the new schema, key template
- * 24's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
+ * `template.test.ts`). Freeze the domain's `PUBLISHING_SCHEMA_26` beside the new schema, key template
+ * 26's rows by it, and re-point this at the new one - as themes 1 did for `publishing/11`, themes 2
  * for `publishing/12`, W14.4 for `publishing/13`, W14.5 for `publishing/14`, TB1.2 for
- * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18`, TG2 for `publishing/19`, TG3 for `publishing/20`, WF2b for `publishing/21`, CIc for `publishing/22` and TMb for `publishing/23`.
+ * `publishing/15`, TB3.1 for `publishing/16`, TB3.2 for `publishing/17`, TG1 for `publishing/18`, TG2 for `publishing/19`, TG3 for `publishing/20`, WF2b for `publishing/21`, CIc for `publishing/22`, TMb for `publishing/23`, TRb for `publishing/24` and UIf for `publishing/25`.
  */
-export const PUBLISHING_SCHEMA_CURRENT: 'publishing/25' = PUBLISHING_SCHEMA;
+export const PUBLISHING_SCHEMA_CURRENT: 'publishing/26' = PUBLISHING_SCHEMA;
 
 const at = (version: number) =>
   fileURLToPath(new URL(`../templates/publication/${version}/main.typ`, import.meta.url));
@@ -129,6 +130,9 @@ export const PUBLICATION_TEMPLATE = {
   // TRb repointed `PUBLISHING_SCHEMA` at `publishing/25`, and the guard above asked for this row:
   // template 25, which says a component is published in its source language for want of a translation.
   25: { name: 'publication', version: 25, file: at(25) },
+  // UIf repointed `PUBLISHING_SCHEMA` at `publishing/26`, and the guard above asked for this row:
+  // template 26, which hands the engine each style's face and its fallbacks, in order.
+  26: { name: 'publication', version: 26, file: at(26) },
 } as const;
 
 /**
@@ -166,7 +170,8 @@ export const TEMPLATE_READING = {
   [PUBLISHING_SCHEMA_22]: 22,
   [PUBLISHING_SCHEMA_23]: 23,
   [PUBLISHING_SCHEMA_24]: 24,
-  [PUBLISHING_SCHEMA_CURRENT]: 25,
+  [PUBLISHING_SCHEMA_25]: 25,
+  [PUBLISHING_SCHEMA_CURRENT]: 26,
 } as const satisfies Record<
   | PublishedSchema
   | typeof PUBLISHING_SCHEMA_9
@@ -184,6 +189,7 @@ export const TEMPLATE_READING = {
   | typeof PUBLISHING_SCHEMA_21
   | typeof PUBLISHING_SCHEMA_22
   | typeof PUBLISHING_SCHEMA_23
-  | typeof PUBLISHING_SCHEMA_24,
+  | typeof PUBLISHING_SCHEMA_24
+  | typeof PUBLISHING_SCHEMA_25,
   keyof typeof PUBLICATION_TEMPLATE
 >;

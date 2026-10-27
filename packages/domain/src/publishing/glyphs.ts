@@ -80,16 +80,56 @@ export const codePointName = (codePoint: number) =>
   `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
 
 /**
+ * The faces a style sets text in, by family, in the order the theme's `fallback` gives them (the UI
+ * plan, UF-B): the first that covers a character sets it. One family where a face has no fallback.
+ */
+export type Chain = readonly string[];
+
+/** A character of the Common or Inherited script: a space, punctuation, a digit, a joiner, a mark. */
+const SHARED = /^[\p{Script=Common}\p{Script=Inherited}]$/u;
+
+/**
+ * Which family of `chain` sets each character of `text`, one entry for each code point (UF-D): the
+ * first that covers it, but a Common or Inherited character stays in the face of the character before
+ * it where that face covers it, so a space or a harakah inside Arabic is the Naskh's. Null where no
+ * face covers it; a character the engine sets without a glyph takes the face before it, or the first.
+ *
+ * Measured against the pinned engine (`fallback.test.ts`): it keeps a joiner and a harakah in the face
+ * of the letter they join, as here, but sets a space or a full stop the first face covers in the
+ * first face even between two Arabic words. Whose face a shared character is set in moves no glyph
+ * check, since one is refused only where no face covers it.
+ */
+export function settingFaces(text: string, covers: Covers, chain: Chain): (string | null)[] {
+  const faces: (string | null)[] = [];
+  let before: string | null = null;
+  for (const character of text) {
+    const codePoint = character.codePointAt(0)!;
+    const face: string | null =
+      before !== null && SHARED.test(character) && covers(codePoint, before)
+        ? before
+        : (chain.find((family) => covers(codePoint, family)) ??
+          (setWithoutAGlyph(codePoint) ? (before ?? chain[0] ?? null) : null));
+    faces.push(face);
+    if (face !== null) before = face;
+  }
+  return faces;
+}
+
+/**
  * Each character of `text` the engine would refuse, once each, in the order they first appear:
- * disallowed anywhere, or missing from the family that sets it (`covers`, asked of `family`), as the
- * engine treats a character with no glyph in that `setting`.
+ * disallowed anywhere, or missing from every family of the chain that sets it (`covers`), as the engine
+ * treats a character with no glyph in that `setting`. Code and an equation ask the chain's first family
+ * alone (UF-C): the template sets code in it, and an equation in the maths face, with no fallback.
  */
 export function characterProblems(
   text: string,
   covers: Covers,
-  family: string,
+  chain: Chain,
   setting: Setting,
 ): { readonly problem: CharacterProblem; readonly codePoint: number }[] {
+  const family = chain[0] ?? '';
+  const covered = (codePoint: number) =>
+    setting === 'body' ? chain.some((each) => covers(codePoint, each)) : covers(codePoint, family);
   const seen = new Set<number>();
   const found: { problem: CharacterProblem; codePoint: number }[] = [];
   for (const character of text) {
@@ -108,12 +148,12 @@ export function characterProblems(
     // against the pinned engine in the final review of equations 2, M2).
     else if (
       setting === 'code'
-        ? setWithoutAGlyph(codePoint) || !covers(codePoint, family)
+        ? setWithoutAGlyph(codePoint) || !covered(codePoint)
         : setting === 'math'
           ? setWithoutAGlyph(codePoint)
             ? !keptInMaths(codePoint)
-            : !covers(codePoint, family)
-          : !setWithoutAGlyph(codePoint) && !covers(codePoint, family)
+            : !covered(codePoint)
+          : !setWithoutAGlyph(codePoint) && !covered(codePoint)
     ) {
       found.push({ problem: 'glyph_missing', codePoint });
     }

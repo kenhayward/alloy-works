@@ -727,6 +727,13 @@ export const typefaceSchema = z.strictObject({
    */
   wordFamily: familyName.optional(),
   /**
+   * The typefaces that set what this one cannot, in order, by identifier (the UI plan, UF-B): the
+   * first that covers a character sets it, the face's own vertical metrics still the line's. Optional,
+   * so every theme stored before it reads as it did. The reader refuses one it does not find
+   * (`typeface_fallback_missing`) and a chain it cannot set (`typeface_fallback_invalid`).
+   */
+  fallback: z.array(typefaceIdSchema).min(1).optional(),
+  /**
    * Vertical metrics, as fractions of the em, from the face's own tables. They place the baseline
    * inside a line: Word puts a line's extra space above it and its baseline one descender above the
    * line's foot, and matching that in CSS and Typst needs these numbers (STY-054).
