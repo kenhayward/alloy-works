@@ -361,6 +361,15 @@ permit one and not the other.
   looked up in the character maps of the faces its styles use, and a missing one fails the publish
   naming the character, the style and the face. The spike showed that no engine setting catches
   this - Typst either borrows a glyph from an undeclared face or sets an empty box, with no warning.
+- **A fallback chain** (the UI plan, UF-B to UF-G): a typeface may name others that set what it
+  cannot, in order, one level deep, each embeddable in Word under its own name. A character is set in
+  the first face covering it, a joiner or a mark in its letter's, as the pinned engine does; the
+  check passes a body character any face covers, and code and maths ask their first face alone. The
+  PDF hands Typst the list (`publishing/26`), the editor a CSS stack, and Word a run split where its
+  face changes, an Arabic-script document's styles naming the Arabic face as `w:cs` for the fields
+  Word recomputes. A face with no italic is set upright everywhere, as the engine sets it. Unsplit
+  text in Word (titles, layout words, fields) holding Latin in a right-to-left Arabic document is set
+  in `w:cs`'s face, and Word substitutes the Latin it lacks.
 
 ## Word
 
