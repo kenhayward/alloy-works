@@ -44,6 +44,11 @@ export interface BinaryBody {
   readonly immutable: boolean;
   /** Saved under this name rather than shown, and never kept (the R17 plan, R17-E). */
   readonly attachment?: string;
+  /**
+   * Shown in place under this policy, which must sandbox it, and never kept: tenant HTML, to a reader
+   * inside the organisation (the HT plan, HT-M).
+   */
+  readonly shownUnder?: string;
 }
 
 const uploadView = (upload: StoredAssetUpload): AssetUploadView => ({

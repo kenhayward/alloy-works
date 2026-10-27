@@ -247789,8 +247789,16 @@
                                 "description": "A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request"
                               },
                               "view": {
-                                "type": "null",
-                                "description": "None here: the file is saved, as `{id}.html`"
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^\\/v1\\/publications\\/[0-9a-f-]+\\/outputs\\/html\\?disposition=inline$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ],
+                                "description": "The service's address that shows it in place, sandboxed, to a reader inside the organisation; null for somebody from outside, who saves it"
                               }
                             },
                             "required": [
@@ -249193,7 +249201,7 @@
       "get": {
         "operationId": "getSharedOutput",
         "summary": "A publication's output, through the service, decided at each request",
-        "description": "Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded.",
+        "description": "Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded. With `disposition=inline`, an HTML output is shown in place to a reader inside the organisation, under a policy that sandboxes it and lets it fetch nothing; somebody from outside is given it to save, and any other format is refused.",
         "tags": [
           "Publication shares"
         ],
@@ -249240,6 +249248,19 @@
             }
           },
           {
+            "name": "disposition",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "`inline` shows an HTML output in place, sandboxed, to a reader inside the organisation; anybody else is given it as an attachment. Refused for any other format. An attachment where absent",
+              "type": "string",
+              "enum": [
+                "attachment",
+                "inline"
+              ]
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -249252,7 +249273,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The bytes, saved as the publication id and format: decided at each request, so a revoked share fetches nothing more",
+            "description": "The bytes, saved as the publication id and format, or an HTML output shown in place under a sandboxing policy: decided at each request, so a revoked share fetches nothing more",
             "content": {
               "application/pdf": {
                 "schema": {
@@ -249276,6 +249297,47 @@
                 "schema": {
                   "type": "string",
                   "contentMediaType": "application/json"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "output_not_shown: only an HTML output is shown in place; save any other",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
                 }
               }
             },

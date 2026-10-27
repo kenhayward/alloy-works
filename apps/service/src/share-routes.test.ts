@@ -67,10 +67,10 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
     ).json<{ id: string; version: { id: string } }>();
     return { id: made.id, version: made.version.id };
   };
-  const publish = async (of: { id: string; version: string }, provenance = false) => {
+  const publish = async (of: { id: string; version: string }, provenance = false, html = false) => {
     const asked = await call('grace', 'POST', `/v1/documents/${of.id}/publications`, {
       version: of.version,
-      formats: ['pdf'],
+      formats: html ? ['pdf', 'html'] : ['pdf'],
     });
     expect(asked.statusCode, asked.body).toBe(200);
     const requestId = asked.json<{ id: string }>().id;
@@ -80,6 +80,9 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
       // Where its values came from, naming who revised one: never shared outside.
       const named = provenance
         ? await store.put(Buffer.from('{"revisedBy":"Grace"}'), 'application/json')
+        : undefined;
+      const page = html
+        ? await store.put(Buffer.from('<!doctype html><p>Shared'), OUTPUT_CONTENT_TYPES.html)
         : undefined;
       const id = await recordPublication(trx, {
         requestId,
@@ -96,6 +99,18 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
             sha256: stored.sha256,
             bytes: stored.size,
           },
+          ...(page
+            ? [
+                {
+                  format: 'html' as const,
+                  writerVersion: 'html/2',
+                  report: [],
+                  key: page.key,
+                  sha256: page.sha256,
+                  bytes: page.size,
+                },
+              ]
+            : []),
           ...(named
             ? [
                 {
@@ -236,6 +251,31 @@ describe('sharing a publication outside the organisation (the R17 plan)', () => 
     expect(bytes.body).toBe(PDF);
     expect(bytes.headers['content-disposition']).toBe(`attachment; filename="${shared}.pdf"`);
     expect(bytes.headers['cache-control']).toBe('private, no-store');
+  });
+
+  it('saves the HTML for somebody shared it, never shows it in place (ADR-0070)', async () => {
+    const shared = await publish(await document('The HTML manual'), false, true);
+    expect(
+      (
+        await call('grace', 'POST', `/v1/publications/${shared}/shares`, {
+          email: 'iris@example.net',
+        })
+      ).statusCode,
+    ).toBe(200);
+    cookies.iris ??= await signIn(app, HOST, 'iris', idp.issuer);
+    const opened = (await call('iris', 'GET', `/v1/publications/${shared}`)).json<{
+      outputs: { format: string; download: string; view: string | null }[];
+    }>();
+    expect(opened.outputs[1]).toMatchObject({
+      format: 'html',
+      download: `/v1/publications/${shared}/outputs/html`,
+      view: null,
+    });
+    // Asked to show it, the service still saves it.
+    const asked = await call('iris', 'GET', `/v1/publications/${shared}/outputs/html?disposition=inline`);
+    expect(asked.statusCode, asked.body).toBe(200);
+    expect(asked.headers['content-disposition']).toBe(`attachment; filename="${shared}.html"`);
+    expect(asked.headers['content-security-policy']).toBe('sandbox');
   });
 
   it('PUB-084 reaches that publication alone, and never its bindings, its document or another', async () => {

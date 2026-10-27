@@ -472,7 +472,7 @@ export function publishingHandlers(
      * output's link is signed for five minutes and saves the bytes as `{id}.pdf`, `{id}.docx` or
      * `{id}.html`: never
      * the title, because the link's query string reaches the store's logs. Each is served as the type
-     * its bytes were kept as, its format's (`OUTPUT_CONTENT_TYPES`). Only the PDF has a link that shows
+     * its bytes were kept as, its format's (`OUTPUT_CONTENT_TYPES`). Only the PDF has a signed link that shows
      * it in place: a browser saves a Word document whatever the link says.
      *
      * Somebody from outside the organisation is given no signed link at all (the R17 plan, R17-E):
@@ -591,9 +591,9 @@ export function publishingHandlers(
                       standard: null,
                       producer: 'html' as const,
                       report: output.report.map((entry) => ({ ...entry })),
-                      // Saved, never shown from the store's origin (ADR-0070): the service's
-                      // sandboxed inline route is HTc's.
-                      view: null,
+                      // Never shown from the store's origin (ADR-0070): the service's own
+                      // sandboxed route shows it, to a reader inside the organisation (HT-M).
+                      view: outside ? null : `${served('html')}?disposition=inline`,
                     }
                   : {
                       ...common,

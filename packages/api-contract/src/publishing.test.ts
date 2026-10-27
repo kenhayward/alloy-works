@@ -254,10 +254,18 @@ describe('the publishing contract for HTML (the HT plan, HT-E)', () => {
     expect(RequestPublicationBody.shape.formats.description).toContain('`html`');
   });
 
-  it('shows an HTML output as made by the HTML writer, claiming no PDF standard, saved rather than shown here', () => {
+  it("shows an HTML output as made by the HTML writer, claiming no PDF standard, shown only by the service's own route", () => {
     const view = PublicationView.parse(viewWith([pdf, html], { formats: ['pdf', 'html'] }));
     expect(view.outputs).toEqual([pdf, html]);
-    for (const wrong of [{ standard: 'ua-1' }, { producer: 'word' }, { view: 'https://store/p' }]) {
+    const shown = { ...html, view: `/v1/publications/${'a'.repeat(8)}/outputs/html?disposition=inline` };
+    expect(PublicationView.parse(viewWith([pdf, shown])).outputs[1]).toEqual(shown);
+    for (const wrong of [
+      { standard: 'ua-1' },
+      { producer: 'word' },
+      // Never from the store's origin (ADR-0070).
+      { view: 'https://store/p' },
+      { view: '/v1/publications/a/outputs/pdf?disposition=inline' },
+    ]) {
       expect(
         PublicationView.safeParse(viewWith([pdf, { ...html, ...wrong }])).success,
         JSON.stringify(wrong),
