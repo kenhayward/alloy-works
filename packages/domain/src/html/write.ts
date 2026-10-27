@@ -114,6 +114,9 @@ const tagOf = (language: PublishedLanguage): string =>
 /** Where a block's anchor is where a reference names none: `assemble`'s own spelling, so none meet. */
 const blockAnchor = (node: string, block: string) => `b-${node}-${block}`;
 
+/** The layout's word for a wide table's region, written once, which each region's name begins with. */
+const SCROLL_REGION = 'aw-scroll-region';
+
 /** A hyperlink's address, where its scheme is one the model allows (HT-L): checked again here. */
 const LINKABLE = new RegExp(`^(${allowedLinkSchemes.join('|')})`, 'i');
 
@@ -326,6 +329,9 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       ['style', zoomedWidth(width)],
     ])} />`;
   };
+
+  /** Whether a table is written, whose region names itself by the layout's word (HT-C). */
+  let tabled = false;
 
   // Footnotes, gathered for the top-level section they stand in (HT-I).
   let notes: string[] = [];
@@ -594,6 +600,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
   };
 
   const table = (each: PublishedTable, node: string): string => {
+    tabled = true;
     const id = each.anchor ?? blockAnchor(node, each.id);
     const captionId = `${id}-caption`;
     const bound = each.bound;
@@ -746,13 +753,14 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ],
           said,
         ),
-        // A wide table scrolls in its own region, reached by the keyboard, so the page reflows (HT-C).
+        // A wide table scrolls in its own region, reached by the keyboard, so the page reflows (HT-C):
+        // named by the layout's word and its caption, so no two regions share a name.
         element(
           'div',
           [
             ['class', 'aw-table-region'],
             ['role', 'region'],
-            ['aria-label', input.html.words.scrollRegion],
+            ['aria-labelledby', `${SCROLL_REGION} ${captionId}`],
             ['tabindex', '0'],
           ],
           element('table', [['aria-labelledby', captionId]], `\n${rows.join('\n')}\n`),
@@ -1201,6 +1209,19 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
     '<body>',
     '<div class="aw-canvas aw-text">',
     element('header', [], `\n${header.join('\n')}\n`),
+    ...(tabled
+      ? [
+          element(
+            'span',
+            [
+              ['id', SCROLL_REGION],
+              ['lang', wordsLanguage],
+              ['hidden', ''],
+            ],
+            escapeText(input.html.words.scrollRegion),
+          ),
+        ]
+      : []),
     ...front,
     element('main', [], `\n${sections}${back.join('')}`),
     '</div>',
@@ -1250,7 +1271,7 @@ const ENTRIES = '.aw-canvas.aw-canvas.aw-canvas :is(ol.aw-notes, ul.aw-entries)'
  */
 function canvasCss(theme: ResolvedTheme, measure: number): string {
   return [
-    `html { background: ${theme.paper}; }`,
+    `html, .aw-canvas { background: ${theme.paper}; }`,
     'body { margin: 0; }',
     `.aw-canvas { --aw-zoom: 1; box-sizing: border-box; max-width: calc(${Math.round(measure * 100) / 100}pt + 32px); ` +
       'margin-inline: auto; padding: 16px; overflow-wrap: break-word; font-synthesis-style: none; }',
@@ -1260,7 +1281,13 @@ function canvasCss(theme: ResolvedTheme, measure: number): string {
     '.aw-canvas pre { white-space: pre; tab-size: 8; overflow-x: auto; }',
     '.aw-canvas pre[data-language]::before { content: attr(data-language); display: block; }',
     '.aw-canvas img { max-width: 100%; }',
+    '.aw-canvas .aw-figure-image img { display: block; height: auto; }',
     '.aw-canvas figure { margin-inline: 0; }',
+    '.aw-canvas table { border-collapse: collapse; table-layout: fixed; width: 100%; }',
+    '.aw-canvas :is(td, th) { vertical-align: top; }',
+    // A contents entry and a list's are links standing alone, each at least a finger's height (WCAG
+    // 2.5.8).
+    '.aw-canvas nav a { display: inline-block; min-block-size: 24px; }',
     '.aw-canvas .aw-table-region { max-width: 100%; overflow-x: auto; }',
     '.aw-canvas .aw-equation-block { display: flex; align-items: center; gap: 1em; overflow-x: auto; }',
     '.aw-canvas .aw-equation-block > math { flex: 1; }',

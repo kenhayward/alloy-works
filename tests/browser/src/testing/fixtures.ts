@@ -78,10 +78,11 @@ export async function makeComponent(
   client: Client,
   title: string,
   content: readonly unknown[],
+  { language = 'en-GB', direction = 'ltr' }: { language?: string; direction?: 'ltr' | 'rtl' } = {},
 ): Promise<string> {
   const { data: made, response } = await client.POST('/v1/spaces/{space}/components', {
     params: { path: { space: await general(client) } },
-    body: { title, language: 'en-GB', direction: 'ltr' },
+    body: { title, language, direction },
   });
   if (!made) throw new Error(`making a component answered ${response.status}`);
   const path = { id: made.id };
@@ -95,7 +96,7 @@ export async function makeComponent(
     params: { path: { ...path, session, sequence: '1' } },
     body: {
       openedFrom: made.version.id,
-      content: { schemaVersion: 1, title, language: 'en-GB', direction: 'ltr', content },
+      content: { schemaVersion: 1, title, language, direction, content },
     },
   });
   if (!saved.data) {
@@ -209,9 +210,30 @@ function followSignedLink(link: URL): Promise<Buffer> {
 
 /** Publishes the document's latest version to a PDF through the stack and downloads it. */
 export async function publishPdf(client: Client, document: DocumentView): Promise<Buffer> {
+  return (await publishAs(client, document, ['pdf'])).pdf!;
+}
+
+/**
+ * Publishes the document's latest version as a PDF and HTML through the stack (the HT plan), and
+ * downloads both, with the address the service shows the HTML at.
+ */
+export async function publishHtml(
+  client: Client,
+  document: DocumentView,
+): Promise<{ pdf: Buffer; html: Buffer; view: string }> {
+  const made = await publishAs(client, document, ['pdf', 'html']);
+  if (made.view === null) throw new Error('The HTML has no address to show it at');
+  return { pdf: made.pdf!, html: made.html!, view: made.view };
+}
+
+async function publishAs(
+  client: Client,
+  document: DocumentView,
+  formats: ['pdf'] | ['pdf', 'html'],
+): Promise<{ pdf: Buffer | null; html: Buffer | null; view: string | null }> {
   const { data: asked, error } = await client.POST('/v1/documents/{id}/publications', {
     params: { path: { id: document.id } },
-    body: { version: document.version.id, formats: ['pdf'] },
+    body: { version: document.version.id, formats },
   });
   if (!asked) throw new Error(`asking for a publication answered ${JSON.stringify(error)}`);
   let publication: string | null = null;
@@ -233,9 +255,14 @@ export async function publishPdf(client: Client, document: DocumentView): Promis
   const { data: kept } = await client.GET('/v1/publications/{id}', {
     params: { path: { id: publication! } },
   });
-  const pdf = kept?.outputs.find((each) => each.format === 'pdf');
+  const of = (format: 'pdf' | 'html') => kept?.outputs.find((each) => each.format === format);
+  const [pdf, html] = [of('pdf'), of('html')];
   if (!pdf) throw new Error('The publication holds no PDF');
-  return followSignedLink(new URL(pdf.download));
+  return {
+    pdf: await followSignedLink(new URL(pdf.download)),
+    html: html === undefined ? null : await followSignedLink(new URL(html.download)),
+    view: html?.view ?? null,
+  };
 }
 
 /**
