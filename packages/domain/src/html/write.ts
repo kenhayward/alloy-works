@@ -655,8 +655,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       const paragraphs = lettered.paragraphs.map((one, at) => {
         const chain = styleChain(styleIn(one.style, 'text'));
         if (at === 0) sets(lettered.letter, chain, ['superscript']);
-        const letter =
-          at === 0 ? `${element('sup', [], escapeText(lettered.letter))} ` : '';
+        const letter = at === 0 ? `${element('sup', [], escapeText(lettered.letter))} ` : '';
         return element(
           'p',
           [
@@ -1121,7 +1120,9 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
 
   // What the PDF prints that HTML has no place for, each said once (HT-K).
   const slots = [...document.format.head, ...document.format.foot].flat();
-  if (slots.some((part) => part.kind === 'field' && (part.field === 'page' || part.field === 'pages'))) {
+  if (
+    slots.some((part) => part.kind === 'field' && (part.field === 'page' || part.field === 'pages'))
+  ) {
     paged = true;
   }
   const said: OutputReportEntry[] = [];

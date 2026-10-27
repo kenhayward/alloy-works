@@ -67,9 +67,7 @@ describe('the maths tree as MathML Core (the HT plan, HT-H)', () => {
       expect(names).toContain(name);
     }
     // Nothing MathML Core does not read but the cells' alignment, a style.
-    expect(
-      new Set(attributes.filter((each) => !['mathvariant', 'style'].includes(each))),
-    ).toEqual(
+    expect(new Set(attributes.filter((each) => !['mathvariant', 'style'].includes(each)))).toEqual(
       new Set([
         'largeop',
         'stretchy',
@@ -101,9 +99,7 @@ describe('the maths tree as MathML Core (the HT plan, HT-H)', () => {
 
   it('sets a limit that moves above and below in display style and beside in a line', () => {
     const sum = treeOf(
-      math(
-        '<munderover><mo movablelimits="true">\u{2211}</mo><mi>i</mi><mi>n</mi></munderover>',
-      ),
+      math('<munderover><mo movablelimits="true">\u{2211}</mo><mi>i</mi><mi>n</mi></munderover>'),
     );
     expect(read(mathml(sum, true)).names).toContain('munderover');
     expect(read(mathml(sum, false)).names).toContain('msubsup');

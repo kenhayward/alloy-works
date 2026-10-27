@@ -9,7 +9,8 @@ import { loadSubsetter } from './subset.js';
 
 const subset = await loadSubsetter();
 const face = (file: string) => readFile(join(FONT_DIRECTORY, file));
-const points = (text: string) => [...new Set([...text].map((each) => each.codePointAt(0)!))].sort((a, b) => a - b);
+const points = (text: string) =>
+  [...new Set([...text].map((each) => each.codePointAt(0)!))].sort((a, b) => a - b);
 
 /** The tables a face file holds, by tag, from its table directory. */
 function tables(bytes: Uint8Array): Set<string> {

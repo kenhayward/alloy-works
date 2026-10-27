@@ -7586,7 +7586,11 @@ describe('the HTML a publication is assembled for (the HT plan, HT-F)', () => {
       capHeights: new Map([['serif', 0.65]]),
       references: new Map(),
       // The layout's words HTML alone sets (HT-I, HT-C), and what each family covers (HT-B).
-      words: { notes: 'Notes', backToReference: 'Back to reference', scrollRegion: 'Scrollable table' },
+      words: {
+        notes: 'Notes',
+        backToReference: 'Back to reference',
+        scrollRegion: 'Scrollable table',
+      },
       covers: expect.any(Function),
     };
     expect(html.html).toEqual(expected);

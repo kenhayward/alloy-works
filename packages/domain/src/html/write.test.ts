@@ -190,9 +190,11 @@ const failuresOf = (writing: WrittenHtml): readonly PublishFailure[] =>
 /** Every face family the file declares with a file inline. */
 const declared = (html: string) =>
   new Set(
-    [...html.matchAll(/font-family: "(aw-face-[\w-]+)"; src: url\("data:font\/(?:ttf|otf);base64,/g)].map(
-      (m) => m[1],
-    ),
+    [
+      ...html.matchAll(
+        /font-family: "(aw-face-[\w-]+)"; src: url\("data:font\/(?:ttf|otf);base64,/g,
+      ),
+    ].map((m) => m[1]),
   );
 
 describe('the HTML writer (the HT plan, HTa)', () => {
@@ -658,10 +660,7 @@ describe('the HTML writer: every other kind (the HT plan, HTb)', () => {
     const said = all(tree, 'p').find((each) => textOf(each).startsWith('See '))!;
     expect(textOf(said)).toBe('See Table 1.1 Readings and Table 1.1.');
     const target = all(tree, 'figure')[0]!.attrs['id'];
-    expect(all(said, 'a').map((each) => each.attrs['href'])).toEqual([
-      `#${target}`,
-      `#${target}`,
-    ]);
+    expect(all(said, 'a').map((each) => each.attrs['href'])).toEqual([`#${target}`, `#${target}`]);
   });
 
   it('STR-055 fails a page reference with no form without pages where HTML is asked for, naming it', () => {
@@ -817,7 +816,12 @@ describe('the HTML writer: every other kind (the HT plan, HTb)', () => {
       htmlOf(
         written({
           ...oneComponent([
-            paragraph('c1', text('Sediment moves '), { type: 'citation', entry: MARLOW }, text('.')),
+            paragraph(
+              'c1',
+              text('Sediment moves '),
+              { type: 'citation', entry: MARLOW },
+              text('.'),
+            ),
           ]),
           layout,
           citations: {
@@ -949,9 +953,18 @@ describe('the HTML writer: content is data (the HT plan, HT-L)', () => {
               text('link', { type: 'hyperlink', id: 'k1', href: REPORT }),
               note('n1', paragraph('n1a', h('Note'))),
               { type: 'equation', mathml: X(`${HOSTILE.replace(/[<>"&']/g, '')}`) },
-              { type: 'image', asset: RED, imageStyle: 'inline', alternative: { kind: 'inherited' } },
+              {
+                type: 'image',
+                asset: RED,
+                imageStyle: 'inline',
+                alternative: { kind: 'inherited' },
+              },
               { type: 'citation', entry: MARLOW },
-              { type: 'text', value: 'speed', marks: [{ type: 'definedTerm', id: 'm1', term: RPM }] },
+              {
+                type: 'text',
+                value: 'speed',
+                marks: [{ type: 'definedTerm', id: 'm1', term: RPM }],
+              },
               xref('x1', toBlock('t1'), 'page', 'numberAndTitle'),
             ),
             {
@@ -990,7 +1003,10 @@ describe('the HTML writer: content is data (the HT plan, HT-L)', () => {
           [
             id('calib'),
             new Map<string, CslItem>([
-              [MARLOW, { type: 'book', title: HOSTILE, author: [{ family: 'Marlow', given: 'Ada' }] }],
+              [
+                MARLOW,
+                { type: 'book', title: HOSTILE, author: [{ family: 'Marlow', given: 'Ada' }] },
+              ],
             ]),
           ],
         ]),
@@ -1092,7 +1108,9 @@ describe('the HTML writer: the leak scan reads what it says in attributes (the H
   });
 
   it("reads an equation's alternative from its alttext, and from its aria-label, each alone", () => {
-    const html = htmlOf(written(oneComponent([{ type: 'equation', id: 'e1', mathml: X(SECRET), numbered: false }])));
+    const html = htmlOf(
+      written(oneComponent([{ type: 'equation', id: 'e1', mathml: X(SECRET), numbered: false }])),
+    );
     const without = (attribute: string) =>
       new TextEncoder().encode(html.replaceAll(new RegExp(` ${attribute}="[^"]*"`, 'g'), ''));
     expect(html).toContain(`alttext="${SECRET}"`);
@@ -1104,9 +1122,7 @@ describe('the HTML writer: the leak scan reads what it says in attributes (the H
 
   it("reads a table's region and a note's link back by their aria-label, the layout's words", () => {
     const html = htmlOf(written(oneComponent([readings()])));
-    const read = htmlText(
-      new TextEncoder().encode(html.replaceAll('Scrollable table', SECRET)),
-    );
+    const read = htmlText(new TextEncoder().encode(html.replaceAll('Scrollable table', SECRET)));
     expect(read).toContain(SECRET);
   });
 });
@@ -1155,7 +1171,9 @@ describe('the HTML writer: each face subset to what it sets (the HT plan, HT-B)'
     );
     expect(declared(html)).toContain('aw-face-naskh');
     const [regular] = naskh.files;
-    expect(calls.get(seedOf(regular!.sha256))).toBe(String.fromCodePoint(0x0627, 0x0628, 0x062d, 0x0631, 0x0645));
+    expect(calls.get(seedOf(regular!.sha256))).toBe(
+      String.fromCodePoint(0x0627, 0x0628, 0x062d, 0x0631, 0x0645),
+    );
     // No italic file: declared upright once, its file carried once, and the page synthesises no slant.
     const declarations = [...html.matchAll(/@font-face \{ font-family: "aw-face-naskh";[^}]*\}/g)];
     expect(declarations.map((each) => /font-style: (\w+)/.exec(each[0])![1])).toEqual([

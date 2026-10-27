@@ -1240,9 +1240,17 @@ describe('publishing a document, from the request to the stored PDF', () => {
 
   it('publishes HTML beside the PDF with a table, a footnote, a reference and equations, its faces subset (HTb)', async () => {
     const kept = new Map<string, string>();
-    const MATHS = '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x plus one"><mi>x</mi><mo>+</mo><mn>1</mn></math>';
+    const MATHS =
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x plus one"><mi>x</mi><mo>+</mo><mn>1</mn></math>';
     const cell = (name: string, value: string) => ({
-      content: [{ type: 'paragraph', id: name, style: 'body', content: [{ type: 'text', value, marks: [] }] }],
+      content: [
+        {
+          type: 'paragraph',
+          id: name,
+          style: 'body',
+          content: [{ type: 'text', value, marks: [] }],
+        },
+      ],
       colspan: 1,
       rowspan: 1,
     });

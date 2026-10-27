@@ -1551,10 +1551,30 @@ screen** ([ADR-0070](../decisions/0070-html-is-a-third-output-served-sandboxed.m
   height and what each reference prints in HTML - so `publishing/26` is the PDF's byte for byte. Where
   HTML is asked for, a page reference with no form fails `page_reference_without_pages`, and a face's
   licence is read from its `pdf` flag, since HTML embeds the same files.
-- **One self-contained file**: a CSP first in its head, the faces the text is set in and their
-  fallbacks inline as data, the theme's CSS projection, and the editor's markup, a column at most the
-  PDF's measure. `html/1` (HTa) writes text, headings, lists, marks, quotations, preformatted text and
-  languages; every other kind fails `html_not_yet`, naming it, until HTb.
+- **One self-contained file**: a CSP first in its head, the faces the text is set in as data, the
+  theme's CSS projection, and the editor's markup, a column at most the PDF's measure. `html/2` (HTb)
+  writes every kind; `html_not_yet`, HTa's refusal of the kinds `html/1` did not write, stays in the
+  failure codes for a failure stored then.
+- **Each kind**: a table in its figure, scrolling in its own region named by `words.scrollRegion`, its
+  note and lettered notes under it; a figure and an image in a line their own bytes as `data:`, sized
+  statically as `sizeImages` sizes the editor's; footnotes at the end of their top-level section, an
+  `<ol>` headed by `words.notes`, each linked to its reference and back (HT-I); a cross-reference,
+  citation and term a link to the anchor the document carries, a page reference its `withoutPages`
+  form; the contents and each list after it a `<nav>` of links without pages (HT-J); equations MathML
+  Core from the maths tree (`html/mathml.ts`, beside Word's `omml.ts`), `alttext` and `aria-label`
+  their alternative (HT-H); the bibliography, glossary and abbreviations after the last node.
+- **Faces subset** (HT-B): each character goes to the face of its style's chain that sets it
+  (`settingFaces`, as the PDF chooses), so a fallback is embedded only where a character falls to it,
+  and each file is kept to its face's characters by HarfBuzz's subsetter (`harfbuzzjs` 1.6.3 in the
+  worker, injected as `subset`), which keeps Arabic's GSUB and the maths face's MATH. A face with no
+  italic is declared once, upright, with `font-synthesis-style: none`. The subset is embedded as the
+  PDF's is (ADR-0010, OFL 1.1). Measured on the pinned faces: a short text and code document 3.50 MiB
+  whole, 0.15 subset; with an equation 4.57 whole, 0.15 subset.
+- **The report** (HT-K): `pages_not_carried` and `running_matter_not_carried`, each once where the PDF
+  prints a page number or running matter, and `table_reflowed` for a table the PDF scaled, its sentence
+  naming the output. Content is data (HT-L): one escape for text and one for attributes, a hyperlink
+  only in an allowed scheme, every address a fragment or the writer's `data:`; the leak scan reads
+  `alt`, `aria-label`, `title` and `alttext` beside the text.
 - **Stored and served as an attachment**: 0168 takes `html` in any ordered set of formats and as an
   output made by `html`; the store's links and the service's output route save it. The sandboxed
   inline route, the renderer's offer and the conformance checks are HTc's. PUB-056 is claimed then.
@@ -2225,10 +2245,9 @@ Each slice is a plan, lands into something that runs, and cites only what its te
    [What was built](word-output.md#what-was-built)).
 
 **Claimed and cited by nothing yet**, each for a reason a test cannot get round: PUB-013 and STR-052
-need a baseline to pin into (T3); PUB-042 needs conditions to be anything but the identity (REU, T4);
-STR-050 and STR-055 need a format without pages, and T1 has none (HTML, PUB-056, is later). Each is
-answered by the design, as structure.md's STR-057 is, and cited by the plan that first makes it
-observable.
+need a baseline to pin into (T3); PUB-042 needs conditions to be anything but the identity (REU, T4).
+Each is answered by the design, as structure.md's STR-057 is, and cited by the plan that first makes it
+observable: STR-050 and STR-055, which needed a format without pages, are cited by HTb's writer tests.
 
 ## What was run
 
