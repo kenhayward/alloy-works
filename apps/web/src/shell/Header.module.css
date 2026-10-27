@@ -169,7 +169,7 @@ a.chip {
 }
 
 .end {
-  right: 0;
+  inset-inline-end: 0;
 }
 
 .items {

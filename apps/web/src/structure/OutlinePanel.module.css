@@ -302,7 +302,7 @@
   content: '';
   position: absolute;
   top: 2px;
-  left: 2px;
+  inset-inline-start: 2px;
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -317,7 +317,7 @@
 
 .switch:checked::after {
   background: var(--surface);
-  transform: translateX(16px);
+  transform: translateX(calc(16px * var(--inline-sign)));
 }
 
 .switch:focus-visible {

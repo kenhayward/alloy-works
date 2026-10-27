@@ -21,4 +21,10 @@ export interface PlatformBridge {
    * choose, so its bridge sets nothing. Tags in the shape the stored model takes them, at most eight.
    */
   setSpellCheckLanguages(languages: readonly string[]): Promise<void>;
+  /**
+   * The interface's language, one declared tag, as it turns to it (the UI plan, UI-I): the desktop
+   * shell words its tray and its spelling menu in it. The browser has neither, so its bridge does
+   * nothing.
+   */
+  setInterfaceLanguage(language: string): Promise<void>;
 }

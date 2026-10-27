@@ -11,6 +11,7 @@ function recording(): { bridge: PlatformBridge; asked: string[][] } {
     setSpellCheckLanguages: async (languages) => {
       asked.push([...languages]);
     },
+    setInterfaceLanguage: async () => {},
   };
   return { bridge, asked };
 }
@@ -77,6 +78,7 @@ describe('the languages of the components open', () => {
     const bridge: PlatformBridge = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
       setSpellCheckLanguages: () => Promise.reject(new Error('refused')),
+      setInterfaceLanguage: async () => {},
     };
     spellingFor(bridge).hold('en-GB');
     // An unhandled rejection would fail the run after the test; a turn lets one surface.

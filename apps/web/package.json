@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./platform": "./src/platform/contract.ts"
+    "./platform": "./src/platform/contract.ts",
+    "./desktop-words": "./src/words/desktop.ts"
   },
   "scripts": {
     "dev": "vite",

@@ -225,6 +225,32 @@ const MORE = [
 /** Drawn filled rather than stroked, on a 10px grid: the outline's section triangle. */
 const TRIANGLE = 'M1.5 2.5h7L5 7.5z';
 
+/**
+ * The icons that point along the line, mirrored right to left (the UI plan, UI-G; LOC-004): back and on,
+ * in and out, a pane's side, a list's marks and a quotation's rule at the start, a collapsed section's
+ * triangle. A letter, a clock or a tick reads the same either way.
+ */
+const MIRRORED = new Set([
+  'Back',
+  'Undo',
+  'Previous page',
+  'Next page',
+  'Go to',
+  'Hide pane',
+  'Show pane',
+  'Nest item',
+  'Lift item',
+  'Bulleted list',
+  'Definition list',
+  'Quotation',
+  'Reference',
+  'Align start',
+  'Align end',
+  'Section',
+]);
+
+const mirroring = (name: string) => (MIRRORED.has(name) ? { 'data-mirrored': '' } : {});
+
 export function Icon({ name, size = 16 }: { name: string; size?: number }) {
   const letter = LETTERS[name];
   if (letter !== undefined) {
@@ -239,6 +265,7 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }) {
       <svg
         className={styles['path']}
         data-icon={name}
+        {...mirroring(name)}
         aria-hidden="true"
         width={size}
         height={size}
@@ -255,6 +282,7 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }) {
       <svg
         className={styles['path']}
         data-icon={name}
+        {...mirroring(name)}
         aria-hidden="true"
         width={size}
         height={size}
@@ -281,6 +309,7 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }) {
     <svg
       className={styles['path']}
       data-icon={name}
+      {...mirroring(name)}
       aria-hidden="true"
       width={size}
       height={size}

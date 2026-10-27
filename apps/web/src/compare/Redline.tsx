@@ -1,4 +1,5 @@
 import type { UnitChange, UnitText } from '@alloy-works/domain';
+import { createContext, useContext, type ReactNode } from 'react';
 
 import styles from './Redline.module.css';
 import { formats, words } from '../words/words.js';
@@ -75,8 +76,28 @@ interface Named {
   readonly content: boolean;
 }
 
-const Shown = ({ text, content }: Named) =>
-  content ? <span data-content>{text}</span> : <>{text}</>;
+/** The language and direction of the content compared, where it has one (UI-G; LOC-004). */
+export interface ContentLanguage {
+  readonly language: string;
+  readonly direction: 'ltr' | 'rtl';
+}
+
+const ContentLanguageContext = createContext<ContentLanguage | undefined>(undefined);
+
+/**
+ * The tenant's words, in their own language and direction; read in their own direction where neither
+ * is known, an outline's titles among them.
+ */
+function Content({ children }: { children: ReactNode }) {
+  const language = useContext(ContentLanguageContext);
+  return (
+    <span data-content lang={language?.language} dir={language?.direction ?? 'auto'}>
+      {children}
+    </span>
+  );
+}
+
+const Shown = ({ text, content }: Named) => (content ? <Content>{text}</Content> : <>{text}</>);
 
 const Added = ({ text, content = true }: { text: string; content?: boolean }) => (
   <ins className={styles['added']}>
@@ -111,10 +132,13 @@ export function Redline({
   changes,
   texts,
   label,
+  content,
 }: {
   changes: readonly UnitChange[];
   texts: RedlineTexts;
   label: string;
+  /** The content's own language and direction, where it is a component's. */
+  content?: ContentLanguage | undefined;
 }) {
   const nameOf = (key: string, text: UnitText | undefined): Named => {
     const own = text?.text || texts.names?.get(key);
@@ -132,110 +156,110 @@ export function Redline({
   );
   if (!changed) return <p className={styles['note']}>{words('compare.nothing-changed')}</p>;
   return (
-    <ol className={styles['redline']} aria-label={label}>
-      {changes.map((change) => {
-        if (change.change === 'inserted') {
-          const text = texts.newer.get(change.newer);
+    <ContentLanguageContext.Provider value={content}>
+      <ol className={styles['redline']} aria-label={label}>
+        {changes.map((change) => {
+          if (change.change === 'inserted') {
+            const text = texts.newer.get(change.newer);
+            return (
+              <li
+                key={`i${change.newer}`}
+                data-change="inserted"
+                className={styles['unit']}
+                style={{ marginInlineStart: `${depthOf(change.newer, texts.newer) * 16}px` }}
+              >
+                <span className={styles['badge']}>{words('compare.added-2')}</span>
+                <Added {...nameOf(change.newer, text)} />
+              </li>
+            );
+          }
+          if (change.change === 'deleted') {
+            const text = texts.older.get(change.older);
+            return (
+              <li
+                key={`d${change.older}`}
+                data-change="deleted"
+                className={styles['unit']}
+                style={{ marginInlineStart: `${depthOf(change.older, texts.older) * 16}px` }}
+              >
+                <span className={styles['badge']}>{words('compare.removed-2')}</span>
+                <Removed {...nameOf(change.older, text)} />
+              </li>
+            );
+          }
+          const now = texts.newer.get(change.newer);
+          const was = texts.older.get(change.older);
+          // A container that holds no text and kept its place says nothing.
+          if (
+            !now?.text &&
+            change.edited === null &&
+            change.moved === null &&
+            change.changed.length === 0 &&
+            !texts.names?.has(change.newer)
+          ) {
+            return null;
+          }
+          const notes = [
+            ...(change.moved ? [words('compare.moved')] : []),
+            ...(change.split ? [words('compare.split')] : []),
+            ...(change.joined ? [words('compare.joined')] : []),
+            ...(change.changed.length > 0
+              ? [
+                  words('compare.changed', {
+                    what: formats().list(
+                      change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name),
+                      { type: 'unit', style: 'short' },
+                    ),
+                  }),
+                ]
+              : []),
+          ];
           return (
             <li
-              key={`i${change.newer}`}
-              data-change="inserted"
+              key={`m${change.newer}`}
+              data-change={
+                change.edited || change.moved || change.changed.length > 0 ? 'changed' : 'unchanged'
+              }
+              data-matched={change.matched}
               className={styles['unit']}
               style={{ marginInlineStart: `${depthOf(change.newer, texts.newer) * 16}px` }}
             >
-              <span className={styles['badge']}>{words('compare.added-2')}</span>
-              <Added {...nameOf(change.newer, text)} />
+              {notes.map((note) => (
+                <span key={note} className={styles['badge']}>
+                  {note}
+                </span>
+              ))}
+              {change.matched === 'similarity' && (
+                <span className={styles['similar']}>
+                  {words('compare.matched-by-similar-wording')}
+                </span>
+              )}
+              {change.edited === null ? (
+                <span>
+                  <Shown {...nameOf(change.newer, now)} />
+                </span>
+              ) : 'whole' in change.edited ? (
+                <>
+                  <Removed text={was?.text ?? ''} /> <Added text={now?.text ?? ''} />
+                </>
+              ) : (
+                <span>
+                  {change.edited.ops.map((op, index) =>
+                    op.op === 'keep' ? (
+                      <Content key={index}>{op.text}</Content>
+                    ) : op.op === 'insert' ? (
+                      <Added key={index} text={op.text} />
+                    ) : (
+                      <Removed key={index} text={op.text} />
+                    ),
+                  )}
+                </span>
+              )}
             </li>
           );
-        }
-        if (change.change === 'deleted') {
-          const text = texts.older.get(change.older);
-          return (
-            <li
-              key={`d${change.older}`}
-              data-change="deleted"
-              className={styles['unit']}
-              style={{ marginInlineStart: `${depthOf(change.older, texts.older) * 16}px` }}
-            >
-              <span className={styles['badge']}>{words('compare.removed-2')}</span>
-              <Removed {...nameOf(change.older, text)} />
-            </li>
-          );
-        }
-        const now = texts.newer.get(change.newer);
-        const was = texts.older.get(change.older);
-        // A container that holds no text and kept its place says nothing.
-        if (
-          !now?.text &&
-          change.edited === null &&
-          change.moved === null &&
-          change.changed.length === 0 &&
-          !texts.names?.has(change.newer)
-        ) {
-          return null;
-        }
-        const notes = [
-          ...(change.moved ? [words('compare.moved')] : []),
-          ...(change.split ? [words('compare.split')] : []),
-          ...(change.joined ? [words('compare.joined')] : []),
-          ...(change.changed.length > 0
-            ? [
-                words('compare.changed', {
-                  what: formats().list(
-                    change.changed.map((name) => ATTRIBUTE_WORDS[name] ?? name),
-                    { type: 'unit', style: 'short' },
-                  ),
-                }),
-              ]
-            : []),
-        ];
-        return (
-          <li
-            key={`m${change.newer}`}
-            data-change={
-              change.edited || change.moved || change.changed.length > 0 ? 'changed' : 'unchanged'
-            }
-            data-matched={change.matched}
-            className={styles['unit']}
-            style={{ marginInlineStart: `${depthOf(change.newer, texts.newer) * 16}px` }}
-          >
-            {notes.map((note) => (
-              <span key={note} className={styles['badge']}>
-                {note}
-              </span>
-            ))}
-            {change.matched === 'similarity' && (
-              <span className={styles['similar']}>
-                {words('compare.matched-by-similar-wording')}
-              </span>
-            )}
-            {change.edited === null ? (
-              <span>
-                <Shown {...nameOf(change.newer, now)} />
-              </span>
-            ) : 'whole' in change.edited ? (
-              <>
-                <Removed text={was?.text ?? ''} /> <Added text={now?.text ?? ''} />
-              </>
-            ) : (
-              <span>
-                {change.edited.ops.map((op, index) =>
-                  op.op === 'keep' ? (
-                    <span key={index} data-content>
-                      {op.text}
-                    </span>
-                  ) : op.op === 'insert' ? (
-                    <Added key={index} text={op.text} />
-                  ) : (
-                    <Removed key={index} text={op.text} />
-                  ),
-                )}
-              </span>
-            )}
-          </li>
-        );
-      })}
-    </ol>
+        })}
+      </ol>
+    </ContentLanguageContext.Provider>
   );
 }
 
@@ -250,9 +274,10 @@ export function redlineHtml(title: string, root: HTMLElement): string {
   // without them the redline still reads by its underlining and striking through.
   const token = (name: string) =>
     getComputedStyle(root.ownerDocument.documentElement).getPropertyValue(name).trim() || 'inherit';
-  // In the interface's language, which its words around the tenant's are in.
+  // In the interface's language and direction, which its words around the tenant's are in; the
+  // tenant's carry their own.
   return `<!doctype html>
-<html lang="${formats().language.tag}">
+<html lang="${formats().language.tag}" dir="${formats().language.direction}">
 <head>
 <meta charset="utf-8">
 <title>${escape(title)}</title>

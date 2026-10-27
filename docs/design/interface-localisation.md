@@ -19,10 +19,11 @@ declared one; never any content's, which keeps its own language and direction.
 
 | ID          | How it is met                                                                                |
 | ----------- | -------------------------------------------------------------------------------------------- |
+| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                  |
 | **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's |
 
-LOC-003, LOC-004, LOC-029, LOC-038 and LOC-042 are claimed as the slice's later PRs answer them: the
-whole interface moved, sorted in the person's collation and laid out right to left.
+LOC-003, LOC-029, LOC-038 and LOC-042 are claimed as the slice's later PRs answer them: the whole
+interface moved and sorted in the person's collation.
 
 ## The mechanism
 
@@ -40,15 +41,36 @@ whole interface moved, sorted in the person's collation and laid out right to le
   padded in breakable groups half again as long, twice under twenty characters; placeholders and
   plurals untouched.
 - English locale data is bundled; another language's loads before it is shown.
-- The ESLint rule `alloy/interface-words` refuses words written in place anywhere in the renderer but
-  `platform/`, the desktop shell's bridge (UIe). It sees JSX text and the props that say something; a
-  word in a variable or a table is review's to catch, and the pseudo walk's. An icon is named, never
-  worded (`icons-named.test.ts`).
+- The ESLint rule `alloy/interface-words` refuses words written in place anywhere in the renderer. It
+  sees JSX text and the props that say something; a word in a variable or a table is review's to
+  catch, and the pseudo walk's. An icon is named, never worded (`icons-named.test.ts`).
 - The pseudo walk (`tests/browser/src/pseudo.test.ts`) walks Home, each module's page and the component
   editor as Grace, and Administration's sections as Ada.
 - `packages/editor` keeps its own words in `EDITOR_WORDS`, said through `say`; the renderer merges them
   into its catalogue as `pm.<key>` and gives them back through `sayWith`, so the views ProseMirror draws
   speak the person's language. With none given, as in the package's tests, English.
+
+## Right to left
+
+`<html dir>` follows the interface language (UI-G), and everything follows it:
+
+- Stylesheets name sides by the inline start and end, never left and right; a slide along x is
+  multiplied by `--inline-sign`, -1 right to left. `theme/logical.test.ts` refuses a physical side
+  unless its line says why (`/* physical: centred */`).
+- An arrow key is read through `inlineKey` (`parts/inline.ts`): right to left, Left goes on. Tabs,
+  segmented controls, toolbars, the symbol palette, the outline's moves and a pane's separator use it;
+  a drag reads `inlineSign`.
+- An icon that points along the line is mirrored (`MIRRORED` in `editor/Icon.tsx`), by `scale`, so a
+  turned triangle keeps its turn.
+- Content keeps its own direction: a component's label is measured from its text's inline start, and
+  a redline's content carries its component's `lang` and `dir`, `dir="auto"` where it has none.
+
+## The desktop shell
+
+The tray and the spelling menu are worded from the catalogue (`words/desktop.ts`), which the main
+process bundles with esbuild, as the preload is. They start in the system's language matched against
+the declared list, and follow the renderer's: `setInterfaceLanguage` on the bridge, one declared tag
+on `alloy-works:interface-language`, checked in the main process and refused otherwise.
 
 ## Collation (UI-H)
 

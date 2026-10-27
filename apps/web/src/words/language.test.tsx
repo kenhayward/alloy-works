@@ -71,3 +71,27 @@ describe('the interface’s language (the UI plan, UI-E)', () => {
     await waitFor(() => expect(document.documentElement.dir).toBe('rtl'));
   });
 });
+
+describe('the interface’s language on the desktop (the UI plan, UI-I)', () => {
+  it('tells the desktop shell each language the interface turns to, so its own menus follow', async () => {
+    const told: string[] = [];
+    window.alloyWorks = {
+      getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron' }),
+      setSpellCheckLanguages: async () => {},
+      setInterfaceLanguage: async (language) => {
+        told.push(language);
+      },
+    };
+    try {
+      const { fetching } = service('ar-XB');
+      render(
+        <InterfaceLanguage fetch={fetching} browser={['en-GB']}>
+          <p>Content</p>
+        </InterfaceLanguage>,
+      );
+      await waitFor(() => expect(told).toEqual(['en-GB', 'ar-XB']));
+    } finally {
+      delete window.alloyWorks;
+    }
+  });
+});

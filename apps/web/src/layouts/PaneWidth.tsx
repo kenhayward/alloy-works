@@ -3,6 +3,7 @@ import { Icon } from '../editor/Icon.js';
 
 import styles from './PaneWidth.module.css';
 import { words as say } from '../words/words.js';
+import { inlineKey, inlineSign } from '../parts/inline.js';
 
 export interface PaneBounds {
   /** Where this browser remembers the width, and beside it (with `.collapsed`) whether it is hidden. */
@@ -100,14 +101,15 @@ export function PaneSeparator({
       aria-valuenow={pane.width}
       tabIndex={0}
       onKeyDown={(event) => {
+        const key = inlineKey(event.key);
         const next =
-          event.key === 'ArrowLeft'
+          key === 'ArrowLeft'
             ? pane.width - towards * STEP
-            : event.key === 'ArrowRight'
+            : key === 'ArrowRight'
               ? pane.width + towards * STEP
-              : event.key === 'Home'
+              : key === 'Home'
                 ? pane.bounds.min
-                : event.key === 'End'
+                : key === 'End'
                   ? pane.bounds.max
                   : null;
         if (next === null) return;
@@ -120,7 +122,9 @@ export function PaneSeparator({
       }}
       onPointerMove={(event) => {
         if (from.current)
-          pane.setWidth(from.current.width + towards * (event.clientX - from.current.x));
+          pane.setWidth(
+            from.current.width + towards * inlineSign() * (event.clientX - from.current.x),
+          );
       }}
       onPointerUp={() => {
         from.current = null;

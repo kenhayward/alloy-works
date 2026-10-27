@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, type KeyboardEvent, type ReactNode, type Ref } from 'react';
 
 import styles from './parts.module.css';
+import { inlineKey } from './inline.js';
 
 /** What the toolbar moves between: its buttons, an `aria-disabled` one among them. */
 const ITEM = 'button:not([disabled])';
@@ -49,8 +50,9 @@ export function Toolbar({
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const from = items().indexOf(event.target as HTMLElement);
     if (from < 0) return;
-    if (event.key === 'ArrowRight') moveTo(from + 1);
-    else if (event.key === 'ArrowLeft') moveTo(from - 1);
+    const key = inlineKey(event.key);
+    if (key === 'ArrowRight') moveTo(from + 1);
+    else if (key === 'ArrowLeft') moveTo(from - 1);
     else if (event.key === 'Home') moveTo(0);
     else if (event.key === 'End') moveTo(items().length - 1);
     else return;

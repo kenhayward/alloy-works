@@ -88,7 +88,7 @@
 .label {
   position: absolute;
   top: 0;
-  right: 0;
+  inset-inline-end: 0;
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
@@ -171,7 +171,7 @@
 .versions {
   position: absolute;
   top: calc(100% + var(--space-8));
-  right: 0;
+  inset-inline-end: 0;
   z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;

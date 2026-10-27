@@ -8,7 +8,7 @@
   "license": "Apache-2.0",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && esbuild src/preload.ts --bundle --format=cjs --platform=node --target=node22 --external:electron --sourcemap --outfile=dist/preload.js",
+    "build": "esbuild src/main.ts src/preload.ts --bundle --format=cjs --platform=node --target=node22 --external:electron --sourcemap --outdir=dist",
     "dev": "pnpm run build && wait-on tcp:127.0.0.1:5173 && electron .",
     "start": "electron .",
     "typecheck": "tsc -p tsconfig.json --noEmit",

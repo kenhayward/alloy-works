@@ -1,6 +1,7 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { resolveBridge } from '../platform/bridge.js';
 import { chosenLanguage, localeOf } from './locales.js';
 import { loadLocaleData } from './polyfills.js';
 import { WordsProvider } from './words.js';
@@ -73,6 +74,10 @@ export function InterfaceLanguage({
     const root = document.documentElement;
     root.lang = language;
     root.dir = localeOf(language).direction;
+    // The desktop's tray and spelling menu follow (UI-I); a refusal leaves them as they were.
+    resolveBridge()
+      .setInterfaceLanguage(language)
+      .catch(() => undefined);
   }, [language]);
 
   const choice = useMemo<LanguageChoice>(

@@ -280,6 +280,7 @@ export function SuggestionsPanel({
               newer: unitTexts(opened.drawn as ContentDocument),
             }}
             label={words('review.what-it-changes')}
+            content={opened.drawn as ContentDocument}
           />
           {opened.state === 'pending' && (
             <div className={styles['actions']}>

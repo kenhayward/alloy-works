@@ -14,6 +14,7 @@ describe('browserBridge', () => {
   // page cannot choose, so there is nothing for it to set.
   it('sets no spelling languages, and answers', async () => {
     await expect(browserBridge.setSpellCheckLanguages(['en-GB'])).resolves.toBeUndefined();
+    await expect(browserBridge.setInterfaceLanguage('ar-XB')).resolves.toBeUndefined();
   });
 });
 
@@ -26,6 +27,7 @@ describe('resolveBridge', () => {
     const injected: PlatformBridge = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
       setSpellCheckLanguages: async () => {},
+      setInterfaceLanguage: async () => {},
     };
 
     expect(resolveBridge({ alloyWorks: injected })).toBe(injected);

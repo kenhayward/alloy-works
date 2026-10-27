@@ -291,6 +291,7 @@ export function VersionsPanel({
               changes={shown.changes}
               texts={{ older: unitTexts(shown.older), newer: unitTexts(shown.newer) }}
               label={shown.title}
+              content={shown.newer}
             />
           </div>
           <button

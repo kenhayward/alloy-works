@@ -68,7 +68,7 @@
   content: '';
   position: absolute;
   top: 2px;
-  left: 2px;
+  inset-inline-start: 2px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -83,7 +83,7 @@
 
 .switch:checked::after {
   background: var(--surface);
-  transform: translateX(12px);
+  transform: translateX(calc(12px * var(--inline-sign)));
 }
 
 .switch:disabled,

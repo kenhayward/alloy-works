@@ -70,6 +70,7 @@ import { StateLozenge } from '../states/Lozenge.js';
 import { HeldFields } from '../metadata/HeldFields.js';
 import { Segmented } from '../parts/Segmented.js';
 import { formats, words as say } from '../words/words.js';
+import { inlineKey } from '../parts/inline.js';
 
 /**
  * The Equation dialog, loaded the first time a title asks for it, and Temml with it - the component
@@ -933,6 +934,8 @@ export function OutlinePanel({
     const order = visibleOrder(nodes, collapsed);
     const index = order.indexOf(current);
     const place = placeOf(nodes, current);
+    // Promote, demote, expand and collapse go with the interface's direction (UI-G).
+    const key = inlineKey(event.key);
     if (event.altKey) {
       const direction = (
         {
@@ -941,7 +944,7 @@ export function OutlinePanel({
           ArrowLeft: 'promote',
           ArrowRight: 'demote',
         } as const
-      )[event.key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'];
+      )[key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'];
       if (direction === undefined) return;
       // Always taken, so Alt+Left never reaches the browser as Back while the tree has focus.
       event.preventDefault();
@@ -952,7 +955,7 @@ export function OutlinePanel({
       else if (breaksFrontFirst(nodes, current, direction)) onNotice(FRONT_FIRST());
       return;
     }
-    switch (event.key) {
+    switch (key) {
       case 'ArrowDown': {
         const next = order[index + 1];
         if (next !== undefined) choose(next, true);

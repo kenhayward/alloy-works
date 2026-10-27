@@ -9,6 +9,7 @@ import type { PlatformBridge } from './platform/bridge.js';
 const desktopBridge: PlatformBridge = {
   getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
   setSpellCheckLanguages: async () => {},
+  setInterfaceLanguage: async () => {},
 };
 
 /** These tests are about the page around them, so the parts that call the service stand aside. */
@@ -142,6 +143,7 @@ describe('App', () => {
     const pending: PlatformBridge = {
       getPlatformInfo: () => new Promise(() => {}),
       setSpellCheckLanguages: async () => {},
+      setInterfaceLanguage: async () => {},
     };
     render(<App bridge={pending} environment={noPanel} workspace={aboutWorkspace} />);
 

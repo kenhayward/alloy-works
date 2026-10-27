@@ -21,6 +21,10 @@
  */
 
 :root {
+  /* Which way the inline axis runs on the screen, for a slide along it (the UI plan, UI-G): 1 left
+     to right, -1 right to left. */
+  --inline-sign: 1;
+
   /* Type. IBM Plex, bundled and never fetched (theme/interface-faces.ts); the platform's face until
      it has loaded. The chrome's only: a component's text is set in its theme's faces (CNT-097). */
   --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -122,6 +126,10 @@
 }
 
 /* The Light theme, and the paper a component's text is set on. */
+:root[dir='rtl'] {
+  --inline-sign: -1;
+}
+
 :root,
 [data-theme='light'],
 .aw-canvas {
