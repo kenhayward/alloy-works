@@ -1285,9 +1285,9 @@ function canvasCss(theme: ResolvedTheme, measure: number): string {
     '.aw-canvas figure { margin-inline: 0; }',
     '.aw-canvas table { border-collapse: collapse; table-layout: fixed; width: 100%; }',
     '.aw-canvas :is(td, th) { vertical-align: top; }',
-    // A contents entry and a list's are links standing alone, each at least a finger's height (WCAG
-    // 2.5.8).
-    '.aw-canvas nav a { display: inline-block; min-block-size: 24px; }',
+    // A contents entry and a list's are links standing alone, each a finger's height from the next
+    // (WCAG 2.5.8): padded, which also keeps a trimmed line from drawing the next over it.
+    '.aw-canvas nav a { display: block; padding-block: 6px; }',
     '.aw-canvas .aw-table-region { max-width: 100%; overflow-x: auto; }',
     '.aw-canvas .aw-equation-block { display: flex; align-items: center; gap: 1em; overflow-x: auto; }',
     '.aw-canvas .aw-equation-block > math { flex: 1; }',

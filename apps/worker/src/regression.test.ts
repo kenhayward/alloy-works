@@ -631,6 +631,8 @@ function shownIn(html: string): {
   const tables: string[] = [];
   const flow = body
     .replace(/<p data-role="running">[\s\S]*?<\/p>/, '')
+    // What is never shown: the word a table's region is named by.
+    .replace(/<(\w+)\b[^>]*\shidden=""[^>]*>[\s\S]*?<\/\1>/g, '')
     .replace(/<math[\s\S]*?<\/math>/g, '')
     .replace(/<table[\s\S]*?<\/table>/g, (table) => {
       tables.push(charactersOf(table));
