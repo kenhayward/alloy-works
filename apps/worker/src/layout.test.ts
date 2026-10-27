@@ -587,6 +587,9 @@ describe('template 4 lays out the page', () => {
         noRows: defaultLayout.words.noRows,
         notAvailable: defaultLayout.words.notAvailable,
         source: defaultLayout.words.source,
+        notes: defaultLayout.words.notes,
+        backToReference: defaultLayout.words.backToReference,
+        scrollRegion: defaultLayout.words.scrollRegion,
       },
     });
     const { read } = await compiled(FIXTURE, reviewing);
