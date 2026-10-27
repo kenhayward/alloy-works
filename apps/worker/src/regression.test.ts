@@ -386,7 +386,7 @@ describe('the publishing regression corpus', () => {
     expect(
       Object.entries(verdicts).flatMap(([name, verdict]) => (verdict.typst ? [name] : [])),
     ).toEqual([
-      'Arabic',
+      // Not Arabic, since the default theme's 0.11 sets it in the Naskh (UF-H).
       'a CJK ideograph',
       'an emoji',
       'a private-use character',

@@ -829,6 +829,28 @@ describe("Administration's Overview, Roles and About", () => {
     ).toHaveAttribute('href', 'https://citationstyles.org');
   });
 
+  it('names in About every typeface the product holds, with its licence and the licence text, the one place a font licence shows', async () => {
+    const { client } = service(everything);
+    render(<Administration client={client} about={null} />);
+    await userEvent.click(section('About and release notes'));
+    const notices = await screen.findByRole('region', { name: 'Third-party notices' });
+    expect(notices).toHaveTextContent(
+      'Typefaces: IBM Plex Sans and IBM Plex Mono, under the SIL Open Font License 1.1.',
+    );
+    expect(notices).toHaveTextContent(
+      'Typefaces: Liberation Serif and Liberation Mono, under the SIL Open Font License 1.1.',
+    );
+    expect(notices).toHaveTextContent(
+      'Typefaces: STIX Two Math, under the SIL Open Font License 1.1.',
+    );
+    expect(notices).toHaveTextContent(
+      'Typefaces: Noto Naskh Arabic, under the SIL Open Font License 1.1.',
+    );
+    const texts = within(notices).getAllByText('Licence text');
+    expect(texts).toHaveLength(4);
+    expect(notices).toHaveTextContent('Copyright 2022 The Noto Project Authors');
+  });
+
   it("says in About what changed in this version, from the changelog's newest entry", async () => {
     const { client } = service(everything);
     render(<Administration client={client} about={null} />);

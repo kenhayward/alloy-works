@@ -241,7 +241,9 @@ day earlier.
 | **STY-047** | A typeface must be a versioned artifact, and a baseline must pin the exact files it published with rather than the theme version that named them                                                                                                                         | Constraint | Specified             |
 | **STY-048** | The default theme must cover the scripts the supported locales admit (**LOC-038**), the bidirectional text CNT-059 admits, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                  | T1         | Superseded by STY-074 |
 | **STY-074** | The default theme must cover the Latin, Greek, Cyrillic and Hebrew scripts, and the mathematics CNT requires, because a face that cannot set them makes those requirements undeliverable                                                                                 | T1         | Specified             |
-| **STY-075** | The default theme must cover every script the supported locales admit (**LOC-038**) and the bidirectional text CNT-059 admits                                                                                                                                            | T6         | Specified             |
+| **STY-075** | The default theme must cover the Latin, Greek, Cyrillic, Hebrew and Arabic scripts, set together in one paragraph as the bidirectional text CNT-059 admits                                                                                                               | T6         | Specified             |
+| **STY-084** | The default theme should cover the right-to-left scripts CNT-059 admits beyond Hebrew and Arabic, among them Syriac, Thaana, N'Ko and Adlam, so text in any of them publishes without a theme of the tenant's own.                                                       | T7         | Specified             |
+| **STY-085** | The default theme should cover the Chinese, Japanese and Korean scripts and the Indic scripts, among them Devanagari, Bengali, Tamil and Telugu, so text in any of them publishes without a theme of the tenant's own.                                                   | T7         | Specified             |
 | **STY-049** | Publishing must fail where any character in the document has no glyph in the theme's typefaces, rather than borrowing one from a face the theme never declared or setting an empty box                                                                                   | Constraint | Specified             |
 | **STY-052** | A typeface whose licence does not permit embedding in Word must declare a permitted face for Word output, and every publication using it must report the substitution                                                                                                    | T1         | Specified             |
 | **STY-062** | A typeface must be validated on ingest for the vertical metrics STY-054 depends on - ascent, descent and line gap - product faces when the product is built and tenant faces when they are supplied (STY-046). A face without them must be refused rather than tolerated | Constraint | Specified             |
@@ -272,7 +274,9 @@ The check has to be the pipeline's own. See
 list until LOC-038 declares one, in T6. What T1's default theme can be held to is the scripts its
 faces set - Latin, Greek, Cyrillic and Hebrew, measured from their character maps - and the
 mathematics; a character outside them fails the publish by name (STY-049) rather than being set
-wrongly. Arabic, which CNT-059 admits, is refused that way until STY-075.
+wrongly. STY-075 adds Arabic in T6, and names its scripts, since the supported locales' list
+(LOC-038) holds no language that says which; STY-084 asks for the other right-to-left scripts, and
+STY-085 for CJK and the Indic scripts.
 
 ## 13. Interchange
 
@@ -515,3 +519,21 @@ Ken answered its question on 2026-10-04, as the design recommended.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 82, of which 6 superseded | 83, of which 7 superseded |
+
+### Amended for the Naskh face, 2026-10-27
+
+Not a review. The [UI plan](../../plans/2026-10-26-ui-interface-localisation.md)'s UIf found that
+STY-075's "every script the supported locales admit" has no list to be held to: LOC-038's declared
+languages are English and two pseudo-locales. Ken chose to amend it in place, since no design or test
+yet cited it, to keep the rest of CNT-059's right-to-left scripts as a row of their own, and to give
+CJK and the Indic scripts another. STY-084 arrived as issue #794, STY-085 as #795.
+
+| What was found                                                                                   | Change                                                                                                                              |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| STY-075 names no script, and the supported locales' list names none                              | **STY-075 amended** to name Latin, Greek, Cyrillic, Hebrew and Arabic, set together in one paragraph                                |
+| CNT-059 admits right-to-left text in any script, and STY-075 now names two                       | **STY-084**, new, in T7: the default theme should cover the other right-to-left scripts, among them Syriac, Thaana, N'Ko and Adlam  |
+| STY-075 no longer asks for CJK or the Indic scripts, and the publishing design pointed CJK at it | **STY-085**, new, in T7: the default theme should cover CJK and the Indic scripts, among them Devanagari, Bengali, Tamil and Telugu |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 83, of which 7 superseded | 85, of which 7 superseded |

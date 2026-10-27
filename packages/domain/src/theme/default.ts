@@ -25,9 +25,9 @@ import type {
 /**
  * **The product's default theme** (themes 1, ruling R3): the theme every environment is given, and
  * every publication is set from until TPL lets a template bind another. As data - a `theme/1` and the
- * six catalogue versions it binds - which the store seeds as literals and a test recomputes from here.
+ * catalogue versions it binds - which the store seeds as literals and a test recomputes from here.
  *
- * **Six versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
+ * **Eleven versions, all stated, because all are stored.** **0.1**, the `FIRST_` constants, is exactly
  * what migration 0024 seeded: six `catalogue/1` versions and the theme naming them. Frozen - the rows
  * are insert-only and the store's test recomputes their hashes from these - so nothing in it may change.
  * **0.2** is themes 2's (ruling R3), seeded by 0025: new versions of the paragraph, table and image
@@ -42,9 +42,15 @@ import type {
  * image catalogues at `catalogue/3`, each 0.4's with every style saying where its caption sits - a
  * table's above, a figure's below, where they always stood - and 0.4 naming them; frozen at six.
  * **0.6**, the `SIXTH_` constants, is B1's (B1-F), seeded by 0048: the value catalogue's first
- * version, beside the six kinds rather than a seventh, and 0.5 naming it too. **0.7**, the unprefixed
- * `DEFAULT_` constants, is TB1's (TB1-F), seeded by 0055: the table catalogue's fifth version, its
- * styles saying how a bound table's cells are formatted and aligned, and 0.6 naming it.
+ * version, beside the six kinds rather than a seventh, and 0.5 naming it too. **0.7**, the `SEVENTH_`
+ * constants, is TB1's (TB1-F), seeded by 0055: the table catalogue's fifth version, its styles saying
+ * how a bound table's cells are formatted and aligned, and 0.6 naming it. **0.8**, `EIGHTH_`, is TG3's
+ * (TG-H), seeded by 0064: the table catalogue's sixth, its columns as wide as what they hold. **0.9**,
+ * `NINTH_`, is the CI plan's (CI-E), seeded by 0146: the citation catalogue's second, naming Harvard.
+ * **0.10**, `TENTH_`, is the TM plan's (TM-D), seeded by 0154: the term catalogue's first, beside the
+ * others. **0.11**, the unprefixed `DEFAULT_` constants, is the UI plan's (UF-H), seeded by 0167:
+ * 0.10 with Noto Naskh Arabic declared and the serif falling back to it, binding 0.10's catalogues,
+ * which the `DEFAULT_CATALOGUE` constants are.
  *
  * **Its numbers are template 11's wherever template 11 wrote one** - the body at 11pt, headings at 16
  * and 13pt bold, preformatted text at 8.8pt on `luma(240)`, which is `#f0f0f0`, in a 6pt panel, its
@@ -1191,10 +1197,10 @@ export const DEFAULT_CATALOGUE_VERSIONS: Readonly<
 /** The catalogues' contents at 0.10, by kind, each as its row holds it. */
 type DefaultCatalogues10 = DefaultCatalogues9 & { readonly term: TermCatalogue };
 
-/** **The catalogues the default theme binds as it stands, 0.10**: 0.9's, and the term catalogue. */
+/** **The catalogues the default theme binds as it stands, 0.10's and 0.11's**: 0.9's, and terms. */
 export const DEFAULT_CATALOGUES: DefaultCatalogues10 = { ...NINTH_DEFAULT_CATALOGUES, term };
 
-/** The same eight, by the version identifier the theme's 0.10 names each by. */
+/** The same eight, by the version identifier the theme's 0.10 and 0.11 name each by. */
 export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new Map(
   (Object.keys(DEFAULT_CATALOGUE_VERSIONS) as (keyof DefaultCatalogues10)[]).map((kind) => [
     DEFAULT_CATALOGUE_VERSIONS[kind],
@@ -1203,13 +1209,53 @@ export const DEFAULT_CATALOGUES_BY_VERSION: ReadonlyMap<string, unknown> = new M
 );
 
 /** The fixed identifier the store seeds the default theme's 0.10 under, by 0154, as 0.9's is fixed. */
-export const DEFAULT_THEME_VERSION = '7d8fe493-5bf4-453b-82b0-fa854fb34604';
+export const TENTH_DEFAULT_THEME_VERSION = '7d8fe493-5bf4-453b-82b0-fa854fb34604';
 
 /** The term catalogue's artifact, in no space, under a fixed identifier 0154 seeds (TM-D). */
 export const DEFAULT_TERM_CATALOGUE_ID = '43a10f0a-dffc-4c32-9a43-0391addf2c4b';
 
-/** **The default theme as it stands, 0.10**: 0.9 naming the term catalogue too. */
-export const DEFAULT_THEME: Theme = {
+/** **The default theme's 0.10, as 0154 stored it**: 0.9 naming the term catalogue too. Frozen. */
+export const TENTH_DEFAULT_THEME: Theme = {
   ...NINTH_DEFAULT_THEME,
   catalogues: { ...DEFAULT_CATALOGUE_VERSIONS },
+};
+
+// ---------------------------------------------------------------------------------------------------
+// Version 0.11 (the UI plan, UF-H): Noto Naskh Arabic declared, and the serif falling back to it, so
+// Arabic in running text is set rather than refused. No catalogue changes: it binds 0.10's.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * Noto Naskh Arabic, its two pinned files under the SIL Open Font Licence 1.1, and its metrics from
+ * its own `hhea` over a 1000-unit em. Only a publication with a character the serif lacks embeds it
+ * (UF-A).
+ */
+export const NASKH: Typeface = {
+  id: 'naskh',
+  family: 'Noto Naskh Arabic',
+  files: [
+    {
+      sha256: 'c34fdbd98af4dbc45ca192a23d2eeb77032add83086f5fe32957d23b3f36b221',
+      weight: 'regular',
+      posture: 'normal',
+    },
+    {
+      sha256: '380ac34b249d336e1a43c21053df440594e1e3db8f75fabd4d85b649ca1ea4c6',
+      weight: 'bold',
+      posture: 'normal',
+    },
+  ],
+  licence: 'OFL-1.1',
+  embedding: { pdf: true, word: true },
+  ascent: 1069 / 1000,
+  descent: 634 / 1000,
+};
+
+/** The fixed identifier the store seeds the default theme's 0.11 under, by 0167, as 0.10's is fixed. */
+export const DEFAULT_THEME_VERSION = '2a390dd9-6d47-4744-bcc5-a04ff5d9697a';
+
+/** **The default theme as it stands, 0.11**: 0.10 with the Naskh, and the serif falling back to it. */
+export const DEFAULT_THEME: Theme = {
+  ...TENTH_DEFAULT_THEME,
+  typefaces: [{ ...serif, fallback: ['naskh'] }, mono, mathsForWord, NASKH],
 };

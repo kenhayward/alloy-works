@@ -20,7 +20,7 @@ import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPaint, type Paint } from './testing/pdf.js';
-import { NASKH, naskhTheme } from './testing/theme.js';
+import { naskhTheme } from './testing/theme.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 const fonts = await loadPinnedFonts();
@@ -191,12 +191,9 @@ describe("a style's face falling back, in the pinned engine (the UI plan, UF-D, 
     const read = readTheme(
       {
         ...DEFAULT_THEME,
-        typefaces: [
-          ...DEFAULT_THEME.typefaces.map((face) =>
-            face.id === 'serif' || face.id === 'mono' ? { ...face, fallback: ['naskh'] } : face,
-          ),
-          NASKH,
-        ],
+        typefaces: DEFAULT_THEME.typefaces.map((face) =>
+          face.id === 'mono' ? { ...face, fallback: ['naskh'] } : face,
+        ),
       },
       DEFAULT_CATALOGUES_BY_VERSION,
     );

@@ -17,13 +17,21 @@ declared one; never any content's, which keeps its own language and direction.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                  |
-| **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's |
+| ID          | How it is met                                                                                  |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| **LOC-003** | Every listing and the renderer's own sorts in the person's collation: [below](#collation-ui-h) |
+| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                    |
+| **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's   |
+| **LOC-042** | `en-XA` and `ar-XB` as modes, and the pseudo walk run in both                                  |
 
-LOC-003, LOC-029, LOC-038 and LOC-042 are claimed as the slice's later PRs answer them: the whole
-interface moved and sorted in the person's collation.
+Not claimed, each answered in part:
+
+- **LOC-027**: the renderer's words are all in the catalogue, but a refusal code the renderer has no
+  words for shows the service's English.
+- **LOC-029**: the pseudo walk checks pages for words cut short or spilling sideways; dialogs are not
+  walked, and elements overlapping each other are not measured.
+- **LOC-038**: formats and plurals come from pinned CLDR, recorded in `LOCALE_DATA`; collation in a
+  browser tab is the runtime's, unrecorded.
 
 ## The mechanism
 

@@ -1050,6 +1050,9 @@ describe('the domain package', () => {
         'xliffInReply',
         // UIf: the schema template 25 reads, frozen by `publishing/26`'s chains.
         'PUBLISHING_SCHEMA_25',
+        // UIg: the default theme's 0.10 frozen beside 0.11.
+        'TENTH_DEFAULT_THEME',
+        'TENTH_DEFAULT_THEME_VERSION',
       ].sort(),
     );
   });

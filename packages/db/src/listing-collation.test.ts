@@ -63,7 +63,7 @@ describe('a listing in the reader’s collation (the UI plan, UI-H)', () => {
       }
     });
 
-  it('orders text as the reader’s language does, page after page, and the right-to-left one as Arabic', async () => {
+  it('LOC-003 orders text as the reader’s language does, page after page, and the right-to-left one as Arabic', async () => {
     expect(await walk('en-GB')).toEqual(['apple', 'Eclair', 'Écrit', 'zebra', 'بحر']);
     expect(await walk('ar-XB')).toEqual(['بحر', 'apple', 'Eclair', 'Écrit', 'zebra']);
   });

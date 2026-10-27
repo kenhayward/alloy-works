@@ -1205,11 +1205,13 @@ describe('writeDocx: faces (ruling R10)', () => {
         .map((each) => each.name),
     ]);
     // Serif in all four: bold headings, emphasis, and emphasis and strong together. Mono regular for
-    // the inline code alone. The maths face sets nothing here, and Word names it Cambria Math.
+    // the inline code alone. The maths face sets nothing here, and Word names it Cambria Math; nor
+    // does the Naskh, with no Arabic to set.
     expect(embedded).toEqual([
       ['Liberation Serif', ['w:embedRegular', 'w:embedBold', 'w:embedItalic', 'w:embedBoldItalic']],
       ['Liberation Mono', ['w:embedRegular']],
       ['Cambria Math', []],
+      ['Noto Naskh Arabic', []],
     ]);
     const serifFont = all(table, 'w:font')[0]!;
     const regular = kids(serifFont, 'w:embedRegular')[0]!;
@@ -1244,6 +1246,7 @@ describe('writeDocx: faces (ruling R10)', () => {
       'Liberation Serif',
       'Courier New',
       'Cambria Math',
+      'Noto Naskh Arabic',
     ]);
     expect(kids(fonts[1]!).filter((each) => each.name.startsWith('w:embed'))).toEqual([]);
     const styles = strFromU8(substituted.docx.files['word/styles.xml']!);
@@ -1281,6 +1284,7 @@ describe('writeDocx: two typefaces of one family', () => {
       'Liberation Serif',
       'Liberation Mono',
       'Cambria Math',
+      'Noto Naskh Arabic',
     ]);
     expect(
       kids(fonts[0]!)

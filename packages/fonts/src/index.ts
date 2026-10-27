@@ -8,4 +8,5 @@ export { COVERAGE } from './coverage.js';
 export { capHeightOfFile, covers, familyOfFile } from './covers.js';
 export type { Ranges } from './covers.js';
 export { INTERFACE_FONT_FILES } from './interface.js';
+export { FONT_LICENCES } from './licences.js';
 export { PINNED_FONT_FILES } from './pinned.js';

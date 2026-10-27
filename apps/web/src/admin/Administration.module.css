@@ -697,3 +697,11 @@
   align-items: center;
   gap: var(--space-8);
 }
+
+/* About (UF-H): a typeface licence's text, scrolled within its disclosure. */
+.licence {
+  max-block-size: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: var(--size-12);
+}

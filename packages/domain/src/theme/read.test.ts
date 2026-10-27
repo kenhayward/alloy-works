@@ -15,6 +15,7 @@ import {
   FIRST_DEFAULT_THEME,
   FOURTH_DEFAULT_CATALOGUES,
   SECOND_DEFAULT_CATALOGUES,
+  TENTH_DEFAULT_THEME,
 } from './default.js';
 import { readCatalogue, readTheme, themeRefusalCodes } from './read.js';
 import { CATALOGUE_KINDS, PLACES, ROLES, STYLED_MARKS } from './schema.js';
@@ -147,6 +148,7 @@ describe('readTheme', () => {
       { id: 'mono', licence: 'OFL-1.1', embedding: { pdf: true, word: true } },
       // Its outlines, not its licence, keep STIX Two Math out of a Word document (default.ts).
       { id: 'maths', licence: 'OFL-1.1', embedding: { pdf: true, word: false } },
+      { id: 'naskh', licence: 'OFL-1.1', embedding: { pdf: true, word: true } },
     ]);
 
     for (const member of ['licence', 'embedding']) {
@@ -322,7 +324,7 @@ describe('readTheme', () => {
     expect(code.chain.map((face) => face.id)).toEqual(['mono']);
     expect(theme.characterStyles.inlineCode.chain?.map((face) => face.id)).toEqual(['mono']);
     // Every theme stored before a fallback could be stated reads as it did.
-    const plain = resolved();
+    const plain = resolved({ ...defaultInputs(), theme: structuredClone(TENTH_DEFAULT_THEME) });
     expect(plain.paragraphStyles.get(plain.places.text)!.chain.map((face) => face.id)).toEqual([
       'serif',
     ]);

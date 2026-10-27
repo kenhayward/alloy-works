@@ -2440,6 +2440,8 @@
   "admin.citations-are-formatted-by-citeproc": "Citations are formatted by citeproc-js, Copyright (c) 2009-2019 Frank Bennett, under the Common Public Attribution License 1.0.",
   "admin.citation-styles-and-locales-from": "Citation styles and locales from the {project}, under the Creative Commons Attribution-ShareAlike 3.0 licence.",
   "admin.citation-style-language-project": "Citation Style Language project",
+  "admin.typefaces-under-the-ofl": "Typefaces: {families}, under the SIL Open Font License 1.1.",
+  "admin.licence-text": "Licence text",
   "admin.what-changed-in": "What changed in {version}",
   "admin.in": "{heading} in {version}",
   "admin.overview": "Overview",

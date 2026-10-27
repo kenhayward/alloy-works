@@ -384,8 +384,8 @@ describe('projectCss', () => {
     );
     expect(rulesFor(css, '.aw-canvas.aw-canvas li')).toEqual([
       'margin-block: 0',
-      `font-family: "aw-face-serif"; font-size: ${z('11')}; font-weight: 400; font-style: normal; ` +
-        'color: #000000; line-height: 0',
+      `font-family: "aw-face-serif", "aw-face-naskh"; font-size: ${z('11')}; font-weight: 400; ` +
+        'font-style: normal; color: #000000; line-height: 0',
     ]);
   });
 
@@ -449,10 +449,11 @@ describe('projectCss', () => {
   it("opens a line held by a run larger than its text as the template does, by what it stands above the text's top and below its foot, on every line the run is on (issue #331)", () => {
     // Every paragraph says what a line of it is: its face, size, weight and posture, its line spacing,
     // its descender, its text's own top above the baseline - one em less the descender - and the size a
-    // run in it stands at. The body: Liberation Serif at 11pt on 14.35pt, 443/2048 of an em below.
+    // run in it stands at. The body: Liberation Serif, falling back to the Naskh, at 11pt on 14.35pt,
+    // 443/2048 of an em below.
     const body = ruleFor(css, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
     for (const declaration of [
-      '--aw-face: "aw-face-serif"',
+      '--aw-face: "aw-face-serif", "aw-face-naskh"',
       `--aw-size: ${z('11')}`,
       '--aw-weight: 400',
       '--aw-posture: normal',
@@ -460,7 +461,7 @@ describe('projectCss', () => {
       '--aw-descent: 0.21631',
       `--aw-top: ${z('8.621')}`,
       `--aw-run: ${z('11')}`,
-      '--aw-run-face: "aw-face-serif"',
+      '--aw-run-face: "aw-face-serif", "aw-face-naskh"',
       '--aw-run-weight: 400',
       '--aw-run-posture: normal',
     ]) {

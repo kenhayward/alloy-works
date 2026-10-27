@@ -1,4 +1,4 @@
-import { readTheme, type Theme, type Typeface as ThemeTypeface } from '@alloy-works/domain';
+import { readTheme, type Theme } from '@alloy-works/domain';
 import type { TextWhere } from '@alloy-works/editor';
 import { describe, expect, it } from 'vitest';
 
@@ -6,41 +6,10 @@ import { notInLabel } from '../editor/SymbolPalette.js';
 import { styleCheckFor, typefaceAt } from './check.js';
 import { DEFAULT_PRESENTATION } from './presentation.fixture.js';
 
-/** Noto Naskh Arabic as a theme declares it, by its pinned files (the UI plan, UF-A). */
-const NASKH: ThemeTypeface = {
-  id: 'naskh',
-  family: 'Noto Naskh Arabic',
-  files: [
-    {
-      sha256: 'c34fdbd98af4dbc45ca192a23d2eeb77032add83086f5fe32957d23b3f36b221',
-      weight: 'regular',
-      posture: 'normal',
-    },
-    {
-      sha256: '380ac34b249d336e1a43c21053df440594e1e3db8f75fabd4d85b649ca1ea4c6',
-      weight: 'bold',
-      posture: 'normal',
-    },
-  ],
-  licence: 'OFL-1.1',
-  embedding: { pdf: true, word: true },
-  ascent: 1.069,
-  descent: 0.634,
-};
-
-/** The default theme with the serif falling back to the Naskh. */
+/** The default theme, whose serif falls back to the Naskh since its 0.11 (UF-H). */
 const theme = (() => {
-  const content = DEFAULT_PRESENTATION.theme.content as Theme;
   const read = readTheme(
-    {
-      ...content,
-      typefaces: [
-        ...content.typefaces.map((face) =>
-          face.id === 'serif' ? { ...face, fallback: ['naskh'] } : face,
-        ),
-        NASKH,
-      ],
-    },
+    DEFAULT_PRESENTATION.theme.content as Theme,
     new Map(DEFAULT_PRESENTATION.theme.catalogues.map((each) => [each.versionId, each.content])),
   );
   if (!read.ok) throw new Error('the theme does not read');
