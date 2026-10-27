@@ -63,6 +63,9 @@ export * from './theme/index.js';
 // The Word writer: a publication as a .docx (docs/design/word-output.md; Word 1).
 export * from './word/index.js';
 
+// The HTML writer: a publication as one HTML file to read on a screen (the HT plan; ADR-0070).
+export * from './html/index.js';
+
 // Search's projection: what a version is found by, place by place (docs/design/search.md; W6).
 export * from './search/index.js';
 

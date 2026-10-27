@@ -17,6 +17,7 @@ export type {
   PublishingAsset,
   WordImage,
   WordInput,
+  HtmlInput,
 } from './assemble.js';
 // The binding stage and what a publication records of it (the B3 plan, B3-D, B3-G).
 export { bind, unbound } from './bind.js';

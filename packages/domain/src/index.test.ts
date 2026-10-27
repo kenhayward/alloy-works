@@ -1058,6 +1058,10 @@ describe('the domain package', () => {
         'TWELFTH_DEFAULT_LAYOUT',
         'PAGED',
         'pagedFormats',
+        // HTa: the HTML writer, the version the job records it at, and its text for the leak scan.
+        'writeHtml',
+        'HTML_WRITER_VERSION',
+        'htmlText',
       ].sort(),
     );
   });
