@@ -448,6 +448,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   filled, banded and padded as its table style says, and a figure and an image in a line are the size
   their image styles give them, from the image's own pixels, as a publication sets them. A table's
   caption and a figure's stand above or below it as its style says, where the publication sets them.
+  A typeface may name others that set what it cannot, in order, so the default theme sets Arabic in
+  Noto Naskh Arabic beside Latin, Greek, Cyrillic and Hebrew in Liberation Serif, in one paragraph, in
+  the editor, the PDF and Word alike. An environment still on the previous default theme moves to it;
+  one that recorded its own theme keeps it. Administration's **About** names every typeface the
+  product holds, with its licence and the licence's text.
   Page breaks,
   hyphenation, keeping lines together, a table's header repeated on each page and a floated figure's
   place on its page are left to the publication.
@@ -1724,7 +1729,7 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   numbered i, ii, the body from 1 and the appendices carrying on. Strong, emphasis, underline,
   subscript, superscript, inline code and quoted phrases are carried, links can be followed, and every
   passage in another language is marked as that language, right to left where it reads that way. The
-  Liberation typefaces are embedded, so it looks the same on a machine that does not have them.
+  Liberation typefaces, and Noto Naskh Arabic where Arabic is set, are embedded, so it looks the same on a machine that does not have them.
   Word lays out its own pages, so its page numbers can differ from the PDF's, and **a page number
   cited from a publication is always the PDF's**: each Word document comes with a note saying so, on
   the publication's page, and a document that refers to a page cannot be published to Word alone.

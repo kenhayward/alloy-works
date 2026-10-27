@@ -795,7 +795,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     });
 
     const failed = await requested(async (trx) => [
-      reference(await component(trx, general, 'Unset', ['Arabic \u{627} here'])),
+      reference(await component(trx, general, 'Unset', ['Devanagari \u{915} here'])),
     ]);
     expect(await work()).toBe('failed');
     const failing = await events(failed);
@@ -812,7 +812,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
   it('fails a document with a character no face can set once, with every failure, and logs none of it', async () => {
     logged.length = 0;
     const id = await requested(async (trx) => [
-      reference(await component(trx, general, 'Calibration', ['Arabic \u{627} here'])),
+      reference(await component(trx, general, 'Calibration', ['Devanagari \u{915} here'])),
       reference(await component(trx, quality, 'Secret', ['Never read'])),
     ]);
     expect(await work()).toBe('failed');
@@ -824,8 +824,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
     ]);
     expect(await publicationOf(id)).toBeUndefined();
     expect(await jobOf(id)).toEqual({ attempts: 1, last_error: 'publish_refused' });
-    expect(JSON.stringify(logged)).not.toContain('U+0627');
-    expect(JSON.stringify(logged)).not.toContain('\u{627}');
+    expect(JSON.stringify(logged)).not.toContain('U+0915');
+    expect(JSON.stringify(logged)).not.toContain('\u{915}');
   });
 
   it('PUB-094 refuses a publish holding a component the publisher may not read, naming its node and nothing of it, and makes no publication', async () => {

@@ -20,7 +20,7 @@ import { FONT_DIRECTORY, loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
 import { PUBLICATION_TEMPLATE, TEMPLATE_READING } from './template.js';
 import { checkOoxml } from './testing/ooxml.js';
 import { readPaint, type Paint } from './testing/pdf.js';
-import { NASKH, naskhTheme } from './testing/theme.js';
+import { defaultTheme, naskhTheme } from './testing/theme.js';
 import { createTypst, typstBinaryPath } from './typst.js';
 
 const fonts = await loadPinnedFonts();
@@ -191,12 +191,9 @@ describe("a style's face falling back, in the pinned engine (the UI plan, UF-D, 
     const read = readTheme(
       {
         ...DEFAULT_THEME,
-        typefaces: [
-          ...DEFAULT_THEME.typefaces.map((face) =>
-            face.id === 'serif' || face.id === 'mono' ? { ...face, fallback: ['naskh'] } : face,
-          ),
-          NASKH,
-        ],
+        typefaces: DEFAULT_THEME.typefaces.map((face) =>
+          face.id === 'mono' ? { ...face, fallback: ['naskh'] } : face,
+        ),
       },
       DEFAULT_CATALOGUES_BY_VERSION,
     );
@@ -217,6 +214,71 @@ describe("a style's face falling back, in the pinned engine (the UI plan, UF-D, 
         code,
       ).rejects.toThrow();
     }
+  });
+});
+
+describe('Arabic, Hebrew and Latin in one paragraph, under the default theme (the UI plan, UF-H)', () => {
+  /** "Shalom", pointed, in Hebrew, which the serif sets. */
+  const POINTED = String.fromCodePoint(0x05e9, 0x05b8, 0x05dc, 0x05d5, 0x05b9, 0x05dd);
+  /** "Peace" with its harakat, which the Naskh sets. */
+  const VOWELLED = String.fromCodePoint(0x0633, 0x064e, 0x0644, 0x064e, 0x0627, 0x0645, 0x064c);
+  /** An Arabic-Indic one and a Persian two. */
+  const DIGITS = String.fromCodePoint(0x0661, 0x06f2);
+  const mixed = Array.from(
+    { length: 12 },
+    (_, index) => `Ada ${VOWELLED} ${POINTED} ${PERSIAN} ${DIGITS} ${index}`,
+  ).join(' ');
+  const latin = Array.from({ length: 12 }, (_, index) => `Ada wrote to Grace ${index}`).join(' ');
+
+  /**
+   * The distinct baselines of the component's paragraph, top down, read from the serif's pieces, since
+   * the Naskh's cursive attachment moves a glyph off its line; and the faces set on them.
+   */
+  const lines = (paint: Paint) => {
+    const texts = body(paint);
+    const serif = texts.filter((each) => each.face === 'LiberationSerif');
+    const ys = [...new Set(serif.map((each) => Math.round(each.y * 100) / 100))].sort(
+      (a, b) => b - a,
+    );
+    return { ys, faces: new Set(texts.map((each) => each.face)) };
+  };
+  const steps = (ys: number[]) => ys.slice(1).map((y, at) => ys[at]! - y);
+
+  it('STY-075 publishes them together to the PDF, each in its face, a line holding Arabic as far from the next as a Latin one', async () => {
+    const together = lines(await painted([paragraph('m1', text(mixed))], defaultTheme));
+    const alone = lines(await painted([paragraph('m2', text(latin))], defaultTheme));
+    expect(together.faces).toEqual(new Set(['LiberationSerif', 'NotoNaskhArabic-Regular']));
+    expect(together.ys.length).toBeGreaterThan(3);
+    // The engine keeps the serif's edges, so the Naskh's taller ones grow no line: every step the
+    // body's line spacing, as in Latin alone.
+    const spacing = defaultTheme.paragraphStyles.get(defaultTheme.places.text)!.properties
+      .lineSpacing;
+    for (const step of [...steps(together.ys), ...steps(alone.ys)]) {
+      expect(step).toBeCloseTo(spacing, 1);
+    }
+  });
+
+  it('STY-075 publishes them together to Word, each piece in its face, its lines at least the line spacing', async () => {
+    const made = assemble(inputOf(defaultTheme, [paragraph('m3', text(mixed))], ['docx']));
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const { bytes } = writeDocx({
+      document: made.document,
+      numbering: made.numbering,
+      word: made.word!,
+      formats: ['docx'],
+      faces: await pinnedFacesByHash(FONT_DIRECTORY),
+      images: new Map(),
+    });
+    expect(await checkOoxml(bytes)).toEqual([]);
+    const parts = unzipSync(bytes);
+    const document = strFromU8(parts['word/document.xml']!);
+    expect(document).toContain('w:ascii="Noto Naskh Arabic"');
+    expect(document).toContain(POINTED);
+    expect(document).toContain(VOWELLED);
+    // Named, not matched: a style's line spacing is Word's "at least", so Word grows a line holding
+    // the Naskh to its taller edges, 18.7pt at 11pt, where the PDF keeps the serif's (the plan's
+    // risks). Only Word itself can measure it.
+    expect(strFromU8(parts['word/styles.xml']!)).toMatch(/w:lineRule="atLeast"/);
   });
 });
 

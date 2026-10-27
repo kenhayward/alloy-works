@@ -245,7 +245,7 @@ function Members({
                     })
                   }
                 />{' '}
-                <span className={styles['initials']} aria-hidden="true">
+                <span className={styles['initials']} aria-hidden="true" data-content>
                   {initials(personName(person))}
                 </span>{' '}
                 {person.name !== null && person.email !== null
@@ -429,7 +429,7 @@ export function Groups({ client }: { client: Client }) {
                         <span className={styles['faces']}>
                           <span aria-hidden="true">
                             {group.members.slice(0, 3).map((member) => (
-                              <span key={member.id} className={styles['initials']}>
+                              <span key={member.id} className={styles['initials']} data-content>
                                 {initials(personName(member))}
                               </span>
                             ))}{' '}

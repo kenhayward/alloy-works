@@ -11,8 +11,8 @@ describe('projectFontFaces', () => {
   it("declares each file of each typeface under a family of its own, never the face's real name", () => {
     const { css, unheld } = projectFontFaces(theme, bundled);
     expect(unheld).toEqual([]);
-    // And the maths face's one upright file again under italic (below).
-    expect(css.match(/@font-face/g)).toHaveLength(everyFile.length + 1);
+    // And the maths face's one upright file again under italic, and the Naskh's two (below).
+    expect(css.match(/@font-face/g)).toHaveLength(everyFile.length + 3);
     expect(faceFamily('serif')).toBe('aw-face-serif');
     // A Liberation Serif installed on the reader's machine is never what the editor sets text in.
     expect(css).not.toContain('Liberation');

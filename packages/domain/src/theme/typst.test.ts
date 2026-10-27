@@ -159,12 +159,13 @@ describe('projectTypst, for publishing/13 to publishing/15', () => {
   it("states every paragraph style as publishing/12's does, with its identifier and its contextual spacing, and its face as a chain", () => {
     // The identifier is what template 13 asks of two consecutive blocks: contextual spacing is between
     // paragraphs of one style, and two styles stating the same values are still two styles. Since
-    // `publishing/26` a face is a list, the chain (the UI plan, UF-E): one family where it has no fallback.
+    // `publishing/26` a face is a list, the chain (the UI plan, UF-E): one family where it has no fallback,
+    // and the serif then the Naskh since the default theme's 0.11.
     for (const [id, style] of Object.entries(typst.styles)) {
       const contextualSpacing = id === 'quotation';
       expect(current.styles[id], id).toEqual({
         ...style,
-        font: [style.font],
+        font: style.font === 'Liberation Serif' ? [style.font, 'Noto Naskh Arabic'] : [style.font],
         id,
         contextualSpacing,
       });

@@ -150,11 +150,11 @@ async function walkAs(cookie: string, language: Language, walked: readonly Surfa
 }
 
 describe('the interface in pseudo-locales (the UI plan, UI-J)', () => {
-  it('shows every moved surface expanded and accented, each word made over and none cut short', async () => {
+  it('LOC-042 shows every moved surface expanded and accented, each word made over and none cut short', async () => {
     await walk('en-XA');
   });
 
-  it('shows every moved surface right to left, each word made over and none cut short', async () => {
+  it('LOC-042 shows every moved surface right to left, each word made over and none cut short', async () => {
     await walk('ar-XB');
   });
 });

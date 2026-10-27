@@ -6,6 +6,7 @@ import { parseContentDocument, type ContentDocument } from '../content/model/doc
 import { markTypes } from '../content/model/marks.js';
 import type { ResolvedTheme } from '../theme/read.js';
 import type { ParagraphProperties, StyleTarget, Typeface } from '../theme/schema.js';
+import { TENTH_DEFAULT_THEME } from '../theme/default.js';
 import { defaultInputs, naskhInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
 import { syntheticFace } from '../word/face.fixture.js';
 import { projectTypst } from '../theme/typst.js';
@@ -7445,7 +7446,9 @@ describe('Arabic set through a fallback (the UI plan, UF-C to UF-E)', () => {
   it("sets a character the style's face lacks in its fallback, and refuses it where no face of the chain has it", () => {
     const words = paragraph('p1', text(`Peace, ${ARABIC}.`));
     expect(failuresOf(assemble(under(naskh(), words)))).toEqual([]);
-    expect(failuresOf(assemble(under(DEFAULT_THEME, words)))).toEqual(
+    // The default theme's 0.10, before it declared the Naskh.
+    const latin = resolved({ ...defaultInputs(), theme: structuredClone(TENTH_DEFAULT_THEME) });
+    expect(failuresOf(assemble(under(latin, words)))).toEqual(
       ['U+0633', 'U+0644', 'U+0627', 'U+0645'].map((each) => glyph('glyph_missing', each)),
     );
   });

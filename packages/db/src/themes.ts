@@ -33,8 +33,10 @@ export const DEFAULT_THEME_ID = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
  * theme's 0.1 names; 0025 gave the paragraph, table and image catalogues a second at `catalogue/2`,
  * `SECOND_DEFAULT_CATALOGUE_VERSIONS`, which the theme's 0.2 and 0.3 name (themes 2), 0034 a third,
  * `FOURTH_DEFAULT_CATALOGUE_VERSIONS`, which its 0.4 names (ET-H), and 0043 the table and image
- * catalogues a fourth at `catalogue/3`, `DEFAULT_CATALOGUE_VERSIONS`, which its 0.5 names (W14.5);
- * these are the artifacts behind them all, which nothing names but the store.
+ * catalogues a fourth at `catalogue/3`, `FIFTH_DEFAULT_CATALOGUE_VERSIONS`, which its 0.5 names
+ * (W14.5); 0055 and 0064 the table catalogue a fifth and sixth, and 0146 the citation catalogue a
+ * second. The theme's latest, 0.11 (0167), binds `DEFAULT_CATALOGUE_VERSIONS`. These are the artifacts
+ * behind them all, which nothing names but the store.
  */
 export const DEFAULT_CATALOGUE_IDS: Readonly<Record<CatalogueKind, string>> = {
   paragraph: 'd743fbe7-68f8-4530-8e93-46494d0fcdc2',
@@ -259,7 +261,7 @@ export async function addCatalogueVersion(
   let latest: { readonly versionId: string; readonly catalogue: Catalogue } | undefined;
   for (const version of history) {
     const earlier = readCatalogue(version.content);
-    // Written by this function or seeded by 0024 or 0025, so it reads: one that does not is a broken
+    // Written by this function or seeded by a migration, so it reads: one that does not is a broken
     // store.
     if (!earlier.ok) {
       throw new Error(`The catalogue ${input.artifactId} at ${version.id} does not read`);

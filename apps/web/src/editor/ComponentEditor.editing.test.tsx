@@ -2213,7 +2213,7 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
   it("CNT-097 sets the surface's text in the theme's own face, loaded from the renderer, at the size the theme declares", async () => {
     const { paragraph } = await openInTheme();
     const running = getComputedStyle(paragraph('Unbox the printer.'));
-    expect(running.fontFamily).toBe('"aw-face-serif"');
+    expect(running.fontFamily).toBe('"aw-face-serif", "aw-face-naskh"');
     expect(running.fontSize).toBe('calc(11pt * var(--aw-zoom))');
     // The face it names is declared from the pinned file, never a face of that name on the machine.
     expect(document.querySelector('style[data-aw-faces]')?.textContent).toContain(
@@ -2512,7 +2512,7 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
           type: 'paragraph',
           id: 'b3',
           style: 'body',
-          content: [{ type: 'text', value: 'Letter ا here.', marks: [] }],
+          content: [{ type: 'text', value: 'Letter क here.', marks: [] }],
         },
       ],
     };
@@ -2573,10 +2573,11 @@ describe('the surface set in the theme\'s type, at the layout\'s measure (themes
     expect(getComputedStyle(paragraph('Keep the box.')).getPropertyValue('margin-inline')).toBe(
       'calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))',
     );
-    // A character no face of the family setting it holds: marked, its code point named.
+    // A character no face of the family setting it holds: marked, its code point named. Devanagari,
+    // since the default theme's 0.11 sets Arabic in its fallback.
     const glyph = view!.dom.querySelector('.aw-glyph-missing');
-    expect(glyph?.textContent).toBe('ا');
-    expect(glyph).toHaveAttribute('title', 'No glyph for U+0627 in this typeface');
+    expect(glyph?.textContent).toBe('क');
+    expect(glyph).toHaveAttribute('title', 'No glyph for U+0915 in this typeface');
     // A face the renderer does not hold: said, by its family, where the text stands.
     expect(await screen.findByText(/Liberation Mono/)).toBeInTheDocument();
   });

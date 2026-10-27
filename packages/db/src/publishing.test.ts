@@ -563,13 +563,13 @@ describe('requesting and recording a publication', () => {
           theme: { ...declared.content, paper: '#fafafa' },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.10 since 0154, so the version recorded after it is 0.11.
-        expect((await defaultTheme(trx)).number).toBe('0.11');
+        // The default is at 0.11 since 0167, so the version recorded after it is 0.12.
+        expect((await defaultTheme(trx)).number).toBe('0.12');
 
         const inputs = await publicationInputs(trx, id);
         expect(inputs!.theme).toEqual({ versionId: declared.versionId, theme: declared.theme });
         expect(inputs!.theme!.theme.paper).toBe('#ffffff');
-        // Thrown to roll the theme's 0.10 back: the rest of the suite publishes under the default.
+        // Thrown to roll the theme's 0.12 back: the rest of the suite publishes under the default.
         throw rolledBack;
       }),
     ).rejects.toBe(rolledBack);

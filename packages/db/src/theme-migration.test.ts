@@ -10,6 +10,7 @@ import {
   DEFAULT_THEME_VERSION,
   EIGHTH_DEFAULT_THEME_VERSION,
   NINTH_DEFAULT_THEME_VERSION,
+  TENTH_DEFAULT_THEME_VERSION,
   DEFAULT_VALUE_FORMATS,
   defaultNumberingScheme,
   FIFTH_DEFAULT_CATALOGUES_BY_VERSION,
@@ -459,6 +460,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1261,6 +1263,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1434,6 +1437,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
 
     const chain = await themeChain(tenant);
@@ -2236,6 +2240,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -2281,9 +2286,17 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       },
       // And 0154's 0.10 (TMb), naming the term catalogue.
       {
-        id: DEFAULT_THEME_VERSION,
+        id: TENTH_DEFAULT_THEME_VERSION,
         revision_no: 0,
         version_no: 10,
+        author_id: null,
+        schema_version: 1,
+      },
+      // And 0167's 0.11 (UF-H), declaring the Naskh.
+      {
+        id: DEFAULT_THEME_VERSION,
+        revision_no: 0,
+        version_no: 11,
         author_id: null,
         schema_version: 1,
       },
@@ -2310,7 +2323,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     expect(await service.withTenant(tenant, (trx) => defaultTheme(trx))).toEqual({
       artifactId: DEFAULT_THEME_ID,
       versionId: DEFAULT_THEME_VERSION,
-      number: '0.10',
+      number: '0.11',
       content: DEFAULT_THEME,
       theme: now,
       catalogues: DEFAULT_CATALOGUES_BY_VERSION,
@@ -2321,7 +2334,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
     expect(sixth.valueCatalogue).toEqual(SIXTH_DEFAULT_CATALOGUES.value);
     expect(formatsFor(sixth.valueCatalogue, 'en-GB')).toEqual(DEFAULT_VALUE_FORMATS);
 
-    // The request waiting was made under 0.5 and is handed 0.5; one made now records the latest, 0.7.
+    // The request waiting was made under 0.5 and is handed 0.5; one made now records the latest.
     const handed = await service.withTenant(tenant, async (trx) => {
       const made = await ask(trx, version);
       return {
@@ -2468,6 +2481,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -2611,6 +2625,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };

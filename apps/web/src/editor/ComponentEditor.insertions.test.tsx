@@ -1502,10 +1502,10 @@ describe('the symbol palette (W14.7)', () => {
     caretAt(view, 6);
     await userEvent.click(screen.getByRole('button', { name: 'Symbols' }));
     let dialog = await opens();
-    // For all is not in the default serif, which sets running text: it stays in its place,
-    // disabled, and says why - once the presentation has arrived to say which face that is.
+    // For all is not in the default serif, nor its fallback, which set running text: it stays in its
+    // place, disabled, and says why - once the presentation has arrived to say which faces they are.
     const forAll = await within(dialog).findByRole('button', {
-      name: 'For all, not in Liberation Serif; use an equation',
+      name: 'For all, not in Liberation Serif or Noto Naskh Arabic; use an equation',
     });
     // Said once, above the grids.
     expect(
@@ -1526,7 +1526,7 @@ describe('the symbol palette (W14.7)', () => {
     await userEvent.keyboard('{ArrowRight}');
     expect(
       within(dialog).getByRole('button', {
-        name: 'There exists, not in Liberation Serif; use an equation',
+        name: 'There exists, not in Liberation Serif or Noto Naskh Arabic; use an equation',
       }),
     ).toHaveFocus();
 

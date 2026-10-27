@@ -12,6 +12,8 @@ import {
   NINTH_DEFAULT_CATALOGUE_VERSIONS,
   NINTH_DEFAULT_THEME,
   NINTH_DEFAULT_THEME_VERSION,
+  TENTH_DEFAULT_THEME,
+  TENTH_DEFAULT_THEME_VERSION,
   EIGHTH_DEFAULT_CATALOGUES,
   EIGHTH_DEFAULT_CATALOGUE_VERSIONS,
   EIGHTH_DEFAULT_THEME,
@@ -124,17 +126,19 @@ describe('the default theme', () => {
     expect(paragraph('body').appliesTo).toEqual(['text', 'listItem']);
   });
 
-  it('holds the three pinned families, each under the SIL Open Font Licence, the text faces embeddable in both outputs and the maths face in a PDF only, set in Cambria Math in Word', () => {
+  it('holds the four pinned families, each under the SIL Open Font Licence, the text faces embeddable in both outputs and the maths face in a PDF only, set in Cambria Math in Word', () => {
     expect(DEFAULT_THEME.typefaces.map((each) => each.family)).toEqual([
       'Liberation Serif',
       'Liberation Mono',
       'STIX Two Math',
+      'Noto Naskh Arabic',
     ]);
     for (const each of DEFAULT_THEME.typefaces) {
       expect(each.licence, each.id).toBe('OFL-1.1');
     }
     expect(face('serif').embedding).toEqual({ pdf: true, word: true });
     expect(face('mono').embedding).toEqual({ pdf: true, word: true });
+    expect(face('naskh').embedding).toEqual({ pdf: true, word: true });
     expect(face('serif').wordFamily).toBeUndefined();
     expect(face('mono').wordFamily).toBeUndefined();
     // Measured (M10): STIX Two Math's outlines are CFF, which Word does not embed - embedded, Word
@@ -164,6 +168,7 @@ describe('the default theme', () => {
       advance: 1229 / 2048,
     });
     expect(face('maths')).toMatchObject({ ascent: 0.762, descent: 0.238 });
+    expect(face('naskh')).toMatchObject({ ascent: 1.069, descent: 0.634 });
     expect(face('serif').advance).toBeUndefined();
   });
 
@@ -287,7 +292,55 @@ describe('the default theme', () => {
   });
 });
 
-describe("the default theme's version 0.10 (the TM plan, TM-D)", () => {
+describe("the default theme's version 0.11 (the UI plan, UF-H)", () => {
+  it("is its 0.10 with Noto Naskh Arabic declared and the serif falling back to it, binding 0.10's catalogues", () => {
+    expect(DEFAULT_THEME).toEqual({
+      ...TENTH_DEFAULT_THEME,
+      typefaces: [
+        { ...TENTH_DEFAULT_THEME.typefaces[0], fallback: ['naskh'] },
+        ...TENTH_DEFAULT_THEME.typefaces.slice(1),
+        {
+          id: 'naskh',
+          family: 'Noto Naskh Arabic',
+          files: [
+            {
+              sha256: 'c34fdbd98af4dbc45ca192a23d2eeb77032add83086f5fe32957d23b3f36b221',
+              weight: 'regular',
+              posture: 'normal',
+            },
+            {
+              sha256: '380ac34b249d336e1a43c21053df440594e1e3db8f75fabd4d85b649ca1ea4c6',
+              weight: 'bold',
+              posture: 'normal',
+            },
+          ],
+          licence: 'OFL-1.1',
+          embedding: { pdf: true, word: true },
+          ascent: 1069 / 1000,
+          descent: 634 / 1000,
+        },
+      ],
+    });
+    expect(TENTH_DEFAULT_THEME.typefaces.map((each) => each.id)).toEqual([
+      'serif',
+      'mono',
+      'maths',
+    ]);
+    expect(readTheme(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION).ok).toBe(true);
+  });
+
+  it('is stored under a fixed identifier of its own', () => {
+    expect(DEFAULT_THEME_VERSION).toBe('2a390dd9-6d47-4744-bcc5-a04ff5d9697a');
+    expect([
+      TENTH_DEFAULT_THEME_VERSION,
+      NINTH_DEFAULT_THEME_VERSION,
+      DEFAULT_TERM_CATALOGUE_ID,
+      ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
+    ]).not.toContain(DEFAULT_THEME_VERSION);
+  });
+});
+
+describe("the default theme's version 0.10, as migration 0154 stored it (the TM plan, TM-D)", () => {
   it('LIB-017 binds a term catalogue expanding a term on its first use, and the rest as 0.9 did', () => {
     expect(DEFAULT_CATALOGUE_VERSIONS).toEqual({
       ...NINTH_DEFAULT_CATALOGUE_VERSIONS,
@@ -304,16 +357,16 @@ describe("the default theme's version 0.10 (the TM plan, TM-D)", () => {
   });
 
   it('is its 0.9 naming that catalogue version, under a fixed identifier of its own', () => {
-    expect(DEFAULT_THEME).toEqual({
+    expect(TENTH_DEFAULT_THEME).toEqual({
       ...NINTH_DEFAULT_THEME,
       catalogues: DEFAULT_CATALOGUE_VERSIONS,
     });
-    expect(DEFAULT_THEME_VERSION).toBe('7d8fe493-5bf4-453b-82b0-fa854fb34604');
+    expect(TENTH_DEFAULT_THEME_VERSION).toBe('7d8fe493-5bf4-453b-82b0-fa854fb34604');
     expect([
       NINTH_DEFAULT_THEME_VERSION,
       DEFAULT_TERM_CATALOGUE_ID,
       ...Object.values(DEFAULT_CATALOGUE_VERSIONS),
-    ]).not.toContain(DEFAULT_THEME_VERSION);
+    ]).not.toContain(TENTH_DEFAULT_THEME_VERSION);
   });
 });
 

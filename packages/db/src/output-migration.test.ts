@@ -317,6 +317,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

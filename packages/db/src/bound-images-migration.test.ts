@@ -277,6 +277,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0164_translation_returns',
       '0165_machine_drafts',
       '0166_interface_language',
+      '0167_default_theme_naskh',
     ]);
     const kept = await queryAs(
       db.adminUrl,

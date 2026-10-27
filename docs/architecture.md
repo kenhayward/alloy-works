@@ -1541,6 +1541,12 @@ service's. **Components** sorts with the same chooser and takes its type facet t
 the paging and the space facet it already had, since its answer still carries the space counts as
 `spaces` beside `facets` (API-012).
 
+**In the reader's collation** (the UI plan, UI-H; [interface-localisation.md](design/interface-localisation.md#collation-ui-h)).
+The API client sends the interface language as `Accept-Language`; a listing sorting by a text key
+orders it, in its keyset as in its order, by the ICU collation Postgres holds for that language
+(`collationFor` in `db: src/listing.ts`), and its cursor records the language, refusing one from
+another. The renderer's own sorts use `formats().compare`.
+
 | Where                                 | What                                                     |
 | ------------------------------------- | -------------------------------------------------------- |
 | `db: src/listing.ts`                  | `countOf`, `facetOf`, `FacetCount`                       |
@@ -1662,7 +1668,10 @@ with `projectFontFaces`, one `@font-face` to a file under the family `aw-face-<t
 face's real name, from the renderer's own copy of the pinned files: `apps/web/src/theme/faces.ts`
 imports each from `@alloy-works/fonts` with Vite's `?url`, so the build emits them beside the renderer
 and both deliveries load them from there. A typeface one of whose files the renderer does not hold is
-declared not at all and named in `unheld`.
+declared not at all and named in `unheld`. A typeface naming a fallback chain (the UI plan; themes.md,
+[Typefaces](design/themes.md#typefaces)) is set as a CSS stack of its own family then each it names,
+as the PDF hands Typst the list (`publishing/26`) and Word splits a run where the face changes: the
+default theme's 0.11 (migration 0167) sets Arabic in Noto Naskh Arabic beside Liberation Serif.
 
 **The canvas** (W8.2). The provider also injects the theme's own rules, `projectCss`, which write every
 paragraph and character property but the pagination-bound under `.aw-canvas`, each length in points
@@ -1829,7 +1838,8 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   built by [the AD plan](plans/2026-10-09-ad-administration-page.md)): a menu grouped Environment,
   People and access and System, counted from each listing's `total`; Overview, Spaces, People,
   Groups, Roles (a grid by the domain's permissions) and About, whose release notes are the
-  changelog's newest entry, read by `vite.config.ts` at build. A row's details open in `SidePanel`
+  changelog's newest entry, read by `vite.config.ts` at build, beside every typeface the product holds
+  with its licence's text (`FONT_LICENCES` in `fonts: src/licences.ts`). A row's details open in `SidePanel`
   beside its list. About's other content reaches the page from `App` through `AboutContext`.
 - **A connection and a query definition** are each a `DetailPage`
   ([ADR-0050](decisions/0050-a-detail-page-is-a-header-a-strip-and-tabs.md), built by
@@ -1842,6 +1852,17 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   Versions; Access). C: the outline, the text, and Part, Document, Lists and Publishing beside it,
   under a head with the mode beside Preview. D: a publication's head, the PDF on the desk, and what
   it was made from.
+- **The interface's words** ([interface-localisation.md](design/interface-localisation.md), built by
+  [the UI plan](plans/2026-10-26-ui-interface-localisation.md)). Every word is an ICU message in
+  `words/en-GB.json`, read by `words(key, values)` in the person's interface language
+  (`principal.interface_language`, 0166; `GET` and `PUT /v1/me/preferences`), chosen from the header,
+  else the browser's; never a content's. Formats, plurals and collation come from pinned FormatJS
+  CLDR (`words/polyfills.ts`), its versions recorded in `LOCALE_DATA` (`words/locale-data.ts`). The declared languages are `en-GB` and two pseudo-locales
+  made from it, `en-XA` and `ar-XB`, which the browser suite's pseudo walk runs; the
+  `alloy/interface-words` lint rule refuses a word written in place. `<html dir>` follows the
+  language, and right to left the stylesheets' logical sides, `inlineKey`'s arrow keys and the
+  mirrored icons follow it; content keeps its own direction. The service's sentences carry codes the
+  renderer words, the English kept for integrators.
 
 ## The platform bridge
 
@@ -1857,6 +1878,7 @@ interface PlatformInfo {
 interface PlatformBridge {
   getPlatformInfo(): Promise<PlatformInfo>;
   setSpellCheckLanguages(languages: readonly string[]): Promise<void>;
+  setInterfaceLanguage(language: string): Promise<void>;
 }
 ```
 
@@ -1888,6 +1910,10 @@ interface PlatformBridge {
   A word added is kept in the app's own dictionary, and cannot yet be removed. Chromium on Windows
   and Linux fetches a dictionary it does not hold from Google's servers the first time it is set,
   which the shell has not changed.
+- **`setInterfaceLanguage`** (the UI plan, UI-G) tells the shell the renderer's interface language,
+  so the tray and the spelling menu speak it, worded from the renderer's catalogue (`words/desktop.ts`,
+  bundled into the main process by esbuild). They start in the system's language matched against the
+  declared list; the main process refuses any tag not on it. The browser's bridge does nothing.
 
 ### The cross-process surface
 
@@ -1895,6 +1921,7 @@ interface PlatformBridge {
 | ---------------- | -------------------------------- | ----------------------------------- |
 | Renderer -> main | `ipcRenderer.invoke` via preload | `alloy-works:platform-info`         |
 | Renderer -> main | `ipcRenderer.invoke` via preload | `alloy-works:spell-check-languages` |
+| Renderer -> main | `ipcRenderer.invoke` via preload | `alloy-works:interface-language`    |
 
 Rules that hold for every channel added later:
 
@@ -2451,7 +2478,8 @@ left in the store, named by nothing, and logged by its key, which is a hash.
   file from the tag `v2.13b171` of stipub/stixfonts, each file listed with its family (`Liberation
 Serif`, `Liberation Mono` or `STIX Two Math`) since themes 1, which set the glyph check asking a
   family where it asked a `Face`, each under the SIL Open Font Licence with its text beside it (`LICENSE-Liberation.txt`,
-  `LICENSE-STIX.txt`) - committed and pinned by
+  `LICENSE-STIX.txt`), and, from the UI plan, Noto Naskh Arabic 2.021, regular and bold, which the
+  default theme's serif falls back to for Arabic (`LICENSE-NotoNaskhArabic.txt`) - committed and pinned by
   SHA-256 (`packages/fonts/src/pinned.ts`, read by `apps/worker/src/fonts.ts`); the worker refuses to start if one is missing or does not match
   its pin. `compile` (`apps/worker/src/typst.ts`) re-hashes them again immediately before every run,
   copies the just-checked bytes into that run's compile root, and points `--font-path` there alone -

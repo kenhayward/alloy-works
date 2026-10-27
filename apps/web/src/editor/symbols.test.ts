@@ -62,8 +62,8 @@ describe("the symbol palette's characters, against the default theme's text face
   const lacked = (codePoints: readonly number[]) =>
     codePoints.filter((codePoint) => running!.lacks(String.fromCodePoint(codePoint)));
 
-  it('is asked of the family that sets running text, the default serif', () => {
-    expect(running?.families).toEqual(['Liberation Serif']);
+  it('is asked of the families that set running text, the default serif and its fallback', () => {
+    expect(running?.families).toEqual(['Liberation Serif', 'Noto Naskh Arabic']);
   });
 
   // Greek is what an author reaches for most, and all of it is set in the default serif.

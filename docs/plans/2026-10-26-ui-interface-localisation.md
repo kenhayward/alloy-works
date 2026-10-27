@@ -88,3 +88,14 @@ Risks: the conformance kit reads the first run on a line in another face as an e
 line is compared by script. Word grows a line holding Naskh (`atLeast`) where Typst keeps the primary's
 edges: measured in UIg and named. Word's font table writes charset 00 and no `w:sig`; checked in real
 Word that the embedded Naskh is used. Bundle: two faces, 310 KB, fetched only where a theme names them.
+
+## Built
+
+UI in eight PRs: UIa #785, UIb #786, UIc #787, UIc2 #788, UId #790, UIe #791, UIf #792 and the close
+#796. Departures: STY-075 was amended to name its scripts, with STY-084 (the other right-to-left
+scripts) and STY-085 (CJK and Indic) beside it; the default theme's 0.11 is migration 0167; About
+lists every face's licence from `FONT_LICENCES`. The final review found LOC-003 and LOC-042 built and
+uncited (now claimed), and LOC-027, LOC-029 and LOC-038 answered in part (named in
+[the design](../design/interface-localisation.md#requirements-owned)). Left, named: Arabic in code
+is refused; Word grows a line holding the Naskh where the PDF does not; whether Word uses the
+embedded Naskh is for Word itself to show.

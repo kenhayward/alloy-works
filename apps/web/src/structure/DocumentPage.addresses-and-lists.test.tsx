@@ -1365,7 +1365,7 @@ describe('the address of every node', () => {
       'calc(var(--aw-measure) * var(--aw-zoom))',
     );
     // Each paragraph by the place it stands in, as on the surface.
-    expect(getComputedStyle(running).fontFamily).toBe('"aw-face-serif"');
+    expect(getComputedStyle(running).fontFamily).toBe('"aw-face-serif", "aw-face-naskh"');
     expect(
       getComputedStyle(within(text).getByText('Keep the box.')).getPropertyValue('margin-inline'),
     ).toBe('calc(11pt * var(--aw-zoom)) calc(11pt * var(--aw-zoom))');

@@ -3,6 +3,29 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.212.0 - 2026-10-27 (PR #796)
+
+Interface localisation (the UI plan).
+
+### Added
+
+- **Interface language.** The header's new Interface language button chooses the language the interface is in, kept as your own and apart from any content's. English is the one language so far, with two test languages that show what is not yet translated or does not fit.
+- **Sorted in your language.** Lists, the service's listings among them, sort as your interface language sorts.
+- **Arabic in the default theme.** A theme's typeface may name others that set what it cannot, in order. The default theme sets Arabic in the pinned Noto Naskh Arabic beside Latin, Greek, Cyrillic and Hebrew in Liberation Serif, in one paragraph, in the PDF, the editor and Word. Environments still on the previous default theme move to it; one that recorded its own theme keeps it.
+- **Typeface licences in About.** Administration's About names every typeface the product holds, with its licence and the licence's text.
+
+### Changed
+
+- **The whole interface in your language.** The component editor, its toolbar and what it marks in the text, the document pages, publishing, translation jobs, imports, Administration, data, prompts, review, lifecycle, your account, the bibliography, terms, access, reuse, comparison, search and themes speak your interface language, their counts, lists and dates in its forms.
+- **The service's sentences in your language.** Search's summary, what the assistant did and why a prompt proposed nothing, why a version cannot be restored, and what a paste or an import kept differently now speak your interface language.
+- **Codes beside the words.** The assistant's step results, a prompt run's end and a document restore's refusals carry a code with their English, for integrators to word themselves.
+- **Right to left.** In a right-to-left interface language the whole interface lays out right to left: its sides, the arrow keys in tabs, toolbars and the outline, a pane's drag, and the icons that point along the line. A saved redline carries its content's language and direction.
+- **The desktop app in your language.** Its tray and its spelling menu speak your interface language, starting in your system's.
+
+### Fixed
+
+- **Editor icons in every language.** The editor's Send and Discard suggestion, Done, Save version and Saved text buttons and a bound table's sort directions show their icons whatever the interface language.
+
 ## 0.211.0 - 2026-10-26 (PR #784)
 
 Translation jobs and machine drafts (the XL plan).

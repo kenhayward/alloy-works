@@ -12576,11 +12576,29 @@
     {
       "id": "STY-075",
       "area": "STY",
-      "statement": "The default theme must cover every script the supported locales admit (**LOC-038**) and the bidirectional text CNT-059 admits",
+      "statement": "The default theme must cover the Latin, Greek, Cyrillic, Hebrew and Arabic scripts, set together in one paragraph as the bidirectional text CNT-059 admits",
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 244
+    },
+    {
+      "id": "STY-084",
+      "area": "STY",
+      "statement": "The default theme should cover the right-to-left scripts CNT-059 admits beyond Hebrew and Arabic, among them Syriac, Thaana, N'Ko and Adlam, so text in any of them publishes without a theme of the tenant's own.",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 245
+    },
+    {
+      "id": "STY-085",
+      "area": "STY",
+      "statement": "The default theme should cover the Chinese, Japanese and Korean scripts and the Indic scripts, among them Devanagari, Bengali, Tamil and Telugu, so text in any of them publishes without a theme of the tenant's own.",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 246
     },
     {
       "id": "STY-049",
@@ -12589,7 +12607,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 245
+      "line": 247
     },
     {
       "id": "STY-052",
@@ -12598,7 +12616,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 246
+      "line": 248
     },
     {
       "id": "STY-062",
@@ -12607,7 +12625,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 247
+      "line": 249
     },
     {
       "id": "STY-043",
@@ -12616,7 +12634,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 281
+      "line": 285
     },
     {
       "id": "STY-044",
@@ -12625,7 +12643,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 282
+      "line": 286
     },
     {
       "id": "STY-071",
@@ -12634,7 +12652,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 283
+      "line": 287
     },
     {
       "id": "STY-073",
@@ -12643,7 +12661,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 284
+      "line": 288
     },
     {
       "id": "TAB-001",
@@ -14931,31 +14949,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 290
+      "line": 294
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 291
+      "line": 295
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 292
+      "line": 296
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 293
+      "line": 297
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 294
+      "line": 298
     },
     {
       "id": "TAB-N01",
@@ -15855,35 +15873,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 300
+      "line": 304
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 301
+      "line": 305
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 302
+      "line": 306
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 303
+      "line": 307
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 304
+      "line": 308
     },
     {
       "id": "TAB-Q01",
@@ -18099,12 +18117,20 @@
       "document": "interface-localisation.md",
       "owns": [
         {
+          "id": "LOC-003",
+          "howItIsMet": "Every listing and the renderer's own sorts in the person's collation: [below](#collation-ui-h)"
+        },
+        {
           "id": "LOC-004",
           "howItIsMet": "Laid out right to left in a right-to-left language: [below](#right-to-left)"
         },
         {
           "id": "LOC-005",
           "howItIsMet": "A person's interface language is theirs, stored apart from and never read from any content's"
+        },
+        {
+          "id": "LOC-042",
+          "howItIsMet": "`en-XA` and `ar-XB` as modes, and the pseudo walk run in both"
         }
       ]
     },
@@ -18431,7 +18457,7 @@
         },
         {
           "id": "PUB-069",
-          "howItIsMet": "Each run carries its passage's language to the engine - a component's own, a language mark's - and in Word it is the run's `w:lang`, which Word hyphenates by where the document asks it to. Typst hyphenates by it, and a language it has no patterns for is not hyphenated at all, never as the document's. It breaks lines by it too: Croatian, Czech, Polish, Portuguese, Slovak and Spanish repeat a hyphen already in the text at the start of the next line, and CJK breaks by its own rules, which no pinned face sets in T1 (STY-075). Otherwise the lines were the same in every language probed - English, French, German, Welsh, Turkish, Greek, Russian, Ukrainian, Serbian and Hebrew, with the pinned faces, compared line by line at 52 measures. Measured on Typst 0.15.1 over Latin text: patterns for Afrikaans, Albanian, Catalan, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Hungarian, Icelandic, Italian, Kurdish, Latin, Lithuanian, Norwegian (`no`, `nb`, `nn`), Polish, Portuguese, Slovak, Slovenian, Spanish, Swedish, Turkish and Turkmen; none for Basque, Breton, Esperanto, Frisian, Galician, Indonesian, Irish, Latvian, Luxembourgish, Malay, Maltese, Northern Sami, Occitan, Romanian, Scottish Gaelic, Swahili, Vietnamese or Welsh. Patterns for scripts other than Latin were not probed (W1.3)"
+          "howItIsMet": "Each run carries its passage's language to the engine - a component's own, a language mark's - and in Word it is the run's `w:lang`, which Word hyphenates by where the document asks it to. Typst hyphenates by it, and a language it has no patterns for is not hyphenated at all, never as the document's. It breaks lines by it too: Croatian, Czech, Polish, Portuguese, Slovak and Spanish repeat a hyphen already in the text at the start of the next line, and CJK breaks by its own rules, which no pinned face sets; STY-085 asks the default theme for CJK. Otherwise the lines were the same in every language probed - English, French, German, Welsh, Turkish, Greek, Russian, Ukrainian, Serbian and Hebrew, with the pinned faces, compared line by line at 52 measures. Measured on Typst 0.15.1 over Latin text: patterns for Afrikaans, Albanian, Catalan, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Hungarian, Icelandic, Italian, Kurdish, Latin, Lithuanian, Norwegian (`no`, `nb`, `nn`), Polish, Portuguese, Slovak, Slovenian, Spanish, Swedish, Turkish and Turkmen; none for Basque, Breton, Esperanto, Frisian, Galician, Indonesian, Irish, Latvian, Luxembourgish, Malay, Maltese, Northern Sami, Occitan, Romanian, Scottish Gaelic, Swahili, Vietnamese or Welsh. Patterns for scripts other than Latin were not probed (W1.3)"
         },
         {
           "id": "PUB-091",
@@ -20212,6 +20238,10 @@
         {
           "id": "STY-074",
           "howItIsMet": "The default theme's faces are checked against Latin, Greek, Cyrillic and Hebrew and the mathematics, from their character maps, by the coverage check below"
+        },
+        {
+          "id": "STY-075",
+          "howItIsMet": "The default theme's 0.11 gives the serif Noto Naskh Arabic as its fallback (migration 0167): each text style's chain is checked against Latin, Greek, Cyrillic, Hebrew and Arabic at every weight and posture, and a paragraph mixing Arabic, Hebrew and Latin is published to the PDF and Word"
         },
         {
           "id": "STY-069",
@@ -23912,13 +23942,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1519,
+      "line": 1541,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1661,
+      "line": 1683,
       "kind": "title"
     },
     {
@@ -24524,7 +24554,7 @@
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2695,
+      "line": 2696,
       "kind": "title"
     },
     {
@@ -24572,7 +24602,7 @@
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 3124,
+      "line": 3125,
       "kind": "title"
     },
     {
@@ -26682,6 +26712,12 @@
       "kind": "title"
     },
     {
+      "id": "STY-075",
+      "file": "apps/worker/src/fallback.test.ts",
+      "line": 247,
+      "kind": "title"
+    },
+    {
       "id": "AST-015",
       "file": "apps/worker/src/figures.test.ts",
       "line": 156,
@@ -27188,43 +27224,49 @@
     {
       "id": "PUB-019",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1360,
+      "line": 1403,
       "kind": "title"
     },
     {
       "id": "PUB-069",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 947,
+      "line": 948,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 491,
+      "line": 492,
       "kind": "title"
     },
     {
       "id": "STY-009",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 681,
+      "line": 682,
       "kind": "title"
     },
     {
       "id": "STY-010",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 774,
+      "line": 775,
       "kind": "title"
     },
     {
       "id": "STY-042",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1360,
+      "line": 1403,
       "kind": "title"
     },
     {
       "id": "STY-074",
       "file": "apps/worker/src/themes.test.ts",
-      "line": 1032,
+      "line": 1033,
+      "kind": "title"
+    },
+    {
+      "id": "STY-075",
+      "file": "apps/worker/src/themes.test.ts",
+      "line": 1033,
       "kind": "title"
     },
     {
@@ -27872,7 +27914,7 @@
     {
       "id": "STY-024",
       "file": "packages/db/src/default-theme.test.ts",
-      "line": 125,
+      "line": 127,
       "kind": "title"
     },
     {
@@ -28491,6 +28533,12 @@
       "id": "LIF-045",
       "file": "packages/db/src/lines.test.ts",
       "line": 339,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-003",
+      "file": "packages/db/src/listing-collation.test.ts",
+      "line": 66,
       "kind": "title"
     },
     {
@@ -30890,7 +30938,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1057,
+      "line": 1060,
       "kind": "title"
     },
     {
@@ -31214,241 +31262,241 @@
     {
       "id": "AST-014",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2250,
+      "line": 2251,
       "kind": "title"
     },
     {
       "id": "CNT-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2880,
+      "line": 2881,
       "kind": "title"
     },
     {
       "id": "CNT-042",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2838,
+      "line": 2839,
       "kind": "title"
     },
     {
       "id": "CNT-049",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4364,
+      "line": 4365,
       "kind": "title"
     },
     {
       "id": "CNT-081",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4180,
+      "line": 4181,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1305,
+      "line": 1306,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 662,
+      "line": 663,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7397,
+      "line": 7398,
       "kind": "title"
     },
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7256,
+      "line": 7257,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6965,
+      "line": 6966,
       "kind": "title"
     },
     {
       "id": "PUB-033",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2250,
+      "line": 2251,
       "kind": "title"
     },
     {
       "id": "PUB-052",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 720,
+      "line": 721,
       "kind": "title"
     },
     {
       "id": "PUB-079",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1000,
+      "line": 1001,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 804,
+      "line": 805,
       "kind": "title"
     },
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7277,
+      "line": 7278,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6248,
+      "line": 6249,
       "kind": "title"
     },
     {
       "id": "REU-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7348,
+      "line": 7349,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7291,
+      "line": 7292,
       "kind": "title"
     },
     {
       "id": "REU-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3414,
+      "line": 3415,
       "kind": "title"
     },
     {
       "id": "REU-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3258,
+      "line": 3259,
       "kind": "title"
     },
     {
       "id": "REU-030",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3238,
+      "line": 3239,
       "kind": "title"
     },
     {
       "id": "REU-038",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7348,
+      "line": 7349,
       "kind": "title"
     },
     {
       "id": "REU-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3291,
+      "line": 3292,
       "kind": "title"
     },
     {
       "id": "STR-013",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 893,
+      "line": 894,
       "kind": "title"
     },
     {
       "id": "STR-020",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3344,
+      "line": 3345,
       "kind": "title"
     },
     {
       "id": "STR-024",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 920,
+      "line": 921,
       "kind": "title"
     },
     {
       "id": "STR-028",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4156,
+      "line": 4157,
       "kind": "title"
     },
     {
       "id": "STR-029",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3880,
+      "line": 3881,
       "kind": "title"
     },
     {
       "id": "STR-030",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3355,
+      "line": 3356,
       "kind": "title"
     },
     {
       "id": "STR-031",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 4263,
+      "line": 4264,
       "kind": "title"
     },
     {
       "id": "STR-032",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3774,
+      "line": 3775,
       "kind": "title"
     },
     {
       "id": "STR-056",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3803,
+      "line": 3804,
       "kind": "title"
     },
     {
       "id": "STR-062",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 3826,
+      "line": 3827,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 1996,
+      "line": 1997,
       "kind": "title"
     },
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5455,
+      "line": 5456,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5455,
+      "line": 5456,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5479,
+      "line": 5480,
       "kind": "title"
     },
     {
       "id": "TAB-026",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2722,
+      "line": 2723,
       "kind": "title"
     },
     {
       "id": "TAB-034",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 2019,
+      "line": 2020,
       "kind": "title"
     },
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7182,
+      "line": 7183,
       "kind": "title"
     },
     {
@@ -32366,25 +32414,25 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 726,
+      "line": 727,
       "kind": "title"
     },
     {
       "id": "TAB-054",
       "file": "packages/domain/src/theme/css.test.ts",
-      "line": 743,
+      "line": 744,
       "kind": "title"
     },
     {
       "id": "LIB-017",
       "file": "packages/domain/src/theme/default.test.ts",
-      "line": 291,
+      "line": 344,
       "kind": "title"
     },
     {
       "id": "TAB-053",
       "file": "packages/domain/src/theme/default.test.ts",
-      "line": 381,
+      "line": 434,
       "kind": "title"
     },
     {
@@ -32420,43 +32468,43 @@
     {
       "id": "LIB-017",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 1376,
+      "line": 1378,
       "kind": "title"
     },
     {
       "id": "STY-001",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 45,
+      "line": 46,
       "kind": "title"
     },
     {
       "id": "STY-003",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 73,
+      "line": 74,
       "kind": "title"
     },
     {
       "id": "STY-006",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 216,
+      "line": 218,
       "kind": "title"
     },
     {
       "id": "STY-027",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 197,
+      "line": 199,
       "kind": "title"
     },
     {
       "id": "STY-038",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 500,
+      "line": 502,
       "kind": "title"
     },
     {
       "id": "STY-041",
       "file": "packages/domain/src/theme/read.test.ts",
-      "line": 137,
+      "line": 138,
       "kind": "title"
     },
     {
@@ -32576,19 +32624,19 @@
     {
       "id": "LIB-016",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5495,
+      "line": 5499,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5562,
+      "line": 5566,
       "kind": "title"
     },
     {
       "id": "PUB-004",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5327,
+      "line": 5331,
       "kind": "title"
     },
     {
@@ -32600,19 +32648,19 @@
     {
       "id": "PUB-025",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3228,
+      "line": 3232,
       "kind": "title"
     },
     {
       "id": "PUB-026",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3651,
+      "line": 3655,
       "kind": "title"
     },
     {
       "id": "PUB-031",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2536,
+      "line": 2540,
       "kind": "title"
     },
     {
@@ -32624,13 +32672,13 @@
     {
       "id": "PUB-039",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5481,
+      "line": 5485,
       "kind": "title"
     },
     {
       "id": "PUB-040",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5398,
+      "line": 5402,
       "kind": "title"
     },
     {
@@ -32642,7 +32690,7 @@
     {
       "id": "PUB-067",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4171,
+      "line": 4175,
       "kind": "title"
     },
     {
@@ -32654,79 +32702,79 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5338,
+      "line": 5342,
       "kind": "title"
     },
     {
       "id": "PUB-097",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5409,
+      "line": 5413,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4561,
+      "line": 4565,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 3027,
+      "line": 3031,
       "kind": "title"
     },
     {
       "id": "STY-052",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 1234,
+      "line": 1236,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 2681,
+      "line": 2685,
       "kind": "title"
     },
     {
       "id": "TAB-008",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5018,
+      "line": 5022,
       "kind": "title"
     },
     {
       "id": "TAB-016",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4939,
+      "line": 4943,
       "kind": "title"
     },
     {
       "id": "TAB-021",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5280,
+      "line": 5284,
       "kind": "title"
     },
     {
       "id": "TAB-027",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4913,
+      "line": 4917,
       "kind": "title"
     },
     {
       "id": "TAB-046",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 4913,
+      "line": 4917,
       "kind": "title"
     },
     {
       "id": "TAB-053",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5310,
+      "line": 5314,
       "kind": "title"
     },
     {
       "id": "TAB-054",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5031,
+      "line": 5035,
       "kind": "title"
     },
     {
@@ -33240,6 +33288,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-042",
+      "file": "tests/browser/src/pseudo.test.ts",
+      "line": 153,
+      "kind": "title"
+    },
+    {
       "id": "ADM-049",
       "file": "tests/browser/src/spaces.test.ts",
       "line": 41,
@@ -33248,7 +33302,7 @@
     {
       "id": "STY-080",
       "file": "tests/browser/src/styles.test.ts",
-      "line": 273,
+      "line": 275,
       "kind": "title"
     },
     {
