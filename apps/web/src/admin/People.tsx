@@ -804,7 +804,7 @@ export function People({ client }: { client: Client }) {
                         >
                           <td>
                             <span className={styles['who']}>
-                              <span className={styles['initials']} aria-hidden="true">
+                              <span className={styles['initials']} aria-hidden="true" data-content>
                                 {initials(person)}
                               </span>
                               <span>
@@ -816,7 +816,12 @@ export function People({ client }: { client: Client }) {
                                 >
                                   {nameOf(person)}
                                 </span>{' '}
-                                <span className={styles['muted']}>
+                                <span
+                                  className={styles['muted']}
+                                  {...(person.name !== null && person.email !== null
+                                    ? { 'data-content': '' }
+                                    : {})}
+                                >
                                   {person.name !== null && person.email !== null
                                     ? person.email
                                     : person.invited

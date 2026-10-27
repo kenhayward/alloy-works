@@ -375,7 +375,7 @@ export function Header({
           label={words('shell.account')}
           button={
             <>
-              <span className={styles['initials']} aria-hidden="true">
+              <span className={styles['initials']} aria-hidden="true" data-content>
                 {initialsOf(who)}
               </span>
               {(who.displayName ?? who.email) ? (
