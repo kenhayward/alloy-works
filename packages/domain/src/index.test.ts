@@ -1048,6 +1048,8 @@ describe('the domain package', () => {
         'translationCall',
         'translationPieces',
         'xliffInReply',
+        // UIf: the schema template 25 reads, frozen by `publishing/26`'s chains.
+        'PUBLISHING_SCHEMA_25',
       ].sort(),
     );
   });

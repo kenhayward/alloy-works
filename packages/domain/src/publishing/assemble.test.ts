@@ -6,7 +6,7 @@ import { parseContentDocument, type ContentDocument } from '../content/model/doc
 import { markTypes } from '../content/model/marks.js';
 import type { ResolvedTheme } from '../theme/read.js';
 import type { ParagraphProperties, StyleTarget, Typeface } from '../theme/schema.js';
-import { defaultInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
+import { defaultInputs, naskhInputs, resolved, type ThemeInputs } from '../theme/theme.fixture.js';
 import { syntheticFace } from '../word/face.fixture.js';
 import { projectTypst } from '../theme/typst.js';
 import {
@@ -64,6 +64,7 @@ import {
   PUBLISHING_SCHEMA_22,
   PUBLISHING_SCHEMA_23,
   PUBLISHING_SCHEMA_24,
+  PUBLISHING_SCHEMA_25,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1181,8 +1182,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/25, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/25');
+  it('assembles under a layout as publishing/26, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/26');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1768,8 +1769,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/25, and publishing/4 to publishing/24 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/25');
+  it('makes publishing/26, and publishing/4 to publishing/25 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/26');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1791,6 +1792,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_22).toBe('publishing/22');
     expect(PUBLISHING_SCHEMA_23).toBe('publishing/23');
     expect(PUBLISHING_SCHEMA_24).toBe('publishing/24');
+    expect(PUBLISHING_SCHEMA_25).toBe('publishing/25');
   });
 });
 
@@ -4912,7 +4914,7 @@ describe('the theme a publication is set from (themes 1)', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/25');
+    expect(assembled.document.schema).toBe('publishing/26');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -5773,8 +5775,8 @@ describe('the formats a publication is assembled for (Word 1)', () => {
       references: new Map(),
       titles: new Map(),
     };
-    expect(docx.word).toEqual(word);
-    expect(both.word).toEqual(word);
+    expect(docx.word).toEqual({ ...word, covers: expect.any(Function) });
+    expect(both.word).toEqual({ ...word, covers: expect.any(Function) });
     // The published document is the PDF's whatever else is asked for (ruling R1): the same bytes, and
     // the same numbering beside them.
     expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
@@ -7410,5 +7412,124 @@ describe('a component published in its source language (the TR plan, TRb)', () =
       [null, null],
       ['Non traduit (en-GB)', { lang: 'en', region: 'GB' }],
     ]);
+  });
+});
+
+describe('Arabic set through a fallback (the UI plan, UF-C to UF-E)', () => {
+  const NASKH = 'Noto Naskh Arabic';
+  /** Latin in the Liberation faces, Arabic and a space in the Naskh, as the pinned files are. */
+  const covers: Covers = (codePoint, family) =>
+    family === NASKH
+      ? (codePoint >= 0x600 && codePoint <= 0x6ff) || codePoint === 0x20
+      : codePoint < 0x250;
+  /** Peace, in Arabic. */
+  const ARABIC = '\u{0633}\u{0644}\u{0627}\u{0645}';
+  const naskh = (change: (inputs: ThemeInputs) => void = () => {}) => {
+    const inputs = naskhInputs();
+    change(inputs);
+    return resolved(inputs);
+  };
+  const under = (theme: ResolvedTheme, ...blocks: unknown[]) => ({
+    ...oneComponent(...blocks),
+    theme,
+    covers,
+  });
+  const glyph = (code: string, codePoint: string, block = 'p1') => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail: codePoint,
+  });
+
+  it("sets a character the style's face lacks in its fallback, and refuses it where no face of the chain has it", () => {
+    const words = paragraph('p1', text(`Peace, ${ARABIC}.`));
+    expect(failuresOf(assemble(under(naskh(), words)))).toEqual([]);
+    expect(failuresOf(assemble(under(DEFAULT_THEME, words)))).toEqual(
+      ['U+0633', 'U+0644', 'U+0627', 'U+0645'].map((each) => glyph('glyph_missing', each)),
+    );
+  });
+
+  it("sets code in the chain's first face alone, so Arabic in code is refused as it was", () => {
+    const theme = naskh((inputs) => {
+      // The mono falling back too: code still asks the mono alone.
+      inputs.theme.typefaces.find((face) => face.id === 'mono')!.fallback = ['naskh'];
+    });
+    expect(
+      failuresOf(
+        assemble(
+          under(
+            theme,
+            paragraph('p1', marked(ARABIC.slice(0, 1), { type: 'inlineCode', id: 'm1' })),
+            { type: 'preformatted', id: 'pre1', text: ARABIC.slice(1, 2) },
+          ),
+        ),
+      ),
+    ).toEqual([
+      glyph('code_glyph_missing', 'U+0633'),
+      glyph('code_glyph_missing', 'U+0644', 'pre1'),
+    ]);
+  });
+
+  it('carries each style and each mark its chain as a list of families, which template 26 sets in order', () => {
+    const theme = naskh();
+    const made = assemble(under(theme, paragraph('p1', text(ARABIC))));
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const body = made.document.theme!.styles[theme.places.text]!;
+    expect(body.font).toEqual(['Liberation Serif', NASKH]);
+    expect(made.document.theme!.marks.inlineCode.font).toEqual(['Liberation Mono']);
+    // The maths face is one family, as it was.
+    expect(made.document.theme!.maths).toBe('STIX Two Math');
+  });
+
+  it('refuses a fallback that may not be embedded only where a character falls to it', () => {
+    const theme = naskh((inputs) => {
+      inputs.theme.typefaces.find((face) => face.id === 'naskh')!.embedding.pdf = false;
+    });
+    expect(failuresOf(assemble(under(theme, paragraph('p1', text('Plain.')))))).toEqual([]);
+    expect(failuresOf(assemble(under(theme, paragraph('p1', text(ARABIC)))))).toEqual([
+      { stage: 'compose', code: 'typeface_not_embeddable', node: null, block: null, detail: NASKH },
+    ]);
+  });
+
+  it("measures a table's columns with each character in the face that sets it", () => {
+    const inputs = naskhInputs();
+    inputs.catalogues.table.styles = inputs.catalogues.table.styles.map((each) =>
+      each.id === 'table' ? { ...each, widths: 'content' as const } : each,
+    );
+    const theme = resolved(inputs);
+    // Every face's letters half an em, but the Naskh's alef two ems.
+    const faces = new Map(
+      [...theme.typefaces.values()].flatMap((face) =>
+        face.files.map((file, at): [string, Uint8Array] => [
+          file.sha256,
+          syntheticFace(face.family === NASKH ? new Map([[0x627, 4096]]) : new Map(), {
+            seed: at + 1,
+          }),
+        ]),
+      ),
+    );
+    const cell = (name: string, value: string) => ({
+      content: [paragraph(name, text(value))],
+      colspan: 1,
+      rowspan: 1,
+    });
+    const table = {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings')],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [{ cells: [cell('a1', '\u{0627}'.repeat(4)), cell('b1', 'abcdefgh')] }],
+    };
+    const made = assemble({ ...under(theme, table), faces } as AssembleInput);
+    if (!made.ok) throw new Error(JSON.stringify(made.failures));
+    const found = blocksOf(made as Assembled<PublishedDocument>).find((b) => b.type === 'table');
+    if (found?.type !== 'table') throw new Error('no table');
+    // Four alefs at two ems are wider than eight letters at half an em: measured in the serif, which
+    // has no alef, they would be narrower.
+    const [arabic, latin] = found.widths!;
+    expect(arabic!).toBeGreaterThan(latin!);
   });
 });

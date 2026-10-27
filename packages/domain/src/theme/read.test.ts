@@ -21,6 +21,7 @@ import { CATALOGUE_KINDS, PLACES, ROLES, STYLED_MARKS } from './schema.js';
 import {
   codes,
   defaultInputs,
+  naskhInputs,
   plainInputs,
   read,
   resolved,
@@ -307,6 +308,75 @@ describe('readTheme', () => {
         code: 'typeface_word_face_missing',
         message:
           'The typeface maths (STIX Two Math) may not be embedded in a Word document and declares no face to set it in there',
+      },
+    ]);
+  });
+
+  it("resolves a style's typeface with its chain: the face, then its fallbacks in order (the UI plan, UF-B)", () => {
+    const theme = resolved(naskhInputs());
+    const body = theme.paragraphStyles.get(theme.places.text)!;
+    expect(body.chain.map((face) => face.id)).toEqual(['serif', 'naskh']);
+    expect(body.chain[0]).toBe(body.typeface);
+    // A face with no fallback is its own chain, and a mark's face carries its chain too.
+    const code = theme.paragraphStyles.get(theme.roles.preformatted)!;
+    expect(code.chain.map((face) => face.id)).toEqual(['mono']);
+    expect(theme.characterStyles.inlineCode.chain?.map((face) => face.id)).toEqual(['mono']);
+    // Every theme stored before a fallback could be stated reads as it did.
+    const plain = resolved();
+    expect(plain.paragraphStyles.get(plain.places.text)!.chain.map((face) => face.id)).toEqual([
+      'serif',
+    ]);
+  });
+
+  it('refuses a fallback the theme does not declare, and one a chain cannot hold, naming each', () => {
+    const inputs = naskhInputs();
+    const naskh = inputs.theme.typefaces.find((face) => face.id === 'naskh')!;
+    inputs.theme.typefaces = [
+      ...inputs.theme.typefaces.map((face) =>
+        face.id === 'serif'
+          ? { ...face, fallback: ['naskh', 'serif', 'naskh', 'kufi', 'held', 'worded', 'unword'] }
+          : face.id === 'maths'
+            ? { ...face, fallback: ['naskh'] }
+            : face,
+      ),
+      { ...naskh, id: 'held', fallback: ['naskh'] },
+      { ...naskh, id: 'worded', wordFamily: 'Arial' },
+      { ...naskh, id: 'unword', embedding: { pdf: true, word: false }, wordFamily: 'Arial' },
+    ];
+    const outcome = read(inputs);
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'typeface_fallback_invalid',
+        message: 'The typeface serif (Liberation Serif) falls back to itself',
+      },
+      {
+        code: 'typeface_fallback_invalid',
+        message: 'The typeface serif (Liberation Serif) falls back to the typeface naskh twice',
+      },
+      {
+        code: 'typeface_fallback_missing',
+        message:
+          'The typeface serif (Liberation Serif) falls back to the typeface kufi, which the theme does not declare',
+      },
+      {
+        code: 'typeface_fallback_invalid',
+        message:
+          'The typeface serif (Liberation Serif) falls back to the typeface held, which falls back itself',
+      },
+      {
+        code: 'typeface_fallback_invalid',
+        message:
+          'The typeface serif (Liberation Serif) falls back to the typeface worded, which names a face for Word',
+      },
+      {
+        code: 'typeface_fallback_invalid',
+        message:
+          'The typeface serif (Liberation Serif) falls back to the typeface unword, which may not be embedded in a Word document',
+      },
+      {
+        code: 'typeface_fallback_invalid',
+        message:
+          "The typeface maths (STIX Two Math) is the theme's maths face, which falls back to nothing",
       },
     ]);
   });

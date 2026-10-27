@@ -127,7 +127,8 @@ export function projectCss(theme: ResolvedTheme, options: ProjectCssOptions = {}
   for (const style of theme.paragraphStyles.values()) {
     const selectors = selectorsOf(theme, style.id);
     if (selectors.length === 0) continue;
-    rules.push(`${selectors.join(', ')} { ${paragraphDeclarations(style).join('; ')}; }`);
+    const code = style.id === theme.roles.preformatted;
+    rules.push(`${selectors.join(', ')} { ${paragraphDeclarations(style, code).join('; ')}; }`);
     const cap = capHeight(style.typeface);
     if (cap !== undefined) {
       trimmed.push(`${selectors.join(', ')} { ${lines(style, cap).join('; ')}; }`);
@@ -240,7 +241,7 @@ function listRules(theme: ResolvedTheme): string[] {
   const bullets = ['\\2022', '\\25E6', '\\25AA'];
   return [
     `${list}, ${CANVAS} li { margin-block: 0; }`,
-    `${CANVAS} li { font-family: "${faceFamily(item.typeface.id)}"; font-size: ${zoomed(p.size)}; ` +
+    `${CANVAS} li { font-family: ${stackOf(item.chain)}; font-size: ${zoomed(p.size)}; ` +
       `font-weight: ${p.bold ? 700 : 400}; font-style: ${p.italic ? 'italic' : 'normal'}; ` +
       `color: ${p.colour}; line-height: 0; }`,
     `${list} { display: grid; grid-template-columns: max-content minmax(0, 1fr); ` +
@@ -513,13 +514,21 @@ export const CANVAS = '.aw-canvas.aw-canvas';
 
 const ALIGN = { start: 'start', end: 'end', centre: 'center', justify: 'justify' } as const;
 
-function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
+/**
+ * A chain as a font stack, which the browser tries in order as the engine does (the UI plan, UF-F).
+ * Code is its first face alone (UF-C).
+ */
+const stackOf = (chain: readonly Typeface[], code = false) =>
+  (code ? chain.slice(0, 1) : chain).map((face) => `"${faceFamily(face.id)}"`).join(', ');
+
+function paragraphDeclarations(style: ResolvedParagraphStyle, code: boolean): string[] {
   const p = style.properties;
   const face = style.typeface;
+  const stack = stackOf(style.chain, code);
   const filled = p.background !== 'none';
   const padding = filled ? p.padding : 0;
   return [
-    `font-family: "${faceFamily(face.id)}"`,
+    `font-family: ${stack}`,
     `font-size: ${zoomed(p.size)}`,
     `font-weight: ${p.bold ? 700 : 400}`,
     `font-style: ${p.italic ? 'italic' : 'normal'}`,
@@ -537,7 +546,7 @@ function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
     // needed; its face's descender, and its text's own top above the baseline, an em less the
     // descender, which is the template's; and the size a run in it stands at, and the face, weight
     // and posture a mark in it inherits where its style states none (`markRules`).
-    `--aw-face: "${faceFamily(face.id)}"`,
+    `--aw-face: ${stack}`,
     `--aw-size: ${length(p.size)}`,
     `--aw-weight: ${p.bold ? 700 : 400}`,
     `--aw-posture: ${p.italic ? 'italic' : 'normal'}`,
@@ -545,7 +554,7 @@ function paragraphDeclarations(style: ResolvedParagraphStyle): string[] {
     `--aw-descent: ${precise(face.descent)}`,
     `--aw-top: ${length((1 - face.descent) * p.size)}`,
     `--aw-run: ${length(p.size)}`,
-    `--aw-run-face: "${faceFamily(face.id)}"`,
+    `--aw-run-face: ${stack}`,
     `--aw-run-weight: ${p.bold ? 700 : 400}`,
     `--aw-run-posture: ${p.italic ? 'italic' : 'normal'}`,
     // Its fill, painted between its spaces: where it has none, its padding box, as a colour, which an
@@ -637,7 +646,7 @@ function markRules(theme: ResolvedTheme): string[] {
       `${at} > .aw-mark-below { vertical-align: calc(-1 * var(--aw-grow)); }`,
       `${at} > .aw-mark-below > .aw-mark-run { ${characterDeclarations(
         style.properties,
-        style.typeface && faceFamily(style.typeface.id),
+        style.chain && stackOf(style.chain, mark === 'inlineCode'),
       ).join('; ')}; }`,
     );
   }
@@ -651,7 +660,7 @@ function markRules(theme: ResolvedTheme): string[] {
  * A script moves by the browser's own rule, drawn where it would stand from the text's baseline, and
  * opens no line of its own, as the template's does not.
  */
-function characterDeclarations(p: CharacterProperties, family: string | undefined): string[] {
+function characterDeclarations(p: CharacterProperties, stack: string | undefined): string[] {
   const scale = (p.scale ?? 1) * (p.position === undefined ? 1 : SCRIPT_SCALE);
   const stated = (property: string, name: string, value: string | undefined) =>
     value === undefined
@@ -670,7 +679,7 @@ function characterDeclarations(p: CharacterProperties, family: string | undefine
     ),
     `text-decoration-line: ${p.underline ? 'underline' : 'none'}`,
     `color: ${p.colour ?? 'inherit'}`,
-    ...stated('font-family', '--aw-run-face', family === undefined ? undefined : `"${family}"`),
+    ...stated('font-family', '--aw-run-face', stack),
     `font-size: ${scale === 1 ? 'var(--aw-around)' : `calc(var(--aw-around) * ${fixed(scale)})`}`,
     '--aw-run: 1em',
     'line-height: 0',

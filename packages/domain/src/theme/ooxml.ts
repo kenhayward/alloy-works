@@ -1,4 +1,5 @@
 import { escapeXml } from '../content/ooxml/xml.js';
+import type { Covers } from '../publishing/glyphs.js';
 import type { PublishedLanguage } from '../publishing/published.js';
 import type { ResolvedCharacterStyle, ResolvedParagraphStyle, ResolvedTheme } from './read.js';
 import { ROLES, STYLED_MARKS, type StyledMark, type TableStyle, type Typeface } from './schema.js';
@@ -60,6 +61,22 @@ export function wordFamily(face: Typeface): string {
   return face.wordFamily ?? face.family;
 }
 
+/** Languages whose usual script is Arabic, by their primary subtag (CLDR's likely subtags). */
+const ARABIC_SCRIPT = new Set([
+  ...['ar', 'arz', 'ary', 'arq', 'aeb', 'apc', 'ajp', 'acm', 'afb', 'ayl'],
+  ...['fa', 'prs', 'ur', 'ps', 'ckb', 'sd', 'ug', 'ks', 'pnb', 'skr', 'bal', 'glk', 'mzn', 'lrc'],
+]);
+
+/**
+ * Whether a language tag is written in Arabic script: by its script subtag where it has one (`-Arab`),
+ * else by its language's usual script (the UI plan, UF-G).
+ */
+export function inArabicScript(tag: string): boolean {
+  const [language = '', second] = tag.split('-');
+  if (second !== undefined && /^[A-Za-z]{4}$/.test(second)) return second.toLowerCase() === 'arab';
+  return ARABIC_SCRIPT.has(language.toLowerCase());
+}
+
 /**
  * What the Word writer adds to the theme's styles (Word 1, ruling R7): `headingList`, the `w:numId` of
  * the list the headings are numbered by, which each heading role's style links to at its depth - and
@@ -71,6 +88,23 @@ export function wordFamily(face: Typeface): string {
 export interface WordStylesOptions {
   readonly headingList?: number;
   readonly extraStyles?: readonly string[];
+  /**
+   * What each family covers: in a document in Arabic script, each style's complex script is the first
+   * face of its chain to cover U+0627, so what Word sets from the styles alone - the fields it
+   * recomputes - lands in it (the UI plan, UF-G). Code keeps its first face (UF-C).
+   */
+  readonly covers?: Covers;
+}
+
+/** The face a style's complex script is named in, where it is not its own (`WordStylesOptions`). */
+export function complexScriptFace(
+  chain: readonly Typeface[],
+  tag: string,
+  covers: Covers | undefined,
+): Typeface | undefined {
+  if (covers === undefined || chain.length < 2 || !inArabicScript(tag)) return undefined;
+  const face = chain.find((each) => covers(0x627, each.family));
+  return face === chain[0] ? undefined : face;
 }
 
 export function projectStylesXml(
@@ -79,10 +113,23 @@ export function projectStylesXml(
   options: WordStylesOptions = {},
 ): string {
   const headings = headingDepths(theme);
+  const tag = wordLanguage(document.language);
+  const cs = (chain: readonly Typeface[] | undefined, code: boolean) =>
+    chain === undefined || code ? undefined : complexScriptFace(chain, tag, options.covers);
   const paragraphs = [...theme.paragraphStyles.values()].map((style) =>
-    paragraphStyle(style, headings.get(style.id), options.headingList),
+    paragraphStyle(
+      style,
+      headings.get(style.id),
+      options.headingList,
+      cs(style.chain, style.id === theme.roles.preformatted),
+    ),
   );
-  const characters = STYLED_MARKS.map((mark) => characterStyle(theme.characterStyles[mark]));
+  const characters = STYLED_MARKS.map((mark) =>
+    characterStyle(
+      theme.characterStyles[mark],
+      cs(theme.characterStyles[mark].chain, mark === 'inlineCode'),
+    ),
+  );
   // Word keeps one namespace of names across every kind of style.
   const taken = new Set(
     [
@@ -96,7 +143,7 @@ export function projectStylesXml(
   const extra = (options.extraStyles ?? []).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
-    `<w:styles ${W_NS}>${docDefaults(theme, document)}${paragraphs.join('')}${characters.join('')}${tables.join('')}${extra}</w:styles>`
+    `<w:styles ${W_NS}>${docDefaults(theme, document, options.covers)}${paragraphs.join('')}${characters.join('')}${tables.join('')}${extra}</w:styles>`
   );
 }
 
@@ -195,12 +242,16 @@ export function shading(colour: string): string {
  * without a style of the theme's falls back to. A right-to-left document's language is its complex
  * script's too, which a right-to-left run reads (measured, M12).
  */
-function docDefaults(theme: ResolvedTheme, document: WordDocument): string {
+function docDefaults(
+  theme: ResolvedTheme,
+  document: WordDocument,
+  covers: Covers | undefined,
+): string {
   const text = theme.paragraphStyles.get(theme.places.text)!;
   const tag = wordLanguage(document.language);
   return (
     '<w:docDefaults><w:rPrDefault><w:rPr>' +
-    rFonts(text.typeface) +
+    rFonts(text.typeface, complexScriptFace(text.chain, tag, covers)) +
     size(text.properties.size) +
     `<w:lang w:val="${tag}"${document.direction === 'rtl' ? ` w:bidi="${tag}"` : ''}/>` +
     '</w:rPr></w:rPrDefault></w:docDefaults>'
@@ -273,6 +324,7 @@ function paragraphStyle(
   style: ResolvedParagraphStyle,
   depth: number | undefined,
   headingList: number | undefined,
+  cs: Typeface | undefined,
 ): string {
   const p = style.properties;
   const filled = p.background !== 'none';
@@ -314,7 +366,7 @@ function paragraphStyle(
     `<w:outlineLvl w:val="${depth === undefined ? 9 : depth - 1}"/>` +
     '</w:pPr>' +
     '<w:rPr>' +
-    rFonts(style.typeface) +
+    rFonts(style.typeface, cs) +
     toggle('b', p.bold) +
     toggle('i', p.italic) +
     `<w:color w:val="${hex(p.colour)}"/>` +
@@ -330,13 +382,13 @@ const JUSTIFICATION = { start: 'left', end: 'right', centre: 'center', justify: 
  * A mark's character style states only what the mark states: an unstated property leaves the text's
  * alone, in Word as in the theme. A scale is not among them (see the top of this file).
  */
-function characterStyle(style: ResolvedCharacterStyle): string {
+function characterStyle(style: ResolvedCharacterStyle, cs: Typeface | undefined): string {
   const { bold, italic, colour, underline, position } = style.properties;
   return (
     `<w:style w:type="character" w:styleId="${markStyleId(style.mark)}">` +
     `<w:name w:val="${escapeXml(style.name)}"/><w:qFormat/>` +
     '<w:rPr>' +
-    (style.typeface === undefined ? '' : rFonts(style.typeface)) +
+    (style.typeface === undefined ? '' : rFonts(style.typeface, cs)) +
     (bold === undefined ? '' : toggle('b', bold)) +
     (italic === undefined ? '' : toggle('i', italic)) +
     (colour === undefined ? '' : `<w:color w:val="${hex(colour)}"/>`) +
@@ -351,9 +403,10 @@ function characterStyle(style: ResolvedCharacterStyle): string {
  * A face, a toggle, a size and a colour as the styles spell them - and so as the Word writer spells a
  * value it pins on a run (`wordRun`), in pairs where Word reads a complex script's apart.
  */
-export function rFonts(face: Typeface): string {
+export function rFonts(face: Typeface, cs: Typeface = face): string {
   const family = escapeXml(wordFamily(face));
-  return `<w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${family}" w:eastAsia="${family}"/>`;
+  const complex = escapeXml(wordFamily(cs));
+  return `<w:rFonts w:ascii="${family}" w:hAnsi="${family}" w:cs="${complex}" w:eastAsia="${family}"/>`;
 }
 
 /** A toggle property and its complex-script twin, stated either way. */

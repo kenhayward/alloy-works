@@ -8,6 +8,8 @@ import serifBold from '@alloy-works/fonts/files/LiberationSerif-Bold.ttf?url';
 import serifBoldItalic from '@alloy-works/fonts/files/LiberationSerif-BoldItalic.ttf?url';
 import serifItalic from '@alloy-works/fonts/files/LiberationSerif-Italic.ttf?url';
 import serifRegular from '@alloy-works/fonts/files/LiberationSerif-Regular.ttf?url';
+import naskhBold from '@alloy-works/fonts/files/NotoNaskhArabic-Bold.ttf?url';
+import naskhRegular from '@alloy-works/fonts/files/NotoNaskhArabic-Regular.ttf?url';
 import maths from '@alloy-works/fonts/files/STIXTwoMath-Regular.otf?url';
 
 /**
@@ -26,6 +28,8 @@ const BUNDLED: Readonly<Record<(typeof PINNED_FONT_FILES)[number]['file'], strin
   'LiberationMono-Italic.ttf': monoItalic,
   'LiberationMono-Regular.ttf': monoRegular,
   'STIXTwoMath-Regular.otf': maths,
+  'NotoNaskhArabic-Regular.ttf': naskhRegular,
+  'NotoNaskhArabic-Bold.ttf': naskhBold,
 };
 
 const BY_HASH: ReadonlyMap<string, string> = new Map(

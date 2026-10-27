@@ -38,7 +38,11 @@ export interface TypstParagraphStyle {
    * the same values are still two styles, as they are to Word.
    */
   readonly id: string;
-  readonly font: string;
+  /**
+   * Its face and the face's fallbacks, by family, in order (the UI plan, UF-E): the engine tries each
+   * for a character the one before lacks. A list since `publishing/26`; one family before.
+   */
+  readonly font: readonly string[];
   readonly size: number;
   readonly weight: 'regular' | 'bold';
   readonly style: 'normal' | 'italic';
@@ -80,7 +84,8 @@ export interface TypstMark {
   readonly style?: 'normal' | 'italic';
   readonly underline?: boolean;
   readonly fill?: string;
-  readonly font?: string;
+  /** Its face's chain, as a paragraph style's `font` (UF-E). */
+  readonly font?: readonly string[];
   readonly position?: 'subscript' | 'superscript';
   /** A fraction of the size of the text the mark stands in: the template's `em`, multiplied. */
   readonly scale?: number;
@@ -187,14 +192,28 @@ export function projectTypst(theme: ResolvedTheme, used?: Iterable<string>): Typ
       {
         ...style,
         id,
+        font: theme.paragraphStyles.get(id)!.chain.map((face) => face.family),
         contextualSpacing: theme.paragraphStyles.get(id)!.properties.contextualSpacing,
       },
     ]),
   );
+  // Each mark's face as its chain, where it names one (UF-E).
+  const marks = Object.fromEntries(
+    STYLED_MARKS.map((mark) => {
+      const { font, ...rest } = frozen.marks[mark];
+      const chain = theme.characterStyles[mark].chain;
+      return [
+        mark,
+        font === undefined || chain === undefined
+          ? rest
+          : { ...rest, font: chain.map((face) => face.family) },
+      ];
+    }),
+  ) as Record<StyledMark, TypstMark>;
   return {
     ...frozen,
     styles,
-    marks: { ...frozen.marks },
+    marks,
     tables: Object.fromEntries(
       [...theme.tableStyles.values()].map((style) => [style.id, table(style)]),
     ),

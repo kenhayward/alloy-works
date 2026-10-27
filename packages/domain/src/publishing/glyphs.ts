@@ -80,16 +80,80 @@ export const codePointName = (codePoint: number) =>
   `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
 
 /**
+ * The faces a style sets text in, by family, in the order the theme's `fallback` gives them (the UI
+ * plan, UF-B): the first that covers a character sets it. One family where a face has no fallback.
+ */
+export type Chain = readonly string[];
+
+/** A character of the Inherited script: a joiner, a combining mark, a harakah. */
+const INHERITED = /^\p{Script=Inherited}$/u;
+
+/**
+ * Which family of `chain` sets each character of `text`, one entry for each code point (UF-D): the
+ * first that covers it, but an Inherited character stays in the face of the character before it where
+ * that face covers it, so a joiner or a harakah inside Arabic is the Naskh's. A Common character, a
+ * space, a full stop or a digit, is the first covering face's even between Arabic words. Null where no
+ * face covers it; a character the engine sets without a glyph takes the face before it, or the first.
+ * Both as the pinned engine sets them (measured in `fallback.test.ts`).
+ */
+export function settingFaces(text: string, covers: Covers, chain: Chain): (string | null)[] {
+  const faces: (string | null)[] = [];
+  let before: string | null = null;
+  for (const character of text) {
+    const codePoint = character.codePointAt(0)!;
+    const face: string | null =
+      before !== null && INHERITED.test(character) && covers(codePoint, before)
+        ? before
+        : (chain.find((family) => covers(codePoint, family)) ??
+          (setWithoutAGlyph(codePoint) ? (before ?? chain[0] ?? null) : null));
+    faces.push(face);
+    if (face !== null) before = face;
+  }
+  return faces;
+}
+
+/**
+ * `text` cut where the face of `chain` setting it changes (`settingFaces`), each piece with its face; a
+ * character no face sets takes the first. One piece where the chain is one face.
+ */
+export function facePieces<Face extends { readonly family: string }>(
+  text: string,
+  covers: Covers,
+  chain: readonly Face[],
+): { face: Face; text: string }[] {
+  if (chain.length === 1) return [{ face: chain[0]!, text }];
+  const faces = settingFaces(
+    text,
+    covers,
+    chain.map((face) => face.family),
+  );
+  const pieces: { face: Face; text: string }[] = [];
+  let at = 0;
+  for (const character of text) {
+    const face = chain.find((each) => each.family === faces[at]) ?? chain[0]!;
+    const last = pieces[pieces.length - 1];
+    if (last?.face === face) last.text += character;
+    else pieces.push({ face, text: character });
+    at += 1;
+  }
+  return pieces;
+}
+
+/**
  * Each character of `text` the engine would refuse, once each, in the order they first appear:
- * disallowed anywhere, or missing from the family that sets it (`covers`, asked of `family`), as the
- * engine treats a character with no glyph in that `setting`.
+ * disallowed anywhere, or missing from every family of the chain that sets it (`covers`), as the engine
+ * treats a character with no glyph in that `setting`. Code and an equation ask the chain's first family
+ * alone (UF-C): the template sets code in it, and an equation in the maths face, with no fallback.
  */
 export function characterProblems(
   text: string,
   covers: Covers,
-  family: string,
+  chain: Chain,
   setting: Setting,
 ): { readonly problem: CharacterProblem; readonly codePoint: number }[] {
+  const family = chain[0] ?? '';
+  const covered = (codePoint: number) =>
+    setting === 'body' ? chain.some((each) => covers(codePoint, each)) : covers(codePoint, family);
   const seen = new Set<number>();
   const found: { problem: CharacterProblem; codePoint: number }[] = [];
   for (const character of text) {
@@ -108,12 +172,12 @@ export function characterProblems(
     // against the pinned engine in the final review of equations 2, M2).
     else if (
       setting === 'code'
-        ? setWithoutAGlyph(codePoint) || !covers(codePoint, family)
+        ? setWithoutAGlyph(codePoint) || !covered(codePoint)
         : setting === 'math'
           ? setWithoutAGlyph(codePoint)
             ? !keptInMaths(codePoint)
-            : !covers(codePoint, family)
-          : !setWithoutAGlyph(codePoint) && !covers(codePoint, family)
+            : !covered(codePoint)
+          : !setWithoutAGlyph(codePoint) && !covered(codePoint)
     ) {
       found.push({ problem: 'glyph_missing', codePoint });
     }

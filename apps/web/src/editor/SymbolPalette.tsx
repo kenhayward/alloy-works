@@ -6,7 +6,7 @@ import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './SymbolPalette.module.css';
 import { SYMBOL_GROUPS } from './symbols.js';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 import { inlineKey } from '../parts/inline.js';
 
 /** How many symbols stand in a row, which the up and down arrows move by. */
@@ -26,6 +26,15 @@ export interface SymbolPaletteProps {
 
 /** What the palette says, once, where the typeface at the cursor lacks some of what it offers. */
 export const DIMMED_NOTE = (): string => words('editor.symbol.dimmed-note');
+
+/** A symbol the faces at the cursor lack, named with them: the chain as a list (the UI plan, UF-F). */
+export const notInLabel = (name: string, families: readonly string[]): string =>
+  families.length === 1
+    ? words('editor.not-in-use-an-equation', { name, family: families[0]! })
+    : words('editor.not-in-any-use-an-equation', {
+        name,
+        families: formats().list(families, { type: 'disjunction' }),
+      });
 
 /** A group's symbols in rows of `PALETTE_COLUMNS`, as the grid's rows hold them. */
 const rowsOf = <T,>(items: readonly T[]): T[][] => {
@@ -167,10 +176,7 @@ export function SymbolPalette({ onChoose, onCancel, typeface = null }: SymbolPal
                       const index = r * PALETTE_COLUMNS + c;
                       const lacked = typeface !== null && lacking.has(symbol.codePoint);
                       const label = lacked
-                        ? words('editor.not-in-use-an-equation', {
-                            name: symbol.name,
-                            family: typeface.family,
-                          })
+                        ? notInLabel(symbol.name, typeface.families)
                         : symbol.name;
                       return (
                         <div role="gridcell" key={symbol.codePoint}>

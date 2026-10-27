@@ -32,6 +32,7 @@ import {
   PUBLISHING_SCHEMA_22,
   PUBLISHING_SCHEMA_23,
   PUBLISHING_SCHEMA_24,
+  PUBLISHING_SCHEMA_25,
   readTheme,
   SECOND_DEFAULT_CATALOGUES_BY_VERSION,
   THIRD_DEFAULT_THEME,
@@ -195,8 +196,9 @@ describe('the publication template', () => {
     // linked to its entry and the bibliography after the last node (CIc). Template 24 reads
     // `publishing/24`: template 23 with a term's forms and the glossary and the abbreviations (TMb).
     // Template 25 reads `publishing/25`: template 24 saying a component is published in its source
-    // language (TRb), re-pinned freely likewise. Templates 1 to 24 are published versions and their
-    // rows never move again.
+    // language (TRb). Template 26 reads `publishing/26`: template 25 with a style's face a list, its
+    // fallbacks after it, and code in the first (UIf), re-pinned freely likewise. Templates 1 to 25 are
+    // published versions and their rows never move again.
     const pinned: Record<number, string> = {
       1: 'e8afabbac53bb797cfb024937ef4387834994a2d50062a029510d9ff300f58b0',
       2: '01bb7d4058901cdf904e05696bb1ccdf4a202a7802d3f7e420f8230d67290e54',
@@ -223,6 +225,7 @@ describe('the publication template', () => {
       23: 'a5eeb4fcf886d51fcc13dbda12ca6da6e88e36048bcc88f9133e4bc1e35a6a06',
       24: '8a8433efed20931eb307b94d404f039a0838e288b382c81da78eddc5d2c9f9c2',
       25: 'c5ce61165adf3cc433706a5899b7ad3359f7c757c1370510aa21de0d8b60a250',
+      26: '726bb4b8c44bf0070af5d966bf6f98da1c14f0559fce3cbf649ae9b8007a843d',
     };
     const hashes: Record<number, string> = {};
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
@@ -261,6 +264,7 @@ describe('the publication template', () => {
       'publishing/23': 23,
       'publishing/24': 24,
       'publishing/25': 25,
+      'publishing/26': 26,
     });
   });
 
@@ -269,7 +273,7 @@ describe('the publication template', () => {
     // dash before it. Templates 5 to 7 set the attribution themselves, so the parameter's name never
     // appears in any of them.
     for (const version of [
-      5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+      5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
     ] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(source, `template ${version}`).not.toContain('attribution:');
@@ -286,7 +290,7 @@ describe('the publication template', () => {
     // it - an underline's offset, a list's indent - no pattern can see: each template's header names
     // each. Templates 13 to 15 are held to the same list, which each needs every entry of (themes 2,
     // ruling R6).
-    for (const version of [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] as const) {
+    for (const version of [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26] as const) {
       const source = await readFile(PUBLICATION_TEMPLATE[version].file, 'utf8');
       expect(typographicLiterals(source), `template ${version}`).toEqual([]);
       const code = withoutComments(source);
@@ -366,7 +370,8 @@ describe('the publication template', () => {
       22: PUBLISHING_SCHEMA_22,
       23: PUBLISHING_SCHEMA_23,
       24: PUBLISHING_SCHEMA_24,
-      25: PUBLISHING_SCHEMA,
+      25: PUBLISHING_SCHEMA_25,
+      26: PUBLISHING_SCHEMA,
     };
     for (const template of Object.values(PUBLICATION_TEMPLATE)) {
       const source = await readFile(template.file, 'utf8');
@@ -506,6 +511,8 @@ describe('the pipeline version', () => {
     '28': 'd72489a985e1cd46980506aec664de436985c916e71d28f1eda534087ccd8703',
     // `publishing/25` (TRb, 2026-10-23): each node carries whether it is marked untranslated.
     '29': '9e531f1a5583e3aa252f654d4e21046cb5662bcf443c4e09be18c2864f563abc',
+    // `publishing/26` (UIf, 2026-10-27): each style's and mark's face is a list, its chain.
+    '30': '40dae467acf5f0777cc594b68e827102ef320122c3f40579e1e3f32ac434da6c',
   };
   // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
   // input is fixed at one: the default theme's 0.3, which '13' to '15' were pinned under. The default moving
@@ -525,7 +532,7 @@ describe('the pipeline version', () => {
     // the one field PUB-063 exists for, so a key that moves while its value stays behind records
     // every publication the new pipeline makes as having been made by the old one - in the PDF's
     // own provenance, with the typecheck clean. Literals, never the constants.
-    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/25': '29' });
+    expect(PIPELINE_VERSION).toEqual({ 'publishing/1': '1', 'publishing/26': '30' });
   });
 
   it('is the version its number says: what assemble makes of a fixed input, the draft notice included', async () => {
@@ -549,7 +556,7 @@ describe('the pipeline version', () => {
     });
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
     expect(assembled.document.schema).toBe(PUBLISHING_SCHEMA);
-    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('29');
+    expect(PIPELINE_VERSION[assembled.document.schema]).toBe('30');
     expect(digest(assembled)).toBe(madeByPipeline[PIPELINE_VERSION[assembled.document.schema]]);
     expect(assembled.document.words).toMatchObject({
       notice: DRAFT_NOTICE.page,

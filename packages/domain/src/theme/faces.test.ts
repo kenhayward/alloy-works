@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { faceFamily, projectFontFaces } from './faces.js';
-import { resolved } from './theme.fixture.js';
+import { NASKH, naskhInputs, resolved } from './theme.fixture.js';
 
 const theme = resolved();
 const everyFile = [...theme.typefaces.values()].flatMap((typeface) => typeface.files);
@@ -11,7 +11,8 @@ describe('projectFontFaces', () => {
   it("declares each file of each typeface under a family of its own, never the face's real name", () => {
     const { css, unheld } = projectFontFaces(theme, bundled);
     expect(unheld).toEqual([]);
-    expect(css.match(/@font-face/g)).toHaveLength(everyFile.length);
+    // And the maths face's one upright file again under italic (below).
+    expect(css.match(/@font-face/g)).toHaveLength(everyFile.length + 1);
     expect(faceFamily('serif')).toBe('aw-face-serif');
     // A Liberation Serif installed on the reader's machine is never what the editor sets text in.
     expect(css).not.toContain('Liberation');
@@ -38,6 +39,28 @@ describe('projectFontFaces', () => {
     expect(unheld).toEqual(['Liberation Mono']);
     expect(css).not.toContain('aw-face-mono');
     expect(css).toContain('aw-face-serif');
+  });
+
+  it('declares a face with no italic upright under italic too, as the engine sets it, so no slant is made up (the UI plan, UF-F)', () => {
+    const { css } = projectFontFaces(resolved(naskhInputs()), bundled);
+    const naskh = css.split('\n').filter((rule) => rule.includes('"aw-face-naskh"'));
+    const [regular, bold] = NASKH.files.map((file) => `src: url("${bundled(file.sha256)}");`);
+    expect(naskh).toEqual([
+      expect.stringContaining(`${regular} font-weight: 400; font-style: normal;`),
+      expect.stringContaining(`${bold} font-weight: 700; font-style: normal;`),
+      expect.stringContaining(`${regular} font-weight: 400; font-style: italic;`),
+      expect.stringContaining(`${bold} font-weight: 700; font-style: italic;`),
+    ]);
+    // A face with its italics declares each file once.
+    expect(css.match(/"aw-face-serif"/g)).toHaveLength(4);
+  });
+
+  it('names a fallback the renderer does not hold as it names any unheld face', () => {
+    const [missing] = NASKH.files;
+    const { unheld } = projectFontFaces(resolved(naskhInputs()), (sha256) =>
+      sha256 === missing!.sha256 ? undefined : bundled(sha256),
+    );
+    expect(unheld).toEqual(['Noto Naskh Arabic']);
   });
 
   it('refuses a URL that could end its own declaration', () => {

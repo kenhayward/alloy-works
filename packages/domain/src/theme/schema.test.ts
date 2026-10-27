@@ -548,6 +548,17 @@ describe('theme/1', () => {
     expect(() => themeSchema.parse({ ...theme, typefaces: [none] })).toThrow();
   });
 
+  it('takes a typeface falling back to others by identifier, and refuses an empty or malformed list', () => {
+    const theme = clone(DEFAULT_THEME);
+    const face = theme.typefaces[0]!;
+    expect(() =>
+      themeSchema.parse({ ...theme, typefaces: [{ ...face, fallback: ['naskh'] }] }),
+    ).not.toThrow();
+    for (const fallback of [[], ['Naskh Arabic'], 'naskh']) {
+      expect(() => themeSchema.parse({ ...theme, typefaces: [{ ...face, fallback }] })).toThrow();
+    }
+  });
+
   it('refuses a licence that is not an SPDX identifier', () => {
     const theme = clone(DEFAULT_THEME);
     const odd = { ...theme.typefaces[0]!, licence: 'free for all <b>' };

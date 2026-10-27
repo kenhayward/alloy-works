@@ -166,6 +166,8 @@ export {
   // Frozen by TMb, which made `publishing/24`: the schema template 23 reads.
   PUBLISHING_SCHEMA_23,
   PUBLISHING_SCHEMA_24,
+  // Frozen by UIf, which made `publishing/26`: the schema template 25 reads.
+  PUBLISHING_SCHEMA_25,
 } from './published.js';
 export type {
   PublishedApproval,

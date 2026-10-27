@@ -7,7 +7,7 @@ import {
   projectCss,
 } from './css.js';
 import { characterPropertiesSchema, paragraphBaseSchema } from './schema.js';
-import { defaultInputs, resolved } from './theme.fixture.js';
+import { defaultInputs, naskhInputs, resolved } from './theme.fixture.js';
 
 /** The editor's projection. It translates resolved styles and decides nothing. */
 const css = projectCss(resolved());
@@ -284,6 +284,34 @@ describe('projectCss', () => {
     expect(code).toContain('font-size: calc(var(--aw-around) * 0.8)');
     // And preformatted text's lines in its role's face and size, never the browser's own for `code`.
     expect(ruleFor(css, '.aw-canvas.aw-canvas pre code')).toBe('font: inherit');
+  });
+
+  it("sets text in its face's chain, the browser trying each in order, but code in the first face and maths alone (the UI plan, UF-C, UF-F)", () => {
+    // The serif and the mono falling back to the Naskh, and a mark naming the serif.
+    const inputs = naskhInputs();
+    inputs.theme.typefaces = inputs.theme.typefaces.map((face) =>
+      face.id === 'mono' ? { ...face, fallback: ['naskh'] } : face,
+    );
+    const strong = inputs.catalogues.character.styles.find((style) => style.mark === 'strong')!;
+    strong.properties = { ...strong.properties, typeface: 'serif' };
+    const text = projectCss(resolved(inputs));
+    const stack = '"aw-face-serif", "aw-face-naskh"';
+    const body = ruleFor(text, '.aw-canvas.aw-canvas [data-place="text"][data-style="body"]');
+    expect(body).toContain(`font-family: ${stack};`);
+    expect(body).toContain(`--aw-face: ${stack};`);
+    expect(body).toContain(`--aw-run-face: ${stack};`);
+    expect(rulesFor(text, '.aw-canvas.aw-canvas li').join('; ')).toContain(
+      `font-family: ${stack};`,
+    );
+    expect(ruleFor(text, `${RUN}strong${TEXT}`)).toContain(`--aw-run-face: ${stack}`);
+    // Code in the mono alone, though it falls back; maths in its own face.
+    const pre = ruleFor(text, '.aw-canvas.aw-canvas [data-role="preformatted"]');
+    expect(pre).toContain('font-family: "aw-face-mono";');
+    expect(pre).toContain('--aw-run-face: "aw-face-mono";');
+    expect(ruleFor(text, `${RUN}inlineCode${TEXT}`)).toContain('font-family: "aw-face-mono";');
+    expect(text).toContain('.aw-canvas.aw-canvas math { font-family: "aw-face-maths"; }');
+    // Metrics stay the primary's: the serif's descender, not the Naskh's.
+    expect(body).toContain('--aw-descent: 0.21631;');
   });
 
   it('sets a paragraph whose style will not resolve in the default of the place it stands in, as it is marked', () => {

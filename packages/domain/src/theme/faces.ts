@@ -16,7 +16,7 @@ const SAFE_URL = /^[^"'\\()\s]+$/;
  * held, as the worker holds a typeface only where it holds exactly its files; the family of any other is
  * named in `unheld`, which the editor shows rather than setting its text in a face nobody chose
  * (STY-070). `font-display: block` keeps a face that is still loading from being painted over by a
- * fallback. Identifiers are class-safe by the schema, and a URL that could end its own declaration is
+ * fallback; a weight with no italic file is declared upright under italic too. Identifiers are class-safe by the schema, and a URL that could end its own declaration is
  * refused rather than written (STY-N03).
  */
 export function projectFontFaces(
@@ -31,14 +31,22 @@ export function projectFontFaces(
       unheld.push(typeface.family);
       continue;
     }
-    typeface.files.forEach((file, index) => {
-      const url = urls[index]!;
+    const declare = (url: string, weight: string, posture: string) => {
       if (!SAFE_URL.test(url)) throw new Error(`${JSON.stringify(url)} is not a URL a face is at`);
       rules.push(
         `@font-face { font-family: "${faceFamily(typeface.id)}"; src: url("${url}"); ` +
-          `font-weight: ${file.weight === 'bold' ? 700 : 400}; ` +
-          `font-style: ${file.posture}; font-display: block; }`,
+          `font-weight: ${weight === 'bold' ? 700 : 400}; ` +
+          `font-style: ${posture}; font-display: block; }`,
       );
+    };
+    typeface.files.forEach((file, index) => declare(urls[index]!, file.weight, file.posture));
+    // A weight with no italic file sets italic text upright, as the pinned engine does (measured in
+    // the worker's `fallback.test.ts`), where a browser would slant it (the UI plan, UF-F).
+    typeface.files.forEach((file, index) => {
+      const italic = typeface.files.some(
+        (each) => each.weight === file.weight && each.posture === 'italic',
+      );
+      if (file.posture === 'normal' && !italic) declare(urls[index]!, file.weight, 'italic');
     });
   }
   return { css: rules.length === 0 ? '' : rules.join('\n') + '\n', unheld };

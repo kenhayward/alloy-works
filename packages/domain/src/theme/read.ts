@@ -86,6 +86,14 @@ export const themeRefusalCodes = [
    * another of its own choosing with nothing said.
    */
   'typeface_word_face_missing',
+  /** A typeface falls back to one the theme does not declare (the UI plan, UF-B). */
+  'typeface_fallback_missing',
+  /**
+   * A chain no output can set: a face falling back to itself or to one face twice, the maths face
+   * falling back at all, or a fallback that falls back itself, names a face for Word or may not be
+   * embedded in Word, since Word splits a run by the face that sets it and embeds each (UF-G).
+   */
+  'typeface_fallback_invalid',
   /** A place or a role is given a style the paragraph catalogue does not contain (STY-027). */
   'style_missing',
   /** A place or a role is given a style that does not apply there (STY-006). */
@@ -137,6 +145,8 @@ export interface ResolvedParagraphStyle {
   readonly properties: ResolvedParagraphProperties;
   /** The typeface `properties.typeface` names, found. */
   readonly typeface: Typeface;
+  /** That typeface and its fallbacks, in order (UF-B): the first that covers a character sets it. */
+  readonly chain: readonly Typeface[];
 }
 
 /** A mark's rendering. Its properties stay optional: an unstated one leaves the paragraph's alone. */
@@ -147,6 +157,8 @@ export interface ResolvedCharacterStyle {
   readonly properties: CharacterProperties;
   /** The typeface `properties.typeface` names, found, where it names one. */
   readonly typeface?: Typeface;
+  /** And its chain, where it names one. */
+  readonly chain?: readonly Typeface[];
 }
 
 export interface ResolvedTheme {
@@ -387,10 +399,48 @@ export function readTheme(
       });
     }
   }
+  // Each face's fallbacks found, and each a face a chain can set (UF-B).
+  for (const face of typefaces.values()) {
+    const named = `The typeface ${face.id} (${face.family})`;
+    const seen = new Set<string>();
+    for (const id of face.fallback ?? []) {
+      const invalid = (why: string) =>
+        refusals.push({ code: 'typeface_fallback_invalid', message: `${named} ${why}` });
+      const fallback = typefaces.get(id);
+      if (id === face.id) invalid('falls back to itself');
+      else if (seen.has(id)) invalid(`falls back to the typeface ${id} twice`);
+      else if (fallback === undefined) {
+        refusals.push({
+          code: 'typeface_fallback_missing',
+          message: `${named} falls back to the typeface ${id}, which the theme does not declare`,
+        });
+      } else if (fallback.fallback !== undefined) {
+        invalid(`falls back to the typeface ${id}, which falls back itself`);
+      } else if (!fallback.embedding.word) {
+        invalid(`falls back to the typeface ${id}, which may not be embedded in a Word document`);
+      } else if (fallback.wordFamily !== undefined) {
+        invalid(`falls back to the typeface ${id}, which names a face for Word`);
+      }
+      seen.add(id);
+    }
+  }
   const maths = typefaces.get(stated.maths);
   if (maths === undefined) {
     refusals.push(missingFace(`The theme's maths face is the typeface ${stated.maths}`));
+  } else if (maths.fallback !== undefined) {
+    refusals.push({
+      code: 'typeface_fallback_invalid',
+      message: `The typeface ${maths.id} (${maths.family}) is the theme's maths face, which falls back to nothing`,
+    });
   }
+  /** A face and the fallbacks the theme declares, in order. */
+  const chainOf = (face: Typeface): Typeface[] => [
+    face,
+    ...(face.fallback ?? []).flatMap((id) => {
+      const fallback = typefaces.get(id);
+      return fallback === undefined || fallback === face ? [] : [fallback];
+    }),
+  ];
 
   // Each catalogue at the version the theme names, of the kind it is named for.
   const examineNamed = (
@@ -459,6 +509,7 @@ export function readTheme(
         appliesTo: style.appliesTo,
         properties,
         typeface,
+        chain: chainOf(typeface),
       });
     }
   }
@@ -478,7 +529,7 @@ export function readTheme(
         name: style.name,
         mark: style.mark,
         properties: style.properties,
-        ...(typeface === undefined ? {} : { typeface }),
+        ...(typeface === undefined ? {} : { typeface, chain: chainOf(typeface) }),
       };
     }
   }

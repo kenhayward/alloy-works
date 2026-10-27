@@ -63,7 +63,7 @@ describe("the symbol palette's characters, against the default theme's text face
     codePoints.filter((codePoint) => running!.lacks(String.fromCodePoint(codePoint)));
 
   it('is asked of the family that sets running text, the default serif', () => {
-    expect(running?.family).toBe('Liberation Serif');
+    expect(running?.families).toEqual(['Liberation Serif']);
   });
 
   // Greek is what an author reaches for most, and all of it is set in the default serif.

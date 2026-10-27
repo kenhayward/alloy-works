@@ -13,6 +13,7 @@ import {
   type TableCatalogue,
   type TermCatalogue,
   type Theme,
+  type Typeface,
   type ValueCatalogue,
 } from './schema.js';
 
@@ -84,4 +85,41 @@ export function resolved(inputs: ThemeInputs = defaultInputs()): ResolvedTheme {
 /** The codes a read refused with, in the order given; none where it read. */
 export function codes(outcome: ThemeReadOutcome): string[] {
   return outcome.ok ? [] : outcome.refusals.map((each) => each.code);
+}
+
+/**
+ * Noto Naskh Arabic as a theme declares it (the UI plan, UF-A): its two pinned files, and its metrics
+ * from its own `hhea`. No default theme names it until UIg; a test that sets Arabic adds it.
+ */
+export const NASKH: Typeface = {
+  id: 'naskh',
+  family: 'Noto Naskh Arabic',
+  files: [
+    {
+      sha256: 'c34fdbd98af4dbc45ca192a23d2eeb77032add83086f5fe32957d23b3f36b221',
+      weight: 'regular',
+      posture: 'normal',
+    },
+    {
+      sha256: '380ac34b249d336e1a43c21053df440594e1e3db8f75fabd4d85b649ca1ea4c6',
+      weight: 'bold',
+      posture: 'normal',
+    },
+  ],
+  licence: 'OFL-1.1',
+  embedding: { pdf: true, word: true },
+  ascent: 1.069,
+  descent: 0.634,
+};
+
+/** The default theme's inputs with the Naskh declared and the serif falling back to it. */
+export function naskhInputs(): ThemeInputs {
+  const inputs = defaultInputs();
+  inputs.theme.typefaces = [
+    ...inputs.theme.typefaces.map((face) =>
+      face.id === 'serif' ? { ...face, fallback: ['naskh'] } : face,
+    ),
+    structuredClone(NASKH),
+  ];
+  return inputs;
 }

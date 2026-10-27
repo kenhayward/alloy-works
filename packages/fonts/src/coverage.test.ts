@@ -17,7 +17,9 @@ describe('the characters each pinned family covers, as data', () => {
     );
     expect(covers(0x41, 'Liberation Serif')).toBe(true); // A
     expect(covers(0x3b1, 'Liberation Serif')).toBe(true); // Greek alpha
-    expect(covers(0x627, 'Liberation Serif')).toBe(false); // Arabic alef, which no pinned face sets
+    expect(covers(0x627, 'Liberation Serif')).toBe(false); // Arabic alef
+    expect(covers(0x627, 'Noto Naskh Arabic')).toBe(true); // which the Naskh face sets (UI-K)
+    expect(covers(0x5d0, 'Noto Naskh Arabic')).toBe(false); // Hebrew alef, which Liberation Serif sets
     expect(covers(0x1d465, 'STIX Two Math')).toBe(true); // mathematical italic x
     expect(covers(0x1d465, 'Liberation Serif')).toBe(false);
     // A family nobody holds covers nothing, as the worker's `covers` says.
