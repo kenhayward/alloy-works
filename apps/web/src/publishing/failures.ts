@@ -103,7 +103,8 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 
 /**
  * What `html_not_yet` names (the HT plan, HTa): a block, an inline or generated matter the HTML writer
- * does not write yet, by its published kind, in the words Word's said them in. HTb takes each off it.
+ * does not write yet, by its published kind, in the words Word's said them in. HTb's writer writes every
+ * kind, so only a failure stored before it says one.
  */
 const NOT_YET_IN_HTML: Readonly<Record<string, string>> = {
   get table() {

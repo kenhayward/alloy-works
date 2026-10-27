@@ -410,7 +410,9 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             {html.producerVersion.replace(/^html\//, '')}.
           </p>
         )}
-        {(pdf !== undefined || (word !== undefined && word.report.length > 0)) && (
+        {(pdf !== undefined ||
+          (word !== undefined && word.report.length > 0) ||
+          (html !== undefined && html.report.length > 0)) && (
           <section className={styles['section']} aria-labelledby="publication-checks">
             <h3 id="publication-checks" className={styles['label']}>
               {words('publishing.checks')}
@@ -454,6 +456,13 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             {word !== undefined && word.report.length > 0 && (
               <ul aria-label={words('publishing.about-the-word-document')}>
                 {reportLines(word.report).map((line) => (
+                  <li key={line.key}>{line.words}</li>
+                ))}
+              </ul>
+            )}
+            {html !== undefined && html.report.length > 0 && (
+              <ul aria-label={words('publishing.about-the-html-file')}>
+                {reportLines(html.report, 'html').map((line) => (
                   <li key={line.key}>{line.words}</li>
                 ))}
               </ul>

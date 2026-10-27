@@ -44,7 +44,7 @@ const family = typefaceSchema.shape.family;
  * PDF scaled to its measure, which Word reflows to the page instead. HTb's (the HT plan, HT-K), each
  * said once of an HTML output, which has no pages: the page numbers the PDF prints - in its running
  * matter, its contents and lists, or a page reference - and its running heads and feet; and HTML reuses
- * `table_reflowed`, of a table the PDF scaled or turned, which HTML reflows. Later slices add their kinds
+ * `table_reflowed`, of a table the PDF scaled, which HTML reflows. Later slices add their kinds
  * as new members here, never by changing one already stored.
  */
 export const OUTPUT_REPORT_KINDS = [

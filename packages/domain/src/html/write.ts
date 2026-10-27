@@ -58,7 +58,7 @@ export interface HtmlWriting {
   readonly faces: ReadonlyMap<string, Uint8Array>;
   /** Every image the request resolved, by the path the published document names it at, as Word's. */
   readonly images: ReadonlyMap<string, Uint8Array>;
-  /** How the PDF set each table too wide for its measure (TB3-J), which HTML reflows instead. */
+  /** How the PDF set each table too wide for its measure (TB3-J): a scaled one HTML reflows instead. */
   readonly wide?: readonly WideTable[];
   /**
    * **A face file kept to these characters** (HT-B), their shaping and maths tables closed over them:
@@ -701,8 +701,13 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ),
       );
     }
-    // A table the PDF scaled or turned is reflowed here, and scrolls where it still does not fit.
-    if (input.wide?.some((wide) => wide.node === node && wide.block === each.id)) {
+    // A table the PDF scaled is reflowed here, as Word reflows it, and scrolls where it still does not
+    // fit; one it turned is set on a landscape page of its own, which neither has, and is said nothing of.
+    if (
+      input.wide?.some(
+        (wide) => wide.node === node && wide.block === each.id && wide.set === 'scaled',
+      )
+    ) {
       report.push({ kind: 'table_reflowed', node, block: each.id, label: each.label });
     }
     return element(

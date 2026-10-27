@@ -373,6 +373,42 @@ describe('a publication at its own address', () => {
     expect(document.querySelectorAll('iframe')).toHaveLength(0);
   });
 
+  it('says what the HTML file does not carry of the PDF: its pages, its running heads and a table scaled to fit (HT-K)', async () => {
+    const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
+    open(
+      json(200, {
+        ...record,
+        formats: ['html'],
+        engine: null,
+        template: null,
+        outputs: [
+          {
+            format: 'html',
+            bytes: 4_096,
+            sha256: 'f'.repeat(64),
+            standard: null,
+            producer: 'html',
+            producerVersion: 'html/2',
+            report: [
+              { kind: 'pages_not_carried' },
+              { kind: 'running_matter_not_carried' },
+              { kind: 'table_reflowed', ...readings },
+            ],
+            download: 'http://store.example.test/t_acme/sha256/fff?X-Amz-Signature=h',
+            view: null,
+          },
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+    const report = within(aside).getByRole('list', { name: 'About the HTML file' });
+    expect([...report.querySelectorAll('li')].map((each) => each.textContent)).toEqual([
+      "An HTML file has no pages, so it shows none of the page numbers the PDF prints. A page number cited from this publication is the PDF's.",
+      "An HTML file has no pages, so it has none of the PDF's running heads and feet: it says its title and revision once, at its start.",
+      'Table 1.1 is too wide for the page, so the PDF scales it down to fit; HTML cannot scale a table, and fits it by wrapping its text instead.',
+    ]);
+  });
+
   it('says what Word could not carry of each table, naming it by its label, or as a table with no number where it has none (Word 2)', async () => {
     const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
     const unnumbered = { node: 'prefaceaaaaaaaaaaaaaaaaaaa', block: 't2', label: null };
@@ -405,7 +441,7 @@ describe('a publication at its own address', () => {
       'Table 1.1 has a header column, which a Word document cannot mark as one, so in Word its cells are read as ordinary cells.',
       'Table 1.1 repeats its header rows on every page it reaches in Word, though its table style does not: Word marks header rows only by repeating them.',
       'Table 1.1 has no continuation label in Word on the pages it continues on, since Word cannot set one.',
-      'Table 1.1 is too wide for the page, so the PDF scales it down to fit; Word cannot scale a table, and fits it to the page by wrapping its text instead.',
+      'Table 1.1 is too wide for the page, so the PDF scales it down to fit; Word cannot scale a table, and fits it by wrapping its text instead.',
       "Word lays out its own pages, so its page numbers can differ from the PDF's. A page number cited from this publication is the PDF's.",
     ]);
   });
