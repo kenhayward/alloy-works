@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import type { Typst } from '../typst.js';
 
 /**
- * **The corpus's recorded outputs** (PUB-075; the AU2 plan, AU-J and AU-K): the SHA-256 of every PDF
- * and DOCX the publishing regression corpus makes, by its case and its place among that case's
+ * **The corpus's recorded outputs** (PUB-075; the AU2 plan, AU-J and AU-K): the SHA-256 of every PDF,
+ * DOCX and HTML file (the HT plan, HT-P) the publishing regression corpus makes, by its case and its place among that case's
  * outputs. A change to the pipeline, the engine, a face or a library that changes a byte fails the
  * corpus, naming the case and keeping what it made for a person to compare. `record` adds
  * what has no pin and rewrites none; `accept` takes a difference, in a pull request that says why.
@@ -16,7 +16,7 @@ export type RecordingMode = 'check' | 'record' | 'accept';
 
 export interface RecordedOutputs {
   /** Holds these bytes, the next output of this case in this format, to its pin. */
-  check(caseName: string, format: 'pdf' | 'docx', bytes: Uint8Array): void;
+  check(caseName: string, format: 'pdf' | 'docx' | 'html', bytes: Uint8Array): void;
   /** Counts every case from one again: a test about to run, or to run again. */
   reset(): void;
   /** Writes the pins taken, where recording or accepting. */
