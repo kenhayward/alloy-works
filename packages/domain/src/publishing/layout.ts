@@ -1098,7 +1098,7 @@ export const TWELFTH_DEFAULT_LAYOUT: Layout8 = frozenAt8({
 });
 
 /** HTML's words in each language the default layout gives its words in (HT-D). */
-const HTML_WORDS: Readonly<
+export const HTML_WORDS: Readonly<
   Record<string, Required<Pick<Layout['words'], 'notes' | 'backToReference' | 'scrollRegion'>>>
 > = {
   en: { notes: 'Notes', backToReference: 'Back to reference', scrollRegion: 'Scrollable table' },

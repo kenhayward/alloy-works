@@ -256,7 +256,8 @@ export const publishFailureCodes = [
   // compose, from HTa (the HT plan): where HTML is asked for, a block, an inline or generated matter
   // the HTML writer does not write yet, naming where it stands and, in `detail`, what it is: a
   // published block's or inline's kind, `listOf:<sequence>`, `bibliography`, `glossary` or
-  // `abbreviations`. HTb writes the rest; kept then, as `word_not_yet` is, for a request that holds it.
+  // `abbreviations`. HTb's writer writes every kind and emits it no more; kept, as `word_not_yet` is,
+  // since a failure stored from HTa may hold it.
   'html_not_yet',
 ] as const;
 

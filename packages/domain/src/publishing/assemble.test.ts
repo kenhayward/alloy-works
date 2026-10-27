@@ -7573,7 +7573,7 @@ describe('the HTML a publication is assembled for (the HT plan, HT-F)', () => {
     return { pdf: failuresOf(pdf), html: failuresOf(html), both: failuresOf(both) };
   };
 
-  it("carries what HTML is written from - the theme and each face's cap height - only where HTML is asked for, beside the PDF's document unchanged", () => {
+  it("carries what HTML is written from - the theme, each face's cap height, its words and coverage - only where HTML is asked for, beside the PDF's document unchanged", () => {
     const over = {
       ...oneParagraph(text('Set the tray.')),
       capHeight: (face: Typeface) => (face.id === 'serif' ? 0.65 : undefined),
@@ -7585,6 +7585,13 @@ describe('the HTML a publication is assembled for (the HT plan, HT-F)', () => {
       theme: DEFAULT_THEME,
       capHeights: new Map([['serif', 0.65]]),
       references: new Map(),
+      // The layout's words HTML alone sets (HT-I, HT-C), and what each family covers (HT-B).
+      words: {
+        notes: 'Notes',
+        backToReference: 'Back to reference',
+        scrollRegion: 'Scrollable table',
+      },
+      covers: expect.any(Function),
     };
     expect(html.html).toEqual(expected);
     expect(both.html).toEqual(expected);

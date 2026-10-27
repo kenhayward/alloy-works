@@ -82,7 +82,9 @@ export type ReportEntry =
   | { readonly kind: 'equation_alternative_lost' }
   | { readonly kind: 'maths_coverage_unchecked'; readonly wordFamily: string }
   | { readonly kind: 'titles_not_headings'; readonly titles: readonly UnheadedTitle[] }
-  | { readonly kind: 'list_not_linked'; readonly sequence: 'figure' };
+  | { readonly kind: 'list_not_linked'; readonly sequence: 'figure' }
+  | { readonly kind: 'pages_not_carried' }
+  | { readonly kind: 'running_matter_not_carried' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -104,7 +106,12 @@ export function reportIn(value: unknown): ReportEntry[] {
     ) {
       return [{ kind: 'face_substituted', family: entry.family, wordFamily: entry.wordFamily }];
     }
-    if (entry.kind === 'no_page_cited_output' || entry.kind === 'pages_cite_the_pdf') {
+    if (
+      entry.kind === 'no_page_cited_output' ||
+      entry.kind === 'pages_cite_the_pdf' ||
+      entry.kind === 'pages_not_carried' ||
+      entry.kind === 'running_matter_not_carried'
+    ) {
       return [{ kind: entry.kind }];
     }
     const kind = TABLE_KINDS.find((each) => each === entry.kind);
@@ -175,6 +182,8 @@ function unheaded(value: unknown): UnheadedTitle[] | null {
  */
 export function reportLines(
   entries: readonly ReportEntry[],
+  /** The output the report is of: a sentence naming what could not carry a thing names it (HT-K). */
+  format: 'docx' | 'html' = 'docx',
 ): { readonly key: string; readonly words: string }[] {
   const counted = new Map<PlacedKind, number>();
   for (const entry of entries) {
@@ -182,7 +191,7 @@ export function reportLines(
   }
   const said = new Set<PlacedKind>();
   return entries.flatMap((entry) => {
-    if (!isPlaced(entry)) return [{ key: reportKey(entry), words: reportWords(entry) }];
+    if (!isPlaced(entry)) return [{ key: reportKey(entry), words: reportWords(entry, format) }];
     if (said.has(entry.kind)) return [];
     said.add(entry.kind);
     return [{ key: entry.kind, words: placedWords(entry.kind, counted.get(entry.kind)!) }];
@@ -228,7 +237,7 @@ function placedWords(kind: PlacedKind, count: number): string {
 }
 
 /** One sentence per kind of entry, in plain language (R13). */
-export function reportWords(entry: ReportEntry): string {
+export function reportWords(entry: ReportEntry, format: 'docx' | 'html' = 'docx'): string {
   switch (entry.kind) {
     case 'face_substituted':
       return say('publishing.the-typeface-cannot-be-embedded-2', {
@@ -248,7 +257,15 @@ export function reportWords(entry: ReportEntry): string {
     case 'continuation_label_omitted':
       return say('publishing.has-no-continuation-label-in', { value1: tableName(entry) });
     case 'table_reflowed':
-      return say('publishing.is-too-wide-for-the', { value1: tableName(entry) });
+      return say('publishing.is-too-wide-for-the', {
+        value1: tableName(entry),
+        output: FORMAT_WORDS[format]!,
+      });
+    // HTb (HT-K): what an HTML file, which has no pages, does not carry of the PDF.
+    case 'pages_not_carried':
+      return say('publishing.html-has-no-pages');
+    case 'running_matter_not_carried':
+      return say('publishing.html-has-no-running-heads');
     // A heading by its number and a caption by its label, as the PDF prints them.
     case 'equation_flattened':
       return say('publishing.holds-an-equation-that-word', {
@@ -310,6 +327,8 @@ export function reportKey(entry: ReportEntry): string {
       return `${entry.kind} ${entry.family}`;
     case 'no_page_cited_output':
     case 'pages_cite_the_pdf':
+    case 'pages_not_carried':
+    case 'running_matter_not_carried':
     case 'equation_alternative_lost':
     case 'titles_not_headings':
       return entry.kind;

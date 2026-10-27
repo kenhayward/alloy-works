@@ -25238,25 +25238,25 @@
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 736,
+      "line": 772,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 797,
+      "line": 833,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 760,
+      "line": 796,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 463,
+      "line": 499,
       "kind": "title"
     },
     {
@@ -26784,6 +26784,12 @@
       "kind": "title"
     },
     {
+      "id": "REU-048",
+      "file": "apps/worker/src/html.test.ts",
+      "line": 139,
+      "kind": "title"
+    },
+    {
       "id": "API-042",
       "file": "apps/worker/src/impact-report.test.ts",
       "line": 183,
@@ -27008,13 +27014,13 @@
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1537,
+      "line": 1586,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1452,
+      "line": 1501,
       "kind": "title"
     },
     {
@@ -27050,7 +27056,7 @@
     {
       "id": "PUB-102",
       "file": "apps/worker/src/publishing-budget.test.ts",
-      "line": 67,
+      "line": 68,
       "kind": "title"
     },
     {
@@ -30819,6 +30825,18 @@
       "id": "GEN-056",
       "file": "packages/domain/src/generation/prompt.test.ts",
       "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "STR-050",
+      "file": "packages/domain/src/html/write.test.ts",
+      "line": 687,
+      "kind": "title"
+    },
+    {
+      "id": "STR-055",
+      "file": "packages/domain/src/html/write.test.ts",
+      "line": 638,
       "kind": "title"
     },
     {

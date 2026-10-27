@@ -85671,6 +85671,12 @@ export interface operations {
                                 node: string;
                                 block: string;
                                 label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "pages_not_carried";
+                            } | {
+                                /** @constant */
+                                kind: "running_matter_not_carried";
                             })[];
                             /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
                             download: string;
@@ -85780,6 +85786,12 @@ export interface operations {
                                 node: string;
                                 block: string;
                                 label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "pages_not_carried";
+                            } | {
+                                /** @constant */
+                                kind: "running_matter_not_carried";
                             })[];
                             /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
                             download: string;

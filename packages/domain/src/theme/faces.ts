@@ -22,6 +22,12 @@ const SAFE_URL = /^[^"'\\()\s]+$/;
 export function projectFontFaces(
   theme: ResolvedTheme,
   urlOf: (sha256: string) => string | undefined,
+  /**
+   * `uprightOnce`: a typeface with no italic file at all is declared upright alone, its file once,
+   * where a file is data that a second declaration would carry again (the HT plan, HT-B); the page
+   * then sets `font-synthesis-style: none`, so its italic is upright as the engine's is.
+   */
+  options: { readonly uprightOnce?: boolean } = {},
 ): { readonly css: string; readonly unheld: readonly string[] } {
   const rules: string[] = [];
   const unheld: string[] = [];
@@ -42,6 +48,8 @@ export function projectFontFaces(
     typeface.files.forEach((file, index) => declare(urls[index]!, file.weight, file.posture));
     // A weight with no italic file sets italic text upright, as the pinned engine does (measured in
     // the worker's `fallback.test.ts`), where a browser would slant it (the UI plan, UF-F).
+    const slanted = typeface.files.some((each) => each.posture === 'italic');
+    if (options.uprightOnce === true && !slanted) continue;
     typeface.files.forEach((file, index) => {
       const italic = typeface.files.some(
         (each) => each.weight === file.weight && each.posture === 'italic',

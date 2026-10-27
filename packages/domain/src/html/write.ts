@@ -1,12 +1,25 @@
-import type { HtmlInput } from '../publishing/assemble.js';
+import { allowedLinkSchemes } from '../content/model/marks.js';
+import {
+  inlineReferenceKey,
+  type HtmlInput,
+  type ReferenceSite,
+  type RunsSite,
+} from '../publishing/assemble.js';
 import type { PublishFailure } from '../publishing/failures.js';
+import { settingFaces } from '../publishing/glyphs.js';
 import { speaksFor, type SlotPart } from '../publishing/layout.js';
 import { textMeasure } from '../publishing/measure.js';
-import type { OutputReport } from '../publishing/outputs.js';
+import type { OutputReport, OutputReportEntry } from '../publishing/outputs.js';
 import {
   PUBLISHED_MARK_ORDER,
   type PublishedBlock,
+  type PublishedCell,
   type PublishedDocument,
+  type PublishedEquation,
+  type PublishedEquationBlock,
+  type PublishedFigure,
+  type PublishedFootnoteRun,
+  type PublishedImageRun,
   type PublishedInline,
   type PublishedLanguage,
   type PublishedList,
@@ -16,35 +29,47 @@ import {
   type PublishedPreformatted,
   type PublishedQuotation,
   type PublishedRun,
-  type PublishedTitleRun,
+  type PublishedTable,
 } from '../publishing/published.js';
 import { projectCss } from '../theme/css.js';
 import { projectFontFaces } from '../theme/faces.js';
 import type { ResolvedTheme } from '../theme/read.js';
-import type { Place, Role, StyledMark } from '../theme/schema.js';
+import type { Place, Role, StyledMark, Typeface } from '../theme/schema.js';
+import type { WideTable } from '../word/write.js';
+
+import { mathml } from './mathml.js';
 
 /**
  * The HTML writer's version (the HT plan, HT-A), recorded on each output it makes as Word's is: it
- * moves whenever what the writer writes does. `html/1` is HTa's, which writes text, headings, lists,
- * marks, quotations, preformatted text and passages in other languages, and refuses every other kind
- * `html_not_yet`.
+ * moves whenever what the writer writes does. `html/1` was HTa's, which wrote text, headings, lists,
+ * marks, quotations, preformatted text and passages in other languages and refused every other kind
+ * `html_not_yet`; `html/2` is HTb's, which writes every kind, and subsets each face it embeds.
  */
-export const HTML_WRITER_VERSION = 'html/1';
+export const HTML_WRITER_VERSION = 'html/2';
 
-/** What the writer is given: `assemble`'s answer for HTML, and the faces it embeds. */
+/** What the writer is given: `assemble`'s answer for HTML, and the files it embeds. */
 export interface HtmlWriting {
   readonly document: PublishedDocument;
   readonly html: HtmlInput;
   /**
    * Every face file the theme names, by its SHA-256, as the worker reads them: the domain reads no
-   * file. Only those the document's text is set in, and their fallbacks, are embedded (HT-B).
+   * file. Only those the document's text is set in are embedded, each subset (HT-B).
    */
   readonly faces: ReadonlyMap<string, Uint8Array>;
+  /** Every image the request resolved, by the path the published document names it at, as Word's. */
+  readonly images: ReadonlyMap<string, Uint8Array>;
+  /** How the PDF set each table too wide for its measure (TB3-J): a scaled one HTML reflows instead. */
+  readonly wide?: readonly WideTable[];
+  /**
+   * **A face file kept to these characters** (HT-B), their shaping and maths tables closed over them:
+   * the worker's HarfBuzz, since the domain is platform-free. The code points are ascending.
+   */
+  readonly subset: (bytes: Uint8Array, codePoints: readonly number[]) => Uint8Array;
 }
 
 /**
- * One HTML file and its report, or every kind it does not write yet, refused `html_not_yet` by name
- * (HTa), so nothing is made of a document it would write in part.
+ * One HTML file and its report. Since HTb the writer writes every kind, so it refuses nothing; the
+ * failures stay for a kind added to the published document before the writer learns it.
  */
 export type WrittenHtml =
   | { readonly ok: true; readonly bytes: Uint8Array; readonly report: OutputReport }
@@ -84,6 +109,12 @@ const element = (tag: string, given: Attributes, content: string): string =>
 const tagOf = (language: PublishedLanguage): string =>
   language.region === null ? language.lang : `${language.lang}-${language.region}`;
 
+/** Where a block's anchor is where a reference names none: `assemble`'s own spelling, so none meet. */
+const blockAnchor = (node: string, block: string) => `b-${node}-${block}`;
+
+/** A hyperlink's address, where its scheme is one the model allows (HT-L): checked again here. */
+const LINKABLE = new RegExp(`^(${allowedLinkSchemes.join('|')})`, 'i');
+
 /** Each mark's element, as the editor renders the mark (`packages/editor/src/schema.ts`). */
 const MARK_TAGS: Readonly<Record<StyledMark, string>> = {
   language: 'span',
@@ -97,7 +128,7 @@ const MARK_TAGS: Readonly<Record<StyledMark, string>> = {
   inlineCode: 'code',
 };
 
-/** Base64, written here since the domain is platform-free: what a face is embedded as (HT-B). */
+/** Base64, written here since the domain is platform-free: what a face and an image are embedded as. */
 const BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 function base64(bytes: Uint8Array): string {
@@ -122,59 +153,112 @@ const fontType = (bytes: Uint8Array): string =>
     ? 'font/otf'
     : 'font/ttf';
 
+/** An image's media type, by the extension `publishedImagePath` gave it. */
+const imageType = (path: string): string => (path.endsWith('.png') ? 'image/png' : 'image/jpeg');
+
+/** A list's markers as the projection's counters and bullets draw them, so their faces hold them. */
+const MARKER_CHARACTERS = '0123456789.abcdefghijklmnopqrstuvwxyz•◦▪';
+
+/** A length in points at the canvas's zoom, to thousandths, as `sizeImages` sets an image's. */
+const zoomedWidth = (points: number) =>
+  `width: calc(${Number(points.toFixed(3))}pt * var(--aw-zoom)); height: auto;`;
+
+const ALIGN = { start: 'start', center: 'center', end: 'end' } as const;
+
+/** Where a run of inlines stands: what a reference's key and its face are read by. */
+interface Where {
+  readonly node: string;
+  readonly site: RunsSite;
+  readonly chain: readonly Typeface[];
+  /** Whether a reference, a citation, a term or a hyperlink may be a link here: not in a title. */
+  readonly links: boolean;
+}
+
 /**
  * **A publication as one HTML file to read on a screen** (the HT plan; ADR-0070): written from the
  * published document the PDF and Word are made from, and the `HtmlInput` beside it, pure, as
- * `writeDocx` is. One file (HT-A): its policy first in its head (HT-L), the faces the text is set in
- * and their fallbacks as data (HT-B), and the theme's projection, `projectCss` with the faces' cap
- * heights, beside the canvas's own rules, a column at most the PDF's measure that reflows below it
- * (HT-C). The markup is the editor's for each kind it writes - a paragraph's `data-style` and
+ * `writeDocx` is. One file (HT-A): its policy first in its head (HT-L), the faces its text is set in
+ * as data, each subset to the characters it sets (HT-B), and the theme's projection, `projectCss`
+ * with the faces' cap heights, beside the canvas's own rules, a column at most the PDF's measure that
+ * reflows below it (HT-C). The markup is the editor's for each kind - a paragraph's `data-style` and
  * `data-place`, a role's `data-role`, each mark's three boxes - so the projection's rules reach it.
  *
  * A `<header>` holds the title, the notice's sentence once, and the revision as the running matter
- * says it; a `<nav>` the contents, to the layout's depth, without pages; each node a `<section>`,
- * its heading `h1` to `h6` by depth and a heading by role and level deeper (HT-J), in its own
- * language and direction where they differ. Nothing has pages (STR-050): a page break and an
- * appendix's new page set nothing.
+ * says it; a `<nav>` the contents, to the layout's depth, and one each list after it, without pages
+ * (HT-J); each node a `<section>`, its heading `h1` to `h6` by depth and a heading by role and level
+ * deeper, in its own language and direction where they differ, its footnotes at the end of its
+ * top-level section (HT-I); then the bibliography, the glossary and the abbreviations. A table scrolls
+ * in its own labelled region, its notes under it; an image is its own bytes as data, sized as the PDF
+ * sets it; an equation MathML Core from the maths tree (HT-H); a reference, a citation and a term a
+ * link to the anchor the document carries. Nothing has pages (STR-050): a page break and an appendix's
+ * new page set nothing, and a page reference prints its form without pages (STR-055). The report says
+ * what the PDF prints that HTML does not: pages, running matter, and a table scaled to fit (HT-K).
  *
- * **HTa writes text, headings, lists, marks, quotations, preformatted text and languages**; every
- * other kind - a table, a figure, an equation, an image, a footnote, a cross-reference, a table's mark,
- * a citation, a term, and the generated lists, bibliography, glossary and abbreviations - is refused
- * `html_not_yet`, naming where it stands, through switches that fail the typecheck when a kind is
- * added unwritten. HTb writes them.
+ * Every kind is written through a switch that fails the typecheck when one is added unwritten.
  */
 export function writeHtml(input: HtmlWriting): WrittenHtml {
   const { document } = input;
-  const theme = input.html.theme;
-  const failures: PublishFailure[] = [];
-  /** Every face a style the text is set in names, its fallbacks with it (HT-B). */
-  const faces = new Set<string>();
+  const { theme, covers } = input.html;
+  /** Each typeface's characters, as the face that sets each one is chosen (HT-B; UF-D's rule). */
+  const used = new Map<string, Set<number>>();
+  const report: OutputReportEntry[] = [];
+  /** Whether the PDF prints a page number that HTML has none of: a reference's, the contents'. */
+  let paged = false;
 
-  const notYet = (node: string | null, block: string | null, detail: string) => {
-    failures.push({ stage: 'compose', code: 'html_not_yet', node, block, detail });
-  };
-  const setIn = (id: string | undefined) => {
-    for (const face of (id === undefined ? undefined : theme.paragraphStyles.get(id))?.chain ??
-      []) {
-      faces.add(face.id);
+  const styleChain = (id: string | undefined) =>
+    (id === undefined ? undefined : theme.paragraphStyles.get(id))?.chain ?? [];
+  const roleChain = (name: Role) => styleChain(theme.roles[name]);
+  const placeChain = (name: Place) => styleChain(theme.places[name]);
+  /** A paragraph's style, a stored `body` its place's default (TH-E). */
+  const styleIn = (id: string, at: Place) => (id === 'body' ? theme.places[at] : id);
+
+  /** Each character of `text` given to the face of the chain that sets it, as the PDF chooses one. */
+  const sets = (text: string, chain: readonly Typeface[], marks: readonly StyledMark[] = []) => {
+    let own = chain;
+    let code = false;
+    for (const mark of marks) {
+      const style = theme.characterStyles[mark];
+      if (style?.typeface !== undefined) own = style.chain ?? [style.typeface];
+      if (mark === 'inlineCode') code = true;
+    }
+    // Code is set in its first face alone (UF-C).
+    const faces = code ? own.slice(0, 1) : own;
+    if (faces.length === 0) return;
+    const families = settingFaces(
+      text,
+      covers,
+      faces.map((face) => face.family),
+    );
+    let at = 0;
+    for (const character of text) {
+      const face = faces.find((each) => each.family === families[at]) ?? faces[0]!;
+      at += 1;
+      let held = used.get(face.id);
+      if (held === undefined) used.set(face.id, (held = new Set()));
+      held.add(character.codePointAt(0)!);
     }
   };
-  const role = (name: Role) => setIn(theme.roles[name]);
-  const place = (name: Place) => setIn(theme.places[name]);
+
   /** Where the layout's words do not serve the document's language, they say their own (TRb). */
   const wordsLanguage = speaksFor(tagOf(document.words.language), tagOf(document.language))
     ? null
     : tagOf(document.words.language);
+  const documentLanguage = tagOf(document.language);
+  /** A language attribute where an alternative's differs from the document's. */
+  const ownLanguage = (language: PublishedLanguage) =>
+    tagOf(language) === documentLanguage ? null : tagOf(language);
 
-  const markElement = (mark: PublishedMark, inner: string): string => {
-    for (const face of theme.characterStyles[mark.kind].chain ?? []) faces.add(face.id);
+  const markElement = (mark: PublishedMark, inner: string, links: boolean): string => {
     const boxes = `<span class="aw-mark-below"><span class="aw-mark-run">${inner}</span></span>`;
+    const linked = mark.kind === 'hyperlink' && links && LINKABLE.test(mark.href);
     const own: Attributes =
       mark.kind === 'hyperlink'
-        ? [
-            ['href', mark.href],
-            ['rel', 'noopener noreferrer'],
-          ]
+        ? linked
+          ? [
+              ['href', mark.href],
+              ['rel', 'noopener noreferrer'],
+            ]
+          : []
         : mark.kind === 'language'
           ? [
               ['lang', tagOf(mark.language)],
@@ -182,83 +266,243 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
             ]
           : [];
     const kind = mark.kind === 'language' ? 'aw-language aw-mark-language' : `aw-mark-${mark.kind}`;
-    return element(MARK_TAGS[mark.kind], [...own, ['class', kind]], boxes);
+    // A link where none may stand - inside another, or in a title - is its words in a span.
+    const tag = mark.kind === 'hyperlink' && !linked ? 'span' : MARK_TAGS[mark.kind];
+    return element(tag, [...own, ['class', kind]], boxes);
   };
 
   /** A run's text inside its marks, the first in the published order outermost, as the editor nests. */
-  const run = (each: PublishedRun): string =>
-    [...each.marks]
+  const run = (each: PublishedRun, chain: readonly Typeface[], links: boolean): string => {
+    sets(
+      each.text,
+      chain,
+      each.marks.map((mark) => mark.kind),
+    );
+    return [...each.marks]
       .sort((a, b) => PUBLISHED_MARK_ORDER.indexOf(a.kind) - PUBLISHED_MARK_ORDER.indexOf(b.kind))
-      .reduceRight((inner, mark) => markElement(mark, inner), escapeText(each.text));
+      .reduceRight((inner, mark) => markElement(mark, inner, links), escapeText(each.text));
+  };
 
-  /** Which kind of inline a published one is. */
-  const inlineKind = (each: PublishedInline) =>
-    'text' in each
-      ? ('run' as const)
-      : 'image' in each
-        ? ('image' as const)
-        : 'footnote' in each
-          ? ('footnote' as const)
-          : 'reference' in each
-            ? ('reference' as const)
-            : 'equation' in each
-              ? ('equation' as const)
-              : 'tableMark' in each
-                ? ('tableMark' as const)
-                : 'citation' in each
-                  ? ('citation' as const)
-                  : ('term' as const);
-
-  const inlines = (runs: readonly PublishedInline[], node: string, block: string): string =>
-    runs
-      .map((each) => {
-        const kind = inlineKind(each);
-        switch (kind) {
-          case 'run':
-            return run(each as PublishedRun);
-          case 'image':
-          case 'footnote':
-          case 'reference':
-          case 'equation':
-          case 'tableMark':
-          case 'citation':
-          case 'term':
-            notYet(node, block, kind);
-            return '';
-          default: {
-            const unreachable: never = kind;
-            throw new Error(`No HTML for an inline of kind ${String(unreachable)}`);
-          }
-        }
-      })
-      .join('');
-
-  const paragraph = (each: PublishedParagraph, node: string, at: Place): string => {
-    setIn(each.style);
+  /** An equation as MathML Core, its alternative its `alttext` and its name (HT-H). */
+  const maths = (equation: PublishedEquation, display: boolean): string => {
+    const markup = mathml(equation.tree, display);
+    // Its characters are the maths face's, which sets them with no fallback (equations 2, R1).
+    const characters = markup
+      .replace(/<[^>]*>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&');
+    sets(characters, [theme.maths]);
+    const alternative = equation.alternative.text;
     return element(
+      'math',
+      [
+        ['display', display ? 'block' : null],
+        ['alttext', alternative],
+        ['aria-label', alternative],
+        ['lang', ownLanguage(equation.alternative.language)],
+      ],
+      markup,
+    );
+  };
+
+  /** An image as its own bytes, sized as the PDF sets it, as `sizeImages` sizes the editor's. */
+  const image = (
+    path: string,
+    width: number,
+    alternative: PublishedFigure['alternative'],
+    own: Attributes,
+  ): string => {
+    const bytes = input.images.get(path);
+    if (bytes === undefined) throw new Error(`No bytes for the image at ${path}`);
+    return `<img${attributes([
+      ['src', `data:${imageType(path)};base64,${base64(bytes)}`],
+      ['alt', alternative?.text ?? ''],
+      ['lang', alternative === null ? null : ownLanguage(alternative.language)],
+      ...own,
+      ['style', zoomedWidth(width)],
+    ])} />`;
+  };
+
+  // Footnotes, gathered for the top-level section they stand in (HT-I).
+  let notes: string[] = [];
+  let noteCount = 0;
+  let notesCount = 0;
+  const footnote = (each: PublishedFootnoteRun['footnote'], where: Where): string => {
+    noteCount += 1;
+    const reference = `aw-noteref-${noteCount}`;
+    const target = each.anchor ?? `aw-note-${noteCount}`;
+    const chain = placeChain('footnote');
+    sets(each.label, where.chain, ['superscript']);
+    sets(each.label, chain);
+    const paragraphs = each.paragraphs.map((paragraph, at) => {
+      const style = styleIn(paragraph.style, 'footnote');
+      const back =
+        at === 0
+          ? element(
+              'a',
+              [
+                ['role', 'doc-backlink'],
+                ['href', `#${reference}`],
+                ['aria-label', input.html.words.backToReference],
+              ],
+              escapeText(each.label),
+            ) + ' '
+          : '';
+      return element(
+        'p',
+        [
+          ['id', paragraph.anchor],
+          ['class', 'aw-footnote-paragraph'],
+          ['data-style', paragraph.style],
+          ['data-place', 'footnote'],
+        ],
+        back +
+          inlines(paragraph.runs, {
+            node: where.node,
+            site: { kind: 'paragraph', block: paragraph.id },
+            chain: styleChain(style),
+            links: true,
+          }),
+      );
+    });
+    notes.push(element('li', [['id', target]], paragraphs.join('')));
+    return element(
+      'sup',
+      [['class', 'aw-footnote']],
+      element(
+        'a',
+        [
+          ['role', 'doc-noteref'],
+          ['id', reference],
+          ['href', `#${target}`],
+        ],
+        escapeText(each.label),
+      ),
+    );
+  };
+
+  const inlines = (runs: readonly PublishedInline[], where: Where): string =>
+    runs.map((each, index) => inline(each, index, where)).join('');
+
+  const inline = (each: PublishedInline, index: number, where: Where): string => {
+    if ('text' in each) return run(each, where.chain, where.links);
+    if ('image' in each) return inlineImage(each);
+    if ('footnote' in each) return footnote(each.footnote, where);
+    if ('reference' in each) {
+      const { reference } = each;
+      if (reference.page) paged = true;
+      const key = inlineReferenceKey(where.node, where.site as ReferenceSite, index);
+      const said = input.html.references.get(key) ?? reference.text ?? '';
+      sets(said, where.chain);
+      return reference.link && where.links
+        ? element(
+            'a',
+            [
+              ['class', 'aw-reference'],
+              ['href', `#${reference.anchor}`],
+            ],
+            escapeText(said),
+          )
+        : element('span', [['class', 'aw-reference']], escapeText(said));
+    }
+    if ('equation' in each) {
+      return element(
+        'span',
+        [
+          ['class', 'aw-equation'],
+          ['data-equation', ''],
+        ],
+        maths(each.equation, false),
+      );
+    }
+    if ('tableMark' in each) {
+      const { letter, link } = each.tableMark;
+      sets(letter, where.chain, ['superscript']);
+      const said =
+        link === null || !where.links
+          ? escapeText(letter)
+          : element('a', [['href', `#${link}`]], escapeText(letter));
+      return element('sup', [['class', 'aw-table-mark']], said);
+    }
+    if ('citation' in each) {
+      const { runs, link } = each.citation;
+      // Its runs carry no link of their own inside the one it is.
+      const body = runs.map((one) => run(one, where.chain, false)).join('');
+      return link !== null && where.links
+        ? element(
+            'a',
+            [
+              ['class', 'aw-citation'],
+              ['href', `#${link}`],
+            ],
+            body,
+          )
+        : element('span', [['class', 'aw-citation']], body);
+    }
+    const kind: 'term' = 'term' in each ? 'term' : (each satisfies never);
+    const { text, marks, link } = each[kind];
+    const body = run({ text, marks }, where.chain, false);
+    return link !== null && where.links
+      ? element(
+          'a',
+          [
+            ['class', 'aw-term'],
+            ['href', `#${link}`],
+          ],
+          body,
+        )
+      : element('span', [['class', 'aw-term']], body);
+  };
+
+  const inlineImage = (each: PublishedImageRun): string =>
+    element(
+      'span',
+      [['class', 'aw-inline-image-holder']],
+      image(each.image.path, each.image.width, each.image.alternative, [
+        ['class', 'aw-inline-image'],
+      ]),
+    );
+
+  const paragraph = (each: PublishedParagraph, node: string, at: Place): string =>
+    element(
       'p',
       [
         ['id', each.anchor],
         ['data-style', each.style],
         ['data-place', at],
       ],
-      inlines(each.runs, node, each.id),
+      inlines(each.runs, {
+        node,
+        site: { kind: 'paragraph', block: each.id },
+        chain: styleChain(styleIn(each.style, at)),
+        links: true,
+      }),
     );
-  };
 
   const list = (each: PublishedList, node: string): string => {
-    place('listItem');
+    const chain = placeChain('listItem');
     if (each.kind === 'definition') {
-      const items = each.items.map((item) =>
+      const items = each.items.map((item, at) =>
         element(
           'div',
           [],
-          element('dt', [['data-place', 'listItem']], inlines(item.term ?? [], node, each.id)) +
-            element('dd', [], blocks(item.blocks, node, 'listItem')),
+          element(
+            'dt',
+            [['data-place', 'listItem']],
+            inlines(item.term ?? [], {
+              node,
+              site: { kind: 'term', block: each.id, item: at },
+              chain,
+              links: true,
+            }),
+          ) + element('dd', [], blocks(item.blocks, node, 'listItem')),
         ),
       );
       return element('dl', [['id', each.anchor]], `\n${items.join('\n')}\n`);
     }
+    sets(MARKER_CHARACTERS, chain);
     const items = each.items.map((item) =>
       element('li', [], blocks(item.blocks, node, 'listItem')),
     );
@@ -274,8 +518,9 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
   };
 
   const preformatted = (each: PublishedPreformatted): string => {
-    role('preformatted');
-    if (each.label !== null) role('preformattedLabel');
+    const text = each.lines.join('\n');
+    sets(text, roleChain('preformatted'), ['inlineCode']);
+    if (each.label !== null) sets(each.label, roleChain('preformattedLabel'));
     return element(
       'pre',
       [
@@ -283,28 +528,288 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['data-role', 'preformatted'],
         ['data-language', each.label],
       ],
-      element('code', [], escapeText(each.lines.join('\n'))),
+      element('code', [], escapeText(text)),
     );
   };
 
   const quotation = (each: PublishedQuotation, node: string): string => {
-    place('quotation');
     const attribution =
       each.attribution === null
         ? ''
-        : (role('attribution'),
-          `\n${element(
+        : `\n${element(
             'footer',
             [
               ['class', 'aw-attribution'],
               ['data-role', 'attribution'],
             ],
-            inlines(each.attribution, node, each.id),
-          )}`);
+            inlines(each.attribution, {
+              node,
+              site: { kind: 'attribution', block: each.id },
+              chain: roleChain('attribution'),
+              links: true,
+            }),
+          )}`;
     return element(
       'blockquote',
       [['id', each.anchor]],
       `\n${blocks(each.blocks, node, 'quotation')}${attribution}\n`,
+    );
+  };
+
+  /** What each list after the contents lists, in document order: a link and its words (HT-J). */
+  const listed: Record<string, { readonly href: string; readonly said: () => string }[]> = {};
+  const enlist = (sequence: string, href: string, said: () => string) =>
+    (listed[sequence] ??= []).push({ href, said });
+
+  /** A caption: its label, as the PDF prints it, and its runs. */
+  const caption = (
+    each: PublishedTable | PublishedFigure,
+    node: string,
+    chain: readonly Typeface[],
+    links: boolean,
+  ): string => {
+    if (each.label !== null) sets(`${each.label} `, chain);
+    const label = each.label === null ? '' : `${escapeText(each.label)} `;
+    return (
+      label +
+      inlines(each.caption, { node, site: { kind: 'caption', block: each.id }, chain, links })
+    );
+  };
+
+  const table = (each: PublishedTable, node: string): string => {
+    const id = each.anchor ?? blockAnchor(node, each.id);
+    const captionId = `${id}-caption`;
+    const bound = each.bound;
+    const cell = (one: PublishedCell, x: number, first: boolean): string => {
+      const tag = one.scope === null ? 'td' : 'th';
+      const scope = one.scope === null ? null : one.scope === 'row' ? 'row' : 'col';
+      const align = one.align ?? bound?.align[x];
+      const wraps = bound === undefined || ((bound.wrap[x] ?? true) && one.nowrap !== true);
+      const width = first && one.colspan === 1 ? each.widths?.[x] : undefined;
+      const style = [
+        align === undefined
+          ? ''
+          : `text-align: ${align === 'centre' ? 'center' : align === 'decimal' ? 'end' : align};`,
+        wraps ? '' : 'white-space: nowrap;',
+        one.colour === undefined ? '' : `color: ${one.colour};`,
+        width === undefined ? '' : `width: ${Number((width * 100).toFixed(3))}%;`,
+      ]
+        .filter((part) => part !== '')
+        .join(' ');
+      return element(
+        tag,
+        [
+          ['scope', scope],
+          ['colspan', one.colspan > 1 ? String(one.colspan) : null],
+          ['rowspan', one.rowspan > 1 ? String(one.rowspan) : null],
+          ['style', style === '' ? null : style],
+        ],
+        blocks(one.blocks, node, 'tableCell'),
+      );
+    };
+    const rows = each.rows.map((row, y) => {
+      const group = y < each.headerRows ? null : (bound?.groups?.[y - each.headerRows] ?? null);
+      if (group?.kind === 'heading') {
+        const [heading] = row.cells;
+        return element(
+          'tr',
+          [['class', 'aw-bound-table-group']],
+          element(
+            'th',
+            [
+              ['scope', 'rowgroup'],
+              ['colspan', heading!.colspan > 1 ? String(heading!.colspan) : null],
+            ],
+            blocks(heading!.blocks, node, 'tableCell'),
+          ),
+        );
+      }
+      return element(
+        'tr',
+        [['class', group?.kind === 'subtotal' ? 'aw-bound-table-subtotal' : null]],
+        row.cells.map((one, x) => cell(one, x, y === 0)).join(''),
+      );
+    });
+    const said = caption(each, node, roleChain('caption'), true);
+    if (each.listed) enlist('table', id, () => caption(each, node, roleChain('listEntry'), false));
+    const under: string[] = [];
+    if (each.note !== null) {
+      under.push(
+        element(
+          'p',
+          [
+            ['class', 'aw-table-note'],
+            ['data-role', 'tableNote'],
+          ],
+          inlines(each.note, {
+            node,
+            site: { kind: 'note', block: each.id },
+            chain: roleChain('tableNote'),
+            links: true,
+          }),
+        ),
+      );
+    }
+    // Its lettered notes stay under it (HT-I), each its letter before its words, where its mark links.
+    for (const lettered of each.notes) {
+      const paragraphs = lettered.paragraphs.map((one, at) => {
+        const chain = styleChain(styleIn(one.style, 'text'));
+        if (at === 0) sets(lettered.letter, chain, ['superscript']);
+        const letter = at === 0 ? `${element('sup', [], escapeText(lettered.letter))} ` : '';
+        return element(
+          'p',
+          [
+            ['id', one.anchor],
+            ['data-style', one.style],
+            ['data-place', 'text'],
+          ],
+          letter +
+            inlines(one.runs, {
+              node,
+              site: { kind: 'paragraph', block: one.id },
+              chain,
+              links: true,
+            }),
+        );
+      });
+      under.push(
+        element(
+          'div',
+          [
+            ['id', lettered.anchor],
+            ['class', 'aw-table-note'],
+          ],
+          paragraphs.join(''),
+        ),
+      );
+    }
+    if (bound?.source !== null && bound?.source !== undefined) {
+      under.push(
+        element(
+          'p',
+          [
+            ['class', 'aw-table-note aw-bound-table-source'],
+            ['data-role', 'tableNote'],
+          ],
+          inlines(bound.source, {
+            node,
+            site: { kind: 'source', block: each.id },
+            chain: roleChain('tableNote'),
+            links: true,
+          }),
+        ),
+      );
+    }
+    // A table the PDF scaled is reflowed here, as Word reflows it, and scrolls where it still does not
+    // fit; one it turned is set on a landscape page of its own, which neither has, and is said nothing of.
+    if (
+      input.wide?.some(
+        (wide) => wide.node === node && wide.block === each.id && wide.set === 'scaled',
+      )
+    ) {
+      report.push({ kind: 'table_reflowed', node, block: each.id, label: each.label });
+    }
+    return element(
+      'figure',
+      [
+        ['id', id],
+        ['data-block', each.id],
+        ['data-table', ''],
+        ['class', 'aw-table'],
+        ['data-table-style', each.style],
+      ],
+      [
+        '',
+        element(
+          'figcaption',
+          [
+            ['id', captionId],
+            ['class', 'aw-table-caption'],
+            ['data-role', 'caption'],
+          ],
+          said,
+        ),
+        // A wide table scrolls in its own region, reached by the keyboard, so the page reflows (HT-C).
+        element(
+          'div',
+          [
+            ['class', 'aw-table-region'],
+            ['role', 'region'],
+            ['aria-label', input.html.words.scrollRegion],
+            ['tabindex', '0'],
+          ],
+          element('table', [['aria-labelledby', captionId]], `\n${rows.join('\n')}\n`),
+        ),
+        ...under,
+        '',
+      ].join('\n'),
+    );
+  };
+
+  const figure = (each: PublishedFigure, node: string): string => {
+    const id = each.anchor ?? blockAnchor(node, each.id);
+    const shown = element(
+      'div',
+      [
+        ['class', 'aw-figure-image'],
+        ['style', `text-align: ${ALIGN[each.alignment]};`],
+      ],
+      image(each.path, each.width, each.alternative, []),
+    );
+    const said = caption(each, node, roleChain('caption'), true);
+    if (each.listed) enlist('figure', id, () => caption(each, node, roleChain('listEntry'), false));
+    const body =
+      said === ''
+        ? ''
+        : element(
+            'div',
+            [['class', 'aw-figure-body']],
+            element(
+              'figcaption',
+              [
+                ['class', 'aw-figure-caption'],
+                ['data-figure-caption', ''],
+                ['data-role', 'caption'],
+              ],
+              said,
+            ),
+          );
+    return element(
+      'figure',
+      [
+        ['id', id],
+        ['data-block', each.id],
+        ['data-figure', ''],
+        ['class', 'aw-figure'],
+      ],
+      each.captionPosition === 'top' ? body + shown : shown + body,
+    );
+  };
+
+  const equation = (each: PublishedEquationBlock, node: string, at: Place): string => {
+    const id = each.anchor ?? (each.label === null ? null : blockAnchor(node, each.id));
+    if (each.label !== null) {
+      const label = each.label;
+      sets(label, placeChain(at));
+      enlist('equation', id!, () => {
+        sets(label, roleChain('listEntry'));
+        return escapeText(label);
+      });
+    }
+    const number =
+      each.label === null
+        ? ''
+        : element('span', [['class', 'aw-equation-number']], escapeText(each.label));
+    return element(
+      'div',
+      [
+        ['id', id],
+        ['data-block', each.id],
+        ['class', 'aw-equation-block'],
+        ['data-equation-block', ''],
+        ['data-place', at],
+      ],
+      maths(each, true) + number,
     );
   };
 
@@ -323,10 +828,11 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         // What a block publishing nothing leaves where a reference names it: its anchor alone.
         return element('div', [['id', each.anchor]], '');
       case 'table':
+        return table(each, node);
       case 'figure':
+        return figure(each, node);
       case 'equation':
-        notYet(node, each.id, each.type);
-        return '';
+        return equation(each, node, at);
       default: {
         const unreachable: never = each;
         throw new Error(`No HTML for a block of kind ${(unreachable as PublishedBlock).type}`);
@@ -340,35 +846,31 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       .filter((written) => written !== '')
       .join('\n');
 
-  /** A title's words, its number before them, as its heading and the contents print it. */
-  const title = (node: PublishedNode): string => {
+  /** A title's words and equations, its number before them, as its heading and the contents print it. */
+  const title = (node: PublishedNode, chain: readonly Typeface[]): string => {
     const words = node.title
-      .map((each: PublishedTitleRun) => {
-        if ('equation' in each) {
-          notYet(node.id, null, 'equation');
-          return '';
-        }
-        return run(each);
-      })
+      .map((each) => ('equation' in each ? maths(each.equation, false) : run(each, chain, false)))
       .join('');
-    return node.number === null
-      ? words
-      : `${element('span', [['class', 'aw-number']], escapeText(node.number))} ${words}`;
+    if (node.number === null) return words;
+    sets(`${node.number} `, chain);
+    return `${element('span', [['class', 'aw-number']], escapeText(node.number))} ${words}`;
   };
 
-  const section = (node: PublishedNode): string => {
+  const section = (node: PublishedNode, top: boolean): string => {
     const depth = Math.min(node.depth, 6);
-    role(`heading${depth}` as Role);
+    const role = `heading${depth}` as Role;
+    if (top) notes = [];
     const anchor = `n-${node.id}`;
+    const said = title(node, roleChain(role));
     const heading =
       node.depth <= 6
         ? element(
             `h${node.depth}`,
             [
               ['id', anchor],
-              ['data-role', `heading${depth}`],
+              ['data-role', role],
             ],
-            title(node),
+            said,
           )
         : element(
             'p',
@@ -378,16 +880,42 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
               ['aria-level', String(node.depth)],
               ['data-role', 'heading6'],
             ],
-            title(node),
+            said,
           );
     // Published in its source language for want of a translation, it says so first (LOC-037).
     const untranslated =
       node.untranslated === null
         ? ''
-        : (place('text'),
+        : (sets(node.untranslated, placeChain('text')),
           `\n${element('p', [['data-place', 'text']], escapeText(node.untranslated))}`);
     const content = blocks(node.blocks, node.id, 'text');
-    const children = node.children.map(section).join('');
+    const children = node.children.map((child) => section(child, false)).join('');
+    // Its notes, and every section's beneath it, at its end (HT-I).
+    let endnotes = '';
+    if (top && notes.length > 0) {
+      notesCount += 1;
+      const heading = `aw-notes-${notesCount}`;
+      sets(input.html.words.notes, placeChain('footnote'));
+      endnotes =
+        element(
+          'section',
+          [
+            ['role', 'doc-endnotes'],
+            ['aria-labelledby', heading],
+          ],
+          `\n${element(
+            'p',
+            [
+              ['id', heading],
+              ['lang', wordsLanguage],
+              ['data-style', 'body'],
+              ['data-place', 'footnote'],
+            ],
+            escapeText(input.html.words.notes),
+          )}\n${element('ol', [['class', 'aw-notes']], `\n${notes.join('\n')}\n`)}\n`,
+        ) + '\n';
+      notes = [];
+    }
     return (
       element(
         'section',
@@ -395,16 +923,103 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ['lang', node.language === null ? null : tagOf(node.language)],
           ['dir', node.direction],
         ],
-        `\n${heading}${untranslated}${content === '' ? '' : `\n${content}`}\n${children}`,
+        `\n${heading}${untranslated}${content === '' ? '' : `\n${content}`}\n${children}${endnotes}`,
       ) + '\n'
     );
   };
 
+  const sections = document.nodes.map((node) => section(node, true)).join('');
+
+  // The bibliography, the glossary and the abbreviations, after the last node, each headed as the
+  // template heads it and each entry an item of a list, labelled where it begins (CIc, TMb).
+  const back: string[] = [];
+  const backList = (
+    name: string,
+    heading: string,
+    entries: readonly { readonly anchor: string | null; readonly said: string }[],
+  ) => {
+    const id = `aw-${name}`;
+    const chain = roleChain('heading1');
+    sets(heading, chain);
+    back.push(
+      element(
+        'section',
+        [['aria-labelledby', id]],
+        `\n${element(
+          'h1',
+          [
+            ['id', id],
+            ['lang', wordsLanguage],
+            ['data-role', 'heading1'],
+          ],
+          escapeText(heading),
+        )}\n${element(
+          'ul',
+          [['class', 'aw-entries']],
+          `\n${entries
+            .map((entry) =>
+              element(
+                'li',
+                [['id', entry.anchor]],
+                element(
+                  'p',
+                  [
+                    ['data-style', 'body'],
+                    ['data-place', 'text'],
+                  ],
+                  entry.said,
+                ),
+              ),
+            )
+            .join('\n')}\n`,
+        )}\n`,
+      ) + '\n',
+    );
+  };
+  const text = placeChain('text');
+  const strong = (words: string) => run({ text: words, marks: [{ kind: 'strong' }] }, text, false);
+  const plain = (words: string) => run({ text: words, marks: [] }, text, false);
+  const { bibliography, glossary, abbreviations } = document.back;
+  if (bibliography !== null) {
+    backList(
+      'bibliography',
+      bibliography.title,
+      bibliography.entries.map((entry) => ({
+        anchor: entry.anchor,
+        said:
+          (entry.label === null
+            ? ''
+            : `${entry.label.map((each) => run(each, text, false)).join('')}${plain(' ')}`) +
+          entry.runs.map((each) => run(each, text, true)).join(''),
+      })),
+    );
+  }
+  if (glossary !== null) {
+    backList(
+      'glossary',
+      glossary.title,
+      glossary.entries.map((entry) => ({
+        anchor: entry.anchor,
+        said: strong(entry.label) + plain(` ${entry.definition}`),
+      })),
+    );
+  }
+  if (abbreviations !== null) {
+    backList(
+      'abbreviations',
+      abbreviations.title,
+      abbreviations.entries.map((entry) => ({
+        anchor: null,
+        said: strong(entry.abbreviation) + plain(` ${entry.label}`),
+      })),
+    );
+  }
+
   // The header: the title, the notice's sentence once, and the revision (HT-J).
-  role('title');
+  sets(document.title, roleChain('title'));
   const header: string[] = [element('p', [['data-role', 'title']], escapeText(document.title))];
   if (document.words.noticeSentence !== null) {
-    role('noticeSentence');
+    sets(document.words.noticeSentence, roleChain('noticeSentence'));
     header.push(
       element(
         'p',
@@ -416,15 +1031,15 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       ),
     );
   }
-  role('running');
-  header.push(element('p', [['data-role', 'running']], escapeText(revisionLine(document))));
+  const revision = revisionLine(document);
+  sets(revision, roleChain('running'));
+  header.push(element('p', [['data-role', 'running']], escapeText(revision)));
 
   // The approval page, on an approved publication whose layout sets one (PUB-089).
   const front: string[] = [];
   const approvals = document.front.approvals;
   if (approvals !== null) {
-    role('contents');
-    role('contentsEntry');
+    sets(approvals.title, roleChain('contents'));
     front.push(
       element(
         'section',
@@ -439,76 +1054,109 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
             ],
             escapeText(approvals.title),
           ),
-          ...approvals.entries.map((each) =>
-            element(
-              'p',
-              [['data-role', 'contentsEntry']],
-              escapeText(`${each.by}, ${each.at}, ${each.gate}`),
-            ),
-          ),
+          ...approvals.entries.map((each) => {
+            const said = `${each.by}, ${each.at}, ${each.gate}`;
+            sets(said, roleChain('contentsEntry'));
+            return element('p', [['data-role', 'contentsEntry']], escapeText(said));
+          }),
         ].join('\n')}\n`,
       ),
     );
   }
-  // The contents, a list of links to each heading to the layout's depth, with no page (HT-J).
+  /** The contents or a list after it: its title, then each entry a link with no page (HT-J). */
+  const navigation = (
+    id: string,
+    heading: string,
+    roles: readonly [Role, Role],
+    entries: readonly string[],
+  ) => {
+    sets(heading, roleChain(roles[0]));
+    front.push(
+      element(
+        'nav',
+        [['aria-labelledby', id]],
+        `\n${[
+          element(
+            'p',
+            [
+              ['id', id],
+              ['lang', wordsLanguage],
+              ['data-role', roles[0]],
+            ],
+            escapeText(heading),
+          ),
+          ...entries.map((entry) => element('p', [['data-role', roles[1]]], entry)),
+        ].join('\n')}\n`,
+      ),
+    );
+  };
   const contents = document.front.contents;
   if (contents !== null) {
-    role('contents');
-    role('contentsEntry');
+    paged = true;
     const entries: string[] = [];
     const walk = (nodes: readonly PublishedNode[]) => {
       for (const node of nodes) {
         if (node.depth > contents.depth) continue;
-        const words = node.title.flatMap((each) => ('text' in each ? [each.text] : [])).join('');
-        const said = node.number === null ? words : `${node.number} ${words}`;
         entries.push(
-          element(
-            'p',
-            [['data-role', 'contentsEntry']],
-            element('a', [['href', `#n-${node.id}`]], escapeText(said)),
-          ),
+          element('a', [['href', `#n-${node.id}`]], title(node, roleChain('contentsEntry'))),
         );
         walk(node.children);
       }
     };
     walk(document.nodes);
-    front.push(
-      element(
-        'nav',
-        [['aria-labelledby', 'aw-contents']],
-        `\n${[
-          element(
-            'p',
-            [
-              ['id', 'aw-contents'],
-              ['lang', wordsLanguage],
-              ['data-role', 'contents'],
-            ],
-            escapeText(document.words.contents),
-          ),
-          ...entries,
-        ].join('\n')}\n`,
+    navigation('aw-contents', document.words.contents, ['contents', 'contentsEntry'], entries);
+  }
+  for (const each of document.front.lists) {
+    paged = true;
+    navigation(
+      `aw-list-${each.sequence}`,
+      each.title,
+      ['list', 'listEntry'],
+      (listed[each.sequence] ?? []).map((entry) =>
+        element('a', [['href', `#${entry.href}`]], entry.said()),
       ),
     );
   }
-  for (const each of document.front.lists) notYet(null, null, `listOf:${each.sequence}`);
 
-  const sections = document.nodes.map(section).join('');
-
-  for (const matter of ['bibliography', 'glossary', 'abbreviations'] as const) {
-    if (document.back[matter] !== null) notYet(null, null, matter);
+  // What the PDF prints that HTML has no place for, each said once (HT-K).
+  const slots = [...document.format.head, ...document.format.foot].flat();
+  if (
+    slots.some((part) => part.kind === 'field' && (part.field === 'page' || part.field === 'pages'))
+  ) {
+    paged = true;
   }
-  if (failures.length > 0) return { ok: false, failures };
+  const said: OutputReportEntry[] = [];
+  if (paged) said.push({ kind: 'pages_not_carried' });
+  if (slots.length > 0) said.push({ kind: 'running_matter_not_carried' });
 
+  // Each face the text is set in, each file kept to the characters it sets (HT-B).
+  const characters = new Map<string, Set<number>>();
+  for (const typeface of theme.typefaces.values()) {
+    const held = used.get(typeface.id);
+    if (held === undefined) continue;
+    for (const file of typeface.files) {
+      const all = characters.get(file.sha256) ?? new Set<number>();
+      for (const codePoint of held) all.add(codePoint);
+      characters.set(file.sha256, all);
+    }
+  }
+  const urls = new Map<string, string>();
+  for (const [sha256, codePoints] of characters) {
+    const bytes = input.faces.get(sha256);
+    if (bytes === undefined) continue;
+    const kept = input.subset(
+      bytes,
+      [...codePoints].sort((a, b) => a - b),
+    );
+    urls.set(sha256, `data:${fontType(kept)};base64,${base64(kept)}`);
+  }
   const held = projectFontFaces(
     {
       ...theme,
-      typefaces: new Map([...theme.typefaces].filter(([, face]) => faces.has(face.id))),
+      typefaces: new Map([...theme.typefaces].filter(([, face]) => used.has(face.id))),
     },
-    (sha256) => {
-      const bytes = input.faces.get(sha256);
-      return bytes === undefined ? undefined : `data:${fontType(bytes)};base64,${base64(bytes)}`;
-    },
+    (sha256) => urls.get(sha256),
+    { uprightOnce: true },
   );
   const capHeights = input.html.capHeights;
   const css =
@@ -536,13 +1184,13 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
     '<div class="aw-canvas aw-text">',
     element('header', [], `\n${header.join('\n')}\n`),
     ...front,
-    element('main', [], `\n${sections}`),
+    element('main', [], `\n${sections}${back.join('')}`),
     '</div>',
     '</body>',
     '</html>',
     '',
   ].join('\n');
-  return { ok: true, bytes: new TextEncoder().encode(html), report: [] };
+  return { ok: true, bytes: new TextEncoder().encode(html), report: [...said, ...report] };
 }
 
 /**
@@ -570,24 +1218,37 @@ function revisionLine(document: PublishedDocument): string {
     .trim();
 }
 
+/** Above the projection's own rules for a list, which the doubled canvas class scopes. */
+const ENTRIES = '.aw-canvas.aw-canvas.aw-canvas :is(ol.aw-notes, ul.aw-entries)';
+
 /**
  * The canvas's own rules (HT-C), beside the theme's projection: the page in the theme's paper, the
  * text a column at most the PDF's measure that reflows below it at any width (WCAG 1.4.10), at the
  * printed size; spaces kept as the author typed them in a block's text, as the editor keeps them;
  * a quoted phrase's own characters its only quotes; a definition and preformatted text without a
- * browser's own indent, the latter scrolling sideways in its own box, under its label.
+ * browser's own indent, the latter scrolling sideways in its own box, under its label; an image no
+ * wider than the column and a table scrolling in its region; notes and entries without markers, their
+ * labels their own; and a face with no italic set upright, as the engine sets it (UF-E).
  */
 function canvasCss(theme: ResolvedTheme, measure: number): string {
   return [
     `html { background: ${theme.paper}; }`,
     'body { margin: 0; }',
     `.aw-canvas { --aw-zoom: 1; box-sizing: border-box; max-width: calc(${Math.round(measure * 100) / 100}pt + 32px); ` +
-      'margin-inline: auto; padding: 16px; overflow-wrap: break-word; }',
+      'margin-inline: auto; padding: 16px; overflow-wrap: break-word; font-synthesis-style: none; }',
     '.aw-canvas :is(p, dt, h1, h2, h3, h4, h5, h6, footer) { white-space: break-spaces; }',
     '.aw-canvas q { quotes: none; }',
     '.aw-canvas :is(dl, dd) { margin: 0; }',
     '.aw-canvas pre { white-space: pre; tab-size: 8; overflow-x: auto; }',
     '.aw-canvas pre[data-language]::before { content: attr(data-language); display: block; }',
+    '.aw-canvas img { max-width: 100%; }',
+    '.aw-canvas figure { margin-inline: 0; }',
+    '.aw-canvas .aw-table-region { max-width: 100%; overflow-x: auto; }',
+    '.aw-canvas .aw-equation-block { display: flex; align-items: center; gap: 1em; overflow-x: auto; }',
+    '.aw-canvas .aw-equation-block > math { flex: 1; }',
+    `${ENTRIES} { display: block; padding: 0; margin: 0; list-style: none; }`,
+    `${ENTRIES} > li { display: block; }`,
+    `${ENTRIES} > li::before { content: none; }`,
     '',
   ].join('\n');
 }

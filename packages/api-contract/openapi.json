@@ -247224,6 +247224,30 @@
                                         "block",
                                         "label"
                                       ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "pages_not_carried"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "running_matter_not_carried"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
                                     }
                                   ]
                                 },
@@ -247730,6 +247754,30 @@
                                         "node",
                                         "block",
                                         "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "pages_not_carried"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "running_matter_not_carried"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
                                       ]
                                     }
                                   ]

@@ -1222,8 +1222,9 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'html',
       standard: null,
       producer: 'html',
-      producer_version: 'html/1',
-      report: [],
+      producer_version: 'html/2',
+      // The default layout's running matter and contents print pages, which HTML has none of (HT-K).
+      report: [{ kind: 'pages_not_carried' }, { kind: 'running_matter_not_carried' }],
     });
     expect([...kept]).toEqual([[html!.object_key, OUTPUT_CONTENT_TYPES.html]]);
     const bytes = await pdfOf(html!.object_key);
@@ -1237,8 +1238,22 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await requestRow(id)).toMatchObject({ state: 'done', failures: [] });
   }, 120_000);
 
-  it('fails HTML by name for a kind its writer does not write yet, before anything is kept (HTa)', async () => {
+  it('publishes HTML beside the PDF with a table, a footnote, a reference and equations, its faces subset (HTb)', async () => {
     const kept = new Map<string, string>();
+    const MATHS =
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x plus one"><mi>x</mi><mo>+</mo><mn>1</mn></math>';
+    const cell = (name: string, value: string) => ({
+      content: [
+        {
+          type: 'paragraph',
+          id: name,
+          style: 'body',
+          content: [{ type: 'text', value, marks: [] }],
+        },
+      ],
+      colspan: 1,
+      rowspan: 1,
+    });
     const id = await requested(
       async (trx) => [
         section('Introduction', [
@@ -1250,11 +1265,44 @@ describe('publishing a document, from the request to the stored PDF', () => {
               [],
               [
                 {
-                  type: 'equation',
-                  id: 'e1',
-                  mathml:
-                    '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
-                  numbered: false,
+                  type: 'table',
+                  id: 't1',
+                  style: 'table',
+                  caption: [{ type: 'text', value: 'Readings by site', marks: [] }],
+                  headerRows: 1,
+                  headerColumns: 0,
+                  rows: [{ cells: [cell('h1', 'Site')] }, { cells: [cell('c1', 'York')] }],
+                },
+                { type: 'equation', id: 'e1', mathml: MATHS, numbered: true },
+                {
+                  type: 'paragraph',
+                  id: 'p1',
+                  style: 'body',
+                  content: [
+                    { type: 'text', value: 'Grace read ', marks: [] },
+                    { type: 'equation', mathml: MATHS },
+                    { type: 'text', value: ' in ', marks: [] },
+                    {
+                      type: 'crossReference',
+                      id: 'x1',
+                      target: { kind: 'block', block: 't1' },
+                      display: 'page',
+                      withoutPages: 'number',
+                    },
+                    {
+                      type: 'footnote',
+                      id: 'n1',
+                      anchor: { kind: 'span' },
+                      content: [
+                        {
+                          type: 'paragraph',
+                          id: 'n1a',
+                          style: 'body',
+                          content: [{ type: 'text', value: 'Ada agreed.', marks: [] }],
+                        },
+                      ],
+                    },
+                  ],
                 },
               ],
             ),
@@ -1263,20 +1311,21 @@ describe('publishing a document, from the request to the stored PDF', () => {
       ],
       ['pdf', 'html'],
     );
-    expect(await work({ handlers: noting(kept) })).toBe('failed');
-    expect(await requestRow(id)).toMatchObject({
-      state: 'failed',
-      failures: [
-        {
-          stage: 'compose',
-          code: 'html_not_yet',
-          node: expect.any(String),
-          block: 'e1',
-          detail: 'equation',
-        },
-      ],
-    });
-    expect([...kept]).toEqual([]);
+    expect(await work({ handlers: noting(kept) })).toBe('done');
+    const [pdf, html, ...rest] = await outputsOf(id);
+    expect(rest).toEqual([]);
+    expect([pdf!.format, html!.format]).toEqual(['pdf', 'html']);
+    expect(html!.producer_version).toBe('html/2');
+    const text = new TextDecoder().decode(await pdfOf(html!.object_key));
+    expect(text).toContain('<table aria-labelledby=');
+    expect(text).toContain('alttext="x plus one"');
+    expect(text).toContain('Grace read ');
+    expect(text).toMatch(/<a class="aw-reference" href="#[^"]+">Table 1\.1<\/a>/);
+    expect(text).toContain('role="doc-endnotes"');
+    // The maths face embedded for the equations, and every face subset: a file well under a megabyte.
+    expect(text).toMatch(/src: url\("data:font\/otf;base64,/);
+    expect(text.length).toBeLessThan(2 ** 20);
+    expect(await requestRow(id)).toMatchObject({ state: 'done', failures: [] });
   }, 120_000);
 
   it('publishes to the PDF and Word from one assembly, the PDF byte for byte what the PDF alone is made of', async () => {

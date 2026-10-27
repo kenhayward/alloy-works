@@ -41,7 +41,10 @@ const family = typefaceSchema.shape.family;
  * document, the titles the PDF tags as headings - the document's, the contents' and each list's - which
  * Word sets as body text, kept out of its contents; and each list after the contents Word cannot link
  * to its captions, which only a list of figures, one of them floated, is. TB3's (TB3-J): a table the
- * PDF scaled to its measure, which Word reflows to the page instead. Later slices add their kinds
+ * PDF scaled to its measure, which Word reflows to the page instead. HTb's (the HT plan, HT-K), each
+ * said once of an HTML output, which has no pages: the page numbers the PDF prints - in its running
+ * matter, its contents and lists, or a page reference - and its running heads and feet; and HTML reuses
+ * `table_reflowed`, of a table the PDF scaled, which HTML reflows. Later slices add their kinds
  * as new members here, never by changing one already stored.
  */
 export const OUTPUT_REPORT_KINDS = [
@@ -64,6 +67,8 @@ export const OUTPUT_REPORT_KINDS = [
   'titles_not_headings',
   'list_not_linked',
   'table_reflowed',
+  'pages_not_carried',
+  'running_matter_not_carried',
 ] as const;
 
 /**
@@ -145,6 +150,8 @@ export const outputReportEntrySchema = z.discriminatedUnion('kind', [
   // Only a figure floats (Word 2, ruling R8), so only a list of figures is written unlinked.
   z.strictObject({ kind: z.literal('list_not_linked'), sequence: z.literal('figure') }),
   z.strictObject({ kind: z.literal('table_reflowed'), ...table }),
+  z.strictObject({ kind: z.literal('pages_not_carried') }),
+  z.strictObject({ kind: z.literal('running_matter_not_carried') }),
 ]);
 
 /**
