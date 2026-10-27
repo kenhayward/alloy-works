@@ -78,13 +78,12 @@ function onServedOrigin(address: URL, target: RendererTarget): boolean {
  * rather than the renderer (the HT plan, HT-N): read decoded and in any case, as a server might.
  */
 function isServiceRoute(pathname: string): boolean {
-  let path = pathname;
+  let lower: string;
   try {
-    path = decodeURIComponent(pathname);
+    lower = decodeURIComponent(pathname).toLowerCase();
   } catch {
     return true;
   }
-  const lower = path.toLowerCase();
   return lower === '/v1' || lower.startsWith('/v1/');
 }
 

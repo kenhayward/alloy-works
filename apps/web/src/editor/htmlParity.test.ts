@@ -5,6 +5,7 @@ import {
   parseContentDocument,
   parseOutlineDocument,
   publishedImagePath,
+  PUBLISHING_SCHEMA_1,
   readTheme,
   writeHtml,
   type AssembleInput,
@@ -162,6 +163,7 @@ function written(): Document {
     occurrences: new Map([['calib'.padEnd(26, 'a'), parseContentDocument(CONTENT)]]),
   } as unknown as AssembleInput);
   if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
+  if (assembled.document.schema === PUBLISHING_SCHEMA_1) throw new Error('assembled as schema 1');
   const faces = new Map<string, Uint8Array>();
   for (const face of THEME.typefaces.values()) {
     for (const file of face.files) faces.set(file.sha256, Uint8Array.of(0, 1, 0, 0));

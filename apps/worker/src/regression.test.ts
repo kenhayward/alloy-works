@@ -503,7 +503,7 @@ const heldAsHtml = async (
 ): Promise<void> => {
   const assembled = assemble({
     ...input,
-    formats: [...new Set([...input.formats, 'html'])],
+    formats: [...input.formats, 'html' as const],
   } as Laid);
   if (!assembled.ok) {
     for (const each of assembled.failures) {
@@ -526,7 +526,7 @@ const heldAsHtml = async (
   expect(again.ok && Buffer.compare(again.bytes, written.bytes), 'the same bytes again').toBe(0);
   outputs.check(caseName(), 'html', written.bytes);
   const html = new TextDecoder().decode(written.bytes);
-  const read = await readPdf(pdf);
+  const read = await readPdf(Buffer.from(pdf));
   const printed = spokenIn(read);
   const shown = shownIn(html);
   expect(

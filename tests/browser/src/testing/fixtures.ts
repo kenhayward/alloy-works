@@ -261,7 +261,7 @@ async function publishAs(
   return {
     pdf: await followSignedLink(new URL(pdf.download)),
     html: html === undefined ? null : await followSignedLink(new URL(html.download)),
-    view: html?.view ?? null,
+    view: (html as { readonly view?: string | null } | undefined)?.view ?? null,
   };
 }
 
