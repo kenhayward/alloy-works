@@ -14,7 +14,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 > publication is set from its template's theme, or the environment's, and records it, its tables and images from the
 > theme's table and image styles. A document can be published to Word as well, or instead, as a
 > Word document in the theme's styles with its headings, figures, tables, footnotes and equations
-> numbered by Word, its cross-references fields Word updates and its equations Word's own.
+> numbered by Word, its cross-references fields Word updates and its equations Word's own, and as
+> one HTML file to read on a screen.
 > What follows describes what actually exists today, so that
 > each new feature has something honest to be added to rather than a list of intentions to be
 > corrected.
@@ -1601,11 +1602,12 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   back and the notice offers the changes again; opened while editing, editing goes on. Not yet: the window that loses the
   component to another of your windows is not offered the list until the component is opened again.
 
-- **Publishing a document as a PDF, in Word, or both.** Somebody who may publish a document - the
-  Publisher role, which Ada and Grace hold on General in development - has **Publish as PDF** beneath
-  its outline, and before it a choice of **PDF**, **Word** or **PDF and Word**, PDF unless they choose
-  otherwise, the button's name following the choice; a second or two later the page says it is
-  published. A PDF publication is a tagged PDF of the version on
+- **Publishing a document as a PDF, in Word, as HTML, or any of them.** Somebody who may publish a
+  document - the Publisher role, which Ada and Grace hold on General in development - has **Publish
+  as PDF** beneath its outline, and before it a box for each format its layout makes - **PDF**,
+  **Word** and **HTML** under the default layout - PDF alone checked unless they choose otherwise,
+  the button's name following the choice and the button off until one is checked; a second or two
+  later the page says it is published. A PDF publication is a tagged PDF of the version on
   the page: its title, its sections numbered as the outline shows them and bookmarked, and each
   component's paragraphs, lists, quotations and preformatted text beneath its heading, set from the
   environment's **theme** - Liberation Serif, with inline code and preformatted text in Liberation
@@ -1736,6 +1738,22 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   The note also names any typeface Word shows in another, and says when a publication has no PDF.
   The publication's page offers each file to download, **Download the PDF** and **Download the Word
   document**, and shows the PDF in the page; a Word document is only downloaded.
+
+  **Publishing as HTML.** Check **HTML** and the publication holds one HTML file to read on a
+  screen, made from the same version as the PDF: its typefaces, cut down to the characters it uses,
+  and its images inside it, so it opens anywhere with nothing fetched and no script. It is the PDF's
+  text, styles and numbers in one column at most the PDF's width, which reflows to a phone's: headings
+  at their levels, the contents and each list as links, every table in a region of its own that
+  scrolls sideways where it is too wide, footnotes at the end of their top-level section, each linked
+  to its mark and back, equations as MathML read by their words, and every passage in another
+  language marked with its language and direction. The browser suite holds it to WCAG 2.2 AA, at
+  320 pixels wide and with its text at 200%. HTML has no pages, so a page reference prints its form for
+  a reading format, and one with none refuses the publish; a page break sets nothing, and the
+  publication's page says that page numbers, running heads and feet, and a table the PDF scales to
+  fit are not carried. The publication's page offers **Download the HTML file** and, in a browser,
+  **Open the HTML file**, which shows it in a tab of its own, to readers inside the organisation,
+  sandboxed so it can run nothing and reach nothing; somebody shared it from outside, and the desktop
+  app, downloads it.
 
   **Lists, quotations, preformatted text, tables, figures and images reach Word** as they reach the
   PDF, spaced as the PDF spaces them. A list is Word's own list, bulleted or numbered as you made

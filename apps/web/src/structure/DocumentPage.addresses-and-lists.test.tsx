@@ -2440,15 +2440,15 @@ describe('publishing from the document page', () => {
     };
     const word = shown({ ...layoutView(defaultLayout.scheme), formats: ['pdf', 'docx'] });
     await screen.findByRole('treeitem', { name: 'Method' });
-    const choice = screen.getByRole('radiogroup', { name: 'Publish as' });
-    expect(within(choice).getByRole('radio', { name: 'PDF' })).toBeChecked();
-    expect(within(choice).getByRole('radio', { name: 'Word' })).not.toBeChecked();
+    const choice = screen.getByRole('group', { name: 'Publish as' });
+    expect(within(choice).getByRole('checkbox', { name: 'PDF' })).toBeChecked();
+    expect(within(choice).getByRole('checkbox', { name: 'Word' })).not.toBeChecked();
     word.unmount();
 
     shown({ ...layoutView(defaultLayout.scheme), formats: ['pdf'] });
     await screen.findByRole('treeitem', { name: 'Method' });
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
-    expect(screen.queryByRole('radiogroup', { name: 'Publish as' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Publish as' })).toBeNull();
   });
 });
 

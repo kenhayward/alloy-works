@@ -5076,7 +5076,7 @@ export interface paths {
         };
         /**
          * A publication's output, through the service, decided at each request
-         * @description Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded.
+         * @description Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded. With `disposition=inline`, an HTML output is shown in place to a reader inside the organisation, under a policy that sandboxes it and lets it fetch nothing; somebody from outside is given it to save, and any other format is refused.
          */
         get: operations["getSharedOutput"];
         put?: never;
@@ -85795,8 +85795,8 @@ export interface operations {
                             })[];
                             /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
                             download: string;
-                            /** @description None here: the file is saved, as `{id}.html` */
-                            view: null;
+                            /** @description The service's address that shows it in place, sandboxed, to a reader inside the organisation; null for somebody from outside, who saves it */
+                            view: string | null;
                         } | {
                             /** @constant */
                             format: "provenance";
@@ -86293,7 +86293,9 @@ export interface operations {
     };
     getSharedOutput: {
         parameters: {
-            query?: never;
+            query?: {
+                disposition?: "attachment" | "inline";
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -86306,7 +86308,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The bytes, saved as the publication id and format: decided at each request, so a revoked share fetches nothing more */
+            /** @description The bytes, saved as the publication id and format, or an HTML output shown in place under a sandboxing policy: decided at each request, so a revoked share fetches nothing more */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -86318,6 +86320,26 @@ export interface operations {
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
                     "text/html; charset=utf-8": string;
                     "application/json": string;
+                };
+            };
+            /** @description output_not_shown: only an HTML output is shown in place; save any other */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
                 };
             };
             /** @description No session, or not one this environment issued */

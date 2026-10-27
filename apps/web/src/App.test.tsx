@@ -8,6 +8,7 @@ import type { PlatformBridge } from './platform/bridge.js';
 
 const desktopBridge: PlatformBridge = {
   getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+  opensServedPages: false,
   setSpellCheckLanguages: async () => {},
   setInterfaceLanguage: async () => {},
 };
@@ -142,6 +143,7 @@ describe('App', () => {
     vi.stubGlobal('fetch', signedIn);
     const pending: PlatformBridge = {
       getPlatformInfo: () => new Promise(() => {}),
+      opensServedPages: false,
       setSpellCheckLanguages: async () => {},
       setInterfaceLanguage: async () => {},
     };

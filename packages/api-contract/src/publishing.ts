@@ -373,7 +373,13 @@ const HtmlOutputView = z.object({
   producerVersion: z.string().describe("The HTML writer's version, as `html/1`"),
   report: outputReportSchema.describe('What HTML could not carry of what the PDF sets'),
   download,
-  view: z.null().describe('None here: the file is saved, as `{id}.html`'),
+  view: z
+    .string()
+    .regex(/^\/v1\/publications\/[0-9a-f-]+\/outputs\/html\?disposition=inline$/)
+    .nullable()
+    .describe(
+      "The service's address that shows it in place, sandboxed, to a reader inside the organisation; null for somebody from outside, who saves it",
+    ),
 });
 
 /** `provenance.json`: where each value a publication printed came from (DAT-042, PUB-049). */

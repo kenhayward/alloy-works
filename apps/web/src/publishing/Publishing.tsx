@@ -30,26 +30,6 @@ interface Listed {
   readonly formats: readonly string[];
 }
 
-/**
- * What an author may ask a publish for where the layout makes Word (Word 1, ruling R14): the PDF,
- * which is chosen until they choose otherwise, Word, or both - each asked for PDF first.
- */
-const CHOICES = [
-  { formats: ['pdf'], words: 'PDF' },
-  {
-    formats: ['docx'],
-    get words() {
-      return say('publishing.word');
-    },
-  },
-  {
-    formats: ['pdf', 'docx'],
-    get words() {
-      return say('publishing.pdf-and-word');
-    },
-  },
-] as const;
-
 type Publish =
   | { readonly state: 'idle' }
   | { readonly state: 'working' }
@@ -207,7 +187,7 @@ export function Publishing({
   readonly placeOf: (node: string) => string;
   /** Given in tests, which need not wait a second. */
   readonly followMs?: number;
-  /** The formats the layout a publish would be made under makes: the PDF alone unless it says Word. */
+  /** The formats the layout a publish would be made under makes, the PDF first: the PDF alone unless it says more. */
   readonly formats?: readonly string[];
   /**
    * A preview of the document, offered beside **Publish** to anybody who may read it, whether or not
@@ -249,8 +229,18 @@ export function Publishing({
     readonly onSave: (change: TitleTranslation) => Promise<boolean>;
   };
 }) {
-  const offersWord = formats.includes('docx');
-  const [chosen, setChosen] = useState<(typeof CHOICES)[number]>(CHOICES[0]);
+  // A box for each format the layout makes, the PDF chosen until the author chooses otherwise (HT-N).
+  const offersChoice = formats.length > 1;
+  const [chosenSet, setChosenSet] = useState<ReadonlySet<string>>(() => new Set(['pdf']));
+  // In the layout's order, the PDF first; the PDF where there is nothing to choose.
+  const chosen = offersChoice ? formats.filter((format) => chosenSet.has(format)) : ['pdf'];
+  const choose = (format: string, on: boolean) =>
+    setChosenSet((now) => {
+      const next = new Set(now);
+      if (on) next.add(format);
+      else next.delete(format);
+      return next;
+    });
   const choiceId = useId();
   const [listed, setListed] = useState<Listed[] | 'failed' | null>(null);
   const [listAttempt, setListAttempt] = useState(0);
@@ -339,7 +329,7 @@ export function Publishing({
         // What the author chose, or the PDF where there was nothing to choose.
         body: {
           version,
-          formats: offersWord ? [...chosen.formats] : ['pdf'],
+          formats: chosen,
           ...(profile === undefined ? {} : { profile: profileOnTheWire(profile.chosen) }),
           ...(publishIn === '' ? {} : { language: publishIn }),
         },
@@ -361,23 +351,28 @@ export function Publishing({
   return (
     <section aria-labelledby="publications-title">
       <h3 id="publications-title">{say('publishing.publications')}</h3>
-      {mayPublish && offersWord && (
-        <div role="radiogroup" aria-labelledby={`${choiceId}-label`}>
-          <span id={`${choiceId}-label`}>{say('publishing.publish-as')}</span>
-          {CHOICES.map((choice) => (
-            <label key={choice.words}>
+      {mayPublish && offersChoice && (
+        <fieldset
+          className={styles['formats']}
+          aria-describedby={chosen.length === 0 ? `${choiceId}-none` : undefined}
+        >
+          <legend>{say('publishing.publish-as')}</legend>
+          {formats.map((format) => (
+            <label key={format}>
               {' '}
               <input
-                type="radio"
-                name={`${choiceId}-formats`}
-                checked={chosen === choice}
+                type="checkbox"
+                checked={chosenSet.has(format)}
                 disabled={publish.state === 'working'}
-                onChange={() => setChosen(choice)}
+                onChange={(event) => choose(format, event.target.checked)}
               />{' '}
-              {choice.words}
+              {formatsWords([format])}
             </label>
           ))}
-        </div>
+          {chosen.length === 0 && (
+            <p id={`${choiceId}-none`}>{say('publishing.choose-a-format')}</p>
+          )}
+        </fieldset>
       )}
       {mayPublish && others.length > 0 && (
         <p>
@@ -447,12 +442,12 @@ export function Publishing({
             <button
               className="primary"
               type="button"
-              disabled={publish.state === 'working'}
+              disabled={publish.state === 'working' || chosen.length === 0}
               onClick={() => void start()}
             >
-              {say('publishing.publish-as-2', {
-                format: offersWord ? chosen.words : say('publishing.pdf'),
-              })}
+              {chosen.length === 0
+                ? say('document.publish')
+                : say('publishing.publish-as-2', { format: formatsWords(chosen) })}
             </button>
           )}
         </div>
@@ -485,7 +480,7 @@ export function Publishing({
                 label={say('publishing.why-it-could-not-be')}
                 failures={publish.failures}
                 placeOf={placeOf}
-                wordOffered={offersWord}
+                wordOffered={formats.includes('docx')}
               />
             )}
           </>

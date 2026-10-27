@@ -17,7 +17,7 @@ import {
   describePlatform,
   isTrustedFrame,
   navigationDecision,
-  opensExternally,
+  windowOpenDecision,
   redirectDecision,
   resolveRendererTarget,
   spellCheckerChoice,
@@ -120,7 +120,8 @@ function createWindow(): void {
     if (decision.openExternally) void shell.openExternal(decision.openExternally);
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
-    if (opensExternally(url)) void shell.openExternal(url);
+    const decision = windowOpenDecision(url);
+    if (decision.openExternally) void shell.openExternal(decision.openExternally);
     return { action: 'deny' };
   });
 

@@ -17,6 +17,7 @@ import {
   PUBLISHING_SCHEMA,
   setWithoutAGlyph,
   writeDocx,
+  writeHtml,
 } from '@alloy-works/domain';
 import { strFromU8, unzipSync } from 'fflate';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
@@ -31,6 +32,7 @@ import { checkPdfUa1 } from './testing/verapdf.js';
 import { createTypst, TypstRefused, typstBinaryPath } from './typst.js';
 // The corpus's cases beyond the first (W14.3): the engine spike's nine, the defects, and the keeps.
 import { rootImages } from './jobs/publish.js';
+import { loadSubsetter } from './subset.js';
 import { readPaint, type Paint } from './testing/pdf.js';
 import {
   chartOf,
@@ -99,6 +101,7 @@ const pinnedDocx = (input: Parameters<typeof writeDocx>[0]) => {
 };
 /** The worker's own face files, by the hash the theme names each by: what the job hands the writer. */
 const faces = await pinnedFacesByHash(FONT_DIRECTORY);
+const subset = await loadSubsetter();
 const at = new Date('2026-09-19T00:00:00Z');
 const id = (name: string) => name.padEnd(26, 'a');
 const COMPONENT = '00000000-0000-4000-8000-000000000001';
@@ -483,8 +486,187 @@ const published = async (input: Laid, charts: readonly Chart[] = []) => {
     at,
     await rootImages(input.assets, async (key) => stored.get(key)!),
   );
+  await heldAsHtml(input, stored, pdf);
   return { assembled, pdf };
 };
+
+/**
+ * **The case as HTML** (the HT plan, HT-P), from the same input asked for HTML beside the PDF: written
+ * twice to the same bytes, held to its pin, and held to the PDF - the same text in order, its notes as
+ * a set per section, its tables' cells, and the same alternatives. A case under a layout that makes
+ * no HTML, or citing a page with no form for a reading format, has none: each refused by name.
+ */
+const heldAsHtml = async (
+  input: Laid,
+  stored: ReadonlyMap<string, Uint8Array>,
+  pdf: Uint8Array,
+): Promise<void> => {
+  const assembled = assemble({
+    ...input,
+    formats: [...input.formats, 'html' as const],
+  } as Laid);
+  if (!assembled.ok) {
+    for (const each of assembled.failures) {
+      expect(['format_unsupported', 'page_reference_without_pages']).toContain(each.code);
+    }
+    return;
+  }
+  const images = await rootImages(input.assets, async (key) => stored.get(key)!);
+  const write = () =>
+    writeHtml({
+      document: assembled.document,
+      html: assembled.html!,
+      faces,
+      images: new Map(images.map((image) => [image.path, image.bytes])),
+      subset,
+    });
+  const written = write();
+  if (!written.ok) throw new Error(JSON.stringify(written.failures));
+  const again = write();
+  expect(again.ok && Buffer.compare(again.bytes, written.bytes), 'the same bytes again').toBe(0);
+  outputs.check(caseName(), 'html', written.bytes);
+  const html = new TextDecoder().decode(written.bytes);
+  const read = await readPdf(Buffer.from(pdf));
+  const printed = spokenIn(read);
+  const shown = shownIn(html);
+  expect(
+    differing(squeezed(shown.flow), squeezed(printed.flow)),
+    'the same text in order',
+  ).toBeNull();
+  expect(
+    shown.notes.map((each) => each.map(squeezed).sort()),
+    'the same notes',
+  ).toEqual(printed.notes.map((each) => each.map(squeezed).sort()));
+  expect(shown.tables.map(characters), "the same tables' cells").toEqual(
+    printed.tables.map(characters),
+  );
+  // And the same alternatives, each figure's in order and each equation's.
+  expect(shown.alternatives, 'the same descriptions').toEqual(
+    read.figures.map((each) => each.alt).filter((alt) => alt !== null && alt !== ''),
+  );
+  // As a set: one in a note stands at the foot of its page in the PDF, at the end of its section here.
+  expect(shown.formulas.sort(), "the same equations' words").toEqual(
+    read.formulas.map((each) => each.alt).sort(),
+  );
+};
+
+/** Where two texts first differ, with a little of each from there, or null where they do not. */
+function differing(html: string, pdf: string): { html: string; pdf: string } | null {
+  let at = 0;
+  while (at < html.length && html[at] === pdf[at]) at += 1;
+  if (at === html.length && at === pdf.length) return null;
+  const from = Math.max(0, at - 30);
+  return { html: html.slice(from, at + 50), pdf: pdf.slice(from, at + 50) };
+}
+
+/** Text compared as characters, its spacing apart: a PDF breaks its lines where HTML flows. */
+const squeezed = (text: string): string => text.replace(/\s+/g, '');
+
+/**
+ * What a reader of the PDF hears, in the order its structure tells it: its text with its running
+ * matter dropped, which is an artifact and no part of the tree; and the page numbers it prints in the
+ * contents and its lists, which HTML has none of; and its notes, set apart as a set for each section,
+ * since the PDF sets each at the foot of its page and HTML at the end of its section (HT-I).
+ */
+function spokenIn(read: Awaited<ReturnType<typeof readPdf>>): {
+  flow: string;
+  notes: string[][];
+  tables: string[];
+} {
+  let flow = '';
+  const notes: string[][] = [];
+  const tables: string[] = [];
+  let note: string | null = null;
+  let inTable = false;
+  for (const { text, roles } of read.spoken) {
+    // A top-level section's heading starts its notes; the document's own matter before it has none.
+    if (roles[0] === 'H1') notes.push([]);
+    // An equation's glyphs are the maths face's, compared by their words below.
+    if (roles.includes('Formula')) continue;
+    // A table's cells, whose rows a page may break in two, each half told on its own page: compared
+    // as their characters, the table's caption and notes in the flow.
+    const cell = roles.includes('TD') || roles.includes('TH');
+    if (cell && !inTable) tables.push('');
+    inTable = cell;
+    if (cell) {
+      tables[tables.length - 1] += text;
+      continue;
+    }
+    if (roles.includes('Note')) {
+      // Its label, the numbering table's, begins a note; its paragraphs follow.
+      if (roles.includes('Lbl')) {
+        note = '';
+        notes.at(-1)!.push(note);
+      } else notes.at(-1)![notes.at(-1)!.length - 1] = note = `${note ?? ''}${text}`;
+      continue;
+    }
+    // A list's markers, which HTML's stylesheet draws.
+    if (roles[0] === 'Lbl' && roles[1] === 'LI') continue;
+    if (roles.includes('TOCI') && /^\s*[\divxlc]+\s*$/i.test(text)) continue;
+    flow += text;
+  }
+  return { flow, notes: notes.filter((each) => each.length > 0), tables };
+}
+
+/** A table's characters, in no order. */
+const characters = (text: string): string => [...squeezed(text)].sort().join('');
+
+/** The HTML's character data, its five entities read. */
+const charactersOf = (markup: string): string =>
+  markup
+    .replace(/<[^>]*>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+
+/**
+ * What a reader of the HTML file reads, as `spokenIn` says the PDF's: its body's text but the revision
+ * its header says once, which the PDF's running matter carries, and each section's notes apart, each
+ * after its link back; with every image's description and every equation's words.
+ */
+function shownIn(html: string): {
+  flow: string;
+  notes: string[][];
+  tables: string[];
+  alternatives: string[];
+  formulas: string[];
+} {
+  const body = html.slice(html.indexOf('<body>'), html.indexOf('</body>'));
+  const notes: string[][] = [];
+  const tables: string[] = [];
+  const flow = body
+    .replace(/<p data-role="running">[\s\S]*?<\/p>/, '')
+    // What is never shown: the word a table's region is named by.
+    .replace(/<(\w+)\b[^>]*\shidden=""[^>]*>[\s\S]*?<\/\1>/g, '')
+    .replace(/<math[\s\S]*?<\/math>/g, '')
+    .replace(/<table[\s\S]*?<\/table>/g, (table) => {
+      tables.push(charactersOf(table));
+      return '';
+    })
+    // A preformatted block's label, which the projection sets before it as the PDF prints it.
+    .replace(/(<pre\b[^>]*\sdata-language="([^"]*)"[^>]*>)/g, '$2$1')
+    .replace(/<section role="doc-endnotes"[\s\S]*?<\/section>/g, (section) => {
+      notes.push(
+        [...section.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].map((item) =>
+          charactersOf(item[1]!.replace(/^[\s\S]*?<a role="doc-backlink"[^>]*>[^<]*<\/a>/, '')),
+        ),
+      );
+      return '';
+    });
+  const attribute = (name: string, tag: string) =>
+    [...body.matchAll(new RegExp(`<${tag}\\b[^>]*\\s${name}="([^"]*)"`, 'g'))].map((each) =>
+      charactersOf(each[1]!),
+    );
+  return {
+    flow: charactersOf(flow),
+    notes,
+    tables,
+    alternatives: attribute('alt', 'img').filter((alt) => alt !== ''),
+    formulas: attribute('alttext', 'math'),
+  };
+}
 
 /** The assets these images are, by version, as a request resolves them. */
 const assetsOf = (charts: readonly Chart[]): ReadonlyMap<string, PublishingAsset> =>

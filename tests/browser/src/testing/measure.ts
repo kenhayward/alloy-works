@@ -29,10 +29,15 @@ export async function measureEditor(
   page: Page,
   tokens: readonly string[],
   families: Readonly<Record<string, string>>,
+  /**
+   * Where the text is, and what in it is not the text: the document view's canvas, or an HTML
+   * publication's, less the header and the contents and lists before its text (HT-O).
+   */
+  { root = 'section.aw-canvas', outside = '[data-label], button' } = {},
 ): Promise<Map<string, Measured>> {
   const found = await page.evaluate(
-    ({ tokens, pxPerPt }) => {
-      const text = document.querySelector<HTMLElement>('section.aw-canvas');
+    ({ tokens, pxPerPt, root, outside }) => {
+      const text = document.querySelector<HTMLElement>(root);
       if (!text) throw new Error('The document has no canvas');
       const origin = text.getBoundingClientRect();
       const style = getComputedStyle(text);
@@ -51,7 +56,7 @@ export async function measureEditor(
       const answers: Record<string, unknown> = {};
       const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT, {
         acceptNode: (node) =>
-          node.parentElement?.closest('[data-label], button')
+          node.parentElement?.closest(outside)
             ? NodeFilter.FILTER_REJECT
             : NodeFilter.FILTER_ACCEPT,
       });
@@ -199,7 +204,7 @@ export async function measureEditor(
       }
       return answers;
     },
-    { tokens: [...tokens], pxPerPt: PX_PER_PT },
+    { tokens: [...tokens], pxPerPt: PX_PER_PT, root, outside },
   );
   const measured = new Map<string, Measured>();
   for (const token of tokens) {

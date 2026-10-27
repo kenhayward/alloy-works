@@ -10,6 +10,10 @@ describe('browserBridge', () => {
     });
   });
 
+  it('opens a page the service shows in a new tab, which carries its session (HT-N)', () => {
+    expect(browserBridge.opensServedPages).toBe(true);
+  });
+
   // The browser checks spelling on the surface with its own checker and its own dictionaries, which a
   // page cannot choose, so there is nothing for it to set.
   it('sets no spelling languages, and answers', async () => {
@@ -26,6 +30,7 @@ describe('resolveBridge', () => {
   it('uses the bridge the desktop shell injected', async () => {
     const injected: PlatformBridge = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+      opensServedPages: false,
       setSpellCheckLanguages: async () => {},
       setInterfaceLanguage: async () => {},
     };

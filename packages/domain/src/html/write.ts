@@ -1,5 +1,7 @@
 import { allowedLinkSchemes } from '../content/model/marks.js';
 import {
+  figureImageKey,
+  inlineImageKey,
   inlineReferenceKey,
   type HtmlInput,
   type ReferenceSite,
@@ -111,6 +113,9 @@ const tagOf = (language: PublishedLanguage): string =>
 
 /** Where a block's anchor is where a reference names none: `assemble`'s own spelling, so none meet. */
 const blockAnchor = (node: string, block: string) => `b-${node}-${block}`;
+
+/** The layout's word for a wide table's region, written once, which each region's name begins with. */
+const SCROLL_REGION = 'aw-scroll-region';
 
 /** A hyperlink's address, where its scheme is one the model allows (HT-L): checked again here. */
 const LINKABLE = new RegExp(`^(${allowedLinkSchemes.join('|')})`, 'i');
@@ -325,6 +330,9 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
     ])} />`;
   };
 
+  /** Whether a table is written, whose region names itself by the layout's word (HT-C). */
+  let tabled = false;
+
   // Footnotes, gathered for the top-level section they stand in (HT-I).
   let notes: string[] = [];
   let noteCount = 0;
@@ -356,6 +364,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ['id', paragraph.anchor],
           ['class', 'aw-footnote-paragraph'],
           ['data-style', paragraph.style],
+          ['data-block', paragraph.id],
           ['data-place', 'footnote'],
         ],
         back +
@@ -388,7 +397,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
 
   const inline = (each: PublishedInline, index: number, where: Where): string => {
     if ('text' in each) return run(each, where.chain, where.links);
-    if ('image' in each) return inlineImage(each);
+    if ('image' in each) return inlineImage(each, inlineImageKey(where.node, where.site, index));
     if ('footnote' in each) return footnote(each.footnote, where);
     if ('reference' in each) {
       const { reference } = each;
@@ -456,12 +465,13 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       : element('span', [['class', 'aw-term']], body);
   };
 
-  const inlineImage = (each: PublishedImageRun): string =>
+  const inlineImage = (each: PublishedImageRun, key: string): string =>
     element(
       'span',
       [['class', 'aw-inline-image-holder']],
       image(each.image.path, each.image.width, each.image.alternative, [
         ['class', 'aw-inline-image'],
+        ['data-image-style', input.html.imageStyles.get(key) ?? null],
       ]),
     );
 
@@ -471,6 +481,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       [
         ['id', each.anchor],
         ['data-style', each.style],
+        ['data-block', each.id],
         ['data-place', at],
       ],
       inlines(each.runs, {
@@ -500,7 +511,14 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ) + element('dd', [], blocks(item.blocks, node, 'listItem')),
         ),
       );
-      return element('dl', [['id', each.anchor]], `\n${items.join('\n')}\n`);
+      return element(
+        'dl',
+        [
+          ['id', each.anchor],
+          ['data-block', each.id],
+        ],
+        `\n${items.join('\n')}\n`,
+      );
     }
     sets(MARKER_CHARACTERS, chain);
     const items = each.items.map((item) =>
@@ -512,6 +530,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['id', each.anchor],
         ['start', each.kind === 'ordered' && each.start !== null ? String(each.start) : null],
         ['data-format', each.kind === 'ordered' ? each.format : null],
+        ['data-block', each.id],
       ],
       `\n${items.join('\n')}\n`,
     );
@@ -527,6 +546,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['id', each.anchor],
         ['data-role', 'preformatted'],
         ['data-language', each.label],
+        ['data-block', each.id],
       ],
       element('code', [], escapeText(text)),
     );
@@ -551,7 +571,10 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           )}`;
     return element(
       'blockquote',
-      [['id', each.anchor]],
+      [
+        ['id', each.anchor],
+        ['data-block', each.id],
+      ],
       `\n${blocks(each.blocks, node, 'quotation')}${attribution}\n`,
     );
   };
@@ -577,6 +600,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
   };
 
   const table = (each: PublishedTable, node: string): string => {
+    tabled = true;
     const id = each.anchor ?? blockAnchor(node, each.id);
     const captionId = `${id}-caption`;
     const bound = each.bound;
@@ -729,13 +753,14 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ],
           said,
         ),
-        // A wide table scrolls in its own region, reached by the keyboard, so the page reflows (HT-C).
+        // A wide table scrolls in its own region, reached by the keyboard, so the page reflows (HT-C):
+        // named by the layout's word and its caption, so no two regions share a name.
         element(
           'div',
           [
             ['class', 'aw-table-region'],
             ['role', 'region'],
-            ['aria-label', input.html.words.scrollRegion],
+            ['aria-labelledby', `${SCROLL_REGION} ${captionId}`],
             ['tabindex', '0'],
           ],
           element('table', [['aria-labelledby', captionId]], `\n${rows.join('\n')}\n`),
@@ -780,6 +805,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['id', id],
         ['data-block', each.id],
         ['data-figure', ''],
+        ['data-image-style', input.html.imageStyles.get(figureImageKey(node, each.id)) ?? null],
         ['class', 'aw-figure'],
       ],
       each.captionPosition === 'top' ? body + shown : shown + body,
@@ -1183,6 +1209,19 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
     '<body>',
     '<div class="aw-canvas aw-text">',
     element('header', [], `\n${header.join('\n')}\n`),
+    ...(tabled
+      ? [
+          element(
+            'span',
+            [
+              ['id', SCROLL_REGION],
+              ['lang', wordsLanguage],
+              ['hidden', ''],
+            ],
+            escapeText(input.html.words.scrollRegion),
+          ),
+        ]
+      : []),
     ...front,
     element('main', [], `\n${sections}${back.join('')}`),
     '</div>',
@@ -1232,7 +1271,7 @@ const ENTRIES = '.aw-canvas.aw-canvas.aw-canvas :is(ol.aw-notes, ul.aw-entries)'
  */
 function canvasCss(theme: ResolvedTheme, measure: number): string {
   return [
-    `html { background: ${theme.paper}; }`,
+    `html, .aw-canvas { background: ${theme.paper}; }`,
     'body { margin: 0; }',
     `.aw-canvas { --aw-zoom: 1; box-sizing: border-box; max-width: calc(${Math.round(measure * 100) / 100}pt + 32px); ` +
       'margin-inline: auto; padding: 16px; overflow-wrap: break-word; font-synthesis-style: none; }',
@@ -1242,7 +1281,13 @@ function canvasCss(theme: ResolvedTheme, measure: number): string {
     '.aw-canvas pre { white-space: pre; tab-size: 8; overflow-x: auto; }',
     '.aw-canvas pre[data-language]::before { content: attr(data-language); display: block; }',
     '.aw-canvas img { max-width: 100%; }',
+    '.aw-canvas .aw-figure-image img { display: block; height: auto; }',
     '.aw-canvas figure { margin-inline: 0; }',
+    '.aw-canvas table { border-collapse: collapse; table-layout: fixed; width: 100%; }',
+    '.aw-canvas :is(td, th) { vertical-align: top; }',
+    // A contents entry and a list's are links standing alone, each a finger's height from the next
+    // (WCAG 2.5.8): padded, which also keeps a trimmed line from drawing the next over it.
+    '.aw-canvas nav a { display: block; padding-block: 6px; }',
     '.aw-canvas .aw-table-region { max-width: 100%; overflow-x: auto; }',
     '.aw-canvas .aw-equation-block { display: flex; align-items: center; gap: 1em; overflow-x: auto; }',
     '.aw-canvas .aw-equation-block > math { flex: 1; }',

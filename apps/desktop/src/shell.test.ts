@@ -22,6 +22,7 @@ import {
   spellingMenu,
   trayMenu,
   windowBackground,
+  windowOpenDecision,
 } from './shell.js';
 
 // String.raw so the Windows separators stay literal - the shell must hand Electron the path it was
@@ -366,11 +367,40 @@ describe('keeping the window on the renderer (issue #309)', () => {
 
   it('knows the renderer by its origin where it is served, whatever path or fragment it is at', () => {
     expect(isRenderer('https://acme.alloy.example/#/documents/abc', service)).toBe(true);
-    expect(isRenderer('https://acme.alloy.example/v1/sign-in/organisation', service)).toBe(true);
     expect(isRenderer(`${DEV_SERVER_URL}/#/components/x`, devServer)).toBe(true);
     expect(isRenderer('https://acme.alloy.example.evil.test/', service)).toBe(false);
     expect(isRenderer('http://acme.alloy.example/', service)).toBe(false);
     expect(isRenderer('https://idp.example/authorize', service)).toBe(false);
+  });
+
+  it("never takes the service's own routes for the renderer, which show stored content (the HT plan, HT-N)", () => {
+    for (const path of [
+      '/v1/publications/abc/outputs/html?disposition=inline',
+      '/v1/publications/abc/outputs/pdf',
+      '/v1/sign-in/organisation',
+      '/v1/',
+      '/V1/publications/abc/outputs/html',
+      '/./v1/x',
+      '/%761/x',
+    ]) {
+      expect(isRenderer(`https://acme.alloy.example${path}`, service), path).toBe(false);
+      expect(isRenderer(`${DEV_SERVER_URL}${path}`, devServer), path).toBe(false);
+      expect(isTrustedFrame(`https://acme.alloy.example${path}`, service), path).toBe(false);
+    }
+    // A new window asked for one opens it outside, in the system browser, which holds no session:
+    // the desktop offers a publication's HTML to save, never to open.
+    const shown = 'https://acme.alloy.example/v1/publications/abc/outputs/html?disposition=inline';
+    expect(windowOpenDecision(shown)).toEqual({ allow: false, openExternally: shown });
+    expect(windowOpenDecision('javascript:alert(1)')).toEqual({ allow: false });
+    // The window still goes to a route that saves what it serves, or signs in; a link from a page
+    // there still opens outside.
+    const from = 'https://acme.alloy.example/#/publications/abc';
+    const saved = 'https://acme.alloy.example/v1/publications/abc/outputs/pdf';
+    expect(navigationDecision(saved, from, service)).toEqual({ allow: true });
+    expect(navigationDecision('https://evil.example/', saved, service)).toEqual({
+      allow: false,
+      openExternally: 'https://evil.example/',
+    });
   });
 
   it('knows the renderer by its file where it is loaded from disk, and no other file', () => {

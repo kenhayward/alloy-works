@@ -822,6 +822,7 @@ describe("the spelling checker's languages (W14.7)", () => {
     const asked: string[][] = [];
     const bridge: PlatformBridge = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+      opensServedPages: false,
       setSpellCheckLanguages: async (languages) => {
         asked.push([...languages]);
       },

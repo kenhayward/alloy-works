@@ -79,6 +79,12 @@ export interface ReadPdf {
     readonly lang?: string;
   }[];
   /**
+   * Every marked-content sequence of tagged text, in the order the structure tree tells it, page after
+   * page, with the structure types it stands in, the nearest first: the text a reader hears, which
+   * running matter, an artifact, is no part of (the HT plan, HT-P).
+   */
+  readonly spoken: readonly { readonly text: string; readonly roles: readonly string[] }[];
+  /**
    * Every `Figure` structure element in the file, in the order it is written: its `/Alt`, its
    * `/Lang` where it declares one of its own (the engine writes none where the language is its
    * parent's), and its layout box, `[left, bottom, right, top]` in points on its page.
@@ -421,6 +427,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
     const languages: TaggedLanguage[][] = [];
     const roles: string[] = [];
     const reading: { role: string; text: string; lang?: string }[] = [];
+    const heard: { text: string; roles: string[] }[] = [];
     const pageSizes: (readonly [number, number])[] = [];
     const textLeft: (number | null)[] = [];
     const textBaselines: ({ top: number; bottom: number } | null)[] = [];
@@ -570,6 +577,16 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
         for (const child of node.children ?? []) if (child.type !== 'content') inOrder(child);
       };
       if (tree) inOrder(tree);
+      const told = (node: StructNode, roles: readonly string[]) => {
+        if (node.type === 'content') {
+          const said = held.get(node.id ?? '') ?? '';
+          if (said.trim() !== '') heard.push({ text: said, roles: [...roles] });
+          return;
+        }
+        const own = node.role !== undefined && node.role !== 'Root' ? [node.role, ...roles] : roles;
+        for (const child of node.children ?? []) told(child, own);
+      };
+      if (tree) told(tree, []);
       const boxOf = (node: StructNode): Box | null => {
         const boxes: Box[] =
           node.type === 'content'
@@ -626,6 +643,7 @@ export async function readPdf(bytes: Buffer): Promise<ReadPdf> {
       roles,
       elements: structureElements(text),
       reading,
+      spoken: heard,
       figures: taggedFigures(text),
       notes: taggedNotes(text),
       formulas,

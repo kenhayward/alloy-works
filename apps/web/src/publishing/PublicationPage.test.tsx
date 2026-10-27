@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
 
+import type { PlatformBridge } from '../platform/bridge.js';
 import { PublicationPage } from './PublicationPage.js';
 
 const PUBLICATION = 'ffffffff-0000-4000-8000-000000000001';
@@ -343,6 +344,63 @@ describe('a publication at its own address', () => {
     expect(aside).not.toHaveTextContent('html/1');
     // Shown in the page: the PDF alone (ADR-0070: HTML is opened in a tab of its own, never here).
     expect(document.querySelectorAll('iframe')).toHaveLength(1);
+  });
+
+  const shownHtml = {
+    format: 'html',
+    bytes: 4_096,
+    sha256: 'f'.repeat(64),
+    standard: null,
+    producer: 'html',
+    producerVersion: 'html/2',
+    report: [],
+    download: 'http://store.example.test/t_acme/sha256/fff?X-Amz-Signature=h',
+    view: `/v1/publications/${PUBLICATION}/outputs/html?disposition=inline`,
+  };
+
+  it("offers the HTML to open in a tab of its own where the bridge's new tab carries the session (HT-N)", async () => {
+    open(json(200, { ...record, formats: ['pdf', 'html'], outputs: [pdfOutput, shownHtml] }));
+    const head = (
+      await screen.findByRole('heading', { level: 1, name: 'The dosing report' })
+    ).closest('header')!;
+    const opened = within(head).getByRole('link', { name: 'Open the HTML file' });
+    expect(opened).toHaveAttribute('href', shownHtml.view);
+    expect(opened).toHaveAttribute('target', '_blank');
+    expect(opened).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(head).getByRole('link', { name: 'Download the HTML file' })).toBeInTheDocument();
+    // Never in this page.
+    expect(document.querySelectorAll('iframe')).toHaveLength(1);
+  });
+
+  it("offers the HTML to save alone where the bridge's new windows hold no session (HT-N)", async () => {
+    const desktop: PlatformBridge = {
+      getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron 44.3.0' }),
+      opensServedPages: false,
+      setSpellCheckLanguages: async () => {},
+      setInterfaceLanguage: async () => {},
+    };
+    render(
+      <PublicationPage
+        client={createApiClient({
+          baseUrl: 'http://acme.example.test',
+          fetch: (async () =>
+            json(200, {
+              ...record,
+              formats: ['html'],
+              engine: null,
+              template: null,
+              outputs: [shownHtml],
+            })) as unknown as typeof fetch,
+        })}
+        id={PUBLICATION}
+        bridge={desktop}
+      />,
+    );
+    expect(
+      await screen.findByText('An HTML file is not shown in the page. Download it to read it.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Download the HTML file' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open the HTML file' })).toBeNull();
   });
 
   it('says an HTML file alone is not shown in the page, and offers it to save', async () => {

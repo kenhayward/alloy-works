@@ -1150,7 +1150,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // sniffed into something a browser would run, and never run as a document of this origin.
       const bytes = body as BinaryBody;
       void reply.header('X-Content-Type-Options', 'nosniff');
-      void reply.header('Content-Security-Policy', 'sandbox');
+      void reply.header('Content-Security-Policy', bytes.shownUnder ?? 'sandbox');
+      if (bytes.shownUnder !== undefined) void reply.header('Cache-Control', 'private, no-store');
       if (bytes.immutable)
         void reply.header('Cache-Control', 'private, max-age=31536000, immutable');
       if (bytes.attachment !== undefined) {

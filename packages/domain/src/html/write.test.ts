@@ -375,7 +375,7 @@ describe('the HTML writer (the HT plan, HTa)', () => {
       ),
     );
     const [ol] = all(tree, 'ol').filter((each) => each.attrs['start'] !== undefined);
-    expect(ol!.attrs).toEqual({ start: '3', 'data-format': 'roman' });
+    expect(ol!.attrs).toEqual({ start: '3', 'data-format': 'roman', 'data-block': 'l1' });
     expect(all(ol!, 'p')[0]!.attrs['data-place']).toBe('listItem');
     const [dl] = all(tree, 'dl');
     const [group] = kids(dl!);
@@ -388,7 +388,11 @@ describe('the HTML writer (the HT plan, HTa)', () => {
       'data-role': 'attribution',
     });
     const [pre] = all(tree, 'pre');
-    expect(pre!.attrs).toEqual({ 'data-role': 'preformatted', 'data-language': 'python' });
+    expect(pre!.attrs).toEqual({
+      'data-role': 'preformatted',
+      'data-language': 'python',
+      'data-block': 'c1',
+    });
     expect(textOf(pre!)).toBe('a < b\n  c');
   });
 
@@ -523,12 +527,16 @@ describe('the HTML writer: every other kind (the HT plan, HTb)', () => {
     const [caption, region, ...after] = kids(figure!);
     expect(caption!.attrs).toMatchObject({ class: 'aw-table-caption', 'data-role': 'caption' });
     expect(textOf(caption!)).toBe('Table 1.1 Readings');
-    // A wide table scrolls in its own region, named by the layout's word and reached by the keyboard.
+    // A wide table scrolls in its own region, named by the layout's word and its caption, and
+    // reached by the keyboard.
     expect(region!.attrs).toMatchObject({
       role: 'region',
-      'aria-label': 'Scrollable table',
+      'aria-labelledby': `aw-scroll-region ${caption!.attrs['id']}`,
       tabindex: '0',
     });
+    const [word] = all(tree, 'span').filter((each) => each.attrs['id'] === 'aw-scroll-region');
+    expect(word!.attrs).toMatchObject({ hidden: '' });
+    expect(textOf(word!)).toBe('Scrollable table');
     const [table] = kids(region!);
     expect(table!.attrs['aria-labelledby']).toBe(caption!.attrs['id']);
     const cells = all(table!, 'tr').map((row) =>
@@ -1116,7 +1124,7 @@ describe('the HTML writer: the leak scan reads what it says in attributes (the H
     expect(htmlText(without('(?:alttext|aria-label)'))).not.toContain(SECRET);
   });
 
-  it("reads a table's region and a note's link back by their aria-label, the layout's words", () => {
+  it("reads a table's region's name and a note's link back, the layout's words", () => {
     const html = htmlOf(written(oneComponent([readings()])));
     const read = htmlText(new TextEncoder().encode(html.replaceAll('Scrollable table', SECRET)));
     expect(read).toContain(SECRET);

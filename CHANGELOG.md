@@ -3,6 +3,21 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.213.0 - 2026-10-27 (PR #803)
+
+The HTML reading format (the HT plan).
+
+### Added
+
+- **HTML to read on a screen.** A document can be published as one HTML file beside the PDF and Word, or alone where it cites no page without a form for a reading format. It holds its own typefaces and images, fetches nothing and runs no script, and reflows to a phone's width.
+- **HTML holds every kind of content.** An HTML publication now carries tables, figures and images, footnotes, cross-references, the contents and lists, equations, citations, the bibliography and the glossary, and says what it leaves out of the PDF: page numbers, running heads and a table scaled to fit.
+- **Smaller HTML files.** Each typeface is cut down to the characters the document uses, so a short document is about 0.15 MB rather than 3.5 MB.
+- **Open the HTML file.** In a browser, a publication's page opens its HTML in a tab of its own, for readers in the organisation, sandboxed so it can run nothing. Somebody it is shared with from outside, and the desktop app, download it.
+
+### Changed
+
+- **A box for each format.** The Publishing panel offers a box for each format the document's layout makes, PDF, Word and HTML, the PDF checked first.
+
 ## 0.212.0 - 2026-10-27 (PR #796)
 
 Interface localisation (the UI plan).

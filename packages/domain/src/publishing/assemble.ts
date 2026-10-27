@@ -338,6 +338,12 @@ export interface HtmlInput {
   readonly theme: ResolvedTheme;
   readonly capHeights: ReadonlyMap<string, number>;
   readonly references: ReadonlyMap<string, string>;
+  /**
+   * Each published figure's and image in a line's image style, by `figureImageKey` and
+   * `inlineImageKey`: what the projection places and spaces it by, as the editor's markup carries it
+   * (HT-C).
+   */
+  readonly imageStyles: ReadonlyMap<string, string>;
   /** The layout's words HTML alone sets (HT-D): its notes' heading, each note's link back, a wide table's region. */
   readonly words: {
     readonly notes: string;
@@ -763,6 +769,8 @@ export function assemble(given: AssembleInput): Assembled {
   }
   /** What each reference prints in HTML, by where the writer meets it, where HTML is asked for. */
   const htmlReferences = new Map<string, string>();
+  /** Each image's style, by where the writer meets it, where HTML is asked for (HT-C). */
+  const htmlImageStyles = new Map<string, string>();
   /**
    * The Word page where Word is asked for, as the PDF's page is read, and null where it is not: what
    * each image is sized against for Word (Word 2, ruling R3), into `wordImages`.
@@ -2048,6 +2056,7 @@ export function assemble(given: AssembleInput): Assembled {
           );
         }
         const { width, height } = figureSize(imageStyle, asset, room);
+        if (html) htmlImageStyles.set(figureImageKey(node, block.id), imageStyle.id);
         // And against the Word page by the same rules, where Word is asked for (Word 2, ruling R3).
         if (wordPage !== null) {
           const word = figureSize(imageStyle, asset, figureRoom(wordPage, indent.word, said));
@@ -2430,6 +2439,7 @@ export function assemble(given: AssembleInput): Assembled {
     }
     if (alternative === undefined) return null;
     if (word !== null) wordImages.set(key, word);
+    if (html) htmlImageStyles.set(key, style.id);
     return {
       image: {
         path: publishedImagePath(asset),
@@ -2813,6 +2823,7 @@ export function assemble(given: AssembleInput): Assembled {
           theme: theme!,
           capHeights: capHeights(theme!, input.capHeight),
           references: htmlReferences,
+          imageStyles: htmlImageStyles,
           // Required from layout schema 9, which a layout making HTML is; English where it predates it.
           words: {
             notes: words.notes ?? HTML_WORDS.en!.notes ?? '',

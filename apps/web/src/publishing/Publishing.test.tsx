@@ -1591,48 +1591,60 @@ describe('publishing from the document page', () => {
     expect(screen.queryByRole('button', { name: 'Publish as PDF' })).toBeNull();
   });
 
-  it('asks for PDF, Word or both where the layout makes Word, the PDF unless the author chooses otherwise, from the keyboard', async () => {
+  it('offers a box for each format the layout makes, the PDF chosen first, from the keyboard', async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
       [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
       [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
     });
-    open(fake.fetch, true, 60_000, ['pdf', 'docx']);
-    const choice = await screen.findByRole('radiogroup', { name: 'Publish as' });
-    // Three, in this order.
-    expect(within(choice).getAllByRole('radio')).toEqual(
-      ['PDF', 'Word', 'PDF and Word'].map((name) => within(choice).getByRole('radio', { name })),
+    open(fake.fetch, true, 60_000, ['pdf', 'docx', 'html']);
+    const choice = await screen.findByRole('group', { name: 'Publish as' });
+    // One each, in the layout's order, the PDF alone checked.
+    expect(within(choice).getAllByRole('checkbox')).toEqual(
+      ['PDF', 'Word', 'HTML'].map((name) => within(choice).getByRole('checkbox', { name })),
     );
-    expect(within(choice).getByRole('radio', { name: 'PDF' })).toBeChecked();
+    expect(
+      within(choice)
+        .getAllByRole('checkbox')
+        .map((box) => (box as HTMLInputElement).checked),
+    ).toEqual([true, false, false]);
     expect(screen.getByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
 
-    // From the keyboard alone: into the choice, along it, and on to the button.
-    within(choice).getByRole('radio', { name: 'PDF' }).focus();
-    await userEvent.keyboard('{ArrowDown}');
-    expect(within(choice).getByRole('radio', { name: 'Word' })).toBeChecked();
+    // From the keyboard alone: HTML chosen, the PDF unchosen, and on to the button.
+    within(choice).getByRole('checkbox', { name: 'HTML' }).focus();
+    await userEvent.keyboard(' ');
+    within(choice).getByRole('checkbox', { name: 'PDF' }).focus();
+    await userEvent.keyboard(' ');
     await userEvent.tab();
-    expect(screen.getByRole('button', { name: 'Publish as Word' })).toHaveFocus();
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Publish as HTML' })).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() =>
       expect(fake.sent.filter((each) => each.method === 'POST').map((each) => each.body)).toEqual([
-        { version: VERSION, formats: ['docx'] },
+        { version: VERSION, formats: ['html'] },
       ]),
     );
   });
 
-  it('asks for both formats, the PDF first, when both are chosen', async () => {
+  it("asks for every format chosen, in the layout's order, and for none until one is", async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
       [`POST /v1/documents/${DOCUMENT}/publications`]: [queued()],
       [`GET /v1/publication-requests/${REQUEST}`]: [queued()],
     });
-    open(fake.fetch, true, 60_000, ['pdf', 'docx']);
-    await userEvent.click(await screen.findByRole('radio', { name: 'PDF and Word' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF and Word' }));
+    open(fake.fetch, true, 60_000, ['pdf', 'docx', 'html']);
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'PDF' }));
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+    expect(screen.getByText('Choose a format to publish in.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'HTML' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Word' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'PDF' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF, Word and HTML' }));
     await waitFor(() =>
       expect(fake.sent.find((each) => each.method === 'POST')?.body).toEqual({
         version: VERSION,
-        formats: ['pdf', 'docx'],
+        formats: ['pdf', 'docx', 'html'],
       }),
     );
   });
@@ -1641,7 +1653,7 @@ describe('publishing from the document page', () => {
     const fake = service({ [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])] });
     open(fake.fetch, true, 0, ['pdf']);
     expect(await screen.findByRole('button', { name: 'Publish as PDF' })).toBeInTheDocument();
-    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Publish as' })).toBeNull();
   });
 
   it('lists which formats each publication was made in', async () => {

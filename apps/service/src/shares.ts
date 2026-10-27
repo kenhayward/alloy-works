@@ -5,6 +5,7 @@ import type {
   ShareParams,
   ShareRevoked,
   SharedOutputParams,
+  SharedOutputQuery,
   ShareView,
 } from '@alloy-works/api-contract';
 import {
@@ -24,7 +25,7 @@ import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, scopesOf, type Authorised } from './access.js';
 import type { BinaryBody } from './assets.js';
-import { storageUnavailable } from './errors.js';
+import { AppError, storageUnavailable } from './errors.js';
 import { refused } from './wire-codes.js';
 
 /** Publication shares (publishing.md, "Shares"; the R17 plan). */
@@ -43,11 +44,18 @@ export const shareView = (share: StoredShare): ShareView => ({
 const SERVED = {
   pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  // Saved, as every output here is: an attachment, never a page on this origin (ADR-0070).
+  // Saved, or shown in place sandboxed to a reader inside the organisation (ADR-0070).
   html: 'text/html; charset=utf-8',
   provenance: 'application/json',
   verapdf: 'application/json',
 } as const;
+
+/**
+ * What HTML shown in place may do (the HT plan, HT-M): sandboxed, so it runs nothing and has no origin;
+ * nothing fetched but its own inline styles, images and faces; and never framed.
+ */
+export const SHOWN_HTML_POLICY =
+  "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 /**
  * Whether the caller may read the publication itself, decided from the facts already held: a share
@@ -140,13 +148,23 @@ export function shareHandlers(
     /**
      * An output, through the service (the R17 plan, R17-E): `read` was decided on the publication at
      * this request, so a revoked share fetches nothing more, and saved as the publication's id and
-     * format - never its title. Somebody from outside fetching it is recorded (PUB-060).
+     * format - never its title. Somebody from outside fetching it is recorded (PUB-060). HTML alone
+     * may be shown in place, and only to a reader inside the organisation: an outsider's is saved
+     * (ADR-0070).
      */
     getSharedOutput: async (
       request: FastifyRequest,
-      { trx, principalId }: Authorised,
+      { trx, principalId, facts }: Authorised,
     ): Promise<BinaryBody> => {
       const { id, format } = request.params as SharedOutputParams;
+      const { disposition } = request.query as SharedOutputQuery;
+      if (disposition === 'inline' && format !== 'html') {
+        throw new AppError(
+          400,
+          'output_not_shown',
+          'Only an HTML file is shown in place. Save this one.',
+        );
+      }
       const publication = await readPublication(trx, id);
       if (!publication) throw notFound();
       // Never provenance.json to somebody shared it alone: it names people (the final review).
@@ -160,6 +178,9 @@ export function shareHandlers(
       const store = await objects.forTenant(trx, tenantOf(request));
       const bytes = await store.get(key);
       await recordSharedAccess(trx, { publication: id, output: format, principal: principalId });
+      if (disposition === 'inline' && facts.principal.kind !== 'external') {
+        return { contentType: SERVED.html, bytes, immutable: false, shownUnder: SHOWN_HTML_POLICY };
+      }
       return {
         contentType: SERVED[format],
         bytes,

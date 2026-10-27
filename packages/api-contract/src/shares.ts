@@ -15,6 +15,17 @@ export type ShareParams = z.infer<typeof ShareParams>;
 export const SharedOutputParams = z.object({ id: LowercaseUuid, format: SharedOutputFormat });
 export type SharedOutputParams = z.infer<typeof SharedOutputParams>;
 
+/** Saved, or for HTML alone shown in place to a reader inside the organisation (the HT plan, HT-M). */
+export const SharedOutputQuery = z.object({
+  disposition: z
+    .enum(['attachment', 'inline'])
+    .optional()
+    .describe(
+      '`inline` shows an HTML output in place, sandboxed, to a reader inside the organisation; anybody else is given it as an attachment. Refused for any other format. An attachment where absent',
+    ),
+});
+export type SharedOutputQuery = z.infer<typeof SharedOutputQuery>;
+
 export const ShareBody = z.strictObject({
   email: z
     .email()
@@ -159,10 +170,11 @@ export const shareRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: SharedOutputParams,
+    query: SharedOutputQuery,
     responses: {
       200: {
         description:
-          'The bytes, saved as the publication id and format: decided at each request, so a revoked share fetches nothing more',
+          'The bytes, saved as the publication id and format, or an HTML output shown in place under a sandboxing policy: decided at each request, so a revoked share fetches nothing more',
         binary: {
           contentTypes: [
             'application/pdf',
@@ -171,6 +183,10 @@ export const shareRoutes = {
             'application/json',
           ],
         },
+      },
+      400: {
+        description: 'output_not_shown: only an HTML output is shown in place; save any other',
+        schema: ErrorBody,
       },
       401: unauthenticated,
       403: {

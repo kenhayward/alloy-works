@@ -110,7 +110,12 @@ export async function checkAxe(
   page: Page,
   state: string,
   meta: TaskMeta,
-  options: Arrival & { readonly within?: string; readonly allowed?: readonly Allowed[] },
+  options: Arrival & {
+    readonly within?: string;
+    readonly allowed?: readonly Allowed[];
+    /** axe's best practices too, which are not WCAG: asked of an HTML publication (HT-O). */
+    readonly bestPractice?: boolean;
+  },
 ): Promise<void> {
   const themed = await page.evaluate(() => document.documentElement.dataset['theme'] !== undefined);
   if (!themed) return checkAxeOnce(page, state, meta, options);
@@ -144,11 +149,19 @@ async function checkAxeOnce(
   {
     within,
     allowed: list = ALLOWED,
+    bestPractice = false,
     ...arrival
-  }: Arrival & { readonly within?: string; readonly allowed?: readonly Allowed[] },
+  }: Arrival & {
+    readonly within?: string;
+    readonly allowed?: readonly Allowed[];
+    readonly bestPractice?: boolean;
+  },
 ): Promise<void> {
   await arrived(state, arrival);
-  let builder = new AxeBuilder({ page, axeSource: AXE_SOURCE }).withTags([...WCAG_22_AA]);
+  let builder = new AxeBuilder({ page, axeSource: AXE_SOURCE }).withTags([
+    ...WCAG_22_AA,
+    ...(bestPractice ? ['best-practice'] : []),
+  ]);
   if (within !== undefined) builder = builder.include(within);
   const results = await builder.analyze();
   await arrived(state, arrival);

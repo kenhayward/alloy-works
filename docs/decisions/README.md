@@ -63,7 +63,7 @@ exist.
 | [0067](0067-citations-are-csl-rendered-by-citeproc-js.md)                         | Citations are CSL, rendered by citeproc-js                                    | Accepted           |
 | [0068](0068-reference-sources-are-declared-and-reached-through-the-connector.md)  | Reference sources are declared and reached through the connector              | Accepted           |
 | [0069](0069-an-import-is-a-proposal-read-in-the-worker.md)                        | An import is a proposal, read in the worker                                   | Accepted           |
-| [0070](0070-html-is-a-third-output-served-sandboxed.md)                           | HTML is a third output, served sandboxed                                      | Proposed           |
+| [0070](0070-html-is-a-third-output-served-sandboxed.md)                           | HTML is a third output, served sandboxed                                      | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

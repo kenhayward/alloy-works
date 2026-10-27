@@ -946,7 +946,8 @@ describe('publishing a document through the service', () => {
       producerVersion: 'html/1',
       report: [],
       download: expect.any(String),
-      view: null,
+      // Shown only by the service's own sandboxed route (HT-M).
+      view: `/v1/publications/${id}/outputs/html?disposition=inline`,
     });
     // Saved, under the publication's id: the store's link never shows tenant HTML (ADR-0070).
     const saved = await fetch(body.outputs[1]!.download);
@@ -957,6 +958,42 @@ describe('publishing a document through the service', () => {
     expect(served.statusCode).toBe(200);
     expect(served.headers['content-disposition']).toBe(`attachment; filename="${id}.html"`);
     expect(served.headers['content-type']).toBe(OUTPUT_CONTENT_TYPES.html);
+  });
+
+  it('shows the HTML in place to a reader in the organisation, sandboxed, never kept, and no other format', async () => {
+    const document = await documentReferencing([]);
+    const answer = await publish('grace', document, ['pdf', 'html']);
+    const id = await published(answer.json<{ id: string }>().id, ['pdf', 'html']);
+    const shown = await call(
+      'alice',
+      'GET',
+      `/v1/publications/${id}/outputs/html?disposition=inline`,
+    );
+    expect(shown.statusCode, shown.body).toBe(200);
+    expect(shown.headers['content-disposition']).toBeUndefined();
+    expect(shown.headers['content-type']).toBe(OUTPUT_CONTENT_TYPES.html);
+    expect(shown.headers['content-security-policy']).toBe(
+      "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    );
+    expect(shown.headers['cache-control']).toBe('private, no-store');
+    expect(shown.headers['x-content-type-options']).toBe('nosniff');
+    // A PDF or anything else is saved from here, never shown: asking to is refused.
+    for (const format of ['pdf', 'provenance', 'verapdf']) {
+      const refused = await call(
+        'alice',
+        'GET',
+        `/v1/publications/${id}/outputs/${format}?disposition=inline`,
+      );
+      expect(refused.statusCode, format).toBe(400);
+      expect(refused.json(), format).toMatchObject({ code: 'output_not_shown' });
+    }
+    // Asked as an attachment, it is one.
+    const saved = await call(
+      'alice',
+      'GET',
+      `/v1/publications/${id}/outputs/html?disposition=attachment`,
+    );
+    expect(saved.headers['content-disposition']).toBe(`attachment; filename="${id}.html"`);
   });
 
   it('opens a Word-only publication with no PDF engine or template', async () => {

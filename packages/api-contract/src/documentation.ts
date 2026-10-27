@@ -1248,7 +1248,7 @@ const descriptions: Readonly<Record<string, string>> = {
   revokePublicationShare:
     'Revokes a share at once: the recipient’s next request for the publication or any of its outputs finds nothing.',
   getSharedOutput:
-    'Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded.',
+    'Returns one of a publication’s outputs, or its PDF’s veraPDF report, through the service, saved as the publication’s id and never kept by the browser. Decided at each request, so a revoked share fetches nothing more; somebody from outside fetching it is recorded. With `disposition=inline`, an HTML output is shown in place to a reader inside the organisation, under a policy that sandboxes it and lets it fetch nothing; somebody from outside is given it to save, and any other format is refused.',
   listTokens:
     'Lists the caller’s own personal tokens and their expiry and last use. Token secrets are never returned by a listing.',
   createToken:

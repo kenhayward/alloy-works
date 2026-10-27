@@ -107,6 +107,7 @@ export {
   ShareRevoked,
   SharedOutputFormat,
   SharedOutputParams,
+  SharedOutputQuery,
   ShareView,
   shareRoutes,
 } from './shares.js';

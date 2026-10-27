@@ -77,6 +77,7 @@ describe('the interface’s language on the desktop (the UI plan, UI-I)', () => 
     const told: string[] = [];
     window.alloyWorks = {
       getPlatformInfo: async () => ({ delivery: 'desktop', runtime: 'Electron' }),
+      opensServedPages: false,
       setSpellCheckLanguages: async () => {},
       setInterfaceLanguage: async (language) => {
         told.push(language);
