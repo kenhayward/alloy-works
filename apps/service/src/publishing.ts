@@ -469,7 +469,8 @@ export function publishingHandlers(
     /**
      * `read` was decided on the publication artifact itself, so a grant on its document reaches none
      * of it (decision D). A document's or a component's id authorises, and is then no publication. Each
-     * output's link is signed for five minutes and saves the bytes as `{id}.pdf` or `{id}.docx`: never
+     * output's link is signed for five minutes and saves the bytes as `{id}.pdf`, `{id}.docx` or
+     * `{id}.html`: never
      * the title, because the link's query string reaches the store's logs. Each is served as the type
      * its bytes were kept as, its format's (`OUTPUT_CONTENT_TYPES`). Only the PDF has a link that shows
      * it in place: a browser saves a Word document whatever the link says.
@@ -583,20 +584,31 @@ export function publishingHandlers(
                     report: output.report.map((entry) => ({ ...entry })),
                     view: null,
                   }
-                : {
-                    ...common,
-                    // `provenance.json` (B3-G), saved as such: redacted for every reader.
-                    download: await store.signedLink(
-                      output.key,
-                      DOWNLOAD_SECONDS,
-                      `${publication.id}-provenance.json`,
-                    ),
-                    format: 'provenance' as const,
-                    standard: null,
-                    producer: 'pipeline' as const,
-                    report: [] as [],
-                    view: null,
-                  };
+                : output.format === 'html'
+                  ? {
+                      ...common,
+                      format: 'html' as const,
+                      standard: null,
+                      producer: 'html' as const,
+                      report: output.report.map((entry) => ({ ...entry })),
+                      // Saved, never shown from the store's origin (ADR-0070): the service's
+                      // sandboxed inline route is HTc's.
+                      view: null,
+                    }
+                  : {
+                      ...common,
+                      // `provenance.json` (B3-G), saved as such: redacted for every reader.
+                      download: await store.signedLink(
+                        output.key,
+                        DOWNLOAD_SECONDS,
+                        `${publication.id}-provenance.json`,
+                      ),
+                      format: 'provenance' as const,
+                      standard: null,
+                      producer: 'pipeline' as const,
+                      report: [] as [],
+                      view: null,
+                    };
           }),
         ),
       };

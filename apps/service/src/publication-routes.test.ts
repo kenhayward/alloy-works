@@ -169,7 +169,10 @@ describe('publishing a document through the service', () => {
    * the formats its request named, the PDF and the Word document each over stand-in bytes kept as
    * its format's type.
    */
-  const published = async (requestId: string, formats: readonly ('pdf' | 'docx')[] = ['pdf']) =>
+  const published = async (
+    requestId: string,
+    formats: readonly ('pdf' | 'docx' | 'html')[] = ['pdf'],
+  ) =>
     tenantDb.withTenant(tenant, async (trx) => {
       const store = await stores.forTenant(trx, tenant);
       const outputs = [];
@@ -197,6 +200,20 @@ describe('publishing a document through the service', () => {
             { kind: 'header_column_lost' as const, ...READINGS },
             { kind: 'pages_cite_the_pdf' as const },
           ],
+          key: stored.key,
+          sha256: stored.sha256,
+          bytes: stored.size,
+        });
+      }
+      if (formats.includes('html')) {
+        const stored = await store.put(
+          Buffer.from('<!DOCTYPE html> a stand-in'),
+          OUTPUT_CONTENT_TYPES.html,
+        );
+        outputs.push({
+          format: 'html' as const,
+          writerVersion: 'html/1',
+          report: [],
           key: stored.key,
           sha256: stored.sha256,
           bytes: stored.size,
@@ -445,9 +462,9 @@ describe('publishing a document through the service', () => {
     const stale = await publish('grace', older);
     expect(stale.statusCode).toBe(409);
     expect(stale.json()).toMatchObject({ code: 'version_precondition', rule: 'API-037' });
-    const html = await publish('grace', other, ['html']);
-    expect(html.statusCode).toBe(400);
-    expect(html.json()).toMatchObject({ code: 'format_unsupported', rule: 'PUB-014' });
+    const epub = await publish('grace', other, ['epub']);
+    expect(epub.statusCode).toBe(400);
+    expect(epub.json()).toMatchObject({ code: 'format_unsupported', rule: 'PUB-014' });
     // A format named twice is a malformed request, not one the template cannot make.
     const twice = await publish('grace', other, ['pdf', 'pdf']);
     expect(twice.statusCode).toBe(400);
@@ -475,20 +492,20 @@ describe('publishing a document through the service', () => {
   it('refuses at the door a format the layout does not make', async () => {
     const document = await documentReferencing([]);
     const before = await requestIds();
-    const answer = await publish('grace', document, ['pdf', 'html']);
+    const answer = await publish('grace', document, ['pdf', 'epub']);
     expect(answer.statusCode, answer.body).toBe(400);
     expect(answer.json()).toEqual({
       code: 'format_unsupported',
       rule: 'PUB-014',
-      message: 'The layout this document is published under does not make html.',
+      message: 'The layout this document is published under does not make epub.',
       traceId: expect.any(String),
     });
     expect(await requestIds()).toEqual(before);
   });
 
-  it('takes Word where the layout makes it, alone or beside the PDF', async () => {
+  it('takes Word and HTML where the layout makes them, alone or beside the PDF', async () => {
     const document = await documentReferencing([]);
-    for (const formats of [['docx'], ['docx', 'pdf']]) {
+    for (const formats of [['docx'], ['docx', 'pdf'], ['html'], ['html', 'pdf', 'docx']]) {
       const answer = await publish('grace', document, formats);
       expect(answer.statusCode, answer.body).toBe(200);
       expect(answer.json()).toMatchObject({ state: 'queued', failures: [] });
@@ -908,6 +925,38 @@ describe('publishing a document through the service', () => {
       });
     });
     expect(await pdfOf()).toMatchObject({ checkState: 'passed' });
+  });
+
+  it('opens a publication in HTML with what made it, a file to save and never one shown from the store', async () => {
+    const document = await documentReferencing([]);
+    const answer = await publish('grace', document, ['pdf', 'html']);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const id = await published(answer.json<{ id: string }>().id, ['pdf', 'html']);
+    const body = (await call('alice', 'GET', `/v1/publications/${id}`)).json<{
+      formats: string[];
+      outputs: { format: string; download: string; view: string | null }[];
+    }>();
+    expect(body.formats).toEqual(['pdf', 'html']);
+    expect(body.outputs[1]).toEqual({
+      format: 'html',
+      bytes: 26,
+      sha256: expect.any(String),
+      standard: null,
+      producer: 'html',
+      producerVersion: 'html/1',
+      report: [],
+      download: expect.any(String),
+      view: null,
+    });
+    // Saved, under the publication's id: the store's link never shows tenant HTML (ADR-0070).
+    const saved = await fetch(body.outputs[1]!.download);
+    expect(saved.headers.get('content-disposition')).toBe(`attachment; filename="${id}.html"`);
+    expect(saved.headers.get('content-type')).toBe(OUTPUT_CONTENT_TYPES.html);
+    // And through the service, saved too.
+    const served = await call('alice', 'GET', `/v1/publications/${id}/outputs/html`);
+    expect(served.statusCode).toBe(200);
+    expect(served.headers['content-disposition']).toBe(`attachment; filename="${id}.html"`);
+    expect(served.headers['content-type']).toBe(OUTPUT_CONTENT_TYPES.html);
   });
 
   it('opens a Word-only publication with no PDF engine or template', async () => {

@@ -13372,7 +13372,7 @@ export interface operations {
                  *     }
                  */
                 "application/json": {
-                    /** @description The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page */
+                    /** @description The formats to publish, each once: any of `pdf`, `docx` and `html`, where the document's layout makes them. A format it does not make is refused by name; so is a request without `pdf` where the document cites a page and the formats asked for would print one: `docx` always, and `html` where a page reference declares no form without pages */
                     formats: string[];
                 };
             };
@@ -13418,7 +13418,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -13553,7 +13553,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -35963,7 +35963,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -37199,7 +37199,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -37349,7 +37349,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -53373,7 +53373,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -53649,7 +53649,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -54028,7 +54028,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -54694,7 +54694,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -54970,7 +54970,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -55349,7 +55349,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -56162,7 +56162,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -56438,7 +56438,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -56817,7 +56817,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -57112,7 +57112,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -57787,7 +57787,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -58063,7 +58063,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -58442,7 +58442,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -59109,7 +59109,7 @@ export interface operations {
                 "application/json": {
                     /** @description The document version the caller is publishing, which must be the latest */
                     version: string & (unknown & unknown);
-                    /** @description The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page */
+                    /** @description The formats to publish, each once: any of `pdf`, `docx` and `html`, where the document's layout makes them. A format it does not make is refused by name; so is a request without `pdf` where the document cites a page and the formats asked for would print one: `docx` always, and `html` where a page reference declares no form without pages */
                     formats: string[];
                     /** @description The profile to publish under in place of the document's own (REU-027): the values on each condition axis, and whether text conditioned on an axis it does not name may be left out */
                     profile?: {
@@ -59165,7 +59165,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -62763,7 +62763,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -63099,7 +63099,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -65131,7 +65131,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                     };
@@ -65407,7 +65407,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -65786,7 +65786,7 @@ export interface operations {
                                 words: {
                                     [key: string]: unknown;
                                 };
-                                /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                                 formats: string[];
                             };
                         };
@@ -85134,7 +85134,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -85678,6 +85678,115 @@ export interface operations {
                             view: null;
                         } | {
                             /** @constant */
+                            format: "html";
+                            bytes: number;
+                            sha256: string;
+                            standard: null;
+                            /** @constant */
+                            producer: "html";
+                            /** @description The HTML writer's version, as `html/1` */
+                            producerVersion: string;
+                            /** @description What HTML could not carry of what the PDF sets */
+                            report: ({
+                                /** @constant */
+                                kind: "face_substituted";
+                                family: string;
+                                wordFamily: string;
+                            } | {
+                                /** @constant */
+                                kind: "no_page_cited_output";
+                            } | {
+                                /** @constant */
+                                kind: "pages_cite_the_pdf";
+                            } | {
+                                /** @constant */
+                                kind: "header_column_lost";
+                                node: string;
+                                block: string;
+                                label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "header_repeated";
+                                node: string;
+                                block: string;
+                                label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "continuation_label_omitted";
+                                node: string;
+                                block: string;
+                                label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "equation_flattened";
+                                node: string;
+                                block: string | null;
+                                label: string | null;
+                            } | {
+                                /** @constant */
+                                kind: "description_language_lost";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "quotation_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "preformatted_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "definition_list_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "quoted_phrase_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "inline_code_not_structure";
+                                node: string;
+                                block: string;
+                            } | {
+                                /** @constant */
+                                kind: "equation_numbered_as_table";
+                                node: string;
+                                block: string;
+                                label: string;
+                            } | {
+                                /** @constant */
+                                kind: "equation_alternative_lost";
+                            } | {
+                                /** @constant */
+                                kind: "maths_coverage_unchecked";
+                                wordFamily: string;
+                            } | {
+                                /** @constant */
+                                kind: "titles_not_headings";
+                                titles: ("document" | "contents" | "lists")[];
+                            } | {
+                                /** @constant */
+                                kind: "list_not_linked";
+                                /** @constant */
+                                sequence: "figure";
+                            } | {
+                                /** @constant */
+                                kind: "table_reflowed";
+                                node: string;
+                                block: string;
+                                label: string | null;
+                            })[];
+                            /** @description A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request */
+                            download: string;
+                            /** @description None here: the file is saved, as `{id}.html` */
+                            view: null;
+                        } | {
+                            /** @constant */
                             format: "provenance";
                             bytes: number;
                             sha256: string;
@@ -86179,7 +86288,7 @@ export interface operations {
             };
             path: {
                 id: string & (unknown & unknown);
-                format: "pdf" | "docx" | "provenance" | "verapdf";
+                format: "pdf" | "docx" | "html" | "provenance" | "verapdf";
             };
             cookie?: never;
         };
@@ -86195,6 +86304,7 @@ export interface operations {
                 content: {
                     "application/pdf": string;
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                    "text/html; charset=utf-8": string;
                     "application/json": string;
                 };
             };
@@ -86351,7 +86461,7 @@ export interface operations {
                             accesses: {
                                 at: string;
                                 /** @description What was fetched, or null where the publication itself was opened */
-                                output: ("pdf" | "docx" | "provenance" | "verapdf") | null;
+                                output: ("pdf" | "docx" | "html" | "provenance" | "verapdf") | null;
                             }[];
                         }[];
                     };
@@ -86530,7 +86640,7 @@ export interface operations {
                             accesses: {
                                 at: string;
                                 /** @description What was fetched, or null where the publication itself was opened */
-                                output: ("pdf" | "docx" | "provenance" | "verapdf") | null;
+                                output: ("pdf" | "docx" | "html" | "provenance" | "verapdf") | null;
                             }[];
                         };
                         /** @description true: nobody had signed in with the address, so it was invited; the share opens once they sign in with it */
@@ -103878,7 +103988,7 @@ export interface operations {
                             words: {
                                 [key: string]: unknown;
                             };
-                            /** @description The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14) */
+                            /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
                             formats: string[];
                         };
                         /** @description Each variable the components its template requires hold that does not resolve yet, by the node placing it and the variable's key: the publish fails on it unless a parameter, field or result gives it a value first (the R10 plan, R10-D) */
