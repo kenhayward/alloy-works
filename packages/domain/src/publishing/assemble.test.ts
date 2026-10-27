@@ -7536,3 +7536,161 @@ describe('Arabic set through a fallback (the UI plan, UF-C to UF-E)', () => {
     expect(arabic!).toBeGreaterThan(latin!);
   });
 });
+
+describe('the HTML a publication is assembled for (the HT plan, HT-F)', () => {
+  const xref = (name: string, target: object, display = 'number', withoutPages?: string) => ({
+    type: 'crossReference',
+    id: name,
+    target,
+    display,
+    ...(withoutPages === undefined ? {} : { withoutPages }),
+  });
+  const toBlock = (block: string) => ({ kind: 'block', block });
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+  const table = (name: string) => ({
+    type: 'table',
+    id: name,
+    style: 'table',
+    caption: [text('Readings')],
+    headerRows: 0,
+    headerColumns: 0,
+    rows: [{ cells: [cellOf(paragraph(`${name}c`, text('12')))] }],
+  });
+  const failed = (code: string, block: string | null, detail: string | null = null) => ({
+    stage: 'compose',
+    code,
+    node: id('calib'),
+    block,
+    detail,
+  });
+  const assembledFor = (over: UnderALayout) => ({
+    pdf: assemble({ ...over, formats: ['pdf'] }),
+    html: assemble({ ...over, formats: ['html'] }),
+    both: assemble({ ...over, formats: ['pdf', 'html'] }),
+  });
+  const failuresFor = (over: UnderALayout) => {
+    const { pdf, html, both } = assembledFor(over);
+    return { pdf: failuresOf(pdf), html: failuresOf(html), both: failuresOf(both) };
+  };
+
+  it("carries what HTML is written from - the theme and each face's cap height - only where HTML is asked for, beside the PDF's document unchanged", () => {
+    const over = {
+      ...oneParagraph(text('Set the tray.')),
+      capHeight: (face: Typeface) => (face.id === 'serif' ? 0.65 : undefined),
+    };
+    const { pdf, html, both } = assembledFor(over);
+    if (!pdf.ok || !html.ok || !both.ok) throw new Error('refused');
+    expect(pdf.html).toBeNull();
+    const expected = {
+      theme: DEFAULT_THEME,
+      capHeights: new Map([['serif', 0.65]]),
+      references: new Map(),
+    };
+    expect(html.html).toEqual(expected);
+    expect(both.html).toEqual(expected);
+    expect(html.word).toBeNull();
+    // `publishing/26` unchanged (HT-F): the PDF beside HTML is the PDF alone, byte for byte.
+    expect(JSON.stringify(both.document)).toBe(JSON.stringify(pdf.document));
+    expect(JSON.stringify(html.document)).toBe(JSON.stringify(pdf.document));
+  });
+
+  it('refuses HTML under a layout that makes none, and for a request made before layouts', () => {
+    const without = layoutWith((layout) => {
+      delete layout.formats.html;
+    });
+    const unsupported = {
+      stage: 'compose',
+      code: 'format_unsupported',
+      node: null,
+      block: null,
+      detail: 'html',
+    };
+    expect(failuresFor({ ...oneParagraph(text('Set.')), layout: without })).toEqual({
+      pdf: [],
+      html: [unsupported],
+      both: [unsupported],
+    });
+    const before = { ...oneParagraph(text('Set.')), layout: null, theme: null };
+    expect(failuresOf(assemble({ ...before, formats: ['html'] }))).toEqual([unsupported]);
+  });
+
+  // STR-055 is cited by HTb, where the writer prints the form; here it is only carried.
+  it("carries a page reference's form without pages for HTML, and fails one with none, naming it, only where HTML is asked for", () => {
+    const over = oneComponent(
+      table('t1'),
+      paragraph(
+        'b1',
+        text('See '),
+        xref('x1', toBlock('t1'), 'page', 'number'),
+        text(' and '),
+        xref('x2', toBlock('t1'), 'page', 'numberAndTitle'),
+        text(' and '),
+        xref('x3', toBlock('t1')),
+      ),
+    );
+    const { pdf, html } = assembledFor(over);
+    if (!pdf.ok || !html.ok) throw new Error('refused');
+    const site = { kind: 'paragraph' as const, block: 'b1' };
+    expect(html.html!.references).toEqual(
+      new Map([
+        [inlineReferenceKey(id('calib'), site, 1), 'Table 1.1'],
+        [inlineReferenceKey(id('calib'), site, 3), 'Table 1.1 Readings'],
+        [inlineReferenceKey(id('calib'), site, 5), 'Table 1.1'],
+      ]),
+    );
+    // The PDF's document is untouched: a page reference prints its page there.
+    expect(JSON.stringify(html.document)).toBe(JSON.stringify(pdf.document));
+
+    const undeclared = oneComponent(
+      table('t1'),
+      paragraph('b1', text('See '), xref('x1', toBlock('t1'), 'page')),
+    );
+    expect(failuresFor(undeclared)).toEqual({
+      pdf: [],
+      html: [failed('page_reference_without_pages', 'x1')],
+      both: [failed('page_reference_without_pages', 'x1')],
+    });
+    // Word has pages, and prints one.
+    expect(failuresOf(assemble({ ...undeclared, formats: ['docx'] }))).toEqual([]);
+  });
+
+  it("refuses neither a section's page break nor an appendix's new page where HTML is asked for", () => {
+    // Nothing honours either yet (#234), so the test sets both and asks that HTML refuses neither.
+    const breaking = {
+      ...input({
+        outline: outline([
+          { ...reference('calib'), pageBreak: 'page' },
+          inMatter('appendix', reference('annex', OTHER)),
+        ]),
+        occurrences: new Map([
+          [id('calib'), component([paragraph('b1', text('Set.'))])],
+          [id('annex'), component([paragraph('b2', text('Wait.'))])],
+        ]),
+      }),
+      layout: layoutWith((layout) => {
+        layout.matter.appendices.newPage = true;
+      }),
+    };
+    const { pdf, html } = assembledFor(breaking);
+    if (!pdf.ok || !html.ok) throw new Error(JSON.stringify(failuresOf(html)));
+    expect(html.document.appendices).toEqual({ newPage: true });
+    expect(JSON.stringify(html.document)).toBe(JSON.stringify(pdf.document));
+  });
+
+  it("asks a face's licence of the PDF for HTML, which embeds the same files", () => {
+    const inputs = defaultInputs();
+    inputs.theme.typefaces.find((each) => each.id === 'serif')!.embedding.pdf = false;
+    const refusal = (detail: string) => ({
+      stage: 'compose',
+      code: 'typeface_not_embeddable',
+      node: null,
+      block: null,
+      detail,
+    });
+    expect(failuresFor({ ...oneParagraph(text('Set.')), theme: resolved(inputs) })).toEqual({
+      pdf: [refusal('Liberation Serif')],
+      html: [refusal('Liberation Serif: html')],
+      both: [refusal('Liberation Serif'), refusal('Liberation Serif: html')],
+    });
+  });
+});

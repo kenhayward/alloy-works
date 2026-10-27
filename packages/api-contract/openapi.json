@@ -24277,7 +24277,7 @@
                       "type": "string",
                       "minLength": 1
                     },
-                    "description": "The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page"
+                    "description": "The formats to publish, each once: any of `pdf`, `docx` and `html`, where the document's layout makes them. A format it does not make is refused by name; so is a request without `pdf` where the document cites a page and the formats asked for would print one: `docx` always, and `html` where a page reference declares no form without pages"
                   }
                 },
                 "required": [
@@ -24422,7 +24422,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -24950,7 +24952,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -90578,7 +90582,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -93745,7 +93749,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -94231,7 +94237,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -158747,7 +158755,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -159809,7 +159817,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -161052,7 +161060,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -162966,7 +162974,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -164028,7 +164036,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -165271,7 +165279,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -167855,7 +167863,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -168917,7 +168925,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -170160,7 +170168,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -170979,7 +170987,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -172822,7 +172832,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -173884,7 +173894,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -175127,7 +175137,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -176935,7 +176945,7 @@
                       "type": "string",
                       "minLength": 1
                     },
-                    "description": "The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page"
+                    "description": "The formats to publish, each once: any of `pdf`, `docx` and `html`, where the document's layout makes them. A format it does not make is refused by name; so is a request without `pdf` where the document cites a page and the formats asked for would print one: `docx` always, and `html` where a page reference declares no form without pages"
                   },
                   "profile": {
                     "description": "The profile to publish under in place of the document's own (REU-027): the values on each condition axis, and whether text conditioned on an axis it does not name may be left out",
@@ -177117,7 +177127,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -186557,7 +186569,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -187742,7 +187754,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -193043,7 +193055,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [
@@ -194105,7 +194117,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -195348,7 +195360,7 @@
                               "items": {
                                 "type": "string"
                               },
-                              "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                              "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                             }
                           },
                           "required": [
@@ -245574,7 +245586,9 @@
                               "style_invalid",
                               "occurrence_untranslated",
                               "translation_out_of_date",
-                              "translation_machine_drafted"
+                              "translation_machine_drafted",
+                              "page_reference_without_pages",
+                              "html_not_yet"
                             ]
                           },
                           "node": {
@@ -247241,6 +247255,513 @@
                             "properties": {
                               "format": {
                                 "type": "string",
+                                "const": "html"
+                              },
+                              "bytes": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "sha256": {
+                                "type": "string"
+                              },
+                              "standard": {
+                                "type": "null"
+                              },
+                              "producer": {
+                                "type": "string",
+                                "const": "html"
+                              },
+                              "producerVersion": {
+                                "type": "string",
+                                "description": "The HTML writer's version, as `html/1`"
+                              },
+                              "report": {
+                                "type": "array",
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "face_substituted"
+                                        },
+                                        "family": {
+                                          "type": "string",
+                                          "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} ._-]{0,62}$"
+                                        },
+                                        "wordFamily": {
+                                          "type": "string",
+                                          "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} ._-]{0,62}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "family",
+                                        "wordFamily"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "no_page_cited_output"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "pages_cite_the_pdf"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "header_column_lost"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "header_repeated"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "continuation_label_omitted"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "equation_flattened"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "description_language_lost"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "quotation_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "preformatted_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "definition_list_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "quoted_phrase_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "inline_code_not_structure"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "equation_numbered_as_table"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "equation_alternative_lost"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "maths_coverage_unchecked"
+                                        },
+                                        "wordFamily": {
+                                          "type": "string",
+                                          "pattern": "^[\\p{L}\\p{N}][\\p{L}\\p{N} ._-]{0,62}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "wordFamily"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "titles_not_headings"
+                                        },
+                                        "titles": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "document",
+                                              "contents",
+                                              "lists"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "titles"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "list_not_linked"
+                                        },
+                                        "sequence": {
+                                          "type": "string",
+                                          "const": "figure"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "sequence"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "table_reflowed"
+                                        },
+                                        "node": {
+                                          "type": "string",
+                                          "pattern": "^[a-z2-7]{26}$"
+                                        },
+                                        "block": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "label": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "kind",
+                                        "node",
+                                        "block",
+                                        "label"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "description": "What HTML could not carry of what the PDF sets"
+                              },
+                              "download": {
+                                "type": "string",
+                                "description": "A link to the bytes, named by the publication id and format: signed for five minutes, or for somebody from outside the organisation, the service's own address, decided at each request"
+                              },
+                              "view": {
+                                "type": "null",
+                                "description": "None here: the file is saved, as `{id}.html`"
+                              }
+                            },
+                            "required": [
+                              "format",
+                              "bytes",
+                              "sha256",
+                              "standard",
+                              "producer",
+                              "producerVersion",
+                              "report",
+                              "download",
+                              "view"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "format": {
+                                "type": "string",
                                 "const": "provenance"
                               },
                               "bytes": {
@@ -248664,6 +249185,7 @@
               "enum": [
                 "pdf",
                 "docx",
+                "html",
                 "provenance",
                 "verapdf"
               ]
@@ -248694,6 +249216,12 @@
                 "schema": {
                   "type": "string",
                   "contentMediaType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                }
+              },
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "text/html; charset=utf-8"
                 }
               },
               "application/json": {
@@ -249056,6 +249584,7 @@
                                       "enum": [
                                         "pdf",
                                         "docx",
+                                        "html",
                                         "provenance",
                                         "verapdf"
                                       ]
@@ -249446,6 +249975,7 @@
                                     "enum": [
                                       "pdf",
                                       "docx",
+                                      "html",
                                       "provenance",
                                       "verapdf"
                                     ]
@@ -304766,7 +305296,7 @@
                           "items": {
                             "type": "string"
                           },
-                          "description": "The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: what a publish may ask for (Word 1, ruling R14)"
+                          "description": "The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)"
                         }
                       },
                       "required": [

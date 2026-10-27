@@ -307,6 +307,72 @@ describe('a publication at its own address', () => {
     expect(document.querySelectorAll('iframe')).toHaveLength(1);
   });
 
+  it('offers an HTML file to save beside the PDF, saying what wrote it, and shows it nowhere in the page (HTa)', async () => {
+    const HTML = 'http://store.example.test/t_acme/sha256/fff?X-Amz-Signature=h';
+    open(
+      json(200, {
+        ...record,
+        formats: ['pdf', 'html'],
+        outputs: [
+          pdfOutput,
+          {
+            format: 'html',
+            bytes: 4_096,
+            sha256: 'f'.repeat(64),
+            standard: null,
+            producer: 'html',
+            producerVersion: 'html/1',
+            report: [],
+            download: HTML,
+            view: null,
+          },
+        ],
+      }),
+    );
+    const aside = await screen.findByRole('complementary', { name: 'What it was made from' });
+    const head = screen
+      .getByRole('heading', { level: 1, name: 'The dosing report' })
+      .closest('header')!;
+    expect(within(head).getByRole('link', { name: 'Download the HTML file' })).toHaveAttribute(
+      'href',
+      HTML,
+    );
+    expect(head).toHaveTextContent('PDF and HTML');
+    expect(aside).toHaveTextContent('HTML file (4 KB)');
+    expect(aside).toHaveTextContent('The HTML file was written by the HTML writer, version 1.');
+    expect(aside).not.toHaveTextContent('html/1');
+    // Shown in the page: the PDF alone (ADR-0070: HTML is opened in a tab of its own, never here).
+    expect(document.querySelectorAll('iframe')).toHaveLength(1);
+  });
+
+  it('says an HTML file alone is not shown in the page, and offers it to save', async () => {
+    open(
+      json(200, {
+        ...record,
+        formats: ['html'],
+        engine: null,
+        template: null,
+        outputs: [
+          {
+            format: 'html',
+            bytes: 4_096,
+            sha256: 'f'.repeat(64),
+            standard: null,
+            producer: 'html',
+            producerVersion: 'html/1',
+            report: [],
+            download: 'http://store.example.test/t_acme/sha256/fff?X-Amz-Signature=h',
+            view: null,
+          },
+        ],
+      }),
+    );
+    expect(
+      await screen.findByText('An HTML file is not shown in the page. Download it to read it.'),
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll('iframe')).toHaveLength(0);
+  });
+
   it('says what Word could not carry of each table, naming it by its label, or as a table with no number where it has none (Word 2)', async () => {
     const readings = { node: 'readingsaaaaaaaaaaaaaaaaaa', block: 't1', label: 'Table 1.1' };
     const unnumbered = { node: 'prefaceaaaaaaaaaaaaaaaaaaa', block: 't2', label: null };

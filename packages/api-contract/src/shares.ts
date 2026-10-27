@@ -6,7 +6,7 @@ import { ErrorBody, LowercaseUuid } from './schemas.js';
  * What may be fetched through the service (the R17 plan, R17-E): an output, or the PDF's veraPDF
  * report.
  */
-export const SharedOutputFormat = z.enum(['pdf', 'docx', 'provenance', 'verapdf']);
+export const SharedOutputFormat = z.enum(['pdf', 'docx', 'html', 'provenance', 'verapdf']);
 export type SharedOutputFormat = z.infer<typeof SharedOutputFormat>;
 
 export const ShareParams = z.object({ id: LowercaseUuid, share: LowercaseUuid });
@@ -167,6 +167,7 @@ export const shareRoutes = {
           contentTypes: [
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/html; charset=utf-8',
             'application/json',
           ],
         },

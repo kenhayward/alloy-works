@@ -335,8 +335,8 @@ describe('requesting and recording a publication', () => {
       expect(Object.keys(stale.current).sort()).toEqual(
         ['author', 'createdAt', 'id', 'note', 'revision', 'version'].sort(),
       );
-      expect((await asked(version.id, ['html'])).answer).toBe('format.unsupported');
-      expect((await asked(version.id, ['pdf', 'html'])).answer).toBe('format.unsupported');
+      expect((await asked(version.id, ['epub'])).answer).toBe('format.unsupported');
+      expect((await asked(version.id, ['pdf', 'epub'])).answer).toBe('format.unsupported');
       const requests = await trx
         .selectFrom('publication_request')
         .select('id')
@@ -415,11 +415,15 @@ describe('requesting and recording a publication', () => {
     ).rejects.toBe(rolledBack);
   });
 
-  it('takes Word where its layout makes it, alone or beside the PDF, records the formats PDF first, and hands them to the job', async () => {
+  it('takes Word and HTML where its layout makes them, alone or beside the PDF, records the formats PDF first, and hands them to the job', async () => {
     await service.withTenant(production, async (trx) => {
       const version = await documentWith(trx, [section('Scope', [])]);
-      // The default layout's 0.6 declares a Word page (Word 1, ruling R4).
-      expect(Object.keys((await defaultLayout(trx)).layout.formats)).toEqual(['pdf', 'docx']);
+      // The default layout's 0.6 declares a Word page (Word 1, ruling R4), and 0.13 HTML (HT-D).
+      expect(Object.keys((await defaultLayout(trx)).layout.formats)).toEqual([
+        'pdf',
+        'docx',
+        'html',
+      ]);
       const formatsOf = async (formats: string[]) => {
         const answer = await requestPublication(trx, {
           documentId: version.artifactId,
@@ -442,6 +446,9 @@ describe('requesting and recording a publication', () => {
       expect(await formatsOf(['pdf', 'docx'])).toEqual(['pdf', 'docx']);
       // A set, in one order whichever it was asked in.
       expect(await formatsOf(['docx', 'pdf'])).toEqual(['pdf', 'docx']);
+      expect(await formatsOf(['html'])).toEqual(['html']);
+      expect(await formatsOf(['html', 'pdf'])).toEqual(['pdf', 'html']);
+      expect(await formatsOf(['html', 'docx', 'pdf'])).toEqual(['pdf', 'docx', 'html']);
     });
   });
 
@@ -523,8 +530,8 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.12 since 0161, so the version recorded after it is 0.13.
-        expect((await defaultLayout(trx)).number).toBe('0.13');
+        // The default is at 0.13 since 0168, so the version recorded after it is 0.14.
+        expect((await defaultLayout(trx)).number).toBe('0.14');
 
         const inputs = await publicationInputs(trx, id);
         // Read in the document's language (TRb): its own words, its further languages left behind.
@@ -2425,6 +2432,47 @@ describe('requesting and recording a publication', () => {
     ]);
   });
 
+  it('records an HTML output, made by the HTML writer at its version, claiming no standard, alone or beside the PDF', async () => {
+    const html = (fill = '8') => ({
+      format: 'html' as const,
+      writerVersion: 'html/1',
+      report: [],
+      key: `${production.role}/sha256/${fill.repeat(64)}`,
+      sha256: fill.repeat(64),
+      bytes: 3000,
+    });
+    const beside = await requestedAs(['pdf', 'html']);
+    const id = await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(beside), outputs: [html(), pdfOutput()] }),
+    );
+    const read = await service.withTenant(production, (trx) => readPublication(trx, id!));
+    expect(read!.formats).toEqual(['pdf', 'html']);
+    expect(read!.outputs.map((each) => each.format)).toEqual(['pdf', 'html']);
+    expect(read!.outputs[1]).toEqual({
+      format: 'html',
+      key: html().key,
+      sha256: html().sha256,
+      bytes: 3000,
+      standard: null,
+      producer: 'html',
+      producerVersion: 'html/1',
+      report: [],
+      check: null,
+      checkGaveUp: false,
+    });
+    const alone = await requestedAs(['html']);
+    const only = await service.withTenant(production, (trx) =>
+      recordPublication(trx, { ...recording(alone), outputs: [html('7')] }),
+    );
+    expect(
+      await service.withTenant(production, (trx) => readPublication(trx, only!)),
+    ).toMatchObject({
+      formats: ['html'],
+      engine: null,
+      template: null,
+    });
+  });
+
   it('records a Word-only publication with no PDF engine or template, which made nothing of it', async () => {
     const request = await requestedAs(['docx']);
     const id = await service.withTenant(production, (trx) =>
@@ -2971,6 +3019,16 @@ describe('requesting and recording a publication', () => {
       object_key: `${production.role}/sha256/${'f'.repeat(64)}`,
       sha256: 'f'.repeat(64),
     };
+    // An HTML file, made by the HTML writer (HT-E).
+    const web = {
+      format: 'html',
+      standard: null,
+      producer: 'html',
+      producer_version: 'html/1',
+      report: '[]',
+      object_key: `${production.role}/sha256/${'9'.repeat(64)}`,
+      sha256: '9'.repeat(64),
+    };
 
     // At the row: each output's standard, producer and report are its format's.
     const pdf = await requestedAs(['pdf']);
@@ -2982,7 +3040,11 @@ describe('requesting and recording a publication', () => {
       [{ producer_version: 'word/1' }, 'publication_output_producer'],
       [{ ...word, producer: 'typst' }, 'publication_output_producer'],
       [{ ...word, producer_version: '2' }, 'publication_output_producer'],
-      [{ format: 'html' }, 'publication_output_format'],
+      [{ format: 'epub' }, 'publication_output_format'],
+      [{ ...web, standard: 'ua-1' }, 'publication_output_standard'],
+      [{ ...web, producer: 'word' }, 'publication_output_producer'],
+      [{ ...web, producer_version: 'word/1' }, 'publication_output_producer'],
+      [{ ...web, report: '{}' }, 'publication_output_report'],
       [{ report: JSON.stringify([{ kind: 'pages_cite_the_pdf' }]) }, 'publication_output_report'],
       [{ ...word, report: '{}' }, 'publication_output_report'],
     ] as const) {
@@ -2995,9 +3057,13 @@ describe('requesting and recording a publication', () => {
         word,
       ]),
     ).rejects.toThrow(/publication_made_by_typst/);
-    await expect(rigged(pdf, { formats: ['pdf', 'pdf'] }, [typst])).rejects.toThrow(
-      /publication_formats_check/,
-    );
+    // Any formats of the three, each once, in their order, and at least one (0168).
+    for (const formats of [['pdf', 'pdf'], ['html', 'pdf'], ['html', 'docx'], [], ['epub']]) {
+      await expect(
+        rigged(pdf, { formats: formats as PublishingFormat[] }, [typst]),
+        formats.join(),
+      ).rejects.toThrow(/publication_formats_check/);
+    }
 
     // At commit: one output per format its request names, the formats its request's, and a PDF made
     // by the template the publication names.
@@ -3014,6 +3080,9 @@ describe('requesting and recording a publication', () => {
     // Whole, it commits.
     await rigged(both, {}, [typst, word]);
     expect((await stateOf(both)).state).toBe('done');
+    const withHtml = await requestedAs(['pdf', 'docx', 'html']);
+    await rigged(withHtml, {}, [typst, word, web]);
+    expect((await stateOf(withHtml)).state).toBe('done');
   });
 
   it('refuses a request without the PDF whose document cites a page, wherever it stands, before recording anything', async () => {
@@ -3124,6 +3193,52 @@ describe('requesting and recording a publication', () => {
       expect(
         (await asked([{ ...scope, children: [reference(byNumber.artifactId)] }], ['docx'])).answer,
       ).toBe('requested');
+    });
+  });
+
+  it('PUB-074 takes HTML without the PDF where every page reference declares a form without pages, and refuses it where one does not (Ken, HT-G)', async () => {
+    await service.withTenant(production, async (trx) => {
+      const scope = section('Scope', []);
+      const pageOf = (id: string, withoutPages?: 'number') => ({
+        type: 'crossReference' as const,
+        id,
+        target: { kind: 'node' as const, node: scope.id },
+        display: 'page' as const,
+        ...(withoutPages === undefined ? {} : { withoutPages }),
+      });
+      const paragraph = (id: string, content: unknown[]) => ({
+        type: 'paragraph',
+        id,
+        style: 'body',
+        content,
+      });
+      const see = { type: 'text', value: 'See ', marks: [] };
+      const declared = await holding(trx, ada, [paragraph('p1', [see, pageOf('r1', 'number')])]);
+      const undeclared = await holding(trx, ada, [
+        paragraph('p1', [see, pageOf('r1', 'number')]),
+        paragraph('p2', [see, pageOf('r2')]),
+      ]);
+      const asked = async (cites: { artifactId: string }, formats: string[]) => {
+        const version = await documentWith(trx, [
+          { ...scope, children: [reference(cites.artifactId)] },
+        ]);
+        return requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats,
+          requester: ada,
+        });
+      };
+      // HTML prints each declared form, so it cites no page; Word has pages, and would cite one.
+      expect((await asked(declared, ['html'])).answer).toBe('requested');
+      expect(await asked(declared, ['docx', 'html'])).toEqual({
+        answer: 'page_reference.without_pdf',
+      });
+      const before = await requestIds(trx);
+      expect(await asked(undeclared, ['html'])).toEqual({ answer: 'page_reference.without_pdf' });
+      expect(await requestIds(trx)).toEqual(before);
+      // Beside the PDF it is taken at the door, and HTML fails it by name when it is made (HT-F).
+      expect((await asked(undeclared, ['pdf', 'html'])).answer).toBe('requested');
     });
   });
 

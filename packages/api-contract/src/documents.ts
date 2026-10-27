@@ -447,8 +447,8 @@ export const DocumentView = z.object({
       formats: z
         .array(z.string())
         .describe(
-          'The formats this layout makes, `pdf` first and then `docx` where it declares a Word page: ' +
-            'what a publish may ask for (Word 1, ruling R14)',
+          'The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and ' +
+            '`html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D)',
         ),
     })
     .describe(

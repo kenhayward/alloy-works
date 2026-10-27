@@ -25,7 +25,7 @@ export const RequestPublicationBody = z.strictObject({
       message: 'Name each format once',
     })
     .describe(
-      "The formats to publish, each once: `pdf`, `docx`, or both, where the document's layout makes them. A format it does not make is refused by name, and one without `pdf` where the document cites a page",
+      "The formats to publish, each once: any of `pdf`, `docx` and `html`, where the document's layout makes them. A format it does not make is refused by name; so is a request without `pdf` where the document cites a page and the formats asked for would print one: `docx` always, and `html` where a page reference declares no form without pages",
     ),
   profile: storedProfileSchema
     .optional()
@@ -363,6 +363,19 @@ const DocxOutputView = z.object({
   view: z.null().describe('None: a browser saves a Word document rather than showing it'),
 });
 
+/** An HTML file to read on a screen (the HT plan, HT-E): no PDF standard, made by the HTML writer. */
+const HtmlOutputView = z.object({
+  format: z.literal('html'),
+  bytes: z.number().int(),
+  sha256: z.string(),
+  standard: z.null(),
+  producer: z.literal('html'),
+  producerVersion: z.string().describe("The HTML writer's version, as `html/1`"),
+  report: outputReportSchema.describe('What HTML could not carry of what the PDF sets'),
+  download,
+  view: z.null().describe('None here: the file is saved, as `{id}.html`'),
+});
+
 /** `provenance.json`: where each value a publication printed came from (DAT-042, PUB-049). */
 const ProvenanceOutputView = z.object({
   format: z.literal('provenance'),
@@ -398,7 +411,14 @@ export const PublicationView = PublicationSummary.extend({
     .describe("The PDF's template; none where the publication has no PDF"),
   pipeline: z.string(),
   outputs: z
-    .array(z.discriminatedUnion('format', [PdfOutputView, DocxOutputView, ProvenanceOutputView]))
+    .array(
+      z.discriminatedUnion('format', [
+        PdfOutputView,
+        DocxOutputView,
+        HtmlOutputView,
+        ProvenanceOutputView,
+      ]),
+    )
     .describe(
       'One per format, the PDF first, and `provenance.json` last wherever the publication prints a value',
     ),

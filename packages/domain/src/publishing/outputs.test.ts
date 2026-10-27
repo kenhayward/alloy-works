@@ -267,6 +267,8 @@ describe("an output's bytes", () => {
     expect(OUTPUT_CONTENT_TYPES).toEqual({
       pdf: 'application/pdf',
       docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      // One file of UTF-8 (HT-A), which the writer declares in its own head too.
+      html: 'text/html; charset=utf-8',
     });
   });
 });

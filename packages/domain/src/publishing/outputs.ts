@@ -14,6 +14,7 @@ import type { PublishingFormat } from './layout.js';
 export const OUTPUT_CONTENT_TYPES = {
   pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  html: 'text/html; charset=utf-8',
 } as const satisfies Record<PublishingFormat, string>;
 
 /** A family name as the theme spells one: the rule a typeface's `family` is held to. */

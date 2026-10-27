@@ -1053,6 +1053,15 @@ describe('the domain package', () => {
         // UIg: the default theme's 0.10 frozen beside 0.11.
         'TENTH_DEFAULT_THEME',
         'TENTH_DEFAULT_THEME_VERSION',
+        // HTa: the default layout's 0.12 frozen beside 0.13, which format has pages, and what a gate
+        // publishes (the HT plan, HT-D and HT-G).
+        'TWELFTH_DEFAULT_LAYOUT',
+        'PAGED',
+        'pagedFormats',
+        // HTa: the HTML writer, the version the job records it at, and its text for the leak scan.
+        'writeHtml',
+        'HTML_WRITER_VERSION',
+        'htmlText',
       ].sort(),
     );
   });

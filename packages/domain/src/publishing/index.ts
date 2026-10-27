@@ -17,6 +17,7 @@ export type {
   PublishingAsset,
   WordImage,
   WordInput,
+  HtmlInput,
 } from './assemble.js';
 // The binding stage and what a publication records of it (the B3 plan, B3-D, B3-G).
 export { bind, unbound } from './bind.js';
@@ -65,12 +66,15 @@ export {
   NINTH_DEFAULT_LAYOUT,
   TENTH_DEFAULT_LAYOUT,
   ELEVENTH_DEFAULT_LAYOUT,
+  TWELFTH_DEFAULT_LAYOUT,
   layoutIn,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
   layoutMigrationChain,
   layoutSchema,
   layoutWordsSchema,
+  PAGED,
+  pagedFormats,
   parseLayout,
   PUBLISHING_FORMATS,
   readLayout,
@@ -79,6 +83,7 @@ export {
 } from './layout.js';
 export type {
   DocxFormat,
+  HtmlFormat,
   Layout,
   Layout2,
   Layout3,
@@ -86,6 +91,7 @@ export type {
   Layout5,
   Layout6,
   Layout7,
+  Layout8,
   LayoutTranslation,
   LayoutField,
   LayoutList,

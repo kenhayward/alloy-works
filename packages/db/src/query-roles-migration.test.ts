@@ -235,6 +235,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -347,6 +348,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
 
     expect(await queryRoles(development)).toEqual([

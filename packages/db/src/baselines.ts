@@ -25,6 +25,7 @@ import type { HeldResolution } from './datasets.js';
 import { readableComponents } from './documents.js';
 import {
   documentCitesAPage,
+  pageCitations,
   recordPublicationEvent,
   resolvePublishable,
   type PublishRefusal,
@@ -745,10 +746,11 @@ export async function requestBaselinePublication(
     outline.outline.language,
   );
 
-  if (!input.formats.includes('pdf')) {
+  const cites = pageCitations(input.formats);
+  if (cites !== null) {
     // What its profile keeps alone: a title it leaves out is never set (the R11 final review).
     const kept = selectOutline(outline.outline, outline.outline.profile?.values ?? {}).outline;
-    if (documentCitesAPage(kept, contents)) {
+    if (documentCitesAPage(kept, contents, cites)) {
       return { answer: 'page_reference.without_pdf' };
     }
   }

@@ -191,7 +191,11 @@ export interface PublicationOutputTable {
   /** A PDF's is PDF/UA-1; a Word document claims none. */
   standard: ColumnType<'ua-1' | null, 'ua-1' | null, never>;
   /** Typst for a PDF, at its publication's template version; the Word writer, at `word/N`, for Word. */
-  producer: ColumnType<'typst' | 'word' | 'pipeline', 'typst' | 'word' | 'pipeline', never>;
+  producer: ColumnType<
+    'typst' | 'word' | 'html' | 'pipeline',
+    'typst' | 'word' | 'html' | 'pipeline',
+    never
+  >;
   producer_version: ColumnType<string, string, never>;
   /** An `OutputReport`, JSONB in as the text of a JSON document: a PDF's is empty. */
   report: ColumnType<unknown, string, never>;

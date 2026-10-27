@@ -43,6 +43,8 @@ export const shareView = (share: StoredShare): ShareView => ({
 const SERVED = {
   pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  // Saved, as every output here is: an attachment, never a page on this origin (ADR-0070).
+  html: 'text/html; charset=utf-8',
   provenance: 'application/json',
   verapdf: 'application/json',
 } as const;

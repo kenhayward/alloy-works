@@ -275,8 +275,8 @@ describe('documents through the service', () => {
       // beside the rest of the layout's own words.
       words: declared.layout.words,
       // What a publish may ask for, the PDF first: the default layout's 0.6 makes Word too (Word 1,
-      // ruling R14), so the page offers the choice.
-      formats: ['pdf', 'docx'],
+      // ruling R14), and its 0.13 HTML (HT-D), so the page offers the choice.
+      formats: ['pdf', 'docx', 'html'],
     };
     expect(document.layout).toEqual(expected);
     // Every answer carrying the outline carries it, so the page never has to ask a second route.

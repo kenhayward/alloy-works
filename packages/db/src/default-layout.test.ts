@@ -9,6 +9,7 @@ import {
   NINTH_DEFAULT_LAYOUT,
   TENTH_DEFAULT_LAYOUT,
   ELEVENTH_DEFAULT_LAYOUT,
+  TWELFTH_DEFAULT_LAYOUT,
   SIXTH_DEFAULT_LAYOUT,
   THIRD_DEFAULT_LAYOUT,
   type Layout,
@@ -71,7 +72,7 @@ describe('the layout every environment starts with', () => {
     );
   const firstVersion = (tenant: Tenant) => versionOf(tenant, 1);
 
-  it('is declared in every environment, at 0.12, authored by nobody and in no space', async () => {
+  it('is declared in every environment, at 0.13, authored by nobody and in no space', async () => {
     for (const tenant of [acme, other]) {
       const { declared, artifact } = await service.withTenant(tenant, async (trx) => ({
         declared: await defaultLayout(trx),
@@ -93,10 +94,11 @@ describe('the layout every environment starts with', () => {
       const tenth = await versionOf(tenant, 10);
       const eleventh = await versionOf(tenant, 11);
       const twelfth = await versionOf(tenant, 12);
+      const thirteenth = await versionOf(tenant, 13);
       expect(declared).toEqual({
         artifactId: DEFAULT_LAYOUT_ID,
-        versionId: twelfth.id,
-        number: '0.12',
+        versionId: thirteenth.id,
+        number: '0.13',
         layout: productDefaultLayout,
       });
       expect(artifact).toMatchObject({ kind: 'layout', space_id: null });
@@ -118,6 +120,7 @@ describe('the layout every environment starts with', () => {
       expect(tenth).toMatchObject({ ...unauthored, schema_version: 7 });
       expect(eleventh).toMatchObject({ ...unauthored, schema_version: 7 });
       expect(twelfth).toMatchObject({ ...unauthored, schema_version: 8 });
+      expect(thirteenth).toMatchObject({ ...unauthored, schema_version: 9 });
     }
   });
 
@@ -144,7 +147,9 @@ describe('the layout every environment starts with', () => {
       // 0.11 as 0154 stored it, placing a glossary and a list of abbreviations (TMb).
       [11, ELEVENTH_DEFAULT_LAYOUT as unknown as Layout],
       // 0.12 as 0161 stored it, its words in French and German too (TRb).
-      [12, productDefaultLayout],
+      [12, TWELFTH_DEFAULT_LAYOUT as unknown as Layout],
+      // 0.13 as 0168 stored it, making HTML, with its words for it in each language (HT-D).
+      [13, productDefaultLayout],
     ] as const;
     for (const [number, layout] of cases) {
       const version = await versionOf(acme, number);
@@ -196,7 +201,7 @@ describe('the layout every environment starts with', () => {
           },
         }),
       ).rejects.toThrow(/lists/);
-      expect(await versions()).toBe(12);
+      expect(await versions()).toBe(13);
 
       const next: Layout = {
         ...productDefaultLayout,
@@ -211,12 +216,14 @@ describe('the layout every environment starts with', () => {
       return { recorded, declared: await defaultLayout(trx), next };
     });
     if (answer.recorded.answer !== 'recorded') throw new Error(answer.recorded.answer);
-    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 13 });
+    expect(answer.recorded.version).toMatchObject({ kind: 'layout', revision: 0, version: 14 });
+    // Read back whole through the schema it was written by: HTML and its words kept (HT-D).
     expect(answer.declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
       versionId: answer.recorded.version.id,
-      number: '0.13',
+      number: '0.14',
       layout: answer.next,
     });
+    expect(answer.declared.layout.formats.html).toEqual({});
   });
 });

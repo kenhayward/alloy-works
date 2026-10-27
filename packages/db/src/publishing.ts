@@ -326,13 +326,34 @@ function imagesIn(
   });
 }
 
+/** A cross-reference as the content model stores it. */
+type CrossReferenceNode = Extract<InlineNode, { type: 'crossReference' }>;
+
+/** Which page references count as citing a page, for the formats a request names (PUB-074). */
+type Cites = (reference: CrossReferenceNode) => boolean;
+
+/** Every page reference: what Word prints as a page number, citing the wrong document. */
+const EVERY_PAGE: Cites = () => true;
+
+/**
+ * **What cites a page for formats without the PDF** (PUB-074, read as Ken answered HT-G): for Word,
+ * every page reference, since Word has pages, only not the PDF's; for HTML alone, a page reference
+ * declaring no form without pages, since HTML prints the form one declares and so cites no page
+ * (STR-055). Null where the PDF is among them, which is the paged record a page number cites.
+ */
+export function pageCitations(formats: readonly string[]): Cites | null {
+  if (formats.includes('pdf')) return null;
+  if (formats.includes('docx')) return EVERY_PAGE;
+  return (reference) => reference.withoutPages === undefined;
+}
+
 /** Whether inline content cites a page (PUB-074): a `page` reference, or one in a footnote in it. */
-function pageCitedIn(content: readonly InlineNode[] | undefined): boolean {
+function pageCitedIn(content: readonly InlineNode[] | undefined, cites: Cites): boolean {
   return (content ?? []).some(
     (inline) =>
-      (inline.type === 'crossReference' && inline.display === 'page') ||
+      (inline.type === 'crossReference' && inline.display === 'page' && cites(inline)) ||
       // A footnote's paragraphs, which the content model holds as its own (CNT-129).
-      (inline.type === 'footnote' && citesAPage(inline.content as readonly BlockNode[])),
+      (inline.type === 'footnote' && citesAPage(inline.content as readonly BlockNode[], cites)),
   );
 }
 
@@ -344,31 +365,33 @@ function pageCitedIn(content: readonly InlineNode[] | undefined): boolean {
  * an output with no pages (STR-055): Word has pages, only not the PDF's, so what it would print there
  * is a page number that cites the wrong document.
  */
-function citesAPage(blocks: readonly BlockNode[]): boolean {
+function citesAPage(blocks: readonly BlockNode[], cites: Cites): boolean {
   return blocks.some((block) => {
     switch (block.type) {
       case 'paragraph':
-        return pageCitedIn(block.content);
+        return pageCitedIn(block.content, cites);
       case 'list':
-        return block.items.some((item) => pageCitedIn(item.term) || citesAPage(item.content));
+        return block.items.some(
+          (item) => pageCitedIn(item.term, cites) || citesAPage(item.content, cites),
+        );
       case 'blockquote':
-        return citesAPage(block.content) || pageCitedIn(block.attribution);
+        return citesAPage(block.content, cites) || pageCitedIn(block.attribution, cites);
       case 'table':
         return (
-          pageCitedIn(block.caption) ||
-          pageCitedIn(block.note) ||
-          block.rows.some((row) => row.cells.some((cell) => citesAPage(cell.content)))
+          pageCitedIn(block.caption, cites) ||
+          pageCitedIn(block.note, cites) ||
+          block.rows.some((row) => row.cells.some((cell) => citesAPage(cell.content, cites)))
         );
       case 'boundTable':
         // Its inline content, walked as a table's (the TB1 plan, TB1-D); its cells are values.
         return (
-          pageCitedIn(block.caption) ||
-          pageCitedIn(block.empty) ||
-          pageCitedIn(block.note) ||
-          pageCitedIn(block.source)
+          pageCitedIn(block.caption, cites) ||
+          pageCitedIn(block.empty, cites) ||
+          pageCitedIn(block.note, cites) ||
+          pageCitedIn(block.source, cites)
         );
       case 'figure':
-        return pageCitedIn(block.caption);
+        return pageCitedIn(block.caption, cites);
       default:
         return false;
     }
@@ -383,12 +406,13 @@ function citesAPage(blocks: readonly BlockNode[]): boolean {
 export function documentCitesAPage(
   outline: OutlineDocument,
   contents: readonly ContentDocument[],
+  cites: Cites = EVERY_PAGE,
 ): boolean {
   let titled = false;
   walkOutline(outline.nodes, (node) => {
-    if (node.type === 'section' && pageCitedIn(node.title)) titled = true;
+    if (node.type === 'section' && pageCitedIn(node.title, cites)) titled = true;
   });
-  return titled || contents.some((each) => citesAPage(each.content));
+  return titled || contents.some((each) => citesAPage(each.content, cites));
 }
 
 export interface ReadOccurrence {
@@ -1099,14 +1123,15 @@ export async function resolvePublishable(
   }));
   // Decided from what the publisher may read, as everything here is: a component they may not read is
   // never read for a page, and fails the request as an unreadable occurrence instead.
-  if (formats !== null && !formats.includes('pdf')) {
+  const cites = formats === null ? null : pageCitations(formats);
+  if (cites !== null) {
     let titled = false;
     walkOutline(read.outline.nodes, (node) => {
-      if (node.type === 'section' && !excluded.has(node.id) && pageCitedIn(node.title)) {
+      if (node.type === 'section' && !excluded.has(node.id) && pageCitedIn(node.title, cites)) {
         titled = true;
       }
     });
-    if (titled || resolved.some((each) => citesAPage(each.content.content))) {
+    if (titled || resolved.some((each) => citesAPage(each.content.content, cites))) {
       return { answer: 'page_reference.without_pdf' };
     }
   }
@@ -2231,6 +2256,12 @@ export type NewPublicationOutput = {
       readonly report: OutputReport;
     }
   | {
+      /** An HTML file, made by the HTML writer at this version (`html/1`), and its report (HT-E). */
+      readonly format: 'html';
+      readonly writerVersion: string;
+      readonly report: OutputReport;
+    }
+  | {
       /** `provenance.json` (B3-G), made by the pipeline at its version: where a value is printed. */
       readonly format: 'provenance';
       readonly pipelineVersion: string;
@@ -2326,7 +2357,9 @@ export async function recordPublication(
     );
   }
   // What the writer reports is held to its closed shape before it is stored, as it is read back.
-  for (const each of input.outputs) if (each.format === 'docx') parseOutputReport(each.report);
+  for (const each of input.outputs) {
+    if (each.format === 'docx' || each.format === 'html') parseOutputReport(each.report);
+  }
   // All or nothing within the caller's transaction too: a failure part way - a refused row, or a lost
   // connection after a statement ran - rolls back to here before it is re-thrown, so a caller that
   // catches it and carries on (to fail the request) keeps no part of the publication. 0017's
@@ -2504,12 +2537,19 @@ async function insertPublication(
                 producer_version: each.writerVersion,
                 report: JSON.stringify(each.report),
               }
-            : {
-                standard: null,
-                producer: 'pipeline' as const,
-                producer_version: each.pipelineVersion,
-                report: '[]',
-              }),
+            : each.format === 'html'
+              ? {
+                  standard: null,
+                  producer: 'html' as const,
+                  producer_version: each.writerVersion,
+                  report: JSON.stringify(each.report),
+                }
+              : {
+                  standard: null,
+                  producer: 'pipeline' as const,
+                  producer_version: each.pipelineVersion,
+                  report: '[]',
+                }),
       })),
     )
     .execute();
@@ -2957,7 +2997,7 @@ export interface StoredPublication {
     readonly sha256: string;
     readonly bytes: number;
     readonly standard: 'ua-1' | null;
-    readonly producer: 'typst' | 'word' | 'pipeline';
+    readonly producer: 'typst' | 'word' | 'html' | 'pipeline';
     readonly producerVersion: string;
     readonly report: OutputReport;
     /** What veraPDF found of the PDF, once it has been checked; none before, and none for Word. */

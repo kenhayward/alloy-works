@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Notice } from '../states/Notice.js';
 import { baselineLink } from '../structure/links.js';
 import { Chip } from '../parts/Chip.js';
-import { reportIn, reportLines, type ReportEntry } from './formats.js';
+import { formatsWords, reportIn, reportLines, type ReportEntry } from './formats.js';
 import { Shares } from './Shares.js';
 import { GeneratedContent } from './GeneratedContent.js';
 import styles from './PublicationPage.module.css';
@@ -18,7 +18,7 @@ type Client = ReturnType<typeof createApiClient>;
  * `provenance.json`, where each value it printed came from (B3), to save.
  */
 interface Output {
-  readonly format: 'pdf' | 'docx' | 'provenance';
+  readonly format: 'pdf' | 'docx' | 'html' | 'provenance';
   readonly download: string;
   /**
    * The same bytes, signed to be shown rather than saved: the PDF's alone, and absent from an older
@@ -135,7 +135,10 @@ function shownIn(data: unknown): Shown | undefined {
   if (template !== null && typeof template !== 'number') return undefined;
   const outputs = (Array.isArray(data.outputs) ? data.outputs : []).flatMap((each): Output[] =>
     isRecord(each) &&
-    (each.format === 'pdf' || each.format === 'docx' || each.format === 'provenance') &&
+    (each.format === 'pdf' ||
+      each.format === 'docx' ||
+      each.format === 'html' ||
+      each.format === 'provenance') &&
     typeof each.download === 'string'
       ? [
           {
@@ -145,7 +148,7 @@ function shownIn(data: unknown): Shown | undefined {
             view: each.format === 'pdf' && typeof each.view === 'string' ? each.view : null,
             bytes: typeof each.bytes === 'number' ? each.bytes : null,
             producerVersion: typeof each.producerVersion === 'string' ? each.producerVersion : null,
-            report: each.format === 'docx' ? reportIn(each.report) : [],
+            report: each.format === 'docx' || each.format === 'html' ? reportIn(each.report) : [],
             check: each.format === 'pdf' ? checkIn(each.check) : null,
             checkGaveUp: each.format === 'pdf' && each.checkState === 'gave_up',
           },
@@ -270,13 +273,11 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
   }
   const pdf = shown.outputs.find((each) => each.format === 'pdf');
   const word = shown.outputs.find((each) => each.format === 'docx');
+  const html = shown.outputs.find((each) => each.format === 'html');
   const provenance = shown.outputs.find((each) => each.format === 'provenance');
-  const formats =
-    pdf !== undefined && word !== undefined
-      ? words('publishing.pdf-and-word')
-      : pdf
-        ? 'PDF'
-        : words('publishing.word');
+  const formats = formatsWords(
+    shown.outputs.filter((each) => each.format !== 'provenance').map((each) => each.format),
+  );
   return (
     <article aria-labelledby="publication-title" className={styles['page']}>
       {/* Layout D's head (the Ledger, ADR-0046): where it is, what it is, what can be taken away. */}
@@ -294,6 +295,11 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             {!outside && (
               <a className={styles['button']} href={`#/documents/${shown.document}`}>
                 {words('publishing.open-the-document')}
+              </a>
+            )}
+            {html !== undefined && (
+              <a className={styles['button']} href={html.download}>
+                {words('publishing.download-the-html-file')}
               </a>
             )}
             {word !== undefined && (
@@ -350,6 +356,9 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
         {pdf === undefined && word !== undefined && (
           <p className={styles['unshown']}>{words('publishing.a-word-document-is-not')}</p>
         )}
+        {pdf === undefined && word === undefined && html !== undefined && (
+          <p className={styles['unshown']}>{words('publishing.an-html-file-is-not')}</p>
+        )}
       </div>
       <aside className={styles['record']} aria-labelledby="publication-record">
         <h2 id="publication-record" className={styles['recordTitle']}>
@@ -393,6 +402,12 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
           <p>
             {words('publishing.the-word-document-was-written')}{' '}
             {word.producerVersion.replace(/^word\//, '')}.
+          </p>
+        )}
+        {html?.producerVersion != null && (
+          <p>
+            {words('publishing.the-html-file-was-written')}{' '}
+            {html.producerVersion.replace(/^html\//, '')}.
           </p>
         )}
         {(pdf !== undefined || (word !== undefined && word.report.length > 0)) && (
@@ -445,13 +460,17 @@ export function PublicationPage({ client, id }: { readonly client: Client; reado
             )}
           </section>
         )}
-        {(pdf !== undefined || word !== undefined || provenance !== undefined) && (
+        {(pdf !== undefined ||
+          word !== undefined ||
+          html !== undefined ||
+          provenance !== undefined) && (
           <section className={styles['section']} aria-labelledby="publication-files">
             <h3 id="publication-files" className={styles['label']}>
               {words('publishing.files')}
             </h3>
             {pdf !== undefined && <p>{sized(words('publishing.pdf'), pdf.bytes)}</p>}
             {word !== undefined && <p>{sized(words('publishing.word-document'), word.bytes)}</p>}
+            {html !== undefined && <p>{sized(words('publishing.html-file'), html.bytes)}</p>}
             {provenance !== undefined && (
               <p>
                 {wordsWith(

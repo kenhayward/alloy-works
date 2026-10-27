@@ -57,4 +57,24 @@ describe("an output's scan for excluded text (the R6 plan, R6-G)", () => {
       await leakedFrom(probes, 'docx', docxSaying('Staff are told at noon.', 'Sites')),
     ).toEqual(['staff are told at']);
   });
+
+  it('finds an excluded passage in an HTML file, in its text and its title, through its marks', async () => {
+    const html = (body: string, title: string) =>
+      new TextEncoder().encode(
+        `<!DOCTYPE html><html><head><title>${title}</title></head><body>${body}</body></html>`,
+      );
+    expect(await leakedFrom(probes, 'html', html('<p>Readings were taken.</p>', 'Sites'))).toEqual(
+      [],
+    );
+    expect(
+      await leakedFrom(
+        probes,
+        'html',
+        html('<p>Staff are <em><span>to</span></em>ld at the morning meeting.</p>', 'Sites'),
+      ),
+    ).not.toEqual([]);
+    expect(
+      await leakedFrom(probes, 'html', html('<p>Readings.</p>', 'Staff are told at noon')),
+    ).toEqual(['staff are told at']);
+  });
 });

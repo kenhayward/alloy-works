@@ -310,6 +310,9 @@ describe('a baseline and a publication at a gate (workflow.md; the WF2 plan, Tas
     await submit(required);
     await approve(required);
     const [baseline] = await baselines(required.artifactId);
+    // The paged formats its layout makes, never HTML, which the default's 0.13 makes too (HT-G): a
+    // page reference stores no form without pages by default, so a gate's publication would fail
+    // for a format nobody chose.
     expect(await requests(required.artifactId)).toEqual([
       { baseline_id: baseline!.id, requested_by: grace, formats: ['pdf', 'docx'] },
     ]);

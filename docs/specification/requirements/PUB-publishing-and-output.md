@@ -313,7 +313,7 @@ fails by name. Either answer is defensible and the silence was not.
 
 | ID          | Requirement                                                                                                               | Tranche | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **PUB-054** | Google Docs export must be labelled in the interface as lossy, and must not be presented beside PDF and Word as an equal  | T6      | Specified |
+| **PUB-054** | Google Docs export must be labelled in the interface as lossy, and must not be presented beside PDF and Word as an equal  | T7      | Specified |
 | **PUB-055** | Any lossy export must report what it could not carry, at the time it is produced                                          | T6      | Specified |
 | **PUB-056** | HTML should be producible as a reading format, and is subject to the same accessibility requirements as the other outputs | T6      | Specified |
 
@@ -657,6 +657,20 @@ and only its tranche changes.
 | What was found                                                                                                    | Change                  |
 | ----------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | Tracked changes read as suggestions are IMP-005's, in T6; writing suggestions as tracked changes is Word fidelity | **PUB-028 moved to T8** |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 111, of which 16 superseded | 111, of which 16 superseded |
+
+### Ken's order for the rest of T6, 2026-10-27
+
+Not a review. Choosing T6's next slice after the UI plan, Ken moved the Google Docs export out of T6:
+nothing exports to Google Docs, and building one needs Google's API and an account per tenant. A row
+moving tranche whole keeps its identifier, and only its tranche changes.
+
+| What was found                                                                     | Change                  |
+| ---------------------------------------------------------------------------------- | ----------------------- |
+| PUB-054 constrains a Google Docs export that T6 does not build and nobody asks for | **PUB-054 moved to T7** |
 
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |

@@ -231,6 +231,45 @@ describe('the publishing contract (Word 1)', () => {
   });
 });
 
+describe('the publishing contract for HTML (the HT plan, HT-E)', () => {
+  const html = {
+    format: 'html',
+    bytes: 3000,
+    sha256: 'e'.repeat(64),
+    standard: null,
+    producer: 'html',
+    producerVersion: 'html/1',
+    report: [],
+    download: 'https://store/p.html',
+    view: null,
+  };
+
+  it('takes a request for HTML, alone or beside the PDF and Word', () => {
+    for (const formats of [['html'], ['pdf', 'html'], ['pdf', 'docx', 'html']]) {
+      expect(
+        RequestPublicationBody.safeParse({ version: VERSION, formats }).success,
+        formats.join(),
+      ).toBe(true);
+    }
+    expect(RequestPublicationBody.shape.formats.description).toContain('`html`');
+  });
+
+  it('shows an HTML output as made by the HTML writer, claiming no PDF standard, saved rather than shown here', () => {
+    const view = PublicationView.parse(viewWith([pdf, html], { formats: ['pdf', 'html'] }));
+    expect(view.outputs).toEqual([pdf, html]);
+    for (const wrong of [{ standard: 'ua-1' }, { producer: 'word' }, { view: 'https://store/p' }]) {
+      expect(
+        PublicationView.safeParse(viewWith([pdf, { ...html, ...wrong }])).success,
+        JSON.stringify(wrong),
+      ).toBe(false);
+    }
+    // HTML alone has no PDF engine or template.
+    expect(
+      PublicationView.parse(viewWith([html], { formats: ['html'], engine: null, template: null })),
+    ).toMatchObject({ formats: ['html'], engine: null });
+  });
+});
+
 describe('the preview contract (W10.2)', () => {
   const request = {
     id: 'r',
