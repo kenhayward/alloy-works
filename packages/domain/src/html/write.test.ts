@@ -10,7 +10,6 @@ import {
   type AssembleInput,
   type PublishingAsset,
 } from '../publishing/assemble.js';
-import type { PublishFailure } from '../publishing/failures.js';
 import { defaultLayout, parseLayout, type Layout } from '../publishing/layout.js';
 import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outline.js';
 import type { ResolvedTheme } from '../theme/read.js';
@@ -183,9 +182,6 @@ function htmlOf(writing: WrittenHtml): string {
   if (!writing.ok) throw new Error(JSON.stringify(writing.failures));
   return new TextDecoder().decode(writing.bytes);
 }
-
-const failuresOf = (writing: WrittenHtml): readonly PublishFailure[] =>
-  writing.ok ? [] : writing.failures;
 
 /** Every face family the file declares with a file inline. */
 const declared = (html: string) =>
