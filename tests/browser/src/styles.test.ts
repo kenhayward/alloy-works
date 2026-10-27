@@ -154,13 +154,15 @@ async function measureView(
         ) {
           return false;
         }
-        // And every face the text is set in, loaded: asked of each styled element's own font.
+        // And every face the text is set in, loaded: asked of each styled element's own font, its
+        // stack's first family, since a fallback (the Naskh) loads only for a character it sets.
         return [
           ...text.querySelectorAll('[data-style], [data-role], code, [class*="aw-mark-"]'),
         ].every((element) => {
           const style = getComputedStyle(element);
+          const [first] = style.fontFamily.split(',');
           return document.fonts.check(
-            `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+            `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${first}`,
           );
         });
       },

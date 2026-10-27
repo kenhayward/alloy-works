@@ -640,6 +640,9 @@ importers:
       '@alloy-works/domain':
         specifier: workspace:^
         version: link:../../packages/domain
+      '@alloy-works/editor':
+        specifier: workspace:^
+        version: link:../../packages/editor
       '@alloy-works/service':
         specifier: workspace:^
         version: link:../../apps/service
