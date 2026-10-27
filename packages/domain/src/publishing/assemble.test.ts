@@ -7585,6 +7585,7 @@ describe('the HTML a publication is assembled for (the HT plan, HT-F)', () => {
       theme: DEFAULT_THEME,
       capHeights: new Map([['serif', 0.65]]),
       references: new Map(),
+      imageStyles: new Map(),
       // The layout's words HTML alone sets (HT-I, HT-C), and what each family covers (HT-B).
       words: {
         notes: 'Notes',

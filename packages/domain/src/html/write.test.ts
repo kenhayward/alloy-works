@@ -375,7 +375,7 @@ describe('the HTML writer (the HT plan, HTa)', () => {
       ),
     );
     const [ol] = all(tree, 'ol').filter((each) => each.attrs['start'] !== undefined);
-    expect(ol!.attrs).toEqual({ start: '3', 'data-format': 'roman' });
+    expect(ol!.attrs).toEqual({ start: '3', 'data-format': 'roman', 'data-block': 'l1' });
     expect(all(ol!, 'p')[0]!.attrs['data-place']).toBe('listItem');
     const [dl] = all(tree, 'dl');
     const [group] = kids(dl!);
@@ -388,7 +388,7 @@ describe('the HTML writer (the HT plan, HTa)', () => {
       'data-role': 'attribution',
     });
     const [pre] = all(tree, 'pre');
-    expect(pre!.attrs).toEqual({ 'data-role': 'preformatted', 'data-language': 'python' });
+    expect(pre!.attrs).toEqual({ 'data-role': 'preformatted', 'data-language': 'python', 'data-block': 'c1' });
     expect(textOf(pre!)).toBe('a < b\n  c');
   });
 

@@ -1,5 +1,7 @@
 import { allowedLinkSchemes } from '../content/model/marks.js';
 import {
+  figureImageKey,
+  inlineImageKey,
   inlineReferenceKey,
   type HtmlInput,
   type ReferenceSite,
@@ -356,6 +358,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ['id', paragraph.anchor],
           ['class', 'aw-footnote-paragraph'],
           ['data-style', paragraph.style],
+          ['data-block', paragraph.id],
           ['data-place', 'footnote'],
         ],
         back +
@@ -388,7 +391,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
 
   const inline = (each: PublishedInline, index: number, where: Where): string => {
     if ('text' in each) return run(each, where.chain, where.links);
-    if ('image' in each) return inlineImage(each);
+    if ('image' in each) return inlineImage(each, inlineImageKey(where.node, where.site, index));
     if ('footnote' in each) return footnote(each.footnote, where);
     if ('reference' in each) {
       const { reference } = each;
@@ -456,12 +459,13 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       : element('span', [['class', 'aw-term']], body);
   };
 
-  const inlineImage = (each: PublishedImageRun): string =>
+  const inlineImage = (each: PublishedImageRun, key: string): string =>
     element(
       'span',
       [['class', 'aw-inline-image-holder']],
       image(each.image.path, each.image.width, each.image.alternative, [
         ['class', 'aw-inline-image'],
+        ['data-image-style', input.html.imageStyles.get(key) ?? null],
       ]),
     );
 
@@ -471,6 +475,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
       [
         ['id', each.anchor],
         ['data-style', each.style],
+        ['data-block', each.id],
         ['data-place', at],
       ],
       inlines(each.runs, {
@@ -500,7 +505,14 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           ) + element('dd', [], blocks(item.blocks, node, 'listItem')),
         ),
       );
-      return element('dl', [['id', each.anchor]], `\n${items.join('\n')}\n`);
+      return element(
+        'dl',
+        [
+          ['id', each.anchor],
+          ['data-block', each.id],
+        ],
+        `\n${items.join('\n')}\n`,
+      );
     }
     sets(MARKER_CHARACTERS, chain);
     const items = each.items.map((item) =>
@@ -512,6 +524,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['id', each.anchor],
         ['start', each.kind === 'ordered' && each.start !== null ? String(each.start) : null],
         ['data-format', each.kind === 'ordered' ? each.format : null],
+        ['data-block', each.id],
       ],
       `\n${items.join('\n')}\n`,
     );
@@ -527,6 +540,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['id', each.anchor],
         ['data-role', 'preformatted'],
         ['data-language', each.label],
+        ['data-block', each.id],
       ],
       element('code', [], escapeText(text)),
     );
@@ -551,7 +565,10 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           )}`;
     return element(
       'blockquote',
-      [['id', each.anchor]],
+      [
+        ['id', each.anchor],
+        ['data-block', each.id],
+      ],
       `\n${blocks(each.blocks, node, 'quotation')}${attribution}\n`,
     );
   };
@@ -780,6 +797,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['id', id],
         ['data-block', each.id],
         ['data-figure', ''],
+        ['data-image-style', input.html.imageStyles.get(figureImageKey(node, each.id)) ?? null],
         ['class', 'aw-figure'],
       ],
       each.captionPosition === 'top' ? body + shown : shown + body,
