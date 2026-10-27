@@ -1,4 +1,4 @@
-import { leaked } from '@alloy-works/domain';
+import { htmlText, leaked } from '@alloy-works/domain';
 import { strFromU8, unzipSync } from 'fflate';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
@@ -60,9 +60,11 @@ export function docxText(bytes: Uint8Array): string {
 /** The probes an output holds: what was excluded and reached it anyway. */
 export async function leakedFrom(
   probes: readonly string[],
-  format: 'pdf' | 'docx',
+  format: 'pdf' | 'docx' | 'html',
   bytes: Uint8Array,
 ): Promise<string[]> {
   if (probes.length === 0) return [];
-  return leaked(probes, format === 'pdf' ? await pdfText(bytes) : docxText(bytes));
+  const text =
+    format === 'pdf' ? await pdfText(bytes) : format === 'docx' ? docxText(bytes) : htmlText(bytes);
+  return leaked(probes, text);
 }

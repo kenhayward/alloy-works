@@ -1208,6 +1208,77 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(await requestRow(id)).toMatchObject({ state: 'done', failures: [] });
   }, 120_000);
 
+  it('publishes to HTML alone: one file kept as HTML, recorded by its writer with its report, and no PDF engine (HTa)', async () => {
+    const kept = new Map<string, string>();
+    const id = await requested(plain, ['html']);
+    expect(await work({ handlers: noting(kept) })).toBe('done');
+    const outputs = await outputsOf(id);
+    expect(outputs).toHaveLength(1);
+    const [html] = outputs;
+    expect(html).toMatchObject({
+      formats: ['html'],
+      engine: null,
+      template: null,
+      format: 'html',
+      standard: null,
+      producer: 'html',
+      producer_version: 'html/1',
+      report: [],
+    });
+    expect([...kept]).toEqual([[html!.object_key, OUTPUT_CONTENT_TYPES.html]]);
+    const bytes = await pdfOf(html!.object_key);
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(html!.sha256);
+    const text = new TextDecoder().decode(bytes);
+    expect(text.startsWith('<!DOCTYPE html>')).toBe(true);
+    expect(text).toContain('Set the tray before every run.');
+    expect(text).toContain('Grace checks the readings.');
+    // Its faces inline, as data, from the pinned files (HT-B).
+    expect(text).toMatch(/src: url\("data:font\/ttf;base64,/);
+    expect(await requestRow(id)).toMatchObject({ state: 'done', failures: [] });
+  }, 120_000);
+
+  it('fails HTML by name for a kind its writer does not write yet, before anything is kept (HTa)', async () => {
+    const kept = new Map<string, string>();
+    const id = await requested(
+      async (trx) => [
+        section('Introduction', [
+          reference(
+            await component(
+              trx,
+              general,
+              'Readings',
+              [],
+              [
+                {
+                  type: 'equation',
+                  id: 'e1',
+                  mathml:
+                    '<math xmlns="http://www.w3.org/1998/Math/MathML" alttext="x"><mi>x</mi></math>',
+                  numbered: false,
+                },
+              ],
+            ),
+          ),
+        ]),
+      ],
+      ['pdf', 'html'],
+    );
+    expect(await work({ handlers: noting(kept) })).toBe('failed');
+    expect(await requestRow(id)).toMatchObject({
+      state: 'failed',
+      failures: [
+        {
+          stage: 'compose',
+          code: 'html_not_yet',
+          node: expect.any(String),
+          block: 'e1',
+          detail: 'equation',
+        },
+      ],
+    });
+    expect([...kept]).toEqual([]);
+  }, 120_000);
+
   it('publishes to the PDF and Word from one assembly, the PDF byte for byte what the PDF alone is made of', async () => {
     const kept = new Map<string, string>();
     const id = await requested(plain, ['pdf', 'docx']);

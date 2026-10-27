@@ -12,9 +12,18 @@ import {
 import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
+import {
+  assemble,
+  defaultLayout,
+  OUTLINE_SCHEMA_VERSION,
+  parseContentDocument,
+  parseOutlineDocument,
+  writeHtml,
+} from '@alloy-works/domain';
 import { readPdf } from './testing/pdf.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { loadPinnedFonts } from './fonts.js';
+import { loadPinnedFonts, pinnedFacesByHash } from './fonts.js';
+import { defaultTheme } from './testing/theme.js';
 import { checkJob } from './jobs/check.js';
 import { CHAPTERS, PAGES, seedReferenceDocument } from './testing/reference-document.js';
 import { publishJob } from './jobs/publish.js';
@@ -311,4 +320,106 @@ describe('PUB-102 publishes the 300-page reference document within the budget', 
     // The reference document is published as PDF/UA-1 that veraPDF passes, every time (PUB-103).
     expect(measured.reportsCompliant).toBe(true);
   }, 900_000);
+});
+
+describe("an HTML publication's faces, measured (the HT plan, HT-B)", () => {
+  /**
+   * HTML embeds every face its text is set in, and each one's fallbacks, whole, in base64 (HT-A,
+   * HT-B). Measured on a short document in the default theme setting text and code, beside what the
+   * maths face would add where an equation is set (HTb). The plan takes up subsetting in this slice
+   * where the default theme's corpus case passes 3 MB; this records the figure it is judged by.
+   */
+  it('measures one HTML file in the default theme, its faces inline whole, and what maths would add', async ({
+    task,
+  }) => {
+    const fonts = await loadPinnedFonts();
+    const faces = await pinnedFacesByHash(fonts.directory);
+    const id = (name: string) => name.padEnd(26, 'a');
+    const made = assemble({
+      formats: ['html'],
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          {
+            type: 'reference',
+            id: id('calib'),
+            component: '00000000-0000-4000-8000-000000000001',
+            mode: { kind: 'latest' },
+            numbered: true,
+            matter: 'body',
+            pageBreak: 'none',
+            values: {},
+            children: [],
+          },
+        ],
+      }),
+      occurrences: new Map([
+        [
+          id('calib'),
+          parseContentDocument({
+            schemaVersion: 1,
+            title: 'Calibration',
+            language: 'en-GB',
+            direction: 'ltr',
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                style: 'body',
+                content: [
+                  { type: 'text', value: 'Ada sets ', marks: [] },
+                  { type: 'text', value: 'tray.cfg', marks: [{ type: 'inlineCode', id: 'k1' }] },
+                  { type: 'text', value: ' before every run.', marks: [] },
+                ],
+              },
+              { type: 'preformatted', id: 'c1', text: 'tray = 3' },
+            ],
+          }),
+        ],
+      ]),
+      refused: [],
+      layout: defaultLayout,
+      theme: defaultTheme,
+      revision: '0.1',
+      covers: fonts.covers,
+      assets: new Map(),
+    });
+    if (!made.ok || made.html === null) throw new Error(JSON.stringify(made));
+    const written = writeHtml({ document: made.document, html: made.html, faces });
+    if (!written.ok) throw new Error(JSON.stringify(written.failures));
+    const html = new TextDecoder().decode(written.bytes);
+    const base64 = (bytes: number) => 4 * Math.ceil(bytes / 3);
+    const embedded = [...defaultTheme.typefaces.values()].map((face) => {
+      const bytes = face.files.reduce(
+        (sum, file) => sum + (faces.get(file.sha256)?.length ?? 0),
+        0,
+      );
+      return {
+        family: face.family,
+        inline: html.includes(`@font-face { font-family: "aw-face-${face.id}"; src: url("data:`),
+        megabytes: Number((base64(bytes) / 2 ** 20).toFixed(2)),
+      };
+    });
+    const measured = {
+      fileMegabytes: Number((written.bytes.length / 2 ** 20).toFixed(2)),
+      faces: embedded,
+      // The faces a document setting maths too would carry: every face the default theme names.
+      withMathsMegabytes: Number(
+        (
+          embedded.reduce((sum, each) => sum + each.megabytes, 0) +
+          written.bytes.length / 2 ** 20 -
+          embedded.filter((each) => each.inline).reduce((sum, each) => sum + each.megabytes, 0)
+        ).toFixed(2),
+      ),
+    };
+    Object.assign(task.meta, { htmlFaces: measured });
+    console.info(`HTML faces report
+${JSON.stringify(measured, null, 2)}`);
+    // The text's faces are inline, each file once; the maths face, which nothing here sets, is not.
+    expect(embedded.filter((each) => each.inline).length).toBeGreaterThan(1);
+    expect(embedded.find((each) => each.family === defaultTheme.maths.family)!.inline).toBe(false);
+  });
 });

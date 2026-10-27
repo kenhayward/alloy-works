@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
 import { renderCitations } from '@alloy-works/domain/citations';
+import { capHeightOfFile } from '@alloy-works/fonts';
 import {
   failPublicationRequest,
   recordPublicationEvent,
@@ -22,8 +23,10 @@ import {
   publishedProvenance,
   revisionCellKey,
   PUBLISHING_SCHEMA_1,
+  HTML_WRITER_VERSION,
   WORD_WRITER_VERSION,
   writeDocx,
+  writeHtml,
   type ContentDocument,
   type HeldDataset,
   type Held,
@@ -272,7 +275,11 @@ const PROVENANCE_CONTENT_TYPE = 'application/json';
 /** An output kept in the tenant's store: its key, digest and size. */
 type Kept = Awaited<ReturnType<typeof keep>>;
 
-async function keep(store: TenantStore, bytes: Uint8Array, format: 'pdf' | 'docx' | 'provenance') {
+async function keep(
+  store: TenantStore,
+  bytes: Uint8Array,
+  format: 'pdf' | 'docx' | 'html' | 'provenance',
+) {
   try {
     return await store.put(
       bytes,
@@ -332,6 +339,14 @@ export async function assembleRequest(
     // for, and what Word cannot carry yet where Word is (Word 1, rulings R2 and R3): a request for
     // both fails if either would, before either output is made.
     formats,
+    // Each face's cap height from the pinned file its regular weight is, which HTML's projection
+    // trims a line to, as the editor's does (HT-C).
+    capHeight: (face) => {
+      const file =
+        face.files.find((each) => each.weight === 'regular' && each.posture === 'normal') ??
+        face.files[0];
+      return file === undefined ? undefined : capHeightOfFile(file.sha256);
+    },
     outline,
     occurrences: new Map(
       [...inputs.occurrences].map(([node, each]) => [
@@ -445,8 +460,11 @@ export function publishJob(deps: {
       const outputs: NewPublicationOutput[] = [];
       // Each output made, and kept only once every one has been scanned (REU-048; R6-G): a passage
       // its conditions took out that reaches any of them fails the publish, and nothing is stored.
-      const made: { bytes: Uint8Array; format: 'pdf' | 'docx'; record: (stored: Kept) => void }[] =
-        [];
+      const made: {
+        bytes: Uint8Array;
+        format: 'pdf' | 'docx' | 'html';
+        record: (stored: Kept) => void;
+      }[] = [];
       // Read once, for whichever outputs are asked for: the same bytes by the same paths. Of a held
       // result's images, only those the binding stage placed (B6-F), never every one a result holds.
       const placed = new Map(assets);
@@ -456,6 +474,35 @@ export function publishJob(deps: {
         if (bound !== undefined) placed.set(value.image.assetVersion, bound);
       }
       const images = await rootImages(placed, (key) => read.store.get(key));
+      // HTML first, where it is asked for (the HT plan, HTa): written from the document and the faces
+      // alone, so a kind its writer does not write yet fails the publish by name before the PDF is
+      // compiled or anything is kept.
+      if (formats.includes('html')) {
+        const { document, html } = assembled;
+        if (html === null || document.schema === PUBLISHING_SCHEMA_1) {
+          throw new Error('assemble answered no HTML inputs for a request that asked for HTML');
+        }
+        const written = writeHtml({
+          document,
+          html,
+          // The theme's faces were held to exactly these files above, as Word's are.
+          faces: await pinnedFacesByHash(deps.fonts.directory),
+        });
+        if (!written.ok) throw new PublishRefused(written.failures);
+        made.push({
+          bytes: written.bytes,
+          format: 'html',
+          record: (stored) =>
+            outputs.push({
+              format: 'html',
+              writerVersion: HTML_WRITER_VERSION,
+              report: written.report,
+              key: stored.key,
+              sha256: stored.sha256,
+              bytes: stored.size,
+            }),
+        });
+      }
       const template = PUBLICATION_TEMPLATE[TEMPLATE_READING[schema]];
       // Asked of the template before anything is made (TB3-I): a table it cannot set whole fails the
       // publish by name, and Word sets each table as the PDF does. Template 1 sets no wide table.
