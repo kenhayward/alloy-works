@@ -45,7 +45,7 @@ describe("a face's character map", () => {
   });
 
   it('finds nothing beyond U+FFFF in the Liberation faces, which carry format 4 and no format 12', async () => {
-    for (const pinned of PINNED_FONT_FILES.filter((each) => each.family !== 'STIX Two Math')) {
+    for (const pinned of PINNED_FONT_FILES.filter((each) => each.family.startsWith('Liberation'))) {
       const covered = [...codePoints(await readFile(join(FONT_DIRECTORY, pinned.file)))];
       expect(covered.length, pinned.file).toBeGreaterThan(0);
       expect(Math.max(...covered), pinned.file).toBeLessThan(0x10000);

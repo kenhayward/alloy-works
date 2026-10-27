@@ -314,6 +314,10 @@ describe('the pinned fonts (issue #145)', () => {
     const stix = await readFile(join(FONT_DIRECTORY, 'LICENSE-STIX.txt'), 'latin1');
     expect(stix).toContain('The STIX Fonts Project Authors');
     expect(stix).toContain('SIL OPEN FONT LICENSE Version 1.1');
+    // Noto Naskh Arabic's, from its release (the UI plan, UF-A).
+    const naskh = await readFile(join(FONT_DIRECTORY, 'LICENSE-NotoNaskhArabic.txt'), 'latin1');
+    expect(naskh).toContain('The Noto Project Authors');
+    expect(naskh).toContain('SIL OPEN FONT LICENSE Version 1.1');
   });
 
   it('pins STIX Two Math 2.13 b171 as the one maths face', () => {

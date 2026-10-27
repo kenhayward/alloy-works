@@ -3,7 +3,9 @@
  * Liberation Serif 2.1.5 for the body, Liberation Mono 2.1.5 for preformatted text and inline code,
  * and STIX Two Math 2.13 b171 for equations (equations 2, EQ-A: the file at the tag `v2.13b171` of
  * stipub/stixfonts, whose hash the equations spike measured), each under the SIL Open Font License
- * 1.1 (ADR-0010), whose text ships beside them - `LICENSE-Liberation.txt` and `LICENSE-STIX.txt`.
+ * 1.1 (ADR-0010), whose text ships beside them - `LICENSE-Liberation.txt` and `LICENSE-STIX.txt`;
+ * and Noto Naskh Arabic 2.021, unhinted, from notofonts/arabic's release, for Arabic, which a theme
+ * sets as a fallback (the UI plan, UF-A), under the same licence in `LICENSE-NotoNaskhArabic.txt`.
  * Typst is handed these files and nothing else - no system fonts and none of its own - so a page is
  * set in these files or not at all. The worker names them when it starts, and every publication's
  * record names them, each with its hash; the renderer bundles the same files for the editor (themes.md,
@@ -66,5 +68,18 @@ export const PINNED_FONT_FILES = [
     family: 'STIX Two Math',
     capHeight: 657 / 1000,
     sha256: '3a5f3f26f40d5698b3c62dd085d48d6663696a3f80825aab8b553d5097518e8c',
+  },
+  {
+    file: 'NotoNaskhArabic-Regular.ttf',
+    family: 'Noto Naskh Arabic',
+    // Arabic has no capitals, and the face states none.
+    capHeight: 0,
+    sha256: 'c34fdbd98af4dbc45ca192a23d2eeb77032add83086f5fe32957d23b3f36b221',
+  },
+  {
+    file: 'NotoNaskhArabic-Bold.ttf',
+    family: 'Noto Naskh Arabic',
+    capHeight: 0,
+    sha256: '380ac34b249d336e1a43c21053df440594e1e3db8f75fabd4d85b649ca1ea4c6',
   },
 ] as const satisfies readonly { file: string; family: string; capHeight: number; sha256: string }[];
