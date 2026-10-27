@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.212.0 - 2026-10-27 (PR #UIG)
+## 0.212.0 - 2026-10-27 (PR #796)
 
 Interface localisation (the UI plan).
 

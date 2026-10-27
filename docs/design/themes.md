@@ -76,6 +76,7 @@ conformance suite.
 | **STY-046** | A tenant's uploaded face is a typeface artifact in that tenant's schema, so it cannot be served to anyone else                                                                                                                                                                                                                                                                                      |
 | **STY-047** | A typeface artifact is the font files themselves, versioned; the baseline pins the files                                                                                                                                                                                                                                                                                                            |
 | **STY-074** | The default theme's faces are checked against Latin, Greek, Cyrillic and Hebrew and the mathematics, from their character maps, by the coverage check below                                                                                                                                                                                                                                         |
+| **STY-075** | The default theme's 0.11 gives the serif Noto Naskh Arabic as its fallback (migration 0167): each text style's chain is checked against Latin, Greek, Cyrillic, Hebrew and Arabic at every weight and posture, and a paragraph mixing Arabic, Hebrew and Latin is published to the PDF and Word                                                                                                     |
 | **STY-069** | The domain's theme reader refuses a text colour below 4.5:1, or 3:1 for large text, against any background it can stand on, and the store refuses what the reader refuses, so a theme is checked when it is saved ([Themes in the PDF](#themes-in-the-pdf), TH-G)                                                                                                                                   |
 | **STY-050** | Vertical space between two blocks is the first block's space after plus the second block's space before, in every output                                                                                                                                                                                                                                                                            |
 | **STY-051** | Line spacing is a minimum baseline-to-baseline distance in points, and means that distance in every output                                                                                                                                                                                                                                                                                          |
@@ -109,8 +110,10 @@ Math lacks from a face nobody declared. Refusing that character for Word needs C
 as data (the W15 plan's W15-K), which W15.4 would have built and ADR-0032 moved out of T1 with the rest of
 Word's fidelity, now T8's ([ADR-0033](../decisions/0033-t2-is-the-data-spine.md)).
 
-**STY-075 is not claimed**: the scripts the supported locales admit have no list until LOC-038
-declares one, and which faces answer it is decided then. STY-074, its T1 half, is claimed.
+**STY-075 is claimed**, amended to name its scripts (STY-084 and STY-085 ask for the rest), with two
+gaps named: code is set in its chain's first face, so Arabic in code is refused (UF-C); and Word grows
+a line holding the Naskh to the face's taller edges, its line spacing being "at least", where the PDF
+keeps the serif's. Whether Word uses the embedded Naskh is checked in Word itself.
 
 **STY-080 is claimed since issues #331 and #333 were fixed.** STY-053 was split (the W13 plan's
 B-M), and STY-080, the editor measured against the PDF, is built in the browser suite

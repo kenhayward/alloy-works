@@ -28,6 +28,7 @@ import {
   DEFAULT_CATALOGUES,
   DEFAULT_CATALOGUES_BY_VERSION,
   DEFAULT_THEME,
+  TENTH_DEFAULT_THEME,
   defaultLayout,
   MATHS_CHARACTERS,
   OUTLINE_SCHEMA_VERSION,
@@ -1029,7 +1030,7 @@ describe("the pinned faces' own files (themes 1)", () => {
     expect(DEFAULT_THEME.typefaces.filter((each) => each.advance !== undefined)).toHaveLength(1);
   });
 
-  it('STY-074 covers the Latin, Greek, Cyrillic and Hebrew scripts in every file of the text faces, and every character the maths tree sets in the maths face', async () => {
+  it('STY-074 STY-075 sets the Latin, Greek, Cyrillic, Hebrew and Arabic scripts in every text style, in its faces at every weight and posture, and every character the maths tree sets in the maths face', async () => {
     const range = (from: number, to: number) =>
       Array.from({ length: to - from + 1 }, (_, index) => from + index);
     const scripts: Record<string, number[]> = {
@@ -1067,17 +1068,58 @@ describe("the pinned faces' own files (themes 1)", () => {
       ),
       'Hebrew points': range(0x5b0, 0x5c7),
     };
-    for (const typeface of DEFAULT_THEME.typefaces.filter((each) => each.id !== 'maths')) {
-      for (const file of typeface.files) {
-        const covered = codePoints(await pinned(file.sha256));
-        for (const [script, letters] of Object.entries({ ...scripts, ...written })) {
+    // Arabic as it is written (STY-075): its letters, the harakat and the superscript alef, its
+    // punctuation, Arabic-Indic and Persian digits, and the letters Persian and Urdu add.
+    const arabic: Record<string, number[]> = {
+      'Arabic letters': range(0x621, 0x63a).concat(range(0x641, 0x64a)),
+      harakat: [...range(0x64b, 0x652), 0x670],
+      'Arabic punctuation': [0x60c, 0x61b, 0x61f],
+      'Arabic-Indic digits': range(0x660, 0x669),
+      'Persian digits': range(0x6f0, 0x6f9),
+      'Persian letters': [0x67e, 0x686, 0x698, 0x6a9, 0x6af, 0x6cc],
+      'Urdu letters': [0x679, 0x688, 0x691, 0x6ba, 0x6be, 0x6c1, 0x6d2],
+    };
+    // Each text style sets a character in the first face of its chain that covers it (UF-D), so each
+    // script is asked of the chain's files together, at each weight and posture of its first face: a
+    // face with no italic, as the Naskh, is set upright there, as the engine was measured to set it.
+    // Code is set in its chain's first face alone (UF-C), so Arabic in code is refused, by design.
+    const theme = read(DEFAULT_THEME, DEFAULT_CATALOGUES_BY_VERSION);
+    const code = new Set([theme.roles.preformatted, theme.roles.preformattedLabel]);
+    const styles = [
+      ...[...theme.paragraphStyles.values()].map((style) => ({
+        name: style.id,
+        chain: style.chain,
+        code: code.has(style.id),
+      })),
+      ...Object.values(theme.characterStyles).flatMap((style) =>
+        style.chain === undefined
+          ? []
+          : [{ name: style.mark, chain: style.chain, code: style.mark === 'inlineCode' }],
+      ),
+    ];
+    expect(styles.filter((style) => !style.code).length).toBeGreaterThan(10);
+    for (const style of styles) {
+      const asked = style.code ? { ...scripts, ...written } : { ...scripts, ...written, ...arabic };
+      for (const { weight, posture } of style.chain[0]!.files) {
+        const covered = new Set<number>();
+        for (const face of style.chain) {
+          const file =
+            face.files.find((each) => each.weight === weight && each.posture === posture) ??
+            face.files.find((each) => each.weight === weight && each.posture === 'normal') ??
+            face.files[0]!;
+          for (const each of codePoints(await pinned(file.sha256))) covered.add(each);
+        }
+        for (const [script, letters] of Object.entries(asked)) {
           const missing = letters.filter((each) => !covered.has(each));
-          expect(missing, `${typeface.family} ${file.weight} ${file.posture}: ${script}`).toEqual(
-            [],
-          );
+          expect(missing, `${style.name} ${weight} ${posture}: ${script}`).toEqual([]);
         }
       }
     }
+    // Body text falls back to the Naskh, and only code does not.
+    expect(theme.paragraphStyles.get(theme.places.text)!.chain.map((face) => face.id)).toEqual([
+      'serif',
+      'naskh',
+    ]);
     // The maths face: every character the maths tree sets on its own account - its fences, accents,
     // lines, braces and primes - and every letter and digit an identifier's variant maps to, in
     // Mathematical Alphanumeric Symbols and, for the letters Unicode placed there first, in
@@ -1109,7 +1151,8 @@ describe("the pinned faces' own files (themes 1)", () => {
 
   it("holds a theme's typefaces to the pinned files exactly: every file of the family and no other, the files' own metrics, and a maths face for equations", () => {
     expect(typefacesNotHeld(defaultTheme, fonts)).toEqual([]);
-    const [serif, mono, maths] = DEFAULT_THEME.typefaces;
+    // 0.10's faces, with no fallback, so a list of them needs no Naskh.
+    const [serif, mono, maths] = TENTH_DEFAULT_THEME.typefaces;
     const holding = (typefaces: Theme['typefaces'], mathsFace = DEFAULT_THEME.maths) =>
       read({ ...DEFAULT_THEME, typefaces, maths: mathsFace }, DEFAULT_CATALOGUES_BY_VERSION);
     const notHeld = (typefaces: Theme['typefaces'], mathsFace?: string) =>
@@ -1398,7 +1441,7 @@ describe('publishing under a theme it must refuse, from the request to the recor
   }, 120_000);
 
   it('fails a theme naming a face the worker does not hold typeface_unavailable, by name, before anything is set', async () => {
-    const [serif, mono, maths] = DEFAULT_THEME.typefaces;
+    const [serif, mono, maths] = TENTH_DEFAULT_THEME.typefaces;
     await declare({
       ...DEFAULT_THEME,
       typefaces: [
@@ -1434,7 +1477,8 @@ describe('publishing under a theme it must refuse, from the request to the recor
 
     // The serif as the maths face (the final review of themes 1, M1): its files are held, and the
     // engine refused the equation unnamed. Now it is named, before anything is set.
-    await declare({ ...DEFAULT_THEME, maths: serif!.id });
+    // 0.10's faces, since a maths face may name no fallback and 0.11's serif names the Naskh.
+    await declare({ ...DEFAULT_THEME, typefaces: TENTH_DEFAULT_THEME.typefaces, maths: serif!.id });
     const unmathematical = await requested();
     expect(await work()).toBe('failed');
     const named = await outcomeOf(unmathematical);
