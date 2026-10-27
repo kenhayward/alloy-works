@@ -21,7 +21,10 @@ import {
   NINTH_DEFAULT_LAYOUT,
   TENTH_DEFAULT_LAYOUT,
   ELEVENTH_DEFAULT_LAYOUT,
+  TWELFTH_DEFAULT_LAYOUT,
   layoutIn,
+  PAGED,
+  pagedFormats,
   SIXTH_DEFAULT_LAYOUT,
   speaksFor,
   THIRD_DEFAULT_LAYOUT,
@@ -39,9 +42,24 @@ const copy = (): Layout => {
   return own;
 };
 
-/** A frozen schema-7 layout as today's schema reads it. */
-const at8 = (layout: object): Layout =>
+/** A frozen layout as today's schema reads it. */
+const atCurrent = (layout: object): Layout =>
   ({ ...layout, schemaVersion: LAYOUT_SCHEMA_VERSION }) as Layout;
+
+/** HTML's words in English, which a layout written at schema 9 gives (HT-D). */
+const HTML_WORDS = {
+  notes: 'Notes',
+  backToReference: 'Back to reference',
+  scrollRegion: 'Scrollable table',
+};
+
+/** A frozen layout as it would be written today: at the current schema, with HTML's words. */
+const writtenNow = (layout: Layout | { words: object }): Layout =>
+  ({
+    ...layout,
+    schemaVersion: LAYOUT_SCHEMA_VERSION,
+    words: { ...layout.words, ...HTML_WORDS },
+  }) as Layout;
 
 const pdfOf = (layout: Layout) => layout.formats.pdf;
 const docxOf = (layout: Layout) => layout.formats.docx!;
@@ -88,7 +106,7 @@ describe('a layout', () => {
       },
     };
     const expected: Layout = {
-      schemaVersion: 8,
+      schemaVersion: 9,
       language: 'en',
       words: {
         contents: 'Contents',
@@ -112,6 +130,11 @@ describe('a layout', () => {
         source: 'Source:',
         // Version 0.9's: what a table's whole-table note follows (TB3-F).
         note: 'Note:',
+        // Version 0.13's: what HTML heads its notes with, names each note's link back by, and names a
+        // wide table's scrolling region by (HT-D).
+        notes: 'Notes',
+        backToReference: 'Back to reference',
+        scrollRegion: 'Scrollable table',
       },
       scheme: defaultNumberingScheme,
       matter: {
@@ -129,16 +152,24 @@ describe('a layout', () => {
         glossary: { title: 'Glossary' },
         abbreviations: { title: 'Abbreviations' },
       },
-      // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4).
-      formats: { pdf: page, docx: page },
+      // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4); 0.13 makes HTML (HT-D).
+      formats: { pdf: page, docx: page, html: {} },
     };
-    expect(LAYOUT_SCHEMA_VERSION).toBe(8);
-    expect(PUBLISHING_FORMATS).toEqual(['pdf', 'docx']);
-    // 0.12 is 0.11 at schema 8 with its words in French and German (TRb), which are tested apart.
+    expect(LAYOUT_SCHEMA_VERSION).toBe(9);
+    expect(PUBLISHING_FORMATS).toEqual(['pdf', 'docx', 'html']);
+    // 0.13 is 0.12 at schema 9, making HTML, with its words for it in each language (HT-D).
     const { translations, ...own } = defaultLayout;
     expect(translations?.map((each) => each.language)).toEqual(['fr', 'de']);
     expect(own).toEqual(expected);
-    expect(ELEVENTH_DEFAULT_LAYOUT).toEqual({ ...expected, schemaVersion: 7 });
+    const { notes, backToReference, scrollRegion, ...words8 } = expected.words;
+    void [notes, backToReference, scrollRegion];
+    const { html, ...formats8 } = expected.formats;
+    void html;
+    const eleventh = { ...expected, schemaVersion: 7, words: words8, formats: formats8 };
+    expect(ELEVENTH_DEFAULT_LAYOUT).toEqual(eleventh);
+    // 0.12 is 0.11 at schema 8 with its words in French and German (TRb), which are tested apart.
+    expect(TWELFTH_DEFAULT_LAYOUT).toMatchObject({ ...eleventh, schemaVersion: 8 });
+    expect(TWELFTH_DEFAULT_LAYOUT.translations?.map((each) => each.language)).toEqual(['fr', 'de']);
     expect(parseLayout(defaultLayout)).toEqual(defaultLayout);
 
     const read = readLayout(JSON.parse(JSON.stringify(defaultLayout)), {
@@ -236,8 +267,8 @@ describe('a layout', () => {
       },
     });
     // Optional at schema 7, in place: a layout without it reads, and fails nothing for its absence.
-    expect(parseLayout(at8(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT))))).toEqual(
-      at8(EIGHTH_DEFAULT_LAYOUT),
+    expect(parseLayout(writtenNow(JSON.parse(JSON.stringify(EIGHTH_DEFAULT_LAYOUT))))).toEqual(
+      writtenNow(EIGHTH_DEFAULT_LAYOUT),
     );
     expect(() => parseLayout({ ...copy(), words: { ...copy().words, note: '' } })).toThrow();
   });
@@ -407,6 +438,7 @@ describe('a layout', () => {
     expect(read.layout.formats).toEqual({
       pdf: defaultLayout.formats.pdf,
       docx: differs.formats.docx,
+      html: {},
     });
     expect(unsupportedFormats(read.layout, ['pdf', 'docx'])).toEqual([]);
   });
@@ -414,7 +446,7 @@ describe('a layout', () => {
   it('makes Word only where it declares a Word page, and makes a PDF always', () => {
     const pdfOnly = copy();
     delete pdfOnly.formats.docx;
-    expect(parseLayout(pdfOnly).formats).toEqual({ pdf: defaultLayout.formats.pdf });
+    expect(parseLayout(pdfOnly).formats).toEqual({ pdf: defaultLayout.formats.pdf, html: {} });
     expect(unsupportedFormats(pdfOnly, ['docx'])).toEqual(['docx']);
 
     const wordOnly = copy();
@@ -541,6 +573,7 @@ describe('a layout', () => {
       notAvailable: 'Not available',
       source: 'Source:',
       note: 'Note:',
+      ...HTML_WORDS,
     });
 
     for (const alone of ['above', 'below'] as const) {
@@ -641,7 +674,7 @@ describe('a layout', () => {
     const placed = copy();
     placed.matter.bibliography = { title: 'References' };
     expect(parseLayout(placed).matter.bibliography).toEqual({ title: 'References' });
-    expect(parseLayout(at8(NINTH_DEFAULT_LAYOUT)).matter.bibliography).toBeUndefined();
+    expect(parseLayout(writtenNow(NINTH_DEFAULT_LAYOUT)).matter.bibliography).toBeUndefined();
 
     const blank = copy();
     blank.matter.bibliography = { title: '  ' };
@@ -657,8 +690,10 @@ describe('a layout', () => {
       { title: 'Terms' },
       { title: 'Short forms' },
     ]);
-    expect(parseLayout(at8(TENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty('glossary');
-    expect(parseLayout(at8(TENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty('abbreviations');
+    expect(parseLayout(writtenNow(TENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty('glossary');
+    expect(parseLayout(writtenNow(TENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty(
+      'abbreviations',
+    );
     for (const member of ['glossary', 'abbreviations'] as const) {
       const blank = copy();
       blank.matter[member] = { title: ' ' };
@@ -671,7 +706,7 @@ describe('a layout', () => {
     expect(() => parseLayout(lists)).toThrow(/Unrecognized key/);
 
     const html = copy();
-    Object.assign(html.formats, { html: {} });
+    Object.assign(html.formats, { html: { paged: false } });
     expect(() => parseLayout(html)).toThrow(/Unrecognized key/);
 
     const empty = copy();
@@ -867,11 +902,11 @@ describe('a layout', () => {
   });
 
   it('names the formats a layout does not make', () => {
-    expect(unsupportedFormats(defaultLayout, ['pdf', 'docx'])).toEqual([]);
-    expect(unsupportedFormats(defaultLayout, ['pdf', 'html'])).toEqual(['html']);
-    expect(unsupportedFormats(defaultLayout, ['toString', 'html', 'html'])).toEqual([
+    expect(unsupportedFormats(defaultLayout, ['pdf', 'docx', 'html'])).toEqual([]);
+    expect(unsupportedFormats(defaultLayout, ['pdf', 'epub'])).toEqual(['epub']);
+    expect(unsupportedFormats(defaultLayout, ['toString', 'epub', 'epub'])).toEqual([
       'toString',
-      'html',
+      'epub',
     ]);
     const pdfOnly = copy();
     delete pdfOnly.formats.docx;
@@ -937,7 +972,66 @@ describe('a layout in further languages (schema 8; the TR plan, TRb)', () => {
       artifact: 'layout-artifact',
       version: 'layout-version',
     });
-    expect(read).toEqual({ ok: true, layout: at8(ELEVENTH_DEFAULT_LAYOUT) });
+    expect(read).toEqual({ ok: true, layout: atCurrent(ELEVENTH_DEFAULT_LAYOUT) });
     expect(read.ok && layoutIn(read.layout, 'fr-FR')).toBeNull();
+  });
+});
+
+describe('a layout that makes HTML (schema 9; the HT plan, HT-D)', () => {
+  it('declares HTML by an empty member, optional, and a layout without one makes none', () => {
+    expect(parseLayout(defaultLayout).formats.html).toEqual({});
+    const without = copy();
+    delete without.formats.html;
+    expect(parseLayout(without).formats).not.toHaveProperty('html');
+    expect(unsupportedFormats(without, ['pdf', 'html'])).toEqual(['html']);
+    expect(unsupportedFormats(defaultLayout, ['html'])).toEqual([]);
+  });
+
+  it("holds pagedness as a format's kind, never stored: the PDF and Word have pages, HTML has none", () => {
+    expect(PAGED).toEqual({ pdf: true, docx: true, html: false });
+    // What a gate publishes (HT-G): the paged formats the layout makes, never HTML.
+    expect(pagedFormats(defaultLayout)).toEqual(['pdf', 'docx']);
+    const pdfOnly = copy();
+    delete pdfOnly.formats.docx;
+    expect(pagedFormats(pdfOnly)).toEqual(['pdf']);
+  });
+
+  it('reads a layout stored at schema version 8 as one with no words for HTML and making none', () => {
+    const read = readLayout(JSON.parse(JSON.stringify(TWELFTH_DEFAULT_LAYOUT)), {
+      artifact: 'layout-artifact',
+      version: 'layout-version',
+    });
+    expect(read).toEqual({ ok: true, layout: atCurrent(TWELFTH_DEFAULT_LAYOUT) });
+    expect(read.ok && read.layout.words).not.toHaveProperty('notes');
+    expect(read.ok && read.layout.formats).not.toHaveProperty('html');
+  });
+
+  it("requires a layout written at schema version 9 to give HTML's words, each words that say something", () => {
+    for (const word of ['notes', 'backToReference', 'scrollRegion'] as const) {
+      const missing = copy();
+      Reflect.deleteProperty(missing.words, word);
+      expect(() => parseLayout(missing), word).toThrow(new RegExp(word));
+      const blank = copy();
+      blank.words[word] = ' ';
+      expect(() => parseLayout(blank), word).toThrow();
+    }
+  });
+
+  it('gives the words for HTML in every translation, and keeps HTML in every language it serves', () => {
+    for (const translation of defaultLayout.translations!) {
+      expect(translation.words.notes).toBeDefined();
+      expect(translation.words.backToReference).toBeDefined();
+      expect(translation.words.scrollRegion).toBeDefined();
+      const gap = structuredClone(translation);
+      Reflect.deleteProperty(gap.words, 'scrollRegion');
+      expect(() => parseLayout({ ...copy(), translations: [gap] })).toThrow();
+    }
+    expect(layoutIn(defaultLayout, 'en-GB')!.formats.html).toEqual({});
+    expect(layoutIn(defaultLayout, 'fr-FR')!.formats.html).toEqual({});
+    expect(layoutIn(defaultLayout, 'fr-FR')!.words.notes).toBe('Notes');
+    expect(layoutIn(defaultLayout, 'de-DE')!.formats.html).toEqual({});
+    const without = { ...copy(), translations: structuredClone(defaultLayout.translations) };
+    delete without.formats.html;
+    expect(layoutIn(parseLayout(without), 'de-DE')!.formats).not.toHaveProperty('html');
   });
 });

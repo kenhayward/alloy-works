@@ -19,8 +19,8 @@ import { DRAFT_NOTICE } from './published.js';
  * The layout's stored shape (docs/design/publishing.md, "The layout"). A layout is an artifact kind
  * whose versions are insert-only, so **the shape is closed at its first version**: every object is
  * strict at every depth, and whatever this parse accepts a later reader must go on accepting. A member
- * nothing reads yet - `paged`, an `html` format - is refused rather than stored, and arrives with the
- * schema version that reads it.
+ * nothing reads yet - `paged` - is refused rather than stored, and arrives with the schema version that
+ * reads it.
  *
  * **Version 2 added `matter.lists`** (tables 2): the generated lists of figures, tables and equations a
  * layout declares, each with its title. A layout stored at version 1 reads as one that generates none,
@@ -64,8 +64,16 @@ import { DRAFT_NOTICE } from './published.js';
  * further language it is given - its words, its labels, its titles and its running matter's words -
  * each complete, so a document publishes in that language under the one layout (`layoutIn`). A layout
  * stored at version 7 reads as having none, for version 2's reason.
+ *
+ * **Version 9 added `formats.html`** (the HT plan, HT-D): an empty member, declaring only that the
+ * layout makes HTML, **optional at every version** as `docx` was at 5; whether a format has pages is
+ * its kind (`PAGED`), never stored. And **`words.notes`, `words.backToReference` and
+ * `words.scrollRegion`**: what HTML heads a section's notes with, names each note's link back to its
+ * mark by, and names a wide table's scrolling region by, in the layout's language. **Required of a
+ * layout written at version 9** and in each of its translations, and absent from one stored earlier,
+ * which reads as having none and making no HTML, for version 2's reason.
  */
-export const LAYOUT_SCHEMA_VERSION = 8;
+export const LAYOUT_SCHEMA_VERSION = 9;
 
 /** The sequences a generated list can list: those a caption-bearing block takes (CNT-081, STR-041). */
 export const LISTED_SEQUENCES = ['figure', 'table', 'equation'] as const;
@@ -78,12 +86,29 @@ export interface LayoutList {
 
 /**
  * The formats a layout may declare a member for (PUB-012, PUB-014), in the order a request and a
- * publication record them: the PDF first, then Word (Word 1, ruling R4).
+ * publication record them: the PDF first, then Word (Word 1, ruling R4), then HTML (HT-D).
  */
-export const PUBLISHING_FORMATS = ['pdf', 'docx'] as const;
+export const PUBLISHING_FORMATS = ['pdf', 'docx', 'html'] as const;
 
 /** One of the formats a publication can be made in. */
 export type PublishingFormat = (typeof PUBLISHING_FORMATS)[number];
+
+/**
+ * **Whether a format has pages** (STR-050, STR-055; ADR-0070): its kind, never a layout's to store.
+ * The PDF and Word are paged; HTML is not, so it sets no page break and cites no page.
+ */
+export const PAGED = {
+  pdf: true,
+  docx: true,
+  html: false,
+} as const satisfies Record<PublishingFormat, boolean>;
+
+/** The paged formats a layout makes, in their order: what a gate publishes (HT-G). */
+export function pagedFormats(layout: Layout): PublishingFormat[] {
+  return PUBLISHING_FORMATS.filter(
+    (format) => PAGED[format] && layout.formats[format] !== undefined,
+  );
+}
 
 /** What a running head or foot can print besides words (PUB-008). */
 export type LayoutField = 'title' | 'section' | 'page' | 'pages' | 'revision';
@@ -114,6 +139,9 @@ export type PdfFormat = PageFormat;
 /** Word's page, as the layout declares it (schema 5): the PDF's shape, and free to differ from it. */
 export type DocxFormat = PageFormat;
 
+/** HTML, as the layout declares it (schema 9): nothing but that the layout makes it. */
+export type HtmlFormat = Record<string, never>;
+
 export interface Layout {
   schemaVersion: typeof LAYOUT_SCHEMA_VERSION;
   /** The language its own words are in: a BCP 47 tag the engine can carry (`publishedLanguage`). */
@@ -140,6 +168,10 @@ export interface Layout {
     source?: string | undefined;
     /** What a table's whole-table note follows (TB3-F): optional at schema 7, added in place. */
     note?: string | undefined;
+    /** HTML's (schema 9): its notes' heading, a note's link back, a wide table's region. */
+    notes?: string | undefined;
+    backToReference?: string | undefined;
+    scrollRegion?: string | undefined;
   };
   /** The numbering scheme, in structure.md's shape, labels included (PUB-011, STR-013, STR-024). */
   scheme: NumberingScheme;
@@ -172,9 +204,9 @@ export interface Layout {
   };
   /**
    * One member per format it makes, each declared on its own (PUB-012, PUB-014): always the PDF, and
-   * Word where the layout makes it.
+   * Word and HTML where the layout makes them.
    */
-  formats: { pdf: PdfFormat; docx?: DocxFormat | undefined };
+  formats: { pdf: PdfFormat; docx?: DocxFormat | undefined; html?: HtmlFormat | undefined };
   /** Its words in each further language (schema 8; TRb): optional, and each complete. */
   translations?: LayoutTranslation[] | undefined;
 }
@@ -324,6 +356,9 @@ export const layoutWordsSchema = z
     notAvailable: words.optional(),
     source: words.optional(),
     note: words.optional(),
+    notes: words.optional(),
+    backToReference: words.optional(),
+    scrollRegion: words.optional(),
   })
   .refine(
     ({ above, below }) => (above === undefined) === (below === undefined),
@@ -405,6 +440,7 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
     formats: z.strictObject({
       pdf: pageFormatSchema(pageSide),
       docx: pageFormatSchema(wordPageSide).optional(),
+      html: z.strictObject({}).optional(),
     }),
     translations: z.array(layoutTranslationSchema).max(MAXIMUM_TRANSLATIONS).optional(),
   })
@@ -444,16 +480,35 @@ const previewLayoutSchema: z.ZodType<Layout> = continuedLayoutSchema.refine(
 );
 
 /**
- * **A layout as it is written at the current schema version**: from version 7 on, with the words a
- * bound table prints with no rows, for a null and before its source (TB1-G).
+ * A layout as it was written at schema versions 7 and 8: with the words a bound table prints with no
+ * rows, for a null and before its source (TB1-G), and not yet with HTML's.
  */
-export const layoutSchema: z.ZodType<Layout> = previewLayoutSchema.superRefine(
+const boundTableLayoutSchema: z.ZodType<Layout> = previewLayoutSchema.superRefine(
   (layout, context) => {
     for (const word of ['noRows', 'notAvailable', 'source'] as const) {
       if (layout.words[word] === undefined) {
         context.addIssue({
           code: 'custom',
           message: `A layout from schema version 7 on gives the words a bound table prints: ${word}`,
+          path: ['words', word],
+        });
+      }
+    }
+  },
+);
+
+/**
+ * **A layout as it is written at the current schema version**: from version 9 on, with the words HTML
+ * heads its notes with, names a note's link back by and names a wide table's region by (HT-D), in its
+ * own words and so, a translation being complete, in each translation's.
+ */
+export const layoutSchema: z.ZodType<Layout> = boundTableLayoutSchema.superRefine(
+  (layout, context) => {
+    for (const word of ['notes', 'backToReference', 'scrollRegion'] as const) {
+      if (layout.words[word] === undefined) {
+        context.addIssue({
+          code: 'custom',
+          message: `A layout from schema version 9 on gives the words HTML sets: ${word}`,
           path: ['words', word],
         });
       }
@@ -567,6 +622,7 @@ export function layoutIn(layout: Layout, language: string): Layout | null {
       ...titled('abbreviations'),
     },
     formats: {
+      ...own.formats,
       pdf: { ...own.formats.pdf, ...translation.slots.pdf },
       ...(own.formats.docx === undefined
         ? {}
@@ -583,6 +639,9 @@ const PREVIEW_SINCE = 6;
 
 /** The version from which a layout is written with the words a bound table prints. */
 const BOUND_TABLE_SINCE = 7;
+
+/** The version from which a layout is written with the words HTML sets. */
+const HTML_SINCE = 9;
 
 /** The one entry point for a layout at the current schema version, as it is written. */
 export function parseLayout(value: unknown): Layout {
@@ -602,7 +661,8 @@ function parseStoredLayout(value: unknown): Layout {
   if (typeof written !== 'number' || written < CONTINUED_SINCE) {
     return upgradedLayoutSchema.parse(migrated);
   }
-  if (written >= BOUND_TABLE_SINCE) return parseLayout(migrated);
+  if (written >= HTML_SINCE) return parseLayout(migrated);
+  if (written >= BOUND_TABLE_SINCE) return boundTableLayoutSchema.parse(migrated);
   return written >= PREVIEW_SINCE
     ? previewLayoutSchema.parse(migrated)
     : continuedLayoutSchema.parse(migrated);
@@ -632,6 +692,8 @@ export const layoutMigrationChain: MigrationChain = {
     // Version 7 gave its words in no further language, and reads as giving none, for version 2's
     // reason.
     7: (layout) => layout,
+    // Version 8 made no HTML and had no words for it, and reads so, for version 2's reason.
+    8: (layout) => layout,
   },
 };
 
@@ -943,13 +1005,22 @@ const runningMatter = (revision: string, page: string): Pick<PageFormat, 'head' 
   ],
 });
 
+/** A layout as schema version 8 stored it: no HTML, and no words for it. The shape of 0.12's row. */
+export type Layout8 = Omit<Layout, 'schemaVersion'> & { schemaVersion: 8 };
+
+/** A frozen schema-8 layout, checked as 0.2 is to read through today's chain, and returned unchanged. */
+function frozenAt8(layout: Layout8): Layout8 {
+  parseStoredLayout(layout);
+  return layout;
+}
+
 /**
- * The default layout as it stands, **version 0.12**: 0.11 at schema version 8, giving its words in
- * French and German as well as English (the TR plan, TRb), seeded by migration 0161.
+ * **The default layout's version 0.12, as migration 0161 stored it**: 0.11 at schema version 8, giving
+ * its words in French and German as well as English (the TR plan, TRb). Frozen for 0.2's reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const TWELFTH_DEFAULT_LAYOUT: Layout8 = frozenAt8({
   ...ELEVENTH_DEFAULT_LAYOUT,
-  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  schemaVersion: 8,
   translations: [
     {
       language: 'fr',
@@ -1024,6 +1095,38 @@ export const defaultLayout: Layout = parseLayout({
       },
     },
   ],
+});
+
+/** HTML's words in each language the default layout gives its words in (HT-D). */
+const HTML_WORDS: Readonly<
+  Record<string, Required<Pick<Layout['words'], 'notes' | 'backToReference' | 'scrollRegion'>>>
+> = {
+  en: { notes: 'Notes', backToReference: 'Back to reference', scrollRegion: 'Scrollable table' },
+  fr: {
+    notes: 'Notes',
+    backToReference: "Retour à l'appel de note",
+    scrollRegion: 'Tableau défilant',
+  },
+  de: {
+    notes: 'Anmerkungen',
+    backToReference: 'Zurück zum Verweis',
+    scrollRegion: 'Scrollbare Tabelle',
+  },
+};
+
+/**
+ * The default layout as it stands, **version 0.13**: 0.12 at schema version 9, making HTML, with the
+ * words HTML sets in English, French and German (the HT plan, HT-D), seeded by migration 0168.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...TWELFTH_DEFAULT_LAYOUT,
+  schemaVersion: LAYOUT_SCHEMA_VERSION,
+  words: { ...TWELFTH_DEFAULT_LAYOUT.words, ...HTML_WORDS['en'] },
+  formats: { ...TWELFTH_DEFAULT_LAYOUT.formats, html: {} },
+  translations: TWELFTH_DEFAULT_LAYOUT.translations!.map((translation) => ({
+    ...translation,
+    words: { ...translation.words, ...HTML_WORDS[translation.language] },
+  })),
 });
 
 /**
