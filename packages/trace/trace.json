@@ -18413,7 +18413,7 @@
         },
         {
           "id": "PUB-012",
-          "howItIsMet": "A layout holds one member per format, each its own declaration, so everything a page means is the `pdf` member's and nothing above it. `paged` belongs to a format rather than to the layout, and is not stored until a format without pages exists to read it (decision B of the second slice): the shape lets a layout differ per format today, and the Word slice is what cites it"
+          "howItIsMet": "A layout holds one member per format, each its own declaration, so everything a page means is the `pdf` member's and nothing above it. Whether a format has pages is the format's kind (`PAGED`: the PDF and Word, never HTML), never stored (decision B of the second slice; the HT plan, HT-D): the shape lets a layout differ per format, and the Word slice is what cites it"
         },
         {
           "id": "PUB-013",
@@ -18541,7 +18541,7 @@
         },
         {
           "id": "PUB-074",
-          "howItIsMet": "A request whose formats exclude `pdf` is refused `page_reference_without_pdf` where the resolved document holds a `page` cross-reference; otherwise the absence of a PDF is the record that no output is page-cited"
+          "howItIsMet": "A request whose formats exclude `pdf` is refused `page_reference_without_pdf` where the resolved document holds a `page` cross-reference those formats would print as a page: any, where Word is asked for; for HTML alone, one declaring no form without pages (Ken, HT-G), since HTML prints the form one declares and so cites no page. Otherwise the absence of a PDF is the record that no output is page-cited"
         },
         {
           "id": "PUB-079",
@@ -18565,7 +18565,7 @@
         },
         {
           "id": "STR-050",
-          "howItIsMet": "A format whose layout member is not `paged` has no page breaks in its projection, and nothing reports their absence"
+          "howItIsMet": "A format that is not paged (`PAGED`, its kind: HTML) has no page breaks in its projection, and nothing reports their absence ([HTML](#html))"
         },
         {
           "id": "STR-052",
@@ -18573,7 +18573,7 @@
         },
         {
           "id": "STR-055",
-          "howItIsMet": "In a format that is not `paged`, a `page` reference renders its `withoutPages` form, and one with none fails `page_reference_without_pages`, naming it"
+          "howItIsMet": "In a format that is not paged, a `page` reference renders its `withoutPages` form, and one with none fails `page_reference_without_pages`, naming it, where that format is asked for ([HTML](#html))"
         },
         {
           "id": "CNT-042",
@@ -22808,43 +22808,43 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 422,
+      "line": 439,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 357,
+      "line": 374,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 450,
+      "line": 467,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 662,
+      "line": 679,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 604,
+      "line": 621,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 539,
+      "line": 556,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 467,
+      "line": 484,
       "kind": "rule"
     },
     {
@@ -25238,25 +25238,25 @@
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 670,
+      "line": 736,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 731,
+      "line": 797,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 694,
+      "line": 760,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 397,
+      "line": 463,
       "kind": "title"
     },
     {
@@ -27008,13 +27008,13 @@
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1466,
+      "line": 1537,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1381,
+      "line": 1452,
       "kind": "title"
     },
     {
@@ -27050,7 +27050,7 @@
     {
       "id": "PUB-102",
       "file": "apps/worker/src/publishing-budget.test.ts",
-      "line": 58,
+      "line": 67,
       "kind": "title"
     },
     {
@@ -27380,7 +27380,7 @@
     {
       "id": "LIB-036",
       "file": "packages/api-contract/src/publishing.test.ts",
-      "line": 287,
+      "line": 326,
       "kind": "title"
     },
     {
@@ -28742,19 +28742,19 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2644,
+      "line": 2692,
       "kind": "title"
     },
     {
       "id": "LIF-038",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 597,
+      "line": 604,
       "kind": "title"
     },
     {
       "id": "LIF-077",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 597,
+      "line": 604,
       "kind": "title"
     },
     {
@@ -28766,13 +28766,19 @@
     {
       "id": "PUB-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 1076,
+      "line": 1083,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-074",
+      "file": "packages/db/src/publishing.test.ts",
+      "line": 3199,
       "kind": "title"
     },
     {
       "id": "PUB-095",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 466,
+      "line": 473,
       "kind": "title"
     },
     {
@@ -28790,13 +28796,13 @@
     {
       "id": "REU-050",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 597,
+      "line": 604,
       "kind": "title"
     },
     {
       "id": "STY-002",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 933,
+      "line": 940,
       "kind": "title"
     },
     {
@@ -29978,7 +29984,7 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 264,
+      "line": 268,
       "kind": "title"
     },
     {
@@ -30938,7 +30944,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1060,
+      "line": 1069,
       "kind": "title"
     },
     {
@@ -31652,25 +31658,25 @@
     {
       "id": "PUB-011",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 50,
+      "line": 68,
       "kind": "title"
     },
     {
       "id": "PUB-012",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 379,
+      "line": 410,
       "kind": "title"
     },
     {
       "id": "PUB-039",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 651,
+      "line": 684,
       "kind": "title"
     },
     {
       "id": "PUB-040",
       "file": "packages/domain/src/publishing/layout.test.ts",
-      "line": 640,
+      "line": 673,
       "kind": "title"
     },
     {

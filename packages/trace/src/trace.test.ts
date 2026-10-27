@@ -981,7 +981,8 @@ describe('the citations in the committed model', () => {
     // 2110 (2026-10-26): XLc's machine drafts, citing LOC-023 to LOC-026, LOC-030 and LOC-041.
     // 2114 (2026-10-26): UIa's interface language, citing LOC-005.
     // 2127 (2026-10-27): UIg cites LOC-003, LOC-042, and STY-075 in two files.
-    expect(model.citations).toHaveLength(2127);
+    // 2128 (2026-10-27): HTa cites PUB-074 for HTML alone without the PDF (Ken, HT-G).
+    expect(model.citations).toHaveLength(2128);
   });
 
   it('cites no identifier the corpus does not hold', () => {
