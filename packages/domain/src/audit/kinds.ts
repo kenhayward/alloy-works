@@ -753,7 +753,9 @@ export const auditKindSpecs = {
   // A recipient from outside opening a shared publication, or one of its outputs (the R17 plan, R17-F).
   'publication.shared_accessed': kind(
     ['LIF-070', 'PUB-060'],
-    z.strictObject({ output: z.enum(['pdf', 'docx', 'provenance', 'verapdf']).nullable() }),
+    z.strictObject({
+      output: z.enum(['pdf', 'docx', 'html', 'provenance', 'verapdf']).nullable(),
+    }),
     'packages/db/src/shares.ts',
   ),
   'support.granted': kind(['LIF-072', 'ADM-042'], empty, LATER),

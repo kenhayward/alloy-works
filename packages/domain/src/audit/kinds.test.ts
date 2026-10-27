@@ -256,6 +256,10 @@ describe('the audit kinds', () => {
     expect(parseAuditDetail('publication.shared_accessed', { output: 'pdf' })).toEqual({
       output: 'pdf',
     });
+    // HTML among the outputs a recipient may fetch (HT-E).
+    expect(parseAuditDetail('publication.shared_accessed', { output: 'html' })).toEqual({
+      output: 'html',
+    });
     expect(() =>
       parseAuditDetail('publication.shared_accessed', { output: 'Shared manual' }),
     ).toThrow();
