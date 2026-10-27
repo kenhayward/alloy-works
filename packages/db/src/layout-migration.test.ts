@@ -382,6 +382,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
 
     // No trigger was held off, and every one stands enabled.
@@ -910,6 +911,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
 
     const { declared, versions } = await service.withTenant(tenant, async (trx) => ({
@@ -987,6 +989,9 @@ describe('migration 0021, which gives the default layout a list of figures', () 
         noRows: 'No rows',
         notAvailable: 'Not available',
         source: 'Source:',
+        notes: 'Notes',
+        backToReference: 'Back to reference',
+        scrollRegion: 'Scrollable table',
       },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
@@ -1154,6 +1159,7 @@ describe('migration 0021, which gives the default layout a list of figures', () 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1215,6 +1221,9 @@ describe('migration 0023, which gives the default layout words for a relative re
         noRows: 'No rows',
         notAvailable: 'Not available',
         source: 'Source:',
+        notes: 'Notes',
+        backToReference: 'Back to reference',
+        scrollRegion: 'Scrollable table',
       },
     };
     const recorded = await service.withTenant({ ...tenant, id }, async (trx) => {
@@ -1380,6 +1389,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1548,6 +1558,7 @@ describe('migration 0023, which gives the default layout words for a relative re
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const declared = await service.withTenant({ ...tenant, id }, (trx) => defaultLayout(trx));
     const chain = await service.withTenant({ ...tenant, id }, (trx) =>
@@ -1572,12 +1583,13 @@ describe('migration 0023, which gives the default layout words for a relative re
       [0, 10],
       [0, 11],
       [0, 12],
+      [0, 13],
     ]);
     expect(chain[3]!.content).toEqual(FOURTH_DEFAULT_LAYOUT);
     expect(declared).toEqual({
       artifactId: DEFAULT_LAYOUT_ID,
-      versionId: chain[11]!.id,
-      number: '0.12',
+      versionId: chain[12]!.id,
+      number: '0.13',
       layout: productDefaultLayout,
     });
   });
@@ -1637,6 +1649,9 @@ describe("migration 0025, which gives the default layout the words a continued t
         noRows: 'No rows',
         notAvailable: 'Not available',
         source: 'Source:',
+        notes: 'Notes',
+        backToReference: 'Back to reference',
+        scrollRegion: 'Scrollable table',
       },
     };
     const recorded = await service.withTenant(tenant, async (trx) => {
@@ -1800,6 +1815,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -1961,6 +1977,7 @@ describe("migration 0025, which gives the default layout the words a continued t
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const { declared, fifth } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -1974,7 +1991,7 @@ describe("migration 0025, which gives the default layout the words a continued t
     }));
     expect(fifth).toMatchObject({ author_id: null, note: null, schema_version: 4 });
     expect(fifth.content).toEqual(FIFTH_DEFAULT_LAYOUT);
-    expect(declared).toMatchObject({ number: '0.12', layout: productDefaultLayout });
+    expect(declared).toMatchObject({ number: '0.13', layout: productDefaultLayout });
   });
 });
 
@@ -2188,6 +2205,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -2372,6 +2390,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const { declared, sixth, inputs } = await service.withTenant(tenant, async (trx) => ({
       declared: await defaultLayout(trx),
@@ -2389,7 +2408,7 @@ describe('migration 0027, which gives the default layout a Word page', () => {
     expect(sixth.content).toEqual(SIXTH_DEFAULT_LAYOUT);
     expect(SIXTH_DEFAULT_LAYOUT.formats.docx).toEqual(SIXTH_DEFAULT_LAYOUT.formats.pdf);
     // And 0035, after it, 0.7 on top, 0055 0.8 on that and 0056 0.9.
-    expect(declared).toMatchObject({ number: '0.12', layout: productDefaultLayout });
+    expect(declared).toMatchObject({ number: '0.13', layout: productDefaultLayout });
     // The request made before it publishes under the 0.5 it was made under, which makes no Word.
     expect(inputs!.layout).toEqual({
       versionId: fifth.versionId,
@@ -2601,6 +2620,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
     expect(declared).toEqual({
@@ -2772,6 +2792,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
     const version = (trx: TenantTransaction, number: number) =>
       trx
@@ -2802,7 +2823,7 @@ describe('migration 0035, which gives a request its kind and the default layout 
     expect(eighth).toMatchObject({ author_id: null, note: null, schema_version: 7 });
     expect(ninth).toMatchObject({ author_id: null, note: null, schema_version: 7 });
     // And 0148 0.10 on that (CId), and 0154 0.11 (TMb).
-    expect(declared).toMatchObject({ number: '0.12', layout: productDefaultLayout });
+    expect(declared).toMatchObject({ number: '0.13', layout: productDefaultLayout });
     // The request waiting is a publish, with nothing of a preview, handed the 0.6 it was made under,
     // which has no words for a preview: it publishes as it would have, and finishes as a publish does.
     expect(row).toEqual({

@@ -10,7 +10,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** What a recipient may fetch: an output, or the PDF's veraPDF report. */
-export type SharedOutput = 'pdf' | 'docx' | 'provenance' | 'verapdf';
+export type SharedOutput = 'pdf' | 'docx' | 'html' | 'provenance' | 'verapdf';
 
 export interface StoredShare {
   /** The grant's id: a share is an ordinary grant at the publication (the R17 plan, R17-B). */

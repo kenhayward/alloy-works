@@ -177,6 +177,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
 
     const read = async () =>

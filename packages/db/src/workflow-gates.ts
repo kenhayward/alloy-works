@@ -2,7 +2,7 @@ import type { TransitionPermission, WorkflowKind } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { isArchived } from './archival.js';
 import { makeBaseline, requestBaselinePublication, type MakeBaselineAnswer } from './baselines.js';
-import { readLayout } from '@alloy-works/domain';
+import { pagedFormats, readLayout } from '@alloy-works/domain';
 import { artifactPlace, recordEvent } from './audit.js';
 import { isDeleted } from './deletion.js';
 import type { TenantTransaction } from './tables.js';
@@ -338,7 +338,11 @@ export async function decideGate(
   };
 }
 
-/** The formats a baseline's layout makes: the PDF, and Word where it has a Word page. */
+/**
+ * The paged formats a baseline's layout makes (HT-G): the PDF, and Word where it has a Word page; never
+ * HTML, where a page reference with no form without pages, which the editor stores by default, would
+ * fail a publication nobody chose the format of.
+ */
 async function layoutFormats(trx: TenantTransaction, baseline: string): Promise<string[]> {
   const row = await trx
     .selectFrom('baseline as b')
@@ -348,7 +352,7 @@ async function layoutFormats(trx: TenantTransaction, baseline: string): Promise<
     .executeTakeFirstOrThrow();
   const read = readLayout(row.content, { artifact: row.layout_id, version: row.layout_version_id });
   if (!read.ok) return ['pdf'];
-  return read.layout.formats.docx === undefined ? ['pdf'] : ['pdf', 'docx'];
+  return pagedFormats(read.layout);
 }
 
 /** One approval or rejection, as an artifact's history lists it (LIF-008, LIF-051). */

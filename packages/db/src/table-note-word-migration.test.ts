@@ -9,6 +9,7 @@ import {
   NINTH_DEFAULT_LAYOUT,
   TENTH_DEFAULT_LAYOUT,
   ELEVENTH_DEFAULT_LAYOUT,
+  TWELFTH_DEFAULT_LAYOUT,
   type Layout,
 } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -207,36 +208,44 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0165_machine_drafts',
       '0166_interface_language',
       '0167_default_theme_naskh',
+      '0168_html_output',
     ]);
-    expect((await layoutChain(tenant)).at(-4)).toMatchObject({
+    expect((await layoutChain(tenant)).at(-5)).toMatchObject({
       version_no: 9,
       author_id: null,
       schema_version: 7,
       content: NINTH_DEFAULT_LAYOUT,
     });
     // And 0148's 0.10 on top of it, placing a bibliography (CId).
-    expect((await layoutChain(tenant)).at(-3)).toMatchObject({
+    expect((await layoutChain(tenant)).at(-4)).toMatchObject({
       version_no: 10,
       author_id: null,
       schema_version: 7,
       content: TENTH_DEFAULT_LAYOUT,
     });
     // And 0154's 0.11 on that, placing a glossary and abbreviations (TMb).
-    expect((await layoutChain(tenant)).at(-2)).toMatchObject({
+    expect((await layoutChain(tenant)).at(-3)).toMatchObject({
       version_no: 11,
       author_id: null,
       schema_version: 7,
       content: ELEVENTH_DEFAULT_LAYOUT,
     });
     // And 0161's 0.12 on that, its words in French and German too (TRb).
-    expect((await layoutChain(tenant)).at(-1)).toMatchObject({
+    expect((await layoutChain(tenant)).at(-2)).toMatchObject({
       version_no: 12,
       author_id: null,
       schema_version: 8,
+      content: TWELFTH_DEFAULT_LAYOUT,
+    });
+    // And 0168's 0.13 on that, making HTML (HT-D).
+    expect((await layoutChain(tenant)).at(-1)).toMatchObject({
+      version_no: 13,
+      author_id: null,
+      schema_version: 9,
       content: productDefaultLayout,
     });
     const declared = await service.withTenant(tenant, (trx) => defaultLayout(trx));
-    expect(declared).toMatchObject({ number: '0.12', layout: productDefaultLayout });
+    expect(declared).toMatchObject({ number: '0.13', layout: productDefaultLayout });
     expect(declared.layout.words.note).toBe('Note:');
     expect(declared.layout.matter.bibliography).toEqual({ title: 'References' });
   });
@@ -253,7 +262,13 @@ describe("migration 0056, which gives the default layout the word a table's note
           content: {
             ...EIGHTH_DEFAULT_LAYOUT,
             schemaVersion: LAYOUT_SCHEMA_VERSION,
-            words: { ...EIGHTH_DEFAULT_LAYOUT.words, contents: 'Table of contents' },
+            words: {
+              ...EIGHTH_DEFAULT_LAYOUT.words,
+              contents: 'Table of contents',
+              notes: 'Notes',
+              backToReference: 'Back to reference',
+              scrollRegion: 'Scrollable table',
+            },
           } satisfies Layout,
         },
       });
