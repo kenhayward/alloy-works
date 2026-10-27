@@ -238,6 +238,12 @@ export interface AssembleInput {
    */
   readonly faces?: ReadonlyMap<string, Uint8Array>;
   /**
+   * Each face's cap height as a fraction of its em, where the caller knows it (`@alloy-works/fonts`):
+   * what HTML's projection trims a line to, as the editor's does (the HT plan, HT-C). Read only where
+   * HTML is asked for; absent, HTML places each baseline from the face's ascent and descent.
+   */
+  readonly capHeight?: (face: Typeface) => number | undefined;
+  /**
    * What is being made (publishing.md, "Preview"): a publication, which is a `draft` until a baseline
    * can approve one, or a `preview` of it (PUB-005, PUB-006). **A preview is assembled exactly as a
    * publish is**, from the same inputs, and differs in two words alone: the notice on every page and
@@ -310,6 +316,22 @@ export interface WordInput {
   readonly titles: ReadonlyMap<string, readonly WordTitleRun[]>;
   /** What each family covers, as the glyph check asked: the writer splits a run by it (UF-G). */
   readonly covers: Covers;
+}
+
+/**
+ * **What the HTML writer reads beside the published document** (the HT plan, HT-F), carried here as
+ * Word's is, so that `publishing/26` stays the PDF's byte for byte: the theme as `readTheme` resolved
+ * it, which HTML's styles are projected from (`projectCss`) as the editor's are; each face's cap height
+ * by its identifier, where it is known; and **what each cross-reference prints in HTML**, keyed by
+ * `inlineReferenceKey`: its words where it prints the same as in the PDF, and a page reference's form
+ * without pages (STR-055), which the published run, printing a page, does not hold. A section's title
+ * needs nothing here: a reference in one never prints a page (`cross_reference_form_unavailable`), so
+ * its published words are HTML's.
+ */
+export interface HtmlInput {
+  readonly theme: ResolvedTheme;
+  readonly capHeights: ReadonlyMap<string, number>;
+  readonly references: ReadonlyMap<string, string>;
 }
 
 /**
@@ -415,6 +437,8 @@ export type Assembled<
       readonly document: Document;
       readonly numbering: NumberingTable;
       readonly word: WordInput | null;
+      /** What HTML is written from beside the document, where HTML is asked for (HT-F). */
+      readonly html: HtmlInput | null;
       /** Every value the binding stage set, in document order: what `provenance.json` records. */
       readonly values: readonly PrintedValue[];
       /** Every variable printed, and the source of each (REU-038; R5-E). */
@@ -671,6 +695,7 @@ export function assemble(given: AssembleInput): Assembled {
   }
   const pdf = input.formats.includes('pdf');
   const docx = input.formats.includes('docx');
+  const html = input.formats.includes('html');
   // Held against what the conditions kept, section titles among it (REU-048; R6-G).
   const probes =
     excludedPassages.length === 0
@@ -718,6 +743,12 @@ export function assemble(given: AssembleInput): Assembled {
   if (docx && layout?.formats.docx === undefined) {
     failures.push(failure('compose', 'format_unsupported', null, null, 'docx'));
   }
+  // So with HTML, which a layout makes only from schema 9 (HT-D).
+  if (html && layout?.formats.html === undefined) {
+    failures.push(failure('compose', 'format_unsupported', null, null, 'html'));
+  }
+  /** What each reference prints in HTML, by where the writer meets it, where HTML is asked for. */
+  const htmlReferences = new Map<string, string>();
   /**
    * The Word page where Word is asked for, as the PDF's page is read, and null where it is not: what
    * each image is sized against for Word (Word 2, ruling R3), into `wordImages`.
@@ -804,6 +835,12 @@ export function assemble(given: AssembleInput): Assembled {
       }
       if (docx && !typeface.embedding.word && typeface.wordFamily === undefined) {
         const detail = `${typeface.family}: docx`;
+        failOnce(failure('compose', 'typeface_not_embeddable', null, null, detail));
+      }
+      // HTML embeds the PDF's files, so reads the PDF's licence (HT-B): the theme's `embedding` is a
+      // strict `{ pdf, word }`. Said for HTML as for Word, the format after the family.
+      if (html && !typeface.embedding.pdf) {
+        const detail = `${typeface.family}: html`;
         failOnce(failure('compose', 'typeface_not_embeddable', null, null, detail));
       }
     }
@@ -1032,6 +1069,7 @@ export function assemble(given: AssembleInput): Assembled {
   failures.push(...resolved.failures);
   for (const each of resolved.pdfsOwn) pdfsOwn.add(each);
   if (docx) failures.push(...resolved.forWord);
+  if (html) failures.push(...resolved.forHtml);
   // Every citation, rendered once in reading order after the references (CIc): a citation without a
   // layout is refused where it stands, as a reference is.
   const citations =
@@ -1241,6 +1279,11 @@ export function assemble(given: AssembleInput): Assembled {
         // Where Word is asked for, what it writes the field from, by where the writer meets it.
         if (docx)
           wordReferences.set(inlineReferenceKey(node, site, runs.length), resolved.forms.get(key)!);
+        // And where HTML is, what it prints there: a page reference without a form has failed.
+        const htmlText = resolved.htmlText.get(key);
+        if (html && htmlText !== undefined) {
+          htmlReferences.set(inlineReferenceKey(node, site, runs.length), htmlText);
+        }
         runs.push({ reference: { ...printed, link } });
         continue;
       }
@@ -2671,6 +2714,7 @@ export function assemble(given: AssembleInput): Assembled {
       probes,
       terms: [],
       word: null,
+      html: null,
       document: {
         schema: PUBLISHING_SCHEMA_1,
         title: input.outline.title,
@@ -2750,6 +2794,13 @@ export function assemble(given: AssembleInput): Assembled {
             covers: input.covers,
           }
         : null,
+    html: html
+      ? {
+          theme: theme!,
+          capHeights: capHeights(theme!, input.capHeight),
+          references: htmlReferences,
+        }
+      : null,
     document: {
       schema: PUBLISHING_SCHEMA,
       title: input.outline.title,
@@ -2774,6 +2825,19 @@ export function assemble(given: AssembleInput): Assembled {
       back: { bibliography, glossary, abbreviations },
     },
   };
+}
+
+/** Each of the theme's faces' cap height by its identifier, where the caller knows it (HT-C). */
+function capHeights(
+  theme: ResolvedTheme,
+  capHeight: AssembleInput['capHeight'],
+): ReadonlyMap<string, number> {
+  const known = new Map<string, number>();
+  for (const face of theme.typefaces.values()) {
+    const cap = capHeight?.(face);
+    if (cap !== undefined) known.set(face.id, cap);
+  }
+  return known;
 }
 
 /**
@@ -2918,6 +2982,13 @@ interface ResolvedReferences {
   readonly forms: ReadonlyMap<string, WordReference>;
   /** What Word's fields would not print as the PDF does, said where Word is asked for (Word 3, R5). */
   readonly forWord: readonly PublishFailure[];
+  /**
+   * What each printed reference prints in HTML, by `referenceKey` (HT-F): its words, or a page
+   * reference's form without pages (STR-055). A page reference with no such form has none, and fails.
+   */
+  readonly htmlText: ReadonlyMap<string, string>;
+  /** What HTML cannot print, said where HTML is asked for: a page with no form without pages. */
+  readonly forHtml: readonly PublishFailure[];
   /** Every citation in a component, in reading order (CIc), with the block a failure names. */
   readonly cited: readonly Cited[];
   /** Each cross-reference to an entry, as the citation it is rendered as (STR-069; CId). */
@@ -2944,6 +3015,8 @@ const NO_REFERENCES: ResolvedReferences = {
   pdfsOwn: new Set(),
   forms: new Map(),
   forWord: [],
+  htmlText: new Map(),
+  forHtml: [],
   cited: [],
   asCitations: new Map(),
   used: [],
@@ -3281,6 +3354,8 @@ function resolveReferences(
   const pdfsOwn = new Set<PublishFailure>();
   const forms = new Map<string, WordReference>();
   const forWord: PublishFailure[] = [];
+  const htmlText = new Map<string, string>();
+  const forHtml: PublishFailure[] = [];
   // Each caption whose words hold a reference asking for anything but its target's number, which a
   // reference to those words prints, as the PDF reads a caption as a title, as that number.
   const nesting = new Set(
@@ -3372,8 +3447,39 @@ function resolveReferences(
         : { anchor, text: text[display], page: false, relative: display === 'relative' },
     );
     forms.set(key, { display, label: target.label, title: target.title });
+    // HTML has no pages (STR-055): a page reference prints the form it declares for a format without
+    // them, which its target must be able to print, and one declaring none fails, naming it.
+    if (display !== 'page') {
+      htmlText.set(key, text[display]);
+    } else if (reference.withoutPages === undefined) {
+      forHtml.push(failure('compose', 'page_reference_without_pages', node, reference.id, null));
+    } else if (!printableForms(target).includes(reference.withoutPages)) {
+      forHtml.push(
+        failure(
+          'compose',
+          'cross_reference_form_unavailable',
+          node,
+          reference.id,
+          reference.withoutPages,
+        ),
+      );
+    } else {
+      htmlText.set(key, text[reference.withoutPages]);
+    }
   }
-  return { printed, named, failures, pdfsOwn, forms, forWord, cited, asCitations, used };
+  return {
+    printed,
+    named,
+    failures,
+    pdfsOwn,
+    forms,
+    forWord,
+    htmlText,
+    forHtml,
+    cited,
+    asCitations,
+    used,
+  };
 }
 
 /** Every citation rendered (CIc): each one's in-text form by node and stored node, and the entries. */

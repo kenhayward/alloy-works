@@ -249,6 +249,15 @@ export const publishFailureCodes = [
   // resolve, from XLc (LOC-024; translation.md): a translation drafted by machine and not yet accepted
   // by a person with approve, at the version the publish reads.
   'translation_machine_drafted',
+  // compose, from HTa (the HT plan, HT-F and HT-G; STR-055): where HTML is asked for, a `page`
+  // cross-reference declaring no form for a format without pages, naming it as the other reference
+  // failures do. The PDF and Word, which have pages, are unaffected.
+  'page_reference_without_pages',
+  // compose, from HTa (the HT plan): where HTML is asked for, a block, an inline or generated matter
+  // the HTML writer does not write yet, naming where it stands and, in `detail`, what it is: a
+  // published block's or inline's kind, `listOf:<sequence>`, `bibliography`, `glossary` or
+  // `abbreviations`. HTb writes the rest; kept then, as `word_not_yet` is, for a request that holds it.
+  'html_not_yet',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];
