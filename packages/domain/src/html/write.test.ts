@@ -16,7 +16,14 @@ import { OUTLINE_SCHEMA_VERSION, parseOutlineDocument } from '../structure/outli
 import type { ResolvedTheme } from '../theme/read.js';
 import { resolved } from '../theme/theme.fixture.js';
 
-import { HTML_WRITER_VERSION, writeHtml, type HtmlWriting, type WrittenHtml } from './write.js';
+import { htmlText } from './text.js';
+import {
+  escapeText,
+  HTML_WRITER_VERSION,
+  writeHtml,
+  type HtmlWriting,
+  type WrittenHtml,
+} from './write.js';
 
 // ---------------------------------------------------------------------------------------------------
 // Reading what was written back: its head as text, and its body as a tree of elements.
@@ -894,5 +901,267 @@ describe('the HTML writer: every other kind (the HT plan, HTb)', () => {
     layout.matter.lists = [];
     const bare = written({ layout: parseLayout(layout) });
     expect(bare.ok && bare.report).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// HT-L: content is data, and the leak scan reads what the writer says.
+// ---------------------------------------------------------------------------------------------------
+
+/** What an author could type to break out of the markup, in every place words reach. */
+const HOSTILE = `<script>alert(1)</script>" onload="alert(2)' onerror='x </style><img src=x onerror=alert(3)> javascript:alert(4)`;
+
+describe('the HTML writer: content is data (the HT plan, HT-L)', () => {
+  it('lets nothing hostile out of any kind it writes: no script, no handler, every address its own', () => {
+    const MARLOW = '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c11';
+    const RPM = '1c0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c11';
+    const h = (value: string) => text(`${value} ${HOSTILE}`);
+    const layout = structuredClone(defaultLayout);
+    layout.matter.bibliography = { title: 'References' };
+    const outline = parseOutlineDocument({
+      schemaVersion: OUTLINE_SCHEMA_VERSION,
+      title: `The report ${HOSTILE}`,
+      language: 'en-GB',
+      direction: 'ltr',
+      nodes: [
+        {
+          ...section('intro', 'Introduction', [reference('calib', 1)]),
+          title: [h('Intro'), { type: 'equation', mathml: X('x') }],
+        },
+      ],
+    });
+    const assembled = assemble({
+      formats: ['html'],
+      refused: [],
+      layout,
+      theme: DEFAULT_THEME,
+      revision: '0.7',
+      covers: () => true,
+      assets: new Map([[RED, { ...RED_ASSET, alternative: { text: HOSTILE, language: 'en-GB' } }]]),
+      outline,
+      occurrences: new Map([
+        [
+          id('calib'),
+          component(`Calibration ${HOSTILE}`, [
+            paragraph(
+              'p1',
+              h('Text'),
+              text('link', { type: 'hyperlink', id: 'k1', href: REPORT }),
+              note('n1', paragraph('n1a', h('Note'))),
+              { type: 'equation', mathml: X(`${HOSTILE.replace(/[<>"&']/g, '')}`) },
+              { type: 'image', asset: RED, imageStyle: 'inline', alternative: { kind: 'inherited' } },
+              { type: 'citation', entry: MARLOW },
+              { type: 'text', value: 'speed', marks: [{ type: 'definedTerm', id: 'm1', term: RPM }] },
+              xref('x1', toBlock('t1'), 'page', 'numberAndTitle'),
+            ),
+            {
+              ...readings(),
+              caption: [h('Caption')],
+              note: [h('Table note')],
+            },
+            {
+              type: 'figure',
+              id: 'f1',
+              asset: RED,
+              imageStyle: 'figure',
+              caption: [h('Figure')],
+              alternative: { kind: 'own', text: HOSTILE },
+            },
+            { type: 'equation', id: 'e1', mathml: X('x'), numbered: true },
+            {
+              type: 'list',
+              id: 'l1',
+              kind: 'definition',
+              items: [{ term: [h('Term')], content: [paragraph('l1a', h('Definition'))] }],
+            },
+            {
+              type: 'blockquote',
+              id: 'q1',
+              content: [paragraph('q1a', h('Quoted'))],
+              attribution: [h('Grace')],
+            },
+            { type: 'preformatted', id: 'c1', text: HOSTILE, language: 'html' },
+          ]),
+        ],
+      ]),
+      citations: {
+        style: { csl: SEEDED_STYLE_FILES['nlm-citation-sequence'], requires: {} },
+        entries: new Map([
+          [
+            id('calib'),
+            new Map<string, CslItem>([
+              [MARLOW, { type: 'book', title: HOSTILE, author: [{ family: 'Marlow', given: 'Ada' }] }],
+            ]),
+          ],
+        ]),
+        render: renderCitations,
+      },
+      terms: {
+        entries: new Map([
+          [
+            id('calib'),
+            new Map([
+              [
+                RPM,
+                {
+                  term: {
+                    schemaVersion: 1 as const,
+                    base: 'en',
+                    labels: [
+                      { language: 'en', preferred: 'rpm', alternatives: [], abbreviation: 'RPM' },
+                    ],
+                    definition: [{ language: 'en', text: HOSTILE }],
+                    broader: [],
+                    narrower: [],
+                    related: [],
+                  },
+                  deprecated: false,
+                },
+              ],
+            ]),
+          ],
+        ]),
+      },
+    });
+    if (!assembled.ok || assembled.html === null) throw new Error(JSON.stringify(assembled));
+    // A hyperlink the model would refuse, put into the published document past it: the writer checks.
+    const document = JSON.parse(
+      JSON.stringify(assembled.document).replaceAll(REPORT, 'javascript:alert(5)'),
+    ) as typeof assembled.document;
+    const html = htmlOf(
+      writeHtml({
+        document,
+        html: assembled.html,
+        faces: facesOf(DEFAULT_THEME),
+        images: IMAGES,
+        subset: whole,
+      }),
+    );
+    // Every kind it writes holds the words, escaped.
+    for (const tag of ['table', 'figure', 'math', 'ol', 'dl', 'blockquote', 'pre', 'nav', 'img']) {
+      expect(html, tag).toContain(`<${tag}`);
+    }
+    expect(html.split(escapeText(HOSTILE)).length).toBeGreaterThan(10);
+    expect(html).not.toMatch(/<script/i);
+    expect(html.match(/<\/style>/gi)).toHaveLength(1);
+    const tags = [...html.matchAll(/<[a-zA-Z][^>]*>/g)].map((match) => match[0]);
+    // Each tag's attributes by name, its values set aside as a browser reads them: every one quoted.
+    const names = tags.map((tag) => tag.replace(/"[^"]*"/g, '""'));
+    expect(names.filter((tag) => /\son\w+\s*=/i.test(tag) || /'/.test(tag))).toEqual([]);
+    const addresses = tags.flatMap((tag) =>
+      [...tag.matchAll(/\s(?:href|src)="([^"]*)"/g)].map((match) => match[1]!),
+    );
+    expect(addresses.length).toBeGreaterThan(5);
+    expect(
+      addresses.filter(
+        (address) =>
+          !address.startsWith('#') &&
+          !address.startsWith('data:image/png;base64,') &&
+          !/^(https?:|mailto:)/.test(address),
+      ),
+    ).toEqual([]);
+    expect(html).not.toContain('javascript:alert(5)"');
+  });
+});
+
+describe('the HTML writer: the leak scan reads what it says in attributes (the HT plan, HT-L)', () => {
+  const SECRET = 'the secret recipe of Ada';
+
+  it("reads an image's alternative from its alt", () => {
+    const html = htmlOf(
+      written(
+        {
+          ...oneComponent([
+            {
+              type: 'figure',
+              id: 'f1',
+              asset: RED,
+              imageStyle: 'figure',
+              caption: [text('Shapes')],
+              alternative: { kind: 'own', text: SECRET },
+            },
+          ]),
+          assets: new Map([[RED, RED_ASSET]]),
+        },
+        { images: IMAGES },
+      ),
+    );
+    expect(html).toContain(`alt="${SECRET}"`);
+    expect(html.split(SECRET)).toHaveLength(2);
+    expect(htmlText(new TextEncoder().encode(html))).toContain(SECRET);
+  });
+
+  it("reads an equation's alternative from its alttext, and from its aria-label, each alone", () => {
+    const html = htmlOf(written(oneComponent([{ type: 'equation', id: 'e1', mathml: X(SECRET), numbered: false }])));
+    const without = (attribute: string) =>
+      new TextEncoder().encode(html.replaceAll(new RegExp(` ${attribute}="[^"]*"`, 'g'), ''));
+    expect(html).toContain(`alttext="${SECRET}"`);
+    expect(html).toContain(`aria-label="${SECRET}"`);
+    expect(htmlText(without('aria-label'))).toContain(SECRET);
+    expect(htmlText(without('alttext'))).toContain(SECRET);
+    expect(htmlText(without('(?:alttext|aria-label)'))).not.toContain(SECRET);
+  });
+
+  it("reads a table's region and a note's link back by their aria-label, the layout's words", () => {
+    const html = htmlOf(written(oneComponent([readings()])));
+    const read = htmlText(
+      new TextEncoder().encode(html.replaceAll('Scrollable table', SECRET)),
+    );
+    expect(read).toContain(SECRET);
+  });
+});
+
+describe('the HTML writer: each face subset to what it sets (the HT plan, HT-B)', () => {
+  const ARABIC = /\p{Script=Arabic}/u;
+  const naskh = DEFAULT_THEME.typefaces.get('naskh')!;
+  /** Naskh covers Arabic and the space; every other face everything but Arabic. */
+  const covers = (codePoint: number, family: string) =>
+    family === naskh.family
+      ? ARABIC.test(String.fromCodePoint(codePoint)) || codePoint === 0x20
+      : !ARABIC.test(String.fromCodePoint(codePoint));
+  /** Each file the writer asked for, by its first bytes' seed, and the characters it asked it for. */
+  const asked = () => {
+    const calls = new Map<number, string>();
+    const subset: HtmlWriting['subset'] = (bytes, codePoints) => {
+      calls.set(bytes[4]!, String.fromCodePoint(...codePoints));
+      return bytes;
+    };
+    return { calls, subset };
+  };
+  const seedOf = (sha256: string) => facesOf(DEFAULT_THEME).get(sha256)![4]!;
+
+  it('subsets each face to the characters it sets, and embeds no fallback a Latin document does not fall to', () => {
+    const { calls, subset } = asked();
+    const html = htmlOf(written({ covers }, { subset }));
+    expect(declared(html)).not.toContain('aw-face-naskh');
+    const regular = DEFAULT_THEME.typefaces
+      .get('serif')!
+      .files.find((file) => file.weight === 'regular' && file.posture === 'normal')!;
+    const serif = calls.get(seedOf(regular.sha256))!;
+    for (const character of 'Ada wrote this first.') expect(serif).toContain(character);
+    expect(serif).not.toMatch(/[QZ]/);
+    // Every file of a face it sets is subset alike, so a bold or an italic run finds its characters.
+    expect(calls.size).toBeGreaterThan(1);
+  });
+
+  it('embeds the Naskh where an Arabic word falls to it, its characters alone, declared once for both postures', () => {
+    const { calls, subset } = asked();
+    const word = String.fromCodePoint(0x0645, 0x0631, 0x062d, 0x0628, 0x0627);
+    const html = htmlOf(
+      written(
+        { covers, ...oneComponent([paragraph('p1', text(`Ada said ${word} to Grace.`))]) },
+        { subset },
+      ),
+    );
+    expect(declared(html)).toContain('aw-face-naskh');
+    const [regular] = naskh.files;
+    expect(calls.get(seedOf(regular!.sha256))).toBe(String.fromCodePoint(0x0627, 0x0628, 0x062d, 0x0631, 0x0645));
+    // No italic file: declared upright once, its file carried once, and the page synthesises no slant.
+    const declarations = [...html.matchAll(/@font-face \{ font-family: "aw-face-naskh";[^}]*\}/g)];
+    expect(declarations.map((each) => /font-style: (\w+)/.exec(each[0])![1])).toEqual([
+      'normal',
+      'normal',
+    ]);
+    expect(html).toContain('font-synthesis-style: none');
   });
 });
