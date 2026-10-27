@@ -12,6 +12,9 @@ const FORMAT_WORDS: Record<string, string> = {
   get docx() {
     return say('publishing.word');
   },
+  get html() {
+    return say('publishing.html');
+  },
 };
 
 /** `PDF`, `Word` or `PDF and Word`: the formats a publication holds, in the order it names them. */

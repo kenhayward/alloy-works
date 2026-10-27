@@ -38,3 +38,30 @@ describe("a citation's failure, in words (CIc)", () => {
     );
   });
 });
+
+describe('a failure where HTML is asked for, in words (the HT plan, HTa)', () => {
+  const at = (code: string, detail: string | null) =>
+    failureWords({ stage: 'compose', code, node: null, block: 'b1', detail } as never);
+
+  it('names what HTML does not write yet, and the page a cross-reference cites with no form without one', () => {
+    expect(at('html_not_yet', 'table')).toBe(
+      'A table cannot be published in HTML yet. Publish this document without HTML.',
+    );
+    expect(at('html_not_yet', 'listOf:figure')).toBe(
+      'The list of figures after the contents cannot be published in HTML yet. Publish this document without HTML.',
+    );
+    expect(at('page_reference_without_pages', null)).toBe(
+      'This cross-reference shows a page, and HTML has no pages. Choose what it shows where there are none, or publish this document without HTML.',
+    );
+  });
+
+  it("names HTML where its layout makes none, and where a face's licence does not let it be embedded", () => {
+    expect(at('format_unsupported', 'html')).toBe(
+      "This publication's layout makes no HTML, so it cannot be published in HTML. Publish it without HTML, or under a layout that makes it.",
+    );
+    expect(at('typeface_not_embeddable', 'Liberation Serif: html')).toBe(
+      "The typeface Liberation Serif cannot be embedded in an HTML file: its licence does not permit it. The publication's theme has to change before this document can be published.",
+    );
+    expect(at('condition_leaked', 'html')).toContain('in the HTML file');
+  });
+});

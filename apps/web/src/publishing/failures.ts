@@ -102,6 +102,40 @@ const NOT_YET_IN_WORD: Readonly<Record<string, string>> = {
 };
 
 /**
+ * What `html_not_yet` names (the HT plan, HTa): a block, an inline or generated matter the HTML writer
+ * does not write yet, by its published kind, in the words Word's said them in. HTb takes each off it.
+ */
+const NOT_YET_IN_HTML: Readonly<Record<string, string>> = {
+  get table() {
+    return words('publishing.a-table');
+  },
+  get figure() {
+    return words('publishing.a-figure');
+  },
+  get equation() {
+    return words('publishing.an-equation');
+  },
+  get image() {
+    return words('publishing.an-image-in-a-line-2');
+  },
+  get footnote() {
+    return words('publishing.a-footnote');
+  },
+  get reference() {
+    return words('publishing.a-cross-reference');
+  },
+  get 'listOf:figure'() {
+    return words('publishing.the-list-of-figures-after');
+  },
+  get 'listOf:table'() {
+    return words('publishing.the-list-of-tables-after');
+  },
+  get 'listOf:equation'() {
+    return words('publishing.the-list-of-equations-after');
+  },
+};
+
+/**
  * What `numbering_not_in_word` names (Word 1, ruling R7; Word 2, ruling R1): `detail` is
  * `<sequence>:<matter>:<why>` - the headings', the figures', the tables', the equations' (Word 4) or
  * the footnotes' numbers, the matter the layout numbers them in, and what in its rule Word would
@@ -333,7 +367,12 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // REU-048: never published with excluded text in it, however it got there.
     case 'condition_leaked':
       return words('publishing.text-this-profile-leaves-out', {
-        value1: failure.detail === 'docx' ? 'Word document' : 'PDF',
+        value1:
+          failure.detail === 'docx'
+            ? 'Word document'
+            : failure.detail === 'html'
+              ? 'HTML file'
+              : 'PDF',
       });
     // GEN-025 (the G3 plan, G3-F): generated content waits to be accepted or rejected.
     case 'generated_unaccepted':
@@ -396,10 +435,11 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     case 'typeface_not_embeddable': {
       const detail = failure.detail ?? '';
       const word = detail.endsWith(': docx');
-      const family = word ? detail.slice(0, -': docx'.length) : detail;
+      const html = detail.endsWith(': html');
+      const family = word || html ? detail.slice(0, -': docx'.length) : detail;
       return words('publishing.the-typeface-cannot-be-embedded', {
         family,
-        value2: word ? 'a Word document' : 'a PDF',
+        value2: word ? 'a Word document' : html ? 'an HTML file' : 'a PDF',
       });
     }
     // Themes 1 (ruling R5): the theme names a typeface by its files' hashes, and the worker holds only
@@ -533,7 +573,16 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // Refused when the request is made (PUB-014), so met only by a request built past that check: the
     // layout's to change, as its words are.
     case 'format_unsupported':
-      return words('publishing.this-publication-s-layout-has');
+      return failure.detail === 'html'
+        ? words('publishing.this-publication-s-layout-makes-no-html')
+        : words('publishing.this-publication-s-layout-has');
+    // HTa (the HT plan): what the HTML writer does not write yet, and a page HTML cannot show.
+    case 'html_not_yet':
+      return words('publishing.cannot-be-published-in-html', {
+        value1: NOT_YET_IN_HTML[failure.detail ?? ''] ?? 'Something here',
+      });
+    case 'page_reference_without_pages':
+      return words('publishing.this-cross-reference-shows-a-page');
     // Word 1's ruling R7: nothing in the document is wrong; the layout's scheme asks Word for a number
     // it would print differently from the PDF's.
     case 'numbering_not_in_word':
@@ -846,6 +895,12 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   },
   get word_not_yet() {
     return words('publishing.it-holds-something-that-cannot');
+  },
+  get html_not_yet() {
+    return words('publishing.it-holds-something-not-yet-in-html');
+  },
+  get page_reference_without_pages() {
+    return words('publishing.it-cites-a-page-html-cannot-show');
   },
   get format_unsupported() {
     return words('publishing.its-layout-has-no-page');
