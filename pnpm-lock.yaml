@@ -287,6 +287,9 @@ importers:
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
+      harfbuzzjs:
+        specifier: 1.6.3
+        version: 1.6.3
       pdfjs-dist:
         specifier: ^6.3.289
         version: 6.3.289
@@ -3335,6 +3338,9 @@ packages:
   guess-json-indent@3.0.1:
     resolution: {integrity: sha512-LWZ3Vr8BG7DHE3TzPYFqkhjNRw4vYgFSsv2nfMuHklAlOfiy54/EwiDQuQfFVLxENCVv20wpbjfTayooQHrEhQ==}
     engines: {node: '>=18.18.0'}
+
+  harfbuzzjs@1.6.3:
+    resolution: {integrity: sha512-R5Mfo1UUvQmZJmtScP7fBLKYKnYu82ZdtFT7WbQYeGb3Ut5PR3xfFCJ5/FjbcW5SAfb9cqCSny/KNjp+NJBx0w==}
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -8514,6 +8520,8 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   guess-json-indent@3.0.1: {}
+
+  harfbuzzjs@1.6.3: {}
 
   has-flag@4.0.0: {}
 
