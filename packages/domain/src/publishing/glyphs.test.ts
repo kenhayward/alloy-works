@@ -86,13 +86,18 @@ describe('settingFaces', () => {
     expect(settingFaces('\u{05D0}', chained, [SERIF, NASKH])).toEqual([null]);
   });
 
-  it('keeps a Common or Inherited character in the face before it, where that face covers it', () => {
-    // A space and a full stop after Arabic stay in the Naskh; a joiner and a harakah too; a bracket
-    // the Naskh lacks falls to the serif. Before anything, the first covering face.
+  it('keeps an Inherited character in the face before it where that covers it, as the pinned engine does', () => {
+    // A joiner and a harakah after Arabic stay in the Naskh, though the serif has the joiner; a space,
+    // a full stop and a bracket are the first covering face's, the serif's, even between Arabic words
+    // (measured in `fallback.test.ts`). Before anything, the first covering face.
     expect(
       settingFaces(' \u{0645}\u{064A}\u{200C}\u{062E} \u{0628}\u{064E}.(', chained, [SERIF, NASKH]),
-    ).toEqual([SERIF, NASKH, NASKH, NASKH, NASKH, NASKH, NASKH, NASKH, NASKH, SERIF]);
-    // A space after Latin stays in the serif.
-    expect(settingFaces('a \u{0627}', chained, [SERIF, NASKH])).toEqual([SERIF, SERIF, NASKH]);
+    ).toEqual([SERIF, NASKH, NASKH, NASKH, NASKH, SERIF, NASKH, NASKH, SERIF, SERIF]);
+    // A joiner after Latin stays in the serif.
+    expect(settingFaces('a\u{200D}\u{0627}', chained, [SERIF, NASKH])).toEqual([
+      SERIF,
+      SERIF,
+      NASKH,
+    ]);
   });
 });

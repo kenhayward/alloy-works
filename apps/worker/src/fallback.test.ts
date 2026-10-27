@@ -138,10 +138,9 @@ describe("a style's face falling back, in the pinned engine (the UI plan, UF-D, 
     expect(space!.face).toBe('LiberationSerif');
   });
 
-  it('sets a space between two Arabic words in the first face that has one, unlike settingFaces', async () => {
-    // Measured, and kept as found: the engine asks the chain afresh for each character, so a space
-    // the serif covers is the serif's wherever it stands. `settingFaces` keeps it in the Naskh, the
-    // plan's rule for splitting a Word run (UF-G); the glyph check is the same either way.
+  it('sets a space between two Arabic words in the first face that has one, as settingFaces does', async () => {
+    // Measured: the engine asks the chain afresh for each Common character, so a space the serif
+    // covers is the serif's wherever it stands; `settingFaces`, which splits a Word run (UF-G), follows.
     const words = body(await painted([paragraph('p3', text(`${PEACE} ${PEACE}`))]));
     expect(words.map((each) => each.face).sort()).toEqual([
       'LiberationSerif',

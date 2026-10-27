@@ -32,25 +32,30 @@ function settingStyle(theme: ResolvedTheme, where: TextWhere): ResolvedParagraph
   return chosen && chosen.appliesTo.includes(place) ? chosen : fallback;
 }
 
-/** The family that sets text standing `where`: inline code's face where the mark is, the style's else. */
-function familyAt(theme: ResolvedTheme, where: TextWhere): string | undefined {
+/**
+ * The chain that sets text standing `where`, by family: inline code's face where the mark is, the
+ * style's else; code its first face alone (the UI plan, UF-C).
+ */
+function familiesAt(theme: ResolvedTheme, where: TextWhere): readonly string[] | undefined {
   const paragraph = settingStyle(theme, where);
-  return where.inlineCode
-    ? (theme.characterStyles.inlineCode.typeface?.family ?? paragraph?.typeface.family)
-    : paragraph?.typeface.family;
+  const chain = where.inlineCode
+    ? (theme.characterStyles.inlineCode.chain ?? paragraph?.chain)
+    : paragraph?.chain;
+  return chain?.slice(0, where.code ? 1 : undefined).map((face) => face.family);
 }
 
 /** The typeface that sets text where the cursor is, and whether it lacks a character. */
 export interface Typeface {
-  readonly family: string;
+  /** Its chain, by family, in order (UF-F): one family where it has no fallback, or in code. */
+  readonly families: readonly string[];
   /** Whether a character typed there would be refused, as the publish's glyph check refuses it. */
   lacks(character: string): boolean;
 }
 
 /**
  * The typeface text typed `where` is set in, asked as the surface's own marks ask it (W14.7, W-M): the
- * family that sets it there, and the publish's glyph check (STY-049) in the setting it is set in. Null
- * where that is not known - no family, or one the renderer does not hold - which a caller takes as
+ * chain that sets it there, and the publish's glyph check (STY-049) in the setting it is set in. Null
+ * where that is not known - no face, or a first the renderer does not hold - which a caller takes as
  * "offer everything", since the surface marks whatever its face lacks.
  */
 export function typefaceAt(
@@ -58,21 +63,21 @@ export function typefaceAt(
   unheld: readonly string[],
   where: TextWhere,
 ): Typeface | null {
-  const family = familyAt(theme, where);
-  if (family === undefined || unheld.includes(family)) return null;
+  const families = familiesAt(theme, where);
+  if (families === undefined || unheld.includes(families[0]!)) return null;
   return {
-    family,
+    families,
     lacks: (character) =>
-      characterProblems(character, covers, [family], where.code ? 'code' : 'body').length > 0,
+      characterProblems(character, covers, families, where.code ? 'code' : 'body').length > 0,
   };
 }
 
 /**
  * The check a surface marks what will not resolve by (themes.md, "What will not resolve", ET-I;
  * STY-070), from the theme the page is set in: the reader's own rules for a style's applicability
- * (STY-006), and the publish's own glyph check (STY-049) asked of the family that sets the text in the
- * setting it is set in, over the coverage generated from the pinned files. A character of a family the
- * renderer does not hold is not marked: the canvas says the face itself is missing.
+ * (STY-006), and the publish's own glyph check (STY-049) asked of the chain that sets the text in the
+ * setting it is set in, over the coverage generated from the pinned files. Nothing is marked where the
+ * renderer does not hold the chain's first face: the canvas says the face itself is missing.
  */
 export function styleCheckFor(theme: ResolvedTheme, unheld: readonly string[]): StyleCheck {
   return {
@@ -80,10 +85,10 @@ export function styleCheckFor(theme: ResolvedTheme, unheld: readonly string[]): 
     table: (style) => resolves(theme.tableStyles.get(style), 'table'),
     image: (style, target) => resolves(theme.imageStyles.get(style), target),
     uncovered: (text, where) => {
-      const family = familyAt(theme, where);
-      if (family === undefined || unheld.includes(family)) return new Set();
+      const families = familiesAt(theme, where);
+      if (families === undefined || unheld.includes(families[0]!)) return new Set();
       return new Set(
-        characterProblems(text, covers, [family], where.code ? 'code' : 'body').map(
+        characterProblems(text, covers, families, where.code ? 'code' : 'body').map(
           (each) => each.codePoint,
         ),
       );

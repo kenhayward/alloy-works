@@ -555,6 +555,7 @@
   "editor.the-speech-rule-engine-has": "The speech rule engine has no rules for {locale}.",
   "editor.symbols": "Symbols",
   "editor.not-in-use-an-equation": "{name}, not in {family}; use an equation",
+  "editor.not-in-any-use-an-equation": "{name}, not in {families}; use an equation",
   "editor.row-above": "Row above",
   "editor.row-below": "Row below",
   "editor.column-before": "Column before",

@@ -85,19 +85,16 @@ export const codePointName = (codePoint: number) =>
  */
 export type Chain = readonly string[];
 
-/** A character of the Common or Inherited script: a space, punctuation, a digit, a joiner, a mark. */
-const SHARED = /^[\p{Script=Common}\p{Script=Inherited}]$/u;
+/** A character of the Inherited script: a joiner, a combining mark, a harakah. */
+const INHERITED = /^\p{Script=Inherited}$/u;
 
 /**
  * Which family of `chain` sets each character of `text`, one entry for each code point (UF-D): the
- * first that covers it, but a Common or Inherited character stays in the face of the character before
- * it where that face covers it, so a space or a harakah inside Arabic is the Naskh's. Null where no
+ * first that covers it, but an Inherited character stays in the face of the character before it where
+ * that face covers it, so a joiner or a harakah inside Arabic is the Naskh's. A Common character, a
+ * space, a full stop or a digit, is the first covering face's even between Arabic words. Null where no
  * face covers it; a character the engine sets without a glyph takes the face before it, or the first.
- *
- * Measured against the pinned engine (`fallback.test.ts`): it keeps a joiner and a harakah in the face
- * of the letter they join, as here, but sets a space or a full stop the first face covers in the
- * first face even between two Arabic words. Whose face a shared character is set in moves no glyph
- * check, since one is refused only where no face covers it.
+ * Both as the pinned engine sets them (measured in `fallback.test.ts`).
  */
 export function settingFaces(text: string, covers: Covers, chain: Chain): (string | null)[] {
   const faces: (string | null)[] = [];
@@ -105,7 +102,7 @@ export function settingFaces(text: string, covers: Covers, chain: Chain): (strin
   for (const character of text) {
     const codePoint = character.codePointAt(0)!;
     const face: string | null =
-      before !== null && SHARED.test(character) && covers(codePoint, before)
+      before !== null && INHERITED.test(character) && covers(codePoint, before)
         ? before
         : (chain.find((family) => covers(codePoint, family)) ??
           (setWithoutAGlyph(codePoint) ? (before ?? chain[0] ?? null) : null));
