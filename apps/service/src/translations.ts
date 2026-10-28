@@ -9,6 +9,7 @@ import type {
   SourceChangeParams,
   SourceChangesView,
   SpaceParams,
+  SpaceTranslationsQuery,
   SpaceTranslationsView,
   TranslationBody,
   TranslationJobBody,
@@ -76,7 +77,7 @@ import { authoriseAt, callerOf, notFound, type Authorised } from './access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import { shownVersionView, versionView } from './components.js';
 import { refused } from './wire-codes.js';
-import { languageOf } from './listing.js';
+import { cursorFor, languageOf, pageAsked } from './listing.js';
 
 /**
  * Translation (docs/design/translation.md; the TR plan): each route decided by its contract's access,
@@ -294,7 +295,13 @@ export function translationHandlers(
       { trx, principalId }: Authorised,
     ): Promise<SpaceTranslationsView> => {
       const { space } = request.params as SpaceParams;
-      const report = await spaceTranslations(trx, space, principalId, languageOf(request));
+      const query = request.query as SpaceTranslationsQuery;
+      // Paged in the reader's collation, a cursor never read in another's (TE-C; UI-H).
+      const asked = pageAsked('translations', query, languageOf(request));
+      const report = await spaceTranslations(trx, space, principalId, asked, {
+        language: query.language,
+        status: query.status,
+      });
       // Every version named, shown in two reads, not two a translation (the TR final review).
       const shownBy = await shownMany(
         trx,
@@ -313,7 +320,14 @@ export function translationHandlers(
             status: { ...each.status },
           })),
         })),
-        capped: report.capped,
+        next: cursorFor(
+          'translations',
+          asked.sort,
+          asked.order,
+          report.snapshot,
+          report.next,
+          asked.language,
+        ),
       };
     },
 

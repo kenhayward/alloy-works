@@ -192,6 +192,32 @@ describe('the search page', () => {
     expect(within(found!).getByText('Diverged: US')).toBeInTheDocument();
   });
 
+  it('LOC-016 says a component found’s translations, each with its status, out of date first', async () => {
+    const { client } = service(() =>
+      json(200, {
+        ...results,
+        count: 1,
+        message: '1 result.',
+        items: [
+          {
+            ...results.items[0],
+            translations: [
+              { language: 'de-DE', status: 'machineDrafted' },
+              { language: 'fr-FR', status: 'outOfDate', retranslate: true },
+            ],
+          },
+        ],
+      }),
+    );
+    render(<SearchPage client={client} query="lever" onSearch={() => undefined} />);
+    const [found] = await screen.findAllByRole('article');
+    expect(
+      within(found!)
+        .getAllByText(/^(de|fr)-/)
+        .map((each) => each.textContent),
+    ).toEqual(['fr-FR: Out of date, needs retranslating', 'de-DE: Machine drafted']);
+  });
+
   it('shows a thread found by a message, resolved, linked to the message', async () => {
     const THREAD = 'ffffffff-0000-4000-8000-000000000001';
     const COMMENT = 'ffffffff-0000-4000-8000-000000000002';

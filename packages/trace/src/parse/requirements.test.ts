@@ -206,7 +206,8 @@ describe('the real corpus', () => {
     // 1590 (2026-10-17): REU-055, superseding REU-006 (R20).
     // 1591 (2026-10-18): CNT-186, superseding CNT-151 (R22, Ken's budget).
     // 1593 (2026-10-27): STY-084 and STY-085, beside STY-075 amended (UIg).
-    expect(total((document) => document.requirements)).toBe(1593);
+    // 1594 (2026-10-28): LOC-044, superseding LOC-038 (TEa).
+    expect(total((document) => document.requirements)).toBe(1594);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

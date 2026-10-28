@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { Chip } from '../parts/Chip.js';
 import { lineAddress } from '../lifecycle/Lines.js';
 import styles from '../lifecycle/Hold.module.css';
 import { words, wordsWith } from '../words/words.js';
@@ -71,6 +72,22 @@ export function statusWords(status: TranslationNow['status']): string {
     default:
       return status.status;
   }
+}
+
+/** Each language's status as its chip, out of date first (LOC-016; the TE plan, TE-B). */
+export function TranslationChips({
+  translations,
+}: {
+  readonly translations: readonly TranslationSaid[] | undefined;
+}) {
+  const ordered = [...(translations ?? [])].sort(
+    (a, b) => Number(b.status === 'outOfDate') - Number(a.status === 'outOfDate'),
+  );
+  return ordered.map((each) => (
+    <Chip key={each.language} {...(each.status === 'translated' ? {} : { tone: 'warn' as const })}>
+      {`${each.language}: ${statusWords(each)}`}
+    </Chip>
+  ));
 }
 
 /**

@@ -243,6 +243,7 @@ export {
   SourceChangeView,
   SourceChangesView,
   SpaceTranslationsView,
+  SpaceTranslationsQuery,
   TranslationBody,
   HeldDecisionBody,
   HeldTranslationView,

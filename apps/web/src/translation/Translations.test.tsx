@@ -74,7 +74,7 @@ function service() {
 }
 
 describe('translations on a component page (the TR plan, TRa)', () => {
-  it('lists each translation with its status, and begins one by whoever may edit', async () => {
+  it('LOC-016 lists each translation with its status from the component’s header, and begins one by whoever may edit', async () => {
     const { client, asked } = service();
     const go = vi.fn();
     render(

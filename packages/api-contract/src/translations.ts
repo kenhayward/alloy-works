@@ -1,6 +1,7 @@
 import { TRANSLATION_CONFLICTS, TRANSLATION_STATUSES } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
+import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 import { SpaceParams } from './components.js';
 import { DocumentParams } from './documents.js';
@@ -120,20 +121,32 @@ export type SourceChangeBody = z.infer<typeof SourceChangeBody>;
 
 export const SourceChangeView = z.object({ version: z.uuid(), retranslate: z.boolean() });
 
+export const SpaceTranslationsQuery = z.object({
+  ...pageQuery,
+  language: z
+    .string()
+    .min(2)
+    .max(35)
+    .optional()
+    .describe('Only translations into this BCP 47 tag, such as `fr-FR`'),
+  status: z.enum(TRANSLATION_STATUSES).optional().describe('Only translations with this status'),
+});
+export type SpaceTranslationsQuery = z.infer<typeof SpaceTranslationsQuery>;
+
 export const SpaceTranslationsView = z.object({
   items: z
     .array(
       z.object({
         component: z.object({ id: z.uuid(), title: z.string() }),
-        translations: z.array(TranslationView),
+        translations: z
+          .array(TranslationView)
+          .describe('Each of its translations the filters leave, by language'),
       }),
     )
     .describe(
-      'Each component of the space the caller may read that has a translation, by title, with each translation and its status',
+      'Each component of the space the caller may read with a translation the filters leave, by title in the language the request accepts',
     ),
-  capped: z
-    .boolean()
-    .describe('Whether more components have translations than the 500 a report names (API-058)'),
+  next: nextCursor,
 });
 export type SpaceTranslationsView = z.infer<typeof SpaceTranslationsView>;
 
@@ -302,12 +315,20 @@ export const translationRoutes = {
     operationId: 'getSpaceTranslations',
     method: 'GET',
     path: '/v1/spaces/{space}/translations',
-    summary: "Report a space's translations, each with its status",
+    summary: "Report a space's translations, each with its status, a page at a time",
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { space: 'space' } },
     params: SpaceParams,
+    query: SpaceTranslationsQuery,
     responses: {
-      200: { description: "The space's translated components", schema: SpaceTranslationsView },
+      200: {
+        description: "A page of the space's translated components",
+        schema: SpaceTranslationsView,
+      },
+      400: {
+        description: 'A cursor this report did not give out, or a limit outside 1 to 100',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: { description: 'The caller may not read this space', schema: ErrorBody },
       404: { description: 'No such space the caller may read', schema: ErrorBody },
