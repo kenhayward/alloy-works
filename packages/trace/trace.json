@@ -15857,7 +15857,7 @@
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
-      "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
+      "settledBy": "**Answered (the IX plan): in scope**, an index marked in content and placed by the layout; STR-043 and PUB-041 stay `should`",
       "document": "STR-structure-numbering-and-cross-references.md",
       "line": 254
     },
@@ -18262,6 +18262,14 @@
         {
           "id": "PUB-056",
           "howItIsMet": "HTML is a third output from the same published document, one self-contained file to read on a screen, held to WCAG 2.2 AA in pinned Chromium (axe, reflow at 320 px and 200% text, every passage's language and direction), as the PDF is to PDF/UA-1 ([HTML](#html))"
+        },
+        {
+          "id": "PUB-041",
+          "howItIsMet": "An index is set where the layout places one (`matter.index`), from the markers the published document carries after conditions and profiles: sorted by the document language's collation, a term's locators before its sub-entries, \"see\" and \"see also\" in the layout's words; page numbers in the PDF, fields Word fills in Word, section links in HTML ([The index](#the-index))"
+        },
+        {
+          "id": "STR-043",
+          "howItIsMet": "An index entry is marked in a component's text by an `indexMarker`, an inline atom of a term, an optional sub-entry, and a \"see\" or \"see also\"s, printing nothing where it stands ([The index](#the-index))"
         },
         {
           "id": "PUB-057",
@@ -30210,7 +30218,7 @@
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 333,
+      "line": 373,
       "kind": "title"
     },
     {
@@ -30234,7 +30242,7 @@
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 590,
+      "line": 630,
       "kind": "title"
     },
     {
@@ -30246,49 +30254,49 @@
     {
       "id": "DAT-097",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2032,
+      "line": 2072,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2008,
+      "line": 2048,
       "kind": "title"
     },
     {
       "id": "STR-025",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 1957,
+      "line": 1997,
       "kind": "title"
     },
     {
       "id": "TAB-001",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2138,
+      "line": 2178,
       "kind": "title"
     },
     {
       "id": "TAB-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2197,
+      "line": 2237,
       "kind": "title"
     },
     {
       "id": "TAB-036",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2149,
+      "line": 2189,
       "kind": "title"
     },
     {
       "id": "TAB-043",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2183,
+      "line": 2223,
       "kind": "title"
     },
     {
       "id": "TAB-048",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2156,
+      "line": 2196,
       "kind": "title"
     },
     {
@@ -30894,7 +30902,7 @@
     {
       "id": "IMP-017",
       "file": "packages/domain/src/import/proposal.test.ts",
-      "line": 88,
+      "line": 133,
       "kind": "title"
     },
     {
@@ -31848,25 +31856,31 @@
     {
       "id": "CNT-185",
       "file": "packages/domain/src/reuse/conditions.test.ts",
-      "line": 104,
+      "line": 105,
       "kind": "title"
     },
     {
       "id": "REU-020",
       "file": "packages/domain/src/reuse/conditions.test.ts",
-      "line": 45,
+      "line": 46,
       "kind": "title"
     },
     {
       "id": "REU-022",
       "file": "packages/domain/src/reuse/conditions.test.ts",
-      "line": 74,
+      "line": 75,
       "kind": "title"
     },
     {
       "id": "REU-024",
       "file": "packages/domain/src/reuse/conditions.test.ts",
-      "line": 124,
+      "line": 125,
+      "kind": "title"
+    },
+    {
+      "id": "REU-048",
+      "file": "packages/domain/src/reuse/conditions.test.ts",
+      "line": 176,
       "kind": "title"
     },
     {
@@ -32226,7 +32240,7 @@
     {
       "id": "STR-064",
       "file": "packages/domain/src/structure/outline.test.ts",
-      "line": 748,
+      "line": 758,
       "kind": "title"
     },
     {
@@ -32934,7 +32948,7 @@
     {
       "id": "CNT-168",
       "file": "packages/editor/src/clipboard.test.ts",
-      "line": 468,
+      "line": 502,
       "kind": "title"
     },
     {
@@ -33210,19 +33224,19 @@
     {
       "id": "CNT-130",
       "file": "packages/readers/src/html.test.ts",
-      "line": 369,
+      "line": 375,
       "kind": "title"
     },
     {
       "id": "CNT-167",
       "file": "packages/readers/src/html.test.ts",
-      "line": 558,
+      "line": 564,
       "kind": "title"
     },
     {
       "id": "CNT-172",
       "file": "packages/readers/src/html.test.ts",
-      "line": 461,
+      "line": 467,
       "kind": "title"
     },
     {

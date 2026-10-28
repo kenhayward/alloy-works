@@ -376,6 +376,10 @@ export function checkInlineContent(
       if (home === 'title') throw new BindingInTitle(inline.id);
       claim(inline.id, claimed.ids);
     }
+    // An index entry marks a place in a component's text, never in an outline's (the IX plan, IX-E).
+    if (inline.type === 'indexMarker' && home === 'title') {
+      throw new Error('A title holds no index marker');
+    }
     if (inline.type !== 'footnote') return inline;
     const noteKind = inline.anchor.kind === 'keyed' || inline.anchor.kind === 'column';
     if (noteKind !== tableNotes) {

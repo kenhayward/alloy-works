@@ -1,5 +1,5 @@
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
-import type { InlineNode } from '../content/model/inline.js';
+import type { IndexMarkerNode, InlineNode } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
 
 /**
@@ -11,7 +11,8 @@ import type { Mark } from '../content/model/marks.js';
  * quotation's attribution. Every inline node that is not text is a `<ph>`, by its place in the unit,
  * and comes back from the source, never from the file; so is text in code or in another language.
  * A mark is an `<sc>`/`<ec>` pair, overlapping and split as it likes, its attributes kept here by its
- * place. Pending insertions and comments are not sent: a variant has its own.
+ * place. Pending insertions and comments are not sent: a variant has its own. An index marker's words
+ * are sent once a distinct term or sub-entry, after the rest (the IX plan, IX-G).
  */
 
 /** One piece of a unit's text, as it is sent and as it comes back. */
@@ -90,6 +91,63 @@ function encode(inlines: readonly InlineNode[]) {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
+
+/** What an index marker's words unit is keyed by: `ix.term.{n}` or `ix.sub.{n}`. */
+const INDEX_UNIT = /^ix\.(term|sub)\.\d+$/;
+
+/** Every index marker a value holds, in stored order, its footnotes' at their anchor. */
+function markersIn(value: unknown, into: IndexMarkerNode[] = []): IndexMarkerNode[] {
+  if (Array.isArray(value)) value.forEach((each) => markersIn(each, into));
+  else if (isRecord(value)) {
+    if (value.type === 'indexMarker') into.push(value as IndexMarkerNode);
+    else Object.values(value).forEach((each) => markersIn(each, into));
+  }
+  return into;
+}
+
+/**
+ * **An index's words, once each** (the IX plan, IX-G): every distinct term - a marker's own, its
+ * "see" and its "see also"s - and every distinct sub-entry, in the order first met, so the markers of
+ * one term are translated as one and stay one entry, and a reference resolves in the variant.
+ */
+function indexWordsOf(content: unknown): { readonly term: string[]; readonly sub: string[] } {
+  const term = new Set<string>();
+  const sub = new Set<string>();
+  for (const marker of markersIn(content)) {
+    for (const words of [marker.term, marker.see, ...(marker.seeAlso ?? [])]) {
+      if (words !== undefined) term.add(words);
+    }
+    if (marker.sub !== undefined) sub.add(marker.sub);
+  }
+  return { term: [...term], sub: [...sub] };
+}
+
+/**
+ * `value` with every index marker's words rewritten from `term` and `sub` where they give one: a copy,
+ * never in place, since a decoded unit shares its placeholders with the text it was read from.
+ */
+function rewriteMarkers(
+  value: unknown,
+  term: ReadonlyMap<string, string>,
+  sub: ReadonlyMap<string, string>,
+): unknown {
+  if (Array.isArray(value)) return value.map((each) => rewriteMarkers(each, term, sub));
+  if (!isRecord(value)) return value;
+  if (value.type !== 'indexMarker') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, each]) => [key, rewriteMarkers(each, term, sub)]),
+    );
+  }
+  const marker = value as IndexMarkerNode;
+  const as = (words: string) => term.get(words) ?? words;
+  return {
+    ...marker,
+    term: as(marker.term),
+    ...(marker.sub !== undefined && { sub: sub.get(marker.sub) ?? marker.sub }),
+    ...(marker.see !== undefined && { see: as(marker.see) }),
+    ...(marker.seeAlso !== undefined && { seeAlso: marker.seeAlso.map(as) }),
+  };
+}
 
 /**
  * **Every unit of a component** (XL-A), in reading order: each translatable text, inline or words,
@@ -186,6 +244,9 @@ export function xliffUnits(content: ContentDocument): XliffUnit[] {
     });
   };
   blocks(content.content, ['content']);
+  const index = indexWordsOf(content.content);
+  index.term.forEach((text, k) => words(`ix.term.${k + 1}`, ['ix', 'term', text], text));
+  index.sub.forEach((text, k) => words(`ix.sub.${k + 1}`, ['ix', 'sub', text], text));
   return units;
 }
 
@@ -283,11 +344,33 @@ export function xliffTarget(
   for (const id of targets.keys()) {
     if (!known.has(id)) problems.push({ unit: id, problem: 'unknown' });
   }
-  const working = structuredClone(source) as unknown;
-  const applied: { readonly unit: string; readonly path: Path; readonly value: unknown }[] = [];
+  let working = structuredClone(source) as unknown;
+  const applied: { readonly unit: string; readonly write: (root: unknown) => unknown }[] = [];
+  // An index's words stand in no one place: every marker naming them is rewritten after the rest,
+  // from the source's words, so a term translated as another term's source is not rewritten twice.
+  const index = { term: new Map<string, string>(), sub: new Map<string, string>() };
   const apply = (unit: XliffUnit, value: unknown) => {
+    if (INDEX_UNIT.test(unit.id)) {
+      const [, kind, words] = unit.path as [string, 'term' | 'sub', string];
+      index[kind].set(words, value as string);
+      const alone = new Map([[words, value as string]]);
+      const write = (root: unknown) =>
+        rewriteMarkers(
+          root,
+          kind === 'term' ? alone : new Map(),
+          kind === 'sub' ? alone : new Map(),
+        );
+      applied.push({ unit: unit.id, write });
+      return;
+    }
     put(working, unit.path, value);
-    applied.push({ unit: unit.id, path: unit.path, value });
+    applied.push({
+      unit: unit.id,
+      write: (root) => {
+        put(root, unit.path, value);
+        return root;
+      },
+    });
   };
   // Deepest first, so a footnote's paragraphs are translated before the text it stands in reads it.
   const ordered = [...units].sort((a, b) => b.path.length - a.path.length);
@@ -317,6 +400,7 @@ export function xliffTarget(
     else apply(unit, decoded);
   }
   if (problems.length > 0) return { ok: false, problems };
+  working = rewriteMarkers(working, index.term, index.sub);
   try {
     return {
       ok: true,
@@ -324,11 +408,9 @@ export function xliffTarget(
     };
   } catch {
     // Refused, never thrown (the XL final review): each unit whose words alone the model refuses.
-    const refused = applied.filter(({ path, value }) => {
-      const alone = structuredClone(source) as unknown;
-      put(alone, path, value);
+    const refused = applied.filter(({ write }) => {
       try {
-        parseContentDocument(alone);
+        parseContentDocument(write(structuredClone(source)));
         return false;
       } catch {
         return true;

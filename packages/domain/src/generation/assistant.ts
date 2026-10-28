@@ -255,6 +255,8 @@ function inlineText(content: readonly InlineNode[]): string {
   return content
     .map((node) => {
       if (node.type === 'text') return node.value;
+      // An index marker prints nothing, so the model is not shown one to copy (the IX plan, IX-F).
+      if (node.type === 'indexMarker') return '';
       return `[${node.type}]`;
     })
     .join('');
@@ -263,6 +265,8 @@ function inlineText(content: readonly InlineNode[]): string {
 /** What in an inline run Markdown cannot say, by name, or none. */
 function inlineProblem(content: readonly InlineNode[]): string | undefined {
   for (const node of content) {
+    // An index marker prints nothing, so a paragraph holding one stays open (the IX plan, IX-F).
+    if (node.type === 'indexMarker') continue;
     if (node.type !== 'text') return `a ${node.type}`;
     for (const mark of node.marks ?? []) {
       if (!EDITABLE_MARKS.has(mark.type)) return `a ${mark.type} mark`;

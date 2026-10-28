@@ -407,4 +407,14 @@ describe('readDocx, structure (IMc)', () => {
       ['field', 'DATE', 1],
     ]);
   });
+
+  it('tallies an XE field as another field, making no index marker (the IX plan, IX-F)', () => {
+    const xe =
+      `<w:r><w:fldChar w:fldCharType="begin"/></w:r>` +
+      `<w:r><w:instrText xml:space="preserve"> XE "Alloy:tempering" </w:instrText></w:r>` +
+      `<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
+    const answer = read(docx(p(`${run('An alloy')}${xe}${run(' tempered')}`)));
+    expect(blocks(answer)).toEqual([para(text('An alloy tempered'))]);
+    expect(subjects(answer.report)).toEqual([['field', 'XE', 1]]);
+  });
 });

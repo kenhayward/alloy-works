@@ -4,6 +4,8 @@ import { isKeptMathml } from '../admission/mathml.js';
 import { canonicalValueSchema, PARAMETER_NAME } from '../../data/definition.js';
 import { MAX_LIST_ITEMS } from '../../data/parameters.js';
 import { sourceNameSchema } from '../../data/protocol.js';
+import { disallowed, setWithoutAGlyph } from '../../publishing/glyphs.js';
+import { storableText } from '../../stored/storable.js';
 
 import { artifactIdentifierSchema, nodeIdentifierSchema } from './identifier.js';
 import { markSchema } from './marks.js';
@@ -106,6 +108,58 @@ export const citationNodeSchema = z.strictObject({
   entry: z.string().min(1),
   locator: z.string().min(1).optional(),
 });
+
+/** The most see-alsos one index marker names. */
+const MAX_SEE_ALSO = 10;
+
+/** No line break of any kind: an index term is one line, as a layout's words are. */
+const LINE_BREAK = /[\n\v\f\r\u0085\u2028\u2029]/u;
+
+/**
+ * An index term, held as a layout's words are (`layout.ts`'s `words`): one line of 1 to 200
+ * characters that shows something, storable and settable, and in NFC, refused rather than normalised,
+ * for a binding's reason.
+ */
+const indexWords = z
+  .string()
+  .min(1)
+  .max(200)
+  .refine((text) => text === text.normalize('NFC'), 'An index term is in NFC')
+  .refine((text) => !LINE_BREAK.test(text), 'An index term is one line')
+  .refine(storableText, 'An index term holds a character that cannot be stored')
+  .refine(
+    (text) => !Array.from(text, (character) => character.codePointAt(0)!).some(disallowed),
+    'An index term holds a character the engine refuses',
+  )
+  .refine(
+    (text) =>
+      Array.from(text).some(
+        (character) => !/\s/u.test(character) && !setWithoutAGlyph(character.codePointAt(0)!),
+      ),
+    'An index term says something',
+  );
+
+/**
+ * **An index marker** (the IX plan, IX-E): an entry of the index under a term and an optional
+ * sub-entry, or a "see" redirecting the term, or "see also"s beside its locators. An atom printing
+ * nothing where it stands, with no `id` (its anchor is `assemble`'s), no marks and no sort key: the
+ * document language's collation alone orders the index.
+ */
+export const indexMarkerNodeSchema = z
+  .strictObject({
+    type: z.literal('indexMarker'),
+    term: indexWords,
+    sub: indexWords.optional(),
+    see: indexWords.optional(),
+    seeAlso: z.array(indexWords).min(1).max(MAX_SEE_ALSO).optional(),
+  })
+  .refine((marker) => marker.see === undefined || marker.seeAlso === undefined, {
+    message: 'An index marker says see or see also, never both',
+    path: ['seeAlso'],
+  });
+
+/** An index marker, as `indexMarkerNodeSchema` holds it. */
+export type IndexMarkerNode = z.infer<typeof indexMarkerNodeSchema>;
 
 export const variableNodeSchema = z.strictObject({
   type: z.literal('variable'),
@@ -264,6 +318,7 @@ export const inlineNodeSchema = z.discriminatedUnion('type', [
   footnoteNodeSchema,
   crossReferenceNodeSchema,
   citationNodeSchema,
+  indexMarkerNodeSchema,
   variableNodeSchema,
   bindingNodeSchema,
   imageNodeSchema,

@@ -32,6 +32,12 @@ const happened = (report: readonly ReportEntry[]) =>
   report.map(({ message: _, ...entry }) => entry);
 
 describe('reading HTML', () => {
+  it("never makes an index marker, even from the editor's own rendering of one (the IX plan, IX-F)", () => {
+    expect(
+      content('<p>An alloy<span class="aw-index-marker" data-index-marker=""></span>.</p>'),
+    ).toEqual([paragraph(text('An alloy.'))]);
+  });
+
   it('reads paragraphs and the nine marks, collapsing whitespace as a browser does', () => {
     expect(
       content(

@@ -75,6 +75,51 @@ describe('proposeImport', () => {
     expect(parts[5]!.blocks).toEqual([]);
   });
 
+  it("passes an index marker untouched through the base and an author's changes (the IX plan, IX-F)", () => {
+    const marker = { type: 'indexMarker', term: 'Alloy', sub: 'tempering' };
+    const { parts } = proposeImport(
+      [
+        {
+          kind: 'block',
+          block: {
+            type: 'paragraph',
+            content: [
+              { type: 'text', value: 'An alloy', marks: [] },
+              marker,
+              {
+                type: 'text',
+                value: ' tempered',
+                marks: [],
+                change: { kind: 'insert', author: 'Ada', id: '1' },
+              },
+            ],
+          },
+          source: 'An alloy tempered',
+        },
+      ],
+      DEFAULT_IMPORT_LEVELS,
+      options,
+    );
+    const [part] = parts;
+    expect(part!.blocks).toEqual([
+      expect.objectContaining({ content: [expect.anything(), marker] }),
+    ]);
+    expect(part!.changes).toEqual([
+      expect.objectContaining({
+        author: 'Ada',
+        proposed: [
+          expect.objectContaining({
+            content: [
+              { type: 'text', value: 'An alloy', marks: [] },
+              marker,
+              { type: 'text', value: ' tempered', marks: [] },
+            ],
+          }),
+        ],
+      }),
+    ]);
+  });
+
   it('IMP-004 proposes again at the levels the importer chooses', () => {
     const flow = [heading(1, 'Part one'), heading(2, 'Chapter'), heading(3, 'Topic'), para('Text')];
     const { parts } = proposeImport(flow, { section: 2, component: 3 }, options);

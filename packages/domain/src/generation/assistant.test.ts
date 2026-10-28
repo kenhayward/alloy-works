@@ -167,6 +167,22 @@ describe("the assistant's terms", () => {
     });
   });
 
+  it('leaves a paragraph holding an index marker open to proposals, and reads it without one (the IX plan, IX-F)', () => {
+    const marked = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'An alloy', marks: [] },
+        { type: 'indexMarker', term: 'Alloy' },
+      ],
+    } as unknown as BlockNode;
+    expect(editableProblem(marked)).toBeUndefined();
+    expect(componentAsText(document(marked))).toBe(
+      `[#p1] paragraph${String.fromCharCode(10)}An alloy`,
+    );
+  });
+
   it('refuses to edit a block holding what Markdown cannot say, naming it', () => {
     const footnoted = {
       type: 'paragraph',

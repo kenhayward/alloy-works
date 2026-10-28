@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type { ContentDocument } from '../content/model/document.js';
+import type { IndexMarkerNode } from '../content/model/inline.js';
 import type { Conditions } from '../content/model/marks.js';
 import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
 import { definitionIdentity } from '../metadata/definition.js';
@@ -108,6 +109,12 @@ export function wordsOf(value: unknown): string {
       each.forEach((member) => {
         if (!(isRecord(member) && member['type'] === 'text')) walk(member);
       });
+    } else if (isRecord(each) && each['type'] === 'indexMarker') {
+      // An index marker's words are printed in the index (the IX plan, IX-F), so they are probed too.
+      const { term, sub, see, seeAlso } = each as Partial<IndexMarkerNode>;
+      for (const words of [term, sub, see, ...(seeAlso ?? [])]) {
+        if (words !== undefined) sequences.push(words);
+      }
     } else if (isRecord(each)) Object.values(each).forEach(walk);
   };
   walk(value);
@@ -194,6 +201,9 @@ export function applyConditions(
           }
           continue;
         }
+        // A marker inside an excluded passage goes with it (the IX plan, IX-F): its entry would
+        // locate words that are not there, and print its term from them.
+        if (passage !== null && isRecord(member) && member['type'] === 'indexMarker') continue;
         if (isRun(member) && member.marks.some(isCondition)) {
           // Each asked, so every unset axis on the run is reported, not the first alone (REU-053).
           const answers = member.marks.filter(isCondition).map((mark) => selects(mark, block));

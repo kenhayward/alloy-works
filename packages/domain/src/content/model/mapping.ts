@@ -94,6 +94,11 @@ export const outputMapping: {
         'The runs the citation style produces, with a REF field to the bookmark on its bibliography entry',
       tagged: 'Reference, pointing at the BibEntry in the bibliography',
     },
+    indexMarker: {
+      ooxml: 'An XE field carrying the term and sub-entry, its see or see also a \\t switch',
+      tagged: 'No element of its own; a label the index links to, in an L of LI entries',
+      note: 'Prints nothing where it stands; the index itself is the IX plan, IX-J and IX-K',
+    },
     variable: {
       ooxml: 'The resolved value as runs; no field, because resolution happened before output',
       tagged: 'No element of its own; a Span only where the value carries its own language',

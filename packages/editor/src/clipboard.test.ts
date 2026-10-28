@@ -286,6 +286,40 @@ describe('pasting', () => {
     ]);
   });
 
+  it('keeps an index marker copied within the product, every member and all (the IX plan, IX-F)', () => {
+    const marker = { type: 'indexMarker', term: 'York', sub: 'walls', seeAlso: ['Leeds'] };
+    const pasted = paste(at(stateOf([paragraph('b1', 'York')]), 5), {
+      [PRODUCT_CLIPBOARD_TYPE]: JSON.stringify({
+        format: 'alloy-works/content',
+        schemaVersion: 1,
+        content: [
+          {
+            type: 'paragraph',
+            id: 'x1',
+            style: 'body',
+            content: [{ type: 'text', value: ' walls', marks: [] }, marker],
+          },
+        ],
+      }),
+    });
+    expect(stored(pasted)).toEqual([
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [{ type: 'text', value: 'York walls', marks: [] }, marker],
+      },
+    ]);
+    // And copied out again whole.
+    const copied = JSON.parse(productClipboard(pasted, 1, pasted.doc.content.size - 1)!) as {
+      content: { content: unknown[] }[];
+    };
+    expect(copied.content[0]!.content).toEqual([
+      { type: 'text', value: 'York walls', marks: [] },
+      marker,
+    ]);
+  });
+
   it('keeps a figure copied within the product, its image, caption and alternative text and all', () => {
     // Figures 2: the product's own clipboard carries a figure whole (component-editor.md, "Figures").
     const figure = {

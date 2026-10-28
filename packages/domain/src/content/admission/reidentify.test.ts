@@ -97,6 +97,18 @@ describe('the re-identify stage', () => {
     ]);
   });
 
+  it('passes an index marker untouched, which has no identifier (the IX plan, IX-F)', () => {
+    const marker = { type: 'indexMarker', term: 'Alloy', sub: 'tempering', seeAlso: ['Steel'] };
+    const { outcome } = run({
+      schemaVersion: 1,
+      content: [paragraph('n1', [text('Copied'), marker])],
+    });
+    expect(outcome).toEqual({
+      ok: true,
+      value: { schemaVersion: 1, content: [paragraph('n3', [text('Copied'), marker])] },
+    });
+  });
+
   it('reaches blocks inside lists, tables, quotations and footnotes', () => {
     const { outcome, entries } = run({
       schemaVersion: 1,

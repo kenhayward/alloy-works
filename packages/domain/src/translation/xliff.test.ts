@@ -348,3 +348,80 @@ describe('a target the content model would refuse (the XL final review)', () => 
     expect(xliffTarget(pending, allTranslated(pending), 'fr').ok).toBe(true);
   });
 });
+
+describe('index markers, translated (the IX plan, IX-G)', () => {
+  const marker = (over: object) => ({ type: 'indexMarker', ...over });
+  const indexed = document([
+    paragraph('p1', [
+      text('Ponds'),
+      marker({ term: 'Pond', sub: 'depth' }),
+      {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [paragraph('p-note', [text('Again.'), marker({ term: 'Pond' })])],
+      },
+    ]),
+    paragraph('p2', [
+      text('Lakes'),
+      marker({ term: 'Lake', sub: 'depth', seeAlso: ['Pond'] }),
+      marker({ term: 'Mere', see: 'Lake' }),
+    ]),
+  ]);
+
+  it('sends each distinct term and sub-entry once, as words, and each marker as a placeholder', () => {
+    const units = xliffUnits(indexed);
+    expect(units.filter((unit) => unit.id.startsWith('ix.'))).toEqual(
+      ['Pond', 'Lake', 'Mere']
+        .map((words, k) =>
+          expect.objectContaining({
+            id: `ix.term.${k + 1}`,
+            kind: 'words',
+            parts: [{ kind: 'text', text: words }],
+          }),
+        )
+        .concat([
+          expect.objectContaining({
+            id: 'ix.sub.1',
+            kind: 'words',
+            parts: [{ kind: 'text', text: 'depth' }],
+          }),
+        ]),
+    );
+    expect(units.find((unit) => unit.id === 'b.p2')!.parts).toEqual([
+      { kind: 'text', text: 'Lakes' },
+      { kind: 'ph', id: 'p1' },
+      { kind: 'ph', id: 'p2' },
+    ]);
+  });
+
+  it('rewrites every term, sub-entry, see and see also from its one translation', () => {
+    const result = xliffTarget(indexed, allTranslated(indexed), 'fr');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const markers: unknown[] = [];
+    JSON.stringify(result.content, (key, value: unknown) => {
+      if ((value as { type?: string } | null)?.type === 'indexMarker') markers.push(value);
+      return value;
+    });
+    expect(markers).toEqual([
+      marker({ term: '[Pond]', sub: '[depth]' }),
+      marker({ term: '[Pond]' }),
+      marker({ term: '[Lake]', sub: '[depth]', seeAlso: ['[Pond]'] }),
+      marker({ term: '[Mere]', see: '[Lake]' }),
+    ]);
+  });
+
+  it('refuses a translated term the content model refuses, naming its unit', () => {
+    const targets = allTranslated(indexed);
+    const result = xliffTarget(
+      indexed,
+      new Map([
+        ...targets,
+        ['ix.term.2', [{ kind: 'text', text: 'x'.repeat(201) }] as XliffPart[]],
+      ]),
+      'fr',
+    );
+    expect(result).toEqual({ ok: false, problems: [{ unit: 'ix.term.2', problem: 'invalid' }] });
+  });
+});

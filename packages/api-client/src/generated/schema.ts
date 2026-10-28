@@ -9297,6 +9297,13 @@ export interface components {
                 locator?: string;
             } | {
                 /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
+            } | {
+                /** @constant */
                 type: "variable";
                 name: string;
             } | {
@@ -9485,6 +9492,13 @@ export interface components {
                 type: "citation";
                 entry: string;
                 locator?: string;
+            } | {
+                /** @constant */
+                type: "indexMarker";
+                term: string;
+                sub?: string;
+                see?: string;
+                seeAlso?: string[];
             } | {
                 /** @constant */
                 type: "variable";
@@ -52660,6 +52674,13 @@ export interface operations {
                                 locator?: string;
                             } | {
                                 /** @constant */
+                                type: "indexMarker";
+                                term: string;
+                                sub?: string;
+                                see?: string;
+                                seeAlso?: string[];
+                            } | {
+                                /** @constant */
                                 type: "variable";
                                 name: string;
                             } | {
@@ -52869,6 +52890,13 @@ export interface operations {
                             type: "citation";
                             entry: string;
                             locator?: string;
+                        } | {
+                            /** @constant */
+                            type: "indexMarker";
+                            term: string;
+                            sub?: string;
+                            see?: string;
+                            seeAlso?: string[];
                         } | {
                             /** @constant */
                             type: "variable";
@@ -55761,6 +55789,13 @@ export interface operations {
                         type: "citation";
                         entry: string;
                         locator?: string;
+                    } | {
+                        /** @constant */
+                        type: "indexMarker";
+                        term: string;
+                        sub?: string;
+                        see?: string;
+                        seeAlso?: string[];
                     } | {
                         /** @constant */
                         type: "variable";

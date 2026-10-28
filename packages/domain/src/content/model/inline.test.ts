@@ -186,4 +186,43 @@ describe('the inline vocabulary', () => {
     expect(inlineNodeSchema.parse(ok).type).toBe('image');
     expect(() => inlineNodeSchema.parse({ ...ok, width: 120 })).toThrow();
   });
+
+  describe('an index marker (the IX plan, IX-E)', () => {
+    const marker = { type: 'indexMarker', term: 'Alloy' };
+
+    it('is an atom of a term and an optional sub-entry, with no identifier, marks or sort key', () => {
+      expect(inlineNodeSchema.parse(marker)).toEqual(marker);
+      expect(inlineNodeSchema.parse({ ...marker, sub: 'tempering' })).toEqual({
+        ...marker,
+        sub: 'tempering',
+      });
+      for (const extra of [{ id: 'm1' }, { marks: [] }, { sortKey: 'alloy' }]) {
+        expect(() => inlineNodeSchema.parse({ ...marker, ...extra })).toThrow();
+      }
+    });
+
+    it('holds a see or one to ten see-alsos, never both', () => {
+      expect(inlineNodeSchema.parse({ ...marker, see: 'Metal' })).toMatchObject({ see: 'Metal' });
+      expect(inlineNodeSchema.parse({ ...marker, seeAlso: ['Metal', 'Steel'] })).toMatchObject({
+        seeAlso: ['Metal', 'Steel'],
+      });
+      expect(() => inlineNodeSchema.parse({ ...marker, seeAlso: [] })).toThrow();
+      const eleven = Array.from({ length: 11 }, (_, n) => `Term ${n}`);
+      expect(() => inlineNodeSchema.parse({ ...marker, seeAlso: eleven })).toThrow();
+      expect(() =>
+        inlineNodeSchema.parse({ ...marker, see: 'Metal', seeAlso: ['Steel'] }),
+      ).toThrow();
+    });
+
+    it('holds every string to one visible line of at most 200 characters, in NFC', () => {
+      const refused = ['', ' ', '\u200b', 'Two\nlines', 'x'.repeat(201), 'Cafe\u0301'];
+      for (const words of refused) {
+        expect(() => inlineNodeSchema.parse({ ...marker, term: words }), words).toThrow();
+        expect(() => inlineNodeSchema.parse({ ...marker, sub: words }), words).toThrow();
+        expect(() => inlineNodeSchema.parse({ ...marker, see: words }), words).toThrow();
+        expect(() => inlineNodeSchema.parse({ ...marker, seeAlso: [words] }), words).toThrow();
+      }
+      expect(inlineNodeSchema.parse({ ...marker, term: 'Caf\u00e9' })).toBeTruthy();
+    });
+  });
 });
