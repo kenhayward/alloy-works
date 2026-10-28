@@ -15857,7 +15857,7 @@
     {
       "id": "STR-Q03",
       "question": "**Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change",
-      "settledBy": "A customer whose house style requires one. Marked as `should`, not `must`, until then",
+      "settledBy": "**Answered (the IX plan): in scope**, an index marked in content and placed by the layout; STR-043 and PUB-041 stay `should`",
       "document": "STR-structure-numbering-and-cross-references.md",
       "line": 254
     },

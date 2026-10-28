@@ -251,7 +251,7 @@ and travels with them wherever they are used. That half is CNT's, through a bloc
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **STR-Q01** | **May a number ever be overridden by hand?** "Section 4a" appears in real submissions, usually because a numbered thing was inserted after a document was already cited elsewhere | A real regulatory submission that requires it. The default answer is no, because an override is a stored number by another name                     |
 | **STR-Q02** | **Do cross-references need to cross documents?** A submission may reference a section of a companion report by number                                                             | Whether early customers submit related documents as a set. It would make resolution depend on a baseline of something else, which is a large change |
-| **STR-Q03** | **Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change                                                                              | A customer whose house style requires one. Marked as `should`, not `must`, until then                                                               |
+| **STR-Q03** | **Is an index in scope at all (STR-043)?** It needs marked entries in content, which is a CNT change                                                                              | **Answered (the IX plan): in scope**, an index marked in content and placed by the layout; STR-043 and PUB-041 stay `should`                        |
 | **STR-Q04** | **How is "above" or "below" resolved (STR-027)?** It depends on final pagination, which the editor cannot know                                                                    | The publishing engine decision, since only the paginator knows whether a target is above                                                            |
 
 ## 13. Traceability
@@ -499,3 +499,13 @@ the rest becomes rows of their own.
 | Counts       | Before                     | After                      |
 | ------------ | -------------------------- | -------------------------- |
 | Requirements | 73, of which 10 superseded | 75, of which 11 superseded |
+
+### Ken's order for the index, 2026-10-28
+
+Ken chose the index as T6's next slice ([the IX plan](../../plans/2026-10-28-ix-index.md)), and
+answered its four questions: an entry and a sub-entry, "see" and "see also", points only, and a
+section as HTML's locator.
+
+| What was found                             | Change                             |
+| ------------------------------------------ | ---------------------------------- |
+| STR-Q03 asked whether an index is in scope | Answered: in scope; no row changes |
