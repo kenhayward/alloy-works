@@ -1,23 +1,34 @@
 import {
   DEFAULT_TRANSLATION_POLICY,
-  INTERFACE_COLLATIONS,
-  type InterfaceLanguage,
   effectiveRevision,
   speaksFor,
   blockText,
   parseContentDocument,
   sourceChangesBetween,
   translationLanguageRefusal,
-  translationStatus,
   type SourceChange,
   type TranslationPolicy,
   type TranslationStatus,
 } from '@alloy-works/domain';
-import { sql } from 'kysely';
+import { sql, type RawBuilder } from 'kysely';
 import { artifactPlace, recordEvent } from './audit.js';
 import { datesStored } from './dates.js';
-import { readableComponents } from './documents.js';
+import { loadReadableSet } from './access-facts.js';
+import { deletionStored, notDeletedAs } from './deletion.js';
 import { diverge, readLine, translationStored, type Line } from './lines.js';
+import {
+  checkedLimit,
+  isListingRequest,
+  keysetPage,
+  listingSorts,
+  snapshotFor,
+  sortColumns,
+  visibleIn,
+  type Listed,
+  type ListingRequest,
+  type SortOf,
+} from './listing.js';
+import { readableArtifactsAs } from './readable-artifacts.js';
 import { revisionScopes } from './scopes.js';
 import type { TenantTransaction } from './tables.js';
 import { latestVersion, readVersion, type StoredVersion } from './versions.js';
@@ -262,13 +273,18 @@ export async function jobsStored(trx: TenantTransaction): Promise<boolean> {
 }
 const jobsKnown = new WeakMap<TenantTransaction, boolean>();
 
-/** Whether 0165 has run, so lines may be marked machine drafted (XL-I). */
+/** Whether 0165 has run, so lines may be marked machine drafted (XL-I): asked once a transaction. */
 async function machineDraftsKnown(trx: TenantTransaction): Promise<boolean> {
+  const known = draftsKnown.get(trx);
+  if (known !== undefined) return known;
   const { rows } = await sql<{
     present: boolean;
   }>`select to_regclass('machine_draft') is not null as present`.execute(trx);
-  return rows[0]?.present === true;
+  const present = rows[0]?.present === true;
+  draftsKnown.set(trx, present);
+  return present;
 }
+const draftsKnown = new WeakMap<TenantTransaction, boolean>();
 
 /** A component's translation into one language, as read (TR-E). */
 export interface Translation {
@@ -282,27 +298,46 @@ export interface Translation {
 }
 
 /**
- * Each of these components' open translations with its status (TR-E; LOC-013, LOC-014, LOC-015), by
- * language: out of date the moment a main-line version follows what it translates, needing
- * retranslation where any such version is declared so or declares nothing; in translation while an
- * open job's item holds it out (XL-E).
+ * `translationStatus` as SQL (the TE plan, TE-C), so a report filters and pages on it; a parity test
+ * holds the two together over every case. `later` is each later source version's `retranslate`.
  */
-export async function translationsOf(
-  trx: TenantTransaction,
-  artifactIds: readonly string[],
-): Promise<Map<string, Translation[]>> {
-  const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
-  if (ids.length === 0 || !(await translationStored(trx))) return new Map();
-  const { rows } = await sql<{
-    line: string;
-    artifact_id: string;
-    language: string;
-    head: string | null;
-    translates: string | null;
-    later: boolean[];
-    in_translation: boolean;
-    machine_drafted: boolean;
-  }>`
+export function translationStatusSql(row: {
+  readonly translates: RawBuilder<unknown>;
+  readonly later: RawBuilder<unknown>;
+  readonly inTranslation: RawBuilder<unknown>;
+  readonly machineDrafted: RawBuilder<unknown>;
+}): { readonly status: RawBuilder<string>; readonly retranslate: RawBuilder<boolean> } {
+  return {
+    status: sql<string>`case
+      when ${row.machineDrafted} then 'machineDrafted'
+      when ${row.translates} is not null and cardinality(${row.later}) = 0 then 'translated'
+      when ${row.inTranslation} then 'inTranslation'
+      when ${row.translates} is null then 'untranslated'
+      else 'outOfDate' end`,
+    retranslate: sql<boolean>`coalesce(true = any(${row.later}), false)`,
+  };
+}
+
+/** What a report's translations may be narrowed to (TE-C): a language, a status, or both. */
+export interface TranslationFilter {
+  readonly language?: string | undefined;
+  readonly status?: TranslationStatus['status'] | undefined;
+}
+
+/**
+ * Every open translation with its status, a row a line (TR-E; TE-C): `line`, `artifact_id`,
+ * `language`, `head`, `translates`, `status` and `retranslate`. Out of date the moment a main-line
+ * version follows what it translates, needing retranslation where any such version is declared so or
+ * declares nothing; in translation while an open job's item holds it out (XL-E).
+ */
+async function translationLines(trx: TenantTransaction): Promise<RawBuilder<unknown>> {
+  const { status, retranslate } = translationStatusSql({
+    translates: sql`y.translates`,
+    later: sql`y.later`,
+    inTranslation: sql`y.in_translation`,
+    machineDrafted: sql`y.machine_drafted`,
+  });
+  const lines = sql`
     select l.id as line, l.artifact_id, l.language, s.version_id as head, s.translates,
            coalesce((
              select array_agg(coalesce((
@@ -332,9 +367,41 @@ export async function translationsOf(
         select version_id, translates from translation_state
          where line_id = l.id order by id desc limit 1
       ) s on true
-     where l.artifact_id = any(${ids}::uuid[]) and l.language is not null
-       and not exists (select 1 from line_closed c where c.line_id = l.id)
-     order by l.artifact_id, l.language`.execute(trx);
+     where l.language is not null
+       and not exists (select 1 from line_closed c where c.line_id = l.id)`;
+  return sql`select y.line, y.artifact_id, y.language, y.head, y.translates,
+                    ${status} as status, ${retranslate} as retranslate
+               from (${lines}) as y`;
+}
+
+/** Whether a translation aliased `t` is one `filter` leaves. */
+const filtered = (filter: TranslationFilter): RawBuilder<unknown> =>
+  sql`${filter.language === undefined ? sql`true` : sql`t.language = ${filter.language}`}
+      and ${filter.status === undefined ? sql`true` : sql`t.status = ${filter.status}`}`;
+
+/**
+ * Each of these components' open translations with its status (TR-E; LOC-013, LOC-014, LOC-015), by
+ * language, those `filter` leaves. Whether the caller may read them is theirs to have decided.
+ */
+export async function translationsOf(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+  filter: TranslationFilter = {},
+): Promise<Map<string, Translation[]>> {
+  const ids = [...new Set(artifactIds.filter((id) => UUID.test(id)))];
+  if (ids.length === 0 || !(await translationStored(trx))) return new Map();
+  const { rows } = await sql<{
+    line: string;
+    artifact_id: string;
+    language: string;
+    head: string | null;
+    translates: string | null;
+    status: TranslationStatus['status'];
+    retranslate: boolean;
+  }>`
+    select t.* from (${await translationLines(trx)}) as t
+     where t.artifact_id = any(${ids}::uuid[]) and ${filtered(filter)}
+     order by t.artifact_id, t.language`.execute(trx);
   const found = new Map<string, Translation[]>();
   for (const row of rows) {
     const translation: Translation = {
@@ -342,12 +409,10 @@ export async function translationsOf(
       language: row.language,
       head: row.head,
       translates: row.translates,
-      status: translationStatus({
-        translates: row.translates,
-        laterSource: row.later.map((retranslate) => ({ retranslate })),
-        inTranslation: row.in_translation,
-        machineDrafted: row.machine_drafted,
-      }),
+      status:
+        row.status === 'outOfDate'
+          ? { status: 'outOfDate', retranslate: row.retranslate }
+          : { status: row.status },
     };
     found.set(row.artifact_id, [...(found.get(row.artifact_id) ?? []), translation]);
   }
@@ -640,76 +705,67 @@ async function needsRetranslating(
   return rows[0]?.stale === true;
 }
 
-/** The most components a space's translation report names (API-058): capped, and said so. */
-export const TRANSLATION_REPORT_MOST = 500;
-
 /**
- * **A space's translations** (the TR plan, TR-M; LOC-016): each component of it the principal may
- * read that has a translation, by its title, with each translation's status - filtered to what may
- * be read before anything is counted or capped - at most `TRANSLATION_REPORT_MOST`, and whether more.
+ * **A space's translations** (the TR plan, TR-M; the TE plan, TE-C; LOC-016): each component of it the
+ * principal may read with a translation `filter` leaves, a page at a time by its title in the reader's
+ * collation and then its id (UI-H), each with those translations. Read-filtered, and filtered by
+ * language and status, in SQL before anything is paged (API-058), so no page but the last is short.
  */
 export async function spaceTranslations(
   trx: TenantTransaction,
   spaceId: string,
   principalId: string,
-  /** The reader's language, whose collation the titles sort in (UI-H; LOC-003). */
-  language?: InterfaceLanguage,
-): Promise<{
-  readonly items: readonly {
+  request: ListingRequest<SortOf<'translations'>>,
+  filter: TranslationFilter = {},
+): Promise<
+  Listed<{
     readonly component: { readonly id: string; readonly title: string };
     readonly translations: readonly Translation[];
-  }[];
-  readonly capped: boolean;
-}> {
-  if (!UUID.test(spaceId) || !(await translationStored(trx))) return { items: [], capped: false };
-  const held = await trx
-    .selectFrom('artifact_line as l')
-    .innerJoin('artifact as a', 'a.id', 'l.artifact_id')
-    .select('l.artifact_id')
-    .distinct()
-    .where('a.space_id', '=', spaceId)
-    .where('l.language', 'is not', null)
-    .where(({ not, exists, selectFrom }) =>
-      not(
-        exists(
-          selectFrom('line_closed as c').select('c.line_id').whereRef('c.line_id', '=', 'l.id'),
-        ),
-      ),
-    )
-    .execute();
-  const readable = await readableComponents(
+  }>
+> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.translations.title;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  const readable = await loadReadableSet(trx, principalId);
+  if (!UUID.test(spaceId) || !readable || !(await translationStored(trx))) {
+    return { items: [], next: null, snapshot };
+  }
+  const inner = sql`
+    select a.id, latest.title, ${sql.join(sortColumns([sql`latest.title`]))}
+      from artifact a
+      join lateral (
+        select v.content ->> 'title' as title from artifact_version v
+         where v.artifact_id = a.id and v.line_id is null and ${visibleIn('v.written_by', snapshot)}
+         order by v.revision_no desc, v.version_no desc limit 1
+      ) latest on true
+     where a.space_id = ${spaceId}::uuid and a.kind = 'component'
+       and ${readableArtifactsAs('a', readable)}
+       and ${(await deletionStored(trx)) ? notDeletedAs('a') : sql`true`}
+       and exists (select 1 from (${await translationLines(trx)}) as t
+                    where t.artifact_id = a.id and ${filtered(filter)})`;
+  const { rows, next } = await keysetPage<{ id: string; title: string }>(
     trx,
-    principalId,
-    held.map((row) => row.artifact_id),
+    inner,
+    types,
+    request.order ?? order,
+    limit,
+    request.after,
+    request.language,
   );
-  const ids = [...readable];
-  const titles = await trx
-    .selectFrom('artifact_version as v')
-    .select(['v.artifact_id', sql<string>`v.content ->> 'title'`.as('title')])
-    .distinctOn('v.artifact_id')
-    .where('v.artifact_id', 'in', ids.length === 0 ? ['00000000-0000-4000-8000-000000000000'] : ids)
-    .where('v.line_id', 'is', null)
-    .orderBy('v.artifact_id')
-    .orderBy('v.revision_no', 'desc')
-    .orderBy('v.version_no', 'desc')
-    .execute();
-  // Ordered and capped before any status is read, so the cap bounds the work (the TR final review).
-  const collator = new Intl.Collator(
-    language === undefined ? undefined : INTERFACE_COLLATIONS[language],
-  );
-  const ordered = [...titles].sort(
-    (a, b) => collator.compare(a.title, b.title) || a.artifact_id.localeCompare(b.artifact_id),
-  );
-  const named = ordered.slice(0, TRANSLATION_REPORT_MOST);
   const statuses = await translationsOf(
     trx,
-    named.map((row) => row.artifact_id),
+    rows.map((row) => row.id),
+    filter,
   );
   return {
-    items: named.map((row) => ({
-      component: { id: row.artifact_id, title: row.title },
-      translations: statuses.get(row.artifact_id) ?? [],
+    items: rows.map((row) => ({
+      component: { id: row.id, title: row.title },
+      translations: statuses.get(row.id) ?? [],
     })),
-    capped: ordered.length > TRANSLATION_REPORT_MOST,
+    next,
+    snapshot,
   };
 }

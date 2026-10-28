@@ -75,6 +75,8 @@ export const listingSorts = {
   iterations: { saved: { types: ['timestamptz'], order: 'desc' } },
   // The deleted a reader may read, the latest deleted first (the DL plan, DL-H).
   deleted: { deleted: { types: ['timestamptz'], order: 'desc' } },
+  // A space's translated components, by title (LOC-016; the TE plan, TE-C).
+  translations: { title: { types: ['text'], order: 'asc' } },
   // The cohorts a reader may read, the newest first or by their titles (SCH-065; the R14 plan, R14-A).
   cohorts: {
     requested: { types: ['timestamptz'], order: 'desc' },
