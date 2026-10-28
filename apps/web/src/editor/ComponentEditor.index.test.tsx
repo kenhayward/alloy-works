@@ -3,7 +3,16 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shimRangeMeasurement } from '../test/range.js';
-import { open, json, lock, opened, quick, caretIn, blocksOf, para } from './test/componentEditor.js';
+import {
+  open,
+  json,
+  lock,
+  opened,
+  quick,
+  caretIn,
+  blocksOf,
+  para,
+} from './test/componentEditor.js';
 
 shimRangeMeasurement();
 

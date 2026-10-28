@@ -988,7 +988,8 @@ describe('the citations in the committed model', () => {
     // 2142 (2026-10-28): IXb cites PUB-041 and STR-043 four times each for the index published, and
     // REU-048 for the scan reading it.
     // 2146 (2026-10-28): IXc cites PUB-041 and STR-043 in the corpus and in the Word check.
-    expect(model.citations).toHaveLength(2146);
+    // 2151 (2026-10-28): IXd cites STR-043 three times and CNT-077 twice for the editor's index entry.
+    expect(model.citations).toHaveLength(2151);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1124,6 +1125,8 @@ describe('scanning the repository for test files', () => {
     // 138, from 137 (2026-10-23): translation/TranslationJobs.test.tsx, citing nothing until XLb claims LOC-033.
     // 140, from 138 (2026-10-26): words/words.test.tsx and words/language.test.tsx, citing LOC-005.
     // 142, from 140 (2026-10-27): parts/inline.test.tsx and editor/Icon.test.tsx, citing LOC-004.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(142);
+    // 144, from 142 (2026-10-28): editor/IndexEntryDialog.test.tsx and
+    // editor/ComponentEditor.index.test.tsx, citing STR-043 and CNT-077.
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(144);
   });
 });

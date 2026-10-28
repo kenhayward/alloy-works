@@ -1172,7 +1172,11 @@ export function ComponentEditor({
   /** Opens the Index entry dialog over `editing`, on the marker selected whole there or none (IX-M). */
   const openIndexEntry = (editing: EditorView): boolean => {
     const whole = surface !== null && !surface.isDestroyed ? surface.state.doc : editing.state.doc;
-    setIndexing({ view: editing, current: indexMarkerAt(editing.state), terms: indexTermsIn(whole) });
+    setIndexing({
+      view: editing,
+      current: indexMarkerAt(editing.state),
+      terms: indexTermsIn(whole),
+    });
     return true;
   };
   const closeIndexEntry = () => {

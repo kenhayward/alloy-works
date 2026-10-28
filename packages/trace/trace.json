@@ -24642,6 +24642,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-077",
+      "file": "apps/web/src/editor/ComponentEditor.index.test.tsx",
+      "line": 88,
+      "kind": "title"
+    },
+    {
+      "id": "STR-043",
+      "file": "apps/web/src/editor/ComponentEditor.index.test.tsx",
+      "line": 66,
+      "kind": "title"
+    },
+    {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
       "line": 846,
@@ -24758,19 +24770,25 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 220,
+      "line": 221,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 666,
+      "line": 667,
       "kind": "title"
     },
     {
       "id": "LOC-004",
       "file": "apps/web/src/editor/Icon.test.tsx",
       "line": 9,
+      "kind": "title"
+    },
+    {
+      "id": "STR-043",
+      "file": "apps/web/src/editor/IndexEntryDialog.test.tsx",
+      "line": 26,
       "kind": "title"
     },
     {
@@ -33102,6 +33120,18 @@
       "kind": "title"
     },
     {
+      "id": "CNT-077",
+      "file": "packages/editor/src/indexEntries.test.ts",
+      "line": 132,
+      "kind": "title"
+    },
+    {
+      "id": "STR-043",
+      "file": "packages/editor/src/indexEntries.test.ts",
+      "line": 55,
+      "kind": "title"
+    },
+    {
       "id": "CNT-003",
       "file": "packages/editor/src/mapping.test.ts",
       "line": 181,
@@ -33152,19 +33182,19 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 215,
+      "line": 225,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 654,
+      "line": 664,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 333,
+      "line": 343,
       "kind": "title"
     },
     {
@@ -33344,7 +33374,7 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1176,
+      "line": 1196,
       "kind": "title"
     },
     {
@@ -33392,13 +33422,13 @@
     {
       "id": "STR-035",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 319,
+      "line": 327,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 354,
+      "line": 362,
       "kind": "title"
     },
     {
@@ -33416,7 +33446,7 @@
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 153,
+      "line": 180,
       "kind": "title"
     },
     {

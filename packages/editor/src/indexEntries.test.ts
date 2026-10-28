@@ -55,9 +55,9 @@ describe('marking an index entry (the IX plan, IX-M)', () => {
   it('STR-043 places the entry an author marked, selected whole, and stores its term and sub-entry', () => {
     let next = caretAt(11);
     expect(indexMarkerPlaceable(next)).toBe(true);
-    expect(
-      insertIndexMarker(entry({ sub: 'bronze' }))(next, (tr) => (next = next.apply(tr))),
-    ).toBe(true);
+    expect(insertIndexMarker(entry({ sub: 'bronze' }))(next, (tr) => (next = next.apply(tr)))).toBe(
+      true,
+    );
     expect(next.selection).toBeInstanceOf(NodeSelection);
     expect(indexMarkerAt(next)).toEqual({ pos: 11, ...entry({ sub: 'bronze' }) });
     expect(runs(next).at(-1)).toEqual({ type: 'indexMarker', term: 'Alloy', sub: 'bronze' });
@@ -73,7 +73,11 @@ describe('marking an index entry (the IX plan, IX-M)', () => {
     expect(run(changeIndexMarker(11, entry({ term: 'Tin', seeAlso: ['Alloy', 'Bronze'] })))).toBe(
       true,
     );
-    expect(indexMarkerAt(next)).toMatchObject({ term: 'Tin', see: null, seeAlso: ['Alloy', 'Bronze'] });
+    expect(indexMarkerAt(next)).toMatchObject({
+      term: 'Tin',
+      see: null,
+      seeAlso: ['Alloy', 'Bronze'],
+    });
     expect(runs(next).at(-1)).toEqual({
       type: 'indexMarker',
       term: 'Tin',
