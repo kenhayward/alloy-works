@@ -18138,6 +18138,10 @@
           "howItIsMet": "A person's interface language is theirs, stored apart from and never read from any content's"
         },
         {
+          "id": "LOC-029",
+          "howItIsMet": "Each page and every dialog walked in both: none cut short, spilling or overlapping: [below](#the-mechanism)"
+        },
+        {
           "id": "LOC-042",
           "howItIsMet": "`en-XA` and `ar-XB` as modes, and the pseudo walk run in both"
         },
@@ -26495,7 +26499,7 @@
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/position.test.ts",
-      "line": 122,
+      "line": 146,
       "kind": "title"
     },
     {
@@ -33597,9 +33601,15 @@
       "kind": "title"
     },
     {
+      "id": "LOC-029",
+      "file": "tests/browser/src/pseudo.test.ts",
+      "line": 823,
+      "kind": "title"
+    },
+    {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 182,
+      "line": 823,
       "kind": "title"
     },
     {
