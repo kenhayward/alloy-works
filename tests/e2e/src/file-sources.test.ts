@@ -280,5 +280,6 @@ describe('HTTP and S3 sources over the whole system', () => {
     const printed = spoken((await readPdf(pdf)).taggedText.flat());
     process.stdout.write(`${JSON.stringify({ printed })}\n`);
     expect(printed).toContain('The workbook says café and the bucket says South weir.');
-  });
+    // A publish waits on the worker, so the default five seconds cut its own 60 s wait short.
+  }, 180_000);
 });
