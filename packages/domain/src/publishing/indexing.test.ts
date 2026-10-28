@@ -215,10 +215,9 @@ describe('the index assembled (IXb)', () => {
 
   it('places none under a layout without one: a marker prints nothing and fails nothing', () => {
     const document = published(
-      publish(
-        one(component(paragraph('p1', text('Seals'), marker('alloy', { see: 'nothing' })))),
-        { layout: THIRTEENTH_DEFAULT_LAYOUT },
-      ),
+      publish(one(component(paragraph('p1', text('Seals'), marker('alloy', { see: 'nothing' })))), {
+        layout: THIRTEENTH_DEFAULT_LAYOUT,
+      }),
     );
     expect(document.back.index).toBeNull();
     expect(marksOf(document)).toEqual([]);

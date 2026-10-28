@@ -2760,7 +2760,10 @@ export function assemble(given: AssembleInput): Assembled {
   // The index after them (IX-I): each marker set, located for HTML by the node whose number, or title
   // where unnumbered, heads it - the innermost holding it, else the nearest before it, else the
   // document's title (IX-D).
-  const headed = new Map<string, { readonly words: string | null; readonly parent: string | null }>();
+  const headed = new Map<
+    string,
+    { readonly words: string | null; readonly parent: string | null }
+  >();
   const order: string[] = [];
   const visit = (each: readonly PublishedNode[], parent: string | null) => {
     for (const node of each) {
