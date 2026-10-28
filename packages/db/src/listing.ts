@@ -77,6 +77,8 @@ export const listingSorts = {
   deleted: { deleted: { types: ['timestamptz'], order: 'desc' } },
   // A space's translated components, by title (LOC-016; the TE plan, TE-C).
   translations: { title: { types: ['text'], order: 'asc' } },
+  // The translation policy's changes, the newest first (LOC-036; the TE plan, TE-D).
+  translationPolicy: { changed: { types: ['timestamptz'], order: 'desc' } },
   // The cohorts a reader may read, the newest first or by their titles (SCH-065; the R14 plan, R14-A).
   cohorts: {
     requested: { types: ['timestamptz'], order: 'desc' },
