@@ -17,14 +17,14 @@ declared one; never any content's, which keeps its own language and direction.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                   |
-| ----------- | ----------------------------------------------------------------------------------------------- |
-| **LOC-003** | Every listing and the renderer's own sorts in the person's collation: [below](#collation-ui-h)  |
-| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                     |
-| **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's    |
-| **LOC-029** | The pseudo walk over every page and dialog: none cut short, spilling or over another: [below](#the-mechanism) |
-| **LOC-042** | `en-XA` and `ar-XB` as modes, and the pseudo walk run in both                                   |
-| **LOC-044** | The declared content languages and every runtime's locale data, recorded: [below](#locale-data) |
+| ID          | How it is met                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| **LOC-003** | Every listing and the renderer's own sorts in the person's collation: [below](#collation-ui-h)              |
+| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                                 |
+| **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's                |
+| **LOC-029** | Each page and every dialog walked in both: none cut short, spilling or overlapping: [below](#the-mechanism) |
+| **LOC-042** | `en-XA` and `ar-XB` as modes, and the pseudo walk run in both                                               |
+| **LOC-044** | The declared content languages and every runtime's locale data, recorded: [below](#locale-data)             |
 
 Not claimed, each answered in part:
 

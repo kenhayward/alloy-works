@@ -237,11 +237,16 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     'ControlOrMeta+Shift+e',
   ),
   // From its button: Chromium keeps Ctrl+Shift+M for itself.
-  overEditor('The symbol palette', 'editor/SymbolPalette.tsx', grace.component.id, async (page, l) => {
-    await caret(page);
-    await page.getByRole('button', { name: say(l, 'pm.command.symbol'), exact: true }).click();
-    return page.getByRole('dialog');
-  }),
+  overEditor(
+    'The symbol palette',
+    'editor/SymbolPalette.tsx',
+    grace.component.id,
+    async (page, l) => {
+      await caret(page);
+      await page.getByRole('button', { name: say(l, 'pm.command.symbol'), exact: true }).click();
+      return page.getByRole('dialog');
+    },
+  ),
   fromCaret(
     'The Condition dialog',
     'editor/ConditionDialog.tsx',
@@ -261,11 +266,16 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     grace.component.id,
     'ControlOrMeta+Shift+6',
   ),
-  overEditor('The Figure dialog', 'editor/FigureDialog.tsx', grace.component.id, async (page, l) => {
-    await caret(page);
-    await page.getByRole('button', { name: say(l, 'editor.figure'), exact: true }).click();
-    return page.getByRole('dialog', { name: say(l, 'editor.figure') });
-  }),
+  overEditor(
+    'The Figure dialog',
+    'editor/FigureDialog.tsx',
+    grace.component.id,
+    async (page, l) => {
+      await caret(page);
+      await page.getByRole('button', { name: say(l, 'editor.figure'), exact: true }).click();
+      return page.getByRole('dialog', { name: say(l, 'editor.figure') });
+    },
+  ),
   {
     // A figure's settings, from its panel with the caret in its caption.
     name: 'The Figure settings dialog',
@@ -289,7 +299,12 @@ const surfaces = (grace: Graces): readonly Surface[] => [
   ...(
     [
       ['Dates', 'lifecycle/Dates.tsx', 'lifecycle.dates', 'lifecycle.dates-of'],
-      ['Effective for', 'lifecycle/Scope.tsx', 'lifecycle.effective-for-2', 'lifecycle.effective-for-3'],
+      [
+        'Effective for',
+        'lifecycle/Scope.tsx',
+        'lifecycle.effective-for-2',
+        'lifecycle.effective-for-3',
+      ],
       ['Used in', 'reuse/UsedIn.tsx', 'reuse.used-in', 'reuse.where-is-used'],
       ['Relationships', 'reuse/Relationships.tsx', 'reuse.relationships', 'reuse.relationships-of'],
     ] as const
@@ -325,7 +340,10 @@ const surfaces = (grace: Graces): readonly Surface[] => [
   ),
   // The account's menu and what it opens.
   account('The Inbox dialog', 'account/Inbox.tsx', (page, language) =>
-    page.getByRole('group', { name: say(language, 'shell.account') }).getByRole('button').first(),
+    page
+      .getByRole('group', { name: say(language, 'shell.account') })
+      .getByRole('button')
+      .first(),
   ),
   account('The Sessions dialog', 'account/Sessions.tsx', (page, language) =>
     page.getByRole('button', { name: say(language, 'shell.sessions'), exact: true }),
@@ -337,7 +355,9 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     open: async (page, language) => {
       await page.locator('header').getByRole('button', { name: /Grace/ }).click();
       await page.getByRole('button', { name: say(language, 'shell.tokens'), exact: true }).click();
-      await page.getByRole('button', { name: say(language, 'account.new-token'), exact: true }).click();
+      await page
+        .getByRole('button', { name: say(language, 'account.new-token'), exact: true })
+        .click();
       return page.getByRole('dialog', { name: say(language, 'account.new-token') });
     },
   },
@@ -446,12 +466,17 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     ['Search', '#/search', 'search.search'],
   ]),
   // Last: typing claims the component's lock and leaves it changed, which nothing after it wants.
-  overEditor('The Saved text dialog', 'editor/RecoveryPanel.tsx', grace.component.id, async (page, l) => {
-    await caret(page);
-    await page.keyboard.type(' ');
-    await page.getByRole('button', { name: say(l, 'editor.saved-text'), exact: true }).click();
-    return page.getByRole('dialog', { name: say(l, 'editor.saved-text') });
-  }),
+  overEditor(
+    'The Saved text dialog',
+    'editor/RecoveryPanel.tsx',
+    grace.component.id,
+    async (page, l) => {
+      await caret(page);
+      await page.keyboard.type(' ');
+      await page.getByRole('button', { name: say(l, 'editor.saved-text'), exact: true }).click();
+      return page.getByRole('dialog', { name: say(l, 'editor.saved-text') });
+    },
+  ),
 ];
 
 /** Administration's sections, and what administering opens, walked by Ada. */
@@ -491,7 +516,9 @@ const administration = (ada: Adas): readonly Surface[] => [
     open: async (page, language) => {
       // By the keyboard: a row scrolled under the header opens its menu there, out of the pointer's reach.
       await page
-        .getByRole('button', { name: say(language, 'parts.more-actions-for', { subject: 'Grace' }) })
+        .getByRole('button', {
+          name: say(language, 'parts.more-actions-for', { subject: 'Grace' }),
+        })
         .first()
         .press('Enter');
       await page.getByRole('menuitem', { name: say(language, 'admin.erase-2') }).press('Enter');
@@ -568,7 +595,9 @@ const administration = (ada: Adas): readonly Surface[] => [
       await page
         .getByRole('button', { name: say(language, 'translation.translate-titles'), exact: true })
         .click();
-      return page.getByRole('dialog', { name: say(language, 'translation.titles-in', { language: 'fr' }) });
+      return page.getByRole('dialog', {
+        name: say(language, 'translation.titles-in', { language: 'fr' }),
+      });
     },
   },
   byButton(
@@ -576,9 +605,12 @@ const administration = (ada: Adas): readonly Surface[] => [
     'structure/TemplateLine.tsx',
     `#/documents/${ada.templated}`,
     (page, language) =>
-      page.getByRole('button', { name: say(language, 'document.move-to-version', { number: '0.2' }) }),
+      page.getByRole('button', {
+        name: say(language, 'document.move-to-version', { number: '0.2' }),
+      }),
     'document.move-to-version',
-    (language) => say(language, 'document.move-to-version-2', { name: ada.template, number: '0.2' }),
+    (language) =>
+      say(language, 'document.move-to-version-2', { name: ada.template, number: '0.2' }),
     { number: '0.2' },
   ),
   {
@@ -657,7 +689,6 @@ async function graces(): Promise<Graces> {
     ).id,
   };
 }
-
 
 /** What Ada's walk needs: her own component and document, a template and a webhook. */
 async function adas(): Promise<Adas> {

@@ -378,9 +378,11 @@ export function MarkPrompt({
           ))}
           {shown !== null && (
             <p className={styles['note']}>
-              {shape.goesOn} <mark className={styles['selected']} data-content>
+              {shape.goesOn}{' '}
+              <mark className={styles['selected']} data-content>
                 {shown}
-              </mark>.
+              </mark>
+              .
             </p>
           )}
           {removable && (
