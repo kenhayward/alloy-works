@@ -166,7 +166,7 @@ export const editorSchema = new Schema({
       // list, a quotation, a table's cell. A cross-reference and an equation stand here as in every
       // inline home (cross-references 1, ruling R4; equations 1, ruling R3).
       content:
-        '(text | image | footnote | crossReference | citation | equation | binding | variable)*',
+        '(text | image | footnote | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -296,7 +296,7 @@ export const editorSchema = new Schema({
      * is what makes a term inline content rather than a string.
      */
     term: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'dt' }],
@@ -460,7 +460,7 @@ export const editorSchema = new Schema({
      * Isolating, as a table's note is, so a Backspace at its start reaches nothing above it.
      */
     boundTableEmpty: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -489,7 +489,7 @@ export const editorSchema = new Schema({
     },
     /** A bound table's source (TAB-027): beneath the table and its note, isolating as they are. */
     boundTableSource: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -501,7 +501,7 @@ export const editorSchema = new Schema({
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
@@ -514,7 +514,7 @@ export const editorSchema = new Schema({
      * never reaches into the table above it.
      */
     tableNote: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -606,7 +606,7 @@ export const editorSchema = new Schema({
     },
     /** A figure's caption: inline content below the image, typed in place as a table's is. */
     figureCaption: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
@@ -682,7 +682,7 @@ export const editorSchema = new Schema({
      * is the mapping's second spelling of it, as `definitionList` is of a list.
      */
     footnoteParagraph: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
@@ -751,6 +751,27 @@ export const editorSchema = new Schema({
         { class: 'aw-citation', 'data-citation': '' },
         say('citation.placeholder'),
       ],
+    },
+    /**
+     * An index marker (the IX plan, IX-E): inline, an atom, carrying its term, and its sub-entry,
+     * "see" and "see also" null where it has none. **No marks**, and it stands wherever a citation
+     * does, never in preformatted text or a title. It prints nothing, so `toDOM` draws nothing a
+     * read-only rendering or a copy would read; the chip is IX-M's. No `parseDOM`, for a footnote's
+     * reason.
+     */
+    indexMarker: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      attrs: {
+        term: {},
+        sub: { default: null },
+        see: { default: null },
+        seeAlso: { default: null },
+      },
+      toDOM: () => ['span', { class: 'aw-index-marker', 'data-index-marker': '' }],
     },
     /**
      * A binding (the B1 plan, B1-B; bindings.md, "The node"): inline, an atom, carrying the stored
@@ -870,7 +891,7 @@ export const editorSchema = new Schema({
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
-      content: '(text | crossReference | citation | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],

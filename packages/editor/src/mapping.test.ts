@@ -1469,3 +1469,78 @@ describe('a citation through the mapping (the CI plan, CId)', () => {
     expect(node.spec.parseDOM).toBeUndefined();
   });
 });
+
+describe('an index marker through the mapping (the IX plan, IX-F)', () => {
+  const marker = { type: 'indexMarker' as const, term: 'Alloy', sub: 'tempering' };
+  const see = { type: 'indexMarker' as const, term: 'Metal', see: 'Alloy' };
+  const seeAlso = { type: 'indexMarker' as const, term: 'Steel', seeAlso: ['Alloy', 'Iron'] };
+
+  it('opens for editing a component marking entries in a paragraph, a footnote, a cell, a caption, a term and an attribution, and stores each with every member, absent ones absent', () => {
+    const stored = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'p0',
+          style: 'body',
+          content: [
+            { type: 'text', value: 'An alloy', marks: [] },
+            marker,
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'fp1', style: 'body', content: [see] }],
+            },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [{ type: 'text', value: 'Grades ', marks: [] }, seeAlso],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [{ type: 'paragraph', id: 'c1', style: 'body', content: [marker] }],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'definition',
+          items: [
+            {
+              term: [{ type: 'text', value: 'Alloy', marks: [] }, marker],
+              content: [{ type: 'paragraph', id: 'l1p', style: 'body', content: [see] }],
+            },
+          ],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('q1p', 'Words.')],
+          attribution: [{ type: 'text', value: 'Ada', marks: [] }, seeAlso],
+        },
+      ]),
+    );
+    const opened = openedDoc(stored);
+    expect(() => opened.check()).not.toThrow();
+    expect(fromEditor(opened)).toEqual(stored);
+  });
+
+  it('is an inline atom with no marks, never in preformatted text or a title, never guessed from an element', () => {
+    const node = editorSchema.nodes.indexMarker!;
+    expect(editorSchema.nodes.preformatted!.contentMatch.matchType(node)).toBeNull();
+    expect(node.spec.marks).toBe('');
+    expect(node.isAtom && node.isInline).toBe(true);
+    expect(node.spec.parseDOM).toBeUndefined();
+  });
+});

@@ -131,7 +131,8 @@ function marksWithNoType(
       inline.type === 'equation' ||
       inline.type === 'binding' ||
       inline.type === 'variable' ||
-      inline.type === 'citation'
+      inline.type === 'citation' ||
+      inline.type === 'indexMarker'
     ) {
       continue;
     }
@@ -267,6 +268,18 @@ function toRun(inline: InlineNode): Node[] {
     // Its entry, and its locator null where none is stored (CId).
     return [
       editorSchema.nodes.citation!.create({ entry: inline.entry, locator: inline.locator ?? null }),
+    ];
+  }
+  if (inline.type === 'indexMarker') {
+    // Each member null where none is stored (the IX plan, IX-F).
+    const { term, sub, see, seeAlso } = inline;
+    return [
+      editorSchema.nodes.indexMarker!.create({
+        term,
+        sub: sub ?? null,
+        see: see ?? null,
+        seeAlso: seeAlso ?? null,
+      }),
     ];
   }
   if (inline.type === 'equation') {
@@ -566,6 +579,18 @@ function runsOf(textblock: Node, id: string): unknown[] {
       // Its locator only where one was typed: absent is the stored spelling of none.
       const { entry, locator } = child.attrs;
       runs.push({ type: 'citation', entry, ...(locator === null ? {} : { locator }) });
+      return;
+    }
+    if (child.type.name === 'indexMarker') {
+      // Each member only where it has one: absent is the stored spelling of none.
+      const { term, sub, see, seeAlso } = child.attrs;
+      runs.push({
+        type: 'indexMarker',
+        term,
+        ...(sub === null ? {} : { sub }),
+        ...(see === null ? {} : { see }),
+        ...(seeAlso === null ? {} : { seeAlso }),
+      });
       return;
     }
     if (child.type.name === 'equation') {
