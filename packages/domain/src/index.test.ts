@@ -1037,6 +1037,14 @@ describe('the domain package', () => {
         // UIb: what each sorts by, and which a request names.
         'INTERFACE_COLLATIONS',
         'interfaceLanguageOf',
+        // TEc: the declared content languages, how they are derived, and the CLDR they come from.
+        'CONTENT_LANGUAGES',
+        'CONTENT_LANGUAGES_CLDR',
+        'DECLARED_SCRIPTS',
+        'declaredLanguageOf',
+        'deriveContentLanguages',
+        'exemplarCodePoints',
+        'renderContentLanguages',
         // XLc: machine drafts and the policy that sends them.
         'TRANSLATE_INSTRUCTIONS',
         'TRANSLATE_INSTRUCTIONS_VERSION',
