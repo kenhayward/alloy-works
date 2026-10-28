@@ -20,6 +20,8 @@ interface Surface {
   readonly regions: readonly string[];
   /** What shows once the surface is drawn, in the language walked. */
   readonly ready: (page: Page, language: Language) => Locator;
+  /** What opens the surface once drawn, where it is a dialog over another. */
+  readonly open?: (page: Page, language: Language) => Promise<void>;
 }
 
 type Language = 'en-XA' | 'ar-XB';
@@ -53,6 +55,25 @@ const surfaces = (component: string): readonly Surface[] => [
     regions: ['main'],
     ready: (page, language) =>
       page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
+  },
+  {
+    // The Index entry dialog over the marker's chip, which says its words in the language (IX-M).
+    name: 'The Index entry dialog',
+    address: `#/components/${component}`,
+    regions: ['[role="dialog"]'],
+    ready: (page, language) =>
+      page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
+    open: async (page, language) => {
+      const chip = page.locator('[data-index-marker]');
+      expect
+        .soft(await chip.textContent(), 'The index entry chip: its words')
+        .toBe(
+          `${say(language, 'pm.index.chip', { entry: 'Newt' })} ${say(language, 'pm.index.prints-nothing')}`,
+        );
+      await chip.click();
+      await page.keyboard.press('ControlOrMeta+Shift+1');
+      await page.getByRole('dialog', { name: say(language, 'editor.index-entry') }).waitFor();
+    },
   },
   ...listed([
     ['The prompts', '#/prompts', 'prompts.prompts'],
@@ -97,7 +118,12 @@ async function walk(language: Language) {
   );
   const cookie = await signInFromNode('grace');
   const component = await makeComponent(await apiAs('grace'), 'Pseudo', [
-    { type: 'paragraph', id: 'b1', style: 'body', content: words('The pond survey found newts.') },
+    {
+      type: 'paragraph',
+      id: 'b1',
+      style: 'body',
+      content: [...words('The pond survey found newts.'), { type: 'indexMarker', term: 'Newt' }],
+    },
   ]);
   await walkAs(cookie, language, surfaces(component.id));
   await walkAs(await signInFromNode('ada'), language, administration);
@@ -118,6 +144,7 @@ async function walkAs(cookie: string, language: Language, walked: readonly Surfa
             .catch(() => false);
           expect.soft(drawn, `${surface.name}: never drawn in ${language}`).toBe(true);
           if (!drawn) continue;
+          await surface.open?.(page, language);
           expect.soft(await page.evaluate(() => document.documentElement.lang)).toBe(language);
           expect
             .soft(await page.evaluate(() => document.documentElement.dir))

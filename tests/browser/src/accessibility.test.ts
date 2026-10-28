@@ -897,6 +897,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           .filter({ has: page.getByRole('math', { name: 'a over b' }) }),
       );
       await at(
+        'an index entry chosen',
+        surface.locator('[data-index-marker]'),
+        [],
+        surface.locator('.ProseMirror-selectednode[data-index-marker]'),
+      );
+      await at(
         'an inline equation chosen',
         surface.getByRole('math').first(),
         [],
@@ -937,6 +943,20 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const cite = page.getByRole('dialog', { name: 'Cite' });
       await check('the Cite dialog', {
         shows: [cite.getByRole('searchbox'), cite.getByRole('radio').first()],
+      });
+      await closeDialog(page);
+
+      // The Index entry dialog, on the marker selected, the component's terms offered (IX-M).
+      await surface.locator('[data-index-marker]').click();
+      await page.keyboard.press('ControlOrMeta+Shift+1');
+      const indexing = page.getByRole('dialog', { name: 'Index entry' });
+      await check('the Index entry dialog', {
+        shows: [indexing.getByRole('combobox', { name: 'Term' })],
+      });
+      await indexing.getByRole('radio', { name: 'This place, and see also other terms' }).click();
+      await indexing.getByRole('button', { name: 'Change' }).click();
+      await check('the Index entry dialog refusing an empty "see also"', {
+        shows: [indexing.getByRole('alert')],
       });
       await closeDialog(page);
 

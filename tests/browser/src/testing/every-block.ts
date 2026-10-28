@@ -104,6 +104,8 @@ export function everyBlock(figure: string, image: string): readonly unknown[] {
         },
         text(' and an equation '),
         INLINE_EQUATION,
+        // An index entry, which prints nothing and is drawn as a chip in the editor (IX-M).
+        { type: 'indexMarker', term: 'Equation', sub: 'inline' },
         text('.'),
       ],
     },
