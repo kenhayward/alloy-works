@@ -531,8 +531,8 @@ describe('writeDocx: the package (Word 1, ruling R6)', () => {
     }
   });
 
-  it('is the Word writer at word/7', () => {
-    expect(WORD_WRITER_VERSION).toBe('word/7');
+  it('is the Word writer at word/8', () => {
+    expect(WORD_WRITER_VERSION).toBe('word/8');
   });
 });
 
@@ -5559,6 +5559,95 @@ describe('writeDocx: terms, the glossary and the abbreviations (the TM plan, TMb
       (each) => each.attrs['w:val'],
     );
     expect(styled).toEqual(['mark-emphasis']);
+  });
+});
+
+describe('writeDocx: the index (the IX plan, IX-K)', () => {
+  // A backslash, built so no tool reading this file decodes it.
+  const B = String.fromCharCode(92);
+  const marker = (term: string, more: object = {}) => ({ type: 'indexMarker', term, ...more });
+  const valve = component('Valve', [
+    paragraph(
+      'c1',
+      text('Brass'),
+      marker('alloy'),
+      marker('alloy', { sub: 'brass' }),
+      marker(`a:b"c${B}d`),
+      marker('latten', { see: 'alloy' }),
+      marker('copper', { seeAlso: ['grade', 'alloy'] }),
+    ),
+    {
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [text('Readings'), marker('grade')],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        {
+          cells: [
+            { content: [paragraph('h1', text('Depth'), marker('depth'))], colspan: 1, rowspan: 1 },
+          ],
+        },
+        { cells: [{ content: [paragraph('v1', text('12'))], colspan: 1, rowspan: 1 }] },
+      ],
+    },
+  ]);
+  const indexed = () =>
+    written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The valve report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [reference('valve', 7)],
+      }),
+      occurrences: new Map([[id('valve'), valve]]),
+      layout: defaultLayout,
+    });
+
+  it("writes an XE field at each marker, its content escaped into the field's code, a see and a see also as its own switch with the layout's words", () => {
+    const { docx } = indexed();
+    expect(fieldCodes(paragraphSaying(docx, 'Brass'))).toEqual([
+      'XE "alloy"',
+      'XE "alloy:brass"',
+      `XE "a${B}:b${B}"c${B}${B}d"`,
+      `XE "latten" ${B}t "see alloy"`,
+      'XE "copper"',
+      `XE "copper" ${B}t "see also alloy; grade"`,
+    ]);
+    // Once each where a caption and a header row are written, which Word sets once.
+    const depth = all(docx.xml('word/document.xml'), 'w:p').find(
+      (each) => textOf(each) === 'Depth',
+    );
+    expect(fieldCodes(depth!)).toEqual(['XE "depth"']);
+    expect(
+      fieldCodes(first(docx.xml('word/document.xml'), 'w:body')!).filter(
+        (code) => code === 'XE "grade"',
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('PUB-041 STR-043 writes the index after the last node: its title, then an INDEX field prefilled with its entries in Index 1 and Index 2, without pages', () => {
+    const { docx } = indexed();
+    const said = paragraphs(docx);
+    const at = said.findIndex((each) => textOf(each) === 'Index');
+    expect(at).toBeGreaterThan(said.findIndex((each) => textOf(each) === 'Brass'));
+    const entries = said.slice(at + 1);
+    expect(entries.map((each) => [styleOf(each), textOf(each)])).toEqual([
+      ['Index1', `a:b"c${B}d`],
+      ['Index1', 'alloy'],
+      ['Index2', 'brass'],
+      ['Index1', 'copper, see also alloy; grade'],
+      ['Index1', 'depth'],
+      ['Index1', 'grade'],
+      ['Index1', 'latten, see alloy'],
+    ]);
+    expect(fieldCodes({ name: 'w:body', attrs: {}, children: entries })).toEqual(['INDEX']);
+    const named = all(docx.xml('word/styles.xml'), 'w:style').map(
+      (each) => each.attrs['w:styleId'],
+    );
+    expect(named).toEqual(expect.arrayContaining(['Index1', 'Index2']));
   });
 });
 

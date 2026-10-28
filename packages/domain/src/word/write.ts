@@ -25,6 +25,8 @@ import type {
   PublishedBibliography,
   PublishedBlock,
   PublishedGlossary,
+  PublishedIndex,
+  PublishedIndexHeading,
   PublishedCell,
   PublishedDocument,
   PublishedEquation,
@@ -127,9 +129,10 @@ import { spacingOverrides, type SpacingOverride } from './spacing.js';
  * so none is inherited, stands a panel's text at its padding and its fill at its indents, and draws
  * a header column's rule on both sides of its line, and `word/7` is UIf's, which splits a run where
  * the face of its style's chain setting it changes and names a style's Arabic face as its complex
- * script's in a document in Arabic script.
+ * script's in a document in Arabic script, and `word/8` is IXb's, which writes an `XE` field at each
+ * index marker and the index as an `INDEX` field after the abbreviations.
  */
-export const WORD_WRITER_VERSION = 'word/7';
+export const WORD_WRITER_VERSION = 'word/8';
 
 /** What the writer is given: `assemble`'s answer for Word, the formats asked for, and the faces. */
 export interface WordWriting {
@@ -784,6 +787,13 @@ export function writeDocx(input: WordWriting): WrittenDocx {
       .at(-1)
       ?.body.push(...writer.terms(glossary, abbreviations));
   }
+  // The index after them (IX-K).
+  if (document.back.index !== null) {
+    sections
+      .filter((section) => section.footnotes !== null)
+      .at(-1)
+      ?.body.push(...writer.index(document.back.index));
+  }
   if (front !== null) {
     front.push(...writer.listsAfterContents(generated, front.length > 0, textBlockWidth(format)));
   }
@@ -1075,6 +1085,7 @@ export function writeDocx(input: WordWriting): WrittenDocx {
           ...(generated.length === 0 ? [] : [listEntryStyle(theme)]),
           ...(notes.length === 0 ? [] : [FOOTNOTE_REFERENCE_STYLE]),
           ...(writer.termed ? [TERM_STYLE] : []),
+          ...(document.back.index === null ? [] : indexStyles(theme)),
         ],
       },
     ),
@@ -1348,6 +1359,44 @@ class Writer {
             heading(abbreviations.title),
             ...abbreviations.entries.map((each) => entry(null, each.abbreviation, each.label)),
           ]),
+    ];
+  }
+
+  /**
+   * **The index** (IX-K; STR-043, PUB-041), as the glossary is: its title in the first heading's style,
+   * outside Word's headings, then one `INDEX` field over its entries, begun in the first and ended in
+   * the last, prefilled as the contents are - each entry in `Index 1` and each sub-entry in `Index 2`,
+   * its "see" and "see also" after it in the layout's words, and no page, which only Word can know.
+   * Word builds it again from the `XE` fields when it updates its fields, in its own collation.
+   */
+  index(index: PublishedIndex): Paragraph[] {
+    this.at = '';
+    const place = this.theme.places.text;
+    const lines: { readonly style: string; readonly words: string }[] = [];
+    const said = (name: string, heading: PublishedIndexHeading) =>
+      [
+        name,
+        ...(heading.see.length === 0 ? [] : [`${index.see} ${heading.see.join('; ')}`]),
+        ...(heading.seeAlso.length === 0 ? [] : [`${index.seeAlso} ${heading.seeAlso.join('; ')}`]),
+      ].join(', ');
+    for (const entry of index.entries) {
+      lines.push({ style: INDEX_STYLES[0], words: said(entry.term, entry) });
+      for (const sub of entry.subEntries) {
+        lines.push({ style: INDEX_STYLES[1], words: said(sub.sub, sub) });
+      }
+    }
+    return [
+      this.paragraph(this.theme.roles.heading1, this.runs(index.title, this.words)),
+      ...lines.map((line, at) =>
+        this.paragraph(
+          place,
+          (at === 0 ? fieldBegin('INDEX') : '') +
+            this.inlineRuns([{ text: line.words, marks: [] }], place, this.document, null) +
+            (at === lines.length - 1 ? FIELD_END : ''),
+          { bidi: this.document.rtl },
+          line.style,
+        ),
+      ),
     ];
   }
 
@@ -3013,6 +3062,31 @@ class Writer {
         xml += to === null ? words : `<w:hyperlink w:anchor="${to.name}">${words}</w:hyperlink>`;
         continue;
       }
+      if ('indexMark' in run) {
+        // An `XE` field (IX-K), no part of a link: a "see also" writes one to locate and one to refer.
+        if (linking !== null) xml += '</w:hyperlink>';
+        linking = null;
+        const words = this.published.back.index;
+        const { term, sub, see, seeAlso } = run.indexMark;
+        const entry = `"${fieldText(term, XE_ESCAPED)}${sub === null ? '' : `:${fieldText(sub, XE_ESCAPED)}`}"`;
+        const refers = (said: string) =>
+          `XE ${entry} ${BACKSLASH}t "${fieldText(said, SWITCH_ESCAPED)}"`;
+        const codes =
+          words === null
+            ? []
+            : see !== null
+              ? [refers(`${words.see} ${see}`)]
+              : seeAlso.length > 0
+                ? [
+                    `XE ${entry}`,
+                    refers(
+                      `${words.seeAlso} ${[...seeAlso].sort(new Intl.Collator(this.published.language.lang).compare).join('; ')}`,
+                    ),
+                  ]
+                : [`XE ${entry}`];
+        for (const code of codes) xml += fieldChar('begin') + instruction(` ${code} `) + FIELD_END;
+        continue;
+      }
       if ('reference' in run) {
         // A field of its own, no part of a link before it: where it links, it links to its target.
         if (linking !== null) xml += '</w:hyperlink>';
@@ -3743,6 +3817,16 @@ function slants(face: Typeface, bold: boolean): boolean {
   return face.files.some((file) => file.posture === 'italic' && file.weight === weight);
 }
 
+/** What an `XE` field's entry escapes (IX-K): a quote, a backslash, and a colon, which is a level. */
+const XE_ESCAPED = `"${BACKSLASH}:`;
+/** What a switch's quoted text escapes: a quote and a backslash. */
+const SWITCH_ESCAPED = `"${BACKSLASH}`;
+
+/** Words as a field's quoted text, each of `escaped` after a backslash, so content reaches no switch. */
+function fieldText(words: string, escaped: string): string {
+  return [...words].map((each) => (escaped.includes(each) ? BACKSLASH + each : each)).join('');
+}
+
 /** A field's start: its instruction, then the separator its result follows. */
 function fieldBegin(code: string): string {
   return fieldChar('begin') + instruction(` ${code} `) + fieldChar('separate');
@@ -4048,6 +4132,20 @@ function listEntryStyle(theme: ResolvedTheme): string {
  * Word's mark is 6.96pt raised 4.56 where the engine's is 7.15 raised 4.98, and in a 9.35pt note its
  * number 6.00 raised 3.48 against 6.08 and 4.24, each standing where the engine's does to 0.03pt.
  */
+/** The index's entries' and sub-entries' styles (IX-K), Word's own, which an update sets them in. */
+const INDEX_STYLES = ['Index1', 'Index2'] as const;
+
+/** `index 1` and `index 2`, each running text's style hung by a step more, as Word's are. */
+function indexStyles(theme: ResolvedTheme): string[] {
+  return INDEX_STYLES.map(
+    (id, at) =>
+      `<w:style w:type="paragraph" w:styleId="${id}">` +
+      `<w:name w:val="index ${at + 1}"/><w:basedOn w:val="${theme.places.text}"/>` +
+      '<w:uiPriority w:val="99"/><w:unhideWhenUsed/>' +
+      `<w:pPr><w:ind w:left="${220 * (at + 1)}" w:hanging="220"/></w:pPr></w:style>`,
+  );
+}
+
 /** The term style (TMb), named and stating nothing, where a term's run is no mark's. */
 const TERM = 'Term';
 const TERM_STYLE =
