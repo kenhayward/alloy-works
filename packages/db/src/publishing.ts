@@ -3163,7 +3163,10 @@ async function localeDataStored(trx: TenantTransaction): Promise<boolean> {
 }
 
 /** The locale data a publication recorded (TE-F), where 0171 has run. */
-async function localeDataOf(trx: TenantTransaction, publication: string): Promise<LocaleData | null> {
+async function localeDataOf(
+  trx: TenantTransaction,
+  publication: string,
+): Promise<LocaleData | null> {
   if (!(await localeDataStored(trx))) return null;
   const { rows } = await sql<{ locale_data: LocaleData | null }>`
     select locale_data from publication where id = ${publication}`.execute(trx);
