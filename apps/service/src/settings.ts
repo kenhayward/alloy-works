@@ -6,17 +6,21 @@ import type {
   ImportSettings,
   TranslationSettings,
   TranslationSettingsBody,
+  TranslationSettingsHistory,
+  TranslationSettingsHistoryQuery,
 } from '@alloy-works/api-contract';
 import {
   dataPolicy,
   editingPolicy,
   importPolicy,
+  lockTranslationPolicy,
   recordEvent,
   setDataPolicy,
   setEditingPolicy,
   setImportPolicy,
   setTranslationPolicy,
   translationPolicy,
+  translationPolicyHistory,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
@@ -25,6 +29,7 @@ import { limitCeilings, runsAtOnce } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
 import { AppError } from './errors.js';
+import { cursorFor, languageOf, pageAsked } from './listing.js';
 
 /**
  * Records the settings a change changed (ADM-002; the AU1 plan, AU1-I), by name and never by value:
@@ -119,12 +124,18 @@ export function settingsHandlers(
     getTranslationSettings: async (request: FastifyRequest): Promise<TranslationSettings> =>
       db.withTenant(tenantOf(request), (trx) => translationPolicy(trx)),
 
+    // Read under the policy's lock (TE-D), so two changes at once take turns and neither's history
+    // row is lost; the history gains one where a value changed, by whom.
     setTranslationSettings: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, principalId }: Authorised,
     ): Promise<TranslationSettings> => {
-      const before = await translationPolicy(trx);
-      const after = await setTranslationPolicy(trx, request.body as TranslationSettingsBody);
+      const before = await lockTranslationPolicy(trx);
+      const after = await setTranslationPolicy(
+        trx,
+        request.body as TranslationSettingsBody,
+        principalId,
+      );
       // The words by language compared as a whole, so an unchanged note is no change.
       const compared = (policy: TranslationSettings) => ({
         ...policy,
@@ -132,6 +143,36 @@ export function settingsHandlers(
       });
       await recordSettingsChanged(trx, 'translation', compared(before), compared(after));
       return after;
+    },
+
+    // The policy's history (TE-D; LOC-036), the newest first: its values, as they are enumerations
+    // and the mark's words, never secrets, to an administrator of the environment.
+    getTranslationSettingsHistory: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<TranslationSettingsHistory> => {
+      const asked = pageAsked(
+        'translationPolicy',
+        request.query as TranslationSettingsHistoryQuery,
+        languageOf(request),
+      );
+      const listed = await translationPolicyHistory(trx, asked);
+      return {
+        items: listed.items.map((each) => ({
+          id: each.id,
+          at: each.at.toISOString(),
+          by: each.by && { ...each.by },
+          policy: each.policy,
+        })),
+        next: cursorFor(
+          'translationPolicy',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
+      };
     },
 
     // The tenant's lowered limits on a run (D2-N; DAT-050): read by anybody signed in, as a limit a

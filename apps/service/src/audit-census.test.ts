@@ -514,6 +514,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setImportSettings: writes('settings.changed'),
   getTranslationSettings: read,
   setTranslationSettings: writes('settings.changed'),
+  getTranslationSettingsHistory: read,
   listTokens: read,
   createToken: writes('token.issued'),
   revokeToken: writes('token.revoked'),

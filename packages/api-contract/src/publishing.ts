@@ -416,6 +416,12 @@ export const PublicationView = PublicationSummary.extend({
     .nullable()
     .describe("The PDF's template; none where the publication has no PDF"),
   pipeline: z.string(),
+  translationPolicy: z
+    .object({ change: z.string(), at: z.string() })
+    .nullable()
+    .describe(
+      "The change to the environment's translation policy a publish in a language was decided under, and when that change was made (`getTranslationSettingsHistory`); null for one in its document's own language, one from a baseline, or one made before the policy kept its history",
+    ),
   outputs: z
     .array(
       z.discriminatedUnion('format', [

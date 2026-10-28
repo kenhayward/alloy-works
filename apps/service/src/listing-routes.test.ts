@@ -648,6 +648,7 @@ describe('the listings through the service', () => {
       listTemplates: '/v1/templates',
       listConnections: '/v1/connections',
       listTenantExports: '/v1/exports',
+      getTranslationSettingsHistory: '/v1/settings/translation/history',
       listDatasetSources: '/v1/datasets',
       listQueryDefinitions: '/v1/query-definitions',
       listPrompts: '/v1/prompts',

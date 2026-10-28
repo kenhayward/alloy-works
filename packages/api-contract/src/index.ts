@@ -460,6 +460,9 @@ export {
   ImportSettings,
   TranslationSettings,
   TranslationSettingsBody,
+  TranslationSettingsChange,
+  TranslationSettingsHistory,
+  TranslationSettingsHistoryQuery,
 } from './settings.js';
 export {
   InvitationBody,

@@ -1919,6 +1919,10 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { fallback: 'refuse', outOfDate: 'publish', note: {} },
     }),
+    getTranslationSettingsHistory: () => ({
+      url: '/v1/settings/translation/history',
+      status: 403,
+    }),
     createAssetUpload: () => ({
       url: `/v1/spaces/${clinical}/asset-uploads`,
       status: 404,

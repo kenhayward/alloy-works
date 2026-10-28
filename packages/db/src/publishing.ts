@@ -3000,6 +3000,11 @@ export interface StoredPublication {
   readonly engine: { readonly name: 'typst'; readonly version: string } | null;
   readonly template: { readonly name: 'publication'; readonly version: number } | null;
   readonly pipelineVersion: string;
+  /**
+   * The translation policy's change it was decided under, and when that change was made (TE-D;
+   * LOC-036); none for one in its document's own language, a baseline's, or one before 0170.
+   */
+  readonly translationPolicy: { readonly change: string; readonly at: Date } | null;
   /** One per format, in the order the formats are named: the PDF first. */
   readonly outputs: readonly {
     /** A format it names, or `provenance.json` beside them where it holds a value (B3-G). */
@@ -3097,6 +3102,7 @@ export async function readPublication(
     format === 'provenance' ? row.formats.length : row.formats.indexOf(format);
   return {
     ...summaryOf(row),
+    translationPolicy: await policyDecidedUnder(trx, id),
     outputs: outputs
       .sort((a, b) => order(a.format) - order(b.format))
       .map((each) => ({
@@ -3114,6 +3120,24 @@ export async function readPublication(
         checkGaveUp: givenUp.some((row) => row.format === each.format),
       })),
   };
+}
+
+/** The policy change a publication's request was decided under (TE-D), where 0170 has run. */
+async function policyDecidedUnder(
+  trx: TenantTransaction,
+  publication: string,
+): Promise<{ readonly change: string; readonly at: Date } | null> {
+  const { rows: stands } = await sql<{
+    present: boolean;
+  }>`select to_regclass('translation_policy_change') is not null as present`.execute(trx);
+  if (stands[0]?.present !== true) return null;
+  const { rows } = await sql<{ change: string; at: Date }>`
+    select c.id as change, c.at
+      from publication p
+      join publication_request r on r.id = p.request_id
+      join translation_policy_change c on c.id = r.policy_change
+     where p.id = ${publication}`.execute(trx);
+  return rows[0] ?? null;
 }
 
 /** A check as it is stored: 0040's checks hold its failed rules to their shape. */
