@@ -382,11 +382,12 @@ export function applyEdits(
       const problem = editableProblem(replaced);
       if (problem)
         return { ok: false, problem: `Block ${edit.replace} cannot be replaced. ${problem}` };
-      const [first, ...rest] = made;
+      const [made1, ...rest] = made;
+      const first = withMarkers(made1!, markersIn(replaced));
       const kept =
-        first!.type === 'paragraph' && replaced.type === 'paragraph'
-          ? { ...first!, id: replaced.id, style: replaced.style }
-          : { ...first!, id: replaced.id };
+        first.type === 'paragraph' && replaced.type === 'paragraph'
+          ? { ...first, id: replaced.id, style: replaced.style }
+          : { ...first, id: replaced.id };
       blocks = [...blocks.slice(0, index), kept as BlockNode, ...rest, ...blocks.slice(index + 1)];
     } else {
       const index = edit.insertAfter === null ? -1 : at(edit.insertAfter);
@@ -398,6 +399,40 @@ export function applyEdits(
   }
   if (blocks.length === 0) return { ok: false, problem: 'A component keeps at least one block.' };
   return { ok: true, content: { ...content, content: blocks } };
+}
+
+/** The index markers a block holds, in reading order. */
+function markersIn(block: BlockNode): InlineNode[] {
+  const paragraphs =
+    block.type === 'paragraph'
+      ? [block]
+      : block.type === 'list'
+        ? block.items.flatMap((item) => item.content)
+        : [];
+  return paragraphs.flatMap((each) =>
+    each.type === 'paragraph' ? each.content.filter((node) => node.type === 'indexMarker') : [],
+  );
+}
+
+/**
+ * A replacement with the replaced block's index markers at the end of its first paragraph (the IX
+ * plan, IXd): the model is never shown one, so it cannot write one back, and an entry is not lost
+ * to a reworded paragraph.
+ */
+function withMarkers(block: BlockNode, markers: readonly InlineNode[]): BlockNode {
+  if (markers.length === 0) return block;
+  if (block.type === 'paragraph') return { ...block, content: [...block.content, ...markers] };
+  if (block.type !== 'list' || block.items.length === 0) return block;
+  const [item, ...items] = block.items;
+  const [paragraph, ...after] = item!.content;
+  if (paragraph?.type !== 'paragraph') return block;
+  return {
+    ...block,
+    items: [
+      { ...item!, content: [withMarkers(paragraph, markers) as typeof paragraph, ...after] },
+      ...items,
+    ],
+  };
 }
 
 /** A citation the model made, `[[COMPONENT#BLOCK]]` (G2-G). */
