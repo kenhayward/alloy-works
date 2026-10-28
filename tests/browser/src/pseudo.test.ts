@@ -718,8 +718,7 @@ async function settled(dialog: Locator): Promise<void> {
   }
 }
 
-async function walkAs(cookie: string, language: Language, all: readonly Surface[]) {
-  const walked = all.filter((each) => new RegExp(process.env['PSEUDO_ONLY'] ?? '').test(each.name)); // TEMP
+async function walkAs(cookie: string, language: Language, walked: readonly Surface[]) {
   await chooseLanguage(cookie, language);
   try {
     await withPage(
@@ -749,9 +748,10 @@ async function walkAs(cookie: string, language: Language, all: readonly Surface[
                 await settled(dialog);
                 return true;
               })
-              // What failed and what it waited for, without the call log's long tail.
-              .catch(async (error: unknown) => {
-                return String(error).split('\n').slice(0, 3).join(' ');
+              // What failed, and the call log's last word on why.
+              .catch((error: unknown) => {
+                const said = String(error).split('\n');
+                return `${said[0]} ${said.at(-1)}`;
               });
             expect.soft(shown, `${surface.name}: never opened in ${language}`).toBe(true);
             if (shown !== true) continue;
