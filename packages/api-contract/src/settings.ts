@@ -280,7 +280,10 @@ export const settingsRoutes = {
     access: { check: 'permission', permission: 'administer', target: { tenant: true } },
     query: TranslationSettingsHistoryQuery,
     responses: {
-      200: { description: 'A page of changes, the newest first', schema: TranslationSettingsHistory },
+      200: {
+        description: 'A page of changes, the newest first',
+        schema: TranslationSettingsHistory,
+      },
       400: { description: 'A limit or a cursor that is not one', schema: ErrorBody },
       401: unauthenticated,
       403: { description: 'The caller may not administer this environment', schema: ErrorBody },

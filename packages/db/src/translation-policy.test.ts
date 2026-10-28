@@ -94,7 +94,10 @@ describe("the translation policy's history (the TE plan, TE-D)", () => {
     );
     const after = await history();
     expect(after.items.map((each) => [each.policy, each.by])).toEqual([
-      [{ ...changed, note: {} }, { id: grace, displayName: 'Grace' }],
+      [
+        { ...changed, note: {} },
+        { id: grace, displayName: 'Grace' },
+      ],
       [changed, { id: ada, displayName: 'Ada' }],
       [DEFAULT_TRANSLATION_POLICY, null],
     ]);
@@ -129,11 +132,7 @@ describe("the translation policy's history (the TE plan, TE-D)", () => {
       await lockTranslationPolicy(trx);
       locked();
       await held;
-      await setTranslationPolicy(
-        trx,
-        { ...DEFAULT_TRANSLATION_POLICY, fallback: 'refuse' },
-        ada,
-      );
+      await setTranslationPolicy(trx, { ...DEFAULT_TRANSLATION_POLICY, fallback: 'refuse' }, ada);
     });
     await lockedYet;
     const second = as(async (trx) => {
@@ -145,12 +144,10 @@ describe("the translation policy's history (the TE plan, TE-D)", () => {
     await Promise.all([first, second]);
     const after = (await history()).items;
     expect(after).toHaveLength(before + 2);
-    expect(after.slice(0, 2).map((each) => [each.policy.fallback, each.policy.outOfDate])).toEqual(
-      [
-        ['refuse', 'refuse'],
-        ['refuse', 'publish'],
-      ],
-    );
+    expect(after.slice(0, 2).map((each) => [each.policy.fallback, each.policy.outOfDate])).toEqual([
+      ['refuse', 'refuse'],
+      ['refuse', 'publish'],
+    ]);
     await as((trx) => setTranslationPolicy(trx, DEFAULT_TRANSLATION_POLICY, ada));
   });
 });
