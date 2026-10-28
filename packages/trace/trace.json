@@ -20424,6 +20424,10 @@
         {
           "id": "LOC-016",
           "howItIsMet": "Status shows on reference rows, the header, the listing and search; a space's report is paged and filtered"
+        },
+        {
+          "id": "LOC-036",
+          "howItIsMet": "All four policies are declared settings with stated defaults, audited, and versioned as the policy's history"
         }
       ]
     },
@@ -21339,13 +21343,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 676,
+      "line": 677,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 689,
+      "line": 690,
       "kind": "title"
     },
     {
@@ -22833,43 +22837,49 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 439,
+      "line": 440,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 374,
+      "line": 375,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "apps/service/src/publication-routes.test.ts",
+      "line": 680,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 467,
+      "line": 468,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 679,
+      "line": 698,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 621,
+      "line": 622,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 556,
+      "line": 557,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 484,
+      "line": 485,
       "kind": "rule"
     },
     {
@@ -23697,13 +23707,19 @@
     {
       "id": "LOC-033",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 517,
+      "line": 560,
       "kind": "title"
     },
     {
       "id": "LOC-035",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 517,
+      "line": 560,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 422,
       "kind": "title"
     },
     {
@@ -23973,13 +23989,13 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1541,
+      "line": 1563,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1683,
+      "line": 1705,
       "kind": "title"
     },
     {
@@ -24154,6 +24170,12 @@
       "id": "API-044",
       "file": "apps/web/src/admin/TenantExport.test.tsx",
       "line": 59,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "apps/web/src/admin/TranslationPolicy.test.tsx",
+      "line": 102,
       "kind": "title"
     },
     {
@@ -25279,9 +25301,15 @@
       "kind": "title"
     },
     {
-      "id": "PUB-004",
+      "id": "LOC-036",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
       "line": 79,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-004",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 95,
       "kind": "title"
     },
     {
@@ -25293,25 +25321,25 @@
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 830,
+      "line": 846,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 891,
+      "line": 907,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 854,
+      "line": 870,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 557,
+      "line": 573,
       "kind": "title"
     },
     {
@@ -27489,7 +27517,7 @@
     {
       "id": "LIB-036",
       "file": "packages/api-contract/src/publishing.test.ts",
-      "line": 337,
+      "line": 338,
       "kind": "title"
     },
     {
@@ -27735,13 +27763,13 @@
     {
       "id": "SCH-025",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 1032,
+      "line": 1051,
       "kind": "title"
     },
     {
       "id": "SCH-048",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 1056,
+      "line": 1075,
       "kind": "title"
     },
     {
@@ -27765,7 +27793,7 @@
     {
       "id": "VER-023",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 1072,
+      "line": 1091,
       "kind": "title"
     },
     {
@@ -27783,13 +27811,13 @@
     {
       "id": "VER-049",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 1000,
+      "line": 1019,
       "kind": "title"
     },
     {
       "id": "VER-058",
       "file": "packages/db/src/baselines.test.ts",
-      "line": 1087,
+      "line": 1106,
       "kind": "title"
     },
     {
@@ -28821,31 +28849,37 @@
     {
       "id": "LOC-010",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 239,
+      "line": 240,
       "kind": "title"
     },
     {
       "id": "LOC-017",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 358,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "LOC-024",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 505,
+      "line": 550,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "packages/db/src/publish-language.test.ts",
+      "line": 359,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 284,
+      "line": 285,
       "kind": "title"
     },
     {
       "id": "LOC-041",
       "file": "packages/db/src/publish-language.test.ts",
-      "line": 505,
+      "line": 550,
       "kind": "title"
     },
     {
@@ -29650,6 +29684,18 @@
       "id": "LOC-035",
       "file": "packages/db/src/translation-jobs.test.ts",
       "line": 377,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "packages/db/src/translation-policy-migration.test.ts",
+      "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "packages/db/src/translation-policy.test.ts",
+      "line": 68,
       "kind": "title"
     },
     {
@@ -33411,13 +33457,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1198,
+      "line": 1201,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 784,
+      "line": 787,
       "kind": "title"
     },
     {
@@ -33483,7 +33529,7 @@
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 180,
+      "line": 182,
       "kind": "title"
     },
     {
