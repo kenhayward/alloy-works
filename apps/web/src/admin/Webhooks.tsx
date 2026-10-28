@@ -159,7 +159,9 @@ function Deliveries({ client, hook }: { client: Client; hook: Hook }) {
                     </td>
                     <td>{STATES[delivery.state]}</td>
                     <td>{formats().number(delivery.attempts)}</td>
-                    <td>{moment(delivery.createdAt)}</td>
+                    <td>
+                      <time dateTime={delivery.createdAt}>{moment(delivery.createdAt)}</time>
+                    </td>
                     <td>
                       <button
                         type="button"
@@ -398,7 +400,7 @@ export function Webhooks({ client }: { client: Client }) {
                         </Chip>
                       )}
                     </td>
-                    <td>
+                    <td className={styles['wraps']}>
                       <button
                         type="button"
                         aria-label={words('admin.deliveries-to', { url: hook.url })}

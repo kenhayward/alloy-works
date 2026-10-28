@@ -230,7 +230,7 @@ export function CitationDialog({ client, space, current, onDone, onCancel }: Cit
                               checked={each.id === choice?.id}
                               onChange={() => setChosen(each.id)}
                             />
-                            {entryName(each)}
+                            <span data-content>{entryName(each)}</span>
                             {each.flag && ` (${flagSaid(each.flag, true)})`}
                           </label>
                         ))}

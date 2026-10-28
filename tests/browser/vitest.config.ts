@@ -10,6 +10,7 @@ export default defineConfig({
       'src/chromium-release.test.ts',
       'src/undecided.test.ts',
       'src/targets.test.ts',
+      'src/dialogs.test.ts',
       // The navigation budgets bind only off a shared runner (B-P), so CI does not run them.
       ...(process.env['CI'] === 'true' ? ['src/budgets.test.ts'] : []),
     ],

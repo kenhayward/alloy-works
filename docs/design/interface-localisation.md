@@ -17,20 +17,19 @@ declared one; never any content's, which keeps its own language and direction.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                   |
-| ----------- | ----------------------------------------------------------------------------------------------- |
-| **LOC-003** | Every listing and the renderer's own sorts in the person's collation: [below](#collation-ui-h)  |
-| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                     |
-| **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's    |
-| **LOC-042** | `en-XA` and `ar-XB` as modes, and the pseudo walk run in both                                   |
-| **LOC-044** | The declared content languages and every runtime's locale data, recorded: [below](#locale-data) |
+| ID          | How it is met                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| **LOC-003** | Every listing and the renderer's own sorts in the person's collation: [below](#collation-ui-h)              |
+| **LOC-004** | Laid out right to left in a right-to-left language: [below](#right-to-left)                                 |
+| **LOC-005** | A person's interface language is theirs, stored apart from and never read from any content's                |
+| **LOC-029** | Each page and every dialog walked in both: none cut short, spilling or overlapping: [below](#the-mechanism) |
+| **LOC-042** | `en-XA` and `ar-XB` as modes, and the pseudo walk run in both                                               |
+| **LOC-044** | The declared content languages and every runtime's locale data, recorded: [below](#locale-data)             |
 
 Not claimed, each answered in part:
 
 - **LOC-027**: the renderer's words are all in the catalogue, but a refusal code the renderer has no
   words for shows the service's English.
-- **LOC-029**: the pseudo walk checks pages for words cut short or spilling sideways; dialogs are not
-  walked, and elements overlapping each other are not measured.
 - **LOC-038**: superseded by LOC-044, which the [locale data](#locale-data) answers.
 
 ## The mechanism
@@ -52,8 +51,13 @@ Not claimed, each answered in part:
 - The ESLint rule `alloy/interface-words` refuses words written in place anywhere in the renderer. It
   sees JSX text and the props that say something; a word in a variable or a table is review's to
   catch, and the pseudo walk's. An icon is named, never worded (`icons-named.test.ts`).
-- The pseudo walk (`tests/browser/src/pseudo.test.ts`) walks Home, each module's page and the component
-  editor as Grace, and Administration's sections as Ada.
+- The pseudo walk (`tests/browser/src/pseudo.test.ts`) walks Home, each module's page, the component
+  editor and every dialog as Grace, and Administration's sections and what they open as Ada. Each
+  surface's words are made over, none cut short, nothing spills sideways, and no two text leaves cross
+  by more than a pixel unless neither holds the other; a dialog or popover is measured apart from its
+  page. An overlap meant by design is marked `data-overlaps="<why>"`, never a looser threshold.
+- `dialogs.test.ts` finds every renderer file drawing a dialog (a `Modal` or `ConfirmDialog` counted
+  at its caller) and fails on one neither walked nor named in its exemptions, each with its reason.
 - `packages/editor` keeps its own words in `EDITOR_WORDS`, said through `say`; the renderer merges them
   into its catalogue as `pm.<key>` and gives them back through `sayWith`, so the views ProseMirror draws
   speak the person's language. With none given, as in the package's tests, English.

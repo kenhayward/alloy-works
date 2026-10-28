@@ -671,7 +671,7 @@ export function ValueDialog({
               {shownWithCurrent.map((each) => (
                 <label key={each.id} className={own['choice']}>
                   {radio('definition', each.id, chosenId === each.id, () => choose(each.id))}
-                  {each.title}
+                  <span data-content>{each.title}</span>
                   <span className={styles['hint']}>
                     {' '}
                     {each.identity === null

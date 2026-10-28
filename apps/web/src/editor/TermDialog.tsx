@@ -154,7 +154,7 @@ export function TermDialog({
                           checked={each.id === choice?.id}
                           onChange={() => setChosen(each.id)}
                         />
-                        {named(each)}
+                        <span data-content>{named(each)}</span>
                         {each.standing === 'deprecated' && words('editor.deprecated')}
                       </label>
                     ))}

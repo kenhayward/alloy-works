@@ -268,7 +268,7 @@ export function MarkPrompt({
   // The button that is about to do something else is called something else. An alert is heard once,
   // in the instant it fires; an accessible name is heard on every focus, which is what a user who
   // tabbed to this button and is deciding whether to press it again actually has.
-  const applies = warning === null ? 'OK' : words('editor.ok-anyway');
+  const applies = warning === null ? words('editor.ok') : words('editor.ok-anyway');
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -378,7 +378,11 @@ export function MarkPrompt({
           ))}
           {shown !== null && (
             <p className={styles['note']}>
-              {shape.goesOn} <mark className={styles['selected']}>{shown}</mark>.
+              {shape.goesOn}{' '}
+              <mark className={styles['selected']} data-content>
+                {shown}
+              </mark>
+              .
             </p>
           )}
           {removable && (

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { Modal } from './Modal.js';
+import { WordsProvider } from '../words/words.js';
 
 /** A button that opens the modal, as a screen would. */
 function Opener() {
@@ -28,6 +29,21 @@ function Opener() {
 }
 
 describe('a modal', () => {
+  // Its selectors are code, never words: in a pseudo-locale they were made over and stopped parsing,
+  // and the modal threw as it opened (the TE plan, TE-G).
+  it('focuses its first field and keeps the focus inside in any interface language', async () => {
+    render(
+      <WordsProvider language="en-XA">
+        <Opener />
+      </WordsProvider>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'New thing' }));
+
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(screen.getAllByRole('button').at(-1)).toHaveFocus();
+  });
+
   it('opens as a dialog named by its heading, focusing its first field', async () => {
     render(<Opener />);
     await userEvent.click(screen.getByRole('button', { name: 'New thing' }));

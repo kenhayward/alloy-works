@@ -9,6 +9,10 @@
   padding: var(--space-40) var(--space-16);
   overflow-y: auto;
   background: var(--overlay);
+  /* Drawn where it was asked for, inside the header for the account's dialogs: its text is the page's,
+     never the header's one unwrapped line, or longer words ran into each other (the TE plan, TE-G). */
+  font-size: var(--size-14);
+  white-space: normal;
 }
 
 .dialog {
