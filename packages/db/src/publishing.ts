@@ -3026,8 +3026,8 @@ export interface StoredPublication {
   }[];
 }
 
-/** A publication as a listing shows it: its record without its outputs. */
-export type PublicationSummary = Omit<StoredPublication, 'outputs'>;
+/** A publication as a listing shows it: its record without its outputs or its policy version. */
+export type PublicationSummary = Omit<StoredPublication, 'outputs' | 'translationPolicy'>;
 
 const publicationColumns = [
   'p.id',
