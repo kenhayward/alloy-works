@@ -987,7 +987,8 @@ describe('the citations in the committed model', () => {
     // 2133 (2026-10-28): IXa cites REU-048 for an index marker in conditions.
     // 2142 (2026-10-28): IXb cites PUB-041 and STR-043 four times each for the index published, and
     // REU-048 for the scan reading it.
-    expect(model.citations).toHaveLength(2142);
+    // 2146 (2026-10-28): IXc cites PUB-041 and STR-043 in the corpus and in the Word check.
+    expect(model.citations).toHaveLength(2146);
   });
 
   it('cites no identifier the corpus does not hold', () => {

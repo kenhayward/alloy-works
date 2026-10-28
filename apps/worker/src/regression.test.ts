@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import {
   assemble,
   defaultLayout,
+  layoutIn,
   OUTLINE_SCHEMA_VERSION,
   parseContentDocument,
   parseOutlineDocument,
@@ -15,6 +16,7 @@ import {
   type OutlineNode,
   forbiddenInPreformatted,
   PUBLISHING_SCHEMA,
+  sectionNumbers,
   setWithoutAGlyph,
   writeDocx,
   writeHtml,
@@ -42,6 +44,8 @@ import {
   footnote,
   inSection,
   lettered,
+  marker,
+  nodeId,
   para,
   placing,
   Prose,
@@ -486,8 +490,8 @@ const published = async (input: Laid, charts: readonly Chart[] = []) => {
     at,
     await rootImages(input.assets, async (key) => stored.get(key)!),
   );
-  await heldAsHtml(input, stored, pdf);
-  return { assembled, pdf };
+  const html = await heldAsHtml(input, stored, pdf);
+  return { assembled, pdf, html };
 };
 
 /**
@@ -500,7 +504,7 @@ const heldAsHtml = async (
   input: Laid,
   stored: ReadonlyMap<string, Uint8Array>,
   pdf: Uint8Array,
-): Promise<void> => {
+): Promise<string | null> => {
   const assembled = assemble({
     ...input,
     formats: [...input.formats, 'html' as const],
@@ -509,7 +513,7 @@ const heldAsHtml = async (
     for (const each of assembled.failures) {
       expect(['format_unsupported', 'page_reference_without_pages']).toContain(each.code);
     }
-    return;
+    return null;
   }
   const images = await rootImages(input.assets, async (key) => stored.get(key)!);
   const write = () =>
@@ -527,7 +531,7 @@ const heldAsHtml = async (
   outputs.check(caseName(), 'html', written.bytes);
   const html = new TextDecoder().decode(written.bytes);
   const read = await readPdf(Buffer.from(pdf));
-  const printed = spokenIn(read);
+  const printed = spokenIn(read, assembled.document.back.index?.title ?? null);
   const shown = shownIn(html);
   expect(
     differing(squeezed(shown.flow), squeezed(printed.flow)),
@@ -537,6 +541,9 @@ const heldAsHtml = async (
     shown.notes.map((each) => each.map(squeezed).sort()),
     'the same notes',
   ).toEqual(printed.notes.map((each) => each.map(squeezed).sort()));
+  // The index's entries in order, each with its "see" and "see also": its locators are pages in the
+  // PDF and sections here (the IX plan, IX-D), so they are left out, and their commas with them.
+  expect(shown.index.replace(/,/g, ''), 'the same index').toBe(printed.index.replace(/,/g, ''));
   expect(shown.tables.map(characters), "the same tables' cells").toEqual(
     printed.tables.map(characters),
   );
@@ -548,6 +555,7 @@ const heldAsHtml = async (
   expect(shown.formulas.sort(), "the same equations' words").toEqual(
     read.formulas.map((each) => each.alt).sort(),
   );
+  return html;
 };
 
 /** Where two texts first differ, with a little of each from there, or null where they do not. */
@@ -566,19 +574,31 @@ const squeezed = (text: string): string => text.replace(/\s+/g, '');
  * What a reader of the PDF hears, in the order its structure tells it: its text with its running
  * matter dropped, which is an artifact and no part of the tree; and the page numbers it prints in the
  * contents and its lists, which HTML has none of; and its notes, set apart as a set for each section,
- * since the PDF sets each at the foot of its page and HTML at the end of its section (HT-I).
+ * since the PDF sets each at the foot of its page and HTML at the end of its section (HT-I). And the
+ * index apart, from its title on, squeezed and without its locators, which are links.
  */
-function spokenIn(read: Awaited<ReturnType<typeof readPdf>>): {
+function spokenIn(
+  read: Awaited<ReturnType<typeof readPdf>>,
+  indexTitle: string | null,
+): {
   flow: string;
   notes: string[][];
   tables: string[];
+  index: string;
 } {
   let flow = '';
+  let index: string | null = null;
   const notes: string[][] = [];
   const tables: string[] = [];
   let note: string | null = null;
   let inTable = false;
   for (const { text, roles } of read.spoken) {
+    // The index is the last thing set.
+    if (index === null && roles[0] === 'H1' && text.trim() === indexTitle) index = '';
+    if (index !== null) {
+      if (!roles.includes('Link')) index += squeezed(text);
+      continue;
+    }
     // A top-level section's heading starts its notes; the document's own matter before it has none.
     if (roles[0] === 'H1') notes.push([]);
     // An equation's glyphs are the maths face's, compared by their words below.
@@ -605,7 +625,7 @@ function spokenIn(read: Awaited<ReturnType<typeof readPdf>>): {
     if (roles.includes('TOCI') && /^\s*[\divxlc]+\s*$/i.test(text)) continue;
     flow += text;
   }
-  return { flow, notes: notes.filter((each) => each.length > 0), tables };
+  return { flow, notes: notes.filter((each) => each.length > 0), tables, index: index ?? '' };
 }
 
 /** A table's characters, in no order. */
@@ -624,7 +644,8 @@ const charactersOf = (markup: string): string =>
 /**
  * What a reader of the HTML file reads, as `spokenIn` says the PDF's: its body's text but the revision
  * its header says once, which the PDF's running matter carries, and each section's notes apart, each
- * after its link back; with every image's description and every equation's words.
+ * after its link back; with every image's description and every equation's words. And the index apart,
+ * squeezed and without its locators, as `spokenIn` gives the PDF's.
  */
 function shownIn(html: string): {
   flow: string;
@@ -632,11 +653,17 @@ function shownIn(html: string): {
   tables: string[];
   alternatives: string[];
   formulas: string[];
+  index: string;
 } {
   const body = html.slice(html.indexOf('<body>'), html.indexOf('</body>'));
   const notes: string[][] = [];
   const tables: string[] = [];
+  let index = '';
   const flow = body
+    .replace(/<section aria-labelledby="aw-index">[\s\S]*?<\/section>/, (section) => {
+      index = squeezed(charactersOf(section.replace(/<a\b[^>]*>[\s\S]*?<\/a>/g, '')));
+      return '';
+    })
     .replace(/<p data-role="running">[\s\S]*?<\/p>/, '')
     // What is never shown: the word a table's region is named by.
     .replace(/<(\w+)\b[^>]*\shidden=""[^>]*>[\s\S]*?<\/\1>/g, '')
@@ -665,6 +692,7 @@ function shownIn(html: string): {
     tables,
     alternatives: attribute('alt', 'img').filter((alt) => alt !== ''),
     formulas: attribute('alttext', 'math'),
+    index,
   };
 }
 
@@ -1235,6 +1263,249 @@ describe('the resolution order, in the PDF', () => {
     // Every page before the body - the contents and the lists - as a reader is told it.
     const listed = read.taggedText.slice(0, body).flat().join(' ').replace(/\s+/g, ' ');
     expect(listed).toContain('Table 1.2 Readings after Table 1.1');
+  }, 120_000);
+});
+
+/** Where `token` is first printed, by the page label a reader's page box shows. */
+const labelWhere = (read: Awaited<ReturnType<typeof readPdf>>, token: string): string => {
+  const page = read.taggedText.findIndex((each) => each.join(' ').includes(token));
+  if (page < 0) throw new Error(`${token} is printed nowhere`);
+  return read.pageLabels![page]!;
+};
+
+/**
+ * **The index's case** (the IX plan, IX-O): markers in front matter, the body, a footnote, a table's
+ * caption and its header row, with sub-entries, a "see" and a "see also"; each marker stands just
+ * after a token of its own, so the page the token is printed on is the page its locator must name.
+ */
+const indexed = () => {
+  const prose = new Prose(43);
+  return documentOf({
+    title: 'The alloy handbook',
+    theme: defaultTheme,
+    covers: fonts.covers,
+    formats: ['pdf', 'docx'],
+    nodes: [
+      placing({
+        name: 'preface',
+        component: componentId(1),
+        title: 'Preface',
+        over: { matter: 'front' },
+        content: [
+          para(
+            'p1',
+            text(`${prose.paragraph(2)} markpreface`),
+            marker('Alloy', { sub: 'history' }),
+            text(` ${prose.paragraph(2)}`),
+          ),
+        ],
+      }),
+      inSection('metals', 'Metals', [
+        placing({
+          name: 'brass',
+          component: componentId(2),
+          title: 'Brass',
+          content: [
+            para(
+              'p1',
+              text(`${prose.paragraph(3)} markbrass`),
+              marker('Alloy'),
+              marker('Brass'),
+              marker('Copper', { seeAlso: ['Bronze', 'Brass'] }),
+              marker('Latten', { see: 'Brass' }),
+              text(` ${prose.paragraph(2)}`),
+            ),
+            para(
+              'p2',
+              text(`${prose.paragraph(2)} marknote`),
+              footnote(
+                'n1',
+                para('n1p', text(`${prose.sentence()} `), marker('Zinc'), text(prose.sentence())),
+              ),
+              text(` ${prose.paragraph(1)}`),
+            ),
+            ...Array.from({ length: 6 }, (_, at) => para(`f${at}`, text(prose.paragraph(6)))),
+            table(
+              't1',
+              [text('Grades of bronze'), marker('Bronze', { sub: 'grades' })],
+              ['Grade', [text('Fraction'), marker('Tin')]],
+              [1, 2, 3, 4].map(() => [[text(prose.title(1))], [text(prose.words(1))]]),
+            ),
+          ],
+        }),
+        placing({
+          name: 'bronze',
+          component: componentId(3),
+          title: 'Bronze',
+          over: { pageBreak: 'page' },
+          content: [
+            para(
+              'p1',
+              text('markbronze'),
+              marker('Bronze'),
+              marker('Alloy', { sub: 'tempering' }),
+              marker('Alloy'),
+              text(` ${prose.paragraph(3)}`),
+            ),
+          ],
+        }),
+      ]),
+    ],
+  });
+};
+
+/** Invented French sentences, for a document in French. */
+const FRENCH = [
+  "Ada trempe l'acier avant de le polir.",
+  "Grace mesure l'etain fondu, puis le verse dans le moule.",
+];
+
+describe('the index, through the pipeline (the IX plan, IX-O)', () => {
+  it("PUB-041 STR-043 indexes markers in front matter, the body, a footnote, a table's caption and header row, each once, with sub-entries, see and see also, each locator the page its marker stands on, and veraPDF passes it", async () => {
+    const input = indexed();
+    const { assembled, pdf, html } = await published(input);
+    expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+    const read = await readPdf(pdf);
+    const [preface, brass, note, tabled, bronze] = [
+      'markpreface',
+      'markbrass',
+      'marknote',
+      'Fraction',
+      'markbronze',
+    ].map((token) => labelWhere(read, token));
+    // The bronze component begins a page, so Alloy is located on two.
+    expect(bronze).not.toBe(brass);
+    expect(squeezed(read.taggedText.flat().join(' '))).toContain(
+      squeezed(
+        [
+          'Index',
+          `Alloy, ${brass}, ${bronze}`,
+          `history, ${preface}`,
+          `tempering, ${bronze}`,
+          `Brass, ${brass}`,
+          `Bronze, ${bronze}`,
+          `grades, ${tabled}`,
+          `Copper, ${brass}, see also Brass; Bronze`,
+          'Latten, see Brass',
+          `Tin, ${tabled}`,
+          `Zinc, ${note}`,
+        ].join(' '),
+      ),
+    );
+    expect(read.bookmarks.map((each) => each.title)).toContain('Index');
+
+    // The HTML's locators are sections (IX-D), each a link to an anchor the file holds once.
+    const numbers = sectionNumbers(assembled.numbering);
+    const [front, first, second] = ['preface', 'brass', 'bronze'].map(
+      (name) => numbers.get(nodeId(name)) ?? '',
+    );
+    const section = /<section aria-labelledby="aw-index">[\s\S]*?<\/section>/.exec(html!)![0];
+    expect(squeezed(charactersOf(section))).toBe(
+      squeezed(
+        [
+          'Index',
+          `Alloy, ${first}, ${second}`,
+          `history, ${front}`,
+          `tempering, ${second}`,
+          `Brass, ${first}`,
+          `Bronze, ${second}`,
+          `grades, ${first}`,
+          `Copper, ${first}, see also Brass; Bronze`,
+          'Latten, see Brass',
+          `Tin, ${first}`,
+          `Zinc, ${first}`,
+        ].join(' '),
+      ),
+    );
+    const anchors = [...section.matchAll(/href="#(x-\d+)"/g)].map((each) => each[1]!);
+    expect(anchors.length).toBeGreaterThan(0);
+    for (const anchor of anchors) {
+      expect(html!.split(`id="${anchor}"`), anchor).toHaveLength(2);
+    }
+
+    // Word: an `XE` field at each marker, a "see also" two, none set again in a list's prefilled
+    // copy of a caption; and one `INDEX` field, which Word fills (the Word check, IX-O).
+    const { bytes } = pinnedDocx({
+      document: assembled.document,
+      numbering: assembled.numbering,
+      word: assembled.word!,
+      formats: input.formats,
+      faces,
+      images: new Map(),
+    });
+    expect(await checkOoxml(bytes)).toEqual([]);
+    const parts = unzipSync(bytes);
+    const codes = ['word/document.xml', 'word/footnotes.xml'].flatMap((name) =>
+      [...strFromU8(parts[name]!).matchAll(/<w:instrText[^>]*>([^<]*)<\/w:instrText>/g)].map(
+        (each) => each[1]!.trim().replace(/&quot;/g, '"'),
+      ),
+    );
+    // The text's in order, then the footnote's.
+    expect(codes.filter((code) => code.startsWith('XE '))).toEqual([
+      'XE "Alloy:history"',
+      'XE "Alloy"',
+      'XE "Brass"',
+      'XE "Copper"',
+      'XE "Copper" \\t "see also Brass; Bronze"',
+      'XE "Latten" \\t "see Brass"',
+      'XE "Bronze:grades"',
+      'XE "Tin"',
+      'XE "Bronze"',
+      'XE "Alloy:tempering"',
+      'XE "Alloy"',
+      'XE "Zinc"',
+    ]);
+    expect(codes.filter((code) => code.startsWith('INDEX'))).toEqual(['INDEX']);
+  }, 120_000);
+
+  it("PUB-041 sorts a French document's index in French collation, not by code point, in the layout's French words", async () => {
+    const { pdf, html } = await published(
+      documentOf({
+        title: "Le manuel de l'alliage",
+        theme: defaultTheme,
+        covers: fonts.covers,
+        language: 'fr-FR',
+        layout: layoutIn(defaultLayout, 'fr-FR')!,
+        nodes: [
+          placing({
+            name: 'metaux',
+            component: componentId(1),
+            title: 'Les metaux',
+            content: [
+              para(
+                'p1',
+                text(FRENCH[0]!),
+                marker('Zinc'),
+                marker('Étain'),
+                marker('Acier', { sub: 'trempé' }),
+                marker('Acier', { sub: 'écroui' }),
+                marker('Œillet'),
+                marker('Cuivre', { seeAlso: ['Étain', 'Acier'] }),
+                marker('Laiton', { see: 'Cuivre' }),
+                text(` ${FRENCH[1]!}`),
+              ),
+            ],
+          }),
+        ],
+      }),
+    );
+    const read = await readPdf(pdf);
+    // Accented initials among their letters, and the ligature as its two: by code point the accented
+    // and the ligature would follow Zinc.
+    const order = [
+      'Index',
+      'Acier',
+      'écroui, 1',
+      'trempé, 1',
+      'Cuivre, 1, voir aussi Acier; Étain',
+      'Étain, 1',
+      'Laiton, voir Cuivre',
+      'Œillet, 1',
+      'Zinc, 1',
+    ].join(' ');
+    expect(squeezed(read.taggedText.flat().join(' '))).toContain(squeezed(order));
+    const section = /<section aria-labelledby="aw-index">[\s\S]*?<\/section>/.exec(html!)![0];
+    expect(squeezed(charactersOf(section))).toBe(squeezed(order));
   }, 120_000);
 });
 

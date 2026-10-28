@@ -27126,33 +27126,45 @@
       "kind": "title"
     },
     {
+      "id": "PUB-041",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 1364,
+      "kind": "title"
+    },
+    {
       "id": "PUB-087",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 675,
+      "line": 703,
       "kind": "title"
     },
     {
       "id": "PUB-098",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1196,
+      "line": 1224,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 191,
+      "line": 195,
       "kind": "title"
     },
     {
       "id": "PUB-106",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1495,
+      "line": 1766,
+      "kind": "title"
+    },
+    {
+      "id": "STR-043",
+      "file": "apps/worker/src/regression.test.ts",
+      "line": 1364,
       "kind": "title"
     },
     {
       "id": "STY-008",
       "file": "apps/worker/src/regression.test.ts",
-      "line": 1503,
+      "line": 1774,
       "kind": "title"
     },
     {
@@ -27350,7 +27362,19 @@
     {
       "id": "PUB-029",
       "file": "apps/worker/src/word-check.test.ts",
-      "line": 2333,
+      "line": 2431,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-041",
+      "file": "apps/worker/src/word-check.test.ts",
+      "line": 3487,
+      "kind": "title"
+    },
+    {
+      "id": "STR-043",
+      "file": "apps/worker/src/word-check.test.ts",
+      "line": 3487,
       "kind": "title"
     },
     {
@@ -32714,7 +32738,7 @@
     {
       "id": "LOC-037",
       "file": "packages/domain/src/word/write.test.ts",
-      "line": 5655,
+      "line": 5658,
       "kind": "title"
     },
     {
@@ -33362,7 +33386,7 @@
     {
       "id": "PUB-056",
       "file": "tests/browser/src/html.test.ts",
-      "line": 139,
+      "line": 183,
       "kind": "title"
     },
     {

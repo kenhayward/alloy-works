@@ -1363,10 +1363,11 @@ class Writer {
   }
 
   /**
-   * **The index** (IX-K; STR-043, PUB-041), as the glossary is: its title in the first heading's style,
-   * outside Word's headings, then one `INDEX` field over its entries, begun in the first and ended in
-   * the last, prefilled as the contents are - each entry in `Index 1` and each sub-entry in `Index 2`,
-   * its "see" and "see also" after it in the layout's words, and no page, which only Word can know.
+   * **The index** (IX-K; STR-043, PUB-041): its title in a list's style, off Word's numbered headings
+   * and out of its contents (the first heading's style was numbered and listed, IXc's Word check);
+   * then one `INDEX` field over its entries, begun in the first and ended in the last, prefilled as
+   * the contents are - each entry in `Index 1` and each sub-entry in `Index 2`, its "see" and "see
+   * also" after it in the layout's words, and no page, which only Word can know.
    * Word builds it again from the `XE` fields when it updates its fields, in its own collation.
    */
   index(index: PublishedIndex): Paragraph[] {
@@ -1386,7 +1387,7 @@ class Writer {
       }
     }
     return [
-      this.paragraph(this.theme.roles.heading1, this.runs(index.title, this.words)),
+      this.paragraph(this.theme.roles.list, this.runs(index.title, this.words)),
       ...lines.map((line, at) =>
         this.paragraph(
           place,

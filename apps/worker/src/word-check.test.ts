@@ -1210,6 +1210,88 @@ const equationsOccurrences = new Map<string, ContentDocument>([
   ],
 ]);
 
+/** An index marker (the IX plan, IX-E). */
+const marker = (
+  term: string,
+  more: { sub?: string; see?: string; seeAlso?: readonly string[] } = {},
+) => ({ type: 'indexMarker', term, ...more });
+
+/**
+ * The index's document (the IX plan, IX-O): markers in front matter, the body, a footnote, a table's
+ * caption and its header row, sub-entries, a "see" and a "see also". Word sets no page break the
+ * layout does not declare (PUB-065), so the body is short enough to fit its first page in both, and
+ * front matter's and the body's pages are the pages the index names.
+ */
+const indexOutline = parseOutlineDocument({
+  schemaVersion: OUTLINE_SCHEMA_VERSION,
+  title: 'The alloy handbook',
+  language: 'en-GB',
+  direction: 'ltr',
+  nodes: [
+    reference('ixpreface', 40, { matter: 'front' }),
+    section('ixmetals', 'Metals', [
+      reference('ixbrass', 41),
+      reference('ixgrades', 42),
+      reference('ixbronze', 43),
+    ]),
+  ],
+});
+const indexOccurrences = new Map<string, ContentDocument>([
+  [
+    id('ixpreface'),
+    component('Preface', [
+      paragraph('ip', text(SENTENCES[0]!), marker('Alloy', { sub: 'history' })),
+    ]),
+  ],
+  [
+    id('ixbrass'),
+    component('Brass', [
+      paragraph(
+        'ib',
+        text(SENTENCES[1]!),
+        marker('Alloy'),
+        marker('Brass'),
+        marker('Copper', { seeAlso: ['Bronze', 'Brass'] }),
+        marker('Latten', { see: 'Brass' }),
+      ),
+    ]),
+  ],
+  [
+    id('ixgrades'),
+    component('Grades', [
+      paragraph(
+        'ig',
+        text(SENTENCES[2]!),
+        footnote('ign', paragraph('ignp', text('Grace weighed the zinc.'), marker('Zinc'))),
+      ),
+      {
+        type: 'table',
+        id: 'igt',
+        style: 'table',
+        caption: [text('Grades of bronze'), marker('Bronze', { sub: 'grades' })],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          { cells: [cell('Grade'), cellOf('igh', text('Fraction'), marker('Tin'))] },
+          { cells: [cell('First'), cell('Tenth')] },
+        ],
+      },
+    ]),
+  ],
+  [
+    id('ixbronze'),
+    component('Bronze', [
+      paragraph(
+        'iz',
+        text(SENTENCES[3]!),
+        marker('Bronze'),
+        marker('Alloy', { sub: 'tempering' }),
+        marker('Alloy'),
+      ),
+    ]),
+  ],
+]);
+
 /** The kinds of Word section a fixture is written as, in order: what its pages are numbered by. */
 type Kind = 'cover' | 'contents' | OutlineMatter;
 
@@ -1244,6 +1326,8 @@ interface Fixture {
    * binding stage; and its PDF compiled beside it, for what each value prints.
    */
   readonly bindings?: AssembleInput['bindings'];
+  /** The IX plan's (IX-O): its PDF compiled beside it, for the pages its index names. */
+  readonly indexed?: boolean;
 }
 
 const withMatter = (matter: Partial<Layout['matter']>): Layout => ({
@@ -1372,6 +1456,16 @@ const FIXTURES: readonly Fixture[] = [
     theme: valuesTheme,
     bindings: valuesBindings,
   },
+  {
+    name: 'index',
+    layout: defaultLayout,
+    formats: ['pdf', 'docx'],
+    sections: ['cover', 'contents', 'front', 'body'],
+    outline: indexOutline,
+    occurrences: indexOccurrences,
+    serifOnly: true,
+    indexed: true,
+  },
 ];
 
 /** What `word-check.ps1` reads of one document through COM. */
@@ -1393,6 +1487,8 @@ interface Opened {
   readonly contents: readonly Entry[];
   /** Each list after the contents - Word's table of figures - by its paragraphs, after the update. */
   readonly figureLists: readonly (readonly Entry[])[];
+  /** The index's paragraphs after the update (IX-O). */
+  readonly index: readonly Entry[];
   readonly tables: readonly TableRead[];
   /** Every image in a line, in the document's order, the ones in a floated figure's box included. */
   readonly images: readonly ImageRead[];
@@ -1585,6 +1681,8 @@ interface Checked {
   readonly beside: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
   /** The PDF, and Word's own PDF, each as laid out, where the fixture holds values. */
   readonly valued: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
+  /** The PDF, and Word's own PDF, each as laid out, where the fixture places an index. */
+  readonly indexed: { readonly pdf: LaidOut; readonly word: LaidOut } | null;
   /** What the writer reported of the document. */
   readonly report: OutputReport;
   /**
@@ -2373,7 +2471,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
         const filled = wrongFilled(bytes);
         await writeFile(join(FOLDER, `${fixture.name}.docx`), filled);
         const pdf =
-          fixture.compared || fixture.beside || fixture.bindings
+          fixture.compared || fixture.beside || fixture.bindings || fixture.indexed
             ? await typst.compile(
                 PUBLICATION_TEMPLATE[TEMPLATE_READING[assembled.document.schema]].file,
                 JSON.stringify(assembled.document),
@@ -2463,12 +2561,13 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           compared: each.fixture.compared ? both : null,
           beside: each.fixture.beside ? both : null,
           valued: each.fixture.bindings ? both : null,
+          indexed: each.fixture.indexed ? both : null,
         });
       }
       // The record a pull request pastes: what Word showed of every fixture, beside what was asked -
       // and, where a fixture is compared, each step between two lines both PDFs set, which the tests
       // below hold within a point.
-      const record = checked.map(({ compared, beside: _, valued: __, ...each }) => ({
+      const record = checked.map(({ compared, beside: _, valued: __, indexed: ___, ...each }) => ({
         ...each,
         fixture: each.fixture.name,
         steps: compared === null ? null : measuredSteps(compared),
@@ -3382,6 +3481,26 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
           expect(inPdf, at).toBeGreaterThan(0);
           expect(times(both!.word, value.printed), at).toBe(inPdf);
         }
+      }
+    });
+
+    it('PUB-041 STR-043 fills the index as Word updates its fields: every entry and sub-entry from its XE fields, in the order the PDF prints them, each page the one the PDF names (IX-O)', () => {
+      const indexed = checked.filter((each) => each.fixture.indexed === true);
+      expect(indexed.map((each) => each.fixture.name)).toEqual(['index']);
+      for (const { fixture, word, indexed: both } of indexed) {
+        // The PDF's index: every line after its title, which is the last thing it sets.
+        const lines = both!.pdf.lines;
+        const title = lines.findLastIndex((line) => line.key === 'Index');
+        expect(title, fixture.name).toBeGreaterThan(0);
+        // Word's own form for a "see" with no page before it, a full stop where the PDF sets a comma.
+        const printed = lines
+          .slice(title + 1)
+          .map((line) => line.key.replace(/^([^,]+),see(?!also)/, '$1.see'));
+        expect(printed, fixture.name).toContain('Latten.seeBrass');
+        expect(
+          word.index.map((entry) => entry.text.replace(/\s+/g, '')).filter((each) => each !== ''),
+          fixture.name,
+        ).toEqual(printed);
       }
     });
   });

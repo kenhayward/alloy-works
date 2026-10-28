@@ -50,6 +50,45 @@ const paragraph = (id: string, content: object[]) => ({
   style: 'body',
   content,
 });
+const marker = (term: string, more: object = {}) => ({ type: 'indexMarker', term, ...more });
+const cell = (id: string, content: object[]) => ({
+  content: [paragraph(id, content)],
+  colspan: 1,
+  rowspan: 1,
+});
+
+/**
+ * Markers in the text, a footnote, a table's caption and its header row, with a sub-entry, a "see"
+ * and a "see also" (the IX plan, IX-O): the default layout places an index, which each walk reads.
+ */
+const INDEXED = [
+  paragraph('ix1', [
+    text('Ada tempers the brass.'),
+    marker('Alloy'),
+    marker('Alloy', { sub: 'tempering' }),
+    marker('Brass'),
+    marker('Copper', { seeAlso: ['Brass', 'Bronze'] }),
+    marker('Latten', { see: 'Brass' }),
+    {
+      type: 'footnote',
+      id: 'ixn',
+      anchor: { kind: 'span' },
+      content: [paragraph('ixn1', [text('Grace weighed the zinc.'), marker('Zinc')])],
+    },
+  ]),
+  {
+    type: 'table',
+    id: 'ixt',
+    style: 'table',
+    caption: [text('Grades of bronze'), marker('Bronze', { sub: 'grades' })],
+    headerRows: 1,
+    headerColumns: 0,
+    rows: [
+      { cells: [cell('ixh1', [text('Grade')]), cell('ixh2', [text('Tin'), marker('Tin')])] },
+      { cells: [cell('ixr1', [text('First')]), cell('ixr2', [text('Tenth')])] },
+    ],
+  },
+];
 
 interface Case {
   readonly name: string;
@@ -115,6 +154,11 @@ beforeAll(async () => {
       [],
     ),
   );
+  cases.push(await published(client, 'an index', INDEXED, []));
+  // Not walked for nothing: the layout the stack declares places the index.
+  if (!cases.at(-1)!.html.includes('<section aria-labelledby="aw-index">')) {
+    throw new Error('The index case published no index');
+  }
 }, 600_000);
 
 /** The file opened as it was saved, every face it sets loaded. */

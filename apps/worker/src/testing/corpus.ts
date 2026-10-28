@@ -160,11 +160,16 @@ export const cell = (id: string, ...content: unknown[]) => ({
   colspan: 1,
   rowspan: 1,
 });
-/** A table of one header row over these rows, each cell a paragraph of these runs. */
+/** An index marker (the IX plan, IX-E): a term, and a sub-entry, a "see" or "see also"s where given. */
+export const marker = (
+  term: string,
+  more: { sub?: string; see?: string; seeAlso?: readonly string[] } = {},
+) => ({ type: 'indexMarker', term, ...more });
+/** A table of one header row over these rows, each cell a paragraph of these runs, a header's of its word or runs. */
 export const table = (
   id: string,
   caption: readonly unknown[],
-  header: readonly string[],
+  header: readonly (string | readonly unknown[])[],
   rows: readonly (readonly (readonly unknown[])[])[],
 ) => ({
   type: 'table',
@@ -174,7 +179,11 @@ export const table = (
   headerRows: 1,
   headerColumns: 0,
   rows: [
-    { cells: header.map((word, column) => cell(`${id}h${column}`, text(word))) },
+    {
+      cells: header.map((word, column) =>
+        cell(`${id}h${column}`, ...(typeof word === 'string' ? [text(word)] : word)),
+      ),
+    },
     ...rows.map((row, at) => ({
       cells: row.map((runs, column) => cell(`${id}r${at}c${column}`, ...runs)),
     })),

@@ -339,6 +339,11 @@ It holds, in its own describe blocks:
   code.
 - **The resolution order in the PDF** (PUB-098): a list of tables printing a caption's reference as
   the number it resolved to, the PDF's half of `order.test.ts`'s references-before-generation pair.
+- **The index** (the IX plan, IX-O): markers in front matter, the body, a footnote, a table's caption
+  and header row, with sub-entries, "see" and "see also", each locator the page its marker is printed
+  on, passing veraPDF; in HTML each locator its section, and in Word one `XE` field a marker; and a
+  French document's index in French collation and the layout's French words. Every case's HTML holds
+  the PDF's index entries in order, its locators apart.
 - **The spike's nine**, ported from `spikes/publishing-engine` and judged as its checks judged them:
   1, headings, a list, a header row, a described figure and a passage in French, tagged and passing
   veraPDF; 2, twenty footnotes each at the foot of its mark's page, one longer than a page split; 3, a
@@ -605,6 +610,12 @@ value catalogue whose English formats differ from the default's in every separat
 a boolean's words; the test checks that each value's text, as Word reads it back and as Word's PDF
 prints it, is `formatValue`'s, as often as the PDF prints it. `word-values.test.ts` holds the same
 fixture in CI, to the values it prints and the runs the document Word is handed carries.
+
+Since IXc it holds the index (the [IX plan](plans/2026-10-28-ix-index.md), IX-O). One fixture, `index`,
+compiled beside it, places markers in front matter, the body, a footnote, a table's caption and header
+row, with sub-entries, a "see" and a "see also"; Word's updated `INDEX` field holds the PDF's index line
+for line, pages included, but for Word's own full stop before a "see" with no page. Word sets no page
+break the layout does not declare (PUB-065), so the body fits one page in both.
 
 - **Who and when.** Whoever changes the Word writer - `packages/domain/src/word/`, the theme's Word
   projection or `wordRun` - runs it before the change lands, on Windows with Word installed. **A pull

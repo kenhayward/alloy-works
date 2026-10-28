@@ -5633,6 +5633,9 @@ describe('writeDocx: the index (the IX plan, IX-K)', () => {
     const said = paragraphs(docx);
     const at = said.findIndex((each) => textOf(each) === 'Index');
     expect(at).toBeGreaterThan(said.findIndex((each) => textOf(each) === 'Brass'));
+    // Its title as a list's is, off Word's numbered headings and out of its contents, as the PDF's is
+    // out of its own: in a heading's style Word numbered it and listed it (the Word check, IXc).
+    expect(styleOf(said[at]!)).toBe('contents-heading');
     const entries = said.slice(at + 1);
     expect(entries.map((each) => [styleOf(each), textOf(each)])).toEqual([
       ['Index1', `a:b"c${B}d`],

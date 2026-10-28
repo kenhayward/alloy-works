@@ -1623,6 +1623,11 @@ An author marks entries in a component's text; a layout that places an index pub
   PDF sets `L`/`LI` with page links (PDF/UA-1's `Index` is not writable by the pinned Typst), Word an
   `XE` per marker and a prefilled `INDEX` field without page numbers, HTML a `<section>` of nested lists
   whose locators are sections (IX-D).
+- **Checked** (IX-O, IXc): the corpus holds an English and a French case, pinned in all three formats,
+  each HTML's entries held to the PDF's; the Word check holds Word's updated `INDEX` field to the PDF's
+  index line for line, pages included. Word sorted as the PDF does and differs only in a full stop
+  before a "see" with no page. It found the index's title in Word's first heading style, numbered and
+  in the contents; it is now in a list's style, as the PDF and HTML keep it out of theirs.
 - **Named gaps**: page ranges (IX-C), sort keys, letter groups (CLDR's index characters), reading
   Word's `XE` fields, and an `Index` structure element.
 
