@@ -47,6 +47,8 @@ const PATHS: Record<string, readonly string[]> = {
   ],
   // A numbered citation in its brackets, [1], as a numeric style prints one (CId).
   Cite: ['M5.5 3H3.5v10h2M10.5 3h2v10h-2', 'M7 5.4 8.3 4.4v7.2'],
+  // An index's lines, a ribbon marking one: an entry that prints nothing where it stands (IX-M).
+  'Index entry': ['M2.5 4h6M2.5 7.5h4.5M2.5 11h6M2.5 14h4.5', 'M10.5 2.5h3v8l-1.5-1.4-1.5 1.4z'],
   // A value standing in a line of text, drawn from a cylinder: a value bound to a source (B2).
   Value: [
     'M2 13h12',
