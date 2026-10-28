@@ -22,6 +22,8 @@ interface Surface {
   readonly ready: (page: Page, language: Language) => Locator;
   /** What opens the surface once drawn, where it is a dialog over another. */
   readonly open?: (page: Page, language: Language) => Promise<void>;
+  /** The renderer file drawing the dialog walked, from `apps/web/src`, which `dialogs.test.ts` counts. */
+  readonly dialog?: string;
 }
 
 type Language = 'en-XA' | 'ar-XB';
@@ -59,6 +61,7 @@ const surfaces = (component: string): readonly Surface[] => [
   {
     // The Index entry dialog over the marker's chip, which says its words in the language (IX-M).
     name: 'The Index entry dialog',
+    dialog: 'editor/IndexEntryDialog.tsx',
     address: `#/components/${component}`,
     regions: ['[role="dialog"]'],
     ready: (page, language) =>
@@ -155,6 +158,7 @@ async function walkAs(cookie: string, language: Language, walked: readonly Surfa
           expect.soft(found.missed, `${surface.name}: words left in English`).toEqual([]);
           expect.soft(found.clipped, `${surface.name}: words cut short`).toEqual([]);
           expect.soft(found.spills, `${surface.name}: wider than the window`).toEqual([]);
+          expect.soft(found.overlaps, `${surface.name}: words over words`).toEqual([]);
           // An icon's button has no text to walk: its name is what a screen reader says. A name that
           // is content, a space's, is marked `data-content-name`.
           const names = await page.$$eval(
