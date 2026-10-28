@@ -147,20 +147,18 @@ const compile = async (layout: Layout) => {
   return { made, pdf, read: await readPdf(pdf) };
 };
 
-const layoutWith = (index: boolean) => {
-  const { index: _index, ...matter } = defaultLayout.matter;
-  return parseLayout({
+const layoutWith = (index: boolean) =>
+  parseLayout({
     ...defaultLayout,
     translations: undefined,
     matter: {
-      ...matter,
+      ...defaultLayout.matter,
       cover: false,
       contents: null,
       lists: [{ sequence: 'table', title: 'Tables' }],
-      ...(index ? { index: defaultLayout.matter.index } : {}),
+      index: index ? defaultLayout.matter.index : undefined,
     },
   });
-};
 
 const pageOf = (read: ReadPdf, value: string) =>
   read.taggedText.findIndex((page) => page.some((each) => each.includes(value)));
