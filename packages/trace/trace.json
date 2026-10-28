@@ -27384,18 +27384,6 @@
       "kind": "title"
     },
     {
-      "id": "PUB-041",
-      "file": "apps/worker/src/word-check.test.ts",
-      "line": 3487,
-      "kind": "title"
-    },
-    {
-      "id": "STR-043",
-      "file": "apps/worker/src/word-check.test.ts",
-      "line": 3487,
-      "kind": "title"
-    },
-    {
       "id": "CNT-045",
       "file": "apps/worker/src/word.test.ts",
       "line": 1656,

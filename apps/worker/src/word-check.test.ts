@@ -3484,7 +3484,7 @@ describe.runIf(WORD_CHECK)('the Word check, where Word is (Word 1, ruling R16)',
       }
     });
 
-    it('PUB-041 STR-043 fills the index as Word updates its fields: every entry and sub-entry from its XE fields, in the order the PDF prints them, each page the one the PDF names (IX-O)', () => {
+    it('fills the index as Word updates its fields: every entry and sub-entry from its XE fields, in the order the PDF prints them, each page the one the PDF names (IX-O)', () => {
       const indexed = checked.filter((each) => each.fixture.indexed === true);
       expect(indexed.map((each) => each.fixture.name)).toEqual(['index']);
       for (const { fixture, word, indexed: both } of indexed) {
