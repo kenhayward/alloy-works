@@ -400,7 +400,7 @@ export function Webhooks({ client }: { client: Client }) {
                         </Chip>
                       )}
                     </td>
-                    <td>
+                    <td className={styles['wraps']}>
                       <button
                         type="button"
                         aria-label={words('admin.deliveries-to', { url: hook.url })}

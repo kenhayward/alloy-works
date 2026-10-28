@@ -119,7 +119,11 @@ function TitlesDialog({
         <h2 id={headingId}>{say('translation.titles-in', { language })}</h2>
         {titles.map((each) => (
           <label key={each.node ?? 'document'}>
-            {each.node === null ? say('translation.the-document', { own: each.own }) : each.own}
+            {each.node === null ? (
+              say('translation.the-document', { own: each.own })
+            ) : (
+              <span data-content>{each.own}</span>
+            )}
             <input
               value={words.get(each.node ?? '') ?? ''}
               maxLength={500}

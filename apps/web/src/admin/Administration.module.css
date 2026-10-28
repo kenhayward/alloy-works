@@ -284,6 +284,13 @@
   white-space: nowrap;
 }
 
+/* A cell of buttons wraps them rather than cutting them off, as a longer language would (TE-G). */
+.table td.wraps {
+  padding-block: var(--space-4);
+  overflow: visible;
+  white-space: normal;
+}
+
 .table tr[data-current='true'] td {
   background: var(--accent-weak);
 }

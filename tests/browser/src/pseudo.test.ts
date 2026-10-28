@@ -407,15 +407,19 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     regions: ['[role="dialog"]'],
     ready: documentDrawn,
     open: async (page, language) => {
+      // Its text drawn first: chosen sooner, Authoring is drawn over again as the text arrives.
+      await page.getByText('The pond survey found newts.').waitFor();
       await documentDrawn(page, language).check();
+      // A placed component's own line, Overrides on it, is drawn with the boundaries.
       await page
-        .getByRole('button', {
-          name: say(language, 'document.overrides-of', { value1: grace.component.title }),
-        })
+        .getByRole('button', { name: say(language, 'document.show-boundaries'), exact: true })
         .click();
-      return page.getByRole('dialog', {
-        name: say(language, 'document.overrides-of-2', { name: grace.component.title }),
-      });
+      // Named by the component's place in the text, so found by the message's start; pressed by the
+      // keyboard, as the longer line beside the text stands under the side panel, out of the pointer's
+      // reach (a finding of TE-G, not yet fixed).
+      const [before] = say(language, 'document.overrides-of', { value1: 'HERE' }).split('HERE');
+      await page.locator(`button[aria-label^="${before!.trimEnd()}"]`).first().press('Enter');
+      return page.getByRole('dialog');
     },
   },
   {
@@ -485,11 +489,12 @@ const administration = (ada: Adas): readonly Surface[] => [
     regions: ['[role="dialog"]'],
     ready: heading('admin.people'),
     open: async (page, language) => {
+      // By the keyboard: a row scrolled under the header opens its menu there, out of the pointer's reach.
       await page
         .getByRole('button', { name: say(language, 'parts.more-actions-for', { subject: 'Grace' }) })
         .first()
-        .click();
-      await page.getByRole('menuitem', { name: say(language, 'admin.erase-2') }).click();
+        .press('Enter');
+      await page.getByRole('menuitem', { name: say(language, 'admin.erase-2') }).press('Enter');
       return page.getByRole('dialog', { name: say(language, 'admin.erase', { name: 'Grace' }) });
     },
   },
@@ -571,10 +576,10 @@ const administration = (ada: Adas): readonly Surface[] => [
     'structure/TemplateLine.tsx',
     `#/documents/${ada.templated}`,
     (page, language) =>
-      page.getByRole('button', { name: say(language, 'document.move-to-version', { number: 2 }) }),
+      page.getByRole('button', { name: say(language, 'document.move-to-version', { number: '0.2' }) }),
     'document.move-to-version',
-    (language) => say(language, 'document.move-to-version-2', { name: ada.template, number: 2 }),
-    { number: '2' },
+    (language) => say(language, 'document.move-to-version-2', { name: ada.template, number: '0.2' }),
+    { number: '0.2' },
   ),
   {
     name: 'The Generate documents dialog',
@@ -620,7 +625,7 @@ const indexed = [
 async function graces(): Promise<Graces> {
   const grace = await apiAs('grace');
   const component = await makeComponent(grace, 'Pseudo', indexed);
-  let document = await makeDocument(grace, 'Pseudo', []);
+  let document = await makeDocument(grace, 'Pseudo', ['Introduction']);
   document = await edit(grace, document, {
     operation: 'insert',
     parent: null,
@@ -713,7 +718,8 @@ async function settled(dialog: Locator): Promise<void> {
   }
 }
 
-async function walkAs(cookie: string, language: Language, walked: readonly Surface[]) {
+async function walkAs(cookie: string, language: Language, all: readonly Surface[]) {
+  const walked = all.filter((each) => new RegExp(process.env['PSEUDO_ONLY'] ?? '').test(each.name)); // TEMP
   await chooseLanguage(cookie, language);
   try {
     await withPage(
@@ -743,7 +749,10 @@ async function walkAs(cookie: string, language: Language, walked: readonly Surfa
                 await settled(dialog);
                 return true;
               })
-              .catch((error: unknown) => String(error).split('\n')[0]);
+              // What failed and what it waited for, without the call log's long tail.
+              .catch(async (error: unknown) => {
+                return String(error).split('\n').slice(0, 3).join(' ');
+              });
             expect.soft(shown, `${surface.name}: never opened in ${language}`).toBe(true);
             if (shown !== true) continue;
           }
