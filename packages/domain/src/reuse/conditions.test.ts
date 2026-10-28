@@ -4,6 +4,7 @@ import type { ContentDocument } from '../content/model/document.js';
 import {
   applyConditions,
   conditionAxisDefinitionSchema,
+  wordsOf,
   profileSchema,
   type Profile,
 } from './conditions.js';
@@ -167,5 +168,61 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
     );
     expect(JSON.stringify(applied.content)).not.toContain('internal');
     expect(applied.excluded).toEqual(['internal']);
+  });
+
+  describe('an index marker (the IX plan, IX-F)', () => {
+    const marker = (term: string) => ({ type: 'indexMarker' as const, term });
+
+    it('REU-048 drops a marker inside an excluded passage with the passage, and keeps one outside', () => {
+      const applied = applyConditions(
+        doc({
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            run('Open. '),
+            marker('Kept term'),
+            run('Internal ', ['audience', ['internal']]),
+            marker('Hidden term'),
+            run('only.', ['audience', ['internal']]),
+            marker('Trailing term'),
+            run(' Open again.'),
+          ],
+        }),
+        regulator,
+      );
+      const printed = JSON.stringify(applied.content);
+      expect(printed).toContain('Kept term');
+      expect(printed).not.toContain('Hidden term');
+      expect(printed).not.toContain('Trailing term');
+      expect(applied.excluded).toEqual(['Internal only.']);
+    });
+
+    it('REU-048 removes a paragraph holding only an excluded passage and its marker', () => {
+      const applied = applyConditions(
+        doc(
+          paragraph('p1', run('Open.')),
+          {
+            type: 'paragraph',
+            id: 'p2',
+            style: 'body',
+            content: [run('Internal.', ['audience', ['internal']]), marker('Hidden term')],
+          },
+        ),
+        regulator,
+      );
+      expect(textOf(applied.content)).toEqual(['Open.']);
+      expect(applied.removed).toEqual(['p2']);
+    });
+
+    it("REU-048 collects a marker's words, so the scan probes for them where its block is excluded", () => {
+      expect(
+        wordsOf([
+          { type: 'text', value: 'Grain', marks: [] },
+          { type: 'indexMarker', term: 'Alloy', sub: 'tempering', seeAlso: ['Steel', 'Iron'] },
+          { type: 'indexMarker', term: 'Metal', see: 'Alloy' },
+        ]),
+      ).toBe('Grain Alloy tempering Steel Iron Metal Alloy');
+    });
   });
 });
