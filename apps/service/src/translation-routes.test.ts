@@ -419,6 +419,49 @@ describe('translation (the TR plan, TRa)', () => {
     expect((await report('?status=lost')).statusCode).toBe(400);
   });
 
+  it('LOC-036 keeps the policy’s history, each change whole by whom and when, listed a page at a time to an administrator alone', async () => {
+    type History = {
+      items: { id: string; at: string; by: { id: string } | null; policy: { fallback: string } }[];
+      next: string | null;
+    };
+    const before = (
+      await h.call('ada', 'GET', '/v1/settings/translation/history?limit=100')
+    ).json<History>().items.length;
+    const set = (fallback: string) =>
+      h.call('ada', 'PUT', '/v1/settings/translation', {
+        fallback,
+        outOfDate: 'publish',
+        note: {},
+      });
+    expect((await set('refuse')).statusCode).toBe(200);
+    // Unchanged, no row; changed back, one.
+    expect((await set('refuse')).statusCode).toBe(200);
+    expect((await set('source')).statusCode).toBe(200);
+    const listed = await h.call('ada', 'GET', '/v1/settings/translation/history?limit=100');
+    expect(listed.statusCode, listed.body).toBe(200);
+    const items = listed.json<History>().items;
+    expect(items).toHaveLength(before + 2);
+    expect(items.slice(0, 2).map((each) => [each.policy.fallback, each.by?.id])).toEqual([
+      ['source', h.ids.ada],
+      ['refuse', h.ids.ada],
+    ]);
+    expect(items.at(-1)!.by).toBeNull();
+    const first = (
+      await h.call('ada', 'GET', '/v1/settings/translation/history?limit=1')
+    ).json<History>();
+    expect(first.items.map((each) => each.id)).toEqual([items[0]!.id]);
+    const second = await h.call(
+      'ada',
+      'GET',
+      `/v1/settings/translation/history?limit=1&cursor=${first.next}`,
+    );
+    expect(second.json<History>().items.map((each) => each.id)).toEqual([items[1]!.id]);
+    expect(
+      (await h.call('ada', 'GET', '/v1/settings/translation/history?cursor=nonsense')).statusCode,
+    ).toBe(400);
+    expect((await h.call('alice', 'GET', '/v1/settings/translation/history')).statusCode).toBe(403);
+  });
+
   it("sends a document's components needing a language as a job, tracked item by item, downloaded as XLIFF 2.1, and closed", async () => {
     const first = await approvedComponent('Ponds');
     const second = await approvedComponent('Streams');

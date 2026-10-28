@@ -13,6 +13,7 @@ import {
   recordPublicationCheck,
   removeGrant,
   seedDevelopmentContent,
+  translationPolicyNow,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -676,6 +677,24 @@ describe('publishing a document through the service', () => {
     ]);
   });
 
+  it('LOC-036 names the version of the translation policy a publication in a language was decided under', async () => {
+    const document = await documentReferencing([]);
+    const asked = await call('grace', 'POST', `/v1/documents/${document.id}/publications`, {
+      version: document.version,
+      formats: ['pdf'],
+      language: 'fr-FR',
+    });
+    expect(asked.statusCode, asked.body).toBe(200);
+    const id = await published(asked.json<{ id: string }>().id);
+    const decided = await tenantDb.withTenant(tenant, (trx) => translationPolicyNow(trx));
+    const read = await call('alice', 'GET', `/v1/publications/${id}`);
+    expect(read.statusCode, read.body).toBe(200);
+    expect(read.json<{ translationPolicy: unknown }>().translationPolicy).toEqual({
+      change: decided.change,
+      at: expect.any(String),
+    });
+  });
+
   it('PUB-047 keeps a publication at its own address, read on its own grants, with no way to delete it', async () => {
     const document = await documentReferencing([]);
     const id = await published(await requested('grace', document));
@@ -695,6 +714,8 @@ describe('publishing a document through the service', () => {
       engine: { name: 'typst', version: '0.15.1' },
       template: { name: 'publication', version: 2 },
       pipeline: '2',
+      // In its document's own language: no translation policy decided anything.
+      translationPolicy: null,
     });
     expect(body.outputs).toHaveLength(1);
     expect(body.outputs[0]).toMatchObject({ format: 'pdf', standard: 'ua-1', bytes: 19 });

@@ -839,6 +839,25 @@ describe('baselines', () => {
     expect(inputs!.request.compiledAt.getTime()).toBe(Math.floor(madeAt.getTime() / 1000) * 1000);
   });
 
+  it('records no translation policy on a baseline’s publish, made in no language but its own (the TE plan, TE-D)', async () => {
+    const document = await documentWith([]);
+    const id = made(await make(document, 'In its own language'));
+    const recorded = await tenant(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return trx
+        .selectFrom('publication_request')
+        .select('policy_change')
+        .where('id', '=', asked.request.id)
+        .executeTakeFirstOrThrow();
+    });
+    expect(recorded.policy_change).toBeNull();
+  });
+
   it('refuses to publish a baseline to somebody who may not read all it pins, by node, and a format its layout does not make', async () => {
     const secret = await component(quality, grace, 'Calibration');
     const hidden = reference(secret.artifactId);

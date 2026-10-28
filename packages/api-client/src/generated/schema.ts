@@ -5795,6 +5795,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/settings/translation/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every change to the environment's policy for publishing in a language
+         * @description Lists every change to the environment’s policy for publishing in a language, the newest first: each change’s values whole, who made it and when. The first is the policy as it stood when the history began, by nobody. A publish or preview in a language names the change it was decided under. Needs administer at the environment.
+         */
+        get: operations["getTranslationSettingsHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sign-in/google": {
         parameters: {
             query?: never;
@@ -85515,6 +85535,10 @@ export interface operations {
                      *         "version": -9007199254740991
                      *       },
                      *       "pipeline": "example",
+                     *       "translationPolicy": {
+                     *         "change": "example",
+                     *         "at": "example"
+                     *       },
                      *       "outputs": []
                      *     }
                      */
@@ -85557,6 +85581,11 @@ export interface operations {
                             version: number;
                         } | null;
                         pipeline: string;
+                        /** @description The change to the environment's translation policy a publish in a language was decided under, and when that change was made (`getTranslationSettingsHistory`); null for one in its document's own language, one from a baseline, or one made before the policy kept its history */
+                        translationPolicy: {
+                            change: string;
+                            at: string;
+                        } | null;
                         /** @description One per format, the PDF first, and `provenance.json` last wherever the publication prints a value */
                         outputs: ({
                             /** @constant */
@@ -96192,6 +96221,153 @@ export interface operations {
                 };
             };
             /** @description invalid_request: a value it does not take, or a note too long */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getTranslationSettingsHistory: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of changes, the newest first */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            /** @description The change, as a publish made under it names it */
+                            id: string;
+                            at: string;
+                            /** @description Who changed it; null for the policy as it stood when the history began */
+                            by: {
+                                id: string;
+                                displayName: string | null;
+                            } | null;
+                            /** @description Every value of the policy as this change left it */
+                            policy: {
+                                /** @enum {string} */
+                                fallback: "source" | "refuse";
+                                /** @enum {string} */
+                                outOfDate: "publish" | "refuse";
+                                note: {
+                                    [key: string]: string;
+                                };
+                                /**
+                                 * @default review
+                                 * @enum {string}
+                                 */
+                                conflict: "review" | "accept" | "reject";
+                                /**
+                                 * @default off
+                                 * @enum {string}
+                                 */
+                                machine: "off" | "inside" | "any";
+                            };
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A limit or a cursor that is not one */
             400: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

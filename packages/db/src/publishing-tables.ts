@@ -55,6 +55,11 @@ export interface PublicationRequestTable {
   warnings: ColumnType<unknown[], string | undefined, never>;
   /** The language it is made in, or none: the document's own (0160; the TR plan, TR-I). */
   language: ColumnType<string | null, string | undefined, never>;
+  /**
+   * The translation policy's history row it was decided under (0170; the TE plan, TE-D), or none: one
+   * in its document's own language, a baseline's, or one before 0170.
+   */
+  policy_change: ColumnType<string | null, string | undefined, never>;
 }
 
 /** Insert and read, nothing else (0017). */

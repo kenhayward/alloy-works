@@ -74,6 +74,8 @@ interface Shown {
   /** Whether a later publication of its document supersedes it (PUB-059), and which, if readable. */
   readonly superseded: boolean;
   readonly newer: string | null;
+  /** When the translation policy it was decided under was changed (TE-D), or none. */
+  readonly policyChanged: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -174,6 +176,11 @@ function shownIn(data: unknown): Shown | undefined {
     // Absent from an answer before R17: never said to be superseded.
     superseded: data.superseded === true,
     newer: typeof data.newer === 'string' ? data.newer : null,
+    // Absent from an answer before TEb, and null for one in its document's own language.
+    policyChanged:
+      isRecord(data.translationPolicy) && typeof data.translationPolicy.at === 'string'
+        ? data.translationPolicy.at
+        : null,
   };
 }
 
@@ -414,6 +421,13 @@ export function PublicationPage({
                 ),
               },
             )}
+          </p>
+        )}
+        {shown.policyChanged !== null && (
+          <p>
+            {words('publishing.decided-under-the-translation-policy', {
+              when: published(shown.policyChanged),
+            })}
           </p>
         )}
         {shown.engine !== null && shown.template !== null && (

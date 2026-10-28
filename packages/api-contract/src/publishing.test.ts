@@ -23,6 +23,7 @@ const viewWith = (outputs: unknown[], record: Record<string, unknown> = {}) => (
   engine: { name: 'typst', version: '0.15.1' },
   template: { name: 'publication', version: 13 },
   pipeline: '13',
+  translationPolicy: null,
   superseded: false,
   newer: null,
   outputs,

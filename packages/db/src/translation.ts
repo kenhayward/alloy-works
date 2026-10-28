@@ -464,36 +464,76 @@ export async function sourceChanges(
 
 /** The tenant's translation policy (TR-J; LOC-036): its default where 0160 has not run. */
 export async function translationPolicy(trx: TenantTransaction): Promise<TranslationPolicy> {
+  return (await translationPolicyNow(trx)).policy;
+}
+
+/** Whether a migration's table stands in this schema: the readers and writers ahead of it ask. */
+async function tableStands(trx: TenantTransaction, table: string): Promise<boolean> {
   const { rows } = await sql<{
     present: boolean;
-  }>`select to_regclass('translation_policy') is not null as present`.execute(trx);
-  if (rows[0]?.present !== true) return DEFAULT_TRANSLATION_POLICY;
+  }>`select to_regclass(${table}) is not null as present`.execute(trx);
+  return rows[0]?.present === true;
+}
+
+/** The latest history row's id: the clock orders them, as changes take turns under the lock. */
+const LATEST_CHANGE = sql`select c.id from translation_policy_change c
+                           order by c.at desc, c.id desc limit 1`;
+
+/**
+ * The policy as it stands and the history row naming it (TE-D; LOC-036), read in one statement so the
+ * two agree: what a publish or a preview in a language is decided under. No row before 0170.
+ */
+export async function translationPolicyNow(
+  trx: TenantTransaction,
+): Promise<{ readonly policy: TranslationPolicy; readonly change: string | null }> {
+  if (!(await tableStands(trx, 'translation_policy'))) {
+    return { policy: DEFAULT_TRANSLATION_POLICY, change: null };
+  }
+  const kept = await tableStands(trx, 'translation_policy_change');
   const found = await sql<{
     fallback: TranslationPolicy['fallback'];
     out_of_date: TranslationPolicy['outOfDate'];
     note: Record<string, string>;
     conflict: TranslationPolicy['conflict'] | null;
     machine: TranslationPolicy['machine'] | null;
+    change: string | null;
   }>`select fallback, out_of_date, note, to_jsonb(p) ->> 'conflict' as conflict,
-            to_jsonb(p) ->> 'machine' as machine
+            to_jsonb(p) ->> 'machine' as machine,
+            ${kept ? sql`(${LATEST_CHANGE})` : sql`null::uuid`} as change
        from translation_policy p`.execute(trx);
   const row = found.rows[0];
   return row
     ? {
-        fallback: row.fallback,
-        outOfDate: row.out_of_date,
-        note: row.note,
-        // Before 0164, a conflicted return was not yet a thing: placed for review, its default.
-        conflict: row.conflict ?? DEFAULT_TRANSLATION_POLICY.conflict,
-        // Before 0165, nothing was sent to a machine: off, its default.
-        machine: row.machine ?? DEFAULT_TRANSLATION_POLICY.machine,
+        policy: {
+          fallback: row.fallback,
+          outOfDate: row.out_of_date,
+          note: row.note,
+          // Before 0164, a conflicted return was not yet a thing: placed for review, its default.
+          conflict: row.conflict ?? DEFAULT_TRANSLATION_POLICY.conflict,
+          // Before 0165, nothing was sent to a machine: off, its default.
+          machine: row.machine ?? DEFAULT_TRANSLATION_POLICY.machine,
+        },
+        change: row.change,
       }
-    : DEFAULT_TRANSLATION_POLICY;
+    : { policy: DEFAULT_TRANSLATION_POLICY, change: null };
+}
+
+/**
+ * The policy read under its row's lock (TE-D), held to the transaction's end, so two changes at once
+ * take turns and the second reads, and compares against, what the first wrote. The update grant is
+ * 0160's.
+ */
+export async function lockTranslationPolicy(trx: TenantTransaction): Promise<TranslationPolicy> {
+  if (await tableStands(trx, 'translation_policy')) {
+    await sql`select singleton from translation_policy for update`.execute(trx);
+  }
+  return translationPolicy(trx);
 }
 
 /**
  * The tenant's translation policy set, whole but for a conflict left out, which stays as it is; the
- * caller decided `administer` at the tenant.
+ * caller decided `administer` at the tenant. Its history gains the values whole, by `by`, where any
+ * differs from the latest row's (TE-D; LOC-036), compared under the policy's lock.
  */
 export async function setTranslationPolicy(
   trx: TenantTransaction,
@@ -501,7 +541,9 @@ export async function setTranslationPolicy(
     readonly conflict?: TranslationPolicy['conflict'] | undefined;
     readonly machine?: TranslationPolicy['machine'] | undefined;
   },
+  by?: string,
 ): Promise<TranslationPolicy> {
+  await lockTranslationPolicy(trx);
   await sql`update translation_policy
                set fallback = ${policy.fallback}, out_of_date = ${policy.outOfDate},
                    note = ${JSON.stringify(policy.note)}::jsonb`.execute(trx);
@@ -517,7 +559,80 @@ export async function setTranslationPolicy(
   if (policy.machine !== undefined && has.has('machine')) {
     await sql`update translation_policy set machine = ${policy.machine}`.execute(trx);
   }
+  // Only where 0170 has run, as `conflict` and `machine` are written only where theirs have.
+  if (await tableStands(trx, 'translation_policy_change')) {
+    await sql`insert into translation_policy_change (fallback, out_of_date, note, conflict, machine, by)
+              select p.fallback, p.out_of_date, p.note, p.conflict, p.machine, ${by ?? null}::uuid
+                from translation_policy p
+               where not exists (
+                 select 1 from translation_policy_change l
+                  where l.id = (${LATEST_CHANGE})
+                    and l.fallback = p.fallback and l.out_of_date = p.out_of_date
+                    and l.note = p.note and l.conflict = p.conflict and l.machine = p.machine)`.execute(
+      trx,
+    );
+  }
   return translationPolicy(trx);
+}
+
+/** One change to the translation policy (TE-D): its values whole, who made it and when. */
+export interface TranslationPolicyChange {
+  readonly id: string;
+  readonly policy: TranslationPolicy;
+  /** Nobody for 0170's row, the policy as that migration found it. */
+  readonly by: { readonly id: string; readonly displayName: string | null } | null;
+  readonly at: Date;
+}
+
+/**
+ * The policy's history (TE-D; LOC-036), the newest first, paged by its keyset. Rows are only ever
+ * inserted, and a later one sorts before any cursor, so a walk is over the rows as they stand. Empty
+ * before 0170.
+ */
+export async function translationPolicyHistory(
+  trx: TenantTransaction,
+  request: ListingRequest<SortOf<'translationPolicy'>> = { limit: 50 },
+): Promise<Listed<TranslationPolicyChange>> {
+  const limit = checkedLimit(request.limit);
+  const { types, order } = listingSorts.translationPolicy.changed;
+  if (!isListingRequest(request, types)) {
+    throw new Error('A page request names a cursor no listing gave out');
+  }
+  const snapshot = await snapshotFor(trx, request.snapshot);
+  if (!(await tableStands(trx, 'translation_policy_change'))) {
+    return { items: [], next: null, snapshot };
+  }
+  const inner = sql`select c.id, c.fallback, c.out_of_date, c.note, c.conflict, c.machine, c.by,
+                           pr.display_name, c.at, c.at as sort_key_0, c.at::text as sort_text_0
+                      from translation_policy_change c
+                      left join principal pr on pr.id = c.by`;
+  const { rows, next } = await keysetPage<{
+    id: string;
+    fallback: TranslationPolicy['fallback'];
+    out_of_date: TranslationPolicy['outOfDate'];
+    note: Record<string, string>;
+    conflict: TranslationPolicy['conflict'];
+    machine: TranslationPolicy['machine'];
+    by: string | null;
+    display_name: string | null;
+    at: Date;
+  }>(trx, inner, types, request.order ?? order, limit, request.after);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      policy: {
+        fallback: row.fallback,
+        outOfDate: row.out_of_date,
+        note: row.note,
+        conflict: row.conflict,
+        machine: row.machine,
+      },
+      by: row.by === null ? null : { id: row.by, displayName: row.display_name },
+      at: row.at,
+    })),
+    next,
+    snapshot,
+  };
 }
 
 /** How a reference reads its component (an outline reference's mode). */

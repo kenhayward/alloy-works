@@ -7,6 +7,7 @@ import {
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
+import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody } from './schemas.js';
 
 /**
@@ -137,6 +138,27 @@ export const TranslationSettingsBody = translationPolicySchema.extend({
 });
 export type TranslationSettingsBody = z.infer<typeof TranslationSettingsBody>;
 
+/** The policy's history (the TE plan, TE-D; LOC-036), the newest first. */
+export const TranslationSettingsHistoryQuery = z.object(pageQuery);
+export type TranslationSettingsHistoryQuery = z.infer<typeof TranslationSettingsHistoryQuery>;
+
+export const TranslationSettingsChange = z.object({
+  id: z.string().describe('The change, as a publish made under it names it'),
+  at: z.string(),
+  by: z
+    .object({ id: z.string(), displayName: z.string().nullable() })
+    .nullable()
+    .describe('Who changed it; null for the policy as it stood when the history began'),
+  policy: TranslationSettings.describe('Every value of the policy as this change left it'),
+});
+export type TranslationSettingsChange = z.infer<typeof TranslationSettingsChange>;
+
+export const TranslationSettingsHistory = z.object({
+  items: z.array(TranslationSettingsChange),
+  next: nextCursor,
+});
+export type TranslationSettingsHistory = z.infer<typeof TranslationSettingsHistory>;
+
 const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
@@ -245,6 +267,24 @@ export const settingsRoutes = {
         description: 'invalid_request: a value it does not take, or a note too long',
         schema: ErrorBody,
       },
+      401: unauthenticated,
+      403: { description: 'The caller may not administer this environment', schema: ErrorBody },
+    },
+  },
+  getTranslationSettingsHistory: {
+    operationId: 'getTranslationSettingsHistory',
+    method: 'GET',
+    path: '/v1/settings/translation/history',
+    summary: "Every change to the environment's policy for publishing in a language",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    query: TranslationSettingsHistoryQuery,
+    responses: {
+      200: {
+        description: 'A page of changes, the newest first',
+        schema: TranslationSettingsHistory,
+      },
+      400: { description: 'A limit or a cursor that is not one', schema: ErrorBody },
       401: unauthenticated,
       403: { description: 'The caller may not administer this environment', schema: ErrorBody },
     },

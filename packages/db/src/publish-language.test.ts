@@ -32,6 +32,7 @@ import {
   beginTranslation,
   setTranslationPolicy,
   translationPolicy,
+  translationPolicyNow,
   translationsOf,
 } from './translation.js';
 import { recordVersion, type StoredVersion } from './versions.js';
@@ -353,6 +354,50 @@ describe('publishing in a language (the TR plan, TRb)', () => {
       setTranslationPolicy(trx, { fallback: 'source', outOfDate: 'publish', note: {} }),
     );
     expect((await as((trx) => translationPolicy(trx))).note).toEqual({});
+  });
+
+  it('LOC-036 records the version of the policy a publish or a preview in a language was decided under, and none in the document’s own language', async () => {
+    const methods = await translated('Methods', 'Ponds were sampled.', 'Les étangs.');
+    const version = await document([reference(methods.source.artifactId)]);
+    const policyOf = (request: string) =>
+      as((trx) =>
+        trx
+          .selectFrom('publication_request')
+          .select('policy_change')
+          .where('id', '=', request)
+          .executeTakeFirstOrThrow(),
+      ).then((row) => row.policy_change);
+
+    await as((trx) =>
+      setTranslationPolicy(trx, { fallback: 'source', outOfDate: 'refuse', note: {} }, ada),
+    );
+    const decided = (await as((trx) => translationPolicyNow(trx))).change;
+    expect(decided).not.toBeNull();
+    const french = await publish(version, 'fr-FR');
+    if (french.answer !== 'requested') throw new Error(french.answer);
+    expect(await policyOf(french.request.id)).toBe(decided);
+    const preview = await as((trx) =>
+      requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats: ['pdf'],
+        requester: ada,
+        kind: 'preview',
+        language: 'fr-FR',
+      }),
+    );
+    if (preview.answer !== 'requested') throw new Error(preview.answer);
+    expect(await policyOf(preview.request.id)).toBe(decided);
+    const own = await publish(version);
+    if (own.answer !== 'requested') throw new Error(own.answer);
+    expect(await policyOf(own.request.id)).toBeNull();
+
+    // A later change is a later version; the request keeps the one it was decided under.
+    await as((trx) =>
+      setTranslationPolicy(trx, { fallback: 'source', outOfDate: 'publish', note: {} }, ada),
+    );
+    expect((await as((trx) => translationPolicyNow(trx))).change).not.toBe(decided);
+    expect(await policyOf(french.request.id)).toBe(decided);
   });
 
   it('LOC-017 refuses a publish holding an out-of-date translation where the policy says so, and only for a change needing retranslation', async () => {

@@ -938,6 +938,28 @@ describe("Administration's menu", () => {
     expect(await screen.findByText('Nothing is on hold.')).toBeInTheDocument();
   });
 
+  it('asks whether the reader administers the environment on Translation opened at its address, so an administrator may change it and sees its history', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/access': administering('tenant'),
+      '/v1/settings/translation': () =>
+        json(200, {
+          fallback: 'source',
+          outOfDate: 'publish',
+          note: {},
+          conflict: 'review',
+          machine: 'off',
+        }),
+      '/v1/settings/translation/history': () => json(200, { items: [], next: null }),
+    });
+    window.location.hash = '#/admin/translation';
+    render(<Administration client={client} about={null} />);
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('table', { name: 'Changes to the translation policy' }),
+    ).toBeInTheDocument();
+  });
+
   it('opens the section the address names, and Overview for one it does not know', async () => {
     const { client } = service(everything);
     window.location.hash = '#/admin/roles';

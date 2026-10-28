@@ -521,6 +521,10 @@ export function publishingHandlers(
         engine: publication.engine && { ...publication.engine },
         template: publication.template && { ...publication.template },
         pipeline: publication.pipelineVersion,
+        translationPolicy: publication.translationPolicy && {
+          change: publication.translationPolicy.change,
+          at: publication.translationPolicy.at.toISOString(),
+        },
         outputs: await Promise.all(
           outputs.map(async (output) => {
             const common = {

@@ -76,6 +76,22 @@ describe('a publication at its own address', () => {
     );
   });
 
+  it('LOC-036 says which version of the translation policy a publication in a language was made under, and nothing where none was', async () => {
+    const first = open(
+      json(200, {
+        ...record,
+        translationPolicy: { change: 'c2', at: '2026-10-27T10:00:00.000Z' },
+      }),
+    );
+    expect(
+      await screen.findByText(/^Made under the translation policy as changed on 27 October 2026/),
+    ).toBeInTheDocument();
+    first.unmount();
+    open(json(200, { ...record, translationPolicy: null }));
+    await screen.findByRole('heading', { name: 'The dosing report' });
+    expect(screen.queryByText(/translation policy/)).not.toBeInTheDocument();
+  });
+
   it('PUB-004 says an approved publication is approved, and never that it is not', async () => {
     open(
       json(200, {

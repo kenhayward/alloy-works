@@ -629,6 +629,7 @@ const operationTags = {
     'setImportSettings',
     'getTranslationSettings',
     'setTranslationSettings',
+    'getTranslationSettingsHistory',
   ],
   'Legal holds': ['placeHold', 'releaseHold', 'listHolds'],
   'Deletion and retention': ['listDeleted', 'getRetention', 'setRetention'],
@@ -1435,6 +1436,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the environment’s policy for publishing in a language: whether a component with no translation into it is published in its own language, marked as untranslated, or fails the publish; whether a translation out of date with a change that needs retranslating publishes or fails it; and the words the mark says, by language.',
   setTranslationSettings:
     'Changes the environment’s policy for publishing in a language, whole. A document’s own fallback, where it states one, stands over it. It applies to each publish asked for from then on. Needs administer at the environment.',
+  getTranslationSettingsHistory:
+    'Lists every change to the environment’s policy for publishing in a language, the newest first: each change’s values whole, who made it and when. The first is the policy as it stood when the history began, by nobody. A publish or preview in a language names the change it was decided under. Needs administer at the environment.',
   startOrganisationSignIn:
     'Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.',
   finishOrganisationSignIn:

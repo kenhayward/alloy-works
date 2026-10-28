@@ -45,12 +45,19 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-026** | Sending to machine translation is the tenant's policy, off by default, inside or any boundary                   |
 | **LOC-041** | Accepting needs approve on the component, and is audited naming who accepted                                    |
 | **LOC-016** | Status shows on reference rows, the header, the listing and search; a space's report is paged and filtered      |
+| **LOC-036** | All four policies are declared settings with stated defaults, audited, and versioned as the policy's history    |
 
 LOC-039's message forms are their own slice, MF (the TE plan, TE-A).
 
 LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
-import - declared, versioned and audited: the first two are here, audited `settings.changed`; the
-rest are XL's, which claims it.
+import - declared, versioned and audited. All four are `translation_policy`'s columns, their defaults
+stated by the contract, a change audited `settings.changed` by name. "Versioned" is the policy's own
+history (the TE plan, TE-D): `translation_policy_change` (0170), insert-only, each change's values
+whole, who and when, inserted only where a value changed. A change reads the policy under
+`select ... for update` and compares against the latest row, so two at once take turns and neither
+is lost. A publish or a preview in a language records the row it was decided under
+(`publication_request.policy_change`), read with the values in one statement; one in the document's
+own language, a baseline's and any before 0170 record none. Other settings' history is ADM-005's.
 
 ## Storage
 
@@ -192,7 +199,9 @@ person's version (XL-I asked for the latter).
 The Publishing panel offers **Publish in** each language the document's layout gives its words in,
 **Preview** beside it in the same language, **Translate titles**, and **Where a component has no
 translation**: the document's own fallback, or the
-environment's. Administration's **Translation** sets the environment's policy and the mark's words.
+environment's. Administration's **Translation** sets the environment's policy and the mark's words,
+and lists its **History** to an administrator, the newest first. A publication made in a language
+says when the policy it was made under was changed.
 
 **Translations** on a component's header lists each translation with its status and opens it; to
 whoever may edit, it begins one and declares whether the source's latest version needs

@@ -379,9 +379,10 @@ export function Administration({
   const roles = useListing<RoleRow>(loads.roles, shown === 'roles');
 
   useEffect(() => {
-    // Spaces are made, renamed and archived by an administrator of the environment (SP-A).
-    if (shown === 'overview' || shown === 'spaces' || shown === 'editing') askAdminister('tenant');
-  }, [shown, askAdminister]);
+    // Spaces are made, renamed and archived by an administrator of the environment (SP-A), and each
+    // policy section is changed by one: asked once, whichever section the address opens on (TEb).
+    askAdminister('tenant');
+  }, [askAdminister]);
   const mayChangeSpaces = administers.get('tenant') === true;
   useEffect(() => {
     if (spaces === null || typeof spaces !== 'object') return;

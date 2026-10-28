@@ -698,8 +698,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         shows: page.getByRole('table', { name: /Translated components/ }),
       });
       await page.goto(`${SERVICE}/#/admin/translation`);
-      await check('the translation policy', {
-        shows: page.getByRole('textbox', { name: 'What the mark says, by language' }),
+      await check('the translation policy and its history', {
+        shows: [
+          page.getByRole('textbox', { name: 'What the mark says, by language' }),
+          page.getByRole('table', { name: 'Changes to the translation policy' }),
+        ],
       });
     });
   });

@@ -66,6 +66,7 @@ import { latestRevisionsOf } from './workflow.js';
 import {
   resolveInLanguage,
   translationPolicy,
+  translationPolicyNow,
   type InLanguage,
   type ReferenceRead,
 } from './translation.js';
@@ -905,6 +906,11 @@ export interface Publishable {
   readonly untranslatedNotes: ReadonlyMap<string, string>;
   /** What reading it in that language reports, which never stops it by itself (TR-J, TR-K). */
   readonly translationWarnings: readonly TranslationWarning[];
+  /**
+   * The translation policy's history row it was decided under (TE-D; LOC-036): in a language asked
+   * for, from 0170 on; otherwise none.
+   */
+  readonly policyChange: string | null;
 }
 
 /** What publishing in a language reports (TR-J, TR-K), by node: never a component's words. */
@@ -997,7 +1003,9 @@ export async function resolvePublishable(
     const shown = translations.get(each.node);
     return each.outcome === 'resolved' && shown ? { ...each, version: shown.version } : each;
   });
-  const policy = input.language === undefined ? undefined : await translationPolicy(trx);
+  // Its values and the history row naming them, read together (TE-D): what the request records.
+  const decided = input.language === undefined ? undefined : await translationPolicyNow(trx);
+  const policy = decided?.policy;
   const fallback = read.outline.fallback ?? policy?.fallback ?? 'source';
   const translationFailures: PublishFailure[] = [];
   const translationWarnings: TranslationWarning[] = [];
@@ -1213,6 +1221,7 @@ export async function resolvePublishable(
     translations,
     translationWarnings,
     untranslatedNotes,
+    policyChange: decided?.change ?? null,
   };
 }
 
@@ -1333,6 +1342,8 @@ export async function requestPublication(
       ...(warnings.length === 0 ? {} : { warnings: JSON.stringify(warnings) }),
       // Its language where one was asked for, as on a request before 0160 (TR-I).
       ...(found.language === undefined ? {} : { language: found.language }),
+      // The policy it was decided under (TE-D): a row only where 0170 has run, which made the column.
+      ...(found.policyChange === null ? {} : { policy_change: found.policyChange }),
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
@@ -2989,6 +3000,11 @@ export interface StoredPublication {
   readonly engine: { readonly name: 'typst'; readonly version: string } | null;
   readonly template: { readonly name: 'publication'; readonly version: number } | null;
   readonly pipelineVersion: string;
+  /**
+   * The translation policy's change it was decided under, and when that change was made (TE-D;
+   * LOC-036); none for one in its document's own language, a baseline's, or one before 0170.
+   */
+  readonly translationPolicy: { readonly change: string; readonly at: Date } | null;
   /** One per format, in the order the formats are named: the PDF first. */
   readonly outputs: readonly {
     /** A format it names, or `provenance.json` beside them where it holds a value (B3-G). */
@@ -3010,8 +3026,8 @@ export interface StoredPublication {
   }[];
 }
 
-/** A publication as a listing shows it: its record without its outputs. */
-export type PublicationSummary = Omit<StoredPublication, 'outputs'>;
+/** A publication as a listing shows it: its record without its outputs or its policy version. */
+export type PublicationSummary = Omit<StoredPublication, 'outputs' | 'translationPolicy'>;
 
 const publicationColumns = [
   'p.id',
@@ -3086,6 +3102,7 @@ export async function readPublication(
     format === 'provenance' ? row.formats.length : row.formats.indexOf(format);
   return {
     ...summaryOf(row),
+    translationPolicy: await policyDecidedUnder(trx, id),
     outputs: outputs
       .sort((a, b) => order(a.format) - order(b.format))
       .map((each) => ({
@@ -3103,6 +3120,24 @@ export async function readPublication(
         checkGaveUp: givenUp.some((row) => row.format === each.format),
       })),
   };
+}
+
+/** The policy change a publication's request was decided under (TE-D), where 0170 has run. */
+async function policyDecidedUnder(
+  trx: TenantTransaction,
+  publication: string,
+): Promise<{ readonly change: string; readonly at: Date } | null> {
+  const { rows: stands } = await sql<{
+    present: boolean;
+  }>`select to_regclass('translation_policy_change') is not null as present`.execute(trx);
+  if (stands[0]?.present !== true) return null;
+  const { rows } = await sql<{ change: string; at: Date }>`
+    select c.id as change, c.at
+      from publication p
+      join publication_request r on r.id = p.request_id
+      join translation_policy_change c on c.id = r.policy_change
+     where p.id = ${publication}`.execute(trx);
+  return rows[0] ?? null;
 }
 
 /** A check as it is stored: 0040's checks hold its failed rules to their shape. */
