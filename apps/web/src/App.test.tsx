@@ -150,7 +150,14 @@ describe('App', () => {
     render(<App bridge={desktopBridge} workspace={aboutWorkspace} />);
 
     expect(await screen.findByRole('heading', { name: 'Environment' })).toBeInTheDocument();
-    expect(signedIn).toHaveBeenCalled();
+    // Signed in, it asks for the service's locale data too: awaited, so no request outlives the test.
+    await vi.waitFor(() =>
+      expect(
+        signedIn.mock.calls.some(([input]) =>
+          (input instanceof Request ? input.url : String(input)).endsWith('/v1/about'),
+        ),
+      ).toBe(true),
+    );
   });
 
   it('says so while the bridge has not answered yet', async () => {
