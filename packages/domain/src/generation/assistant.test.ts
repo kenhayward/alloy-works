@@ -178,7 +178,9 @@ describe("the assistant's terms", () => {
       ],
     } as unknown as BlockNode;
     expect(editableProblem(marked)).toBeUndefined();
-    expect(componentAsText(document(marked))).toBe(`[#p1] paragraph${String.fromCharCode(10)}An alloy`);
+    expect(componentAsText(document(marked))).toBe(
+      `[#p1] paragraph${String.fromCharCode(10)}An alloy`,
+    );
   });
 
   it('refuses to edit a block holding what Markdown cannot say, naming it', () => {

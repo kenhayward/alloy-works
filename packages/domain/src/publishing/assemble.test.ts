@@ -7709,18 +7709,12 @@ describe('an index marker, published (the IX plan, IX-F)', () => {
 
   it('prints nothing and fails nothing, under a layout or none, wherever it stands', () => {
     const blocks = [
-      paragraph(
-        'b1',
-        text('An '),
-        marker,
-        text('alloy'),
-        {
-          type: 'footnote',
-          id: 'f1',
-          anchor: { kind: 'span' },
-          content: [paragraph('n1', text('Noted'), marker)],
-        },
-      ),
+      paragraph('b1', text('An '), marker, text('alloy'), {
+        type: 'footnote',
+        id: 'f1',
+        anchor: { kind: 'span' },
+        content: [paragraph('n1', text('Noted'), marker)],
+      }),
       {
         type: 'table',
         id: 't1',

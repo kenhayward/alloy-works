@@ -200,15 +200,12 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
 
     it('REU-048 removes a paragraph holding only an excluded passage and its marker', () => {
       const applied = applyConditions(
-        doc(
-          paragraph('p1', run('Open.')),
-          {
-            type: 'paragraph',
-            id: 'p2',
-            style: 'body',
-            content: [run('Internal.', ['audience', ['internal']]), marker('Hidden term')],
-          },
-        ),
+        doc(paragraph('p1', run('Open.')), {
+          type: 'paragraph',
+          id: 'p2',
+          style: 'body',
+          content: [run('Internal.', ['audience', ['internal']]), marker('Hidden term')],
+        }),
         regulator,
       );
       expect(textOf(applied.content)).toEqual(['Open.']);
