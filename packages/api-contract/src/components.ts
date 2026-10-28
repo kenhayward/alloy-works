@@ -1,3 +1,4 @@
+import { TRANSLATION_STATUSES } from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
@@ -214,6 +215,26 @@ export const Lock = z.object({
     .describe('Somebody asking to take it over, or null'),
 });
 
+/**
+ * A component's translations where it is listed (LOC-016; the TE plan, TE-B): each language and its
+ * status, as a document's reference row says them; absent where it has none.
+ */
+export const ListedTranslations = z
+  .array(
+    z.object({
+      language: z.string(),
+      status: z.enum(TRANSLATION_STATUSES),
+      retranslate: z
+        .boolean()
+        .optional()
+        .describe('Out of date: whether any source change since needs retranslating (LOC-015)'),
+    }),
+  )
+  .optional()
+  .describe(
+    'Its translations, by language, each with its status (LOC-016); absent where it has none',
+  );
+
 export const ComponentList = z.object({
   items: z.array(
     z.object({
@@ -237,6 +258,7 @@ export const ComponentList = z.object({
         .array(z.string())
         .optional()
         .describe('Its open divergent lines, by name (LIF-046); absent where it has not diverged'),
+      translations: ListedTranslations,
     }),
   ),
   next: nextCursor,

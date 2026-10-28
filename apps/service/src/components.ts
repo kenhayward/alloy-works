@@ -39,6 +39,8 @@ import {
   headVersion,
   lineNumbers,
   openLinesOf,
+  translationsOf,
+  type Translation,
   readLines,
 } from '@alloy-works/db';
 import {
@@ -236,6 +238,26 @@ async function metadataView(trx: TenantTransaction, version: StoredVersion) {
   };
 }
 
+/**
+ * A component's translations where it is listed (LOC-016; the TE plan, TE-B): each language and its
+ * status, as a reference row says them; nothing where it has none.
+ */
+export function listedTranslations(
+  translated: ReadonlyMap<string, readonly Translation[]>,
+  component: string,
+): {
+  translations?: {
+    language: string;
+    status: Translation['status']['status'];
+    retranslate?: boolean;
+  }[];
+} {
+  const each = translated.get(component);
+  return each === undefined || each.length === 0
+    ? {}
+    : { translations: each.map((one) => ({ language: one.language, ...one.status })) };
+}
+
 export function componentHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
@@ -398,19 +420,24 @@ export function componentHandlers(
       const principal = principalOf(request).principalId;
       const spaces = query.spaces?.split(',');
       const types = query.types?.split(',');
-      const { page, states, past, open } = await db.withTenant(tenantOf(request), async (trx) => {
-        const page = await listReadableComponents(trx, principal, asked, {
-          ...(spaces === undefined ? {} : { spaces }),
-          ...(types === undefined ? {} : { types }),
-          ...(query.archived === undefined ? {} : { archived: query.archived }),
-        });
-        // Each one's workflow state now (WF-G).
-        const states = await workflowStates(trx, page?.items.map((item) => item.id) ?? []);
-        const past = await pastReviewOf(trx, page?.items.map((item) => item.id) ?? []);
-        // Each one's open lines (LIF-046; R16-E).
-        const open = await openLinesOf(trx, page?.items.map((item) => item.id) ?? []);
-        return { page, states, past, open };
-      });
+      const { page, states, past, open, translated } = await db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          const page = await listReadableComponents(trx, principal, asked, {
+            ...(spaces === undefined ? {} : { spaces }),
+            ...(types === undefined ? {} : { types }),
+            ...(query.archived === undefined ? {} : { archived: query.archived }),
+          });
+          // Each one's workflow state now (WF-G).
+          const states = await workflowStates(trx, page?.items.map((item) => item.id) ?? []);
+          const past = await pastReviewOf(trx, page?.items.map((item) => item.id) ?? []);
+          // Each one's open lines (LIF-046; R16-E).
+          const open = await openLinesOf(trx, page?.items.map((item) => item.id) ?? []);
+          // And its translations, of the page the reader may read alone (LOC-016; TE-B).
+          const translated = await translationsOf(trx, page?.items.map((item) => item.id) ?? []);
+          return { page, states, past, open, translated };
+        },
+      );
       if (!page) throw new Error('A signed-in principal is not in its own tenant');
       return {
         items: page.items.map((item) => ({
@@ -425,6 +452,7 @@ export function componentHandlers(
           state: stateOf(states, item.id),
           pastReview: past.has(item.id),
           ...(open.has(item.id) ? { lines: open.get(item.id)! } : {}),
+          ...listedTranslations(translated, item.id),
         })),
         next: cursorFor(
           'components',

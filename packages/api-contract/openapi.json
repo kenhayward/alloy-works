@@ -46945,7 +46945,7 @@
       "get": {
         "operationId": "listComponents",
         "summary": "The components the caller may read, a page at a time",
-        "description": "Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone.",
+        "description": "Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone. Each says its translations, by language, with each one’s status.",
         "tags": [
           "Components"
         ],
@@ -47150,6 +47150,36 @@
                             "type": "array",
                             "items": {
                               "type": "string"
+                            }
+                          },
+                          "translations": {
+                            "description": "Its translations, by language, each with its status (LOC-016); absent where it has none",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "language": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "untranslated",
+                                    "machineDrafted",
+                                    "inTranslation",
+                                    "translated",
+                                    "outOfDate"
+                                  ]
+                                },
+                                "retranslate": {
+                                  "description": "Out of date: whether any source change since needs retranslating (LOC-015)",
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "language",
+                                "status"
+                              ]
                             }
                           }
                         },
@@ -272388,7 +272418,7 @@
       "get": {
         "operationId": "search",
         "summary": "Everything the caller may read that holds these words, a page at a time",
-        "description": "Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.",
+        "description": "Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in, and a component its translations, each with its status.",
         "tags": [
           "Search"
         ],
@@ -272934,6 +272964,36 @@
                                 "type": "array",
                                 "items": {
                                   "type": "string"
+                                }
+                              },
+                              "translations": {
+                                "description": "A component's translations, by language, each with its status (LOC-016); absent where it has none, and for anything else",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "language": {
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "untranslated",
+                                        "machineDrafted",
+                                        "inTranslation",
+                                        "translated",
+                                        "outOfDate"
+                                      ]
+                                    },
+                                    "retranslate": {
+                                      "description": "Out of date: whether any source change since needs retranslating (LOC-015)",
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "language",
+                                    "status"
+                                  ]
                                 }
                               },
                               "section": {
@@ -318956,8 +319016,8 @@
     "/v1/spaces/{space}/translations": {
       "get": {
         "operationId": "getSpaceTranslations",
-        "summary": "Report a space's translations, each with its status",
-        "description": "Reports the components of a space that have translations, by title, each translation with its status: untranslated, translated, or out of date with its source, saying whether any change since needs retranslating. Only components the caller may read are named or counted. At most 500 are named, and the report says when there are more. It needs read on the space.",
+        "summary": "Report a space's translations, each with its status, a page at a time",
+        "description": "Reports the components of a space that have translations, a page at a time by title in the language the request accepts, each translation with its status: untranslated, machine drafted, in translation, translated, or out of date with its source, saying whether any change since needs retranslating. Narrow it to one language, one status or both with `language` and `status`; only the translations they leave are given. Only components the caller may read are named. Send the returned next cursor, with the same language, to continue. It needs read on the space.",
         "tags": [
           "Translations"
         ],
@@ -318989,6 +319049,53 @@
             }
           },
           {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Where the previous page ended, as that page gave it; absent for the first",
+              "type": "string",
+              "maxLength": 4000
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "At most this many, 50 when absent",
+              "type": "string",
+              "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only translations into this BCP 47 tag, such as `fr-FR`",
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 35
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "Only translations with this status",
+              "type": "string",
+              "enum": [
+                "untranslated",
+                "machineDrafted",
+                "inTranslation",
+                "translated",
+                "outOfDate"
+              ]
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -319001,7 +319108,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The space's translated components",
+            "description": "A page of the space's translated components",
             "content": {
               "application/json": {
                 "schema": {
@@ -319179,7 +319286,8 @@
                                 "translates",
                                 "status"
                               ]
-                            }
+                            },
+                            "description": "Each of its translations the filters leave, by language"
                           }
                         },
                         "required": [
@@ -319187,21 +319295,65 @@
                           "translations"
                         ]
                       },
-                      "description": "Each component of the space the caller may read that has a translation, by title, with each translation and its status"
+                      "description": "Each component of the space the caller may read with a translation the filters leave, by title in the language the request accepts"
                     },
-                    "capped": {
-                      "type": "boolean",
-                      "description": "Whether more components have translations than the 500 a report names (API-058)"
+                    "next": {
+                      "description": "The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
                     "items",
-                    "capped"
+                    "next"
                   ]
                 },
                 "example": {
                   "items": [],
-                  "capped": false
+                  "next": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A cursor this report did not give out, or a limit outside 1 to 100",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
                 }
               }
             },

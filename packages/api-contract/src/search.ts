@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ListedTranslations } from './components.js';
 import type { RouteContract } from './contract.js';
 import { ErrorBody } from './schemas.js';
 
@@ -184,6 +185,9 @@ export const SearchResultView = z.object({
     .describe(
       "A component's open divergent lines, by name (LIF-046); absent where it has not diverged",
     ),
+  translations: ListedTranslations.describe(
+    "A component's translations, by language, each with its status (LOC-016); absent where it has none, and for anything else",
+  ),
   section: z
     .object({
       document: z.object({ id: z.string(), title: z.string() }),

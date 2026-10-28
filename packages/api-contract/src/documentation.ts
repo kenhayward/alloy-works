@@ -703,7 +703,7 @@ const descriptions: Readonly<Record<string, string>> = {
   explainAccess:
     'For an administrator, explain each permission a named principal has on a target and the grants and levels behind the answer.',
   listComponents:
-    'Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone.',
+    'Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone. Each says its translations, by language, with each one’s status.',
   getComponent:
     'Opens the latest component version with the caller’s editing permissions and current lock. Use its version when submitting a change.',
   listIterations:
@@ -1104,7 +1104,7 @@ const descriptions: Readonly<Record<string, string>> = {
   previewComponentTerms:
     "Answers the standing and preferred label of each term a component's editor uses, in order, so it can flag a deprecated one with its replacement. A term that is not one of the component's space the caller may read is answered unavailable, and nothing more is said of it. Nothing is kept.",
   getSpaceTranslations:
-    'Reports the components of a space that have translations, by title, each translation with its status: untranslated, translated, or out of date with its source, saying whether any change since needs retranslating. Only components the caller may read are named or counted. At most 500 are named, and the report says when there are more. It needs read on the space.',
+    'Reports the components of a space that have translations, a page at a time by title in the language the request accepts, each translation with its status: untranslated, machine drafted, in translation, translated, or out of date with its source, saying whether any change since needs retranslating. Narrow it to one language, one status or both with `language` and `status`; only the translations they leave are given. Only components the caller may read are named. Send the returned next cursor, with the same language, to continue. It needs read on the space.',
   listComponentTranslations:
     "Lists a component's translations, one per language, each with its newest version recorded against a source, the source version that translates, and its status: untranslated until its first cut, translated, or out of date the moment a source version follows the one it translates, saying whether any change since needs retranslating. Open a translation as any other line of the component. It needs read on the component.",
   beginComponentTranslation:
@@ -1418,7 +1418,7 @@ const descriptions: Readonly<Record<string, string>> = {
   listExternalAccess:
     'Lists everybody from outside the organisation: each grant reaching them, directly or through a group, with its level and expiry, and what those grants let them read. The report an administrator runs to see who from outside can reach what.',
   search:
-    'Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.',
+    'Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in, and a component its translations, each with its status.',
   getEditingSettings:
     'Reads the environment’s editing settings, including how long saved changes are retained.',
   setEditingSettings:

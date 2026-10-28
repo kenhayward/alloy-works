@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { allRoutes } from '@alloy-works/api-contract';
 import {
+  beginTranslation,
   bootstrapCluster,
+  decideGate,
+  moveArtifact,
   createComponent,
   createConnection,
   createPrompt,
@@ -42,7 +45,13 @@ const HOST = 'acme.alloy.test';
 
 interface Page {
   // An audit event is known by its sequence, as everything else by its id.
-  items: { id: string; sequence?: string; title?: string; name?: string }[];
+  items: {
+    id: string;
+    sequence?: string;
+    title?: string;
+    name?: string;
+    component?: { id: string };
+  }[];
   next: string | null;
 }
 
@@ -264,7 +273,7 @@ describe('the listings through the service', () => {
       const response = await get(url);
       expect(response.statusCode, url).toBe(200);
       const page = response.json<Page>();
-      seen.push(...page.items.map((each) => each.id ?? each.sequence));
+      seen.push(...page.items.map((each) => each.id ?? each.sequence ?? each.component?.id));
       if (page.next === null) return seen;
       url = `${path}${path.includes('?') ? '&' : '?'}limit=1&cursor=${page.next}`;
     }
@@ -568,6 +577,55 @@ describe('the listings through the service', () => {
         await createImport(trx, { spaceId: general, importer: asker, fileName, fileType: 'docx' });
       }
     });
+    // Two components translated, so a space's translations have pages to turn (TE-C): Ada approves.
+    const approver = await tenantDb.withTenant(
+      tenant,
+      async (trx) =>
+        (
+          await trx
+            .insertInto('principal')
+            .values({
+              issuer: 'https://idp.example',
+              subject: randomUUID(),
+              email: null,
+              display_name: 'Ada',
+            })
+            .returning('id')
+            .executeTakeFirstOrThrow()
+        ).id,
+    );
+    for (const title of ['Translated one', 'Translated two']) {
+      await tenantDb.withTenant(tenant, async (trx) => {
+        const made = await createComponent(trx, {
+          spaceId: general,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author: asker,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        const at = { artifactId: made.version.artifactId, kind: 'component' as const };
+        const moved = await moveArtifact(trx, {
+          ...at,
+          transition: 'submit',
+          from: 'draft',
+          by: asker,
+          may: () => true,
+        });
+        expect(moved.answer).toBe('moved');
+        const passed = await decideGate(trx, {
+          ...at,
+          transition: 'approve',
+          version: made.version.id,
+          decision: 'approved',
+          by: approver,
+          may: () => true,
+        });
+        expect(passed.answer).toBe('passed');
+        const begun = await beginTranslation(trx, { ...at, language: 'fr-FR', by: asker });
+        if (begun.answer !== 'begun') throw new Error(begun.answer);
+      });
+    }
     const addressed: Record<string, string> = {
       listComponents: '/v1/components',
       listComponentVersions: `/v1/components/${component}/versions`,
@@ -595,6 +653,7 @@ describe('the listings through the service', () => {
       listPrompts: '/v1/prompts',
       listBibliographyEntries: `/v1/spaces/${general}/bibliography-entries`,
       listTerms: `/v1/spaces/${general}/terms`,
+      getSpaceTranslations: `/v1/spaces/${general}/translations`,
       listImports: `/v1/spaces/${general}/imports`,
       listDefinitions: '/v1/definitions',
       listPeople: '/v1/people',
@@ -624,8 +683,6 @@ describe('the listings through the service', () => {
       'listReferenceSources',
       // And a document's flagged sources: those what it places cites, flagged alone (XRb).
       'getDocumentFlaggedSources',
-      // And a space's translations: capped at 500 and saying so (the TR plan, TR-M).
-      'getSpaceTranslations',
       // And a person's conversations, at most 200, the newest first (the G5 plan).
       'listConversations',
       // And the endpoints a turn may run on: the tenant's handful in use, as the endpoints are.
@@ -659,7 +716,7 @@ describe('the listings through the service', () => {
       expect(whole.next, route.operationId).toBeNull();
       expect(whole.items.length, route.operationId).toBeGreaterThan(0);
       expect(await walk(path), route.operationId).toEqual(
-        whole.items.map((each) => each.id ?? each.sequence),
+        whole.items.map((each) => each.id ?? each.sequence ?? each.component?.id),
       );
     }
   });

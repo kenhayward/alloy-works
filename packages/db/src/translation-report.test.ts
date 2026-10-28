@@ -53,7 +53,11 @@ describe('a space’s translations, paged (the TE plan, TE-C)', () => {
     service.withTenant(tenant, work, { actorKind: 'person', actor: who });
 
   /** Cut on the main line, or on a language line recording what it translates. */
-  const cut = (version: StoredVersion, language: string, extra: { line?: string; translates?: string } = {}) =>
+  const cut = (
+    version: StoredVersion,
+    language: string,
+    extra: { line?: string; translates?: string } = {},
+  ) =>
     as(async (trx) => {
       const at = {
         artifactId: version.artifactId,
@@ -75,7 +79,12 @@ describe('a space’s translations, paged (the TE plan, TE-C)', () => {
           },
         ],
       };
-      const saved = await saveIteration(trx, { ...at, sequence: 1, openedFrom: version.id, content });
+      const saved = await saveIteration(trx, {
+        ...at,
+        sequence: 1,
+        openedFrom: version.id,
+        content,
+      });
       if (saved.answer !== 'accepted') throw new Error(saved.answer);
       const made = await cutVersion(trx, {
         ...at,
@@ -256,7 +265,12 @@ describe('a space’s translations, paged (the TE plan, TE-C)', () => {
     const cases = [null, 'v1'].flatMap((translates) =>
       laters.flatMap((later) =>
         [false, true].flatMap((inTranslation) =>
-          [false, true].map((machineDrafted) => ({ translates, later, inTranslation, machineDrafted })),
+          [false, true].map((machineDrafted) => ({
+            translates,
+            later,
+            inTranslation,
+            machineDrafted,
+          })),
         ),
       ),
     );
@@ -322,9 +336,7 @@ describe('a space’s translations, paged (the TE plan, TE-C)', () => {
       'zebra',
       'بحر',
     ]);
-    expect(
-      (await walk(ada, 2, { language: 'fr-FR', status: 'untranslated' })).flat(),
-    ).toEqual([
+    expect((await walk(ada, 2, { language: 'fr-FR', status: 'untranslated' })).flat()).toEqual([
       { title: 'apple', languages: ['fr-FR untranslated'] },
       { title: 'Bach', languages: ['fr-FR untranslated'] },
     ]);

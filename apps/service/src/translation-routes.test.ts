@@ -233,7 +233,7 @@ describe('translation (the TR plan, TRa)', () => {
     });
   });
 
-  it('LOC-010 publishes a document in a language through the API, a component without a translation reported, and LOC-037 refused as the document says', async () => {
+  it('LOC-010 publishes a document in a language through the API, a component without a translation reported, and LOC-037 refused as the document says; LOC-016 each reference says its translations', async () => {
     const translatedOne = await approvedComponent('Methods');
     const begun = await h.call('grace', 'POST', `/v1/components/${translatedOne.id}/translations`, {
       language: 'fr-FR',
@@ -310,7 +310,6 @@ describe('translation (the TR plan, TRa)', () => {
         .json<{ items: { component: { id: string } }[] }>()
         .items.map((each) => each.component.id),
     ).toContain(translatedOne.id);
-    expect(report.json()).toMatchObject({ capped: false });
     expect(
       report
         .json<{ items: { component: { id: string } }[] }>()
@@ -348,6 +347,76 @@ describe('translation (the TR plan, TRa)', () => {
     expect(refused.json()).toMatchObject({
       failures: [{ code: 'occurrence_untranslated', node: nodes[1]!.id }],
     });
+  });
+
+  it('LOC-016 says a component’s translation status where it is listed and found, and reports a space’s a page at a time, filtered, to nobody who may not read it', async () => {
+    const component = await approvedComponent('Quillwort');
+    const alone = await approvedComponent('Quillwort rushes');
+    const begin = async (language: string) =>
+      (
+        await h.call('grace', 'POST', `/v1/components/${component.id}/translations`, { language })
+      ).json<{ line: string }>().line;
+    const french = await begin('fr-FR');
+    await begin('nl-NL');
+    const translated = await cut(
+      'grace',
+      component.id,
+      component.version.id,
+      [para('b1', 'Isoète.')],
+      'fr-FR',
+      { line: french, translates: component.version.id },
+    );
+    expect(translated.statusCode, translated.body).toBe(200);
+    const said = [
+      { language: 'fr-FR', status: 'translated' },
+      { language: 'nl-NL', status: 'untranslated' },
+    ];
+
+    type Listed = { items: { id: string; translations?: unknown }[] };
+    const listed = (
+      await h.call('alice', 'GET', `/v1/components?spaces=${h.general}&limit=100`)
+    ).json<Listed>().items;
+    expect(listed.find((each) => each.id === component.id)?.translations).toEqual(said);
+    expect(listed.find((each) => each.id === alone.id)).not.toHaveProperty('translations');
+
+    type Found = { items: { kind: string; artifactId: string; translations?: unknown }[] };
+    const found = (await h.call('alice', 'GET', '/v1/search?q=quillwort')).json<Found>().items;
+    expect(
+      found.find((each) => each.kind === 'component' && each.artifactId === component.id)
+        ?.translations,
+    ).toEqual(said);
+    expect(
+      found.find((each) => each.kind === 'component' && each.artifactId === alone.id),
+    ).not.toHaveProperty('translations');
+    expect(
+      (await h.call('ivy', 'GET', '/v1/search?q=quillwort')).json<Found>().items ?? [],
+    ).toEqual([]);
+
+    // The report, filtered before it is paged, a cursor read back only in its own language.
+    const report = (query: string, language = 'en-GB') =>
+      h.app.inject({
+        method: 'GET',
+        url: `/v1/spaces/${h.general}/translations${query}`,
+        headers: { host: HOST, cookie: h.cookies.alice!, 'accept-language': language },
+      });
+    type Report = {
+      items: { component: { id: string }; translations: { language: string }[] }[];
+      next: string | null;
+    };
+    const dutch = (await report('?language=nl-NL')).json<Report>();
+    expect(dutch.items.map((each) => each.component.id)).toEqual([component.id]);
+    expect(dutch.items[0]!.translations.map((each) => each.language)).toEqual(['nl-NL']);
+    expect(
+      (await report('?status=machineDrafted'))
+        .json<Report>()
+        .items.map((each) => each.component.id),
+    ).not.toContain(component.id);
+    const first = (await report('?limit=1')).json<Report>();
+    expect(first.items).toHaveLength(1);
+    expect(first.next).not.toBeNull();
+    expect((await report(`?limit=1&cursor=${first.next}`)).statusCode).toBe(200);
+    expect((await report(`?limit=1&cursor=${first.next}`, 'ar-XB')).statusCode).toBe(400);
+    expect((await report('?status=lost')).statusCode).toBe(400);
   });
 
   it("sends a document's components needing a language as a job, tracked item by item, downloaded as XLIFF 2.1, and closed", async () => {

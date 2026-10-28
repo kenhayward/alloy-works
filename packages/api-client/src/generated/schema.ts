@@ -852,7 +852,7 @@ export interface paths {
         };
         /**
          * The components the caller may read, a page at a time
-         * @description Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone.
+         * @description Lists only components the caller can read, in stable cursor pages. Send the returned next cursor to continue the same listing. Archived components are left out unless archived=only asks for them alone. Each says its translations, by language, with each one’s status.
          */
         get: operations["listComponents"];
         put?: never;
@@ -5540,7 +5540,7 @@ export interface paths {
         };
         /**
          * Everything the caller may read that holds these words, a page at a time
-         * @description Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in.
+         * @description Searches only content the caller may read, with facets and stable cursor paging: the latest version of each by default, every version on request, or what one baseline pins. Each result names the version it matched in, and a component its translations, each with its status.
          */
         get: operations["search"];
         put?: never;
@@ -6319,8 +6319,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Report a space's translations, each with its status
-         * @description Reports the components of a space that have translations, by title, each translation with its status: untranslated, translated, or out of date with its source, saying whether any change since needs retranslating. Only components the caller may read are named or counted. At most 500 are named, and the report says when there are more. It needs read on the space.
+         * Report a space's translations, each with its status, a page at a time
+         * @description Reports the components of a space that have translations, a page at a time by title in the language the request accepts, each translation with its status: untranslated, machine drafted, in translation, translated, or out of date with its source, saying whether any change since needs retranslating. Narrow it to one language, one status or both with `language` and `status`; only the translations they leave are given. Only components the caller may read are named. Send the returned next cursor, with the same language, to continue. It needs read on the space.
          */
         get: operations["getSpaceTranslations"];
         put?: never;
@@ -19815,6 +19815,14 @@ export interface operations {
                             pastReview: boolean;
                             /** @description Its open divergent lines, by name (LIF-046); absent where it has not diverged */
                             lines?: string[];
+                            /** @description Its translations, by language, each with its status (LOC-016); absent where it has none */
+                            translations?: {
+                                language: string;
+                                /** @enum {string} */
+                                status: "untranslated" | "machineDrafted" | "inTranslation" | "translated" | "outOfDate";
+                                /** @description Out of date: whether any source change since needs retranslating (LOC-015) */
+                                retranslate?: boolean;
+                            }[];
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -93930,6 +93938,14 @@ export interface operations {
                             } | null;
                             /** @description A component's open divergent lines, by name (LIF-046); absent where it has not diverged */
                             lines?: string[];
+                            /** @description A component's translations, by language, each with its status (LOC-016); absent where it has none, and for anything else */
+                            translations?: {
+                                language: string;
+                                /** @enum {string} */
+                                status: "untranslated" | "machineDrafted" | "inTranslation" | "translated" | "outOfDate";
+                                /** @description Out of date: whether any source change since needs retranslating (LOC-015) */
+                                retranslate?: boolean;
+                            }[];
                             /** @description A section's document and the components it places; null for anything else */
                             section: {
                                 document: {
@@ -108150,7 +108166,12 @@ export interface operations {
     };
     getSpaceTranslations: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string;
+                limit?: string;
+                language?: string;
+                status?: "untranslated" | "machineDrafted" | "inTranslation" | "translated" | "outOfDate";
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -108162,7 +108183,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The space's translated components */
+            /** @description A page of the space's translated components */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -108173,17 +108194,18 @@ export interface operations {
                     /**
                      * @example {
                      *       "items": [],
-                     *       "capped": false
+                     *       "next": "example"
                      *     }
                      */
                     "application/json": {
-                        /** @description Each component of the space the caller may read that has a translation, by title, with each translation and its status */
+                        /** @description Each component of the space the caller may read with a translation the filters leave, by title in the language the request accepts */
                         items: {
                             component: {
                                 /** Format: uuid */
                                 id: string;
                                 title: string;
                             };
+                            /** @description Each of its translations the filters leave, by language */
                             translations: {
                                 /**
                                  * Format: uuid
@@ -108228,8 +108250,28 @@ export interface operations {
                                 } | null;
                             }[];
                         }[];
-                        /** @description Whether more components have translations than the 500 a report names (API-058) */
-                        capped: boolean;
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                    };
+                };
+            };
+            /** @description A cursor this report did not give out, or a limit outside 1 to 100 */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

@@ -8,9 +8,12 @@ import {
   type TenantDatabase,
   openLinesOf,
   readsOnlyShares,
+  translationsOf,
+  type Translation,
 } from '@alloy-works/db';
 import type { SearchKind } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
+import { listedTranslations } from './components.js';
 import { AppError } from './errors.js';
 import type { ConnectorOptions } from './data/connections.js';
 import { meaningSearcher, type MeaningState } from './generation/meaning.js';
@@ -57,6 +60,8 @@ function view(
   outside = false,
   /** Whether meaning was searched beside the words (the G7 plan, G7-I). */
   meaning: MeaningState = 'skipped',
+  /** Each component found's translations (LOC-016; TE-B). */
+  translated: ReadonlyMap<string, readonly Translation[]> = new Map(),
 ): SearchAnswerView {
   const message = sentenceFor(answer);
   if (answer.outcome === 'nothing_to_match') {
@@ -110,6 +115,8 @@ function view(
       ...(each.kind === 'component' && open.has(each.artifactId)
         ? { lines: [...open.get(each.artifactId)!] }
         : {}),
+      // And its translations, each with its status (LOC-016; TE-B).
+      ...(each.kind === 'component' ? listedTranslations(translated, each.artifactId) : {}),
       section:
         each.section === null
           ? null
@@ -216,28 +223,35 @@ export function searchHandlers(
           },
         },
       );
-      const { answer, open, outside } = await db.withTenant(tenantOf(request), async (trx) => {
-        const found = await searchWords(trx, principalOf(request).principalId, query.q ?? '', {
-          ...(meaning.hits.length === 0 ? {} : { meaning: meaning.hits }),
-          ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
-          ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
-          filters,
-          scope:
-            query.baseline === undefined
-              ? (query.versions ?? 'latest')
-              : { baseline: query.baseline },
-        });
-        // The open lines of each component found: of results the reader may read alone.
-        const components =
-          found !== undefined && found !== 'baseline_not_found' && found.outcome === 'results'
-            ? found.items.filter((each) => each.kind === 'component').map((each) => each.artifactId)
-            : [];
-        return {
-          answer: found,
-          open: await openLinesOf(trx, components),
-          outside: await readsOnlyShares(trx, principalOf(request).principalId),
-        };
-      });
+      const { answer, open, outside, translated } = await db.withTenant(
+        tenantOf(request),
+        async (trx) => {
+          const found = await searchWords(trx, principalOf(request).principalId, query.q ?? '', {
+            ...(meaning.hits.length === 0 ? {} : { meaning: meaning.hits }),
+            ...(query.offset === undefined ? {} : { offset: Number(query.offset) }),
+            ...(query.limit === undefined ? {} : { limit: Number(query.limit) }),
+            filters,
+            scope:
+              query.baseline === undefined
+                ? (query.versions ?? 'latest')
+                : { baseline: query.baseline },
+          });
+          // The open lines of each component found: of results the reader may read alone.
+          const components =
+            found !== undefined && found !== 'baseline_not_found' && found.outcome === 'results'
+              ? found.items
+                  .filter((each) => each.kind === 'component')
+                  .map((each) => each.artifactId)
+              : [];
+          return {
+            answer: found,
+            open: await openLinesOf(trx, components),
+            outside: await readsOnlyShares(trx, principalOf(request).principalId),
+            // Read only of what the reader was found to read, so none they may not is named.
+            translated: await translationsOf(trx, components),
+          };
+        },
+      );
       if (answer === 'baseline_not_found') {
         throw new AppError(
           404,
@@ -268,6 +282,7 @@ export function searchHandlers(
         open,
         outside,
         meaning.state,
+        translated,
       );
     },
   };
