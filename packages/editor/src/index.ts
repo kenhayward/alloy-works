@@ -172,6 +172,17 @@ export {
   type CitationFlags,
   type CitationForms,
 } from './citations.js';
+// An index marker, placed and changed in the Index entry dialog (the IX plan, IX-M).
+export {
+  changeIndexMarker,
+  indexEntryRefused,
+  indexMarkerAt,
+  indexMarkerPlaceable,
+  indexTermsIn,
+  insertIndexMarker,
+  type IndexEntryAt,
+  type IndexEntryChoice,
+} from './indexEntries.js';
 // A variable, placed from the declared ones (the R5 plan, R5b).
 export { insertVariable, variablePlaceable, variableSelected } from './variables.js';
 // Conditions, set over text and given alternatives (the R6 plan, R6-H).

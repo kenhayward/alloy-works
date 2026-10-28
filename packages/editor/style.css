@@ -781,6 +781,24 @@
   font-size: 0.9em;
 }
 
+/* An index marker (the IX plan, IX-M): a small chip naming its entry, on the surface alone, since it
+ * prints nothing. Its sides logical, so it reads the same in right-to-left text. */
+.aw-text .aw-index-marker {
+  margin-inline: 0.1em;
+  padding-inline: 0.3em;
+  border: 1px dotted var(--muted);
+  border-radius: 3px;
+  background: var(--sunken);
+  font-size: 0.8em;
+  vertical-align: 0.1em;
+  unicode-bidi: isolate;
+}
+
+.aw-text .aw-index-marker.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* A deprecated or unreadable term where it is used (LIB-018): underlined wavy, the flag said after
  * it in words, so it is told apart without colour. */
 .aw-text .aw-term-deprecated,

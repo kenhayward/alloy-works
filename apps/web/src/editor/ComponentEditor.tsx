@@ -33,6 +33,11 @@ import {
   citationFormsOf,
   insertCitation,
   type CitationAt,
+  changeIndexMarker,
+  indexMarkerAt,
+  indexTermsIn,
+  insertIndexMarker,
+  type IndexEntryAt,
   createEditorState,
   EDITOR_COMMANDS,
   equationAt,
@@ -165,6 +170,7 @@ import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
 import { SymbolPalette } from './SymbolPalette.js';
 import { VariableDialog } from './VariableDialog.js';
 import { CitationDialog } from './CitationDialog.js';
+import { IndexEntryDialog } from './IndexEntryDialog.js';
 import { entryOptions, useCitationForms } from './citing.js';
 import { TermDialog } from './TermDialog.js';
 import { useTermIndex, useTermStandings, type TermIndexes } from './terming.js';
@@ -778,6 +784,14 @@ export function ComponentEditor({
     readonly current: CitationAt | null;
   } | null>(null);
   const citingBack = useRef<EditorView | null>(null);
+  // The Index entry dialog, as the Cite dialog is: on the marker selected whole or none (IX-M), with
+  // the terms the component's markers carry to offer.
+  const [indexing, setIndexing] = useState<{
+    readonly view: EditorView;
+    readonly current: IndexEntryAt | null;
+    readonly terms: readonly string[];
+  } | null>(null);
+  const indexingBack = useRef<EditorView | null>(null);
   // The space's entries, read as the Reference dialog opens, which it offers beside the rest (STR-069).
   const [entriesOffered, setEntriesOffered] = useState<readonly EntryOffered[] | null>(null);
   // The Condition dialog, open over the view it was asked from with the conditions its selection
@@ -1155,6 +1169,27 @@ export function ComponentEditor({
     if (back !== null && !back.isDestroyed) back.focus();
   }, [citing]);
 
+  /** Opens the Index entry dialog over `editing`, on the marker selected whole there or none (IX-M). */
+  const openIndexEntry = (editing: EditorView): boolean => {
+    const whole = surface !== null && !surface.isDestroyed ? surface.state.doc : editing.state.doc;
+    setIndexing({
+      view: editing,
+      current: indexMarkerAt(editing.state),
+      terms: indexTermsIn(whole),
+    });
+    return true;
+  };
+  const closeIndexEntry = () => {
+    indexingBack.current = indexing?.view ?? null;
+    setIndexing(null);
+  };
+  useEffect(() => {
+    if (indexing !== null) return;
+    const back = indexingBack.current;
+    indexingBack.current = null;
+    if (back !== null && !back.isDestroyed) back.focus();
+  }, [indexing]);
+
   /** Runs a condition's command where the dialog was asked from, as the palette inserts (R6-H). */
   const conditionWith = (
     command: ReturnType<typeof setCondition>,
@@ -1236,6 +1271,8 @@ export function ComponentEditor({
   openVariablesRef.current = openVariables;
   const openCitationRef = useRef(openCitation);
   openCitationRef.current = openCitation;
+  const openIndexEntryRef = useRef(openIndexEntry);
+  openIndexEntryRef.current = openIndexEntry;
   const openConditionsRef = useRef(openConditions);
   openConditionsRef.current = openConditions;
   // The page's latest context, which every fresh state starts from: a state rebuilt after a version is
@@ -1404,6 +1441,8 @@ export function ComponentEditor({
           if (name === 'variable') return openVariablesRef.current(into);
           // **Cite** too (CId), on a citation selected whole to change it.
           if (name === 'cite') return openCitationRef.current(into);
+          // **Index entry** too (IX-M), on a marker selected whole to change it.
+          if (name === 'indexEntry') return openIndexEntryRef.current(into);
           // **Condition** too (the R6 plan, R6-H).
           if (name === 'condition') return openConditionsRef.current(into);
           const command = EDITOR_COMMANDS.find(
@@ -2854,6 +2893,7 @@ export function ComponentEditor({
               (action === 'value' && openValue(view)) ||
               (action === 'variable' && openVariables(view)) ||
               (action === 'cite' && openCitation(view)) ||
+              (action === 'indexEntry' && openIndexEntry(view)) ||
               (action === 'condition' && openConditions(view)))
           }
         />
@@ -3492,6 +3532,40 @@ export function ComponentEditor({
               return null;
             }}
             onCancel={closeCitation}
+          />,
+          document.body,
+        )}
+      {indexing !== null &&
+        // Beside the article, as the palette is.
+        createPortal(
+          <IndexEntryDialog
+            current={indexing.current}
+            terms={indexing.terms}
+            onDone={(choice) => {
+              // As the Cite dialog asks: the phase as it is now.
+              const now = controls.current?.view().phase;
+              const into = indexing.view;
+              if (
+                !shown.mayEdit ||
+                now === undefined ||
+                !isEditablePhase(now) ||
+                into.isDestroyed
+              ) {
+                return say('editor.this-component-can-no-longer-5');
+              }
+              const command =
+                indexing.current === null
+                  ? insertIndexMarker(choice)
+                  : changeIndexMarker(indexing.current.pos, choice);
+              if (!command(into.state, into.dispatch.bind(into))) {
+                return indexing.current === null
+                  ? say('editor.index.cannot-be-placed')
+                  : say('editor.index.not-there');
+              }
+              closeIndexEntry();
+              return null;
+            }}
+            onCancel={closeIndexEntry}
           />,
           document.body,
         )}

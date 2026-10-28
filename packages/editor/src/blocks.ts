@@ -8,6 +8,7 @@ import { ReplaceAroundStep, ReplaceStep } from 'prosemirror-transform';
 import { canPlaceBinding } from './bindings.js';
 import { canPlaceVariable } from './variables.js';
 import { canPlaceCitation } from './citations.js';
+import { canPlaceIndexMarker } from './indexEntries.js';
 import { canPlaceCondition } from './conditions.js';
 import { canPlaceEquation } from './equations.js';
 import { insertFootnote } from './footnotes.js';
@@ -160,6 +161,7 @@ export type BlockAction =
   | 'value'
   | 'variable'
   | 'cite'
+  | 'indexEntry'
   | 'condition';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
@@ -946,6 +948,9 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // Variable's kind (CId): which entry is the author's to choose, in the renderer's Cite dialog.
     case 'cite':
       return canPlaceCitation;
+    // Cite's kind (the IX plan, IX-M): the term is the author's to give, in the renderer's dialog.
+    case 'indexEntry':
+      return canPlaceIndexMarker;
     // The R6 plan, R6-H: which axis and values are the author's to choose, in the renderer's dialog,
     // which runs `setCondition` or `addAlternative` with the answer.
     case 'condition':

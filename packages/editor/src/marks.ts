@@ -224,6 +224,16 @@ const ROWS: readonly CommandRow[] = [
     shortcut: 'Mod-Shift-2',
     prompts: true,
   },
+  // The IX plan, IX-M: beside Cite, prompting as it does, for the term only the author can give. On
+  // Cite's Shift and digits, with 1, rather than the plan's Mod-Alt-i, which is Cmd, Option and I,
+  // the developer tools of every browser on a Mac. Nothing in this registry or the renderer takes it.
+  {
+    kind: 'block',
+    action: 'indexEntry',
+    label: 'Index entry',
+    shortcut: 'Mod-Shift-1',
+    prompts: true,
+  },
   // B2-A: beside Reference, prompting as it does, for the definition, parameters and value only the
   // author can choose. On Shift and 6, beside the list family's 7 to 0, rather than V (paste as plain
   // text), X (Firefox's text direction) or a Ctrl-Alt chord (AltGr). Checked for its plan: nothing in
@@ -507,6 +517,7 @@ function rangeToMark(state: EditorState, type: MarkType): { from: number; to: nu
       state.selection.node.type.name === 'binding' ||
       state.selection.node.type.name === 'variable' ||
       state.selection.node.type.name === 'citation' ||
+      state.selection.node.type.name === 'indexMarker' ||
       state.selection.node.type.name === 'equation' ||
       state.selection.node.type.name === 'equationBlock' ||
       isFootnote(state.selection.node))

@@ -20,9 +20,17 @@ import { withPage } from './testing/page.js';
  * shown there: the loop it guards against is the window, the outline and the text moving each other.
  */
 
-/** A paragraph of a component's content, as the editor stores one. */
+/** A paragraph of a component's content, as the editor stores one, with an index entry (IX-M). */
 function paragraph(id: string, value: string) {
-  return { type: 'paragraph', id, style: 'body', content: [{ type: 'text', value, marks: [] }] };
+  return {
+    type: 'paragraph',
+    id,
+    style: 'body',
+    content: [
+      { type: 'text', value, marks: [] },
+      { type: 'indexMarker', term: 'Unit', sub: id },
+    ],
+  };
 }
 
 const WORDS =

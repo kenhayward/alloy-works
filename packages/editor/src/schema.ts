@@ -756,7 +756,7 @@ export const editorSchema = new Schema({
      * An index marker (the IX plan, IX-E): inline, an atom, carrying its term, and its sub-entry,
      * "see" and "see also" null where it has none. **No marks**, and it stands wherever a citation
      * does, never in preformatted text or a title. It prints nothing, so `toDOM` draws nothing a
-     * read-only rendering or a copy would read; the chip is IX-M's. No `parseDOM`, for a footnote's
+     * read-only rendering or a copy would read; the surface draws a chip (`indexMarkerView`, IX-M). No `parseDOM`, for a footnote's
      * reason.
      */
     indexMarker: {

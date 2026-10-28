@@ -183,6 +183,46 @@ describe("the assistant's terms", () => {
     );
   });
 
+  it('keeps the index markers of a block it replaces, at the end of the first paragraph made (the IX plan, IXd)', () => {
+    const alloy = { type: 'indexMarker', term: 'Alloy', sub: 'casting' };
+    const tin = { type: 'indexMarker', term: 'Tin', seeAlso: ['Alloy'] };
+    const marked = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'An alloy', marks: [] },
+        alloy,
+        { type: 'text', value: ' of tin', marks: [] },
+        tin,
+      ],
+    } as unknown as BlockNode;
+    const outcome = applyEdits(
+      document(marked),
+      [{ replace: 'p1', markdown: 'A cast alloy.\nThen tin.' }],
+      read,
+    );
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.content.content[0]).toMatchObject({
+      id: 'p1',
+      content: [{ type: 'text', value: 'A cast alloy.' }, alloy, tin],
+    });
+    expect(outcome.content.content[1]).toMatchObject({ content: [{ value: 'Then tin.' }] });
+
+    const listed = {
+      type: 'list',
+      id: 'l1',
+      kind: 'unordered',
+      items: [{ content: [{ ...marked, id: 'p2' }] }],
+    } as unknown as BlockNode;
+    const relisted = applyEdits(document(listed), [{ replace: 'l1', markdown: 'Bronze.' }], read);
+    expect(relisted.ok && relisted.content.content[0]).toMatchObject({
+      id: 'l1',
+      content: [{ value: 'Bronze.' }, alloy, tin],
+    });
+  });
+
   it('refuses to edit a block holding what Markdown cannot say, naming it', () => {
     const footnoted = {
       type: 'paragraph',
