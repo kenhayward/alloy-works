@@ -67,6 +67,7 @@ export {
   TENTH_DEFAULT_LAYOUT,
   ELEVENTH_DEFAULT_LAYOUT,
   TWELFTH_DEFAULT_LAYOUT,
+  THIRTEENTH_DEFAULT_LAYOUT,
   layoutIn,
   LAYOUT_SCHEMA_VERSION,
   LISTED_SEQUENCES,
@@ -84,6 +85,7 @@ export {
 export type {
   DocxFormat,
   HtmlFormat,
+  IndexWords,
   Layout,
   Layout2,
   Layout3,

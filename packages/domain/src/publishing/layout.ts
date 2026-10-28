@@ -201,6 +201,12 @@ export interface Layout {
      */
     glossary?: { title: string } | undefined;
     abbreviations?: { title: string } | undefined;
+    /**
+     * The index (STR-043, PUB-041; the IX plan, IX-H), under its title after the abbreviations, with
+     * the words a "see" and a "see also" print. Added at 9 in place, as `glossary` was at 7: a layout
+     * without one places none.
+     */
+    index?: IndexWords | undefined;
   };
   /**
    * One member per format it makes, each declared on its own (PUB-012, PUB-014): always the PDF, and
@@ -209,6 +215,13 @@ export interface Layout {
   formats: { pdf: PdfFormat; docx?: DocxFormat | undefined; html?: HtmlFormat | undefined };
   /** Its words in each further language (schema 8; TRb): optional, and each complete. */
   translations?: LayoutTranslation[] | undefined;
+}
+
+/** An index's title and the words its "see" and "see also" print (IX-H). */
+export interface IndexWords {
+  title: string;
+  see: string;
+  seeAlso: string;
 }
 
 /**
@@ -233,6 +246,7 @@ export interface LayoutTranslation {
     bibliography?: string | undefined;
     glossary?: string | undefined;
     abbreviations?: string | undefined;
+    index?: IndexWords | undefined;
   };
   slots: {
     pdf: Pick<PageFormat, 'head' | 'foot'>;
@@ -370,6 +384,8 @@ const MAXIMUM_TRANSLATIONS = 50;
 
 const headFoot = z.strictObject({ head: slots, foot: slots });
 
+const indexWordsSchema = z.strictObject({ title: words, see: words, seeAlso: words });
+
 const layoutTranslationSchema = z.strictObject({
   language: z.string().superRefine((tag, context) => {
     if (publishedLanguage(tag) === null) {
@@ -396,6 +412,7 @@ const layoutTranslationSchema = z.strictObject({
     bibliography: words.optional(),
     glossary: words.optional(),
     abbreviations: words.optional(),
+    index: indexWordsSchema.optional(),
   }),
   slots: z.strictObject({ pdf: headFoot, docx: headFoot.optional() }),
 });
@@ -436,6 +453,7 @@ const upgradedLayoutSchema: z.ZodType<Layout> = z
       bibliography: z.strictObject({ title: words }).optional(),
       glossary: z.strictObject({ title: words }).optional(),
       abbreviations: z.strictObject({ title: words }).optional(),
+      index: indexWordsSchema.optional(),
     }),
     formats: z.strictObject({
       pdf: pageFormatSchema(pageSide),
@@ -560,7 +578,13 @@ function translationGaps(layout: Layout, translation: LayoutTranslation): string
   ) {
     gaps.push('A translation titles each list the layout places, and no other');
   }
-  for (const title of ['approvals', 'bibliography', 'glossary', 'abbreviations'] as const) {
+  for (const title of [
+    'approvals',
+    'bibliography',
+    'glossary',
+    'abbreviations',
+    'index',
+  ] as const) {
     if ((layout.matter[title] === undefined) !== (translation.titles[title] === undefined)) {
       gaps.push(`A translation titles ${title} where the layout places it`);
     }
@@ -620,6 +644,8 @@ export function layoutIn(layout: Layout, language: string): Layout | null {
       ...titled('bibliography'),
       ...titled('glossary'),
       ...titled('abbreviations'),
+      // The index's words are a member of their own, not a title (IX-H).
+      ...(own.matter.index === undefined ? {} : { index: translation.titles.index! }),
     },
     formats: {
       ...own.formats,
@@ -1115,10 +1141,11 @@ export const HTML_WORDS: Readonly<
 };
 
 /**
- * The default layout as it stands, **version 0.13**: 0.12 at schema version 9, making HTML, with the
- * words HTML sets in English, French and German (the HT plan, HT-D), seeded by migration 0168.
+ * **The default layout's version 0.13, as migration 0168 stored it**: 0.12 at schema version 9, making
+ * HTML, with the words HTML sets in English, French and German (the HT plan, HT-D). Frozen for 0.2's
+ * reason.
  */
-export const defaultLayout: Layout = parseLayout({
+export const THIRTEENTH_DEFAULT_LAYOUT: Layout = parseLayout({
   ...TWELFTH_DEFAULT_LAYOUT,
   schemaVersion: LAYOUT_SCHEMA_VERSION,
   words: { ...TWELFTH_DEFAULT_LAYOUT.words, ...HTML_WORDS['en'] },
@@ -1126,6 +1153,27 @@ export const defaultLayout: Layout = parseLayout({
   translations: TWELFTH_DEFAULT_LAYOUT.translations!.map((translation) => ({
     ...translation,
     words: { ...translation.words, ...HTML_WORDS[translation.language] },
+  })),
+});
+
+/** The index's words in each language the default layout gives its words in (IX-H). */
+export const INDEX_WORDS: Readonly<Record<string, IndexWords>> = {
+  en: { title: 'Index', see: 'see', seeAlso: 'see also' },
+  fr: { title: 'Index', see: 'voir', seeAlso: 'voir aussi' },
+  de: { title: 'Register', see: 'siehe', seeAlso: 'siehe auch' },
+};
+
+/**
+ * The default layout as it stands, **version 0.14**: 0.13 placing an index after the abbreviations,
+ * in English, French and German (the IX plan, IX-H), at schema version 9, where the member was added
+ * in place, seeded by migration 0169.
+ */
+export const defaultLayout: Layout = parseLayout({
+  ...THIRTEENTH_DEFAULT_LAYOUT,
+  matter: { ...THIRTEENTH_DEFAULT_LAYOUT.matter, index: INDEX_WORDS['en'] },
+  translations: THIRTEENTH_DEFAULT_LAYOUT.translations!.map((translation) => ({
+    ...translation,
+    titles: { ...translation.titles, index: INDEX_WORDS[translation.language] },
   })),
 });
 

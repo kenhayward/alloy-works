@@ -22,6 +22,7 @@ import {
   TENTH_DEFAULT_LAYOUT,
   ELEVENTH_DEFAULT_LAYOUT,
   TWELFTH_DEFAULT_LAYOUT,
+  THIRTEENTH_DEFAULT_LAYOUT,
   layoutIn,
   PAGED,
   pagedFormats,
@@ -151,6 +152,8 @@ describe('a layout', () => {
         // Version 0.11's glossary and abbreviations (TMb).
         glossary: { title: 'Glossary' },
         abbreviations: { title: 'Abbreviations' },
+        // Version 0.14's index (IX-H).
+        index: { title: 'Index', see: 'see', seeAlso: 'see also' },
       },
       // Version 0.6's Word page is its PDF page, copied (Word 1, ruling R4); 0.13 makes HTML (HT-D).
       formats: { pdf: page, docx: page, html: {} },
@@ -165,7 +168,15 @@ describe('a layout', () => {
     void [notes, backToReference, scrollRegion];
     const { html, ...formats8 } = expected.formats;
     void html;
-    const eleventh = { ...expected, schemaVersion: 7, words: words8, formats: formats8 };
+    const { index, ...matter13 } = expected.matter;
+    void index;
+    const eleventh = {
+      ...expected,
+      schemaVersion: 7,
+      words: words8,
+      matter: matter13,
+      formats: formats8,
+    };
     expect(ELEVENTH_DEFAULT_LAYOUT).toEqual(eleventh);
     // 0.12 is 0.11 at schema 8 with its words in French and German (TRb), which are tested apart.
     expect(TWELFTH_DEFAULT_LAYOUT).toMatchObject({ ...eleventh, schemaVersion: 8 });
@@ -1033,5 +1044,72 @@ describe('a layout that makes HTML (schema 9; the HT plan, HT-D)', () => {
     const without = { ...copy(), translations: structuredClone(defaultLayout.translations) };
     delete without.formats.html;
     expect(layoutIn(parseLayout(without), 'de-DE')!.formats).not.toHaveProperty('html');
+  });
+});
+
+describe('a layout that places an index (the IX plan, IX-H)', () => {
+  it('declares an index under a title, with its words for see and see also, which a layout stored without one reads as placing none', () => {
+    const placed = copy();
+    placed.matter.index = { title: 'Index', see: 'see', seeAlso: 'see also' };
+    expect(parseLayout(placed).matter.index).toEqual({
+      title: 'Index',
+      see: 'see',
+      seeAlso: 'see also',
+    });
+    expect(parseLayout(atCurrent(THIRTEENTH_DEFAULT_LAYOUT)).matter).not.toHaveProperty('index');
+    for (const word of ['title', 'see', 'seeAlso'] as const) {
+      const blank = copy();
+      blank.matter.index = { title: 'Index', see: 'see', seeAlso: 'see also', [word]: ' ' };
+      expect(() => parseLayout(blank), word).toThrow();
+      const missing = copy();
+      missing.matter.index = { title: 'Index', see: 'see', seeAlso: 'see also' };
+      Reflect.deleteProperty(missing.matter.index, word);
+      expect(() => parseLayout(missing), word).toThrow();
+    }
+  });
+
+  it('titles the index in every translation where the layout places one, and in no other, and serves each language its own', () => {
+    const french = () => structuredClone(defaultLayout.translations![0]!);
+    expect(french().titles.index).toEqual({ title: 'Index', see: 'voir', seeAlso: 'voir aussi' });
+    const without = french();
+    Reflect.deleteProperty(without.titles, 'index');
+    expect(() => parseLayout({ ...copy(), translations: [without] })).toThrow(/index/);
+    const unplaced = copy();
+    delete unplaced.matter.index;
+    expect(() => parseLayout({ ...unplaced, translations: [french()] })).toThrow(/index/);
+
+    expect(layoutIn(defaultLayout, 'en-GB')!.matter.index).toEqual({
+      title: 'Index',
+      see: 'see',
+      seeAlso: 'see also',
+    });
+    expect(layoutIn(defaultLayout, 'fr-FR')!.matter.index).toEqual({
+      title: 'Index',
+      see: 'voir',
+      seeAlso: 'voir aussi',
+    });
+    expect(layoutIn(defaultLayout, 'de-DE')!.matter.index).toEqual({
+      title: 'Register',
+      see: 'siehe',
+      seeAlso: 'siehe auch',
+    });
+    expect(layoutIn(parseLayout(unplaced), 'en')!.matter).not.toHaveProperty('index');
+  });
+
+  it("keeps the default layout's 0.13, as migration 0168 stored it, and 0.14 is 0.13 placing an index in each language", () => {
+    const { index, ...matter13 } = defaultLayout.matter;
+    expect(index).toEqual({ title: 'Index', see: 'see', seeAlso: 'see also' });
+    expect(THIRTEENTH_DEFAULT_LAYOUT.matter).toEqual(matter13);
+    expect(THIRTEENTH_DEFAULT_LAYOUT.schemaVersion).toBe(9);
+    expect(THIRTEENTH_DEFAULT_LAYOUT.translations!.map((each) => each.titles)).toEqual(
+      defaultLayout.translations!.map(({ titles: { index: placed, ...titles } }) => {
+        void placed;
+        return titles;
+      }),
+    );
+    expect({ ...THIRTEENTH_DEFAULT_LAYOUT, matter: defaultLayout.matter }).toEqual({
+      ...defaultLayout,
+      translations: THIRTEENTH_DEFAULT_LAYOUT.translations,
+    });
   });
 });
