@@ -679,6 +679,15 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(row).toMatchObject({ profile: { values: { audience: ['regulator'] } } });
   });
 
+  it('LOC-044 records the locale data it was made with: the ICU, Unicode and CLDR the worker holds', async () => {
+    const { request } = await published();
+    expect((await publicationOf(request))!.locale_data).toEqual({
+      icu: process.versions.icu,
+      unicode: process.versions.unicode,
+      cldr: process.versions.cldr,
+    });
+  });
+
   it("PUB-063 records the engine, the engine's version and the template's version that made it", async () => {
     const { request } = await published();
     const row = await publicationOf(request);

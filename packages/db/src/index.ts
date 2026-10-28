@@ -101,6 +101,7 @@ export {
 } from './assets.js';
 export type { AssetUploadTable } from './assets-tables.js';
 export type {
+  LocaleData,
   PublicationInputTable,
   PublicationOutputTable,
   PublicationRequestOccurrenceTable,

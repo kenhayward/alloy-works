@@ -52,6 +52,13 @@ import {
 import type { RootImage, Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
 
+/** The locale data this worker holds, as Node names it (TE-F): recorded on every publication. */
+export const LOCALE_DATA = {
+  icu: process.versions.icu ?? 'none',
+  unicode: process.versions.unicode ?? 'none',
+  cldr: process.versions.cldr ?? 'none',
+};
+
 /**
  * The pipeline's own version (PUB-063), by the schema of the document it makes: `assemble` and this
  * job, as one, and the words `assemble` carries into every page - the draft notice, and since layouts
@@ -662,6 +669,8 @@ export function publishJob(deps: {
               numbering: assembled.numbering,
               // One per format the request names, the PDF first, or none: whole or absent.
               outputs,
+              // Node's own, which sorts every glossary, index and bibliography (TE-F; LOC-044).
+              localeData: LOCALE_DATA,
             });
             if (publication !== undefined) {
               await recordPublicationEvent(

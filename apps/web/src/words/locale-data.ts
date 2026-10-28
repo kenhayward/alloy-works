@@ -1,8 +1,9 @@
 /**
- * **Where the interface's locale data comes from** (the UI plan, UI-A; LOC-038): plural rules, number,
+ * **Where the interface's locale data comes from** (the UI plan, UI-A; LOC-044): plural rules, number,
  * date, list and relative-time formats and display names, CLDR as these FormatJS packages carry it,
  * pinned and bundled, so a change of data is a change of a version here, never a drift in a browser.
- * Time zones are the golden set the date formatter carries. Collation alone is the runtime's.
+ * Time zones are the golden set the date formatter carries. Collation alone is the runtime's: a tab's
+ * own sorts are the browser's (LOC-044).
  */
 export const LOCALE_DATA = {
   formats: {
@@ -15,8 +16,10 @@ export const LOCALE_DATA = {
     '@formatjs/intl-pluralrules': '6.3.15',
     '@formatjs/intl-relativetimeformat': '12.3.15',
   },
+  /** The CLDR release they carry, as FormatJS's own repository pinned it when they were published. */
+  cldr: '48.2.0',
 } as const;
 
-/** The data's version in a line: the formatter's, which names the CLDR release it bundles with. */
+/** The data's version in a line: the formatter's, and the CLDR release it bundles. */
 export const localeDataVersion = (): string =>
-  `FormatJS ${LOCALE_DATA.formats['@formatjs/intl']}, date data ${LOCALE_DATA.formats['@formatjs/intl-datetimeformat']}`;
+  `FormatJS ${LOCALE_DATA.formats['@formatjs/intl']}, date data ${LOCALE_DATA.formats['@formatjs/intl-datetimeformat']}, CLDR ${LOCALE_DATA.cldr}`;

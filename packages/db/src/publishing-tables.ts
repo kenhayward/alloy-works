@@ -178,6 +178,15 @@ export interface PublicationTable {
   citation_style_id: ColumnType<string | null, string | undefined, never>;
   citation_style_version_id: ColumnType<string | null, string | undefined, never>;
   citation_style_kind: ColumnType<'citationStyle', never, never>;
+  /** The worker's ICU, Unicode and CLDR versions (0171; the TE plan, TE-F); null from before. */
+  locale_data: ColumnType<LocaleData | null, string | undefined, never>;
+}
+
+/** The locale data a runtime holds, as `process.versions` names it (TE-F; LOC-044). */
+export interface LocaleData {
+  readonly icu: string;
+  readonly unicode: string;
+  readonly cldr: string;
 }
 
 export interface PublicationInputTable {
