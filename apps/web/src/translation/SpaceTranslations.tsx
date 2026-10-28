@@ -101,7 +101,10 @@ export function SpaceTranslations({ client }: { readonly client: Client }) {
   const fetchPage = useCallback(
     async (cursor: string | null) => {
       if (space === null) {
-        return { data: { items: [], next: null, total: 0, facets: null }, response: new Response() };
+        return {
+          data: { items: [], next: null, total: 0, facets: null },
+          response: new Response(),
+        };
       }
       const { data, response } = await client.GET('/v1/spaces/{space}/translations', {
         params: {
@@ -158,13 +161,13 @@ export function SpaceTranslations({ client }: { readonly client: Client }) {
       {space !== null && (
         <form onSubmit={show}>
           <label htmlFor={languageId}>{words('translation.language')}</label>{' '}
-          <input
-            id={languageId}
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-          />{' '}
+          <input id={languageId} value={typed} onChange={(event) => setTyped(event.target.value)} />{' '}
           <label htmlFor={statusId}>{words('translation.status')}</label>{' '}
-          <select id={statusId} value={status} onChange={(event) => setStatus(event.target.value as Status | '')}>
+          <select
+            id={statusId}
+            value={status}
+            onChange={(event) => setStatus(event.target.value as Status | '')}
+          >
             <option value="">{words('translation.any-status')}</option>
             {STATUSES.map((each) => (
               <option key={each} value={each}>

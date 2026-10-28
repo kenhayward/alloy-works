@@ -64,10 +64,11 @@ describe('a space’s translations (the TR plan, TR-M; the TE plan, TE-C)', () =
       'href',
       `#/components/${POND}`,
     );
-    expect(within(row).getAllByText(/^(fr|de)-/).map((each) => each.textContent)).toEqual([
-      'de-DE: Out of date, needs retranslating',
-      'fr-FR: Translated',
-    ]);
+    expect(
+      within(row)
+        .getAllByText(/^(fr|de)-/)
+        .map((each) => each.textContent),
+    ).toEqual(['de-DE: Out of date, needs retranslating', 'fr-FR: Translated']);
     await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
     expect(await within(table).findByRole('row', { name: /Survey/ })).toHaveTextContent(
       'fr-FR: Untranslated',
@@ -78,7 +79,9 @@ describe('a space’s translations (the TR plan, TR-M; the TE plan, TE-C)', () =
 
   it('LOC-016 narrows the report to a language and a status, asking the service for them', async () => {
     const asked: URLSearchParams[] = [];
-    render(<SpaceTranslations client={service({ '': { items: [SAMPLING], next: null } }, asked)} />);
+    render(
+      <SpaceTranslations client={service({ '': { items: [SAMPLING], next: null } }, asked)} />,
+    );
     await screen.findByRole('table', { name: 'Translated components' });
     await userEvent.type(screen.getByRole('textbox', { name: 'Language' }), 'de-DE');
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'Out of date');
@@ -94,10 +97,11 @@ describe('a space’s translations (the TR plan, TR-M; the TE plan, TE-C)', () =
   it('says when no translation matches the filters', async () => {
     render(<SpaceTranslations client={service({})} />);
     await screen.findByText(/No component of this space is translated yet/);
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'In translation');
-    expect(
-      await screen.findByText('No translation of this space matches.'),
-    ).toBeInTheDocument();
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Status' }),
+      'In translation',
+    );
+    expect(await screen.findByText('No translation of this space matches.')).toBeInTheDocument();
   });
 
   it('says when nothing is translated', async () => {
