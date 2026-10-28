@@ -1612,7 +1612,8 @@ An author marks entries in a component's text; a layout that places an index pub
 - **Every path keeps it** (IX-F, IXa): the editor schema and its mapping both ways, the product
   clipboard, re-identification and import pass it whole; no reader makes one (Word's `XE` fields are
   tallied as other fields). `assemble` prints nothing for it. A proposal may edit a paragraph holding
-  one, and the assistant is not shown it. A marker inside an excluded passage goes with the passage,
+  one, and the assistant is not shown it; a replacement keeps the replaced block's markers at the end
+  of its first paragraph (IXd), so no entry is lost to a reworded paragraph. A marker inside an excluded passage goes with the passage,
   and `wordsOf` gives its words to the leak scan.
 - **Translated** (IX-G, IXa): each distinct term and sub-entry is one `words` unit in each component a
   job sends, `ix.term.{n}` and `ix.sub.{n}`, and every marker's term, sub-entry, "see" and "see also" is
@@ -1628,6 +1629,12 @@ An author marks entries in a component's text; a layout that places an index pub
   index line for line, pages included. Word sorted as the PDF does and differs only in a full stop
   before a "see" with no page. It found the index's title in Word's first heading style, numbered and
   in the contents; it is now in a list's style, as the PDF and HTML keep it out of theirs.
+- **The editor** (IX-M, IXd): **Index entry** (Ctrl or Cmd, Shift and 1, not the plan's Mod-Alt-i,
+  which is the developer tools on a Mac) opens a dialog of term, sub-entry and what it gives: this
+  place, a "see", or "see also"s, one a line. It offers the terms the component's markers carry, holds
+  what is typed in NFC, trimmed, and refuses what the content model refuses, naming the member
+  (`indexEntryRefused`). The marker is a chip naming its entry, saying to a screen reader and a
+  pointer's tip that it prints nothing; selected whole, the same action changes it.
 - **Named gaps**: page ranges (IX-C), sort keys, letter groups (CLDR's index characters), reading
   Word's `XE` fields, and an `Index` structure element.
 
