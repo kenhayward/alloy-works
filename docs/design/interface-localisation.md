@@ -100,7 +100,7 @@ Built by [the TE plan](../plans/2026-10-28-te-translation-ends.md), TE-E and TE-
   and the header says one outside the list is not declared.
 - **Recorded**: the interface's CLDR is `LOCALE_DATA.cldr`, held equal to the list's; a publication
   records the worker's `process.versions` ICU, Unicode and CLDR (`publication.locale_data`, 0171), and
-  shows them; `GET /v1/tenant` gives the service's and each interface language's collation version
+  shows them; `GET /v1/about`, to a signed-in person only, gives the service's and each interface language's collation version
   (`pg_collation_actual_version`); About shows both. Node is pinned to a patch in `deploy/Dockerfile`.
 - **A tab's own sorts** are the browser's collation, and About says so.
 

@@ -14827,6 +14827,205 @@
         }
       }
     },
+    "/v1/about": {
+      "get": {
+        "operationId": "getAbout",
+        "summary": "The locale data the service sorts and formats with",
+        "description": "Returns the ICU, Unicode and CLDR versions the service sorts and formats with, and the version of the database collation each interface language sorts listings by, so a change in them is visible. A publication records its own. It needs a signed-in session.",
+        "tags": [
+          "Environments"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the service runs on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "localeData": {
+                      "type": "object",
+                      "properties": {
+                        "icu": {
+                          "type": "string",
+                          "description": "The ICU version the service's runtime carries"
+                        },
+                        "unicode": {
+                          "type": "string",
+                          "description": "The Unicode version it carries"
+                        },
+                        "cldr": {
+                          "type": "string",
+                          "description": "The CLDR version it carries"
+                        },
+                        "collations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "language": {
+                                "type": "string",
+                                "description": "An interface language"
+                              },
+                              "collation": {
+                                "type": "string",
+                                "description": "The database's collation it sorts listings by"
+                              },
+                              "version": {
+                                "description": "That collation's version as the database's ICU reports it",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "language",
+                              "collation",
+                              "version"
+                            ]
+                          },
+                          "description": "The collation each interface language sorts by, where the database holds one"
+                        }
+                      },
+                      "required": [
+                        "icu",
+                        "unicode",
+                        "cldr",
+                        "collations"
+                      ],
+                      "description": "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's"
+                    }
+                  },
+                  "required": [
+                    "localeData"
+                  ]
+                },
+                "example": {
+                  "localeData": {
+                    "icu": "example",
+                    "unicode": "example",
+                    "cldr": "example",
+                    "collations": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/access": {
       "get": {
         "operationId": "getAccess",
@@ -325633,76 +325832,16 @@
                         ]
                       },
                       "description": "The ways in it offers: the organisation's provider, Google, or both"
-                    },
-                    "localeData": {
-                      "type": "object",
-                      "properties": {
-                        "icu": {
-                          "type": "string",
-                          "description": "The ICU version the service's runtime carries"
-                        },
-                        "unicode": {
-                          "type": "string",
-                          "description": "The Unicode version it carries"
-                        },
-                        "cldr": {
-                          "type": "string",
-                          "description": "The CLDR version it carries"
-                        },
-                        "collations": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "language": {
-                                "type": "string",
-                                "description": "An interface language"
-                              },
-                              "collation": {
-                                "type": "string",
-                                "description": "The database's collation it sorts listings by"
-                              },
-                              "version": {
-                                "description": "That collation's version as the database's ICU reports it",
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
-                              }
-                            },
-                            "required": [
-                              "language",
-                              "collation",
-                              "version"
-                            ]
-                          },
-                          "description": "The collation each interface language sorts by, where the database holds one"
-                        }
-                      },
-                      "required": [
-                        "icu",
-                        "unicode",
-                        "cldr",
-                        "collations"
-                      ],
-                      "description": "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's"
                     }
                   },
                   "required": [
                     "name",
-                    "signIn",
-                    "localeData"
+                    "signIn"
                   ]
                 },
                 "example": {
                   "name": "example",
-                  "signIn": [],
-                  "localeData": {
-                    "icu": "example",
-                    "unicode": "example",
-                    "cldr": "example",
-                    "collations": []
-                  }
+                  "signIn": []
                 }
               }
             },

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { words } from './words/words.js';
 
 type LocaleData =
-  paths['/v1/tenant']['get']['responses']['200']['content']['application/json']['localeData'];
+  paths['/v1/about']['get']['responses']['200']['content']['application/json']['localeData'];
 
 interface Sample {
   readonly id: string;
@@ -43,11 +43,7 @@ export function Environment({ fetch: given, follow = followStream }: Environment
   useEffect(() => {
     let current = true;
     void client.GET('/v1/tenant').then(({ data }) => {
-      if (!current || !data) return;
-      setEnvironment(data.name);
-      // Absent from a service before TEc.
-      const given = (data as { localeData?: LocaleData }).localeData;
-      if (given) setLocaleData(given);
+      if (current && data) setEnvironment(data.name);
     });
     void client.GET('/v1/me').then(({ data }) => {
       if (!current) return;
@@ -59,6 +55,18 @@ export function Environment({ fetch: given, follow = followStream }: Environment
       current = false;
     };
   }, [client]);
+
+  // The service's locale data, for a signed-in person alone (TE-F; LOC-044).
+  useEffect(() => {
+    if (who === undefined || who === 'nobody') return undefined;
+    let current = true;
+    void client.GET('/v1/about').then(({ data }) => {
+      if (current && data) setLocaleData(data.localeData);
+    });
+    return () => {
+      current = false;
+    };
+  }, [who, client]);
 
   useEffect(() => {
     if (who === undefined || who === 'nobody') return undefined;

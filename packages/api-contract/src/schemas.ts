@@ -50,6 +50,28 @@ export const TenantProfile = z.object({
   signIn: z
     .array(z.enum(['organisation', 'google']))
     .describe("The ways in it offers: the organisation's provider, Google, or both"),
+});
+
+/**
+ * A page of the app to come back to once signed in, as its address after `#/` names it: a shared
+ * publication's, so the person it was shared with lands on it (the R17 plan, R17-A). Words and ids
+ * between slashes alone, so it can only ever name a page of this app.
+ */
+export const SIGN_IN_RETURN = /^[a-z]+(\/[a-z0-9-]+)*$/;
+
+export const SignInStartQuery = z.object({
+  to: z
+    .string()
+    .max(200)
+    .regex(SIGN_IN_RETURN)
+    .optional()
+    .describe('The page to come back to once signed in, as its address after `#/` names it'),
+});
+export type SignInStartQuery = z.infer<typeof SignInStartQuery>;
+export type TenantProfile = z.infer<typeof TenantProfile>;
+
+/** What the service runs on, for About, to a signed-in person only (the TE plan, TE-F; LOC-044). */
+export const About = z.object({
   localeData: z
     .object({
       icu: z.string().describe("The ICU version the service's runtime carries"),
@@ -72,24 +94,7 @@ export const TenantProfile = z.object({
       "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's",
     ),
 });
-
-/**
- * A page of the app to come back to once signed in, as its address after `#/` names it: a shared
- * publication's, so the person it was shared with lands on it (the R17 plan, R17-A). Words and ids
- * between slashes alone, so it can only ever name a page of this app.
- */
-export const SIGN_IN_RETURN = /^[a-z]+(\/[a-z0-9-]+)*$/;
-
-export const SignInStartQuery = z.object({
-  to: z
-    .string()
-    .max(200)
-    .regex(SIGN_IN_RETURN)
-    .optional()
-    .describe('The page to come back to once signed in, as its address after `#/` names it'),
-});
-export type SignInStartQuery = z.infer<typeof SignInStartQuery>;
-export type TenantProfile = z.infer<typeof TenantProfile>;
+export type About = z.infer<typeof About>;
 
 export const Me = z.object({
   id: z.string().describe('The principal, stable for as long as the environment exists'),

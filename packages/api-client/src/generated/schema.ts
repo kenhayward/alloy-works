@@ -19,6 +19,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/about": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The locale data the service sorts and formats with
+         * @description Returns the ICU, Unicode and CLDR versions the service sorts and formats with, and the version of the database collation each interface language sorts listings by, so a change in them is visible. A publication records its own. It needs a signed-in session.
+         */
+        get: operations["getAbout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/access": {
         parameters: {
             query?: never;
@@ -9608,6 +9628,100 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         status: "ok";
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getAbout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What the service runs on */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "localeData": {
+                     *         "icu": "example",
+                     *         "unicode": "example",
+                     *         "cldr": "example",
+                     *         "collations": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's */
+                        localeData: {
+                            /** @description The ICU version the service's runtime carries */
+                            icu: string;
+                            /** @description The Unicode version it carries */
+                            unicode: string;
+                            /** @description The CLDR version it carries */
+                            cldr: string;
+                            /** @description The collation each interface language sorts by, where the database holds one */
+                            collations: {
+                                /** @description An interface language */
+                                language: string;
+                                /** @description The database's collation it sorts listings by */
+                                collation: string;
+                                /** @description That collation's version as the database's ICU reports it */
+                                version: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -110658,13 +110772,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "name": "example",
-                     *       "signIn": [],
-                     *       "localeData": {
-                     *         "icu": "example",
-                     *         "unicode": "example",
-                     *         "cldr": "example",
-                     *         "collations": []
-                     *       }
+                     *       "signIn": []
                      *     }
                      */
                     "application/json": {
@@ -110672,24 +110780,6 @@ export interface operations {
                         name: string;
                         /** @description The ways in it offers: the organisation's provider, Google, or both */
                         signIn: ("organisation" | "google")[];
-                        /** @description The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's */
-                        localeData: {
-                            /** @description The ICU version the service's runtime carries */
-                            icu: string;
-                            /** @description The Unicode version it carries */
-                            unicode: string;
-                            /** @description The CLDR version it carries */
-                            cldr: string;
-                            /** @description The collation each interface language sorts by, where the database holds one */
-                            collations: {
-                                /** @description An interface language */
-                                language: string;
-                                /** @description The database's collation it sorts listings by */
-                                collation: string;
-                                /** @description That collation's version as the database's ICU reports it */
-                                version: string | null;
-                            }[];
-                        };
                     };
                 };
             };

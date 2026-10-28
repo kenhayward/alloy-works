@@ -673,11 +673,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const signIn: ('organisation' | 'google')[] = [];
       if (await permits(tenant, 'organisation')) signIn.push('organisation');
       if (options.google && (await permits(tenant, 'google'))) signIn.push('google');
-      // The locale data it sorts and formats with (TE-F; LOC-044), the database's collations beside.
-      const collations = await db.withTenant(tenant, (trx) => collationVersions(trx));
+      return { name: profile.display_name, signIn };
+    },
+
+    // The locale data it sorts and formats with (TE-F; LOC-044), the database's collations beside:
+    // behind sign-in, so the versions never fingerprint the service to anybody.
+    getAbout: async (request) => {
+      const collations = await db.withTenant(tenantOf(request), (trx) => collationVersions(trx));
       return {
-        name: profile.display_name,
-        signIn,
         localeData: {
           icu: process.versions.icu ?? 'none',
           unicode: process.versions.unicode ?? 'none',
