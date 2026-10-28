@@ -330,6 +330,46 @@ describe('the content document', () => {
     expect(canonicalise(parseContentDocument(JSON.parse(stored)))).toBe(stored);
   });
 
+  it('keeps every member of an index marker in a paragraph, a footnote, an attribution and a caption (the IX plan, IX-F)', () => {
+    const marker = { type: 'indexMarker', term: 'Alloy', sub: 'tempering', seeAlso: ['Steel'] };
+    const see = { type: 'indexMarker', term: 'Metal', see: 'Alloy' };
+    const blocks = [
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'An alloy', marks: [] },
+          marker,
+          {
+            type: 'footnote',
+            id: 'f1',
+            anchor: { kind: 'span' },
+            content: [{ type: 'paragraph', id: 'f1p', style: 'body', content: [see] }],
+          },
+        ],
+      },
+      {
+        type: 'blockquote',
+        id: 'q1',
+        content: [paragraph('q1p')],
+        attribution: [{ type: 'text', value: 'Ada', marks: [] }, marker],
+      },
+      {
+        type: 'figure',
+        id: 'g1',
+        asset: ASSET_VERSION,
+        imageStyle: 'figure',
+        caption: [{ type: 'text', value: 'Grain', marks: [] }, see],
+        alternative: { kind: 'own', text: 'Grain under a lens' },
+      },
+    ];
+    const parsed = parseContentDocument(doc(blocks));
+    expect(parsed.content).toEqual(blocks);
+    const stored = canonicalise(parsed);
+    expect(canonicalise(parseContentDocument(JSON.parse(stored)))).toBe(stored);
+  });
+
   it('CNT-129 admits no table and no image inside a footnote, and nothing outside its closed list', () => {
     const noting = (content: unknown[]) => ({
       type: 'paragraph',

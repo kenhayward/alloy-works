@@ -503,6 +503,16 @@ describe('a section title, under the content model rules', () => {
     ).toThrow(BINDING_IN_TITLE);
   });
 
+  it('refuses an index marker in a title, in its footnote too (the IX plan, IX-E)', () => {
+    const marker = { type: 'indexMarker', term: 'Alloy' };
+    expect(() => parseOutlineDocument(titled([words, marker]))).toThrow(
+      'A title holds inline content the content model refuses',
+    );
+    expect(() =>
+      parseOutlineDocument(titled([words, footnote([{ ...paragraph, content: [marker] }])])),
+    ).toThrow('A title holds inline content the content model refuses');
+  });
+
   it('lets a cross-reference in a title target an outline node, and nothing a title cannot show', () => {
     const reference = (id: string, target: unknown) => ({
       type: 'crossReference',

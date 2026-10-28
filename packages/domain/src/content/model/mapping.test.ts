@@ -19,6 +19,7 @@ const inlineTypes = [
   'footnote',
   'crossReference',
   'citation',
+  'indexMarker',
   'variable',
   'binding',
   'image',

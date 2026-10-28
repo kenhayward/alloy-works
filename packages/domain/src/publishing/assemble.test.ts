@@ -7702,3 +7702,52 @@ describe('the HTML a publication is assembled for (the HT plan, HT-F)', () => {
     });
   });
 });
+
+describe('an index marker, published (the IX plan, IX-F)', () => {
+  const marker = { type: 'indexMarker', term: 'Grace term', sub: 'Ada sub-entry' };
+  const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
+
+  it('prints nothing and fails nothing, under a layout or none, wherever it stands', () => {
+    const blocks = [
+      paragraph(
+        'b1',
+        text('An '),
+        marker,
+        text('alloy'),
+        {
+          type: 'footnote',
+          id: 'f1',
+          anchor: { kind: 'span' },
+          content: [paragraph('n1', text('Noted'), marker)],
+        },
+      ),
+      {
+        type: 'table',
+        id: 't1',
+        style: 'table',
+        caption: [text('Readings'), marker],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [
+          { cells: [cellOf(paragraph('h1', text('Depth'), marker))] },
+          { cells: [cellOf(paragraph('v1', text('12'), marker))] },
+        ],
+      },
+    ];
+    // Where there is no layout a footnote and a table are refused by name, so a paragraph alone.
+    for (const result of [
+      assemble(oneComponent(...blocks)),
+      assemble({
+        ...oneComponent(paragraph('b1', text('An '), marker, text('alloy'))),
+        layout: null,
+        theme: null,
+      }),
+    ]) {
+      expect(failuresOf(result)).toEqual([]);
+      const printed = JSON.stringify(result);
+      for (const words of ['indexMarker', 'Grace term', 'Ada sub-entry']) {
+        expect(printed).not.toContain(words);
+      }
+    }
+  });
+});

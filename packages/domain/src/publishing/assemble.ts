@@ -1341,6 +1341,8 @@ export function assemble(given: AssembleInput): Assembled {
       }
       // A binding still here is one the binding stage failed by name (B3-D): nothing is printed.
       if (inline.type === 'binding') continue;
+      // An index marker prints nothing where it stands (the IX plan, IX-F).
+      if (inline.type === 'indexMarker') continue;
       if (inline.type !== 'text') {
         failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;
