@@ -28,6 +28,8 @@
 # line, the face it is set in, the page and the lines it starts and ends on, and whether it stands in
 # the contents or a list after it; and with every paragraph, the contents' entries and the lists', the
 # text each equation in it gives, so that a test can tell the words around an equation from its maths.
+# And the index (the IX plan, IX-O): its paragraphs after the update, which Word builds again from the
+# XE fields.
 #
 # With -ExportOnly (the W15 plan's W15.1), it does only what a measurement needs of Word: opens each
 # document, updates its contents and every field, repaginates, exports Word's own PDF, <name>.pdf, and
@@ -205,6 +207,16 @@ function ReadContents($doc) {
   return , $list
 }
 
+function ReadIndex($doc) {
+  $list = @()
+  if ($doc.Indexes.Count -gt 0) {
+    foreach ($para in $doc.Indexes.Item(1).Range.Paragraphs) {
+      $list += [ordered]@{ text = (Clean $para.Range.Text); style = [string]$para.Style.NameLocal; maths = (Maths $para.Range) }
+    }
+  }
+  return , $list
+}
+
 function ReadReferences($doc) {
   # A cross-reference's field is one naming a bookmark the writer made, `_Ref` and its digits: never
   # the contents' or a list's own PAGEREF, whose bookmarks Word names `_Toc`.
@@ -296,6 +308,7 @@ function Update($doc) {
   # notes as well as the text.
   foreach ($t in $doc.TablesOfContents) { $t.Update() }
   foreach ($t in $doc.TablesOfFigures) { $t.Update() }
+  foreach ($t in $doc.Indexes) { $t.Update() }
   [void]$doc.Fields.Update()
   if ($doc.Footnotes.Count -gt 0) { [void]$doc.StoryRanges.Item($wdFootnotesStory).Fields.Update() }
   foreach ($s in $doc.Sections) {
@@ -369,6 +382,7 @@ try {
       $out.paragraphs = (ReadParagraphs $doc)
       $out.contents = (ReadContents $doc)
       $out.figureLists = (ReadFigureLists $doc)
+      $out.index = (ReadIndex $doc)
       $out.tables = (ReadTables $doc)
       $out.images = (ReadImages $doc)
       $out.floats = (ReadFloats $doc)
