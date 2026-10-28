@@ -530,8 +530,8 @@ describe('requesting and recording a publication', () => {
           },
         });
         if (next.answer !== 'recorded') throw new Error(next.answer);
-        // The default is at 0.13 since 0168, so the version recorded after it is 0.14.
-        expect((await defaultLayout(trx)).number).toBe('0.14');
+        // The default is at 0.14 since 0169, so the version recorded after it is 0.15.
+        expect((await defaultLayout(trx)).number).toBe('0.15');
 
         const inputs = await publicationInputs(trx, id);
         // Read in the document's language (TRb): its own words, its further languages left behind.

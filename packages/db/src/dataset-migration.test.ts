@@ -282,6 +282,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0166_interface_language',
       '0167_default_theme_naskh',
       '0168_html_output',
+      '0169_default_layout_index',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default
@@ -297,7 +298,8 @@ describe('migration 0047, over an environment made before it', () => {
       // And 0161's default layout 0.12 (TRb).
       // And 0167's default theme 0.11 (UF-H).
       // And 0168's default layout 0.13 (HT-D).
-      artifact_version: counts.artifact_version! + 21,
+      // And 0169's default layout 0.14 (IX-H).
+      artifact_version: counts.artifact_version! + 22,
     });
 
     fresh = await createTenant(db.adminUrl, db.migratorUrl, {
