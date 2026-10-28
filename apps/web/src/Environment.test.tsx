@@ -48,6 +48,34 @@ describe('the environment panel', () => {
     expect(link).toHaveAttribute('href', '/v1/sign-in/organisation');
   });
 
+  it("LOC-044 says the service's locale data and each collation's version", async () => {
+    render(
+      <Environment
+        fetch={
+          serviceThat({
+            '/v1/tenant': {
+              name: 'Development',
+              localeData: {
+                icu: '78.3',
+                unicode: '17.0',
+                cldr: '48.0',
+                collations: [{ language: 'ar-XB', collation: 'ar-x-icu', version: '153.120.42' }],
+              },
+            },
+            '/v1/me': new Response('{"code":"unauthenticated"}', { status: 401 }),
+          }) as unknown as typeof fetch
+        }
+        follow={noStream}
+      />,
+    );
+    expect(
+      await screen.findByText("The service's locale data: ICU 78.3, Unicode 17.0, CLDR 48.0."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Listings in ar-XB sort by ar-x-icu, version 153.120.42.'),
+    ).toBeInTheDocument();
+  });
+
   it('says who is signed in, and asks for a sample when told to', async () => {
     const asked = vi.fn();
     const fetching = serviceThat(
