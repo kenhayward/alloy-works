@@ -757,7 +757,8 @@ export async function requestBaselinePublication(
 
   const formats = PUBLISHING_FORMATS.filter((format) => input.formats.includes(format));
   // Under the profile the pinned version declares, recorded where it says something, as a publish's is
-  // (VER-020; R11-F): never the empty profile in its place.
+  // (VER-020; R11-F): never the empty profile in its place. In its document's own language, so no
+  // translation policy decided anything: none recorded (TE-D).
   const profile = (baseline.outline as { profile?: StoredProfile }).profile;
   const request = await trx
     .insertInto('publication_request')

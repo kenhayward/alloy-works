@@ -66,6 +66,7 @@ import { latestRevisionsOf } from './workflow.js';
 import {
   resolveInLanguage,
   translationPolicy,
+  translationPolicyNow,
   type InLanguage,
   type ReferenceRead,
 } from './translation.js';
@@ -905,6 +906,11 @@ export interface Publishable {
   readonly untranslatedNotes: ReadonlyMap<string, string>;
   /** What reading it in that language reports, which never stops it by itself (TR-J, TR-K). */
   readonly translationWarnings: readonly TranslationWarning[];
+  /**
+   * The translation policy's history row it was decided under (TE-D; LOC-036): in a language asked
+   * for, from 0170 on; otherwise none.
+   */
+  readonly policyChange: string | null;
 }
 
 /** What publishing in a language reports (TR-J, TR-K), by node: never a component's words. */
@@ -997,7 +1003,9 @@ export async function resolvePublishable(
     const shown = translations.get(each.node);
     return each.outcome === 'resolved' && shown ? { ...each, version: shown.version } : each;
   });
-  const policy = input.language === undefined ? undefined : await translationPolicy(trx);
+  // Its values and the history row naming them, read together (TE-D): what the request records.
+  const decided = input.language === undefined ? undefined : await translationPolicyNow(trx);
+  const policy = decided?.policy;
   const fallback = read.outline.fallback ?? policy?.fallback ?? 'source';
   const translationFailures: PublishFailure[] = [];
   const translationWarnings: TranslationWarning[] = [];
@@ -1213,6 +1221,7 @@ export async function resolvePublishable(
     translations,
     translationWarnings,
     untranslatedNotes,
+    policyChange: decided?.change ?? null,
   };
 }
 
@@ -1333,6 +1342,8 @@ export async function requestPublication(
       ...(warnings.length === 0 ? {} : { warnings: JSON.stringify(warnings) }),
       // Its language where one was asked for, as on a request before 0160 (TR-I).
       ...(found.language === undefined ? {} : { language: found.language }),
+      // The policy it was decided under (TE-D): a row only where 0170 has run, which made the column.
+      ...(found.policyChange === null ? {} : { policy_change: found.policyChange }),
     })
     .returning(['id'])
     .executeTakeFirstOrThrow();
