@@ -20420,6 +20420,10 @@
         {
           "id": "LOC-041",
           "howItIsMet": "Accepting needs approve on the component, and is audited naming who accepted"
+        },
+        {
+          "id": "LOC-016",
+          "howItIsMet": "Status shows on reference rows, the header, the listing and search; a space's report is paged and filtered"
         }
       ]
     },
@@ -22445,7 +22449,7 @@
     {
       "id": "API-007",
       "file": "apps/service/src/listing-routes.test.ts",
-      "line": 371,
+      "line": 380,
       "kind": "title"
     },
     {
@@ -23679,6 +23683,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-016",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 236,
+      "kind": "title"
+    },
+    {
       "id": "LOC-031",
       "file": "apps/service/src/translation-routes.test.ts",
       "line": 168,
@@ -23687,13 +23697,13 @@
     {
       "id": "LOC-033",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 448,
+      "line": 517,
       "kind": "title"
     },
     {
       "id": "LOC-035",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 448,
+      "line": 517,
       "kind": "title"
     },
     {
@@ -24749,19 +24759,25 @@
     {
       "id": "LIF-018",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 341,
+      "line": 349,
       "kind": "title"
     },
     {
       "id": "LIF-020",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 268,
+      "line": 276,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
-      "line": 354,
+      "line": 362,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-016",
+      "file": "apps/web/src/editor/ComponentList.test.tsx",
+      "line": 370,
       "kind": "title"
     },
     {
@@ -25569,9 +25585,15 @@
       "kind": "title"
     },
     {
+      "id": "LOC-016",
+      "file": "apps/web/src/search/SearchPage.test.tsx",
+      "line": 195,
+      "kind": "title"
+    },
+    {
       "id": "SCH-003",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 380,
+      "line": 406,
       "kind": "title"
     },
     {
@@ -25589,25 +25611,25 @@
     {
       "id": "SCH-058",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 380,
+      "line": 406,
       "kind": "title"
     },
     {
       "id": "SCH-060",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 439,
+      "line": 465,
       "kind": "title"
     },
     {
       "id": "SCH-061",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 274,
+      "line": 300,
       "kind": "title"
     },
     {
       "id": "SCH-063",
       "file": "apps/web/src/search/SearchPage.test.tsx",
-      "line": 274,
+      "line": 300,
       "kind": "title"
     },
     {
@@ -26463,6 +26485,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-016",
+      "file": "apps/web/src/translation/SpaceTranslations.test.tsx",
+      "line": 40,
+      "kind": "title"
+    },
+    {
       "id": "LOC-018",
       "file": "apps/web/src/translation/TranslationJobs.test.tsx",
       "line": 116,
@@ -26472,6 +26500,12 @@
       "id": "LOC-035",
       "file": "apps/web/src/translation/TranslationJobs.test.tsx",
       "line": 116,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-016",
+      "file": "apps/web/src/translation/Translations.test.tsx",
+      "line": 77,
       "kind": "title"
     },
     {
@@ -29616,6 +29650,12 @@
       "id": "LOC-035",
       "file": "packages/db/src/translation-jobs.test.ts",
       "line": 377,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-016",
+      "file": "packages/db/src/translation-report.test.ts",
+      "line": 311,
       "kind": "title"
     },
     {
