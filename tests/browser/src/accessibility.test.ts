@@ -946,15 +946,17 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await closeDialog(page);
 
-      // The Index entry dialog, on the marker selected, the component's terms offered (IX-M).
-      await surface.locator('[data-index-marker]').click();
+      // The Index entry dialog at the caret, the component's terms offered (IX-M), opened where the
+      // Cite dialog is, so the focus it gives back is the caret the next step clicks.
+      await last.click();
+      await page.keyboard.press('End');
       await page.keyboard.press('ControlOrMeta+Shift+1');
       const indexing = page.getByRole('dialog', { name: 'Index entry' });
       await check('the Index entry dialog', {
         shows: [indexing.getByRole('combobox', { name: 'Term' })],
       });
       await indexing.getByRole('radio', { name: 'This place, and see also other terms' }).click();
-      await indexing.getByRole('button', { name: 'Change' }).click();
+      await indexing.getByRole('button', { name: 'Insert' }).click();
       await check('the Index entry dialog refusing an empty "see also"', {
         shows: [indexing.getByRole('alert')],
       });
