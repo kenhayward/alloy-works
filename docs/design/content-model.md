@@ -412,8 +412,9 @@ nothing edits either until the footnotes slice.
 
 ## Inlines and marks
 
-`text` is the only leaf. Eight inline nodes: `text`, `equation`, `footnote`, `crossReference`,
-`citation`, `variable`, `binding`, `image`.
+`text` is the only leaf. Nine inline nodes: `text`, `equation`, `footnote`, `crossReference`,
+`citation`, `indexMarker`, `variable`, `binding`, `image`. An `indexMarker` is an index entry, printing
+nothing where it stands ([publishing.md](publishing.md#the-index)).
 
 **A footnote's anchor** is one of six kinds: `span`, where it stands in text; `cell` by key,
 `cellPosition` and `table`, which nothing makes; and, only in a bound table's `notes` and only there,
