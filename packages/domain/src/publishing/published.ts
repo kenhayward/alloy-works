@@ -50,8 +50,18 @@ import type { MathsTree } from './maths.js';
  *
  * Since `publishing/26` (the UI plan, UF-E) a paragraph style's and a mark's `font` in the theme is a
  * list, the face and its fallbacks, which template 26 hands the engine to try in order.
+ *
+ * Since `publishing/27` (the IX plan, IX-I) a run may be an index marker, anchored once, a table or a
+ * figure may carry the anchors of the markers its copies would set again, and `back.index` is the
+ * index the layout places, which template 27 sets.
  */
-export const PUBLISHING_SCHEMA = 'publishing/26';
+export const PUBLISHING_SCHEMA = 'publishing/27';
+
+/**
+ * The document as it stood before a run could be an index marker, frozen by IXb for the reason
+ * `publishing/16` is: `apps/worker/templates/publication/26/` asserts it.
+ */
+export const PUBLISHING_SCHEMA_26 = 'publishing/26';
 
 /**
  * The document as it stood before a style's face could fall back to others, frozen by UIf for the
@@ -416,8 +426,24 @@ export interface PublishedTermRun {
 }
 
 /**
+ * **An index marker** (IXb; IX-I), printing nothing: `anchor`, `x-<n>` in reading order, where it is
+ * set, and null for a "see", which locates nothing, and in a caption or a table's header rows, which
+ * are set again - their anchors are the table's or the figure's `indexAnchors`. Its entry beside it,
+ * which Word writes as an `XE` field.
+ */
+export interface PublishedIndexMarkRun {
+  readonly indexMark: {
+    readonly anchor: string | null;
+    readonly term: string;
+    readonly sub: string | null;
+    readonly see: string | null;
+    readonly seeAlso: readonly string[];
+  };
+}
+
+/**
  * One piece of a published run sequence: text with its marks, an image, a footnote, a reference, an
- * equation, a table's note's mark, a citation or a term.
+ * equation, a table's note's mark, a citation, a term or an index marker.
  */
 export type PublishedInline =
   | PublishedRun
@@ -427,7 +453,8 @@ export type PublishedInline =
   | PublishedEquationRun
   | PublishedTableMarkRun
   | PublishedCitationRun
-  | PublishedTermRun;
+  | PublishedTermRun
+  | PublishedIndexMarkRun;
 
 /**
  * **A table's lettered note** (TB3-E), set beneath it after the whole table's note and before a bound
@@ -612,6 +639,12 @@ export interface PublishedTable {
      */
     readonly groups?: readonly PublishedGroupRow[];
   };
+  /**
+   * The anchors of the index markers in its caption and header rows (IX-I), which are set again - in
+   * the list of tables and on every page the table reaches - so each is set once, where the table
+   * begins. Absent where it has none.
+   */
+  readonly indexAnchors?: readonly string[];
 }
 
 /** A grouped table's body row (TG1): a heading or a subtotal at its level, else null. */
@@ -655,6 +688,8 @@ export interface PublishedFigure {
    * places the caption there and decides nothing.
    */
   readonly captionPosition: 'top' | 'bottom';
+  /** Its caption's index markers' anchors, set once where it begins, as a table's (IX-I). */
+  readonly indexAnchors?: readonly string[];
 }
 
 /**
@@ -884,6 +919,42 @@ export interface PublishedAbbreviations {
   readonly entries: readonly { readonly abbreviation: string; readonly label: string }[];
 }
 
+/**
+ * A locator of the index (IX-I): a marker's anchor, which the PDF prints as its page, and HTML's
+ * (IX-D): the node whose number, or title where unnumbered, locates it - the innermost holding the
+ * marker that has either, else the nearest before it - and the words it prints; `node` null for the
+ * document's title, where none comes before it.
+ */
+export interface PublishedIndexLocator {
+  readonly anchor: string;
+  readonly node: string | null;
+  readonly words: string;
+}
+
+/** What an entry or a sub-entry gives (IX-B): its locators in reading order, its "see"s, "see also"s. */
+export interface PublishedIndexHeading {
+  readonly locators: readonly PublishedIndexLocator[];
+  readonly see: readonly string[];
+  readonly seeAlso: readonly string[];
+}
+
+/** An entry of the index: its term, and its sub-entries in collation order (IX-A). */
+export interface PublishedIndexEntry extends PublishedIndexHeading {
+  readonly term: string;
+  readonly subEntries: readonly (PublishedIndexHeading & { readonly sub: string })[];
+}
+
+/**
+ * **The index the layout places** (STR-043, PUB-041; IXb): its title and the words a "see" and a "see
+ * also" print, in the layout's language, and its entries in the document language's collation.
+ */
+export interface PublishedIndex {
+  readonly title: string;
+  readonly see: string;
+  readonly seeAlso: string;
+  readonly entries: readonly PublishedIndexEntry[];
+}
+
 export interface PublishedDocument {
   readonly schema: typeof PUBLISHING_SCHEMA;
   readonly title: string;
@@ -918,11 +989,13 @@ export interface PublishedDocument {
   readonly nodes: readonly PublishedNode[];
   /**
    * After the last node: the bibliography, where the layout declares one and a citation stands; then
-   * the glossary and the abbreviations, where it declares each and a term used has an entry in it.
+   * the glossary and the abbreviations, where it declares each and a term used has an entry in it;
+   * then the index, where it declares one and a marker stands (IXb).
    */
   readonly back: {
     readonly bibliography: PublishedBibliography | null;
     readonly glossary: PublishedGlossary | null;
     readonly abbreviations: PublishedAbbreviations | null;
+    readonly index: PublishedIndex | null;
   };
 }

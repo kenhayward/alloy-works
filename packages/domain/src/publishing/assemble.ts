@@ -6,6 +6,7 @@ import type { ContentDocument } from '../content/model/document.js';
 import type {
   CrossReferenceDisplay,
   CrossReferenceTarget,
+  IndexMarkerNode,
   InlineNode,
 } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
@@ -82,6 +83,7 @@ const titleTexts = (nodes: readonly OutlineNode[]): string[] =>
   ]);
 import { isLaidOut } from './bound.js';
 import type { PublishFailure } from './failures.js';
+import { assembleIndex, type IndexMarked } from './indexing.js';
 import {
   characterProblems,
   codePointName,
@@ -148,6 +150,7 @@ import {
   type PublishedBibliographyEntry,
   type PublishedGlossary,
   type PublishedAbbreviations,
+  type PublishedIndexLocator,
 } from './published.js';
 import {
   glossaryAnchor,
@@ -1146,6 +1149,36 @@ export function assemble(given: AssembleInput): Assembled {
       ? null
       : { title: layout.matter.abbreviations.title, entries: terms!.abbreviations };
   const inGlossary = new Set(glossary?.entries.map((each) => each.anchor) ?? []);
+  // Each index marker anchored once, in reading order, where the layout places an index (IX-I): a
+  // "see" locates nothing, and one in a caption or a header row is anchored on its table or figure,
+  // since those are set again. Without an index a marker prints nothing and fails nothing.
+  const indexWords = layout?.matter.index;
+  const markerAnchors = new Map<
+    string,
+    Map<InlineNode, { readonly anchor: string | null; readonly lifted: boolean }>
+  >();
+  /** By a table's or a figure's node and identifier, a space between: a node's has none. */
+  const liftedAnchors = new Map<string, string[]>();
+  /** Every anchor set, so a locator names only a marker the document carries. */
+  const setAnchors = new Set<string>();
+  if (indexWords !== undefined) {
+    let count = 0;
+    for (const { node, marker, lifted } of resolved.indexed) {
+      const anchor = marker.see === undefined ? `x-${++count}` : null;
+      const held = markerAnchors.get(node) ?? new Map();
+      markerAnchors.set(node, held.set(marker, { anchor, lifted: lifted !== null }));
+      if (anchor !== null && lifted !== null) {
+        const key = `${node} ${lifted}`;
+        liftedAnchors.set(key, [...(liftedAnchors.get(key) ?? []), anchor]);
+      }
+    }
+  }
+  /** The anchors a table or a figure sets for its copies' markers, once, where it begins. */
+  const indexAnchorsOf = (node: string, block: string) => {
+    const anchors = liftedAnchors.get(`${node} ${block}`) ?? [];
+    for (const anchor of anchors) setAnchors.add(anchor);
+    return anchors.length === 0 ? {} : { indexAnchors: anchors };
+  };
   /**
    * What a heading prints for the words a term covers (TM-E): its preferred label, in the document's
    * language, else the base language's; the words themselves where it does not resolve.
@@ -1341,8 +1374,24 @@ export function assemble(given: AssembleInput): Assembled {
       }
       // A binding still here is one the binding stage failed by name (B3-D): nothing is printed.
       if (inline.type === 'binding') continue;
-      // An index marker prints nothing where it stands (the IX plan, IX-F).
-      if (inline.type === 'indexMarker') continue;
+      // An index marker prints nothing where it stands (IX-F): its anchor where the layout places an
+      // index, unless what holds it is set again (IX-I), and its entry for Word's `XE` field.
+      if (inline.type === 'indexMarker') {
+        const at = markerAnchors.get(node)?.get(inline);
+        if (at === undefined) continue;
+        const anchor = at.lifted ? null : at.anchor;
+        if (anchor !== null) setAnchors.add(anchor);
+        runs.push({
+          indexMark: {
+            anchor,
+            term: inline.term,
+            sub: inline.sub ?? null,
+            see: inline.see ?? null,
+            seeAlso: inline.seeAlso ?? [],
+          },
+        });
+        continue;
+      }
       if (inline.type !== 'text') {
         failures.push(failure('compose', 'inline_not_publishable', node, block, inline.type));
         continue;
@@ -1955,6 +2004,7 @@ export function assemble(given: AssembleInput): Assembled {
             // Its own, else its style's, else scale (TB3-G): a missing style has already failed.
             wide: block.wide ?? tableStyle?.wide ?? 'scale',
             ...(widths === null ? {} : { widths }),
+            ...indexAnchorsOf(node, block.id),
             ...(laidOut === null
               ? {}
               : {
@@ -2082,6 +2132,7 @@ export function assemble(given: AssembleInput): Assembled {
             alignment: ALIGNMENTS[imageStyle.alignment],
             listed: entry !== undefined,
             captionPosition: imageStyle.caption === 'above' ? 'top' : 'bottom',
+            ...indexAnchorsOf(node, block.id),
           },
         ];
       }
@@ -2706,6 +2757,61 @@ export function assemble(given: AssembleInput): Assembled {
   };
 
   const nodes = input.outline.nodes.map((node) => project(node, 1, node.matter));
+  // The index after them (IX-I): each marker set, located for HTML by the node whose number, or title
+  // where unnumbered, heads it - the innermost holding it, else the nearest before it, else the
+  // document's title (IX-D).
+  const headed = new Map<
+    string,
+    { readonly words: string | null; readonly parent: string | null }
+  >();
+  const order: string[] = [];
+  const visit = (each: readonly PublishedNode[], parent: string | null) => {
+    for (const node of each) {
+      const words = node.number ?? titleWords(node.title);
+      headed.set(node.id, { words: hasText(words) ? words : null, parent });
+      order.push(node.id);
+      visit(node.children, node.id);
+    }
+  };
+  visit(nodes, null);
+  const locatorOf = (node: string, anchor: string): PublishedIndexLocator => {
+    for (let at: string | null = node; at !== null; at = headed.get(at)?.parent ?? null) {
+      const words = headed.get(at)?.words;
+      if (words != null) return { anchor, node: at, words };
+    }
+    for (const before of order.slice(0, order.indexOf(node)).reverse()) {
+      const words = headed.get(before)?.words;
+      if (words != null) return { anchor, node: before, words };
+    }
+    return { anchor, node: null, words: input.outline.title };
+  };
+  const marked: IndexMarked[] = resolved.indexed.flatMap(({ node, block, marker }) => {
+    const at = markerAnchors.get(node)?.get(marker);
+    if (at === undefined) return [];
+    const set = at.anchor !== null && setAnchors.has(at.anchor);
+    return [{ node, block, marker, locator: set ? locatorOf(node, at.anchor!) : null }];
+  });
+  const indexed =
+    indexWords === undefined
+      ? { index: null, failures: [] }
+      : assembleIndex(marked, indexWords, input.outline.language);
+  failures.push(...indexed.failures);
+  const { index } = indexed;
+  // Its words and its entries asked of the faces as the glossary's are (TM-H), each term once.
+  if (index !== null) {
+    checkWords(index.title, roles('heading1'), (next) => failures.push(next));
+    for (const words of [index.see, index.seeAlso]) {
+      checkWords(words, inPlace('text'), (next) => failures.push(next));
+    }
+    const said = new Set<string>();
+    for (const { node, block, marker } of marked) {
+      for (const words of [marker.term, marker.sub ?? '']) {
+        if (words === '' || said.has(words)) continue;
+        said.add(words);
+        check(words, node, block, inPlace('text'));
+      }
+    }
+  }
   // The bibliography after them: its title in the first heading's style, its entries in running
   // text's, each asked of the faces as the document's words are.
   if (bibliography !== null) {
@@ -2856,7 +2962,7 @@ export function assemble(given: AssembleInput): Assembled {
       front: { cover, contents: shownContents, lists, approvals },
       appendices: { newPage: layout.matter.appendices.newPage },
       nodes,
-      back: { bibliography, glossary, abbreviations },
+      back: { bibliography, glossary, abbreviations, index },
     },
   };
 }
@@ -3029,6 +3135,19 @@ interface ResolvedReferences {
   readonly asCitations: ReadonlyMap<ReferenceNode, CitationNode>;
   /** Every use of a term, in reading order (TM-E): no title's, footnotes at their mark. */
   readonly used: readonly TermUse[];
+  /** Every index marker, in reading order (IX-I), as a citation is found. */
+  readonly indexed: readonly Indexed[];
+}
+
+/**
+ * An index marker found in the document: where it is read, the block a failure names, and the table
+ * or figure it is anchored on where what holds it is set again - a caption, a header row (IX-I).
+ */
+interface Indexed {
+  readonly node: string;
+  readonly block: string;
+  readonly marker: IndexMarkerNode;
+  readonly lifted: string | null;
 }
 
 /** A citation as the content model stores it. */
@@ -3054,6 +3173,7 @@ const NO_REFERENCES: ResolvedReferences = {
   cited: [],
   asCitations: new Map(),
   used: [],
+  indexed: [],
 };
 
 /**
@@ -3174,6 +3294,9 @@ function resolveReferences(
   const asCitations = new Map<ReferenceNode, CitationNode>();
   // Each use of a term where the walk meets it, as a citation is (TM-E). A title's is no use.
   const used: TermUse[] = [];
+  // Each index marker where the walk meets it (IX-I), and the table whose header row holds it.
+  const indexed: Indexed[] = [];
+  let headerOf: string | null = null;
 
   const place = (anchor: string, inHeader: boolean) => {
     positions.set(anchor, at++);
@@ -3210,6 +3333,9 @@ function resolveReferences(
         found.push({ node, reference: inline, inTitle, at: at++, inNote, inCaption });
       } else if (inline.type === 'citation' && block !== null) {
         cited.push({ node, block, citation: inline });
+      } else if (inline.type === 'indexMarker' && block !== null) {
+        const lifted = inCaption !== null ? block : inHeader ? headerOf : null;
+        indexed.push({ node, block, marker: inline, lifted });
       } else if (inline.type === 'footnote' && beneath !== null) {
         beneath.push(() => {
           place(blockAnchor(node, inline.id), false);
@@ -3265,8 +3391,11 @@ function resolveReferences(
           beneath = lettered;
           stored.rows.forEach((row, index) => {
             const header = inHeader || index < stored.headerRows;
+            const outerHeader = headerOf;
+            if (!inHeader && header) headerOf = stored.id;
             for (const cell of row.cells)
               for (const each of cell.content) block(each, node, header);
+            headerOf = outerHeader;
           });
           beneath = outer;
           inlines(stored.note ?? [], node, false, inHeader, null, false, stored.id);
@@ -3513,6 +3642,7 @@ function resolveReferences(
     cited,
     asCitations,
     used,
+    indexed,
   };
 }
 

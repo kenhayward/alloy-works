@@ -22,6 +22,7 @@ import {
   type PublishedFigure,
   type PublishedFootnoteRun,
   type PublishedImageRun,
+  type PublishedIndexHeading,
   type PublishedInline,
   type PublishedLanguage,
   type PublishedList,
@@ -45,9 +46,10 @@ import { mathml } from './mathml.js';
  * The HTML writer's version (the HT plan, HT-A), recorded on each output it makes as Word's is: it
  * moves whenever what the writer writes does. `html/1` was HTa's, which wrote text, headings, lists,
  * marks, quotations, preformatted text and passages in other languages and refused every other kind
- * `html_not_yet`; `html/2` is HTb's, which writes every kind, and subsets each face it embeds.
+ * `html_not_yet`; `html/2` is HTb's, which writes every kind, and subsets each face it embeds; `html/3` is IXb's,
+ * which writes an index marker as an empty span and the index after the abbreviations.
  */
-export const HTML_WRITER_VERSION = 'html/2';
+export const HTML_WRITER_VERSION = 'html/3';
 
 /** What the writer is given: `assemble`'s answer for HTML, and the files it embeds. */
 export interface HtmlWriting {
@@ -450,6 +452,11 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           )
         : element('span', [['class', 'aw-citation']], body);
     }
+    // An index marker prints nothing: an empty span its locators link to, where it is anchored (IX-L).
+    if ('indexMark' in each) {
+      const { anchor } = each.indexMark;
+      return anchor === null ? '' : element('span', [['id', anchor]], '');
+    }
     const kind: 'term' = 'term' in each ? 'term' : (each satisfies never);
     const { text, marks, link } = each[kind];
     const body = run({ text, marks }, where.chain, false);
@@ -583,6 +590,10 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
   const listed: Record<string, { readonly href: string; readonly said: () => string }[]> = {};
   const enlist = (sequence: string, href: string, said: () => string) =>
     (listed[sequence] ??= []).push({ href, said });
+
+  /** The anchors of a table's or a figure's copies' index markers, each an empty span (IX-L). */
+  const indexSpans = (anchors: readonly string[] | undefined): string =>
+    (anchors ?? []).map((anchor) => element('span', [['id', anchor]], '')).join('');
 
   /** A caption: its label, as the PDF prints it, and its runs. */
   const caption = (
@@ -743,7 +754,7 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['data-table-style', each.style],
       ],
       [
-        '',
+        indexSpans(each.indexAnchors),
         element(
           'figcaption',
           [
@@ -808,7 +819,8 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         ['data-image-style', input.html.imageStyles.get(figureImageKey(node, each.id)) ?? null],
         ['class', 'aw-figure'],
       ],
-      each.captionPosition === 'top' ? body + shown : shown + body,
+      indexSpans(each.indexAnchors) +
+        (each.captionPosition === 'top' ? body + shown : shown + body),
     );
   };
 
@@ -1038,6 +1050,67 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
         anchor: null,
         said: strong(entry.abbreviation) + plain(` ${entry.label}`),
       })),
+    );
+  }
+
+  // The index after them (IX-L): its title as theirs, each entry an item of a list and its sub-entries
+  // a list in it, each locator its section's number, or title where unnumbered, a link to the first
+  // marker the section holds (IX-D); a "see" and a "see also" in the layout's words, emphasised.
+  const index = document.back.index;
+  if (index !== null) {
+    const emphasised = (words: string) => {
+      const said = run({ text: words, marks: [{ kind: 'emphasis' }] }, text, false);
+      return wordsLanguage === null ? said : element('span', [['lang', wordsLanguage]], said);
+    };
+    const line = (name: string, heading: PublishedIndexHeading): string => {
+      const parts = [plain(name)];
+      const sections = new Set<string | null>();
+      for (const locator of heading.locators) {
+        if (sections.has(locator.node)) continue;
+        sections.add(locator.node);
+        parts.push(element('a', [['href', `#${locator.anchor}`]], plain(locator.words)));
+      }
+      for (const [word, targets] of [
+        [index.see, heading.see],
+        [index.seeAlso, heading.seeAlso],
+      ] as const) {
+        if (targets.length > 0) parts.push(`${emphasised(word)}${plain(` ${targets.join('; ')}`)}`);
+      }
+      return element(
+        'p',
+        [
+          ['data-style', 'body'],
+          ['data-place', 'text'],
+        ],
+        parts.join(plain(', ')),
+      );
+    };
+    const items = index.entries.map((entry) => {
+      const subs =
+        entry.subEntries.length === 0
+          ? ''
+          : element(
+              'ul',
+              [],
+              `\n${entry.subEntries.map((sub) => element('li', [], line(sub.sub, sub))).join('\n')}\n`,
+            );
+      return element('li', [], line(entry.term, entry) + subs);
+    });
+    sets(index.title, roleChain('heading1'));
+    back.push(
+      element(
+        'section',
+        [['aria-labelledby', 'aw-index']],
+        `\n${element(
+          'h1',
+          [
+            ['id', 'aw-index'],
+            ['lang', wordsLanguage],
+            ['data-role', 'heading1'],
+          ],
+          escapeText(index.title),
+        )}\n${element('ul', [['class', 'aw-entries aw-index']], `\n${items.join('\n')}\n`)}\n`,
+      ) + '\n',
     );
   }
 

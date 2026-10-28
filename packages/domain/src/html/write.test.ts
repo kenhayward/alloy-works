@@ -194,8 +194,8 @@ const declared = (html: string) =>
   );
 
 describe('the HTML writer (the HT plan, HTa)', () => {
-  it('is the writer at html/2, which writes every kind (HTb)', () => {
-    expect(HTML_WRITER_VERSION).toBe('html/2');
+  it('is the writer at html/3, which writes the index (IXb)', () => {
+    expect(HTML_WRITER_VERSION).toBe('html/3');
   });
 
   it('writes one self-contained file: its policy first in its head, its styles and faces inline, nothing fetched', () => {
@@ -919,6 +919,96 @@ describe('the HTML writer: every other kind (the HT plan, HTb)', () => {
 /** What an author could type to break out of the markup, in every place words reach. */
 const HOSTILE = `<script>alert(1)</script>" onload="alert(2)' onerror='x </style><img src=x onerror=alert(3)> javascript:alert(4)`;
 
+describe('the HTML writer: the index (the IX plan, IX-D and IX-L)', () => {
+  const marker = (term: string, more: object = {}) => ({ type: 'indexMarker', term, ...more });
+  const indexed = () =>
+    written({
+      outline: parseOutlineDocument({
+        schemaVersion: OUTLINE_SCHEMA_VERSION,
+        title: 'The dosing report',
+        language: 'en-GB',
+        direction: 'ltr',
+        nodes: [
+          section('intro', 'Introduction', [reference('calib', 1)]),
+          section('method', 'Method', [reference('mix', 2)]),
+        ],
+      }),
+      occurrences: new Map([
+        [
+          id('calib'),
+          component('Calibration', [
+            paragraph(
+              'p1',
+              text('Brass '),
+              marker('alloy'),
+              marker('alloy'),
+              marker('alloy', { sub: 'brass' }),
+            ),
+            { ...readings(), caption: [text('Readings'), marker('grade')] },
+          ]),
+        ],
+        [
+          id('mix'),
+          component('Mixing', [
+            paragraph(
+              'p2',
+              text('Copper '),
+              marker('alloy'),
+              marker('latten', { see: 'alloy' }),
+              marker('copper', { seeAlso: ['alloy', 'grade'] }),
+            ),
+          ]),
+        ],
+      ]),
+    });
+
+  it('PUB-041 STR-043 writes the index after the last node: nested lists, each locator its section by number linked to the marker, a section once an entry, see and see also emphasised', () => {
+    const tree = body(htmlOf(indexed()));
+    const index = all(tree, 'section').at(-1)!;
+    const heading = all(index, 'h1')[0]!;
+    expect(index.attrs['aria-labelledby']).toBe(heading.attrs['id']);
+    expect(textOf(heading)).toBe('Index');
+    const [entries] = kids(index).filter((each) => each.name === 'ul');
+    expect(
+      kids(entries!).map((item) => [
+        textOf(kids(item)[0]!),
+        ...all(item, 'ul').flatMap((sub) => kids(sub).map(textOf)),
+      ]),
+    ).toEqual([
+      ['alloy, 1.1, 2.1', 'brass, 1.1'],
+      ['copper, 2.1, see also alloy; grade'],
+      ['grade, 1.1'],
+      ['latten, see alloy'],
+    ]);
+    // Each locator a link to the first marker its section holds; the layout's words emphasised.
+    const alloy = kids(kids(entries!)[0]!)[0]!;
+    const links = all(alloy, 'a').map((each) => each.attrs['href']!);
+    expect(links).toEqual(['#x-1', '#x-5']);
+    for (const href of links) {
+      expect(all(tree, 'span').some((span) => `#${span.attrs['id']}` === href)).toBe(true);
+    }
+    expect(all(kids(entries!)[1]!, 'em').map(textOf)).toEqual(['see also']);
+  });
+
+  it("sets each marker as an empty span once, a caption's where its table begins and none in the list of tables", () => {
+    const html = htmlOf(indexed());
+    const tree = body(html);
+    const spans = all(tree, 'span').filter((each) => each.attrs['id']?.startsWith('x-'));
+    expect(spans.map((each) => each.attrs['id'])).toEqual([
+      'x-1',
+      'x-2',
+      'x-3',
+      'x-4',
+      'x-5',
+      'x-6',
+    ]);
+    expect(spans.every((each) => each.children.length === 0)).toBe(true);
+    const table = all(tree, 'figure').find((each) => each.attrs['data-block'] === 't1')!;
+    expect(all(table, 'span').map((each) => each.attrs['id'])).toContain('x-4');
+    expect(html.match(/id="x-4"/g)).toHaveLength(1);
+  });
+});
+
 describe('the HTML writer: content is data (the HT plan, HT-L)', () => {
   it('lets nothing hostile out of any kind it writes: no script, no handler, every address its own', () => {
     const MARLOW = '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c11';
@@ -970,6 +1060,7 @@ describe('the HTML writer: content is data (the HT plan, HT-L)', () => {
                 marks: [{ type: 'definedTerm', id: 'm1', term: RPM }],
               },
               xref('x1', toBlock('t1'), 'page', 'numberAndTitle'),
+              { type: 'indexMarker', term: `Index ${HOSTILE}`, sub: `Sub ${HOSTILE}` },
             ),
             {
               ...readings(),

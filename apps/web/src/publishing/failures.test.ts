@@ -65,3 +65,20 @@ describe('a failure where HTML is asked for, in words (the HT plan, HTa)', () =>
     expect(at('condition_leaked', 'html')).toContain('in the HTML file');
   });
 });
+
+describe("an index marker's failure, in words (the IX plan, IX-I)", () => {
+  const at = (code: string, detail: string | null) =>
+    failureWords({ stage: 'compose', code, node: null, block: 'p1', detail } as never);
+
+  it('names which reference names no entry, and a "see" on an entry with pages', () => {
+    expect(at('index_reference_unresolved', 'see')).toBe(
+      'An index entry here says "see" a term no index entry carries. Mark that term somewhere, or change what it refers to.',
+    );
+    expect(at('index_reference_unresolved', 'seeAlso')).toBe(
+      'An index entry here says "see also" a term no index entry carries. Mark that term somewhere, or change what it refers to.',
+    );
+    expect(at('index_see_located', null)).toBe(
+      'An index entry here says "see" another term, but other markers give the same entry pages. Make it "see also", or remove the pages.',
+    );
+  });
+});

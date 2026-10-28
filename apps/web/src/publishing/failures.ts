@@ -736,6 +736,13 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // A machine draft not yet accepted (the XL plan, XL-I).
     case 'translation_machine_drafted':
       return words('publishing.this-component-s-translation-was');
+    // An index marker (the IX plan, IX-I): `detail` names which of its references, never its words.
+    case 'index_reference_unresolved':
+      return failure.detail === 'seeAlso'
+        ? words('publishing.an-index-entry-here-says-3')
+        : words('publishing.an-index-entry-here-says');
+    case 'index_see_located':
+      return words('publishing.an-index-entry-here-says-2');
     default:
       return words('publishing.the-publication-could-not-be-4');
   }
@@ -785,6 +792,12 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   },
   get translation_machine_drafted() {
     return words('publishing.a-translation-in-it-was');
+  },
+  get index_reference_unresolved() {
+    return words('publishing.an-index-entry-in-it');
+  },
+  get index_see_located() {
+    return words('publishing.an-index-entry-in-it-2');
   },
   get occurrence_unresolved() {
     return words('publishing.a-reference-in-it-waits');

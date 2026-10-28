@@ -24502,7 +24502,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {
@@ -25032,7 +25034,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {
@@ -93829,7 +93833,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {
@@ -94317,7 +94323,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {
@@ -171184,7 +171192,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {
@@ -177324,7 +177334,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {
@@ -245783,7 +245795,9 @@
                               "translation_out_of_date",
                               "translation_machine_drafted",
                               "page_reference_without_pages",
-                              "html_not_yet"
+                              "html_not_yet",
+                              "index_reference_unresolved",
+                              "index_see_located"
                             ]
                           },
                           "node": {

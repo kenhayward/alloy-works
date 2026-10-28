@@ -252,7 +252,7 @@ export function printTerms(
 }
 
 /** The document language's collation, or the root's where the tag is one `Intl` refuses. */
-function collatorFor(language: string): Intl.Collator {
+export function collatorFor(language: string): Intl.Collator {
   try {
     return new Intl.Collator(language);
   } catch {

@@ -1105,7 +1105,7 @@ describe('a caption where its style places it (W14.5)', () => {
         await images(),
       ),
     ]);
-    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(26);
+    expect(TEMPLATE_READING[PUBLISHING_SCHEMA]).toBe(27);
     const [was, now] = await Promise.all([readPdf(before), readPdf(after)]);
     expect(now.pages).toBe(was.pages);
     expect(now.taggedText).toEqual(was.taggedText);

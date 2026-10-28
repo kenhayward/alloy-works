@@ -985,7 +985,9 @@ describe('the citations in the committed model', () => {
     // 2131 (2026-10-27): HTb cites STR-050 and STR-055 in the HTML writer, and REU-048 in the worker's.
     // 2132 (2026-10-27): HTc cites PUB-056 in the browser suite's HTML walks.
     // 2133 (2026-10-28): IXa cites REU-048 for an index marker in conditions.
-    expect(model.citations).toHaveLength(2133);
+    // 2142 (2026-10-28): IXb cites PUB-041 and STR-043 four times each for the index published, and
+    // REU-048 for the scan reading it.
+    expect(model.citations).toHaveLength(2142);
   });
 
   it('cites no identifier the corpus does not hold', () => {
