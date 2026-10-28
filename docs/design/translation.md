@@ -44,9 +44,10 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-025** | The terms the source uses go with each piece, and the draft is checked against their labels                     |
 | **LOC-026** | Sending to machine translation is the tenant's policy, off by default, inside or any boundary                   |
 | **LOC-041** | Accepting needs approve on the component, and is audited naming who accepted                                    |
+| **LOC-016** | Status shows on reference rows, the header, the listing and search; a space's report is paged and filtered      |
 
-LOC-016 asks for status wherever a component is used: a document's references say it, and a space
-reports it, but a search result and the components listing do not yet, so it is not claimed.
+LOC-039's message forms are their own slice, MF (the TE plan, TE-A).
+
 LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
 import - declared, versioned and audited: the first two are here, audited `settings.changed`; the
 rest are XL's, which claims it.
@@ -109,10 +110,13 @@ cross-references, which read the outline - and its own where none is, reported
 
 ## Status where used
 
-A document's reference rows say each translation of the component placed and its status. `GET
-/v1/spaces/{space}/translations` reports each component of a space the caller may read that has a
-translation, read-filtered before it is capped at 500 and saying so; the **Translations** page,
-linked from Components, shows it.
+A document's reference rows, the component's header, each row of the components listing and each
+component search finds say each translation and its status (the TE plan, TE-B), read once a page
+after the read filter. Status is computed in SQL (`translationStatusSql`, held to `translationStatus`
+by a parity test), so `GET /v1/spaces/{space}/translations` reports each component of a space the
+caller may read that has a translation a page at a time, by title in the reader's collation (UI-H),
+filtered by `language` and `status` before it is paged (TE-C); the **Translations** page, linked
+from Components, shows it.
 
 ## Translation jobs
 

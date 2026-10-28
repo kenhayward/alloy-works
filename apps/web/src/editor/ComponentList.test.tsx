@@ -26,6 +26,14 @@ const row = (id: string, title: string, space: string, by: { id: string; name: s
   state: { key: 'in_review', name: 'In review' },
   pastReview: title === 'Replace the toner',
   ...(title === 'Install the printer' ? { lines: ['US'] } : {}),
+  ...(title === 'Install the printer'
+    ? {
+        translations: [
+          { language: 'de-DE', status: 'translated' },
+          { language: 'fr-FR', status: 'outOfDate', retranslate: false },
+        ],
+      }
+    : {}),
 });
 
 const SPACES = [
@@ -357,5 +365,17 @@ describe('the components list', () => {
     const link = await screen.findByRole('link', { name: 'Install the printer' });
     expect(within(link.closest('tr')!).getByText('Diverged: US')).toBeInTheDocument();
     expect(screen.getAllByText(/^Diverged/)).toHaveLength(1);
+  });
+
+  it('LOC-016 shows each translation’s status as its lozenge, out of date first, and none where there is none', async () => {
+    const { client } = service();
+    render(<ComponentList client={client} principalId="p9" />);
+    const link = await screen.findByRole('link', { name: 'Install the printer' });
+    expect(
+      within(link.closest('tr')!)
+        .getAllByText(/^(de|fr)-/)
+        .map((each) => each.textContent),
+    ).toEqual(['fr-FR: Out of date, no retranslation needed', 'de-DE: Translated']);
+    expect(screen.getAllByText(/^(de|fr)-/)).toHaveLength(2);
   });
 });

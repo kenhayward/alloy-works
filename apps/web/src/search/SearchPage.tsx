@@ -5,6 +5,7 @@ import { Notice } from '../states/Notice.js';
 import { Chip } from '../parts/Chip.js';
 import { StateLozenge } from '../states/Lozenge.js';
 import { PlaceIntoButton } from '../structure/PlaceSection.js';
+import { TranslationChips, type TranslationSaid } from '../translation/Translations.js';
 import { resultLink, whereFound, type SearchScope } from './links.js';
 import { searchSaid, type SearchSaid } from './said.js';
 import styles from './SearchPage.module.css';
@@ -48,6 +49,8 @@ interface Result {
   readonly state?: { readonly key: string; readonly name: string } | null;
   /** A component's open divergent lines (LIF-046); absent where it has not diverged. */
   readonly lines?: readonly string[];
+  /** A component's translations, each with its status (LOC-016; TE-B); absent where it has none. */
+  readonly translations?: readonly TranslationSaid[];
   /** How it was found (SCH-014; the G7 plan): absent from a service before G7, which finds by words. */
   readonly found?: 'words' | 'meaning' | 'both';
   /** A section's document and the components it places (SCH-053); absent from a service before R14. */
@@ -641,6 +644,7 @@ export function SearchPage({
                         })}
                       </Chip>
                     )}
+                    <TranslationChips translations={item.translations} />
                     {/* Found by meaning answers another question than by words (SCH-014). */}
                     {item.found === 'meaning' && <Chip>{words('search.found-by-meaning')}</Chip>}
                     {item.found === 'both' && (

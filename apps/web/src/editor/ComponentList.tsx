@@ -24,6 +24,7 @@ import { Icon } from './Icon.js';
 import styles from './ComponentList.module.css';
 import { NewComponent } from './NewComponent.js';
 import { RowMenu } from './RowMenu.js';
+import { TranslationChips } from '../translation/Translations.js';
 import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -374,6 +375,8 @@ export function ComponentList({ client, principalId }: ComponentListProps) {
                       {(item.lines?.length ?? 0) > 0 && (
                         <Chip>{words('editor.diverged', { value1: item.lines!.join(', ') })}</Chip>
                       )}
+                      {/* Each translation's status (LOC-016; the TE plan, TE-B). */}
+                      <TranslationChips translations={item.translations} />
                     </td>
                     <td className={styles['muted']}>
                       <time dateTime={item.changedAt}>{whenChanged(item.changedAt)}</time>
