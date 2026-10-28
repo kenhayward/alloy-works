@@ -246841,6 +246841,33 @@
                       ],
                       "description": "The change to the environment's translation policy a publish in a language was decided under, and when that change was made (`getTranslationSettingsHistory`); null for one in its document's own language, one from a baseline, or one made before the policy kept its history"
                     },
+                    "localeData": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "icu": {
+                              "type": "string"
+                            },
+                            "unicode": {
+                              "type": "string"
+                            },
+                            "cldr": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "icu",
+                            "unicode",
+                            "cldr"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The ICU, Unicode and CLDR versions the worker that made it held, which its sorting and formatting came from; null for one made before they were recorded"
+                    },
                     "outputs": {
                       "type": "array",
                       "items": {
@@ -248148,6 +248175,7 @@
                     "template",
                     "pipeline",
                     "translationPolicy",
+                    "localeData",
                     "outputs"
                   ]
                 },
@@ -248181,6 +248209,11 @@
                   "translationPolicy": {
                     "change": "example",
                     "at": "example"
+                  },
+                  "localeData": {
+                    "icu": "example",
+                    "unicode": "example",
+                    "cldr": "example"
                   },
                   "outputs": []
                 }
@@ -325600,16 +325633,76 @@
                         ]
                       },
                       "description": "The ways in it offers: the organisation's provider, Google, or both"
+                    },
+                    "localeData": {
+                      "type": "object",
+                      "properties": {
+                        "icu": {
+                          "type": "string",
+                          "description": "The ICU version the service's runtime carries"
+                        },
+                        "unicode": {
+                          "type": "string",
+                          "description": "The Unicode version it carries"
+                        },
+                        "cldr": {
+                          "type": "string",
+                          "description": "The CLDR version it carries"
+                        },
+                        "collations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "language": {
+                                "type": "string",
+                                "description": "An interface language"
+                              },
+                              "collation": {
+                                "type": "string",
+                                "description": "The database's collation it sorts listings by"
+                              },
+                              "version": {
+                                "description": "That collation's version as the database's ICU reports it",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "language",
+                              "collation",
+                              "version"
+                            ]
+                          },
+                          "description": "The collation each interface language sorts by, where the database holds one"
+                        }
+                      },
+                      "required": [
+                        "icu",
+                        "unicode",
+                        "cldr",
+                        "collations"
+                      ],
+                      "description": "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's"
                     }
                   },
                   "required": [
                     "name",
-                    "signIn"
+                    "signIn",
+                    "localeData"
                   ]
                 },
                 "example": {
                   "name": "example",
-                  "signIn": []
+                  "signIn": [],
+                  "localeData": {
+                    "icu": "example",
+                    "unicode": "example",
+                    "cldr": "example",
+                    "collations": []
+                  }
                 }
               }
             },

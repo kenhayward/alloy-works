@@ -18,7 +18,9 @@ ARG VERAPDF_IMAGE=verapdf/cli@sha256:d5ee329657cf9bc4b2400392dd54c7d0a0ce9980ff6
 ARG VERAPDF_PLATFORM=linux/amd64
 FROM --platform=${VERAPDF_PLATFORM} ${VERAPDF_IMAGE} AS verapdf
 
-FROM node:24-bookworm-slim AS base
+# Node to its exact patch (the TE plan, TE-F; LOC-044): its ICU sorts and formats what the worker
+# publishes, and each publication records its versions, so a change of them is this line changing.
+FROM node:24.22.1-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH ELECTRON_SKIP_BINARY_DOWNLOAD=1
 RUN corepack enable
 WORKDIR /repo

@@ -197,6 +197,23 @@ describe('the service', () => {
     expect((await at('docs.customer.example')).json()).toMatchObject({ name: 'Production' });
   });
 
+  it("LOC-044 names the service's locale data and the version of each collation listings sort by", async () => {
+    const answered = await app.inject({ url: '/v1/tenant', headers: { host: 'acme.alloy.test' } });
+    const { localeData } = answered.json() as {
+      localeData: { icu: string; unicode: string; cldr: string; collations: unknown[] };
+    };
+    expect(localeData).toMatchObject({
+      icu: process.versions.icu,
+      unicode: process.versions.unicode,
+      cldr: process.versions.cldr,
+    });
+    expect(localeData.collations).toEqual([
+      { language: 'en-GB', collation: 'en-GB-x-icu', version: expect.any(String) },
+      { language: 'en-XA', collation: 'en-GB-x-icu', version: expect.any(String) },
+      { language: 'ar-XB', collation: 'ar-x-icu', version: expect.any(String) },
+    ]);
+  });
+
   it('refuses a hostname that serves no environment, before any tenant data is touched', async () => {
     const response = await app.inject({
       url: '/v1/tenant',

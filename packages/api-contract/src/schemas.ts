@@ -50,6 +50,27 @@ export const TenantProfile = z.object({
   signIn: z
     .array(z.enum(['organisation', 'google']))
     .describe("The ways in it offers: the organisation's provider, Google, or both"),
+  localeData: z
+    .object({
+      icu: z.string().describe("The ICU version the service's runtime carries"),
+      unicode: z.string().describe('The Unicode version it carries'),
+      cldr: z.string().describe('The CLDR version it carries'),
+      collations: z
+        .array(
+          z.object({
+            language: z.string().describe('An interface language'),
+            collation: z.string().describe("The database's collation it sorts listings by"),
+            version: z
+              .string()
+              .nullable()
+              .describe("That collation's version as the database's ICU reports it"),
+          }),
+        )
+        .describe('The collation each interface language sorts by, where the database holds one'),
+    })
+    .describe(
+      "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's",
+    ),
 });
 
 /**

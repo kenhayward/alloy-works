@@ -358,7 +358,7 @@ nor the store's key. Give `JAVA_OPTS` a heap limit sized to the worker's contain
 worker's network access, but its XMP parser refuses external entities: an external DTD, an external
 general entity and a parameter entity in a PDF's metadata were each refused with no request made, in
 the final review of the check. Its Java runtime, Debian's `openjdk-17-jre-headless`, floats with
-Debian's updates, as the `node:24-bookworm-slim` base does.
+Debian's updates, as the Node base's own Debian packages do; Node itself is pinned to a patch.
 
 **An environment's sign-in client secret is not one of them.** It is the environment's own, sealed with
 `SECRET_OBJECT_STORE_KEY` into its own schema when its sign-in is configured

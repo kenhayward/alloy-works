@@ -85539,6 +85539,11 @@ export interface operations {
                      *         "change": "example",
                      *         "at": "example"
                      *       },
+                     *       "localeData": {
+                     *         "icu": "example",
+                     *         "unicode": "example",
+                     *         "cldr": "example"
+                     *       },
                      *       "outputs": []
                      *     }
                      */
@@ -85585,6 +85590,12 @@ export interface operations {
                         translationPolicy: {
                             change: string;
                             at: string;
+                        } | null;
+                        /** @description The ICU, Unicode and CLDR versions the worker that made it held, which its sorting and formatting came from; null for one made before they were recorded */
+                        localeData: {
+                            icu: string;
+                            unicode: string;
+                            cldr: string;
                         } | null;
                         /** @description One per format, the PDF first, and `provenance.json` last wherever the publication prints a value */
                         outputs: ({
@@ -110647,7 +110658,13 @@ export interface operations {
                     /**
                      * @example {
                      *       "name": "example",
-                     *       "signIn": []
+                     *       "signIn": [],
+                     *       "localeData": {
+                     *         "icu": "example",
+                     *         "unicode": "example",
+                     *         "cldr": "example",
+                     *         "collations": []
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -110655,6 +110672,24 @@ export interface operations {
                         name: string;
                         /** @description The ways in it offers: the organisation's provider, Google, or both */
                         signIn: ("organisation" | "google")[];
+                        /** @description The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's */
+                        localeData: {
+                            /** @description The ICU version the service's runtime carries */
+                            icu: string;
+                            /** @description The Unicode version it carries */
+                            unicode: string;
+                            /** @description The CLDR version it carries */
+                            cldr: string;
+                            /** @description The collation each interface language sorts by, where the database holds one */
+                            collations: {
+                                /** @description An interface language */
+                                language: string;
+                                /** @description The database's collation it sorts listings by */
+                                collation: string;
+                                /** @description That collation's version as the database's ICU reports it */
+                                version: string | null;
+                            }[];
+                        };
                     };
                 };
             };

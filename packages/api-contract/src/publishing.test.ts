@@ -24,6 +24,7 @@ const viewWith = (outputs: unknown[], record: Record<string, unknown> = {}) => (
   template: { name: 'publication', version: 13 },
   pipeline: '13',
   translationPolicy: null,
+  localeData: null,
   superseded: false,
   newer: null,
   outputs,

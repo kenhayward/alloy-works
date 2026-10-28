@@ -50,3 +50,11 @@ describe("the worker image's veraPDF", () => {
     );
   });
 });
+
+describe("the image's Node", () => {
+  it('LOC-044 is pinned to an exact patch, so a change of the ICU and CLDR it carries is a visible change', async () => {
+    const dockerfile = await readFile(DOCKERFILE, 'utf8');
+    const bases = [...dockerfile.matchAll(/^FROM (node:\S+)/gm)].map((match) => match[1]);
+    expect(bases).toEqual([expect.stringMatching(/^node:\d+\.\d+\.\d+-bookworm-slim$/)]);
+  });
+});

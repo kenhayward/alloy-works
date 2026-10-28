@@ -3,7 +3,7 @@ import { sql } from 'kysely';
 import type { InterfaceLanguage } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
-import { collationFor, keysetPage, sortColumns, type Keyset } from './listing.js';
+import { collationFor, collationVersions, keysetPage, sortColumns, type Keyset } from './listing.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -72,5 +72,16 @@ describe('a listing in the reader’s collation (the UI plan, UI-H)', () => {
     const named = await service.withTenant(tenant, (trx) => collationFor(trx, 'en-GB'));
     expect(named).toMatch(/-x-icu$/);
     expect(await service.withTenant(tenant, (trx) => collationFor(trx, undefined))).toBeUndefined();
+  });
+
+  it('LOC-044 names the version of each collation the interface languages sort by, as the cluster has it', async () => {
+    const versions = await service.withTenant(tenant, (trx) => collationVersions(trx));
+    expect(versions.map((each) => each.language)).toEqual(['en-GB', 'en-XA', 'ar-XB']);
+    for (const each of versions) {
+      expect(each.collation).toMatch(/-x-icu$/);
+      expect(each.version).toMatch(/^\d+(\.\d+)+$/);
+    }
+    // A pseudo-locale sorts as the language it is made from.
+    expect(versions[1]!.collation).toBe(versions[0]!.collation);
   });
 });

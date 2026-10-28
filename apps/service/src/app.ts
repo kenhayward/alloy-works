@@ -27,6 +27,7 @@ import {
 } from '@alloy-works/api-contract';
 import {
   claimInvitation,
+  collationVersions,
   enqueueJob,
   findApiToken,
   groupNames,
@@ -672,7 +673,18 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const signIn: ('organisation' | 'google')[] = [];
       if (await permits(tenant, 'organisation')) signIn.push('organisation');
       if (options.google && (await permits(tenant, 'google'))) signIn.push('google');
-      return { name: profile.display_name, signIn };
+      // The locale data it sorts and formats with (TE-F; LOC-044), the database's collations beside.
+      const collations = await db.withTenant(tenant, (trx) => collationVersions(trx));
+      return {
+        name: profile.display_name,
+        signIn,
+        localeData: {
+          icu: process.versions.icu ?? 'none',
+          unicode: process.versions.unicode ?? 'none',
+          cldr: process.versions.cldr ?? 'none',
+          collations: collations.map((each) => ({ ...each })),
+        },
+      };
     },
 
     startOrganisationSignIn: async (request, reply) => {
