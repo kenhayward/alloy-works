@@ -4984,6 +4984,8 @@
   "metadata.which-at": "{which, select, first {The first} other {The second}}, at UTC{offset}",
   "shell.asking": "asking...",
   "editor.base-language": "Base language: {tag}",
+  "editor.base-language-not-declared": "Base language: {tag}, not declared",
+  "editor.language-not-declared": "{tag} is not a declared language. It is kept, but its text may not publish as it should.",
   "editor.base-direction": "Base direction: {direction}",
   "editor.direction-short": "{direction, select, rtl {RTL} other {LTR}}",
   "desktop.show": "Show Alloy Works",

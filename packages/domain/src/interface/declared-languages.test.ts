@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { cldrInputs, coveredByDefaultFaces } from '../../scripts/cldr-inputs.js';
+import { languageTagSchema } from '../content/model/document.js';
 import { CONTENT_LANGUAGES, CONTENT_LANGUAGES_CLDR } from './content-languages.js';
 import {
   declaredLanguageOf,
@@ -100,6 +101,7 @@ describe('the declared content languages (the TE plan, TE-E)', () => {
     expect(declaredLanguageOf('sr-RS')?.tag).toBe('sr');
     expect(declaredLanguageOf('pa-Arab-PK')?.tag).toBe('pa-Arab');
     // Admitted as any well-formed tag is, and not declared.
+    expect(languageTagSchema.safeParse('pa').success).toBe(true);
     expect(declaredLanguageOf('pa')).toBeUndefined();
     expect(declaredLanguageOf('zz')).toBeUndefined();
     expect(declaredLanguageOf('')).toBeUndefined();
