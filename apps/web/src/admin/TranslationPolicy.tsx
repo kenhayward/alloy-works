@@ -112,7 +112,7 @@ function PolicyHistory({ client }: { client: Client }) {
   }
   return (
     <section>
-      <h3>{say('admin.history')}</h3>
+      <h2>{say('admin.history')}</h2>
       <table
         aria-label={say('admin.changes-to-the-translation-policy')}
         className={styles['table']}
