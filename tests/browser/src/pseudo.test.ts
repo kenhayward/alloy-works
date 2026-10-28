@@ -93,6 +93,8 @@ const administration: readonly Surface[] = listed([
   ['Administration, its people', '#/admin/people', 'admin.people'],
   ['Administration, its groups', '#/admin/groups', 'admin.groups'],
   ['Administration, its roles', '#/admin/roles', 'admin.roles'],
+  // The policy and its history (the TE plan, TE-D).
+  ['Administration, its translation policy', '#/admin/translation', 'admin.translation'],
 ]);
 
 /** Pages whose first heading names them, each walked whole. */
