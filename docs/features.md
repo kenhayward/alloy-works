@@ -1254,8 +1254,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   latest change needs retranslating. On a translation, Translations shows the source's words changed
   since, and **Mark current** records it current where nothing needed new words. A translator and the
   author each hold their own lock, so they edit at once. A document's references say each
-  translation of the component they place and its status, and **Translations**, linked from
-  Components, lists every translated component of a space with each language's status.
+  translation of the component they place and its status, and so do the components list and search
+  results, out of date first. **Translations**, linked from Components, lists every translated
+  component of a space with each language's status, a page at a time, narrowed to a language or a
+  status. Administration's **Translation** lists every change to the policy, whole, by whom and when,
+  and a publication made in a language names the version it was made under.
 - **Publishing in a language.** The Publishing panel offers **Publish in** each language the document's
   layout gives its words in, the default layout English, French and German. Each component is
   published in its translation into that language; its overrides, made against its source's words,
@@ -1283,7 +1286,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Interface language.** The header's **Interface language** button chooses the language the interface is in,
   kept as the person's own and never the content's, or follows the browser. English is the one real
   language; two test languages, one stretched and accented and one right to left, show what is not
-  yet translated or does not fit. Dates and numbers come from pinned locale data, named in About.
+  yet translated or does not fit, every dialog walked in both for words cut short or overlapping.
+  Dates and numbers come from pinned locale data, named in About with the service's own and each
+  collation's version, and a publication records the locale data it was made with. A component's base
+  language offers the declared content languages, every language of the Latin, Greek, Cyrillic,
+  Hebrew and Arabic scripts, setting the direction from its script; one not declared is kept and said
+  so.
   Lists sort in the person's language, the service's listings among them, and the whole interface
   speaks it, the service's own sentences among them (search's summary, the assistant's steps and
   refusals, a restore's reasons, what a paste or an import kept differently), and the desktop app's

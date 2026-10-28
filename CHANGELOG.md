@@ -3,6 +3,28 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.215.0 - 2026-10-28 (PR #813)
+
+Translation's open ends (the TE plan).
+
+### Added
+
+- **Translation status where a component is listed.** The components list and search results show each translation's status, out of date first.
+- **The translation policy's history.** Administration's Translation lists every change to the policy, whole, by whom and when, and a publication made in a language says which version of the policy it was made under.
+- **Declared content languages.** A component's base language offers every declared language, sets the direction from its script, and says when a language is not declared, keeping it.
+- **Locale data recorded.** A publication records the ICU, Unicode and CLDR it was made with, and About shows the service's, each collation's version and the interface's CLDR.
+
+### Changed
+
+- **The Translations report pages.** A space's report shows every translated component a page at a time, and narrows to a language or a status.
+
+### Fixed
+
+- **Dialogs in every interface language.** A dialog no longer fails as it opens in a language other than English, and a document no longer fails to follow where you are reading in one.
+- **Long words in dialogs.** In the Value, Cite and Reference dialogs a choice that wraps no longer stands over the next, and the API tokens, Inbox and Sessions dialogs wrap their text rather than running it together.
+- **Webhook buttons.** A webhook's buttons wrap onto a second line rather than being cut off.
+- **The Link dialog's OK.** It is said in your interface language.
+
 ## 0.214.0 - 2026-10-28 (PR #807)
 
 The index (the IX plan).

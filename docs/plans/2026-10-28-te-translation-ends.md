@@ -62,3 +62,15 @@ pseudo walk opens every dialog and measures overlap (LOC-029).
 - **A dialog walk grows long**: about forty dialogs, two locales; the walk stays one run that names
   every failure (`expect.soft`), and is timed in TEd.
 - **The report's contract changes** (`capped` gone): pre-release, the drift check names it.
+
+## Built
+
+TE in four PRs: TEa #808, TEb #811, TEc #812 and the close #813. Departures: CLDR is 48.2.0, not
+47.0.0, FormatJS's own pin (TE-E, amended); the service's locale data is on `GET /v1/about`, signed
+in, not the public `GET /v1/tenant` (TE-F, amended). TEb fixed Administration reading a section
+opened by its address as read-only (#810). The census found 49 dialog files: 41 walked, 8 named
+(each needs a data source, an extension, a worker's publication or a lapsed lock). Overlap found two,
+both fixed in CSS, none marked `data-overlaps`; the walk also found every Modal throwing in a
+pseudo-locale (its selectors were catalogue strings) and the components cursor racing a language
+change. The walk went from about 6 s to 47 s. Left open: about 18 other `everyPage` callers share
+that race, and in pseudo the side panel covers the Overrides button, which the walk presses by key.
