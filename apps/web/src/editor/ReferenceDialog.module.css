@@ -32,8 +32,11 @@
 }
 
 /* Each choice at least 24px tall, so a radio button's 13px has the spacing WCAG 2.5.8 asks of a small
-   target: stacked with the targets' 4px gap they stood 23px apart, and axe failed them (W13.2). */
+   target: stacked with the targets' 4px gap they stood 23px apart, and axe failed them (W13.2). Never
+   shrunk below their words: in the targets' scrolling column a long list squeezed each choice, and
+   words that wrapped stood over the next (the TE plan, TE-G). */
 .choice {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);

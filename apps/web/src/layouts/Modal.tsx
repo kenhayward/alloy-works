@@ -5,8 +5,9 @@ import { IconButton } from '../parts/IconButton.js';
 import styles from './Modal.module.css';
 import { words } from '../words/words.js';
 
-const FOCUSABLE = (): string => words('layouts.a-href-button-not-disabled');
-const FIELD = (): string => words('layouts.input-not-disabled-select-not');
+// Selectors, never words: in the catalogue a language made them over and they stopped parsing.
+const FIELD = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+const FOCUSABLE = `a[href], button:not([disabled]), ${FIELD}, [tabindex]:not([tabindex="-1"])`;
 
 /**
  * A modal over the screen that asked for it, never a route (docs/interface/README.md): 40px from the
@@ -37,7 +38,7 @@ export function Modal({
     const box = dialog.current;
     if (!box) return undefined;
     const first = () =>
-      box.querySelector<HTMLElement>('[data-autofocus]') ?? box.querySelector<HTMLElement>(FIELD());
+      box.querySelector<HTMLElement>('[data-autofocus]') ?? box.querySelector<HTMLElement>(FIELD);
     (first() ?? box).focus();
     // A form that reads what it offers after it mounts brings its first field late: focus it then,
     // unless the person has already moved on.
@@ -60,7 +61,7 @@ export function Modal({
       return;
     }
     if (event.key !== 'Tab' || !dialog.current) return;
-    const stops = [...dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE())];
+    const stops = [...dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
     const firstStop = stops[0];
     const lastStop = stops[stops.length - 1];
     if (!firstStop || !lastStop) return;

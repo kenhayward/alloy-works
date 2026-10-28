@@ -88,7 +88,8 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
         for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
           const text = node.textContent ?? '';
           const owner = node.parentElement;
-          if (/\S/.test(text) && owner && !owner.closest('[data-overlaps]')) {
+          // A closed list's options stand where it does, one over another, and are never seen so.
+          if (/\S/.test(text) && owner && !owner.closest('[data-overlaps], select')) {
             const style = getComputedStyle(owner);
             const range = document.createRange();
             range.selectNodeContents(node);
