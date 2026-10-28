@@ -81,8 +81,9 @@ import type { JobHandler } from '../worker.js';
  * write `provenance.json` at its schema 5 (the R5 plan, R5-E), 27 the first to print a citation
  * and its bibliography (the CI plan, CIc), 28 the first to print a term's forms, the glossary and
  * the abbreviations (the TM plan, TMb), 29 the first to mark a component published in its
- * source language for want of a translation (the TR plan, TRb), and 30 the first to set a style's
- * face with its fallbacks after it (the UI plan, UF-E).
+ * source language for want of a translation (the TR plan, TRb), 30 the first to set a style's
+ * face with its fallbacks after it (the UI plan, UF-E), and 31 the first to publish an index (the IX
+ * plan, IXb).
  *
  * **Both keys are frozen.** Keyed by `PUBLISHING_SCHEMA` itself, a repoint moved the key while the
  * value stayed behind, and the `satisfies` clause could not catch it because `PublishedSchema`
@@ -94,7 +95,7 @@ import type { JobHandler } from '../worker.js';
  */
 export const PIPELINE_VERSION = {
   [PUBLISHING_SCHEMA_1]: '1',
-  [PUBLISHING_SCHEMA_CURRENT]: '30',
+  [PUBLISHING_SCHEMA_CURRENT]: '31',
 } as const satisfies Record<PublishedSchema, string>;
 
 /** The document's own failures, every one at once: the job is finished, never tried again. */

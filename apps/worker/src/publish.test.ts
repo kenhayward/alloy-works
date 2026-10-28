@@ -688,8 +688,8 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 26,
-      pipeline_version: '30',
+      template_version: 27,
+      pipeline_version: '31',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1187,11 +1187,11 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '30',
+      pipeline_version: '31',
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/7',
+      producer_version: 'word/8',
       report: [
         // The titles the PDF tags as headings, which Word sets as body text (W14.6's final review).
         { kind: 'titles_not_headings', titles: ['document', 'contents'] },
@@ -1222,7 +1222,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'html',
       standard: null,
       producer: 'html',
-      producer_version: 'html/2',
+      producer_version: 'html/3',
       // The default layout's running matter and contents print pages, which HTML has none of (HT-K).
       report: [{ kind: 'pages_not_carried' }, { kind: 'running_matter_not_carried' }],
     });
@@ -1315,7 +1315,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     const [pdf, html, ...rest] = await outputsOf(id);
     expect(rest).toEqual([]);
     expect([pdf!.format, html!.format]).toEqual(['pdf', 'html']);
-    expect(html!.producer_version).toBe('html/2');
+    expect(html!.producer_version).toBe('html/3');
     const text = new TextDecoder().decode(await pdfOf(html!.object_key));
     expect(text).toContain('<table aria-labelledby=');
     expect(text).toContain('alttext="x plus one"');
@@ -1340,12 +1340,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine: 'typst',
       engine_version: '0.15.1',
       template: 'publication',
-      template_version: 26,
-      pipeline_version: '30',
+      template_version: 27,
+      pipeline_version: '31',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
-      producer_version: '26',
+      producer_version: '27',
       report: [],
     });
     // Beside a PDF, the Word document's pages are cited in the PDF, and it says so; and its titles
@@ -1354,7 +1354,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       format: 'docx',
       standard: null,
       producer: 'word',
-      producer_version: 'word/7',
+      producer_version: 'word/8',
       report: [
         { kind: 'titles_not_headings', titles: ['document', 'contents'] },
         { kind: 'pages_cite_the_pdf' },
@@ -1447,7 +1447,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     );
     expect(await work()).toBe('done');
     const [pdf, docx] = await outputsOf(id);
-    expect(pdf).toMatchObject({ format: 'pdf', template_version: 26, pipeline_version: '30' });
+    expect(pdf).toMatchObject({ format: 'pdf', template_version: 27, pipeline_version: '31' });
     expect(docx!.report).toContainEqual({
       kind: 'table_reflowed',
       node,
@@ -1492,7 +1492,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
         format: 'pdf',
         standard: 'ua-1',
         producer: 'typst',
-        producer_version: '26',
+        producer_version: '27',
         report: [],
       }),
     ]);
