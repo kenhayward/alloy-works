@@ -238,6 +238,8 @@ export function FigureSettings({
           <p
             className={styles['note']}
             data-tone={!bound && settings.described.state === 'none' ? 'warn' : undefined}
+            // The image's own description is content, as its author wrote it.
+            data-content={!bound && settings.described.state === 'described' ? '' : undefined}
           >
             {inheritedNote(settings)}
           </p>,

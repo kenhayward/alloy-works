@@ -9,11 +9,15 @@ export type Page<T> = { readonly items: readonly T[]; readonly next: string | nu
  * Shared by the access panel and the documents page, so a listing is read to its end by one rule: a
  * listing cut short is a failure, never a shorter answer - a caller naming things by what a listing
  * holds would otherwise call a readable thing unreadable.
+ *
+ * `going` stops it asking for another page once its caller has gone, as a page drawn again in another
+ * language does: a cursor sorted in one language is refused in another. Stopped, it answers status 0.
  */
 export async function everyPage<T>(
   fetchPage: (
     cursor: string | undefined,
   ) => Promise<{ readonly data?: Page<T>; readonly response: Response }>,
+  going: () => boolean = () => true,
 ): Promise<{ readonly items: T[] } | { readonly status: number }> {
   const items: T[] = [];
   let cursor: string | undefined;
@@ -25,6 +29,7 @@ export async function everyPage<T>(
     if (data.next === null) return { items };
     if (typeof data.next !== 'string' || asked.has(data.next)) return { status: response.status };
     asked.add(data.next);
+    if (!going()) return { status: 0 };
     cursor = data.next;
   }
 }

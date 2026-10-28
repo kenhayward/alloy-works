@@ -107,8 +107,12 @@ export function Sessions({ client, onClose }: { client: Client; onClose: () => v
                 {sessions.map((session) => (
                   <tr key={session.id}>
                     <td>{ROUTE_WORDS[session.route]}</td>
-                    <td>{moment(session.startedAt)}</td>
-                    <td>{moment(session.lastActiveAt)}</td>
+                    <td>
+                      <time dateTime={session.startedAt}>{moment(session.startedAt)}</time>
+                    </td>
+                    <td>
+                      <time dateTime={session.lastActiveAt}>{moment(session.lastActiveAt)}</time>
+                    </td>
                     <td className={styles['act']}>
                       {session.current ? (
                         <Chip tone="accent">{words('account.this-session')}</Chip>

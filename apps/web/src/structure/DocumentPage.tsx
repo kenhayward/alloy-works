@@ -1448,8 +1448,10 @@ export function DocumentPage({
   useEffect(() => {
     let current = true;
     setComponents({ state: 'loading' });
-    everyPage((cursor) =>
-      client.GET('/v1/components', { params: { query: cursor === undefined ? {} : { cursor } } }),
+    everyPage(
+      (cursor) =>
+        client.GET('/v1/components', { params: { query: cursor === undefined ? {} : { cursor } } }),
+      () => current,
     )
       .then((answer) => {
         if (!current) return;

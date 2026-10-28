@@ -40,7 +40,8 @@ export interface Unlocalised {
 /**
  * The interface words in `regions` a pseudo-locale left in English or cut short (UI-J; LOC-042,
  * LOC-029). Text marked `data-content` is a person's content, never the interface's, and may be cut
- * by design; numbers and punctuation say nothing in a language.
+ * by design; so is a field's value, and a `<time>`, which the locale's own data formats. Numbers and
+ * punctuation say nothing in a language.
  *
  * Overlap is measured on every visible text leaf, content too, each box clipped to what its scrolling
  * ancestors show. A layer above its page (a dialog, a menu, a popover) is measured on its own, never
@@ -52,7 +53,9 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
     const missed: string[] = [];
     const clipped: string[] = [];
     const overlaps: string[] = [];
-    const content = (node: Node) => node.parentElement?.closest('[data-content]') !== null;
+    // A person's content, a field's value, and a date or time the locale's own data formats.
+    const content = (node: Node) =>
+      node.parentElement?.closest('[data-content], textarea, time') !== null;
     const LAYER =
       '[role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"], [popover], [role="alertdialog"]';
     type Box = { left: number; top: number; right: number; bottom: number };
@@ -89,7 +92,7 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
           const text = node.textContent ?? '';
           const owner = node.parentElement;
           // A closed list's options stand where it does, one over another, and are never seen so.
-          if (/\S/.test(text) && owner && !owner.closest('[data-overlaps], select')) {
+          if (/\S/.test(text) && owner && !owner.closest('[data-overlaps], select, textarea')) {
             const style = getComputedStyle(owner);
             const range = document.createRange();
             range.selectNodeContents(node);

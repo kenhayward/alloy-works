@@ -284,7 +284,7 @@ export function RelationshipsDialog({
         </form>
         {/* Every view is a query an integrator can ask too (REL-028). */}
         <p className={styles['relQuery']}>
-          {wordsWith('reuse.answered-by', {}, { query: <code>{queryOf(centre.id, filter)}</code> })}
+          {wordsWith('reuse.answered-by', {}, { query: <code data-content>{queryOf(centre.id, filter)}</code> })}
         </p>
         {notice && <p role="status">{notice}</p>}
         {(read === undefined || types === undefined) && (

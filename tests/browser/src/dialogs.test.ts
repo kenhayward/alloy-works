@@ -13,7 +13,17 @@ const here = dirname(fileURLToPath(import.meta.url));
 const renderer = join(here, '../../../apps/web/src');
 
 /** The dialogs the walk cannot open, each with its reason. Kept few: walk what can be made. */
-const EXEMPT: Readonly<Record<string, string>> = {};
+const EXEMPT: Readonly<Record<string, string>> = {
+  'admin/Extensions.tsx': 'needs an extension installed from a source',
+  'data/ProvenancePanel.tsx': 'needs a value resolved from a data source',
+  'editor/ComponentEditor.tsx':
+    'needs work saved and never cut, its lock lapsed: no route lets a lock go without cutting',
+  'editor/FormatDialog.tsx': 'needs a table bound to a data source',
+  'publishing/Shares.tsx': 'needs a publication, a publish job run by the worker',
+  'structure/OwnViewAsk.tsx': 'needs a data source asserting who asks',
+  'structure/RevisionAsk.tsx': 'needs a value from a data source, revised by hand, then moved on',
+  'structure/RevisionDialog.tsx': 'needs a value resolved from a data source',
+};
 
 /** Every renderer source file, `/`-separated from `apps/web/src`, tests and stories aside. */
 function sources(directory = renderer): string[] {
@@ -59,9 +69,9 @@ function census(): string[] {
   return [...dialogs].sort();
 }
 
-/** The dialogs `pseudo.test.ts` walks: each surface's `dialog`. */
+/** The dialogs `pseudo.test.ts` walks: each surface's `dialog`, a renderer file named in quotes. */
 const walked = [
-  ...readFileSync(join(here, 'pseudo.test.ts'), 'utf8').matchAll(/dialog: '([^']+)'/g),
+  ...readFileSync(join(here, 'pseudo.test.ts'), 'utf8').matchAll(/'([\w-]+\/\w+\.tsx)'/g),
 ].map((match) => match[1]!);
 
 describe('every dialog in the pseudo walk (the TE plan, TE-G)', () => {

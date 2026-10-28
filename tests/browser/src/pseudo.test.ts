@@ -1,9 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import { DEFAULT_THEME_ID } from '@alloy-works/db';
 import type { Locator, Page } from 'playwright-core';
 import { describe, expect, it } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
-import { api, apiAs, edit, makeDocument, words, type Client } from './testing/api.js';
+import { api, apiAs, edit, makeDocument, words } from './testing/api.js';
 import { makeComponent, uploadImage } from './testing/component.js';
 import {
   makeDocument as makeDocumentFrom,
@@ -47,8 +46,6 @@ interface Graces {
   readonly document: string;
   /** A token of hers, to be asked about revoking. */
   readonly token: string;
-  /** Her component with work saved and never cut, its lock let go: offered for recovery. */
-  readonly unsaved: string;
   /** Her component holding a figure. */
   readonly figured: string;
 }
@@ -239,12 +236,12 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     grace.component.id,
     'ControlOrMeta+Shift+e',
   ),
-  fromCaret(
-    'The symbol palette',
-    'editor/SymbolPalette.tsx',
-    grace.component.id,
-    'ControlOrMeta+Shift+m',
-  ),
+  // From its button: Chromium keeps Ctrl+Shift+M for itself.
+  overEditor('The symbol palette', 'editor/SymbolPalette.tsx', grace.component.id, async (page, l) => {
+    await caret(page);
+    await page.getByRole('button', { name: say(l, 'pm.command.symbol'), exact: true }).click();
+    return page.getByRole('dialog');
+  }),
   fromCaret(
     'The Condition dialog',
     'editor/ConditionDialog.tsx',
@@ -288,15 +285,6 @@ const surfaces = (grace: Graces): readonly Surface[] => [
       return page.getByRole('dialog', { name: say(language, 'editor.figure-settings') });
     },
   },
-  byButton(
-    'The Discard dialog',
-    'editor/ComponentEditor.tsx',
-    `#/components/${grace.unsaved}`,
-    (page, language) =>
-      page.getByRole('button', { name: say(language, 'editor.discard'), exact: true }),
-    'editor.discard',
-    (language) => say(language, 'editor.discard.question'),
-  ),
   // The component's own header: what it may be, where it is used, and its relationships.
   ...(
     [
@@ -649,7 +637,6 @@ async function graces(): Promise<Graces> {
     translated: await translatedComponent(api()),
     document: document.id,
     token,
-    unsaved: await unsavedComponent(grace),
     figured: (
       await makeComponent(grace, 'Pseudo figure', [
         {
@@ -666,47 +653,6 @@ async function graces(): Promise<Graces> {
   };
 }
 
-/**
- * A component of Grace's whose work was saved in one session and never cut, the lock then claimed
- * in another and let go with nothing saved: what she finds after closing a tab mid-edit.
- */
-async function unsavedComponent(grace: Client): Promise<string> {
-  const { id, title } = await makeComponent(grace, 'Pseudo unsaved', indexed);
-  const read = await grace.GET('/v1/components/{id}', { params: { path: { id } } });
-  if (!read.data) throw new Error(`reading it answered ${read.response.status}`);
-  const openedFrom = read.data.version.id;
-  const first = randomUUID();
-  const claimed = await grace.POST('/v1/components/{id}/lock', {
-    params: { path: { id } },
-    body: { session: first },
-  });
-  if (!claimed.data) throw new Error(`claiming answered ${claimed.response.status}`);
-  const saved = await grace.PUT('/v1/components/{id}/iterations/{session}/{sequence}', {
-    params: { path: { id, session: first, sequence: '1' } },
-    body: {
-      openedFrom,
-      content: {
-        schemaVersion: 1,
-        title,
-        language: 'en-GB',
-        direction: 'ltr',
-        content: [{ type: 'paragraph', id: 'b1', style: 'body', content: words('Changed.') }],
-      },
-    },
-  });
-  if (!saved.data) throw new Error(`saving answered ${saved.response.status}`);
-  const second = randomUUID();
-  const again = await grace.POST('/v1/components/{id}/lock', {
-    params: { path: { id } },
-    body: { session: second },
-  });
-  if (!again.data) throw new Error(`claiming again answered ${again.response.status}`);
-  const done = await grace.DELETE('/v1/components/{id}/lock', {
-    params: { path: { id }, query: { session: second, openedFrom } },
-  });
-  if (!done.response.ok) throw new Error(`letting go answered ${done.response.status}`);
-  return id;
-}
 
 /** What Ada's walk needs: her own component and document, a template and a webhook. */
 async function adas(): Promise<Adas> {
@@ -774,12 +720,12 @@ async function walkAs(cookie: string, language: Language, walked: readonly Surfa
       async (page) => {
         // A dialog that does not open says so in seconds, not the default thirty.
         page.setDefaultTimeout(15_000);
-        let opened = false;
+        let stale = false;
         for (const surface of walked) {
           await page.goto(`${SERVICE}/${surface.address}`);
-          // A dialog open over the last surface stays open over a hash's change: drawn afresh.
-          if (opened) await page.reload();
-          opened = false;
+          // A dialog left open, or a page never drawn, stays over a hash's change: drawn afresh.
+          if (stale) await page.reload();
+          stale = true;
           // Every surface walked whatever another finds, so one run names them all.
           const drawn = await surface
             .ready(page, language)
@@ -788,8 +734,8 @@ async function walkAs(cookie: string, language: Language, walked: readonly Surfa
             .catch(() => false);
           expect.soft(drawn, `${surface.name}: never drawn in ${language}`).toBe(true);
           if (!drawn) continue;
+          stale = surface.open !== undefined;
           if (surface.open) {
-            opened = true;
             const shown = await surface
               .open(page, language)
               .then(async (dialog) => {

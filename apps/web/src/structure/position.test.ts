@@ -1,11 +1,35 @@
 import { fireEvent, renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HOLD_LONGEST_MS, HOLD_QUIET_MS, holdInPlace, useReadingPosition } from './position.js';
+import { resetWords, WordsProvider } from '../words/words.js';
 
 describe('where the reader is in the text', () => {
   const original = window.IntersectionObserver;
   afterEach(() => {
     window.IntersectionObserver = original;
+  });
+
+  // Its margin is CSS, never words: in a pseudo-locale it was made over, and the browser refused it
+  // as the document opened (the TE plan, TE-G).
+  it('watches from the reading line in any interface language', () => {
+    let margin: string | undefined;
+    window.IntersectionObserver = class {
+      constructor(_: unknown, options: IntersectionObserverInit) {
+        margin = options.rootMargin;
+      }
+      observe() {}
+      disconnect() {}
+    } as unknown as typeof IntersectionObserver;
+    const root = document.createElement('div');
+    document.body.append(root);
+    renderHook(() => useReadingPosition({ current: root }, vi.fn(), 'document'), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(WordsProvider, { language: 'en-XA', children }),
+    });
+    expect(margin).toBe('0px 0px -75% 0px');
+    root.remove();
+    resetWords();
   });
 
   it("watches the text's nodes again when one comes or goes, and not when an editor's text changes inside one", async () => {

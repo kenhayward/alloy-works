@@ -146,9 +146,15 @@ export function TokenTable({
                   {token.name}
                 </td>
                 <td className={styles['muted']}>{mayDo(token)}</td>
-                <td>{moment(token.expiresAt)}</td>
                 <td>
-                  {token.lastUsedAt === null ? words('account.never-used') : day(token.lastUsedAt)}
+                  <time dateTime={token.expiresAt}>{moment(token.expiresAt)}</time>
+                </td>
+                <td>
+                  {token.lastUsedAt === null ? (
+                    words('account.never-used')
+                  ) : (
+                    <time dateTime={token.lastUsedAt}>{day(token.lastUsedAt)}</time>
+                  )}
                 </td>
                 <td className={styles['act']}>
                   <button

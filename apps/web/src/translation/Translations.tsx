@@ -258,7 +258,7 @@ function TranslationsDialog({
                               onGo(lineAddress(componentId, each.line));
                             }}
                           >
-                            {each.language}
+                            <span data-content>{each.language}</span>
                           </a>
                         ),
                       },

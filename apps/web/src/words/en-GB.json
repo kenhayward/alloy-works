@@ -1539,7 +1539,6 @@
   "document.a-person-s-own-view": "A person''s own view",
   "document.checking-the-images-is-taking": "Checking the images is taking longer than it should. Look again in a moment.",
   "document.the-value-could-not-be-3": "The value could not be fetched. Try again.",
-  "document.0px-0px-0px": "0px 0px -{value1}% 0px",
   "document.there-are-no-rows-to": "There are no rows to read.",
   "document.the-first-line-names-a": "The first line names a parameter twice, or leaves one unnamed.",
   "document.line-has-more-cells-than": "Line {value1} has more cells than the first line names.",
