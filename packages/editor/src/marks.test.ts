@@ -130,7 +130,7 @@ describe('the command registry', () => {
   // rows through the real chain, `EditorToolbar.test.tsx` for the toolbar's own row, and
   // `ComponentEditor.test.tsx` for F6 and Shift-F6 between the regions of the view.
   it('gives every command a shortcut and one label, with no shortcut used twice', () => {
-    expect(EDITOR_COMMANDS).toHaveLength(26);
+    expect(EDITOR_COMMANDS).toHaveLength(27);
     for (const command of EDITOR_COMMANDS) {
       expect(command.label, command.label).toMatch(/^[A-Z][a-z ]+$/);
       // No fancy dashes in anything an author reads; a plain hyphen would be allowed. Written by
@@ -139,7 +139,7 @@ describe('the command registry', () => {
       expect(command.label + command.shortcutSaid).not.toMatch(fancy);
       if (command.kind === 'mark') expect(editorSchema.marks[command.mark]).toBeDefined();
     }
-    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(26);
+    expect(new Set(EDITOR_COMMANDS.map((c) => c.shortcut)).size).toBe(27);
   });
 
   it('says each command and its shortcut from the words, as the label in English', () => {
@@ -169,6 +169,7 @@ describe('the command registry', () => {
       'footnote',
       'reference',
       'cite',
+      'indexEntry',
       'value',
       'variable',
       'condition',
@@ -177,12 +178,12 @@ describe('the command registry', () => {
     ]);
   });
 
-  it('asks for a value only where the author must supply one: three marks, a reference, a citation, a value, a variable, a condition, an equation and a symbol', () => {
+  it('asks for a value only where the author must supply one: three marks, a reference, a citation, an index entry, a value, a variable, a condition, an equation and a symbol', () => {
     const prompting = EDITOR_COMMANDS.filter(
       (command) => command.kind === 'mark' && command.prompts,
     ).map((c) => (c.kind === 'mark' ? c.mark : c.action));
     expect(prompting).toEqual(['hyperlink', 'language', 'definedTerm']);
-    // Seven block actions prompt: Reference, for its target and form (cross-references 1, ruling R9), Cite, for its entry (CId),
+    // Eight block actions prompt: Reference, for its target and form (cross-references 1, ruling R9), Cite, for its entry (CId), Index entry, for its term (IX-M),
     // Value, for what it binds (B2-A), Variable, for which declared one (the R5 plan, R5b), Condition, for its axis and values (R6-H),
     // Equation, for its LaTeX (equations 1, ruling R6), and Symbols, for its character (W-L). Nothing
     // about making a list is a value only the author can give; a list's start and its numbering are
@@ -191,7 +192,16 @@ describe('the command registry', () => {
       EDITOR_COMMANDS.filter((command) => command.kind === 'block' && command.prompts).map((c) =>
         c.kind === 'block' ? c.action : c.mark,
       ),
-    ).toEqual(['reference', 'cite', 'value', 'variable', 'condition', 'equation', 'symbol']);
+    ).toEqual([
+      'reference',
+      'cite',
+      'indexEntry',
+      'value',
+      'variable',
+      'condition',
+      'equation',
+      'symbol',
+    ]);
   });
 });
 
@@ -653,7 +663,7 @@ function inParagraph(state: EditorState, nth: number): number {
 describe('the keymap', () => {
   it('CNT-077 binds every command in the registry, and makes and nests a list from the keyboard alone', () => {
     const bound = commandKeymap(counter());
-    expect(Object.keys(bound)).toHaveLength(26);
+    expect(Object.keys(bound)).toHaveLength(27);
     for (const command of EDITOR_COMMANDS) {
       expect(Object.keys(bound), command.label).toContain(command.shortcut);
     }

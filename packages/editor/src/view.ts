@@ -16,6 +16,7 @@ import { figureView } from './figureView.js';
 import { bindingsShown, type BindingShown } from './bindings.js';
 import { bindingContextOf, bindingView } from './bindingView.js';
 import { citationView } from './citations.js';
+import { indexMarkerView } from './indexEntries.js';
 import { holdBoundTableColumn } from './boundTableFocus.js';
 import { boundTableBodyView } from './boundTableView.js';
 import { footnoteView } from './footnoteView.js';
@@ -135,6 +136,8 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       // A citation, drawn with the form its decoration carries (CId).
       citation: (node, owner, _getPos, decorations) =>
         citationView(node, owner.dom.ownerDocument, decorations),
+      // An index marker, as a chip naming its entry (the IX plan, IX-M).
+      indexMarker: (node, owner) => indexMarkerView(node, owner.dom.ownerDocument),
       equationBlock: (node, owner) => equationView(node, owner.dom.ownerDocument),
       // A table, its column group set from the widths its decoration carries (TG3).
       table: (node, owner, _getPos, decorations) =>
