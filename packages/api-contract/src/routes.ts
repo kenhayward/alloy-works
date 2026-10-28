@@ -84,6 +84,7 @@ import {
   SignInCallback,
   SignInStartQuery,
   TenantProfile,
+  About,
 } from './schemas.js';
 
 /** The API's major version, as in `/v1`. It changes only with a breaking change (API-010). */
@@ -277,6 +278,18 @@ const ownRoutes = {
     access: { check: 'session' },
     responses: {
       200: { description: 'The signed-in principal', schema: Me },
+      401: unauthenticated,
+    },
+  },
+  getAbout: {
+    operationId: 'getAbout',
+    method: 'GET',
+    path: '/v1/about',
+    summary: 'The locale data the service sorts and formats with',
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'What the service runs on', schema: About },
       401: unauthenticated,
     },
   },

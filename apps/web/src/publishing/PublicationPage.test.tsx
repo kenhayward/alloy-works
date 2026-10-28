@@ -92,6 +92,19 @@ describe('a publication at its own address', () => {
     expect(screen.queryByText(/translation policy/)).not.toBeInTheDocument();
   });
 
+  it('LOC-044 says the locale data a publication was made with, and nothing where it recorded none', async () => {
+    const first = open(
+      json(200, { ...record, localeData: { icu: '78.3', unicode: '17.0', cldr: '48.0' } }),
+    );
+    expect(
+      await screen.findByText('Sorted and formatted with ICU 78.3, Unicode 17.0 and CLDR 48.0.'),
+    ).toBeInTheDocument();
+    first.unmount();
+    open(json(200, { ...record, localeData: null }));
+    await screen.findByRole('heading', { name: 'The dosing report' });
+    expect(screen.queryByText(/Sorted and formatted/)).not.toBeInTheDocument();
+  });
+
   it('PUB-004 says an approved publication is approved, and never that it is not', async () => {
     open(
       json(200, {

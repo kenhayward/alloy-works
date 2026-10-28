@@ -70,6 +70,32 @@ export const SignInStartQuery = z.object({
 export type SignInStartQuery = z.infer<typeof SignInStartQuery>;
 export type TenantProfile = z.infer<typeof TenantProfile>;
 
+/** What the service runs on, for About, to a signed-in person only (the TE plan, TE-F; LOC-044). */
+export const About = z.object({
+  localeData: z
+    .object({
+      icu: z.string().describe("The ICU version the service's runtime carries"),
+      unicode: z.string().describe('The Unicode version it carries'),
+      cldr: z.string().describe('The CLDR version it carries'),
+      collations: z
+        .array(
+          z.object({
+            language: z.string().describe('An interface language'),
+            collation: z.string().describe("The database's collation it sorts listings by"),
+            version: z
+              .string()
+              .nullable()
+              .describe("That collation's version as the database's ICU reports it"),
+          }),
+        )
+        .describe('The collation each interface language sorts by, where the database holds one'),
+    })
+    .describe(
+      "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's",
+    ),
+});
+export type About = z.infer<typeof About>;
+
 export const Me = z.object({
   id: z.string().describe('The principal, stable for as long as the environment exists'),
   displayName: z.string().nullable(),

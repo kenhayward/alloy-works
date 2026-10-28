@@ -18140,6 +18140,10 @@
         {
           "id": "LOC-042",
           "howItIsMet": "`en-XA` and `ar-XB` as modes, and the pseudo walk run in both"
+        },
+        {
+          "id": "LOC-044",
+          "howItIsMet": "The declared content languages and every runtime's locale data, recorded: [below](#locale-data)"
         }
       ]
     },
@@ -21041,6 +21045,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-044",
+      "file": "apps/service/src/about-routes.test.ts",
+      "line": 16,
+      "kind": "title"
+    },
+    {
       "id": "API-053",
       "file": "apps/service/src/access-routes.test.ts",
       "line": 563,
@@ -21343,13 +21353,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 677,
+      "line": 678,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 690,
+      "line": 691,
       "kind": "title"
     },
     {
@@ -22837,49 +22847,49 @@
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 440,
+      "line": 441,
       "kind": "rule"
     },
     {
       "id": "API-037",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 375,
+      "line": 376,
       "kind": "title"
     },
     {
       "id": "LOC-036",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 680,
+      "line": 681,
       "kind": "title"
     },
     {
       "id": "PUB-014",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 468,
+      "line": 469,
       "kind": "rule"
     },
     {
       "id": "PUB-047",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 698,
+      "line": 699,
       "kind": "title"
     },
     {
       "id": "PUB-048",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 622,
+      "line": 623,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 557,
+      "line": 558,
       "kind": "rule"
     },
     {
       "id": "PUB-095",
       "file": "apps/service/src/publication-routes.test.ts",
-      "line": 485,
+      "line": 486,
       "kind": "rule"
     },
     {
@@ -23921,6 +23931,18 @@
       "kind": "title"
     },
     {
+      "id": "LOC-044",
+      "file": "apps/web/src/App.test.tsx",
+      "line": 132,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "apps/web/src/Environment.test.tsx",
+      "line": 53,
+      "kind": "title"
+    },
+    {
       "id": "IAM-029",
       "file": "apps/web/src/access/AccessPanel.test.tsx",
       "line": 1506,
@@ -24595,91 +24617,97 @@
     {
       "id": "CNT-063",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 597,
+      "line": 643,
       "kind": "title"
     },
     {
       "id": "CNT-082",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2224,
+      "line": 2270,
       "kind": "title"
     },
     {
       "id": "CNT-094",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2696,
+      "line": 2742,
       "kind": "title"
     },
     {
       "id": "CNT-097",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2213,
+      "line": 2259,
       "kind": "title"
     },
     {
       "id": "CNT-115",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2241,
+      "line": 2287,
       "kind": "title"
     },
     {
       "id": "CNT-122",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2279,
+      "line": 2325,
       "kind": "title"
     },
     {
       "id": "CNT-168",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 641,
+      "line": 687,
       "kind": "title"
     },
     {
       "id": "CNT-169",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1514,
+      "line": 1560,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 291,
+      "line": 337,
       "kind": "title"
     },
     {
       "id": "COL-044",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 1103,
+      "line": 1149,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 3125,
+      "line": 3171,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
+      "line": 245,
       "kind": "title"
     },
     {
       "id": "REU-008",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 363,
+      "line": 409,
       "kind": "title"
     },
     {
       "id": "SCH-057",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2101,
+      "line": 2147,
       "kind": "title"
     },
     {
       "id": "STY-070",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2489,
+      "line": 2535,
       "kind": "title"
     },
     {
       "id": "STY-079",
       "file": "apps/web/src/editor/ComponentEditor.editing.test.tsx",
-      "line": 2379,
+      "line": 2425,
       "kind": "title"
     },
     {
@@ -25307,9 +25335,15 @@
       "kind": "title"
     },
     {
-      "id": "PUB-004",
+      "id": "LOC-044",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
       "line": 95,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-004",
+      "file": "apps/web/src/publishing/PublicationPage.test.tsx",
+      "line": 108,
       "kind": "title"
     },
     {
@@ -25321,25 +25355,25 @@
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 846,
+      "line": 859,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 907,
+      "line": 920,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 870,
+      "line": 883,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 573,
+      "line": 586,
       "kind": "title"
     },
     {
@@ -26579,6 +26613,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-044",
+      "file": "apps/web/src/words/locale-data.test.ts",
+      "line": 18,
+      "kind": "title"
+    },
+    {
       "id": "LOC-005",
       "file": "apps/web/src/words/locales.test.ts",
       "line": 18,
@@ -26891,6 +26931,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-044",
+      "file": "apps/worker/src/image.test.ts",
+      "line": 55,
+      "kind": "title"
+    },
+    {
       "id": "API-042",
       "file": "apps/worker/src/impact-report.test.ts",
       "line": 183,
@@ -27089,6 +27135,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-044",
+      "file": "apps/worker/src/publish.test.ts",
+      "line": 682,
+      "kind": "title"
+    },
+    {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
       "line": 431,
@@ -27109,7 +27161,7 @@
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 886,
+      "line": 895,
       "kind": "title"
     },
     {
@@ -27127,25 +27179,25 @@
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 682,
+      "line": 691,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1586,
+      "line": 1595,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1501,
+      "line": 1510,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 904,
+      "line": 913,
       "kind": "title"
     },
     {
@@ -27157,7 +27209,7 @@
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 831,
+      "line": 840,
       "kind": "title"
     },
     {
@@ -27517,7 +27569,7 @@
     {
       "id": "LIB-036",
       "file": "packages/api-contract/src/publishing.test.ts",
-      "line": 338,
+      "line": 339,
       "kind": "title"
     },
     {
@@ -28675,7 +28727,13 @@
     {
       "id": "LOC-003",
       "file": "packages/db/src/listing-collation.test.ts",
-      "line": 66,
+      "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "packages/db/src/listing-collation.test.ts",
+      "line": 83,
       "kind": "title"
     },
     {
@@ -28829,6 +28887,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-044",
+      "file": "packages/db/src/publication-locale-data-migration.test.ts",
+      "line": 107,
+      "kind": "title"
+    },
+    {
       "id": "LIB-016",
       "file": "packages/db/src/publication-terms.test.ts",
       "line": 283,
@@ -28885,7 +28949,7 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 2692,
+      "line": 2694,
       "kind": "title"
     },
     {
@@ -28915,7 +28979,7 @@
     {
       "id": "PUB-074",
       "file": "packages/db/src/publishing.test.ts",
-      "line": 3199,
+      "line": 3201,
       "kind": "title"
     },
     {
@@ -31129,7 +31193,13 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1072,
+      "line": 1080,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "packages/domain/src/interface/declared-languages.test.ts",
+      "line": 18,
       "kind": "title"
     },
     {

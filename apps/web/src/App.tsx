@@ -69,6 +69,8 @@ export function App({
                 : words('app.delivery', { delivery: platform.delivery, runtime: platform.runtime })}
             </p>
             <p>{words('app.localeData', { version: localeDataVersion() })}</p>
+            {/* A tab's own orderings are the browser's collation, said so (LOC-044). */}
+            <p>{words('app.browser-collation')}</p>
           </div>
         }
       >

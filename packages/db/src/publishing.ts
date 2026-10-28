@@ -97,6 +97,7 @@ import { lockBindings } from './datasets.js';
 import { applyOutlineOverrides } from './overrides.js';
 import { profileUnknown, variablesByKey } from './definitions.js';
 import { revisionsNamed, revisionsStanding } from './revisions.js';
+import type { LocaleData } from './publishing-tables.js';
 import { indexPublication } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import {
@@ -2288,6 +2289,8 @@ export interface NewPublication {
   readonly numbering: NumberingTable;
   /** One per format the request names, each once (Word 1, ruling R11). */
   readonly outputs: readonly NewPublicationOutput[];
+  /** The worker's locale data (TE-F; LOC-044), recorded where 0171 has run. */
+  readonly localeData?: LocaleData;
 }
 
 /**
@@ -2489,6 +2492,10 @@ async function insertPublication(
       ...(style === null
         ? {}
         : { citation_style_id: style.id, citation_style_version_id: style.version }),
+      // Its locale data (TE-F), where 0171 made the column: migration tests run this on older ones.
+      ...(input.localeData !== undefined && (await localeDataStored(trx))
+        ? { locale_data: JSON.stringify(input.localeData) }
+        : {}),
     })
     .execute();
   const occurrences = await trx
@@ -3005,6 +3012,8 @@ export interface StoredPublication {
    * LOC-036); none for one in its document's own language, a baseline's, or one before 0170.
    */
   readonly translationPolicy: { readonly change: string; readonly at: Date } | null;
+  /** The worker's locale data it was made with (TE-F; LOC-044); none for one before 0171. */
+  readonly localeData: LocaleData | null;
   /** One per format, in the order the formats are named: the PDF first. */
   readonly outputs: readonly {
     /** A format it names, or `provenance.json` beside them where it holds a value (B3-G). */
@@ -3026,8 +3035,11 @@ export interface StoredPublication {
   }[];
 }
 
-/** A publication as a listing shows it: its record without its outputs or its policy version. */
-export type PublicationSummary = Omit<StoredPublication, 'outputs' | 'translationPolicy'>;
+/** A publication as a listing shows it: its record without its outputs, policy or locale data. */
+export type PublicationSummary = Omit<
+  StoredPublication,
+  'outputs' | 'translationPolicy' | 'localeData'
+>;
 
 const publicationColumns = [
   'p.id',
@@ -3103,6 +3115,7 @@ export async function readPublication(
   return {
     ...summaryOf(row),
     translationPolicy: await policyDecidedUnder(trx, id),
+    localeData: await localeDataOf(trx, id),
     outputs: outputs
       .sort((a, b) => order(a.format) - order(b.format))
       .map((each) => ({
@@ -3138,6 +3151,26 @@ async function policyDecidedUnder(
       join translation_policy_change c on c.id = r.policy_change
      where p.id = ${publication}`.execute(trx);
   return rows[0] ?? null;
+}
+
+/** Whether this schema has 0171's `locale_data`: migration tests run this code on older ones. */
+async function localeDataStored(trx: TenantTransaction): Promise<boolean> {
+  const { rows } = await sql<{ present: boolean }>`
+    select exists (select 1 from information_schema.columns
+                    where table_schema = current_schema() and table_name = 'publication'
+                      and column_name = 'locale_data') as present`.execute(trx);
+  return rows[0]?.present === true;
+}
+
+/** The locale data a publication recorded (TE-F), where 0171 has run. */
+async function localeDataOf(
+  trx: TenantTransaction,
+  publication: string,
+): Promise<LocaleData | null> {
+  if (!(await localeDataStored(trx))) return null;
+  const { rows } = await sql<{ locale_data: LocaleData | null }>`
+    select locale_data from publication where id = ${publication}`.execute(trx);
+  return rows[0]?.locale_data ?? null;
 }
 
 /** A check as it is stored: 0040's checks hold its failed rules to their shape. */

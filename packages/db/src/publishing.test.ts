@@ -1733,6 +1733,8 @@ describe('requesting and recording a publication', () => {
         citation_style_id: null,
         citation_style_version_id: null,
         citation_style_kind: 'citationStyle',
+        // No locale data: this worker named none (0171).
+        locale_data: null,
         // The transaction that recorded it, which a listing's snapshot reads (0032).
         written_by: expect.stringMatching(/^\d+$/),
       });

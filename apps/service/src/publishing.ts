@@ -525,6 +525,7 @@ export function publishingHandlers(
           change: publication.translationPolicy.change,
           at: publication.translationPolicy.at.toISOString(),
         },
+        localeData: publication.localeData && { ...publication.localeData },
         outputs: await Promise.all(
           outputs.map(async (output) => {
             const common = {

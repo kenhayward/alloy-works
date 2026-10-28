@@ -76,6 +76,12 @@ interface Shown {
   readonly newer: string | null;
   /** When the translation policy it was decided under was changed (TE-D), or none. */
   readonly policyChanged: string | null;
+  /** The worker's ICU, Unicode and CLDR it was made with (TE-F), or none. */
+  readonly localeData: {
+    readonly icu: string;
+    readonly unicode: string;
+    readonly cldr: string;
+  } | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -180,6 +186,14 @@ function shownIn(data: unknown): Shown | undefined {
     policyChanged:
       isRecord(data.translationPolicy) && typeof data.translationPolicy.at === 'string'
         ? data.translationPolicy.at
+        : null,
+    // Absent from an answer before TEc, and null for one made before 0171.
+    localeData:
+      isRecord(data.localeData) &&
+      typeof data.localeData.icu === 'string' &&
+      typeof data.localeData.unicode === 'string' &&
+      typeof data.localeData.cldr === 'string'
+        ? { icu: data.localeData.icu, unicode: data.localeData.unicode, cldr: data.localeData.cldr }
         : null,
   };
 }
@@ -429,6 +443,9 @@ export function PublicationPage({
               when: published(shown.policyChanged),
             })}
           </p>
+        )}
+        {shown.localeData !== null && (
+          <p>{words('publishing.locale-data', { ...shown.localeData })}</p>
         )}
         {shown.engine !== null && shown.template !== null && (
           <p>

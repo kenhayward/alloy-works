@@ -101,6 +101,7 @@ export {
 } from './assets.js';
 export type { AssetUploadTable } from './assets-tables.js';
 export type {
+  LocaleData,
   PublicationInputTable,
   PublicationOutputTable,
   PublicationRequestOccurrenceTable,
@@ -199,7 +200,7 @@ export {
   type AuditPage,
   type AuditPageRequest,
 } from './audit-read.js';
-export { isSnapshot } from './listing.js';
+export { collationVersions, isSnapshot } from './listing.js';
 export {
   beatPresence,
   leavePresence,

@@ -46,6 +46,36 @@ describe('the environment panel', () => {
     expect(await screen.findByText('Development')).toBeInTheDocument();
     const link = await screen.findByRole('link', { name: /sign in/i });
     expect(link).toHaveAttribute('href', '/v1/sign-in/organisation');
+    // The versions behind it are for a signed-in person alone.
+    expect(screen.queryByText(/locale data/)).toBeNull();
+  });
+
+  it("LOC-044 says the service's locale data and each collation's version to a signed-in person", async () => {
+    render(
+      <Environment
+        fetch={
+          serviceThat({
+            '/v1/tenant': { name: 'Development' },
+            '/v1/me': { id: 'p1', displayName: 'Ada', email: null, environment: 'Development' },
+            '/v1/about': {
+              localeData: {
+                icu: '78.3',
+                unicode: '17.0',
+                cldr: '48.0',
+                collations: [{ language: 'ar-XB', collation: 'ar-x-icu', version: '153.120.42' }],
+              },
+            },
+          }) as unknown as typeof fetch
+        }
+        follow={noStream}
+      />,
+    );
+    expect(
+      await screen.findByText("The service's locale data: ICU 78.3, Unicode 17.0, CLDR 48.0."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Listings in ar-XB sort by ar-x-icu, version 153.120.42.'),
+    ).toBeInTheDocument();
   });
 
   it('says who is signed in, and asks for a sample when told to', async () => {

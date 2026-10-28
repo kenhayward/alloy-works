@@ -1,5 +1,10 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { bindingDigestInput, DEFAULT_CATALOGUES, type Binding } from '@alloy-works/domain';
+import {
+  bindingDigestInput,
+  CONTENT_LANGUAGES,
+  DEFAULT_CATALOGUES,
+  type Binding,
+} from '@alloy-works/domain';
 import { fromEditor, NodeSelection, Selection, type EditorView } from '@alloy-works/editor';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -235,6 +240,47 @@ describe('the component editor', () => {
     expect(screen.getByRole('button', { name: 'Base direction: right to left' })).toHaveTextContent(
       'RTL',
     );
+  });
+
+  it('LOC-044 offers the declared languages, a declared one setting its direction, and keeps one outside the list, saying so', async () => {
+    const { asked, surface } = open({
+      'GET /v1/components/{id}': () => json(200, opened()),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+      'PUT /v1/components/{id}/iterations/{session}/1': () => json(200, { sequence: 1, lock }),
+      'PUT /v1/components/{id}/iterations/{session}/2': () => json(200, { sequence: 2, lock }),
+    });
+    await surface();
+    await userEvent.click(screen.getByRole('button', { name: 'Base language: en-GB' }));
+    const field = screen.getByLabelText('Language', { selector: 'input' });
+    const offered = document.getElementById(field.getAttribute('list')!)!;
+    expect(offered.querySelectorAll('option')).toHaveLength(CONTENT_LANGUAGES.length);
+    expect(offered.querySelector('option[value="sr-Latn"]')).not.toBeNull();
+    expect(screen.queryByText(/not a declared language/)).toBeNull();
+
+    // Outside the list: kept as typed, saved, and said to be not declared.
+    await userEvent.clear(field);
+    await userEvent.type(field, 'pa');
+    expect(
+      await screen.findByText(
+        'pa is not a declared language. It is kept, but its text may not publish as it should.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Base language: pa, not declared' }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(asked.find((each) => each.route.startsWith('PUT'))?.body).toMatchObject({
+        content: { language: 'pa', direction: 'ltr' },
+      }),
+    );
+
+    // A declared language written right to left sets the direction with it.
+    await userEvent.clear(field);
+    await userEvent.type(field, 'ar');
+    expect(
+      await screen.findByRole('button', { name: 'Base direction: right to left' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/not a declared language/)).toBeNull();
   });
 
   it('opened at a place in its text, puts the focus and the caret there', async () => {

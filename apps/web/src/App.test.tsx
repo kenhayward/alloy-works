@@ -129,6 +129,20 @@ describe('App', () => {
     expect(screen.getByText(/Electron 44\.3\.0/)).toBeInTheDocument();
   });
 
+  it("LOC-044 names the interface's locale data and its CLDR in About, and says the window's own sorts are the browser's", async () => {
+    vi.stubGlobal('fetch', signedIn);
+    render(<App bridge={desktopBridge} environment={noPanel} workspace={aboutWorkspace} />);
+
+    expect(
+      within(about()).getByText(/^Locale data: FormatJS .*, CLDR 48\.2\.0$/),
+    ).toBeInTheDocument();
+    expect(
+      within(about()).getByText(
+        "What this window sorts on its own, it sorts by the browser's collation.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('shows the environment panel in About, asking the service where it stands', async () => {
     // The panel's own behaviour is Environment.test.tsx's business; what is proved here is that
     // the page renders it, which is the only reason a person sees it at all.
@@ -136,7 +150,14 @@ describe('App', () => {
     render(<App bridge={desktopBridge} workspace={aboutWorkspace} />);
 
     expect(await screen.findByRole('heading', { name: 'Environment' })).toBeInTheDocument();
-    expect(signedIn).toHaveBeenCalled();
+    // Signed in, it asks for the service's locale data too: awaited, so no request outlives the test.
+    await vi.waitFor(() =>
+      expect(
+        signedIn.mock.calls.some(([input]) =>
+          (input instanceof Request ? input.url : String(input)).endsWith('/v1/about'),
+        ),
+      ).toBe(true),
+    );
   });
 
   it('says so while the bridge has not answered yet', async () => {

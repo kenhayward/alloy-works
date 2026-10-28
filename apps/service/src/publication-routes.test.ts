@@ -228,6 +228,7 @@ describe('publishing a document through the service', () => {
         dataSha256: 'b'.repeat(64),
         numbering: { scheme: defaultNumberingScheme.id, entries: [] },
         outputs,
+        localeData: { icu: '78.3', unicode: '17.0', cldr: '48.0' },
       });
       if (!id) throw new Error(`The request ${requestId} was already finished`);
       return id;
@@ -716,6 +717,8 @@ describe('publishing a document through the service', () => {
       pipeline: '2',
       // In its document's own language: no translation policy decided anything.
       translationPolicy: null,
+      // The worker's ICU, Unicode and CLDR (LOC-044).
+      localeData: { icu: '78.3', unicode: '17.0', cldr: '48.0' },
     });
     expect(body.outputs).toHaveLength(1);
     expect(body.outputs[0]).toMatchObject({ format: 'pdf', standard: 'ua-1', bytes: 19 });

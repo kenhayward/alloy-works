@@ -121,6 +121,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   keepProposal: writes('suggestion.made'),
   discardProposal: writes('generation.discarded'),
   getTenant: read,
+  getAbout: read,
   startOrganisationSignIn: { none: 'attempt' },
   finishOrganisationSignIn: writes(
     'authentication.signed_in',

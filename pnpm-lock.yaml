@@ -437,9 +437,21 @@ importers:
         specifier: ^4.6.1
         version: 4.6.1
     devDependencies:
+      '@alloy-works/fonts':
+        specifier: workspace:*
+        version: link:../fonts
       '@types/node':
         specifier: ^24.5.2
         version: 24.13.4
+      cldr-core:
+        specifier: 48.2.0
+        version: 48.2.0
+      cldr-misc-full:
+        specifier: 48.2.0
+        version: 48.2.0(cldr-core@48.2.0)
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -2695,6 +2707,14 @@ packages:
 
   citeproc@2.4.63:
     resolution: {integrity: sha512-68F95Bp4UbgZU/DBUGQn0qV3HDZLCdI9+Bb2ByrTaNJDL5VEm9LqaiNaxljsvoaExSLEXe1/r6n2Z06SCzW3/Q==}
+
+  cldr-core@48.2.0:
+    resolution: {integrity: sha512-zfmLothncSwfv2jlevoSrgI2VGgH8SDGHXst6jUEotHA8nq9Igeg9jzdJDFtBso9pgJuG89DK16TzrmZDdo2Bg==}
+
+  cldr-misc-full@48.2.0:
+    resolution: {integrity: sha512-dSc2Tr53dQcUGwsTinamEeoP2YXOhQrIZ+SyeuUrv4MzJOSjT/Q0qkSmX11ZwfcTbYSkIqbrgALQLhAm1yf5fA==}
+    peerDependencies:
+      cldr-core: 48.2.0
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -7775,6 +7795,12 @@ snapshots:
   ci-info@4.4.0: {}
 
   citeproc@2.4.63: {}
+
+  cldr-core@48.2.0: {}
+
+  cldr-misc-full@48.2.0(cldr-core@48.2.0):
+    dependencies:
+      cldr-core: 48.2.0
 
   cliui@8.0.1:
     dependencies:

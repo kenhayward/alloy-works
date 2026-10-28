@@ -1,6 +1,14 @@
-import { createApiClient, followStream, type FollowOptions } from '@alloy-works/api-client';
+import {
+  createApiClient,
+  followStream,
+  type FollowOptions,
+  type paths,
+} from '@alloy-works/api-client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { words } from './words/words.js';
+
+type LocaleData =
+  paths['/v1/about']['get']['responses']['200']['content']['application/json']['localeData'];
 
 interface Sample {
   readonly id: string;
@@ -28,6 +36,7 @@ export function Environment({ fetch: given, follow = followStream }: Environment
     [origin, given],
   );
   const [environment, setEnvironment] = useState<string | undefined>();
+  const [localeData, setLocaleData] = useState<LocaleData | undefined>();
   const [who, setWho] = useState<{ readonly name: string } | 'nobody' | undefined>();
   const [samples, setSamples] = useState<readonly Sample[]>([]);
 
@@ -46,6 +55,18 @@ export function Environment({ fetch: given, follow = followStream }: Environment
       current = false;
     };
   }, [client]);
+
+  // The service's locale data, for a signed-in person alone (TE-F; LOC-044).
+  useEffect(() => {
+    if (who === undefined || who === 'nobody') return undefined;
+    let current = true;
+    void client.GET('/v1/about').then(({ data }) => {
+      if (current && data) setLocaleData(data.localeData);
+    });
+    return () => {
+      current = false;
+    };
+  }, [who, client]);
 
   useEffect(() => {
     if (who === undefined || who === 'nobody') return undefined;
@@ -73,6 +94,25 @@ export function Environment({ fetch: given, follow = followStream }: Environment
         <p>{words('shell.asking')}</p>
       ) : (
         <p data-content>{environment}</p>
+      )}
+      {/* The service's own locale data and its database's collations (TE-F; LOC-044). */}
+      {localeData && (
+        <>
+          <p>
+            {words('shell.locale-data', {
+              icu: localeData.icu,
+              unicode: localeData.unicode,
+              cldr: localeData.cldr,
+            })}
+          </p>
+          {localeData.collations.map((each) => (
+            <p key={each.language}>
+              {each.version === null
+                ? words('shell.collation-unversioned', each)
+                : words('shell.collation', { ...each, version: each.version })}
+            </p>
+          ))}
+        </>
       )}
       {who === 'nobody' && <a href="/v1/sign-in/organisation">{words('shell.signIn')}</a>}
       {who !== undefined && who !== 'nobody' && (

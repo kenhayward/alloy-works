@@ -261,7 +261,7 @@ export const documentationGroups = [
 
 const operationTags = {
   Health: ['getHealth', 'requestSample', 'getSample'],
-  Environments: ['getTenant'],
+  Environments: ['getTenant', 'getAbout'],
   Identity: [
     'getMe',
     'getMyPreferences',
@@ -693,6 +693,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Use this check to see whether the service process answers requests. It does not test an environment or its dependencies.',
   getTenant:
     'Returns the environment selected by the request hostname. Check this before using a token or making a change, especially when you have both production and sandbox environments.',
+  getAbout:
+    'Returns the ICU, Unicode and CLDR versions the service sorts and formats with, and the version of the database collation each interface language sorts listings by, so a change in them is visible. A publication records its own. It needs a signed-in session.',
   getMe:
     'Returns the person represented by the supplied personal token or signed-in session and the environment in which that credential was issued.',
   getMyPreferences:

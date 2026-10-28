@@ -197,6 +197,11 @@ describe('the service', () => {
     expect((await at('docs.customer.example')).json()).toMatchObject({ name: 'Production' });
   });
 
+  it('says nothing of the versions behind it to somebody not signed in', async () => {
+    const answered = await app.inject({ url: '/v1/tenant', headers: { host: 'acme.alloy.test' } });
+    expect(Object.keys(answered.json() as object).sort()).toEqual(['name', 'signIn']);
+  });
+
   it('refuses a hostname that serves no environment, before any tenant data is touched', async () => {
     const response = await app.inject({
       url: '/v1/tenant',

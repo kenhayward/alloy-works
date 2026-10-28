@@ -1,4 +1,8 @@
-import { INTERFACE_COLLATIONS, type InterfaceLanguage } from '@alloy-works/domain';
+import {
+  INTERFACE_COLLATIONS,
+  INTERFACE_LANGUAGES,
+  type InterfaceLanguage,
+} from '@alloy-works/domain';
 import { sql, type Compilable, type RawBuilder, type SqlBool } from 'kysely';
 import type { TenantTransaction } from './tables.js';
 
@@ -229,6 +233,35 @@ export async function collationFor(
     collations.set(locale, wanted.find((each) => held.has(each)) ?? null);
   }
   return collations.get(locale) ?? undefined;
+}
+
+/**
+ * The collation each interface language sorts by and its version as the cluster's ICU reports it
+ * (`pg_collation_actual_version`; the TE plan, TE-F; LOC-044); none where the cluster holds none.
+ */
+export async function collationVersions(trx: TenantTransaction): Promise<
+  readonly {
+    readonly language: InterfaceLanguage;
+    readonly collation: string;
+    readonly version: string | null;
+  }[]
+> {
+  const named = await Promise.all(
+    INTERFACE_LANGUAGES.map(async (language) => ({
+      language,
+      collation: await collationFor(trx, language),
+    })),
+  );
+  const held = named.flatMap((each) => (each.collation === undefined ? [] : [each.collation]));
+  const { rows } = await sql<{ collname: string; version: string | null }>`
+    select collname, pg_collation_actual_version(oid) as version
+      from pg_collation where collname = any(${held}::text[])`.execute(trx);
+  const versions = new Map(rows.map((row) => [row.collname, row.version]));
+  return named.flatMap(({ language, collation }) =>
+    collation === undefined
+      ? []
+      : [{ language, collation, version: versions.get(collation) ?? null }],
+  );
 }
 
 /**

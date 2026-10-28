@@ -637,6 +637,7 @@ export {
   SIGN_IN_RETURN,
   SignInStartQuery,
   TenantProfile,
+  About,
 } from './schemas.js';
 export {
   AuditEventView,
