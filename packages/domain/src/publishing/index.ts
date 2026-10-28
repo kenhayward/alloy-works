@@ -176,6 +176,8 @@ export {
   PUBLISHING_SCHEMA_24,
   // Frozen by UIf, which made `publishing/26`: the schema template 25 reads.
   PUBLISHING_SCHEMA_25,
+  // Frozen by IXb, which made `publishing/27`: the schema template 26 reads.
+  PUBLISHING_SCHEMA_26,
 } from './published.js';
 export type {
   PublishedApproval,
@@ -184,6 +186,11 @@ export type {
   PublishedBibliographyEntry,
   PublishedAbbreviations,
   PublishedGlossary,
+  PublishedIndex,
+  PublishedIndexEntry,
+  PublishedIndexHeading,
+  PublishedIndexLocator,
+  PublishedIndexMarkRun,
   PublishedTermRun,
   PublishedCitationRun,
   PublishedBlock,

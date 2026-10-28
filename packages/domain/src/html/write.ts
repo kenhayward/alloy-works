@@ -450,6 +450,11 @@ export function writeHtml(input: HtmlWriting): WrittenHtml {
           )
         : element('span', [['class', 'aw-citation']], body);
     }
+    // An index marker prints nothing: an empty span its locators link to, where it is anchored (IX-L).
+    if ('indexMark' in each) {
+      const { anchor } = each.indexMark;
+      return anchor === null ? '' : element('span', [['id', anchor]], '');
+    }
     const kind: 'term' = 'term' in each ? 'term' : (each satisfies never);
     const { text, marks, link } = each[kind];
     const body = run({ text, marks }, where.chain, false);

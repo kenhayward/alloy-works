@@ -38,6 +38,7 @@ import {
   parseLayout,
   readLayout,
   type Layout,
+  THIRTEENTH_DEFAULT_LAYOUT,
 } from './layout.js';
 import {
   DRAFT_NOTICE,
@@ -66,6 +67,7 @@ import {
   PUBLISHING_SCHEMA_23,
   PUBLISHING_SCHEMA_24,
   PUBLISHING_SCHEMA_25,
+  PUBLISHING_SCHEMA_26,
   type PublishedBlock,
   type PublishedDocument,
   type PublishedInline,
@@ -1183,8 +1185,8 @@ describe('assemble', () => {
     ]);
   });
 
-  it('assembles under a layout as publishing/26, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/26');
+  it('assembles under a layout as publishing/27, keeping publishing/3 and publishing/4 as the shapes templates 3 and 4 read', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/27');
     // Frozen with templates 3 and 4 and the publications made by them, exactly as `publishing/2` was
     // frozen when a run began to carry its marks: a template version is a record, not something to
     // migrate.
@@ -1770,8 +1772,8 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     ]);
   });
 
-  it('makes publishing/26, and publishing/4 to publishing/25 are frozen', () => {
-    expect(PUBLISHING_SCHEMA).toBe('publishing/26');
+  it('makes publishing/27, and publishing/4 to publishing/26 are frozen', () => {
+    expect(PUBLISHING_SCHEMA).toBe('publishing/27');
     expect(PUBLISHING_SCHEMA_4).toBe('publishing/4');
     expect(PUBLISHING_SCHEMA_5).toBe('publishing/5');
     expect(PUBLISHING_SCHEMA_6).toBe('publishing/6');
@@ -1794,6 +1796,7 @@ describe('a quotation and preformatted text, published (editor 5)', () => {
     expect(PUBLISHING_SCHEMA_23).toBe('publishing/23');
     expect(PUBLISHING_SCHEMA_24).toBe('publishing/24');
     expect(PUBLISHING_SCHEMA_25).toBe('publishing/25');
+    expect(PUBLISHING_SCHEMA_26).toBe('publishing/26');
   });
 });
 
@@ -4915,7 +4918,7 @@ describe('the theme a publication is set from (themes 1)', () => {
     const theme = resolved();
     const assembled = assemble(oneParagraph(text('Set the tray.')));
     if (!assembled.ok) throw new Error(JSON.stringify(assembled.failures));
-    expect(assembled.document.schema).toBe('publishing/26');
+    expect(assembled.document.schema).toBe('publishing/27');
     expect(assembled.document.theme).toEqual(projectTypst(theme));
     expect(Object.keys(assembled.document.theme.tables)).toEqual(['table', 'banded']);
     expect(Object.keys(assembled.document.theme.images)).toEqual([
@@ -7707,7 +7710,7 @@ describe('an index marker, published (the IX plan, IX-F)', () => {
   const marker = { type: 'indexMarker', term: 'Grace term', sub: 'Ada sub-entry' };
   const cellOf = (...blocks: unknown[]) => ({ content: blocks, colspan: 1, rowspan: 1 });
 
-  it('prints nothing and fails nothing, under a layout or none, wherever it stands', () => {
+  it('prints nothing and fails nothing, under a layout placing no index or none, wherever it stands', () => {
     const blocks = [
       paragraph('b1', text('An '), marker, text('alloy'), {
         type: 'footnote',
@@ -7730,7 +7733,7 @@ describe('an index marker, published (the IX plan, IX-F)', () => {
     ];
     // Where there is no layout a footnote and a table are refused by name, so a paragraph alone.
     for (const result of [
-      assemble(oneComponent(...blocks)),
+      assemble({ ...oneComponent(...blocks), layout: THIRTEENTH_DEFAULT_LAYOUT }),
       assemble({
         ...oneComponent(paragraph('b1', text('An '), marker, text('alloy'))),
         layout: null,

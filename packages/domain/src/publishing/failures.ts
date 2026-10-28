@@ -259,6 +259,12 @@ export const publishFailureCodes = [
   // `abbreviations`. HTb's writer writes every kind and emits it no more; kept, as `word_not_yet` is,
   // since a failure stored from HTa may hold it.
   'html_not_yet',
+  // compose, from IXb (the IX plan, IX-B; STR-043, PUB-041), where the layout places an index: a marker
+  // whose "see" or "see also" names a term no marker in the published document carries, `detail` `see`
+  // or `seeAlso`, never the words; and a "see" redirecting an entry a marker also locates. Each names
+  // the marker's node and block.
+  'index_reference_unresolved',
+  'index_see_located',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];
