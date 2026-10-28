@@ -26,7 +26,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "generate": "node scripts/generate-csl.mjs"
+    "generate": "node scripts/generate-csl.mjs",
+    "generate:languages": "tsx scripts/generate-content-languages.ts"
   },
   "dependencies": {
     "citeproc": "2.4.63",
@@ -34,7 +35,11 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "@alloy-works/fonts": "workspace:*",
     "@types/node": "^24.5.2",
+    "cldr-core": "48.2.0",
+    "cldr-misc-full": "48.2.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"
   }
