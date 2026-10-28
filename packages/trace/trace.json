@@ -7914,7 +7914,7 @@
     {
       "id": "LOC-038",
       "area": "LOC",
-      "statement": "The languages and locales the product supports must be a declared list, and locale data - formats, collation, plural categories - must come from a named, versioned source, with the version recorded so that a change in it is a visible change rather than a drift in output (**LOC-Q05**)",
+      "statement": "The languages and locales the product supports must be a declared list, and locale data - formats, collation, plural categories - must come from a named, versioned source, with the version recorded so that a change in it is a visible change rather than a drift in output. A browser tab's own orderings of what it shows may use the browser's collation, said to be the browser's; whatever is stored or published records the version of the locale data it was made with (**LOC-Q05**)",
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
@@ -15654,7 +15654,7 @@
     {
       "id": "LOC-Q05",
       "question": "**Which languages and locales are supported at launch (LOC-038)?** The list is declared and the locale data versioned either way; what is open is which entries it starts with, and which right-to-left locale the suite runs against",
-      "settledBy": "The first customers' markets. A regulated submission's languages are decided by where it is filed, so this follows the first filing rather than a product preference",
+      "settledBy": "**Answered (Ken, 2026-10-28): every language CLDR has data for written in the Latin, Greek, Cyrillic, Hebrew or Arabic script**, the scripts the default theme sets (STY-075); the Chinese, Japanese, Korean and Indic scripts join with STY-085. The suite's right-to-left locale is the pseudo-locale `ar-XB`",
       "document": "LOC-localisation-and-translation.md",
       "line": 203
     },
