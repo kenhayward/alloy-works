@@ -331,6 +331,18 @@ the delivery store or object store down `sink_unavailable`. `needs_user` answers
 Anything unexpected is `internal` with a fixed message; a credential, token or SQL never appears in an
 error.
 
+The `content_rejected` reasons, each answered before anything is written:
+
+- `component_deleted` - a component the delivery writes was deleted in Alloy Works; it stays deleted.
+- `component_type_missing` - the space's component type is not in this environment.
+- `template_unresolved` - the space's template cannot be resolved, or declares a parameter a delivery cannot give.
+- `mapping_refused` - the package holds something the mapping cannot map.
+- `content_invalid` - a component's content as mapped is refused by the content model.
+- `outline_invalid` - the outline as mapped is refused by the outline model.
+- `metadata_incomplete` - the document's values fail its template's rules, or a required field has none.
+- `component_locked` - a person holds a lock on a component the delivery writes (API-039).
+- `not_configured` - a data package for a space whose settings name no delivery store.
+
 ## Deployment
 
 - **The service** mounts `/bridge` when `SECRET_BRIDGE_KEYS` is set; nothing is published that is not

@@ -16,6 +16,7 @@ export const CARRY_CODES = [
   'title_from_text',
   'property_unmapped',
   'property_unconverted',
+  'image_unreferenced',
 ] as const;
 
 export type CarryCode = (typeof CARRY_CODES)[number];

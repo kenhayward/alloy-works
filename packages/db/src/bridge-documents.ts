@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
+import { sql } from 'kysely';
 import {
   assetAlternativeSchema,
   bridge,
   carryForward,
+  checkDocumentParameters,
   checkWrittenValues,
   definitionsFor,
   parseContentDocument,
   parseOutlineDocument,
   resolveComponentFields,
+  seededValues,
   templateProfile,
   type ContentDocument,
   type EffectiveField,
@@ -24,7 +27,6 @@ import {
   type DecomposedDocument,
   type Receipt,
 } from '@kenhayward/bridge-contract';
-import { sql } from 'kysely';
 import { createAssetUpload, holdObject, receiveAssetBytes, recordAsset } from './assets.js';
 import {
   readDelivery,
@@ -33,17 +35,18 @@ import {
   type BridgeSettings,
 } from './bridge-store.js';
 import { currentDefinitionsFor, defaultComponentType } from './creation.js';
-import { profileUnknown } from './definitions.js';
+import { profileUnknown, variablesByKey } from './definitions.js';
 import { isDeleted } from './deletion.js';
 import { resolveForDocument, resolvedFrom } from './documents.js';
 import { readLocks } from './editing.js';
 import { indexTemplateOf } from './reference-index.js';
 import { checkSpaceLive, SpaceArchived } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
-import { documentRules } from './templates.js';
+import { documentRules, refusedParameters } from './templates.js';
 import {
   createArtifact,
   latestVersion,
+  lockArtifact,
   readVersion,
   recordVersion,
   type StoredVersion,
@@ -143,9 +146,7 @@ function sectionIds(document: DecomposedDocument): string[] {
  */
 async function lockAll(trx: TenantTransaction, ids: readonly string[]): Promise<void> {
   for (const id of [...new Set(ids)].sort()) {
-    await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:artifact:${id}`}, 0))`.execute(
-      trx,
-    );
+    await lockArtifact(trx, id);
   }
 }
 
@@ -159,6 +160,59 @@ async function currentOf(trx: TenantTransaction, id: string): Promise<StoredVers
   }
   return latest;
 }
+
+/**
+ * The version each artifact was at when CT Studio last had it from this document's deliveries: the
+ * newest written receipt that lists it. A component a later delivery left out (its section no longer
+ * sent) is held to that, so a person's edit to it since is never written over.
+ */
+async function lastDelivered(
+  trx: TenantTransaction,
+  persistentId: string,
+): Promise<Map<string, string>> {
+  const rows = await trx
+    .selectFrom('bridge_delivery')
+    .select('receipt')
+    .where('persistent_id', '=', persistentId)
+    .where('state', '=', 'written')
+    .orderBy('finished_at', 'desc')
+    .execute();
+  const versions = new Map<string, string>();
+  for (const row of rows) {
+    const receipt = row.receipt as Partial<SinkReceipt> | null;
+    for (const each of receipt?.document?.components ?? []) {
+      if (!versions.has(each.id)) versions.set(each.id, each.version);
+    }
+  }
+  return versions;
+}
+
+/** The images the document names: in figures and image blocks, inline, and an image-only equation's. */
+function namedImages(document: DecomposedDocument): Set<string> {
+  const images = new Set<string>();
+  const equations = new Set<string>();
+  const walk = (value: unknown) => {
+    if (Array.isArray(value)) {
+      for (const each of value) walk(each);
+    } else if (typeof value === 'object' && value !== null) {
+      const node = value as { imageId?: unknown; equationId?: unknown };
+      if (typeof node.imageId === 'string') images.add(node.imageId);
+      if (typeof node.equationId === 'string') equations.add(node.equationId);
+      for (const each of Object.values(value)) walk(each);
+    }
+  };
+  walk([document.blocks, document.sections, document.notes]);
+  for (const equation of document.equations) {
+    if (equations.has(equation.id) && equation.mathml === null) images.add(equation.imageId);
+  }
+  return images;
+}
+
+const hasValue = (value: unknown) =>
+  value !== undefined &&
+  value !== null &&
+  value !== '' &&
+  !(Array.isArray(value) && value.length === 0);
 
 /** The latest version of an asset in the space whose bytes are these, so an image is never made twice. */
 async function assetHolding(
@@ -207,18 +261,25 @@ async function fieldsForCreate(trx: TenantTransaction, input: DocumentDelivery):
       template: templateId,
     });
   }
+  const { definition } = resolution.resolution;
   const resolved = resolvedFrom(resolution.resolution);
-  const profile = templateProfile(resolution.resolution.definition, {});
-  if (!resolved.ok || (await profileUnknown(trx, profile)).length > 0) {
-    return rejected('The space is set up with a template the delivery cannot use', {
+  // Its parameters as createDocument checks them (TP1-G): a delivery gives none, so a parameter
+  // declared without one the template can do without - a required one - leaves it unusable.
+  const declared = definition.parameters ?? [];
+  const unusable = () =>
+    rejected('The space is set up with a template the delivery cannot use', {
       reason: 'template_unresolved',
       template: templateId,
     });
-  }
+  if (!resolved.ok || checkDocumentParameters(declared, {}) !== null) return unusable();
+  if (refusedParameters(definition, resolved, await variablesByKey(trx)) !== null)
+    return unusable();
+  const profile = templateProfile(definition, {});
+  if ((await profileUnknown(trx, profile)).length > 0) return unusable();
   return {
     answer: 'fields',
     fields: resolved.document,
-    base: carryForward({}, resolved.document).values,
+    base: { ...carryForward({}, resolved.document).values, ...seededValues(declared, {}) },
     bind: { template: templateId, version: resolution.resolution.template.version, profile },
   };
 }
@@ -232,13 +293,15 @@ async function fieldsForUpdate(trx: TenantTransaction, document: StoredVersion):
 
 /**
  * The document's values: what it starts with or holds, and each property its field takes. One the
- * field's rules refuse once written whole (a fixed field, say) is left out and reported.
+ * field's rules refuse once written whole (a fixed field, say) is left out and reported. Then every
+ * field is held to its rules: values that still fail, or a required field left without one, refuse
+ * the delivery as `metadata_incomplete`.
  */
 function valuesFor(
   input: DocumentDelivery,
   fields: readonly EffectiveField[],
   base: MetadataValues,
-): { values: MetadataValues; carried: CarryEntry[] } {
+): { values: MetadataValues; carried: CarryEntry[] } | DocumentRefused {
   const mapped = bridge.mapProperties(
     input.document.properties,
     input.settings.propertyMap,
@@ -255,6 +318,22 @@ function valuesFor(
       if (!input.document.properties.some((property) => property.name === name)) continue;
       carried.push(bridge.carry('property_unconverted', name, `${field}: ${failure.rule}`));
     }
+  }
+  const failures = checkWrittenValues(fields, values);
+  if (failures.length > 0) {
+    return rejected('The document metadata does not fit its template', {
+      reason: 'metadata_incomplete',
+      failures: failures.map((failure) => ({ field: failure.field, rule: failure.rule })),
+    });
+  }
+  const missing = fields
+    .filter((each) => each.required && !hasValue(values[each.field.id]))
+    .map((each) => each.field.id);
+  if (missing.length > 0) {
+    return rejected('A field the template requires has no value', {
+      reason: 'metadata_incomplete',
+      fields: missing,
+    });
   }
   return { values, carried };
 }
@@ -306,16 +385,21 @@ const isRefused = (value: object): value is DocumentRefused =>
 
 /**
  * Each image as an asset version of the space: one whose bytes the space already holds at an asset's
- * latest version is that version, and any other is held, stored by hash and recorded through the
- * asset door unqueued, as an accepted import's are, with the delivery's note.
+ * latest version is that version, and any other is stored by hash and recorded through the asset door
+ * unqueued, as an accepted import's are, with the delivery's note.
  */
 async function assetsFor(
   trx: TenantTransaction,
   input: DocumentDelivery,
+  images: readonly CheckedImage[],
 ): Promise<Map<string, { readonly artifactId: string; readonly versionId: string }>> {
+  // Every object held before the first is stored, in hash order, so two deliveries sharing images
+  // never wait on each other the other way round.
+  for (const sha256 of [...new Set(images.map((image) => image.sha256))].sort()) {
+    await holdObject(trx, sha256);
+  }
   const made = new Map<string, { readonly artifactId: string; readonly versionId: string }>();
-  for (const image of input.images) {
-    await holdObject(trx, image.sha256);
+  for (const image of images) {
     const stored = await input.store.put(image.bytes, `image/${image.header.format}`);
     if (stored.sha256 !== image.sha256) {
       throw new Error(`Image ${image.id} was stored as ${stored.sha256}, not ${image.sha256}`);
@@ -391,6 +475,11 @@ function firstComponent(
  * version, or keeps its own when nothing changed, and the document cuts one pinning them. What the
  * mapping or the model refuses is refused before anything is written too. The receipt holds what was
  * written and what it reads back as (API-067, API-069, API-070, API-071, API-073).
+ *
+ * Who may write here is `create` in the space for a new document and `edit` for an update, decided for
+ * the author by the caller before this is called and in the same transaction (Task 10), as
+ * `createComponent` leaves it to its caller. The read-back runs inside this transaction too, after the
+ * writes, on the versions as stored.
  */
 export async function writeDocumentDelivery(
   trx: TenantTransaction,
@@ -445,13 +534,25 @@ export async function writeDocumentDelivery(
       .select('space_id')
       .where('id', '=', persistentId)
       .executeTakeFirstOrThrow();
+    // Not in this space is not here: the delivery's target holds no such document.
     if (home.space_id !== input.spaceId) {
-      return refused(bridgeError('not_found', 'The document is in another space'));
+      return refused(documentMissing(persistentId, 'The document is not in this space'));
     }
     const changed: { id: string; expected: string; actual: string | null }[] = [];
     for (const each of expected) {
       const actual = (await currentOf(trx, each.id))?.id ?? null;
       if (actual !== each.version) changed.push({ id: each.id, expected: each.version, actual });
+    }
+    // A component this delivery writes that CT Studio did not send back is held to the version its
+    // last delivery left it at, so an edit made since is refused rather than written over.
+    const named = new Set(expected.map((each) => each.id));
+    const delivered = await lastDelivered(trx, persistentId);
+    for (const component of componentIds) {
+      if (named.has(component)) continue;
+      const actual = (await currentOf(trx, component))?.id;
+      if (actual === undefined) continue;
+      const was = delivered.get(component) ?? 'not delivered';
+      if (actual !== was) changed.push({ id: component, expected: was, actual });
     }
     if (changed.length > 0) {
       return refused(
@@ -500,16 +601,25 @@ export async function writeDocumentDelivery(
     ? await fieldsForUpdate(trx, existing)
     : await fieldsForCreate(trx, input);
   if (fields.answer === 'refused') return fields;
+  const metadata = valuesFor(input, fields.fields, fields.base);
+  if ('answer' in metadata) return metadata;
+
+  // An image the document never names is neither stored nor listed, and is reported.
+  const named = namedImages(input.document);
+  const images = input.images.filter((image) => named.has(image.id));
+  const unreferenced = input.images
+    .filter((image) => !named.has(image.id))
+    .map((image) => bridge.carry('image_unreferenced', image.id));
 
   // Mapped and checked once with stand-in assets, so a refusal comes before anything is written.
-  const standIn = new Map(input.images.map((image) => [image.id, randomUUID()]));
+  const standIn = new Map(images.map((image) => [image.id, randomUUID()]));
   const trial = mapped(input, persistentId, standIn);
   if (isRefused(trial)) return trial;
   const standInPins = new Map(trial.components.map((each) => [each.artifactId, randomUUID()]));
   const invalid = modelRefusal(trial, standInPins);
   if (invalid) return invalid;
 
-  const assets = await assetsFor(trx, input);
+  const assets = await assetsFor(trx, input, images);
   const assetVersions = new Map([...assets].map(([image, asset]) => [image, asset.versionId]));
   const final = mapped(input, persistentId, assetVersions);
   if (isRefused(final)) throw new Error('A mapping that held with stand-in assets refused');
@@ -544,7 +654,7 @@ export async function writeDocumentDelivery(
       throw new Error(`Component ${component.artifactId} under its lock answered ${answer.answer}`);
   }
 
-  const { values, carried: valuesCarried } = valuesFor(input, fields.fields, fields.base);
+  const { values } = metadata;
   const versionIds = new Map([...pins].map(([id, version]) => [id, version.id]));
   const drawn = final.outline(versionIds);
   let written: StoredVersion;
@@ -592,7 +702,7 @@ export async function writeDocumentDelivery(
   }
 
   await recordElements(trx, persistentId, elementsOf(input.document, persistentId, final, assets));
-  const carried = [...final.carried, ...valuesCarried];
+  const carried = [...final.carried, ...metadata.carried, ...unreferenced];
   const readBack = await readBackOf(trx, input.document, persistentId, assetVersions, carried);
   return {
     answer: 'written',

@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import type { ContentDocument } from '../content/model/index.js';
 
 import { mapDocument } from './document.js';
+import { elementIdFor } from './ids.js';
 import { readBack, type WrittenDocument } from './readback.js';
 
 const require = createRequire(import.meta.url);
@@ -268,6 +269,36 @@ describe('reading a delivery back', () => {
       const json = JSON.stringify(component);
       read.components.set(id, JSON.parse(json.replaceAll(words, `${words}!`)) as ContentDocument);
     }
+    expect(readBack(document, read).ok).toBe(false);
+  });
+
+  it('a cross-reference stored with another target is a difference', () => {
+    const { document, assets } = rich();
+    const read = stored(document, assets);
+    const retarget = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(retarget);
+      if (typeof value !== 'object' || value === null) return value;
+      const node = Object.fromEntries(
+        Object.entries(value).map(([key, each]) => [key, retarget(each)]),
+      );
+      return node['type'] === 'crossReference'
+        ? { ...node, target: { kind: 'node', node: elementIdFor(PERSISTENT, 's2') } }
+        : node;
+    };
+    for (const [id, component] of read.components) {
+      read.components.set(id, retarget(component) as ContentDocument);
+    }
+    expect(readBack(document, read).ok).toBe(false);
+  });
+
+  it('MathML stored otherwise is a difference', () => {
+    const { document, assets } = rich();
+    const read = stored(document, assets);
+    for (const [id, component] of read.components) {
+      const json = JSON.stringify(component).replaceAll('x</mi>', 'z</mi>');
+      read.components.set(id, JSON.parse(json) as ContentDocument);
+    }
+    expect(JSON.stringify([...read.components.values()])).toContain('z</mi>');
     expect(readBack(document, read).ok).toBe(false);
   });
 

@@ -17,6 +17,7 @@ describe('what a delivery carries over and reports', () => {
       'title_from_text',
       'property_unmapped',
       'property_unconverted',
+      'image_unreferenced',
     ]);
   });
 

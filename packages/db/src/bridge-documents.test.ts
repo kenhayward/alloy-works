@@ -34,6 +34,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createServiceIdentity } from './service-identities.js';
+import { archiveSpace, createSpace } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTemplate, documentTemplate } from './templates.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -218,7 +219,7 @@ describe('a document delivery', () => {
     as(async (trx) => {
       const started = await startDelivery(trx, {
         key,
-        spaceId: space,
+        spaceId: over.spaceId ?? space,
         family: 'document',
         tokenId: randomUUID(),
         packageKey: null,
@@ -639,42 +640,47 @@ describe('a document delivery', () => {
     expect(receipt.readBack).toEqual({ ok: true, at: null, detail: null });
   });
 
-  it('properties fill the fields of the template the space delivers with', async () => {
-    const template = await as(async (trx) => {
-      for (const [id, dataType] of [
-        [TITLE_FIELD, 'text'],
-        [PAGES_FIELD, 'number'],
-      ] as const) {
+  let defined = false;
+  /** A template of the space, its document fields Title and Pages; the definitions made once. */
+  const templateOf = (over: { requires?: string[]; parameters?: unknown[] } = {}) =>
+    as(async (trx) => {
+      if (!defined) {
+        defined = true;
+        for (const [id, dataType] of [
+          [TITLE_FIELD, 'text'],
+          [PAGES_FIELD, 'number'],
+        ] as const) {
+          await createArtifact(trx, {
+            author: ada,
+            substance: {
+              kind: 'field',
+              content: {
+                schemaVersion: DEFINITION_SCHEMA_VERSION,
+                id,
+                name: id,
+                dataType,
+                multiplicity: 'one',
+                validation: {},
+              },
+            },
+          });
+        }
         await createArtifact(trx, {
           author: ada,
           substance: {
-            kind: 'field',
+            kind: 'metadataSchema',
             content: {
               schemaVersion: DEFINITION_SCHEMA_VERSION,
-              id,
-              name: id,
-              dataType,
-              multiplicity: 'one',
-              validation: {},
+              id: SCHEMA,
+              name: 'Report',
+              entries: [
+                { field: TITLE_FIELD, required: false, fixed: false },
+                { field: PAGES_FIELD, required: false, fixed: false },
+              ],
             },
           },
         });
       }
-      await createArtifact(trx, {
-        author: ada,
-        substance: {
-          kind: 'metadataSchema',
-          content: {
-            schemaVersion: DEFINITION_SCHEMA_VERSION,
-            id: SCHEMA,
-            name: 'Report',
-            entries: [
-              { field: TITLE_FIELD, required: false, fixed: false },
-              { field: PAGES_FIELD, required: false, fixed: false },
-            ],
-          },
-        },
-      });
       const made = await createTemplate(trx, {
         spaceId: space,
         author: ada,
@@ -683,14 +689,18 @@ describe('a document delivery', () => {
           name: 'Report',
           theme: DEFAULT_THEME_ID,
           layout: DEFAULT_LAYOUT_ID,
-          schemas: [{ schema: SCHEMA, level: 'document', requires: [] }],
+          schemas: [{ schema: SCHEMA, level: 'document', requires: over.requires ?? [] }],
           outline: { sections: [] },
           changes: { add: true, remove: true, reorder: true },
+          ...(over.parameters === undefined ? {} : { parameters: over.parameters }),
         },
       });
       if (made.answer !== 'created') throw new Error(made.answer);
       return made.template;
     });
+
+  it('properties fill the fields of the template the space delivers with', async () => {
+    const template = await templateOf();
     const answer = await deliver({
       settings: {
         ...settings,
@@ -715,6 +725,200 @@ describe('a document delivery', () => {
         ['property_unmapped', 'Author'],
       ]),
     );
+  });
+
+  it('API-069 a component re-sent after a person edited it outside expected is refused', async () => {
+    const receipt = written(await deliver());
+    const fewer = documentOf();
+    fewer.sections = fewer.sections.slice(0, 1);
+    const second = written(await deliver({ document: fewer, update: updateOf(receipt) }));
+    const s2 = entry(receipt, 'component', 's2');
+    const edited = await edit(s2.id, (current) => ({
+      ...(current.content as object),
+      title: 'Kept and edited in Alloy Works',
+    }));
+    const answer = await deliver({ update: updateOf(second) });
+    expect(answer).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'changed_in_target',
+        details: { changed: [{ id: s2.id, expected: s2.version, actual: edited.id }] },
+      },
+    });
+    expect((await latest(s2.id))!.id).toBe(edited.id);
+    expect((await latest(second.persistentId))!.id).toBe(entry(second, 'map', null).version);
+
+    // Untouched since, it is sent again and written.
+    const other = written(await deliver());
+    const without = written(await deliver({ document: fewer, update: updateOf(other) }));
+    const back = written(await deliver({ update: updateOf(without) }));
+    expect(entry(back, 'component', 's2').version).toBe(entry(other, 'component', 's2').version);
+  });
+
+  it('a component deleted in Alloy Works refuses with component_deleted', async () => {
+    const receipt = written(await deliver());
+    const fewer = documentOf();
+    fewer.sections = fewer.sections.slice(0, 1);
+    const second = written(await deliver({ document: fewer, update: updateOf(receipt) }));
+    const s2 = entry(receipt, 'component', 's2');
+    expect(await as((trx) => deleteArtifact(trx, s2.id, ada))).toMatchObject({
+      answer: 'deleted',
+    });
+    expect(await deliver({ update: updateOf(second) })).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'content_rejected',
+        details: { reason: 'component_deleted', component: s2.id },
+      },
+    });
+    expect((await latest(second.persistentId))!.id).toBe(entry(second, 'map', null).version);
+  });
+
+  it('a component type the environment does not hold refuses, writing nothing', async () => {
+    const before = await countArtifacts();
+    expect(await deliver({ settings: { ...settings, componentType: randomUUID() } })).toMatchObject(
+      {
+        answer: 'refused',
+        error: { code: 'content_rejected', details: { reason: 'component_type_missing' } },
+      },
+    );
+    expect(await countArtifacts()).toBe(before);
+  });
+
+  it('a template the delivery cannot use refuses with template_unresolved', async () => {
+    const before = await countArtifacts();
+    expect(await deliver({ settings: { ...settings, template: randomUUID() } })).toMatchObject({
+      answer: 'refused',
+      error: { code: 'content_rejected', details: { reason: 'template_unresolved' } },
+    });
+    expect(await countArtifacts()).toBe(before);
+    const parameterised = await templateOf({
+      parameters: [
+        {
+          name: 'site',
+          type: { base: 'text' },
+          required: true,
+          list: false,
+          changeable: false,
+          feeds: { field: TITLE_FIELD, arguments: false },
+        },
+      ],
+    });
+    const after = await countArtifacts();
+    expect(await deliver({ settings: { ...settings, template: parameterised.id } })).toMatchObject({
+      answer: 'refused',
+      error: { code: 'content_rejected', details: { reason: 'template_unresolved' } },
+    });
+    expect(await countArtifacts()).toBe(after);
+  });
+
+  it('a required field left without a value refuses with metadata_incomplete', async () => {
+    const template = await templateOf({ requires: [TITLE_FIELD] });
+    const before = await countArtifacts();
+    const withTemplate = {
+      ...settings,
+      template: template.id,
+      propertyMap: { Title: TITLE_FIELD },
+    };
+    expect(await deliver({ settings: withTemplate })).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'content_rejected',
+        details: { reason: 'metadata_incomplete', fields: [TITLE_FIELD] },
+      },
+    });
+    expect(await countArtifacts()).toBe(before);
+    const filled = await deliver({
+      settings: withTemplate,
+      document: documentOf({ properties: [{ name: 'Title', value: 'Annual', origin: 'core' }] }),
+    });
+    expect(filled.answer).toBe('written');
+  });
+
+  it('content the model refuses is refused with content_invalid, writing nothing', async () => {
+    const before = await countArtifacts();
+    const cell = {
+      rowSpan: 0,
+      colSpan: 1,
+      hAlign: 'left' as const,
+      vAlign: 'top' as const,
+      header: false,
+      blocks: [para('c1', 'A')],
+    };
+    const answer = await deliver({
+      document: documentOf({
+        sections: [
+          section('s1', 'Method', [
+            {
+              kind: 'table',
+              id: 't1',
+              numbered: false,
+              caption: [],
+              captionPosition: 'above',
+              columnWidths: [],
+              headerRows: 0,
+              rows: [{ cells: [cell] }],
+              notes: [],
+              wide: false,
+              key: null,
+            },
+          ]),
+        ],
+        images: [],
+      }),
+      images: [],
+    });
+    expect(answer).toMatchObject({
+      answer: 'refused',
+      error: { code: 'content_rejected', details: { reason: 'content_invalid', element: 's1' } },
+    });
+    expect(await countArtifacts()).toBe(before);
+  });
+
+  it('an archived space answers not_found, writing nothing', async () => {
+    const archived = await as(async (trx) => {
+      const made = await createSpace(trx, `Archived ${randomUUID()}`);
+      await archiveSpace(trx, made.id, ada);
+      return made.id;
+    });
+    const before = await countArtifacts();
+    expect(
+      await deliver({ spaceId: archived, settings: { ...settings, spaceId: archived } }),
+    ).toMatchObject({ answer: 'refused', error: { class: 'needs_user', code: 'not_found' } });
+    expect(await countArtifacts()).toBe(before);
+  });
+
+  it('a document in another space answers not_found with document_missing, writing nothing', async () => {
+    const receipt = written(await deliver());
+    const elsewhere = await as(async (trx) => (await createSpace(trx, `Other ${randomUUID()}`)).id);
+    const before = await countArtifacts();
+    expect(
+      await deliver({
+        spaceId: elsewhere,
+        settings: { ...settings, spaceId: elsewhere },
+        update: updateOf(receipt),
+      }),
+    ).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'not_found',
+        details: { reason: 'document_missing', persistentId: receipt.persistentId },
+      },
+    });
+    expect(await countArtifacts()).toBe(before);
+    expect((await latest(receipt.persistentId))!.id).toBe(entry(receipt, 'map', null).version);
+  });
+
+  it('an image the document never names is neither stored nor listed, and is reported', async () => {
+    const unnamed = withChunk(PNG, 'unnamed');
+    const answer = await deliver({ images: [checked('img-1'), checked('img-x', unnamed)] });
+    if (answer.answer !== 'written') throw new Error(JSON.stringify(answer.error));
+    const document = answer.receipt.document!;
+    expect(document.components.some((each) => each.element === 'img-x')).toBe(false);
+    expect(answer.receipt.written.filter((each) => each.kind === 'asset')).toHaveLength(1);
+    expect(answer.carried).toContainEqual({ code: 'image_unreferenced', element: 'img-x' });
+    const key = `${tenant.role}/sha256/${createHash('sha256').update(unnamed).digest('hex')}`;
+    expect(stored.has(key)).toBe(false);
   });
 });
 

@@ -11,6 +11,7 @@ import {
 import type { BlockNode, ContentDocument, InlineNode } from '../content/model/index.js';
 import type { OutlineDocument } from '../structure/outline.js';
 
+import { sanitiseMathml } from '../content/admission/mathml.js';
 import { componentIdFor, elementIdFor } from './ids.js';
 import { noteMarkers } from './markers.js';
 import type { CarryEntry } from './report.js';
@@ -269,7 +270,7 @@ class View {
         return this.table(node);
       case 'figure':
         if (this.index.equationBlocks.has(node.id)) {
-          return { kind: 'equation', id: node.id, equationId: this.equation(null) };
+          return { kind: 'equation', id: node.id, equationId: this.equation(null, node.asset) };
         }
         return {
           kind: 'figure',
@@ -359,14 +360,14 @@ class View {
           break;
         }
         case 'crossReference':
-          out.push({ kind: 'xref', targetId: '', text: '' });
+          out.push({ kind: 'xref', targetId: targetKey(node.target), text: '' });
           break;
         case 'equation':
           out.push({ kind: 'inline_equation', equationId: this.equation(node.mathml) });
           break;
         case 'image':
           if (this.isEquationImage(node.asset, node.alternative)) {
-            out.push({ kind: 'inline_equation', equationId: this.equation(null) });
+            out.push({ kind: 'inline_equation', equationId: this.equation(null, node.asset) });
           } else {
             out.push({ kind: 'inline_image', imageId: this.image(node.alternative) });
           }
@@ -428,9 +429,15 @@ class View {
     return id;
   }
 
-  private equation(mathml: string | null): string {
+  /** An equation of the view: its MathML, or for an image-only one the asset version it shows. */
+  private equation(mathml: string | null, asset?: string): string {
     const id = `view-equation-${this.equations.length}`;
-    this.equations.push({ id, mathml, latex: null, imageId: id });
+    this.equations.push({
+      id,
+      mathml,
+      latex: null,
+      imageId: asset === undefined ? id : assetKey(asset),
+    });
     return id;
   }
 
@@ -442,24 +449,98 @@ class View {
   }
 }
 
-/** The contract's forms with the identifiers a sink derives anew taken out of their tokens. */
-const tokensOnly = (unit: string) =>
-  unit.replace(/⟦xref:[^⟧]*⟧/gu, '⟦xref⟧').replace(/⟦eq:[^⟧]*⟧/gu, '⟦eq⟧');
-
 const quote = (unit: string | undefined) =>
   unit === undefined
     ? 'nothing'
     : JSON.stringify(unit.length > QUOTED ? `${unit.slice(0, QUOTED)}...` : unit);
 
-/** The package with each cross-reference the mapping kept as text (`xref_outside`) as that text. */
-function asCarried(document: DecomposedDocument, outside: ReadonlySet<string>): DecomposedDocument {
-  if (outside.size === 0) return document;
-  const inlines = (items: readonly Inline[]): Inline[] =>
-    items.map((inline): Inline => {
-      if (inline.kind === 'xref' && outside.has(inline.targetId)) {
-        return { kind: 'text', text: inline.text, marks: [] };
+/** A cross-reference's target as the read-back names it, whichever way the model holds it. */
+const targetKey = (target: Extract<InlineNode, { type: 'crossReference' }>['target']): string =>
+  target.kind === 'node' ? `node:${target.node}` : `block:${'block' in target ? target.block : ''}`;
+
+/** An image-only equation's image as the read-back names it: the asset version it became. */
+const assetKey = (asset: string) => `asset:${asset}`;
+
+const BLOCK_TYPES: ReadonlySet<string> = new Set([
+  'paragraph',
+  'list',
+  'table',
+  'figure',
+  'equation',
+]);
+
+/** The block identifiers the stored components hold, and the lead's first in document order. */
+function storedBlocks(stored: WrittenDocument): { all: Set<string>; leadFirst: string | null } {
+  const walk = (value: unknown, into: string[]) => {
+    if (Array.isArray(value)) {
+      for (const each of value) walk(each, into);
+    } else if (typeof value === 'object' && value !== null) {
+      const node = value as { type?: unknown; id?: unknown };
+      if (typeof node.id === 'string' && BLOCK_TYPES.has(String(node.type))) into.push(node.id);
+      for (const each of Object.values(value)) walk(each, into);
+    }
+  };
+  const all = new Set<string>();
+  for (const content of stored.components.values()) {
+    const ids: string[] = [];
+    walk(content.content, ids);
+    for (const id of ids) all.add(id);
+  }
+  const lead: string[] = [];
+  walk(stored.components.get(componentIdFor(stored.persistentId, LEAD))?.content ?? [], lead);
+  return { all, leadFirst: lead[0] ?? null };
+}
+
+/**
+ * The package as the mapping meant to store it, for the forms to compare: each cross-reference's target
+ * derived as the mapping derives it (document.ts) - a section its node, a block its derived id, a block
+ * the mapping dropped or flattened its section's node or the lead's first block - and one with no
+ * target there as its text (`xref_outside`); each equation's MathML as the model's reader keeps it, and
+ * an image-only one by the asset version its image became.
+ */
+function asSent(document: DecomposedDocument, stored: WrittenDocument): DecomposedDocument {
+  const { persistentId } = stored;
+  const sections = new Set<string>();
+  const home = new Map<string, string>();
+  const blockIds = (blocks: readonly Block[], section: string) => {
+    for (const block of blocks) {
+      home.set(block.id, section);
+      if (block.kind === 'list') for (const item of block.items) blockIds(item.blocks, section);
+      if (block.kind === 'table') {
+        for (const row of block.rows) for (const cell of row.cells) blockIds(cell.blocks, section);
       }
-      if (inline.kind === 'link') return { ...inline, inlines: inlines(inline.inlines) };
+    }
+  };
+  blockIds(document.blocks, LEAD);
+  const collect = (items: readonly Section[]) => {
+    for (const each of items) {
+      sections.add(each.id);
+      blockIds(each.blocks, each.id);
+      collect(each.sections);
+    }
+  };
+  collect(document.sections);
+  const made = storedBlocks(stored);
+  const nodeOf = (section: string) => `node:${elementIdFor(persistentId, section)}`;
+  // A title stands under no component, so it can only point at a section (document.ts).
+  const keyFor = (targetId: string, title: boolean): string | null => {
+    const at = title ? undefined : home.get(targetId);
+    if (at === undefined) return sections.has(targetId) ? nodeOf(targetId) : null;
+    const block = elementIdFor(componentIdFor(persistentId, at), targetId);
+    if (made.all.has(block)) return `block:${block}`;
+    if (at !== LEAD) return nodeOf(at);
+    return made.leadFirst === null ? null : `block:${made.leadFirst}`;
+  };
+
+  const inlines = (items: readonly Inline[], title = false): Inline[] =>
+    items.map((inline): Inline => {
+      if (inline.kind === 'xref') {
+        const key = keyFor(inline.targetId, title);
+        return key === null
+          ? { kind: 'text', text: inline.text, marks: [] }
+          : { ...inline, targetId: key };
+      }
+      if (inline.kind === 'link') return { ...inline, inlines: inlines(inline.inlines, title) };
       return inline;
     });
   const blocks = (items: readonly Block[]): Block[] =>
@@ -486,7 +567,7 @@ function asCarried(document: DecomposedDocument, outside: ReadonlySet<string>): 
     });
   const section = (each: Section): Section => ({
     ...each,
-    title: inlines(each.title),
+    title: inlines(each.title, true),
     blocks: blocks(each.blocks),
     sections: each.sections.map(section),
   });
@@ -495,16 +576,24 @@ function asCarried(document: DecomposedDocument, outside: ReadonlySet<string>): 
     blocks: blocks(document.blocks),
     sections: document.sections.map(section),
     notes: document.notes.map((note) => ({ ...note, blocks: blocks(note.blocks) })),
+    equations: document.equations.map((equation) => {
+      if (equation.mathml === null) {
+        const asset = stored.assets.get(equation.imageId);
+        return asset === undefined ? equation : { ...equation, imageId: assetKey(asset) };
+      }
+      const read = sanitiseMathml(equation.mathml);
+      return read.ok ? { ...equation, mathml: read.mathml } : equation;
+    }),
   };
 }
 
 /**
  * Reads a delivery back (docs/design/ct-studio-sink.md, "Versions, updates and the receipt"): what was
  * stored, seen in the decomposed shape, and the package, each through the contract's `textForm` and
- * `gridForms`, compared unit by unit and grid by grid. The identifiers inside a cross-reference's and
- * an equation's tokens are left out, since the sink derives its own and the model keeps MathML as its
- * reader writes it. What the mapping reports it did on purpose is allowed for: a title made from the
- * text is no title sent, a cross-reference outside the document is its text, and a table flattened
+ * `gridForms`, compared unit by unit and grid by grid. A cross-reference is compared by its target as
+ * the mapping derives it, an equation by its MathML as the model's reader keeps it (`asSent`). What the
+ * mapping reports it did on purpose is allowed for: a title made from the text is no title sent, a
+ * cross-reference outside the document is its text, and a table flattened
  * into a cell is compared through that cell's text, its own grid left out. Anything else that differs
  * is a defect, and the first difference is what `at` and `detail` name.
  */
@@ -523,13 +612,12 @@ export function readBack(document: DecomposedDocument, stored: WrittenDocument):
       entry.element === null ? [] : [elementIdFor(stored.persistentId, entry.element)],
     ),
   );
-  const outside = new Set(codes('xref_outside').flatMap((entry) => entry.detail ?? []));
   const flattened = new Set(codes('table_flattened').flatMap((entry) => entry.element ?? []));
 
   const view = new View(index, stored, untitled).document(document);
-  const sent = asCarried(document, outside);
+  const sent = asSent(document, stored);
 
-  const [read, expected] = [textForm(view).map(tokensOnly), textForm(sent).map(tokensOnly)];
+  const [read, expected] = [textForm(view), textForm(sent)];
   for (let at = 0; at < Math.max(read.length, expected.length); at += 1) {
     if (read[at] !== expected[at]) {
       return {
@@ -539,8 +627,7 @@ export function readBack(document: DecomposedDocument, stored: WrittenDocument):
       };
     }
   }
-  const grid = (forms: Record<string, string[][]>, id: string) =>
-    JSON.stringify(forms[id]?.map((row) => row.map(tokensOnly)) ?? null);
+  const grid = (forms: Record<string, string[][]>, id: string) => JSON.stringify(forms[id] ?? null);
   const [readGrids, sentGrids] = [gridForms(view), gridForms(sent)];
   for (const id of new Set([...Object.keys(sentGrids), ...Object.keys(readGrids)])) {
     if (flattened.has(id)) continue;
