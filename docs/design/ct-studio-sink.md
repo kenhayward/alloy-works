@@ -30,7 +30,7 @@ Alloy Works, and reads back what it wrote before it says it succeeded. Delivery 
 | ----------- | ---------------------------------------------------------------------------------------------------------------- |
 | **API-065** | The bridge contract served under `/bridge`, signed, acting as a service identity; ADR-0071 carves it out         |
 | **API-066** | The published conformance suite run in process in the service's tests, and against a running stack               |
-| **API-067** | Images admitted first, then everything else in one tenant transaction; a refusal or failure writes nothing       |
+| **API-067** | Images checked first, then everything in one tenant transaction; a refusal or failure writes nothing             |
 | **API-068** | `bridge_delivery` keyed by the delivery key; a replay answers the stored first receipt                           |
 | **API-069** | `update.expected` checked against the latest versions under each artifact's lock; any difference refuses all     |
 | **API-070** | Identifiers derived from the document's persistent id and CT Studio's own element ids, the same every delivery   |
@@ -52,10 +52,10 @@ and **AST-001** (the asset door).
   privileged internal API (API-N02): nothing of Alloy Works' own uses it, and it can do nothing the
   identity behind its token could not do through `/v1`.
 - **The contract is consumed, never copied**: `@kenhayward/bridge-contract` from GitHub Packages,
-  pinned to the exact version CT Studio has published (0.10.0 if it is out, else 0.9.0, which
-  3ds-sink uses), through a scoped registry line in `.npmrc` and a `read:packages` token in CI. Its
+  pinned to exactly 0.10.0, the version CT Studio has published (3ds-sink is still on 0.9.0),
+  through a scoped registry line in `.npmrc` and a `read:packages` token in CI and the image build. Its
   zod schemas, `verifyRequest`, comparison forms and `conformanceSuite` are used as they are.
-- **The worker does the slow part**: a delivery is a job, `bridge-deliver`, on the existing Postgres
+- **The worker does the slow part**: a delivery is a job, `bridge_deliver`, on the existing Postgres
   queue, so it survives a restart (3ds-sink keeps its jobs in memory and loses them). A job carries
   no content, so the accepted **package is stored in the tenant's object store by its SHA-256**,
   named by `bridge_delivery`, and deleted once the delivery is written or refused; the bridge keeps
@@ -162,25 +162,29 @@ and **AST-001** (the asset door).
   note whose marker is in no cell is **not refused**: the model can anchor a footnote to the table, so
   it is anchored there and reported. The markers themselves are removed from the cell text, since a
   theme draws a footnote's callout.
-- **Everything goes through admission and `parseContentDocument`** as any content from outside a
-  component does (IMP-N03), with one difference: admission's `reidentify` is not run, because
-  identifiers are already derived ([Identifiers](#identifiers)). A refusal by the model is a
-  `content_rejected` naming the element, never a partial write.
+- **Everything is held to the model by `parseContentDocument` and `parseOutlineDocument`**
+  (IMP-N03). `admit()` is not used: it always runs `reidentify`, and identifiers here are derived
+  ([Identifiers](#identifiers)). The mapping builds model nodes directly, so the sanitising admission
+  would do is the mapping's: every string NFC, control characters dropped, link schemes allowlisted,
+  MathML read by the model's own strict reader. A refusal by the model is a `content_rejected` naming
+  the element, never a partial write.
 
 ### Images
 
-- **PNG and JPEG** go through the asset door unchanged: bytes stored by hash, the `ingest` job, an
-  asset version. Bytes the space already holds reuse that asset, as the door already does.
-- **SVG**, which the asset door does not admit, is rasterised to PNG in the worker at 300 dpi for the
-  width CT Studio gives (`widthMm`), and that PNG goes through the door. The original SVG is kept by
-  its hash in the tenant's object store and named in `bridge_delivery`, so a later decision to admit
-  SVG as an asset can recover it.
+- **Checked in the worker, recorded in the transaction**, as an accepted import's images are: each
+  image is decoded whole by the worker's `checkImage`, then, inside the delivery's transaction, held,
+  stored by hash and recorded as an asset version (`holdObject`, `createAssetUpload`,
+  `receiveAssetBytes` unqueued, `recordAsset`), with no `ingest` job to wait for. One image refused
+  refuses the delivery, `content_rejected` naming the image, and nothing is written.
+- **Reused by hash**: an image whose bytes an asset in the target space already holds at its latest
+  version reuses that asset version, found by its object key, since the door itself makes a new
+  asset each time.
+- **SVG**, which the asset door does not admit, is rasterised to PNG in the worker by `sharp`
+  (already the worker's) at 300 dpi for the width CT Studio gives (`widthMm`), and that PNG is what
+  is checked and recorded. The original SVG is kept by its hash in the tenant's object store and
+  named in `bridge_delivery`, so a later decision to admit SVG as an asset can recover it.
 - **Alternative text**: CT Studio's `alt` becomes `{ kind: "own" }`; an image with none is
   `{ kind: "inherited" }` and reported.
-- **Admitted before the transaction**: the job waits for every asset to be ready, as an import does,
-  and one image refused refuses the delivery, `content_rejected` naming the image. An asset admitted
-  for a delivery that is then refused is left unreferenced, as an abandoned upload's would be, and
-  a retry reuses it by its hash.
 
 ### Identifiers
 
@@ -230,8 +234,8 @@ CT Studio's are deterministic paths. Both are derived the same way every time:
   `written`, `refused`), the receipt, the report and the provenance. Its key is unique; a delivery
   with a key already `written` answers that first receipt and writes nothing (API-068), and one
   already `running` answers the same job.
-- **No part-way state**: images are admitted first, then everything else is one `withTenant`
-  transaction. A failure rolls it back and clears the key, so a retry is a fresh attempt and
+- **No part-way state**: images are checked first, then everything, images' assets included, is one
+  `withTenant` transaction. A failure rolls it back and clears the key, so a retry is a fresh attempt and
   `delivery_part_way` never arises. This is the main thing Postgres buys over 3ds-sink, whose writes
   span many platform calls.
 - **Limits**: a body up to 100 MiB, above CT Studio's 50 MiB default; the document limits
@@ -244,8 +248,10 @@ CT Studio sends a document's `properties` as `{ name, value, origin }` pairs; Al
 typed metadata against definitions. Nothing is created on the fly:
 
 - **A space's bridge settings** say, per target space, which component type delivered components
-  take, and which metadata field each property name fills on the document version. An administrator
-  edits them; the first slice sets them through a route, a page comes later.
+  take, which template delivered documents are made from, and which of that template's document
+  fields each property name fills. A document's fields come only from its template here, so with no
+  template set every property is unmapped. An administrator edits the settings through a route; a
+  page comes later.
 - **A mapped property is converted to its field's data type**: text as is, number as a canonical
   decimal, date, time and date-time from ISO 8601, boolean from `true`/`false`/`yes`/`no`. One that
   does not convert is left unset and reported; it does not refuse the delivery.
@@ -269,8 +275,8 @@ the way any source is read.
 - **Provisioned when an administrator turns delivery on for a space** through the bridge settings
   route: the service, connecting to `delivered` as its owner role (`SECRET_DELIVERED_URL`), creates
   the tenant's schema and read role if they do not exist, generates the read role's password, and
-  makes the space's `connection` with that credential sealed, as a connection's credential always is.
-  No person sees the password. Turning delivery on for a second space reuses the schema and makes
+  makes the space's `connection` with that credential sealed by the connector (`seal`), as a
+  connection's credential always is. No person sees the password. Turning delivery on for a second space reuses the schema and makes
   that space's own connection.
 - **TLS, as every Postgres connection needs** (no `disable`): `delivered-postgres` serves a
   certificate the connector trusts, the deployment's own in production and the snakeoil one in
@@ -334,8 +340,8 @@ error.
 ## Verification
 
 - **Conformance**: the contract's `conformanceSuite` run in process against the plugin in the
-  service's tests, all checks including the seven document ones, and in CI against the stack, as
-  3ds-sink does.
+  service's tests, all checks including the seven document ones, as 3ds-sink does; and once,
+  before merge, from CT Studio's `ct-bridge-conformance` image against the staging stack.
 - **The mapping**: CT Studio's published fixtures, and the decomposed fixtures, through
   `packages/domain/src/bridge/` to stored shapes; each row of the tables above a test citing its
   requirement.
