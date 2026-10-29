@@ -62,7 +62,7 @@ signature is as the code has it at the plan's base (`2bcaa436`).
 | CS-A | **Straight in** (Ken; ADR-0071): no proposal; API-065 is the one exception to API-N05 and IMP-003.                                                                                                                                                                                                              |
 | CS-B | **Served at `/bridge`** (default): an encapsulated Fastify scope with its own JSON-as-buffer parser (100 MiB), error and not-found handlers. Not a `RouteContract`; `app.test.ts`'s "registers exactly the routes the contract declares" excludes `/bridge` as it excludes `/mcp`.                              |
 | CS-C | **Identity** (default): `SECRET_BRIDGE_KEYS` proves the bridge; the `token` credential must resolve by `findApiToken` to a principal of kind `service`; its scopes mask its grants as `decide` does. The job re-resolves the token by id at write time.                                                         |
-| CS-D | **Nonces** (default): `verifyRequest` with an accept-all store, then an insert into `platform.bridge_nonce` under a unique constraint; a conflict is `credential_rejected` `replayed`. The worker sweeps rows older than 300 s.                                                                                 |
+| CS-D | **Nonces** (default): `verifyRequest` with an accept-all store, then an insert into `platform.bridge_nonce` under a unique constraint; a conflict is `credential_rejected` `replayed`. The worker sweeps rows older than 600 s, twice the window, since a timestamp may be 300 s either side.                   |
 | CS-E | **The package** (default): stored in the tenant object store by SHA-256; `bridge_delivery.package_key` names it; deleted when the delivery is written or refused.                                                                                                                                               |
 | CS-F | **Images inline** (default): checked by `checkImage` in the worker (SVG rasterised by `sharp` first), recorded as assets inside the delivery transaction by `holdObject`, `createAssetUpload`, `receiveAssetBytes(..., false)`, `recordAsset`; reused when the space's latest asset version holds the same key. |
 | CS-G | **No `admit()`** (default): it always reidentifies. The mapping builds NFC model nodes and `parseContentDocument` / `parseOutlineDocument` validate.                                                                                                                                                            |
@@ -370,7 +370,7 @@ signature is as the code has it at the plan's base (`2bcaa436`).
   read back, `finishDelivery` or `refuseDelivery`, audit, remove the package object. `failed`:
   `refuseDelivery` with `internal`. Throws `JobRefused` for a refusal so it is not retried. Also
   `sweepBridgeNonces(queueDb)`, run on the worker's idle tick, deleting `platform.bridge_nonce` rows
-  older than 300 seconds.
+  older than 600 seconds (twice the signing window).
 - [ ] **Step 1: Failing tests** (processNext pattern from `import.test.ts`):
       `it('API-067 a package with a refused image writes nothing')`,
       `it('an SVG is rasterised and its original kept')`,
