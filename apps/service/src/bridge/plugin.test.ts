@@ -2,9 +2,20 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { finishDelivery, revokeApiToken, writeBridgeSettings } from '@alloy-works/db';
+import {
+  createServiceIdentity,
+  createSpace,
+  createTenant,
+  finishDelivery,
+  issueApiToken,
+  refuseDelivery,
+  revokeApiToken,
+  writeBridgeSettings,
+} from '@alloy-works/db';
+import type { ObjectStores } from '@alloy-works/objects';
 import { queryAs } from '@alloy-works/db/testing';
 import {
+  bridgeError,
   BridgeErrorSchema,
   BrowseResultSchema,
   signRequest,
@@ -12,7 +23,9 @@ import {
   type BridgePackage,
 } from '@kenhayward/bridge-contract';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { hashToken } from '../sessions.js';
 import { HOST, startHarness, type Harness } from '../test/bindings-harness.js';
+import { newTokenSecret } from '../tokens.js';
 
 const inAMonth = () => new Date(Date.now() + 30 * 86_400_000).toISOString();
 
@@ -37,6 +50,35 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
   let token = { id: '', secret: '' };
   let personal = '';
   let instance = '';
+  /** A space the identity may create in, with no bridge settings. */
+  let inbox = '';
+  /** Whether the object store the service is given refuses to keep anything, as one down would. */
+  let storeDown = false;
+
+  const failable = (stores: ObjectStores): ObjectStores => ({
+    forTenant: async (trx, tenant) => {
+      const store = await stores.forTenant(trx, tenant);
+      return {
+        put: (body, type) =>
+          storeDown ? Promise.reject(new Error('the store is down')) : store.put(body, type),
+        putFile: (path, type) => store.putFile(path, type),
+        get: (key) => store.get(key),
+        remove: (key) => store.remove(key),
+        signedLink: (...args) => store.signedLink(...args),
+      };
+    },
+  });
+
+  /** A token of a service identity, as Ada issues one. */
+  const issue = async (scopes: string[], to = identity) => {
+    const issued = await h.call('ada', 'POST', `/v1/service-identities/${to}/tokens`, {
+      name: 'Another',
+      scopes,
+      expiresAt: inAMonth(),
+    });
+    expect(issued.statusCode, issued.body).toBe(200);
+    return issued.json<{ id: string; secret: string }>();
+  };
 
   /** A request signed as the bridge signs it: the path relative to /bridge, over the exact bytes. */
   const signed = (
@@ -71,7 +113,10 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
   });
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: `${retiring}, ${key}` } });
+    h = await startHarness({
+      secrets: { SECRET_BRIDGE_KEYS: `${retiring}, ${key}` },
+      objects: failable,
+    });
     instance = h.tenant.id;
     const made = await h.call('ada', 'POST', '/v1/service-identities', {
       name: 'CT Studio',
@@ -88,6 +133,8 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     token = issued.json<{ id: string; secret: string }>();
     await h.allow(identity, h.roles.Author!, { kind: 'space', id: h.general });
     await h.allow(identity, h.roles.Reader!, { kind: 'space', id: h.quality });
+    inbox = (await h.tenantDb.withTenant(h.tenant, (trx) => createSpace(trx, 'Inbox'))).id;
+    await h.allow(identity, h.roles.Author!, { kind: 'space', id: inbox });
     const own = await h.call('grace', 'POST', '/v1/tokens', {
       name: 'Mine',
       scopes: ['create', 'edit'],
@@ -119,6 +166,29 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
       code: 'credential_rejected',
       details: { reason: 'missing' },
     });
+
+    // An address no route claims is refused for its signature too, before its body is read.
+    const nowhere = await h.app.inject({
+      method: 'POST',
+      url: '/bridge/nowhere',
+      headers: { host: HOST, 'content-type': 'application/json' },
+      payload: '{}',
+    });
+    expect(nowhere.statusCode).toBe(401);
+    expect(nowhere.json()).toMatchObject({ details: { reason: 'missing' } });
+    // Refused on its headers, before its body is read: one claiming more than the limit is not
+    // answered as too large, since nothing of it was taken in.
+    const unread = await h.app.inject({
+      method: 'POST',
+      url: '/bridge/deliveries',
+      headers: {
+        host: HOST,
+        'content-type': 'application/json',
+        'content-length': String(200 * 1024 * 1024),
+      },
+      payload: '{}',
+    });
+    expect(unread.statusCode).toBe(401);
 
     const stale = await h.app.inject({
       url: '/bridge/describe',
@@ -243,10 +313,27 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     });
     expect(browsed.statusCode, browsed.body).toBe(200);
     const result = BrowseResultSchema.parse(browsed.json());
-    // General, where it is an Author; never Quality, which it may only read.
-    expect(result.nodes).toEqual([
+    // General and Inbox, where it is an Author; never Quality, which it may only read.
+    const creatable = [
       { id: h.general, label: 'General', kind: 'space', hasChildren: false, selectable: true },
-    ]);
+      { id: inbox, label: 'Inbox', kind: 'space', hasChildren: false, selectable: true },
+    ];
+    expect(result).toEqual({ nodes: creatable, nextCursor: null });
+
+    // More spaces it may read than a listing page holds, all ahead of the two it may create in: the
+    // browse reads on rather than answer an empty page with a cursor.
+    await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      for (let n = 0; n < 60; n += 1) await createSpace(trx, `Annex ${String(n).padStart(2, '0')}`);
+    });
+    await h.allow(identity, h.roles.Reader!, { kind: 'tenant' });
+    const past = await signed('POST', '/browse', {
+      instanceId: instance,
+      credential: credential(),
+      field: 'space',
+      parentId: null,
+      cursor: null,
+    });
+    expect(past.json()).toEqual({ nodes: creatable, nextCursor: null });
     const children = await signed('POST', '/browse', {
       instanceId: instance,
       credential: credential(),
@@ -316,6 +403,170 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
       [h.tenant.id],
     );
     expect(after.rows).toEqual([{ jobs: 1 }]);
+  });
+
+  it('API-068 a package over 1 MiB of files alone is accepted, and needs no settings', async () => {
+    // Ruling 24: files alone are taken and written as nothing; Inbox has no bridge settings.
+    const files = fixture('package-document.json');
+    const big = randomBytes(1_200_000).toString('base64');
+    const asked = delivery({
+      destination: { space: inbox },
+      package: { ...files, data: null, files: [{ ...files.files[0]!, content: big }] },
+    });
+    expect(JSON.stringify(asked).length).toBeGreaterThan(1024 * 1024);
+    const answer = await signed('POST', '/deliveries', asked);
+    expect(answer.statusCode, answer.body.slice(0, 300)).toBe(200);
+    expect(answer.json()).toMatchObject({ status: 'pending' });
+    // A data package there is refused: its settings name no delivery store.
+    const data = await signed(
+      'POST',
+      '/deliveries',
+      delivery({ destination: { space: inbox }, package: fixture('package-document.json') }),
+    );
+    expect(data.json()).toMatchObject({ details: { reason: 'not_configured' } });
+  });
+
+  it('API-068 a key reused for another space or identity is refused, never answered', async () => {
+    const asked = delivery();
+    const first = (await signed('POST', '/deliveries', asked)).json<{ sinkJobId: string }>();
+    const elsewhere = await signed('POST', '/deliveries', {
+      ...asked,
+      destination: { space: inbox },
+    });
+    expect(elsewhere.json()).toMatchObject({
+      code: 'content_rejected',
+      details: { reason: 'key_reused' },
+    });
+    const made = await h.call('ada', 'POST', '/v1/service-identities', {
+      name: 'Another importer',
+      description: 'Invented for the test',
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const other = made.json<{ id: string }>().id;
+    await h.allow(other, h.roles.Author!, { kind: 'space', id: h.general });
+    const theirs = await issue(['create', 'edit'], other);
+    const byOther = await signed('POST', '/deliveries', {
+      ...asked,
+      credential: { token: theirs.secret },
+    });
+    expect(byOther.json()).toMatchObject({ details: { reason: 'key_reused' } });
+    expect(byOther.body).not.toContain(first.sinkJobId);
+    // Another token of the same identity, as after a rotation, is the same caller.
+    const rotated = await issue(['create', 'edit']);
+    const same = await signed('POST', '/deliveries', {
+      ...asked,
+      credential: { token: rotated.secret },
+    });
+    expect(same.json()).toEqual({ status: 'pending', sinkJobId: first.sinkJobId });
+  });
+
+  it('API-065 a token expired, scoped short or of another tenant is refused', async () => {
+    const expired = await issue(['create', 'edit']);
+    await queryAs(
+      h.db.adminUrl,
+      `update ${h.tenant.schema}.api_token
+          set created_at = now() - interval '2 days', expires_at = now() - interval '1 day'
+        where id = $1`,
+      [expired.id],
+    );
+    const tested = await signed('POST', '/connections:test', {
+      instanceId: instance,
+      credential: { token: expired.secret },
+    });
+    expect(tested.json()).toMatchObject({ code: 'credential_rejected' });
+
+    // Its grants are masked by its token's scopes: none, then create without edit for an update.
+    const readOnly = await issue([]);
+    const unscoped = await signed(
+      'POST',
+      '/deliveries',
+      delivery({ credential: { token: readOnly.secret } }),
+    );
+    expect(unscoped.json()).toMatchObject({
+      code: 'credential_rejected',
+      details: { permission: 'create' },
+    });
+    const createOnly = await issue(['create']);
+    const update = {
+      persistentId: randomUUID(),
+      expected: [{ kind: 'component', id: randomUUID(), version: '0.1', element: null }],
+    };
+    const updating = await signed(
+      'POST',
+      '/deliveries',
+      delivery({ credential: { token: createOnly.secret }, update }),
+    );
+    expect(updating.json()).toMatchObject({
+      code: 'credential_rejected',
+      details: { permission: 'edit' },
+    });
+    const creating = await signed(
+      'POST',
+      '/deliveries',
+      delivery({ credential: { token: createOnly.secret } }),
+    );
+    expect(creating.json()).toMatchObject({ status: 'pending' });
+
+    // A live service identity's token in another environment is not one of this one's.
+    const other = await createTenant(h.db.adminUrl, h.db.migratorUrl, {
+      organisation: { id: 'acme', name: 'Acme' },
+      tenant: { id: h.db.newTenantId(), name: 'Elsewhere' },
+      hostnames: ['elsewhere.alloy.test'],
+    });
+    const foreign = newTokenSecret();
+    await h.tenantDb.withTenant(other, async (trx) => {
+      const made = await createServiceIdentity(trx, {
+        name: 'CT Studio',
+        description: 'Elsewhere',
+        by: null,
+      });
+      await issueApiToken(trx, {
+        principalId: made.id,
+        name: 'Bridge',
+        tokenHash: hashToken(foreign),
+        scopes: ['create', 'edit'],
+        expiresAt: new Date(Date.now() + 86_400_000),
+      });
+    });
+    const crossing = await signed('POST', '/connections:test', {
+      instanceId: instance,
+      credential: { token: foreign },
+    });
+    expect(crossing.json()).toMatchObject({ code: 'credential_rejected' });
+  });
+
+  it('a refused delivery answers failed, with its refusal', async () => {
+    const started = (await signed('POST', '/deliveries', delivery())).json<{
+      sinkJobId: string;
+    }>();
+    const refusal = bridgeError('content_rejected', 'A component was deleted.', {
+      reason: 'component_deleted',
+    });
+    await h.tenantDb.withTenant(h.tenant, (trx) => refuseDelivery(trx, started.sinkJobId, refusal));
+    expect((await signed('GET', `/deliveries/${started.sinkJobId}`)).json()).toEqual({
+      status: 'failed',
+      error: refusal,
+    });
+  });
+
+  it('an object store that is down answers sink_unavailable, 503', async () => {
+    storeDown = true;
+    try {
+      const asked = delivery();
+      const answer = await signed('POST', '/deliveries', asked);
+      expect(answer.statusCode).toBe(503);
+      expect(answer.json()).toMatchObject({ class: 'retryable', code: 'sink_unavailable' });
+      const kept = await h.tenantDb.withTenant(h.tenant, (trx) =>
+        trx
+          .selectFrom('bridge_delivery')
+          .select('id')
+          .where('key', '=', asked.idempotencyKey)
+          .execute(),
+      );
+      expect(kept).toEqual([]);
+    } finally {
+      storeDown = false;
+    }
   });
 
   it("every error is the contract's shape and never holds the token", async () => {

@@ -20,7 +20,7 @@ import {
 } from '@kenhayward/bridge-contract';
 import { authoriseAt } from '../access.js';
 import { AppError } from '../errors.js';
-import { refuse } from './errors.js';
+import { refuse, storeUnavailable } from './errors.js';
 
 /** The service identity a request's token resolved to: the token by its id, never its secret. */
 export interface Identity {
@@ -93,10 +93,63 @@ const accepted = (request: SinkDeliverRequest) =>
     'utf8',
   );
 
+/** A delivery a key already names, as far as answering a repeat of it needs. */
+interface Known {
+  readonly id: string;
+  readonly state: string;
+  readonly receipt: unknown;
+  readonly space_id: string;
+  readonly token_id: string;
+}
+
+/**
+ * The answer a key already in use gives (API-068): a running delivery its id, a written one its first
+ * receipt. A key reused for another space, or by another service identity, is refused `key_reused`
+ * (Ruling 23): a delivery never answers with somebody else's receipt. Another token of the same
+ * identity is the same caller, as after a token is rotated; a token since revoked or expired is
+ * gone, and its identity cannot be told, so it is refused too.
+ */
+async function answerFor(
+  trx: TenantTransaction,
+  known: Known,
+  identity: Identity,
+  space: string,
+): Promise<SinkDeliverResult> {
+  let same = known.space_id === space && known.token_id === identity.tokenId;
+  if (!same && known.space_id === space) {
+    const holder = await trx
+      .selectFrom('api_token')
+      .select('principal_id')
+      .where('id', '=', known.token_id)
+      .executeTakeFirst();
+    same = holder?.principal_id === identity.principalId;
+  }
+  if (!same) {
+    throw refuse('content_rejected', 'This idempotency key names another delivery.', {
+      reason: 'key_reused',
+    });
+  }
+  return known.state === 'written'
+    ? ({ status: 'succeeded', receipt: known.receipt } as SinkDeliverResult)
+    : { status: 'pending', sinkJobId: known.id };
+}
+
+/** The delivery the key names now, if any, and not yet refused (a refused one gives its key up). */
+const knownBy = (trx: TenantTransaction, key: string) =>
+  trx
+    .selectFrom('bridge_delivery')
+    .select(['id', 'state', 'receipt', 'space_id', 'token_id'])
+    .where('key', '=', key)
+    .executeTakeFirst();
+
 /**
  * `POST /deliveries`: the destination checked, the package stored and the delivery started as a job,
  * answered `pending` with the delivery's id (API-068). A key already running answers that same
  * delivery; one already written answers its first receipt, and nothing is written again.
+ *
+ * A package with neither a document nor data - files or images alone - is accepted and written as
+ * nothing (Ruling 24), as `files` are: the space need not be set up for it. A data package needs the
+ * space's settings to name a delivery store.
  */
 export async function acceptDelivery(
   deps: { readonly db: TenantDatabase; readonly objects: ObjectStores },
@@ -118,57 +171,64 @@ export async function acceptDelivery(
     });
   }
   if (!UUID.test(space)) throw refuse('not_found', 'The space is not there.');
-  const family = request.package.document ? 'document' : 'data';
+  const writes = request.package.document ? 'document' : request.package.data ? 'data' : 'nothing';
   return deps.db.withTenant(
     tenant,
     async (trx) => {
       await holds(trx, identity, 'create', space);
       if (request.update !== undefined) await holds(trx, identity, 'edit', space);
-      const known = await trx
-        .selectFrom('bridge_delivery')
-        .select(['id', 'state', 'receipt'])
-        .where('key', '=', request.idempotencyKey)
-        .executeTakeFirst();
-      if (known?.state === 'written') {
-        return { status: 'succeeded', receipt: known.receipt } as SinkDeliverResult;
-      }
-      if (known?.state === 'running') return { status: 'pending', sinkJobId: known.id };
-      const settings = await readBridgeSettings(trx, space);
-      if (settings === undefined || (family === 'data' && settings.tableSchema === null)) {
-        throw refuse('content_rejected', 'The space is not set up for delivery.', {
-          reason: 'not_configured',
-        });
+      const known = await knownBy(trx, request.idempotencyKey);
+      if (known) return answerFor(trx, known, identity, space);
+      if (writes !== 'nothing') {
+        const settings = await readBridgeSettings(trx, space);
+        if (settings === undefined || (writes === 'data' && settings.tableSchema === null)) {
+          throw refuse('content_rejected', 'The space is not set up for delivery.', {
+            reason: 'not_configured',
+          });
+        }
       }
       const bytes = accepted(request);
       // Held as the asset door holds its bytes, so no refusal elsewhere removes them in between.
       await holdObject(trx, createHash('sha256').update(bytes).digest('hex'));
-      const store = await deps.objects.forTenant(trx, tenant);
-      const stored = await store.put(bytes, 'application/json');
+      let packageKey: string;
+      try {
+        const store = await deps.objects.forTenant(trx, tenant);
+        packageKey = (await store.put(bytes, 'application/json')).key;
+      } catch {
+        throw storeUnavailable();
+      }
       const started = await startDelivery(trx, {
         key: request.idempotencyKey,
         spaceId: space,
-        family,
+        family: writes === 'document' ? 'document' : 'data',
         tokenId: identity.tokenId,
-        packageKey: stored.key,
+        packageKey,
         provenance: {
           source: request.package.provenance,
           producer: request.package.producer,
           actingUser: request.actingUser,
         },
       });
-      // Another request with the key got there first, after the look above: its answer is ours. The
-      // bytes stored stay, by their hash, as the store keeps every object until it is released.
-      if (started.answer === 'written') {
-        return { status: 'succeeded', receipt: started.receipt } as SinkDeliverResult;
+      if (started.answer === 'started') {
+        await enqueueJob(trx, 'bridge_deliver', started.id);
+        return { status: 'pending', sinkJobId: started.id };
       }
-      if (started.answer === 'started') await enqueueJob(trx, 'bridge_deliver', started.id);
-      return { status: 'pending', sinkJobId: started.id };
+      // Another request with the key got there first, after the look above: answered as a repeat of
+      // it. The bytes stored stay, by their hash, as the store keeps every object until it is released.
+      const raced = await knownBy(trx, request.idempotencyKey);
+      if (!raced) throw new Error('A delivery key in use names no delivery');
+      return answerFor(trx, raced, identity, space);
     },
     contextOf(identity, traceId),
   );
 }
 
-/** `GET /deliveries/{id}`: the delivery as it stands; an id this tenant holds none of is `not_found`. */
+/**
+ * `GET /deliveries/{id}`: the delivery as it stands; an id this tenant holds none of is `not_found`.
+ * It answers any delivery in the hostname's tenant, whichever identity started it: the contract's GET
+ * carries no credential, so the bridge's signature and the delivery's unguessable uuid are its only
+ * gates. Another tenant's deliveries are never reached, as the read runs in this tenant's schema.
+ */
 export async function deliveryStatus(
   db: TenantDatabase,
   tenant: Tenant,

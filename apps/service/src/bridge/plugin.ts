@@ -22,7 +22,10 @@ import { bearerSecret } from '../tokens.js';
 import { acceptDelivery, deliveryStatus, type Identity } from './deliveries.js';
 import { describeSink } from './describe.js';
 import { loggable, refuse, signatureRefused, toBridgeAnswer } from './errors.js';
-import { checkSignature } from './signing.js';
+import { checkSignature, signatureMissing } from './signing.js';
+
+/** The most listing pages one browse reads looking for spaces the identity may create in. */
+const BROWSE_PAGES = 20;
 
 /** Where the bridge's routes live, and what their signed paths are relative to. */
 const PREFIX = '/bridge';
@@ -167,6 +170,13 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
         reply.status(404).send(bridgeError('not_found', 'There is no such bridge route.')),
       );
 
+      // Before any body is read: a request with no signature, or one out of its window, is refused
+      // without its bytes being taken in. The signature itself is checked once they are.
+      scope.addHook('onRequest', async (request) => {
+        const reason = signatureMissing(request.headers);
+        if (reason !== undefined) throw signatureRefused(reason);
+      });
+
       // preValidation, once the bytes are in: nothing of a route runs before its signature holds.
       scope.addHook('preValidation', async (request) => {
         const raw = Buffer.isBuffer(request.body) ? request.body : Buffer.alloc(0);
@@ -212,12 +222,16 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
         return payload;
       });
 
-      scope.get('/describe', async (request) =>
+      // The design's limit, on every route as on the parser, so it holds whichever of the two Fastify
+      // reads a body's limit from.
+      const limited = { bodyLimit: BODY_LIMIT };
+
+      scope.get('/describe', limited, async (request) =>
         describeSink(await instanceOf(db, admittedOf(request).tenant)),
       );
 
       // `::` is a literal colon: the path is /connections:test.
-      scope.post('/connections::test', async (request): Promise<ConnectionTestResult> => {
+      scope.post('/connections::test', limited, async (request): Promise<ConnectionTestResult> => {
         const { tenant, body } = admittedOf(request);
         const asked = read(ConnectionTestRequestSchema, body);
         checkInstance(tenant, asked.instanceId);
@@ -226,7 +240,7 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
         return { ok: true, identity: `${identity.name} on ${instance.label}` };
       });
 
-      scope.post('/browse', async (request): Promise<BrowseResult> => {
+      scope.post('/browse', limited, async (request): Promise<BrowseResult> => {
         const { tenant, body } = admittedOf(request);
         const asked = read(BrowseRequestSchema, body);
         checkInstance(tenant, asked.instanceId);
@@ -249,25 +263,37 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
           }
           throw error;
         }
-        const listed = await db.withTenant(tenant, (trx) =>
-          listSpacesFor(trx, identity.principalId, identity.scopes, page, { archived: false }),
-        );
-        return {
-          // A space the identity may only read is no destination: browse offers those it may create in.
-          nodes: listed.items
-            .filter((space) => space.mayCreate)
-            .map((space) => ({
-              id: space.id,
-              label: space.name,
-              kind: 'space',
-              hasChildren: false,
-              selectable: true,
-            })),
-          nextCursor: cursorFor('spaces', page.sort, page.order, listed.snapshot, listed.next),
-        };
+        // A space the identity may only read is no destination: browse offers those it may create in,
+        // reading on until a page holds a page's worth or the spaces end, so no page comes back empty
+        // while more remain.
+        const { nodes, next } = await db.withTenant(tenant, async (trx) => {
+          const found: BrowseResult['nodes'] = [];
+          let asking = page;
+          for (let pages = 1; ; pages += 1) {
+            const listed = await listSpacesFor(trx, identity.principalId, identity.scopes, asking, {
+              archived: false,
+            });
+            for (const space of listed.items) {
+              if (!space.mayCreate) continue;
+              found.push({
+                id: space.id,
+                label: space.name,
+                kind: 'space',
+                hasChildren: false,
+                selectable: true,
+              });
+            }
+            const after = cursorFor('spaces', page.sort, page.order, listed.snapshot, listed.next);
+            if (listed.next === null || found.length >= page.limit || pages >= BROWSE_PAGES) {
+              return { nodes: found, next: after };
+            }
+            asking = { ...asking, after: listed.next, snapshot: listed.snapshot };
+          }
+        });
+        return { nodes, nextCursor: next };
       });
 
-      scope.post('/deliveries', async (request) => {
+      scope.post('/deliveries', limited, async (request) => {
         const { tenant, body } = admittedOf(request);
         const asked = read(SinkDeliverRequestSchema, body);
         checkInstance(tenant, asked.instanceId);
@@ -275,7 +301,7 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
         return acceptDelivery(deps, tenant, identity, asked, request.id);
       });
 
-      scope.get('/deliveries/:id', async (request) => {
+      scope.get('/deliveries/:id', limited, async (request) => {
         const { tenant } = admittedOf(request);
         return deliveryStatus(db, tenant, (request.params as { id: string }).id);
       });

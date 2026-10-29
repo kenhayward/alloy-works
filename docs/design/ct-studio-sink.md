@@ -342,6 +342,9 @@ The `content_rejected` reasons, each answered before anything is written:
 - `metadata_incomplete` - the document's values fail its template's rules, or a required field has none.
 - `component_locked` - a person holds a lock on a component the delivery writes (API-039).
 - `not_configured` - a data package for a space whose settings name no delivery store.
+- `invalid_request` - the request is not the contract's shape, its body not JSON, or its destination names no space.
+- `too_large` - the request body is over the 100 MiB limit.
+- `key_reused` - the idempotency key names a delivery to another space, or by another service identity; it never answers that delivery's receipt.
 
 ## Deployment
 

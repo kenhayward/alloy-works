@@ -1,4 +1,9 @@
-import { SIGNATURE_HEADERS, verifyRequest, type NonceStore } from '@kenhayward/bridge-contract';
+import {
+  REPLAY_WINDOW_SECONDS,
+  SIGNATURE_HEADERS,
+  verifyRequest,
+  type NonceStore,
+} from '@kenhayward/bridge-contract';
 
 /**
  * The contract's own store would answer a replay from one process's memory. Every nonce is admitted
@@ -6,6 +11,8 @@ import { SIGNATURE_HEADERS, verifyRequest, type NonceStore } from '@kenhayward/b
  * (docs/design/ct-studio-sink.md, "Signing").
  */
 const admitEvery: NonceStore = { seen: () => false };
+
+const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
 /** Why a signature does not hold, the most telling first: a wrong key or body over a late one. */
 const ORDER = ['bad_signature', 'stale', 'missing'] as const;
@@ -32,10 +39,32 @@ export function checkSignature(
   for (const key of keys) {
     const result = verifyRequest(key, { ...request }, admitEvery, now);
     if (result.ok) {
-      const nonce = request.headers[SIGNATURE_HEADERS.nonce];
-      return { ok: true, nonce: String(Array.isArray(nonce) ? nonce[0] : nonce) };
+      return { ok: true, nonce: String(one(request.headers[SIGNATURE_HEADERS.nonce])) };
     }
     reasons.add(result.reason);
   }
   return { ok: false, reason: ORDER.find((reason) => reasons.has(reason)) ?? 'missing' };
+}
+
+/**
+ * Why a request cannot be signed, judged from its headers alone, before its body is read: a
+ * signature header missing, or a timestamp out of the window. Undefined when it may be; the
+ * signature is checked over the bytes afterwards, by `checkSignature`.
+ */
+export function signatureMissing(
+  headers: Record<string, string | string[] | undefined>,
+  now: () => number = () => Math.floor(Date.now() / 1000),
+): 'missing' | 'stale' | undefined {
+  const timestamp = one(headers[SIGNATURE_HEADERS.timestamp]);
+  if (
+    !timestamp ||
+    !one(headers[SIGNATURE_HEADERS.nonce]) ||
+    !one(headers[SIGNATURE_HEADERS.signature])
+  ) {
+    return 'missing';
+  }
+  const at = Number(timestamp);
+  return Number.isInteger(at) && Math.abs(now() - at) <= REPLAY_WINDOW_SECONDS
+    ? undefined
+    : 'stale';
 }
