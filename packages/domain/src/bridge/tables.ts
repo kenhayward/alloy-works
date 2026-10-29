@@ -38,7 +38,7 @@ function safe(name: string): string {
   return (cleaned === '' ? '_' : cleaned).slice(0, MAX_IDENTIFIER);
 }
 
-/** A column name: safe, and not starting with a digit. */
+/** A column or table name: safe, and not starting with a digit. */
 function safeColumn(name: string): string {
   const cleaned = safe(name);
   return /^[0-9]/.test(cleaned) ? `_${cleaned}`.slice(0, MAX_IDENTIFIER) : cleaned;
@@ -82,7 +82,9 @@ export function planTables(
   provenance: ExtractionProvenance,
   tableSet: string | undefined,
 ): TablePlan[] | TablePlanRefusal {
-  const set = safe(tableSet === undefined || tableSet === '' ? provenance.recipeId : tableSet);
+  const set = safeColumn(
+    tableSet === undefined || tableSet === '' ? provenance.recipeId : tableSet,
+  );
   const provenanceCells = (row: number): (string | null)[] => [
     provenance.sourceSha256,
     provenance.sourceFilename,
@@ -134,7 +136,9 @@ export function planTables(
       columns.push({ name: columnName, type: columnType(column.type) });
     }
     const rows = table.rows.map((row, index) => [
-      ...table.columns.map((column) => cell(row[column.id])),
+      ...table.columns.map((column) =>
+        Object.hasOwn(row, column.id) ? cell(row[column.id]) : null,
+      ),
       ...provenanceCells(index + 1),
     ]);
     plans.push({ name, columns: [...columns, ...PROVENANCE], rows });

@@ -210,4 +210,51 @@ describe('data tables planned as Postgres tables', () => {
       refused: 'reserved_column',
     });
   });
+
+  it('reads a row cell only from its own keys: a column id like constructor is null', () => {
+    const [plan] = plans(
+      planTables(
+        data([table('t', [['constructor', 'text']], [{ a: 'x' }, { constructor: 'own' }])]),
+        provenance,
+        'x',
+      ),
+    );
+    expect(plan!.rows.map((row) => row[0])).toEqual([null, 'own']);
+  });
+
+  it('a table name starting with a digit gets an underscore prefix', () => {
+    const named = plans(planTables(data([table('1')]), provenance, '2024'));
+    expect(named.map((plan) => plan.name)).toEqual(['_2024_1', '_2024_fields']);
+  });
+
+  it('a package with no approver has ct_approved_by null', () => {
+    const [plan] = plans(
+      planTables(
+        data([table('t', [['a', 'text']], [{ a: 'x' }])]),
+        { ...provenance, approver: null },
+        'x',
+      ),
+    );
+    const at = plan!.columns.findIndex((column) => column.name === 'ct_approved_by');
+    expect(plan!.rows[0]![at]).toBeNull();
+  });
+
+  it('datetime and dateTime both map to timestamptz', () => {
+    const [plan] = plans(
+      planTables(
+        data([
+          table('t', [
+            ['a', 'datetime'],
+            ['b', 'dateTime'],
+          ]),
+        ]),
+        provenance,
+        'x',
+      ),
+    );
+    expect(plan!.columns.slice(0, 2).map((column) => column.type)).toEqual([
+      'timestamptz',
+      'timestamptz',
+    ]);
+  });
 });

@@ -1374,3 +1374,10 @@ export {
   type ExpectedComponent,
   type SinkReceipt,
 } from './bridge-documents.js';
+export {
+  createDeliveredStore,
+  type DeliveredAccess,
+  type DeliveredRefused,
+  type DeliveredStore,
+  type DeliveredWritten,
+} from './delivered.js';
