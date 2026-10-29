@@ -470,8 +470,10 @@ function firstComponent(
  * (docs/design/ct-studio-sink.md, "Versions, updates and the receipt"). Every artifact it names is
  * locked first, in id order. A create makes the document at the persistent id it gives out, its
  * components at their derived ids and its images' assets, each at 0.1. An update is refused, with
- * nothing written, when the document is gone (`documentMissing`), when any expected version has moved
- * on (`changed_in_target`) or when a person holds a component's lock; otherwise each component cuts a
+ * nothing written, when the document is gone (`documentMissing`), in another space
+ * (`document_in_another_space`), when any expected version, or the map's or a component's not sent
+ * back against its last delivery, has moved on (`changed_in_target`) or when a person holds a
+ * component's lock; otherwise each component cuts a
  * version, or keeps its own when nothing changed, and the document cuts one pinning them. What the
  * mapping or the model refuses is refused before anything is written too. The receipt holds what was
  * written and what it reads back as (API-067, API-069, API-070, API-071, API-073).
@@ -534,20 +536,24 @@ export async function writeDocumentDelivery(
       .select('space_id')
       .where('id', '=', persistentId)
       .executeTakeFirstOrThrow();
-    // Not in this space is not here: the delivery's target holds no such document.
+    // Found in another space is not gone: the contract keeps `documentMissing` for a document gone,
+    // which CT Studio answers by forgetting the link (Ruling 35).
     if (home.space_id !== input.spaceId) {
-      return refused(documentMissing(persistentId, 'The document is not in this space'));
+      return rejected('The document is in another space than the delivery is for', {
+        reason: 'document_in_another_space',
+      });
     }
     const changed: { id: string; expected: string; actual: string | null }[] = [];
     for (const each of expected) {
       const actual = (await currentOf(trx, each.id))?.id ?? null;
       if (actual !== each.version) changed.push({ id: each.id, expected: each.version, actual });
     }
-    // A component this delivery writes that CT Studio did not send back is held to the version its
-    // last delivery left it at, so an edit made since is refused rather than written over.
+    // The document's map and every component this delivery writes that CT Studio did not send back
+    // are held to the version their last delivery left them at, so an edit made since is refused
+    // rather than written over; a document no delivery wrote compares against 'not delivered'.
     const named = new Set(expected.map((each) => each.id));
     const delivered = await lastDelivered(trx, persistentId);
-    for (const component of componentIds) {
+    for (const component of [persistentId, ...componentIds]) {
       if (named.has(component)) continue;
       const actual = (await currentOf(trx, component))?.id;
       if (actual === undefined) continue;

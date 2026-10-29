@@ -343,6 +343,7 @@ The `content_rejected` reasons, each answered before anything is written:
 - `outline_invalid` - the outline as mapped is refused by the outline model.
 - `metadata_incomplete` - the document's values fail its template's rules, or a required field has none.
 - `component_locked` - a person holds a lock on a component the delivery writes (API-039).
+- `document_in_another_space` - an update names a document that is in another space than the delivery is for; a document gone is `not_found` with the contract's `documentMissing` marker instead.
 - `not_configured` - a space with no bridge settings, for a document or a data package, or a data package for a space whose settings name no delivery store (or a worker given none).
 - `invalid_request` - the request is not the contract's shape, its body not JSON, or its destination names no space; or a package whose provenance is not its family's (a document's decomposition, a data package's extraction).
 - `image_refused` - an image does not pass the check an upload is held to, an SVG cannot be drawn, or the document does not describe it; `details.image` names it.
@@ -422,10 +423,15 @@ system behaves now.
   and needs no record.
 - **A column type CT Studio names that is not known is `text`**; the contract keeps the type an open
   string. `ct_approved_by` is the approver's name.
-- **An update compares more than it was told.** A component the delivery derives that is in the
-  target but not among `expected` is compared too: if a person changed it since its last delivery
-  (by `bridge_delivery`'s receipt and the element record), the update is refused,
-  `changed_in_target`, rather than overwriting it.
+- **An update compares more than it was told.** The document's map, and a component the delivery
+  derives that is in the target, are compared even when they are not among `expected`: each is held
+  to the version its last delivery left it at (by `bridge_delivery`'s receipts alone), and if a
+  person changed it since, the update is refused, `changed_in_target`, rather than overwriting it.
+  A document no CT Studio delivery wrote has no such version, so an update to it is refused
+  `changed_in_target` before anything is written.
+- **A document in another space is not gone.** An update naming a document that exists in another
+  space is refused `content_rejected` reason `document_in_another_space`; `documentMissing` stays for
+  a document that is no longer in Alloy Works, which CT Studio answers by forgetting the link.
 - **Grants are checked by the job.** At run time, for the token's identity in the space, the job
   decides `create` (a new document) or `edit` (an update) before anything is written. A grant
   removed since the delivery was accepted refuses it, `credential_rejected`, as does a token revoked

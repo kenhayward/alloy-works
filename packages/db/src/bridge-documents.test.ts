@@ -27,6 +27,7 @@ import {
   type BridgeSettings,
 } from './bridge-store.js';
 import { deleteArtifact } from './deletion.js';
+import { createDocument } from './documents.js';
 import { claimLock } from './editing.js';
 import { grant } from './grants.js';
 import { DEFAULT_LAYOUT_ID } from './layouts.js';
@@ -388,6 +389,58 @@ describe('a document delivery', () => {
       },
     });
     expect((await latest(receipt.persistentId))!.id).toBe(edited.id);
+  });
+
+  it('API-069 an update whose expected leaves out the map is held to its last delivery', async () => {
+    const receipt = written(await deliver());
+    const map = entry(receipt, 'map', null);
+    const edited = await edit(receipt.persistentId, (current) => ({
+      ...(current.content as OutlineDocument),
+      title: 'Retitled in Alloy Works',
+    }));
+    const answer = await deliver({
+      update: {
+        persistentId: receipt.persistentId,
+        expected: receipt.components.filter((each) => each.kind !== 'map'),
+      },
+    });
+    expect(answer).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'changed_in_target',
+        details: {
+          changed: [{ id: receipt.persistentId, expected: map.version, actual: edited.id }],
+        },
+      },
+    });
+    expect((await latest(receipt.persistentId))!.id).toBe(edited.id);
+  });
+
+  it('API-069 an update to a document no delivery wrote is refused, changing nothing', async () => {
+    const made = await as(async (trx) => {
+      const document = await createDocument(trx, {
+        spaceId: space,
+        title: 'Written by a person',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (document.answer !== 'created') throw new Error(document.answer);
+      return document.version;
+    });
+    const before = await countArtifacts();
+    const answer = await deliver({ update: { persistentId: made.artifactId, expected: [] } });
+    expect(answer).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'changed_in_target',
+        details: {
+          changed: [{ id: made.artifactId, expected: 'not delivered', actual: made.id }],
+        },
+      },
+    });
+    expect(await countArtifacts()).toBe(before);
+    expect((await latest(made.artifactId))!.id).toBe(made.id);
   });
 
   it('API-069 an update after a new image version is refused', async () => {
@@ -888,7 +941,7 @@ describe('a document delivery', () => {
     expect(await countArtifacts()).toBe(before);
   });
 
-  it('a document in another space answers not_found with document_missing, writing nothing', async () => {
+  it('a document in another space is refused document_in_another_space, writing nothing', async () => {
     const receipt = written(await deliver());
     const elsewhere = await as(async (trx) => (await createSpace(trx, `Other ${randomUUID()}`)).id);
     const before = await countArtifacts();
@@ -901,8 +954,9 @@ describe('a document delivery', () => {
     ).toMatchObject({
       answer: 'refused',
       error: {
-        code: 'not_found',
-        details: { reason: 'document_missing', persistentId: receipt.persistentId },
+        class: 'needs_user',
+        code: 'content_rejected',
+        details: { reason: 'document_in_another_space' },
       },
     });
     expect(await countArtifacts()).toBe(before);
