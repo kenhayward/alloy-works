@@ -230,7 +230,9 @@ CT Studio's are deterministic paths. Both are derived the same way every time:
 - **Read-back**: after the transaction, the service reads the stored versions, projects them to the
   contract's comparison forms (`textForm`, `gridForms`) and compares them with the package's.
   `readBack.ok` is false, with the first difference in `detail`, when they differ, which can only
-  mean a mapping defect.
+  mean a mapping defect. A table flattened into a cell (`table_flattened`) is compared through the
+  outer cell's text, which holds its words; its own grid has no counterpart in Alloy Works and is
+  left out of the comparison, and the report names it.
 
 ### Idempotency and atomicity
 

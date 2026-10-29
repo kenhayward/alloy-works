@@ -23,6 +23,19 @@ const cellOf = (blocks: Block[]) => ({
   header: false,
   blocks,
 });
+const cellTable = () => ({
+  kind: 'table' as const,
+  id: 'tab',
+  numbered: false,
+  caption: [],
+  captionPosition: 'above' as const,
+  columnWidths: [],
+  headerRows: 0,
+  notes: [],
+  wide: false,
+  key: null,
+  rows: [],
+});
 const text = (value: string): Inline => ({ kind: 'text', text: value, marks: [] });
 const para = (id: string, ...inlines: Inline[]): Block => ({ kind: 'paragraph', id, inlines });
 const section = (
@@ -217,6 +230,7 @@ describe('mapDocument', () => {
     for (const component of mapped.components) parseContentDocument(component.content);
     parseOutlineDocument(mapped.outline(pinsFor(mapped)));
   });
+
   it('a cross-reference to a block the mapping dropped or flattened never names a missing id', () => {
     const empty = para('e2');
     const nested: Block = {
@@ -283,5 +297,41 @@ describe('mapDocument', () => {
       else expect(made.has(target.block!)).toBe(true);
     }
     parseContentDocument(one.content);
+  });
+
+  it('a cross-reference to a figure in a cell, with a caption, takes the section node', () => {
+    const figure: Block = {
+      kind: 'figure',
+      id: 'fig',
+      imageId: 'img1',
+      numbered: true,
+      caption: [text('Caption')],
+      captionPosition: 'below',
+    };
+    const document = documentOf({
+      images: [
+        {
+          id: 'img1',
+          contentType: 'image/png',
+          widthMm: 1,
+          heightMm: 1,
+          align: 'left',
+          alt: 'A chart',
+          origin: 'embedded',
+          originalContentType: null,
+        },
+      ],
+      sections: [
+        section('s1', 'One', [
+          para('x', { kind: 'xref', targetId: 'fig', text: 'figure' }),
+          { ...(cellTable() as object), rows: [{ cells: [cellOf([figure])] }] } as Block,
+        ]),
+      ],
+    });
+    const mapped = mapDocument(document, { ...input, assets: new Map([['img1', ASSET]]) });
+    const target = (
+      mapped.components[0]!.content.content[0] as { content: { type: string; target?: unknown }[] }
+    ).content.find((inline) => inline.type === 'crossReference')!.target;
+    expect(target).toEqual({ kind: 'node', node: elementIdFor('persist-1', 's1') });
   });
 });

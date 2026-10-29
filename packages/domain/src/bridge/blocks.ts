@@ -187,9 +187,10 @@ class Mapping {
    */
   private inCell(block: Block): BlockNode[] | null {
     if (block.kind === 'paragraph' || block.kind === 'list') return null;
+    // Ids of their own: the converted units are not the block, so a reference to the block does not land on one.
     const units = this.cellUnits(block);
     const paragraphs = units.flatMap((unit, index) =>
-      this.paragraphs(index === 0 ? block.id : `${block.id}/flat/${index}`, unit.inlines, {
+      this.paragraphs(`${block.id}/flat/${index}`, unit.inlines, {
         element: unit.element,
         breaks: 'space',
         note: false,

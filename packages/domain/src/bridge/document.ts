@@ -171,17 +171,14 @@ export function mapDocument(
   // name an id that is not there.
   const made = new Set<string>();
   const firstOfLead: { block: string | null } = { block: null };
-  const provisional = (): ReadonlyMap<string, CrossTarget> => {
-    const targets = new Map(nodeTargets);
-    for (const [id, at] of home) {
-      const component = componentIdFor(persistentId, at);
-      targets.set(id, { kind: 'component', component, block: elementIdFor(component, id) });
-    }
-    return targets;
-  };
+  const provisional = new Map(nodeTargets);
+  for (const [id, at] of home) {
+    const component = componentIdFor(persistentId, at);
+    provisional.set(id, { kind: 'component', component, block: elementIdFor(component, id) });
+  }
   for (const { section, blocks } of owned) {
     const owner = componentIdFor(persistentId, section);
-    const ids = madeIds(mapBlocks(blocks, contextFor(owner, provisional())).blocks);
+    const ids = madeIds(mapBlocks(blocks, contextFor(owner, provisional)).blocks);
     for (const id of ids) made.add(id);
     if (section === LEAD) firstOfLead.block = ids[0] ?? null;
   }

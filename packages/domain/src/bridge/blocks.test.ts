@@ -1,5 +1,6 @@
 import type {
   Block,
+  DecomposedDocument,
   Cell,
   DecomposedImage,
   Equation,
@@ -7,6 +8,7 @@ import type {
   Note,
   Table,
 } from '@kenhayward/bridge-contract';
+import { gridForms, normalise, textForm } from '@kenhayward/bridge-contract';
 import { describe, expect, it } from 'vitest';
 
 import { parseContentDocument, type BlockNode } from '../content/model/index.js';
@@ -572,6 +574,94 @@ describe('mapping decomposed blocks to the content model', () => {
         .join(''),
     ).toBe('D M');
     expect(carried.map((each) => each.element)).toEqual(['mid', 'deep']);
+  });
+
+  it('API-073 a converted cell reads, through the contract forms, as the cell CT Studio sent', () => {
+    const equation = { id: 'e1', mathml: MATHML, latex: 'x', imageId: 'img1' };
+    const inner = table({
+      id: 'inner',
+      caption: [text('Inner cap')],
+      notes: [{ marker: '1)', inlines: [text('Inner note.')] }],
+      rows: [
+        {
+          cells: [
+            cell([para('a', text('A'), text('1)', 'superscript'))]),
+            cell([{ kind: 'image', id: 'ii', imageId: 'img1' }]),
+          ],
+        },
+      ],
+    });
+    const outer = table({
+      id: 'outer',
+      caption: [text('Outer cap')],
+      rows: [
+        {
+          cells: [
+            cell([
+              {
+                kind: 'figure',
+                id: 'f',
+                imageId: 'img1',
+                numbered: true,
+                caption: [text('Fig')],
+                captionPosition: 'below',
+              },
+              { kind: 'equation', id: 'eq', equationId: 'e1' },
+              {
+                kind: 'list',
+                id: 'l',
+                ordered: false,
+                items: [
+                  { blocks: [para('li', text('Item'))] },
+                  { blocks: [{ kind: 'equation', id: 'eq2', equationId: 'e1' }] },
+                ],
+              },
+            ]),
+            cell([para('before', text('Before')), inner]),
+          ],
+        },
+      ],
+    });
+    const source: DecomposedDocument = {
+      blocks: [],
+      sections: [{ id: 's', title: [], blocks: [outer], sections: [] }],
+      images: [image('img1')],
+      equations: [equation],
+      notes: [],
+      properties: [],
+      report: [],
+    };
+    const { blocks } = map([outer], { equations: new Map([['e1', equation]]) });
+    const mapped = blocks[0] as Table_;
+
+    // The mapped cells' text, by the contract's token forms and its joining rules.
+    const inlineText = (inlines: Record<string, unknown>[]): string =>
+      inlines
+        .map((each) => {
+          if (each.type === 'text') return String(each.value);
+          if (each.type === 'equation') return `⟦eq:${String(each.mathml)}⟧`;
+          if (each.type === 'image') {
+            const alt = (each.alternative as { kind: string; text?: string }).text;
+            return alt ? `⟦img⟧ ${alt}` : '⟦img⟧';
+          }
+          throw new Error(`Unexpected inline ${String(each.type)}`);
+        })
+        .join('');
+    const unitsOf = (block: BlockNode): string[] =>
+      block.type === 'list'
+        ? block.items.flatMap((item) => item.content.flatMap(unitsOf))
+        : [inlineText(contentOf(block))];
+    const joined = (units: string[]) => units.map(normalise).filter(Boolean).join(' ');
+    const cellText = (cellNode: { content: BlockNode[] }) =>
+      joined(cellNode.content.flatMap(unitsOf));
+    const cells = mapped.rows[0]!.cells.map(cellText);
+
+    // A grid slot is "row,column|cell text".
+    expect(gridForms(source).outer).toEqual([cells.map((words, column) => `0,${column}|${words}`)]);
+    const caption = inlineText(mapped.caption as unknown as Record<string, unknown>[]);
+    // The text form of the outer table: its caption, then each cell. The nested table's own grid has
+    // no counterpart, which is why the read-back leaves it out.
+    expect(textForm(source).slice(0, 3)).toEqual([normalise(caption), ...cells]);
   });
 
   it('a figure pins the asset version with its caption and its alternative', () => {
