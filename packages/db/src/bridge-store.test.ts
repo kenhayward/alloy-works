@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { objectInUse } from './assets.js';
 import { releaseObject } from './imports.js';
@@ -328,6 +329,15 @@ describe('the bridge store', () => {
     );
     expect(released).toBe(false);
     expect(removed).toEqual([]);
+    // The check is answered by the originals' index, not by reading every delivery.
+    const plan = await as(async (trx) => {
+      await sql`set local enable_seqscan = off`.execute(trx);
+      const { rows } = await sql<{ 'QUERY PLAN': string }>`explain select 1 from bridge_delivery
+         where provenance -> 'originals' @> jsonb_build_array(jsonb_build_object('key', ${key}::text))
+         limit 1`.execute(trx);
+      return rows.map((row) => row['QUERY PLAN']).join(' ');
+    });
+    expect(plan).toContain('bridge_delivery_originals');
     // Another key is not held by it.
     expect(await as((trx) => objectInUse(trx, `t_x/sha256/${'e'.repeat(64)}`, randomUUID()))).toBe(
       false,

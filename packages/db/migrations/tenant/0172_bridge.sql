@@ -35,6 +35,10 @@ create table bridge_delivery (
 );
 create index bridge_delivery_space on bridge_delivery (space_id, created_at);
 create index bridge_delivery_package on bridge_delivery (package_key) where package_key is not null;
+-- The SVG originals a written delivery kept, by key, which every release of an object asks after
+-- (`objectInUse`, Ruling 27): containment on the provenance's `originals`.
+create index bridge_delivery_originals on bridge_delivery
+  using gin ((provenance -> 'originals') jsonb_path_ops);
 
 -- The artifact a source document's element became, by the document's persistent identity, so a
 -- redelivery finds what it made before (API-069).
