@@ -13,7 +13,8 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * An `embed` embeds an artifact's blocks its latest version lacks vectors for, its subject the artifact
  * (the G7 plan, G7-F). An `import` reads an import's file into its proposal, its subject the import (the
  * IM plan, IM-C). A `translation_return` reads a translation job's returned file, its subject the
- * return (the XL plan, XL-F).
+ * return (the XL plan, XL-F). A `bridge_deliver` writes a delivery CT Studio's bridge asked for, its
+ * subject the delivery (docs/design/ct-studio-sink.md, "Where it lives").
  */
 export type JobKind =
   | 'sample_pdf'
@@ -28,7 +29,8 @@ export type JobKind =
   | 'range'
   | 'embed'
   | 'import'
-  | 'translation_return';
+  | 'translation_return'
+  | 'bridge_deliver';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {

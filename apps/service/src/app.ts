@@ -93,6 +93,7 @@ import { serviceIdentityHandlers } from './service-identities.js';
 import { webhookHandlers } from './webhooks.js';
 import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
+import { registerBridge } from './bridge/plugin.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
@@ -369,6 +370,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
   registerMcp(app, db, (hostname) => tenants.resolve(hostname));
+  // CT Studio's delivery bridge (ADR-0071), served only where its signing keys are set.
+  const bridgeKeys = (secrets.get('bridge_keys') ?? '')
+    .split(',')
+    .map((key) => key.trim())
+    .filter((key) => key !== '');
+  if (bridgeKeys.length > 0) {
+    if (!options.objects) throw new Error('The bridge needs an object store for its packages');
+    registerBridge(app, {
+      db,
+      objects: options.objects,
+      keys: bridgeKeys,
+      resolve: (hostname) => tenants.resolve(hostname),
+    });
+  }
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
   app.decorateRequest('credential', null);

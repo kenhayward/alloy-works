@@ -203,6 +203,8 @@ export interface HarnessOptions {
   readonly events?: boolean;
   /** Whether development's content is seeded once everyone has signed in: its Report among it. */
   readonly development?: boolean;
+  /** The service's secrets, as `SECRET_*` variables would hold them: `SECRET_BRIDGE_KEYS`, say. */
+  readonly secrets?: Readonly<Record<string, string>>;
 }
 
 export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
@@ -247,7 +249,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
         },
       }),
       oidc: createOidcClient({ allowInsecureIssuers: true }),
-      secrets: environmentSecrets({}),
+      secrets: environmentSecrets(options.secrets ?? {}),
       sealingKey: TEST_SEALING_KEY,
       ...(objects === undefined ? {} : { objects }),
       ...(events === undefined ? {} : { events }),
