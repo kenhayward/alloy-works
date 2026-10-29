@@ -298,6 +298,27 @@ describe('the delivery store', () => {
     await expect(store.setPassword(id, "x'; drop role postgres; --")).rejects.toThrow();
   });
 
+  it('every read role joins the group delivered_readers, which cannot log in', async () => {
+    const first = tenant('groupa');
+    const one = await store.provision(first);
+    const two = await store.ensure(tenant('groupb'));
+    // ensure again on a role already a member changes nothing and does not fail.
+    await store.ensure(first);
+    const group = await admin.query<{ rolcanlogin: boolean; rolsuper: boolean }>(
+      `select rolcanlogin, rolsuper from pg_roles where rolname = 'delivered_readers'`,
+    );
+    expect(group.rows).toEqual([{ rolcanlogin: false, rolsuper: false }]);
+    const members = await admin.query<{ rolname: string }>(
+      `select m.rolname from pg_auth_members a
+         join pg_roles g on g.oid = a.roleid
+         join pg_roles m on m.oid = a.member
+        where g.rolname = 'delivered_readers' and m.rolname = any($1)
+        order by m.rolname`,
+      [[one.account, two.account]],
+    );
+    expect(members.rows.map((row) => row.rolname)).toEqual([one.account, two.account].sort());
+  });
+
   it('provisioning twice keeps the schema', async () => {
     const id = tenant('twice');
     const first = await store.provision(id);

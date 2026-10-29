@@ -361,6 +361,12 @@ The `content_rejected` reasons, each answered before anything is written:
   `connector-egress` (where the connector reaches `source-postgres`) and `delivered`, a network of its
   own shared with the service and worker alone, with its own volume and certificate. A deployment whose `CONNECTOR_DENY` refuses private addresses must
   allow this one.
+- **Who may sign in to the delivery store** is held by its pg_hba, written on every start by
+  `deploy/delivered/start.sh`: from anywhere, only members of the group role `delivered_readers`
+  (each tenant's read role joins it when it is provisioned) to the database `delivered`, over TLS,
+  with a password; the owner only from the `delivered` network, whose subnet compose fixes
+  (`DELIVERED_SUBNET`, `10.213.71.0/24` by default); everything else is rejected. The connector is
+  not on `delivered`, so it can never sign in as the owner, whatever password it is given.
 - **CT Studio's side** needs no code: an entry in the bridge's `BRIDGE_SINKS` per tenant, a shared
   connection holding the service identity's token, and a target naming the space. The bridge must
   reach the tenant's hostname.
@@ -474,7 +480,10 @@ system behaves now.
   a connection at a server of their own is never handed the tenant's read password.
 - **The public schema** is untouched (Postgres 17 gives `PUBLIC` no create there).
 - **Deployment.** The delivery store is the platform's own pgvector Postgres 17 image, pinned by
-  digest; the contract package installs from GitHub Packages through a build secret.
+  digest; the contract package installs from GitHub Packages through a build secret. Its pg_hba
+  admits only `delivered_readers` from anywhere and the owner only from the `delivered` subnet
+  (Deployment, above); provisioning makes the group, `NOLOGIN`, if it is absent and grants it to
+  each tenant's read role.
 
 ## Decisions
 

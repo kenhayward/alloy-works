@@ -316,21 +316,17 @@ services:
   delivered-postgres:
     # Postgres 17, the platform database's own image: the delivery store follows its major version.
     image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
-    command:
-      [
-        'postgres',
-        '-c',
-        'ssl=on',
-        '-c',
-        'ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem',
-        '-c',
-        'ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key',
-      ]
+    # Writes its pg_hba, then starts the image's own entrypoint with TLS on: from anywhere only the
+    # tenants' read roles (group `delivered_readers`), the owner only from the `delivered` subnet,
+    # everything else refused (./delivered/start.sh).
+    entrypoint: ['sh', '/srv/delivered/start.sh']
     environment:
       POSTGRES_PASSWORD: delivered-postgres-dev-password
       POSTGRES_DB: delivered
+      DELIVERED_SUBNET: ${DELIVERED_SUBNET:-10.213.71.0/24}
     volumes:
       - delivered-data:/var/lib/postgresql/data
+      - ./delivered/start.sh:/srv/delivered/start.sh:ro
     networks:
       - connector-egress
       - delivered
@@ -400,11 +396,16 @@ networks:
     internal: true
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
-  # Between the delivery store and the service and worker that write it, and no one else.
+  # Between the delivery store and the service and worker that write it, and no one else. Its
+  # subnet is fixed because the store's pg_hba admits the owner only from it; set DELIVERED_SUBNET
+  # where the default collides with a network the host already has.
   delivered:
     internal: true
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
+    ipam:
+      config:
+        - subnet: ${DELIVERED_SUBNET:-10.213.71.0/24}
 
 # The bridge contract package comes from GitHub Packages; the image builds read its token from the
 # environment (a GitHub token with read:packages, e.g. NODE_AUTH_TOKEN=$(gh auth token)).

@@ -64,7 +64,7 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 | `service`            | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                                                                                 |
 | `worker`             | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                                                                               |
 | `connector`          | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                                                                               |
-| `delivered-postgres` | `postgres`, pinned         | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered` |
+| `delivered-postgres` | `pgvector/pgvector:pg17`   | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered` |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.
@@ -98,7 +98,12 @@ data tables are written, is on `connector-egress` - where the connector reaches 
 which is `internal: true` and isolated like the other two and holds only the delivery store, the
 service and the worker. The service and worker write to it there as its owner
 (`SECRET_DELIVERED_URL`); the connector is not on `delivered` and the service and worker are not on
-`connector-egress`, so the connector still reaches none of the platform. A deployment whose
+`connector-egress`, so the connector still reaches none of the platform. Its pg_hba, written by
+`delivered/start.sh` on every start, holds the line at sign-in too: from anywhere it admits only
+members of the group `delivered_readers` (each environment's read role joins it when a space turns
+data on), to the database `delivered`, over TLS; the owner only from the `delivered` network's fixed
+subnet (`DELIVERED_SUBNET`, `10.213.71.0/24` unset); and refuses everything else, so the connector
+can never sign in as the owner. A deployment whose
 `CONNECTOR_DENY` refuses private addresses must allow the delivery store's address.
 
 The service reaches it at `CONNECTOR_URL` with the key in `SECRET_CONNECTOR_KEY`; without the two
@@ -348,6 +353,7 @@ files above set the same ones for a run from source; these are the ones worth kn
 | `ALLOY_SERVICE_URL`                            | the desktop app        | Which environment its window opens                                                                                                                                                                                           |
 | `CONNECTOR_URL`                                | service                | Where the connector answers, `http://connector:8090` in the stack; set with `SECRET_CONNECTOR_KEY`, or neither                                                                                                               |
 | `SECRET_CONNECTOR_KEY`                         | service                | The key the service presents to the connector: the connector's `CONNECTOR_KEY`                                                                                                                                               |
+| `DELIVERED_SUBNET`                             | compose                | The `delivered` network's subnet, which the delivery store's pg_hba admits the owner from; `10.213.71.0/24` unset, set it where that collides                                                                                |
 | `SECRET_BRIDGE_KEYS`                           | service                | CT Studio's delivery bridge: the signing keys its requests may carry, comma separated; unset, the service starts and `/bridge` is not mounted ([the guide](../docs/guides/ct-studio-sink.md))                                |
 | `SECRET_DELIVERED_URL`                         | service, worker        | The delivery store's owner URL, `delivered-postgres` in the stack, TLS required; without it data delivery answers `delivery_store_unavailable` or `not_configured`                                                           |
 | `CONNECTOR_KEY`                                | connector              | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                                                                                                             |

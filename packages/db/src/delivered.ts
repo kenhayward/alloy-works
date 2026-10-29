@@ -48,6 +48,8 @@ export interface DeliveredStore {
 
 const MAX_IDENTIFIER = 63;
 const HEX_PASSWORD = /^[0-9a-f]{32,128}$/;
+/** The group every tenant's read role joins; the only roles the store admits from outside. */
+const READERS = 'delivered_readers';
 const SCHEMA_NAME = /^t_[a-z0-9_]{1,61}$/;
 /** Bind parameters per statement are capped at 65535 by the protocol; stay well under. */
 const PARAMETER_BUDGET = 30_000;
@@ -159,6 +161,14 @@ export function createDeliveredStore(url: string): DeliveredStore {
             trx,
           );
         }
+        // The group the store's pg_hba admits from anywhere (deploy/delivered/start.sh): only its
+        // members, over TLS, to this database. It cannot log in itself.
+        const group = await sql<{ rolname: string }>`
+          select rolname from pg_roles where rolname = ${READERS}`.execute(trx);
+        if (group.rows.length === 0) {
+          await sql`create role ${sql.id(READERS)} nologin`.execute(trx);
+        }
+        await sql`grant ${sql.id(READERS)} to ${sql.id(account)}`.execute(trx);
         const current = await sql<{ name: string }>`select current_database() as name`.execute(trx);
         const database = current.rows[0]!.name;
         await sql`revoke connect on database ${sql.id(database)} from public`.execute(trx);
