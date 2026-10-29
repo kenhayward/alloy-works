@@ -94,6 +94,7 @@ import { webhookHandlers } from './webhooks.js';
 import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
 import { registerBridge } from './bridge/plugin.js';
+import { bridgeSettingsHandlers } from './bridge/settings.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
@@ -592,11 +593,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
     options.objects,
     options.events,
   );
+  // A space's CT Studio settings, and the delivery store data delivery is turned on against.
+  const bridgeSettings = bridgeSettingsHandlers({
+    tenantOf,
+    connector: options.connector,
+    deliveredUrl: secrets.get('delivered_url'),
+  });
+  app.addHook('onClose', bridgeSettings.close);
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf, boundCreation),
     ...templateHandlers(db, tenantOf, principalOf),
     ...connectionRoutes,
+    ...bridgeSettings.handlers,
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...bindingHandlers(tenantOf, options.objects),
     ...pendingHandlers(db, tenantOf, options.objects),

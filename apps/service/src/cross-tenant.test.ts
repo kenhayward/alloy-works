@@ -505,6 +505,8 @@ const OTHER_TENANT_IDS: Readonly<
   createTemplate: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
+  getBridgeSettings: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  putBridgeSettings: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createConnection: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
   recordConnectionVersion: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),
@@ -951,6 +953,9 @@ const VALID_INPUT: Readonly<
   },
   createSpace: { payload: { name: 'Elsewhere' } },
   updateSpace: { payload: { name: 'Elsewhere' } },
+  putBridgeSettings: {
+    payload: { componentType: null, template: null, propertyMap: {}, data: false },
+  },
   setGroupMembers: { payload: { principals: [] } },
   extendGrant: { payload: {} },
   createToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },

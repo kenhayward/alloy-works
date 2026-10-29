@@ -34,6 +34,8 @@ describe("the connector's one caller", () => {
     expect(importers.sort()).toEqual([
       // A reference source searched, or a result made an entry, as a person asks (the XR plan, XR-B).
       'bibliography/sources.ts',
+      // The delivery connection's password sealed as an administrator turns data delivery on (API-072).
+      'bridge/settings.ts',
       'data/connections.ts',
       'data/connector.test.ts',
       // An extension's manifest fetched as an administrator previews, installs or updates it (EX-B).

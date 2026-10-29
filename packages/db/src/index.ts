@@ -348,6 +348,7 @@ export {
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,
+  checkSpaceLive,
   createSpace,
   listSpacesFor,
   readSpace,

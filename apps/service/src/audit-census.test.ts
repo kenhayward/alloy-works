@@ -404,6 +404,14 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getTemplate: read,
   recordTemplateVersion: writes('content.version_cut'),
   listConnections: read,
+  getBridgeSettings: read,
+  // Data delivery turned on makes the space's connection and sets its credential (API-072).
+  putBridgeSettings: writes(
+    'bridge.settings_changed',
+    'content.version_cut',
+    'connection.made',
+    'connection.credential_set',
+  ),
   createConnection: writes('content.version_cut', 'connection.made'),
   getConnection: read,
   recordConnectionVersion: writes(
