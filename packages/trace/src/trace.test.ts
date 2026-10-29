@@ -101,7 +101,8 @@ describe('the committed trace.json', () => {
     // 1590, from 1589 (2026-10-17): REU-055, superseding REU-006 (R20).
     // 1593, from 1591 (2026-10-27): STY-084 and STY-085, beside STY-075 amended (UIg).
     // 1594, from 1593 (2026-10-28): LOC-044, superseding LOC-038 (TEa).
-    expect(model.requirements).toHaveLength(1594);
+    // 1595, from 1594 (2026-10-29): LOC-045, superseding LOC-039 (MFa).
+    expect(model.requirements).toHaveLength(1595);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -997,7 +998,9 @@ describe('the citations in the committed model', () => {
     // 2173 (2026-10-28): TEc cites LOC-044 in eleven files: the declared languages, the CLDR pin, the
     // picker, About, a publication's locale data, 0171, the collations and the Node pin.
     // 2174 (2026-10-28): TEd cites LOC-029 in the pseudo walk, every page and dialog in both pseudo-locales.
-    expect(model.citations).toHaveLength(2174);
+    // 2176 (2026-10-29): MFa cites LOC-044 for the compiled plural rules and the contract's record;
+    // their FormatJS parity cites nothing until a design claims LOC-045 (MFd).
+    expect(model.citations).toHaveLength(2176);
   });
 
   it('cites no identifier the corpus does not hold', () => {

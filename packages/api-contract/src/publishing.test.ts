@@ -231,6 +231,17 @@ describe('the publishing contract (Word 1)', () => {
     );
     expect(word).toMatchObject({ engine: null, template: null, formats: ['docx'] });
   });
+
+  it('LOC-044 shows the CLDR its plural rules came from, absent from one made before they were recorded', () => {
+    const versions = { icu: '78.3', unicode: '17.0', cldr: '48.0' };
+    expect(
+      PublicationView.parse(viewWith([pdf], { localeData: { ...versions, plurals: '48.2.0' } }))
+        .localeData,
+    ).toEqual({ ...versions, plurals: '48.2.0' });
+    expect(PublicationView.parse(viewWith([pdf], { localeData: versions })).localeData).toEqual(
+      versions,
+    );
+  });
 });
 
 describe('the publishing contract for HTML (the HT plan, HT-E)', () => {

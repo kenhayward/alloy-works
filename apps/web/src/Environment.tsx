@@ -105,6 +105,8 @@ export function Environment({ fetch: given, follow = followStream }: Environment
               cldr: localeData.cldr,
             })}
           </p>
+          {/* The CLDR its plural rules were compiled from (the MF plan, MF-H). */}
+          <p>{words('shell.plural-rules', { cldr: localeData.plurals })}</p>
           {localeData.collations.map((each) => (
             <p key={each.language}>
               {each.version === null

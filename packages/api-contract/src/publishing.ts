@@ -423,7 +423,17 @@ export const PublicationView = PublicationSummary.extend({
       "The change to the environment's translation policy a publish in a language was decided under, and when that change was made (`getTranslationSettingsHistory`); null for one in its document's own language, one from a baseline, or one made before the policy kept its history",
     ),
   localeData: z
-    .object({ icu: z.string(), unicode: z.string(), cldr: z.string() })
+    .object({
+      icu: z.string(),
+      unicode: z.string(),
+      cldr: z.string(),
+      plurals: z
+        .string()
+        .optional()
+        .describe(
+          'The CLDR version the plural rules it selected message forms by were compiled from; absent from one made before they were recorded',
+        ),
+    })
     .nullable()
     .describe(
       'The ICU, Unicode and CLDR versions the worker that made it held, which its sorting and formatting came from; null for one made before they were recorded',

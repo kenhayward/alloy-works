@@ -94,12 +94,24 @@ describe('a publication at its own address', () => {
 
   it('LOC-044 says the locale data a publication was made with, and nothing where it recorded none', async () => {
     const first = open(
-      json(200, { ...record, localeData: { icu: '78.3', unicode: '17.0', cldr: '48.0' } }),
+      json(200, {
+        ...record,
+        localeData: { icu: '78.3', unicode: '17.0', cldr: '48.0', plurals: '48.2.0' },
+      }),
     );
     expect(
       await screen.findByText('Sorted and formatted with ICU 78.3, Unicode 17.0 and CLDR 48.0.'),
     ).toBeInTheDocument();
+    // The CLDR its plural rules were compiled from (the MF plan, MF-H).
+    expect(screen.getByText('Plural rules from CLDR 48.2.0.')).toBeInTheDocument();
     first.unmount();
+    // Made before the plural rules' CLDR was recorded.
+    const second = open(
+      json(200, { ...record, localeData: { icu: '78.3', unicode: '17.0', cldr: '48.0' } }),
+    );
+    await screen.findByText('Sorted and formatted with ICU 78.3, Unicode 17.0 and CLDR 48.0.');
+    expect(screen.queryByText(/Plural rules/)).not.toBeInTheDocument();
+    second.unmount();
     open(json(200, { ...record, localeData: null }));
     await screen.findByRole('heading', { name: 'The dosing report' });
     expect(screen.queryByText(/Sorted and formatted/)).not.toBeInTheDocument();

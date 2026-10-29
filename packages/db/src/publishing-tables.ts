@@ -187,6 +187,8 @@ export interface LocaleData {
   readonly icu: string;
   readonly unicode: string;
   readonly cldr: string;
+  /** The CLDR the domain's plural rules were compiled from (the MF plan, MF-H); absent before. */
+  readonly plurals?: string;
 }
 
 export interface PublicationInputTable {
