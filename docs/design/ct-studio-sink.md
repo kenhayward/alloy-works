@@ -91,8 +91,8 @@ and **AST-001** (the asset door).
   keys are a comma-separated `SECRET_BRIDGE_KEYS`, so a key can be rotated. `verifyRequest` checks
   the signature and window with a store that admits every nonce, since its store is synchronous;
   the nonce is then inserted into a platform table under a unique constraint, and a conflict is the
-  replay refusal (`credential_rejected`, `details.reason: "replayed"`). Rows older than the 300
-  second window are swept. Two service replicas therefore cannot both accept one nonce.
+  replay refusal (`credential_rejected`, `details.reason: "replayed"`). Rows older than 600
+  seconds are swept: twice the window, since a timestamp is taken up to 300 seconds either way. Two service replicas therefore cannot both accept one nonce.
 - **The credential is checked on every call**: the `token` must be a live token of a service
   identity in this tenant; a person's token is refused, `credential_rejected`. It is never stored or
   logged; the connection holding it lives on the bridge.

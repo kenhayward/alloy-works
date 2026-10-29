@@ -902,23 +902,34 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     expect(await gone(delivery.packageKey!)).toBe(true);
   });
 
-  it("the nonces past the signing window are swept on the worker's idle tick", async () => {
+  it("the nonces past twice the signing window are swept on the worker's idle tick", async () => {
+    // The timestamp may be 300 s either way, so a nonce is kept for 600 s: one stamped 300 s ahead is
+    // still refused as a replay up to 600 s after it was recorded.
     const old = randomUUID();
+    const within = randomUUID();
     const fresh = randomUUID();
     await service.withTenant(tenant, async (trx) => {
       await recordNonce(trx, old);
+      await recordNonce(trx, within);
       await recordNonce(trx, fresh);
     });
     const admin = new pg.Client({ connectionString: db.adminUrl });
     await admin.connect();
     try {
       await admin.query(
-        "update platform.bridge_nonce set at = now() - interval '301 seconds' where nonce = $1",
+        "update platform.bridge_nonce set at = now() - interval '601 seconds' where nonce = $1",
         [old],
       );
+      await admin.query(
+        "update platform.bridge_nonce set at = now() - interval '599 seconds' where nonce = $1",
+        [within],
+      );
       expect(await queue.sweepBridgeNonces()).toBe(1);
-      const left = await admin.query('select nonce from platform.bridge_nonce order by nonce');
-      expect(left.rows.map((row: { nonce: string }) => row.nonce)).toEqual([fresh]);
+      const left = await admin.query(
+        'select nonce from platform.bridge_nonce where nonce = any($1) order by nonce',
+        [[old, within, fresh]],
+      );
+      expect(left.rows.map((row: { nonce: string }) => row.nonce)).toEqual([within, fresh].sort());
     } finally {
       await admin.end();
     }
