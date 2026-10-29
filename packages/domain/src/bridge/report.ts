@@ -8,6 +8,7 @@ export const CARRY_CODES = [
   'presentation_dropped',
   'note_anchored_table',
   'note_flattened',
+  'table_flattened',
   'xref_outside',
   'link_scheme',
   'equation_image_only',

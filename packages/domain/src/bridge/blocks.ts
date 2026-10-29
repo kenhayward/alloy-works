@@ -49,6 +49,7 @@ type Footnote = Extract<InlineNode, { type: 'footnote' }>;
 type Alternative = Extract<BlockNode, { type: 'figure' }>['alternative'];
 
 const BREAK = Symbol('break');
+const SPACE: Inline = { kind: 'text', text: ' ', marks: [] };
 type Piece = InlineNode | typeof BREAK;
 
 /** Strings in NFC, with the C0 controls but tab and newline removed. */
@@ -115,6 +116,10 @@ class Mapping {
   }
 
   private block(block: Block, scope: Scope): BlockNode[] {
+    if (scope.cell !== undefined) {
+      const converted = this.inCell(block);
+      if (converted !== null) return converted;
+    }
     switch (block.kind) {
       case 'paragraph':
         return this.paragraphs(block.id, block.inlines, {
@@ -171,6 +176,63 @@ class Mapping {
         throw new Error(
           `Block ${(block as { id?: string }).id ?? '?'} is of a type, ${String((block as { kind?: unknown }).kind)}, that has no place in the content model`,
         );
+    }
+  }
+
+  /**
+   * What a cell cannot hold - the model allows paragraphs and lists there, at any depth - as paragraphs:
+   * an image or a figure its caption and an inline image, an equation an inline equation, a table its
+   * words flattened. The text units are those the contract's text form reads, joined by single spaces,
+   * so the cell's text comes out as it was sent. Null for a block a cell holds as it stands.
+   */
+  private inCell(block: Block): BlockNode[] | null {
+    if (block.kind === 'paragraph' || block.kind === 'list') return null;
+    const units = this.cellUnits(block);
+    const paragraphs = units.flatMap((unit, index) =>
+      this.paragraphs(index === 0 ? block.id : `${block.id}/flat/${index}`, unit.inlines, {
+        element: unit.element,
+        breaks: 'space',
+        note: false,
+        outer: [],
+      }),
+    );
+    return paragraphs.filter((each) => !isEmpty(each));
+  }
+
+  /** The units of a block in a cell, each a run of inlines; a nested table's are reported as flattened. */
+  private cellUnits(block: Block): { inlines: Inline[]; element: string }[] {
+    const at = block.id;
+    const unit = (...inlines: Inline[]) => ({ inlines, element: at });
+    const apart = (inlines: Inline[]): Inline[] => (inlines.length > 0 ? [SPACE, ...inlines] : []);
+    switch (block.kind) {
+      case 'paragraph':
+        return [unit(...block.inlines)];
+      case 'list':
+        return block.items.flatMap((item) => item.blocks.flatMap((each) => this.cellUnits(each)));
+      case 'figure':
+        return [
+          unit(...block.caption, ...apart([{ kind: 'inline_image', imageId: block.imageId }])),
+        ];
+      case 'image':
+        return [unit({ kind: 'inline_image', imageId: block.imageId })];
+      case 'equation':
+        return [unit({ kind: 'inline_equation', equationId: block.equationId })];
+      case 'table':
+        this.carried.push(carry('table_flattened', block.id));
+        return [
+          ...(block.caption.length > 0 ? [unit(...block.caption)] : []),
+          ...block.rows.flatMap((row) =>
+            row.cells.map((each) => {
+              const inlines = each.blocks
+                .flatMap((inner) => this.cellUnits(inner))
+                .flatMap((part, index) => (index === 0 ? part.inlines : [SPACE, ...part.inlines]));
+              return unit(...inlines);
+            }),
+          ),
+          ...block.notes.map((note) =>
+            unit({ kind: 'text', text: `${note.marker}: `, marks: [] }, ...note.inlines),
+          ),
+        ];
     }
   }
 

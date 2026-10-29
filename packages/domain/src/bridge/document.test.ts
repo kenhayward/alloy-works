@@ -15,6 +15,14 @@ const require = createRequire(import.meta.url);
 const ASSET = '7c2e9b41-3a6d-4f18-8e05-1d9a4c6b8f27';
 const VERSION = '3b1f6a52-9c04-4d7e-a1b8-52e6f0c97d34';
 
+const cellOf = (blocks: Block[]) => ({
+  rowSpan: 1,
+  colSpan: 1,
+  hAlign: 'left' as const,
+  vAlign: 'top' as const,
+  header: false,
+  blocks,
+});
 const text = (value: string): Inline => ({ kind: 'text', text: value, marks: [] });
 const para = (id: string, ...inlines: Inline[]): Block => ({ kind: 'paragraph', id, inlines });
 const section = (
@@ -189,7 +197,7 @@ describe('mapDocument', () => {
     parseContentDocument(one!.content);
   });
 
-  it('the package fixture maps to an outline the model accepts', () => {
+  it('the package fixture maps to components and an outline the model accepts', () => {
     const fixture = join(
       dirname(dirname(require.resolve('@kenhayward/bridge-contract'))),
       'test',
@@ -206,8 +214,74 @@ describe('mapDocument', () => {
       assets,
     });
     expect(mapped.components.length).toBeGreaterThan(0);
-    // Its components are not parsed here: the fixture puts a table and an image in cells, which the
-    // model refuses and the delivery reports as content_rejected (blocks.test.ts holds that).
+    for (const component of mapped.components) parseContentDocument(component.content);
     parseOutlineDocument(mapped.outline(pinsFor(mapped)));
+  });
+  it('a cross-reference to a block the mapping dropped or flattened never names a missing id', () => {
+    const empty = para('e2');
+    const nested: Block = {
+      kind: 'table',
+      id: 'inner',
+      numbered: false,
+      caption: [],
+      captionPosition: 'above',
+      columnWidths: [],
+      headerRows: 0,
+      notes: [],
+      wide: false,
+      key: null,
+      rows: [{ cells: [cellOf([para('deep', text('Deep'))])] }],
+    };
+    const outer: Block = {
+      ...(nested as object),
+      id: 'outer',
+      rows: [{ cells: [cellOf([nested])] }],
+    } as Block;
+    const xrefs = (...ids: string[]) =>
+      para(
+        'x',
+        ...ids.flatMap((id) => [{ kind: 'xref' as const, targetId: id, text: id }, text(' ')]),
+      );
+    const document = documentOf({
+      blocks: [para('e1'), empty, para('lead-text', text('Lead'))],
+      sections: [
+        section('s1', 'One', [xrefs('e2', 'deep', 'inner'), outer]),
+        section('s2', 'Two', [para('p', text('Two'))]),
+      ],
+    });
+    const mapped = mapDocument(document, input);
+    const made = new Set<string>();
+    const walk = (value: unknown): void => {
+      if (Array.isArray(value)) value.forEach(walk);
+      else if (typeof value === 'object' && value !== null) {
+        const node = value as { id?: unknown };
+        if (typeof node.id === 'string') made.add(node.id);
+        Object.values(value).forEach(walk);
+      }
+    };
+    mapped.components.forEach((component) => walk(component.content));
+    const pins = pinsFor(mapped);
+    const outline = parseOutlineDocument(mapped.outline(pins));
+    const nodes = new Set<string>();
+    const nodeWalk = (list: readonly (typeof outline.nodes)[number][]): void =>
+      list.forEach((node) => {
+        nodes.add(node.id);
+        nodeWalk(node.children);
+      });
+    nodeWalk(outline.nodes);
+    const one = mapped.components.find((component) => component.section === 's1')!;
+    const targets = (
+      one.content.content[0] as {
+        content: { type: string; target?: { kind: string; node?: string; block?: string } }[];
+      }
+    ).content
+      .filter((inline) => inline.type === 'crossReference')
+      .map((inline) => inline.target!);
+    expect(targets).toHaveLength(3);
+    for (const target of targets) {
+      if (target.kind === 'node') expect(nodes.has(target.node!)).toBe(true);
+      else expect(made.has(target.block!)).toBe(true);
+    }
+    parseContentDocument(one.content);
   });
 });

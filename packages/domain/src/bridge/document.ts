@@ -89,6 +89,26 @@ function blockIds(blocks: readonly DecomposedBlock[], into: string[]): string[] 
   return into;
 }
 
+/** The identifiers of the blocks a mapping made, in document order, those in lists and cells too. */
+function madeIds(value: unknown, into: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    for (const each of value) madeIds(each, into);
+  } else if (typeof value === 'object' && value !== null) {
+    const node = value as { type?: unknown; id?: unknown };
+    if (typeof node.id === 'string' && BLOCK_TYPES.has(String(node.type))) into.push(node.id);
+    for (const each of Object.values(value)) madeIds(each, into);
+  }
+  return into;
+}
+
+const BLOCK_TYPES: ReadonlySet<string> = new Set([
+  'paragraph',
+  'list',
+  'table',
+  'figure',
+  'equation',
+]);
+
 type SectionShape = {
   id: string;
   title: InlineNode[];
@@ -137,18 +157,6 @@ export function mapDocument(
   for (const { section, blocks } of owned) {
     for (const id of blockIds(blocks, [])) home.set(id, section);
   }
-  const targetsFor = (section: string): ReadonlyMap<string, CrossTarget> => {
-    const targets = new Map(nodeTargets);
-    for (const [id, at] of home) {
-      const component = componentIdFor(persistentId, at);
-      const block = elementIdFor(component, id);
-      targets.set(
-        id,
-        at === section ? { kind: 'block', block } : { kind: 'component', component, block },
-      );
-    }
-    return targets;
-  };
   const contextFor = (owner: string, targets: ReadonlyMap<string, CrossTarget>): BlockContext => ({
     owner,
     assets: input.assets,
@@ -158,6 +166,46 @@ export function mapDocument(
     equations,
   });
 
+  // The blocks a mapping really makes, found by mapping each once: it drops a duplicate empty
+  // paragraph, flattens a table in a cell and keeps the ids of the rest, and a reference must never
+  // name an id that is not there.
+  const made = new Set<string>();
+  const firstOfLead: { block: string | null } = { block: null };
+  const provisional = (): ReadonlyMap<string, CrossTarget> => {
+    const targets = new Map(nodeTargets);
+    for (const [id, at] of home) {
+      const component = componentIdFor(persistentId, at);
+      targets.set(id, { kind: 'component', component, block: elementIdFor(component, id) });
+    }
+    return targets;
+  };
+  for (const { section, blocks } of owned) {
+    const owner = componentIdFor(persistentId, section);
+    const ids = madeIds(mapBlocks(blocks, contextFor(owner, provisional())).blocks);
+    for (const id of ids) made.add(id);
+    if (section === LEAD) firstOfLead.block = ids[0] ?? null;
+  }
+  const targetsFor = (section: string): ReadonlyMap<string, CrossTarget> => {
+    const targets = new Map(nodeTargets);
+    for (const [id, at] of home) {
+      const component = componentIdFor(persistentId, at);
+      const block = elementIdFor(component, id);
+      if (!made.has(block)) {
+        // Dropped or flattened: its section's node, or for the lead, which has none, the lead's first block.
+        const node = nodeTargets.get(at);
+        if (node !== undefined) targets.set(id, node);
+        else if (firstOfLead.block !== null) {
+          targets.set(id, { kind: 'component', component, block: firstOfLead.block });
+        }
+      } else {
+        targets.set(
+          id,
+          at === section ? { kind: 'block', block } : { kind: 'component', component, block },
+        );
+      }
+    }
+    return targets;
+  };
   const carried: CarryEntry[] = [];
   const components: MappedComponent[] = [];
 

@@ -462,21 +462,55 @@ describe('mapping decomposed blocks to the content model', () => {
     ).toThrow(/t1.*marker/);
   });
 
-  it('IMP-N03 a cell the model cannot hold is refused by the model', () => {
-    const mapped = mapBlocks(
+  it('API-073 a figure or an image in a cell is a paragraph of its caption and an inline image', () => {
+    const { blocks, carried } = map([
+      table({
+        rows: [
+          {
+            cells: [
+              cell([
+                {
+                  kind: 'figure',
+                  id: 'f',
+                  imageId: 'img1',
+                  numbered: true,
+                  caption: [text('Fig')],
+                  captionPosition: 'below',
+                },
+                { kind: 'image', id: 'i', imageId: 'img1' },
+              ]),
+            ],
+          },
+        ],
+      }),
+    ]);
+    const content = (blocks[0] as Table_).rows[0]!.cells[0]!.content;
+    expect(content.map((each) => each.type)).toEqual(['paragraph', 'paragraph']);
+    expect(contentOf(content[0]).map((each) => each.type)).toEqual(['text', 'image']);
+    expect(contentOf(content[0])[1]).toMatchObject({
+      asset: ASSET,
+      imageStyle: 'inline',
+      alternative: { kind: 'own', text: 'A chart' },
+    });
+    expect(contentOf(content[1]).map((each) => each.type)).toEqual(['image']);
+    expect(carried).toEqual([]);
+  });
+
+  it('API-073 an equation in a cell, in a list in a cell too, is a paragraph with an inline equation', () => {
+    const equation = { id: 'e1', mathml: MATHML, latex: 'x', imageId: 'img1' };
+    const { blocks } = map(
       [
         table({
           rows: [
             {
               cells: [
                 cell([
+                  { kind: 'equation', id: 'eq', equationId: 'e1' },
                   {
-                    kind: 'figure',
-                    id: 'f',
-                    imageId: 'img1',
-                    numbered: true,
-                    caption: [],
-                    captionPosition: 'below',
+                    kind: 'list',
+                    id: 'l',
+                    ordered: false,
+                    items: [{ blocks: [{ kind: 'equation', id: 'eq2', equationId: 'e1' }] }],
                   },
                 ]),
               ],
@@ -484,9 +518,60 @@ describe('mapping decomposed blocks to the content model', () => {
           ],
         }),
       ],
-      context(),
+      { equations: new Map([['e1', equation]]) },
     );
-    expect(() => wrap(mapped.blocks)).toThrow(/figure in a cell/);
+    const content = (blocks[0] as Table_).rows[0]!.cells[0]!.content;
+    expect(contentOf(content[0]).map((each) => each.type)).toEqual(['equation']);
+    const item = (content[1] as List_).items[0]!.content[0];
+    expect(contentOf(item).map((each) => each.type)).toEqual(['equation']);
+  });
+
+  it('API-073 a table in a cell is flattened to its words, in the order the text form reads', () => {
+    const inner = table({
+      id: 'inner',
+      caption: [text('Cap')],
+      notes: [{ marker: '1)', inlines: [text('Note.')] }],
+      rows: [
+        {
+          cells: [
+            cell([para('a', text('A'), text('1)', 'superscript'))]),
+            cell([para('b', text('B'))]),
+          ],
+        },
+        {
+          cells: [
+            cell([para('c', text('C'))]),
+            cell([{ kind: 'image', id: 'ii', imageId: 'img1' }]),
+          ],
+        },
+      ],
+    });
+    const { blocks, carried } = map([
+      table({ rows: [{ cells: [cell([para('before', text('Before')), inner])] }] }),
+    ]);
+    const content = (blocks[0] as Table_).rows[0]!.cells[0]!.content;
+    const words = content.map((each) =>
+      contentOf(each)
+        .map((part) => (part.type === 'text' ? String(part.value) : '[img]'))
+        .join(''),
+    );
+    expect(words).toEqual(['Before', 'Cap', 'A1)', 'B', 'C', '[img]', '1): Note.']);
+    expect(JSON.stringify(content)).not.toContain('footnote');
+    expect(carried).toEqual([{ code: 'table_flattened', element: 'inner' }]);
+  });
+
+  it('API-073 a table in a table in a cell is flattened and reported for each', () => {
+    const deepest = table({ id: 'deep', rows: [{ cells: [cell([para('d', text('D'))])] }] });
+    const middle = table({ id: 'mid', rows: [{ cells: [cell([deepest, para('m', text('M'))])] }] });
+    const { blocks, carried } = map([table({ rows: [{ cells: [cell([middle])] }] })]);
+    const content = (blocks[0] as Table_).rows[0]!.cells[0]!.content;
+    expect(content).toHaveLength(1);
+    expect(
+      contentOf(content[0])
+        .map((part) => String(part.value))
+        .join(''),
+    ).toBe('D M');
+    expect(carried.map((each) => each.element)).toEqual(['mid', 'deep']);
   });
 
   it('a figure pins the asset version with its caption and its alternative', () => {
