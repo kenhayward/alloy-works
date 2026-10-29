@@ -223,6 +223,7 @@ describe('a document delivery', () => {
         spaceId: over.spaceId ?? space,
         family: 'document',
         tokenId: randomUUID(),
+        principalId: identity,
         packageKey: null,
         provenance: { sourceFilename: 'report.docx' },
       });
@@ -322,6 +323,7 @@ describe('a document delivery', () => {
           spaceId: space,
           family: 'document',
           tokenId: randomUUID(),
+          principalId: identity,
           packageKey: null,
           provenance: {},
         });
@@ -558,6 +560,7 @@ describe('a document delivery', () => {
         spaceId: space,
         family: 'document',
         tokenId: randomUUID(),
+        principalId: identity,
         packageKey: null,
         provenance: {},
       }),

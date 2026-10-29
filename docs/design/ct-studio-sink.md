@@ -238,7 +238,8 @@ CT Studio's are deterministic paths. Both are derived the same way every time:
 ### Idempotency and atomicity
 
 - **`bridge_delivery`** (tenant schema): the delivery key, the target space, the state (`running`,
-  `written`, `refused`), the receipt, the report and the provenance. Its key is unique; a delivery
+  `written`, `refused`), the token and the service identity it was asked with, the receipt, the
+  report and the provenance. Its key is unique; a delivery
   with a key already `written` answers that first receipt and writes nothing (API-068), and one
   already `running` answers the same job.
 - **No part-way state**: images are checked first, then everything, images' assets included, is one
@@ -449,7 +450,9 @@ system behaves now.
   `too_large`. A store or database that is down answers `sink_unavailable` (503), not `internal`.
 - **A reused key is refused.** An idempotency key already used for another space, or by another
   service identity, refuses `content_rejected` with reason `key_reused`; it never answers that
-  delivery's receipt. After the first token is revoked, even the same identity is refused.
+  delivery's receipt. The identity is the one `bridge_delivery` recorded at accept
+  (`principal_id`), so the same identity under a rotated token, the first revoked and gone, gets its
+  first answer.
 - **A package with neither document nor data** (files or images only) is accepted and written as
   nothing, its receipt empty, as `files` are; it is never `not_configured`.
 - **`not_configured` is for both families.** A document delivery to a space with no bridge

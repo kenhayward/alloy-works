@@ -22,6 +22,7 @@ export interface StoredDelivery {
   readonly family: DeliveryFamily;
   readonly state: DeliveryState;
   readonly tokenId: string;
+  readonly principalId: string;
   /** The package waiting in the object store; null once the delivery is written or refused. */
   readonly packageKey: string | null;
   readonly persistentId: string | null;
@@ -46,6 +47,8 @@ export interface NewDelivery {
   readonly spaceId: string;
   readonly family: DeliveryFamily;
   readonly tokenId: string;
+  /** The service identity the token was issued to. */
+  readonly principalId: string;
   readonly packageKey: string | null;
   readonly provenance: unknown;
 }
@@ -62,6 +65,7 @@ type DeliveryRow = {
   family: DeliveryFamily;
   state: DeliveryState;
   token_id: string;
+  principal_id: string;
   package_key: string | null;
   persistent_id: string | null;
   receipt: unknown;
@@ -79,6 +83,7 @@ const deliveryOf = (row: DeliveryRow): StoredDelivery => ({
   family: row.family,
   state: row.state,
   tokenId: row.token_id,
+  principalId: row.principal_id,
   packageKey: row.package_key,
   persistentId: row.persistent_id,
   receipt: row.receipt,
@@ -107,6 +112,7 @@ export async function startDelivery(
         space_id: input.spaceId,
         family: input.family,
         token_id: input.tokenId,
+        principal_id: input.principalId,
         package_key: input.packageKey,
         provenance: JSON.stringify(input.provenance),
       })

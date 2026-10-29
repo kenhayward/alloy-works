@@ -18,6 +18,7 @@ import {
 } from './testing/database.js';
 
 const TOKEN = '3f6d7c2b-9a52-4c1e-8b1f-5e1d0c7a0b01';
+const PRINCIPAL = '00000000-0000-4000-8000-0000000000b2';
 const NONCE = 'n'.repeat(32);
 
 describe('migration 0172, which stores the delivery bridge', () => {
@@ -84,6 +85,7 @@ describe('migration 0172, which stores the delivery bridge', () => {
         spaceId: await general(trx),
         family: 'document',
         tokenId: TOKEN,
+        principalId: PRINCIPAL,
         packageKey: null,
         provenance: { source: 'a.docx' },
       }),

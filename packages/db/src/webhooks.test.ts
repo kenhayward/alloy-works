@@ -262,6 +262,7 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
       spaceId: space,
       family: 'document' as const,
       tokenId: randomUUID(),
+      principalId: randomUUID(),
       packageKey: null,
       provenance: {},
     });

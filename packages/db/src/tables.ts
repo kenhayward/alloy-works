@@ -829,6 +829,7 @@ export interface BridgeDeliveryTable {
     'written' | 'refused'
   >;
   token_id: ColumnType<string, string, never>;
+  principal_id: ColumnType<string, string, never>;
   package_key: ColumnType<string | null, string | null, string | null>;
   persistent_id: ColumnType<string | null, string | null, string | null>;
   receipt: ColumnType<unknown, string | null | undefined, string | null>;

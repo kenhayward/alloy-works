@@ -80,6 +80,7 @@ describe('the bridge store', () => {
     spaceId: space,
     family: 'document',
     tokenId: randomUUID(),
+    principalId: randomUUID(),
     packageKey: null,
     provenance: { source: 'report.docx', sha256: 'a'.repeat(64) },
     ...over,

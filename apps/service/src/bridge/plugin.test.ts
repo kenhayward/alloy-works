@@ -475,6 +475,20 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     expect(same.json()).toEqual({ status: 'pending', sinkJobId: first.sinkJobId });
   });
 
+  it('API-068 the same identity under a rotated token gets its first answer', async () => {
+    const first = await issue(['create', 'edit']);
+    const asked = delivery({ credential: { token: first.secret } });
+    const started = (await signed('POST', '/deliveries', asked)).json<{ sinkJobId: string }>();
+    // Rotated: the first token is revoked, and its row is gone.
+    await h.tenantDb.withTenant(h.tenant, (trx) => revokeApiToken(trx, identity, first.id));
+    const next = await issue(['create', 'edit']);
+    const again = await signed('POST', '/deliveries', {
+      ...asked,
+      credential: { token: next.secret },
+    });
+    expect(again.json()).toEqual({ status: 'pending', sinkJobId: started.sinkJobId });
+  });
+
   it('API-065 a token expired, scoped short or of another tenant is refused', async () => {
     const expired = await issue(['create', 'edit']);
     await queryAs(

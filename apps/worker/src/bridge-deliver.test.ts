@@ -237,6 +237,7 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
         spaceId,
         family: pkg.document ? 'document' : 'data',
         tokenId,
+        principalId: identity,
         packageKey: stored.key,
         provenance: {
           source: pkg.provenance,
@@ -493,6 +494,7 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
       ]),
       {
         tokenId,
+        principalId: identity,
         update: {
           persistentId: randomUUID(),
           expected: [{ kind: 'map', id: randomUUID(), version: randomUUID(), element: null }],

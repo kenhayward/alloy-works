@@ -99,32 +99,18 @@ interface Known {
   readonly state: string;
   readonly receipt: unknown;
   readonly space_id: string;
-  readonly token_id: string;
+  readonly principal_id: string;
 }
 
 /**
  * The answer a key already in use gives (API-068): a running delivery its id, a written one its first
  * receipt. A key reused for another space, or by another service identity, is refused `key_reused`
- * (Ruling 23): a delivery never answers with somebody else's receipt. Another token of the same
- * identity is the same caller, as after a token is rotated; a token since revoked or expired is
- * gone, and its identity cannot be told, so it is refused too.
+ * (Ruling 23): a delivery never answers with somebody else's receipt. The identity is the one the
+ * delivery recorded when it was accepted, so the same identity under another token - after a
+ * rotation, even with the first token revoked and gone - is the same caller (Ruling 23 amended).
  */
-async function answerFor(
-  trx: TenantTransaction,
-  known: Known,
-  identity: Identity,
-  space: string,
-): Promise<SinkDeliverResult> {
-  let same = known.space_id === space && known.token_id === identity.tokenId;
-  if (!same && known.space_id === space) {
-    const holder = await trx
-      .selectFrom('api_token')
-      .select('principal_id')
-      .where('id', '=', known.token_id)
-      .executeTakeFirst();
-    same = holder?.principal_id === identity.principalId;
-  }
-  if (!same) {
+function answerFor(known: Known, identity: Identity, space: string): SinkDeliverResult {
+  if (known.space_id !== space || known.principal_id !== identity.principalId) {
     throw refuse('content_rejected', 'This idempotency key names another delivery.', {
       reason: 'key_reused',
     });
@@ -138,7 +124,7 @@ async function answerFor(
 const knownBy = (trx: TenantTransaction, key: string) =>
   trx
     .selectFrom('bridge_delivery')
-    .select(['id', 'state', 'receipt', 'space_id', 'token_id'])
+    .select(['id', 'state', 'receipt', 'space_id', 'principal_id'])
     .where('key', '=', key)
     .executeTakeFirst();
 
@@ -180,7 +166,7 @@ export async function acceptDelivery(
       await holds(trx, identity, 'create', space);
       if (request.update !== undefined) await holds(trx, identity, 'edit', space);
       const known = await knownBy(trx, request.idempotencyKey);
-      if (known) return answerFor(trx, known, identity, space);
+      if (known) return answerFor(known, identity, space);
       if (writes !== 'nothing') {
         const settings = await readBridgeSettings(trx, space);
         if (settings === undefined || (writes === 'data' && settings.tableSchema === null)) {
@@ -204,6 +190,7 @@ export async function acceptDelivery(
         spaceId: space,
         family: writes === 'document' ? 'document' : 'data',
         tokenId: identity.tokenId,
+        principalId: identity.principalId,
         packageKey,
         provenance: {
           source: request.package.provenance,
@@ -220,7 +207,7 @@ export async function acceptDelivery(
       // it. The bytes stored stay, by their hash, as the store keeps every object until it is released.
       const raced = await knownBy(trx, request.idempotencyKey);
       if (!raced) throw new Error('A delivery key in use names no delivery');
-      return answerFor(trx, raced, identity, space);
+      return answerFor(raced, identity, space);
     },
     contextOf(identity, traceId),
   );

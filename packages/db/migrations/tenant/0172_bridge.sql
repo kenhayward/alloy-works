@@ -13,6 +13,10 @@ create table bridge_delivery (
   state text not null default 'running' check (state in ('running', 'written', 'refused')),
   -- The service identity's token the delivery was asked with, kept to re-check it in the job.
   token_id uuid not null,
+  -- The identity that token was issued to, kept so a retry under a rotated token is the same caller
+  -- (Ruling 23 amended): a revoked token's row is gone, its identity is not. Not a reference, as
+  -- token_id is not: it is compared, never joined.
+  principal_id uuid not null,
   -- The package waiting in the object store for the job; gone once the delivery is written or refused.
   package_key text check (package_key is null or package_key <> ''),
   -- The source document's persistent identity, once the delivery has made or found its document.
