@@ -76,6 +76,15 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'binding.revised'() {
     return words('admin.data-revised');
   },
+  get 'bridge.delivered'() {
+    return words('admin.delivery-from-ct-studio-written');
+  },
+  get 'bridge.refused'() {
+    return words('admin.delivery-from-ct-studio-refused');
+  },
+  get 'bridge.settings_changed'() {
+    return words('admin.bridge-settings-changed');
+  },
   get 'channel.changed'() {
     return words('admin.channel-changed');
   },
@@ -433,6 +442,9 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   },
   get binding() {
     return words('admin.data-in-documents');
+  },
+  get bridge() {
+    return words('admin.ct-studio-deliveries');
   },
   get channel() {
     return words('admin.channels');

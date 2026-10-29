@@ -41,8 +41,12 @@ refused. Signed in as an administrator:
 
 1. Make a service identity (`POST /v1/service-identities`), named for what it is, for example
    "CT Studio deliveries".
-2. Give it access: grant the identity **create** and **edit** in each space CT Studio is to deliver
-   into. The token below is only a mask over these grants, never more.
+2. Give it access: grant the identity the **Author** role (`read`, `create`, `edit`, `comment` and
+   `suggest`) at each space CT Studio is to deliver into, with `POST /v1/grants`: the role's id, the
+   identity as the `principal` of the subject, the level `space:<space id>` and the effect `allow`.
+   The delivery needs `create` to make a document and `edit` to update one. The token below is only
+   a mask over these grants, never more, and the job checks the grants again when it runs, so a grant
+   removed after a delivery was accepted refuses it.
 3. Issue it a token (`POST /v1/service-identities/{id}/tokens`) with the scopes `create` and `edit`
    and an expiry no more than 365 days away. The answer carries the `awt_` secret **once**; copy it
    straight to CT Studio.
@@ -102,10 +106,17 @@ source and recipe replaces its earlier rows and leaves other sources' alone.
 
 To query the tables, sign in as somebody who may use the connection and write SQL in the space:
 
-1. Open the connection the settings named. **Test** it; **Describe** lists the delivered tables.
+1. Open the connection the settings named. **Test** it first: a connection that has not been tested
+   refuses Describe and Sample with `sql_not_permitted`, so the test is what lets the rest run.
+   Then **Describe** lists the delivered tables.
 2. Make a **query definition** in the space on that connection, with an SQL fetch such as
    `select * from "<table set>_<table id>"`, and declare its columns.
 3. **Sample** it to see the rows.
+
+A CT Studio number column is stored as an unconstrained `numeric`, so a value keeps all the digits
+CT Studio sent. Describe proposes no type for such a column, since there is no precision or scale to
+read from it: when you declare the query definition's columns, you choose the precision and scale
+that suit the figures.
 
 If a recipe changes, a new column is added to the table; a column the package no longer has is kept,
 null in new rows. A column whose type changes is refused, `content_rejected` naming it, because

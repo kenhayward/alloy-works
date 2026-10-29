@@ -101,8 +101,8 @@ signature is as the code has it at the plan's base (`2bcaa436`).
 - [ ] **Step 2:** `pnpm --filter @alloy-works/domain test -- bridge/contract` fails on the import.
 - [ ] **Step 3:** add to `.npmrc`:
       `@kenhayward:registry=https://npm.pkg.github.com` and
-      `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}`; add `"@kenhayward/bridge-contract":
-    "0.10.0"` (exact) to the three packages; install with `NODE_AUTH_TOKEN=$(gh auth token)`.
+      `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}`; add the dependency
+      `"@kenhayward/bridge-contract": "0.10.0"` (exact) to the three packages; install with `NODE_AUTH_TOKEN=$(gh auth token)`.
       In `deploy/Dockerfile`, each `pnpm install` gets
       `RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN`; in `ci.yml`, every job running
       `pnpm install` gets `env: NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`, the workflow

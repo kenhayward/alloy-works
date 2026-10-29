@@ -4,7 +4,8 @@ How a document decomposed by CT Studio, and the data tables it extracts, land in
 unattended: a second sink for CT Studio's delivery bridge, beside 3ds-sink, but served by the Alloy
 Works service itself rather than as a service of its own. Ken's answers of 2026-10-29 shaped it, and
 [ADR-0071](../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md) records them.
-Nothing here is built yet; a plan in `docs/plans/` comes next.
+Built by [the CS plan](../plans/2026-10-29-cs-ct-studio-sink.md); [As CS built it](#as-cs-built-it)
+says where the build settled what this design left open.
 
 ## The shape in one paragraph
 
@@ -322,7 +323,8 @@ the way any source is read.
 ## Errors
 
 The contract's version 2 codes, with their classes, and none of the version 3 administration codes
-(`locked`, `forbidden`, `not_configured`), whose meanings are a sink's configuration's: an unknown
+(`locked`, `forbidden`, `not_configured`), whose meanings are a sink's configuration's (the
+`not_configured` below is a `content_rejected` reason, never that code): an unknown
 hostname or tenant `instance_not_allowed`; a bad, expired or person's token, or an identity without
 `create` and `edit` in the space, `credential_rejected` (CT Studio then points its person at the
 connection); the space gone `not_found`; a model or mapping refusal, a person's lock or a space not
@@ -356,8 +358,8 @@ The `content_rejected` reasons, each answered before anything is written:
 - **The service** mounts `/bridge` when `SECRET_BRIDGE_KEYS` is set; nothing is published that is not
   already, since `/bridge` is on the service's own port.
 - **The delivery store** is a Postgres service in `deploy/compose.yaml`, `delivered-postgres`, on
-  `connector-egress` (where the connector reaches `source-postgres`) and the service's network, with
-  its own volume and certificate. A deployment whose `CONNECTOR_DENY` refuses private addresses must
+  `connector-egress` (where the connector reaches `source-postgres`) and `delivered`, a network of its
+  own shared with the service and worker alone, with its own volume and certificate. A deployment whose `CONNECTOR_DENY` refuses private addresses must
   allow this one.
 - **CT Studio's side** needs no code: an entry in the bridge's `BRIDGE_SINKS` per tenant, a shared
   connection holding the service identity's token, and a target naming the space. The bridge must
@@ -375,6 +377,104 @@ The `content_rejected` reasons, each answered before anything is written:
   with nothing written; a replayed key answers the first receipt after an update.
 - **Data**: a delivery read back through a connection and an SQL query definition by the connector.
 - **Cross-tenant**: one tenant's key, token or hostname never reaches another's documents or tables.
+
+## As CS built it
+
+What the build settled where this design left a choice, or changed what it said. Each is how the
+system behaves now.
+
+### Documents
+
+- **A table's notes.** A note whose superscript marker is in exactly one cell is a `footnote`
+  anchored to that cell, and its marker is removed from the cell's text. A note whose marker is in no
+  cell, or in several, is plain text in the table's `note` (the marker, a space, the words, several
+  run on in order), reported, and its markers stay in the cells as written so a reader can match
+  them. A footnote anchored to the table itself is never made, because publishing refuses one.
+- **What a cell cannot hold is converted, not refused.** CT Studio's own decomposed fixture puts
+  images, equations and a table in cells, and conformance requires it to be delivered. An image or
+  figure becomes a paragraph of its caption then an inline image; a block equation an inline
+  equation; a quotation or preformatted block a paragraph; a table in a cell is flattened to
+  paragraphs (caption, one per cell in grid order, each note as `marker: words`) and reported
+  `table_flattened`.
+- **Read-back is honest.** It compares text forms in full and leaves out the grid of a table
+  flattened into a cell, naming it in the report. A mapping that loses words - a note referenced by
+  no marker, a flattened note's content, a marker repeated in one cell - reports `readBack.ok`
+  false rather than the comparison being loosened, so CT Studio shows a warning on that document.
+- **A cross-reference to a block the mapping dropped or flattened** targets that block's component,
+  or its section's node, never a missing id. A lead with no blocks of its own makes the reference
+  fall back to its text, reported `xref_outside`.
+- **The delivered outline is CT Studio's structure alone.** A template's starting sections and
+  required components are not added to it, so a template rule can be unmet on a delivered document.
+- **The template governs the metadata.** The document is made through the space's template, bound as
+  `createDocument` binds it, with the identifier CT Studio's persistent id gives. A required field
+  left without a value refuses the delivery, `content_rejected` reason `metadata_incomplete`; a
+  template with a parameter that has no default refuses every delivery, `template_unresolved`, since
+  a delivery has no one to ask. A property value that does not convert, or is only white space,
+  leaves its field unset and is reported `property_unconverted`; a property no field takes is kept
+  with the provenance in `bridge_delivery`.
+- **`bridge_element` holds the lead, the sections and the images.** A block's identifier is derived
+  and needs no record.
+- **A column type CT Studio names that is not known is `text`**; the contract keeps the type an open
+  string. `ct_approved_by` is the approver's name.
+- **An update compares more than it was told.** A component the delivery derives that is in the
+  target but not among `expected` is compared too: if a person changed it since its last delivery
+  (by `bridge_delivery`'s receipt and the element record), the update is refused,
+  `changed_in_target`, rather than overwriting it.
+- **Grants are checked by the job.** At run time, for the token's identity in the space, the job
+  decides `create` (a new document) or `edit` (an update) before anything is written. A grant
+  removed since the delivery was accepted refuses it, `credential_rejected`, as does a token revoked
+  or expired in between; a space archived or no longer readable answers `not_found`.
+- **Images.** An SVG original the delivery keeps is held against release like any referenced
+  object: `objectInUse` counts it, so a release elsewhere cannot delete bytes the delivery says it
+  kept. Finding the originals in use is by a GIN index on `bridge_delivery.provenance`. An SVG
+  that cannot be drawn refuses the delivery.
+
+### The service
+
+- **The instance** `describe` answers is `{ id: <tenant slug>, label: <tenant name> }`, the
+  platform tenant's readable id and its display name.
+- **The body limit** is 100 MiB on the route itself, over the default; a larger body answers
+  `too_large`. A store or database that is down answers `sink_unavailable` (503), not `internal`.
+- **A reused key is refused.** An idempotency key already used for another space, or by another
+  service identity, refuses `content_rejected` with reason `key_reused`; it never answers that
+  delivery's receipt. After the first token is revoked, even the same identity is refused.
+- **A package with neither document nor data** (files or images only) is accepted and written as
+  nothing, its receipt empty, as `files` are; it is never `not_configured`.
+- **`not_configured` is for both families.** A document delivery to a space with no bridge
+  settings is refused too, since it has no component type or template to write with; and so is a
+  data package to a space whose settings name no delivery store (or to a worker given none).
+- **Webhooks and audit.** `bridge.delivered` and `bridge.refused` are webhook event types. A
+  webhook's readability check needs an artifact or a space, so `bridge.refused` takes the space as
+  its subject, and `bridge.delivered` the document for a document delivery and the space for data.
+  `bridge.settings_changed` is audit only. The job queue sweeps the nonce table, and the runtime
+  role cannot delete or truncate `bridge_delivery`.
+- **Browse** reads at most 20 pages of spaces a call.
+
+### Data
+
+- **A person's data is not an internal error.** A value its column's type cannot hold refuses the
+  delivery, `content_rejected` reason `value_invalid` naming the table, column and row (1-based, as
+  `ct_row`) and rolling the transaction back; an empty value is null in every column but text.
+- **A table the recipe no longer produces keeps its old rows.** A replace acts on the tables a
+  package names; removing tables under a person's queries is theirs to decide.
+- **Names.** A table or column name that would begin with a digit takes a leading `_`; a tenant name
+  that had to be cleaned gets a hash suffix, and provisioning returns the names it made. A
+  column-level `name_conflict` also answers `details.field: tableSet`, the one thing the person can
+  change.
+- **Provisioning and the password.** Turning data on provisions only when the space has no delivery
+  connection or its schema is not yet recorded; a settings change that touches only the mapping
+  rotates nothing. When it does rotate, the service chooses the tenant role's password, seals it for
+  every delivery connection of the tenant, writes them in the tenant transaction and sets the role's
+  password last, so a seal that fails changes nothing. Turning data off clears the schema and keeps
+  the connection and the tables. One advisory lock serialises provisioning, and `connect` is revoked
+  from `PUBLIC` on the delivered database.
+- **The host check.** A delivery connection is reused or resealed only while its source settings
+  (host, port, database, TLS, account) equal the delivery store's own. One that was edited is never
+  resealed - it loses access - and the space gets a new connection, so an administrator who points
+  a connection at a server of their own is never handed the tenant's read password.
+- **The public schema** is untouched (Postgres 17 gives `PUBLIC` no create there).
+- **Deployment.** The delivery store is the platform's own pgvector Postgres 17 image, pinned by
+  digest; the contract package installs from GitHub Packages through a build secret.
 
 ## Decisions
 
@@ -394,7 +494,8 @@ The `content_rejected` reasons, each answered before anything is written:
 - One component per section's own text, sections `numbered: false`, references pinned.
 - The receipt's components include the document and its assets, so any edit in Alloy Works refuses
   the next update.
-- Table notes whose marker is in no cell anchored to the table, not refused.
+- Table notes whose marker is in no cell carried in the table's own `note`, not refused (a
+  table-anchored footnote cannot be published).
 - Properties fill metadata only through an administrator's mapping; unconvertible values reported,
   not refused.
 - The delivery store provisioned by the service when delivery is turned on for a space, its read

@@ -36,13 +36,14 @@ made it told. Every attempt, what was sent and what came back, is kept 30 days f
 The audit kind's name is the event type, so a receiver reads the same words as the audit log. The
 list is closed, in domain, each held by a test to an audit kind.
 
-| Types                                                                                  | Subject                                               |
-| -------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `content.version_cut`, `content.restored`, `artifact.archived`, `artifact.unarchived`  | The artifact and its version                          |
-| `workflow.transitioned`, `approval.given`, `gate.rejected`, `revision.effective`       | The artifact and its version                          |
-| `round.opened`, `round.closed`, `review.completed`, `review.reopened`, `review.lapsed` | The document and its version                          |
-| `publication.requested`, `publication.produced`, `publication.failed`                  | The document and its version                          |
-| `notification.created`                                                                 | The notification, and its artifact where it names one |
+| Types                                                                                  | Subject                                                  |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `content.version_cut`, `content.restored`, `artifact.archived`, `artifact.unarchived`  | The artifact and its version                             |
+| `workflow.transitioned`, `approval.given`, `gate.rejected`, `revision.effective`       | The artifact and its version                             |
+| `round.opened`, `round.closed`, `review.completed`, `review.reopened`, `review.lapsed` | The document and its version                             |
+| `publication.requested`, `publication.produced`, `publication.failed`                  | The document and its version                             |
+| `notification.created`                                                                 | The notification, and its artifact where it names one    |
+| `bridge.delivered`, `bridge.refused`                                                   | CT Studio's delivery: the document it made, or the space |
 
 Deletion is not an event a receiver can be told of: a deleted artifact is read by nobody. A payload:
 `{ type, id, sequence, at, subject: { kind, id, version }, detail }`, `detail` the audit event's own

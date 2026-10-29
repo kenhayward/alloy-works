@@ -92,6 +92,15 @@ does on Linux: a port published on every address, and a process on the Windows h
 every address, each answer an ordinary container through the host and neither answers the
 connector.
 
+**The delivery store sits on both sides of that boundary.** `delivered-postgres`, where CT Studio's
+data tables are written, is on `connector-egress` - where the connector reaches it as it reaches
+`source-postgres`, with a read-only account per environment - and on a third network, `delivered`,
+which is `internal: true` and isolated like the other two and holds only the delivery store, the
+service and the worker. The service and worker write to it there as its owner
+(`SECRET_DELIVERED_URL`); the connector is not on `delivered` and the service and worker are not on
+`connector-egress`, so the connector still reaches none of the platform. A deployment whose
+`CONNECTOR_DENY` refuses private addresses must allow the delivery store's address.
+
 The service reaches it at `CONNECTOR_URL` with the key in `SECRET_CONNECTOR_KEY`; without the two
 the service still starts, and every data act answers `connector_unavailable`.
 

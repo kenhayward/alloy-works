@@ -1,6 +1,6 @@
 # 0071 - CT Studio delivers straight in, as a service identity
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-29
 
 ## Context
