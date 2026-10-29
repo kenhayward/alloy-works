@@ -29,6 +29,7 @@
   "dependencies": {
     "@alloy-works/domain": "workspace:^",
     "@alloy-works/sealing": "workspace:^",
+    "@kenhayward/bridge-contract": "0.10.0",
     "kysely": "^0.29.5",
     "pg": "^8.23.0"
   },

@@ -411,6 +411,9 @@ importers:
       '@alloy-works/sealing':
         specifier: workspace:^
         version: link:../sealing
+      '@kenhayward/bridge-contract':
+        specifier: 0.10.0
+        version: 0.10.0
       kysely:
         specifier: ^0.29.5
         version: 0.29.5

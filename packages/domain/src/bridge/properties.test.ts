@@ -87,6 +87,15 @@ describe('document properties to metadata values', () => {
     expect(result.unmapped).toEqual([]);
   });
 
+  it.each(['', '   ', '\t\n'])('API-073 an empty text %j is left unset and reported', (text) => {
+    const result = mapProperties([prop('Title', text)], { Title: 'title' }, fields);
+    expect(result.values).toEqual({});
+    expect(result.carried.map((entry) => [entry.code, entry.element])).toEqual([
+      ['property_unconverted', 'Title'],
+    ]);
+    expect(result.unmapped).toEqual([]);
+  });
+
   it('API-073 reports a value the field own validation refuses', () => {
     const result = mapProperties([prop('S', 'long text')], { S: 'short' }, fields);
     expect(result.values).toEqual({});

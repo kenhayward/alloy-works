@@ -15,7 +15,8 @@ function convert(dataType: string, raw: string): unknown {
   const text = raw.trim();
   switch (dataType) {
     case 'text':
-      return raw;
+      // Nothing to say is no value: left unset, and reported.
+      return text === '' ? undefined : raw;
     case 'number':
       return canonicaliseDecimal(text);
     case 'date':

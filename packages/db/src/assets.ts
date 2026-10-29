@@ -213,12 +213,14 @@ export async function uploadForDatasetImage(
 /**
  * The `ingest` job's success: the asset, in the upload's space, at version 0.1 by its uploader, with
  * what the check read and the description the uploader gave; and the upload `ready`, naming it. One
- * transaction, so an upload is never ready without its asset or the other way round.
+ * transaction, so an upload is never ready without its asset or the other way round. A delivery's
+ * image carries the delivery's note on its version, as every version it writes does (API-071).
  */
 export async function recordAsset(
   trx: TenantTransaction,
   id: string,
   header: ImageHeader,
+  options: { readonly note?: string } = {},
 ): Promise<StoredVersion> {
   const upload = await readAssetUpload(trx, id);
   if (!upload || upload.state !== 'checking') throw new Error(`Upload ${id} is not being checked`);
@@ -242,6 +244,7 @@ export async function recordAsset(
   const version = await createArtifact(trx, {
     spaceId: upload.spaceId,
     author: upload.uploader,
+    ...(options.note === undefined ? {} : { note: options.note }),
     substance: { kind: 'asset', content },
   });
   await trx

@@ -1363,3 +1363,14 @@ export {
   type StartedDelivery,
   type StoredDelivery,
 } from './bridge-store.js';
+export {
+  deliveryNote,
+  writeDocumentDelivery,
+  type CheckedImage,
+  type DeliveryObjects,
+  type DocumentDelivery,
+  type DocumentRefused,
+  type DocumentWritten,
+  type ExpectedComponent,
+  type SinkReceipt,
+} from './bridge-documents.js';

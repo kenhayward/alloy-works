@@ -12,3 +12,5 @@ export { mapProperties } from './properties.js';
 export type { DecomposedProperty } from './properties.js';
 export { planTables } from './tables.js';
 export type { ColumnType, PackageData, TablePlan, TablePlanRefusal } from './tables.js';
+export { readBack } from './readback.js';
+export type { ReadBack, WrittenDocument } from './readback.js';
