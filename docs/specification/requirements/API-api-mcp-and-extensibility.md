@@ -147,6 +147,25 @@ door. Whether native content - content this product already holds, moving betwee
 that both speak its own format - needs batch endpoints is a different question, and an open one
 (**API-Q05**).
 
+### Delivery from CT Studio
+
+One integration is the exception to API-N05 and IMP-003: CT Studio's delivery bridge, whose content a
+person has already reviewed in CT Studio and which arrives already split
+([ADR-0071](../../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md)). It
+answers API-Q05 for this integration only.
+
+| ID          | Requirement                                                                                                                                                                                                                                                        | Tranche | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
+| **API-065** | A document decomposed by CT Studio, and the data tables it extracts, must be deliverable unattended through CT Studio's bridge contract, signed by the bridge and acting as a service identity an administrator made; no other caller or format is excused API-N05 | T6      | Specified |
+| **API-066** | The delivery endpoint must pass the bridge contract's published conformance suite at the contract version it declares                                                                                                                                              | T6      | Specified |
+| **API-067** | A delivery must be all or nothing: one refused or failed leaves nothing written                                                                                                                                                                                    | T6      | Specified |
+| **API-068** | One delivery key must write at most once, and a replay must answer the first write's receipt                                                                                                                                                                       | T6      | Specified |
+| **API-069** | An update must name the versions it expects, and must be refused, changing nothing, when any has moved on or is locked by a person                                                                                                                                 | T6      | Specified |
+| **API-070** | Delivered content must keep the same identifiers from one delivery of a document to the next                                                                                                                                                                       | T6      | Specified |
+| **API-071** | Every delivered version must record the source file, its hash, the decomposer version, the delivery key and the CT Studio user it was delivered for                                                                                                                | T6      | Specified |
+| **API-072** | Delivered data tables must be real Postgres tables outside the platform's database, readable by an SQL query definition through a connection                                                                                                                       | T6      | Specified |
+| **API-073** | What a delivery could not carry must be reported in its receipt and kept with the delivery, never dropped silently                                                                                                                                                 | T6      | Specified |
+
 ## 7. MCP
 
 | ID          | Requirement                                                                                                                            | Tranche    | Status    |
@@ -218,26 +237,27 @@ value it saw is exactly the silent staleness this specification rules out everyw
 | **API-Q02** | **How many MCP tools is the right number (API-024)?** Too few and an agent cannot do the job; too many and it does none of them well                                                                                                          | Evaluation against real tasks, which is the only way to find out                                                                                                                                                                                                                                              |
 | **API-Q03** | **Where do extensions run?** In-process is fast and dangerous; out-of-process is safe and slow, and both are a support burden                                                                                                                 | The architecture, and how much a connector is expected to do                                                                                                                                                                                                                                                  |
 | **API-Q04** | **Is the API public, or for integrators under contract?** It changes what deprecation costs and how much the specification must promise                                                                                                       | A commercial decision as much as a technical one                                                                                                                                                                                                                                                              |
-| **API-Q05** | **Do batch create and update endpoints exist for native content?** API-N05 rules out unattended import of foreign documents; content this product already holds, moving between tenants or systems that speak its format, is a different case | The first integration that needs it. The risk of adding it early is that it becomes the bulk-import door API-N05 closed                                                                                                                                                                                       |
+| **API-Q05** | **Do batch create and update endpoints exist for native content?** API-N05 rules out unattended import of foreign documents; content this product already holds, moving between tenants or systems that speak its format, is a different case | **Settled for CT Studio only** by [ADR-0071](../../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md): its bridge delivers straight in (API-065 to API-073). General batch endpoints for native content stay open, for the next integration that needs them                              |
 | **API-Q06** | **Are extensions versioned and pinned per tenant (API-048)?** An extension updated under a tenant that depended on its old behaviour is the same failure as an unversioned API, one layer out                                                 | The architecture decision in API-Q03. Where extensions run largely decides whether pinning is cheap                                                                                                                                                                                                           |
 | **API-Q07** | **What are the synchronous surface's availability and latency numbers (API-050)?** Scope §11 budgets opening, publishing, keystrokes and search, and names an availability target, but no number covers an ordinary API request               | The first load testing against real content, and the commercial answer to API-Q04 - what is promised depends on who it is promised to                                                                                                                                                                         |
 
 ## 12. Traceability
 
-| This document      | Rests on                                                                        |
-| ------------------ | ------------------------------------------------------------------------------- |
-| API-002, API-003   | Scope §9 decision 5, OpenAPI as the source of truth                             |
-| API-018, API-024   | Scope §9 decision 6, a curated facade                                           |
-| API-020, API-022   | IAM-036, GEN-017                                                                |
-| API-014            | Scope §7.15, realtime specified separately                                      |
-| Section 9          | Scope §7.15 extension points, in priority order                                 |
-| API-037 to API-039 | COL-005, COL-007 - one editor at a time, and who holds it                       |
-| API-040 to API-044 | IMP-018, IMP-020; REU section 9; PUB - the work that outlives a request         |
-| API-049            | DAT - what a binding does when its source is gone                               |
-| API-050            | ADM-016, ADM-020; scope §11                                                     |
-| API-053            | IAM - the authentication and authorisation contract                             |
-| API-037 to API-053 | [The v1 review](<../../reviews/API - api and mcp specification.md>); section 13 |
-| API-062            | [Requirement issue #352](https://github.com/kenhayward/alloy-works/issues/352)  |
+| This document      | Rests on                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| API-002, API-003   | Scope §9 decision 5, OpenAPI as the source of truth                                                         |
+| API-018, API-024   | Scope §9 decision 6, a curated facade                                                                       |
+| API-020, API-022   | IAM-036, GEN-017                                                                                            |
+| API-014            | Scope §7.15, realtime specified separately                                                                  |
+| Section 9          | Scope §7.15 extension points, in priority order                                                             |
+| API-037 to API-039 | COL-005, COL-007 - one editor at a time, and who holds it                                                   |
+| API-040 to API-044 | IMP-018, IMP-020; REU section 9; PUB - the work that outlives a request                                     |
+| API-049            | DAT - what a binding does when its source is gone                                                           |
+| API-050            | ADM-016, ADM-020; scope §11                                                                                 |
+| API-053            | IAM - the authentication and authorisation contract                                                         |
+| API-037 to API-053 | [The v1 review](<../../reviews/API - api and mcp specification.md>); section 13                             |
+| API-062            | [Requirement issue #352](https://github.com/kenhayward/alloy-works/issues/352)                              |
+| API-065 to API-073 | [ADR-0071](../../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md), Ken on 2026-10-29 |
 
 ## 13. Change history
 

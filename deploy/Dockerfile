@@ -27,7 +27,7 @@ WORKDIR /repo
 
 FROM base AS build
 # The manifests first, so a change to source does not reinstall the world.
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
 COPY apps/connector/package.json apps/connector/
 COPY apps/desktop/package.json apps/desktop/
 COPY apps/service/package.json apps/service/
@@ -45,7 +45,10 @@ COPY packages/readers/package.json packages/readers/
 COPY packages/sealing/package.json packages/sealing/
 COPY packages/stand-in-idp/package.json packages/stand-in-idp/
 # Only what the containers need: this is what keeps Electron and the renderer out of the image.
-RUN pnpm install --frozen-lockfile \
+# The bridge contract comes from GitHub Packages; its token is a build secret, mounted for this step
+# only and never stored in a layer: --secret id=npm_token,env=NODE_AUTH_TOKEN
+RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
+    pnpm install --frozen-lockfile \
       --filter "@alloy-works/service..." \
       --filter "@alloy-works/worker..." \
       --filter "@alloy-works/stand-in-idp..." \
@@ -59,12 +62,14 @@ COPY apps/connector/ apps/connector/
 COPY apps/service/ apps/service/
 COPY apps/web/ apps/web/
 COPY apps/worker/ apps/worker/
-RUN pnpm --filter "@alloy-works/service..." build \
+RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
+    pnpm --filter "@alloy-works/service..." build \
  && pnpm --filter "@alloy-works/worker..." build \
  && pnpm --filter "@alloy-works/web..." build \
  && pnpm --filter "@alloy-works/connector..." build
 # Each app, with its own production dependencies and nothing else.
-RUN pnpm deploy --filter @alloy-works/service --prod /prod/service \
+RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
+    pnpm deploy --filter @alloy-works/service --prod /prod/service \
  && pnpm deploy --filter @alloy-works/worker --prod /prod/worker \
  && pnpm deploy --filter @alloy-works/connector --prod /prod/connector
 

@@ -208,7 +208,8 @@ describe('the real corpus', () => {
     // 1593 (2026-10-27): STY-084 and STY-085, beside STY-075 amended (UIg).
     // 1594 (2026-10-28): LOC-044, superseding LOC-038 (TEa).
     // 1595 (2026-10-29): LOC-045, superseding LOC-039 (MFa).
-    expect(total((document) => document.requirements)).toBe(1595);
+    // 1604 (2026-10-29): API-065 to API-073, delivery from CT Studio (CS).
+    expect(total((document) => document.requirements)).toBe(1604);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

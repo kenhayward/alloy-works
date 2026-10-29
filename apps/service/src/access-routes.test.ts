@@ -1093,6 +1093,12 @@ describe('routes that check a permission', () => {
       payload: { definition: aTemplate() },
     }),
     getTemplate: () => ({ url: `/v1/templates/${plan}`, status: 404 }),
+    getBridgeSettings: () => ({ url: `/v1/spaces/${clinical}/bridge-settings`, status: 404 }),
+    putBridgeSettings: () => ({
+      url: `/v1/spaces/${clinical}/bridge-settings`,
+      status: 404,
+      payload: { componentType: null, template: null, propertyMap: {}, data: false },
+    }),
     createConnection: () => ({
       url: `/v1/spaces/${clinical}/connections`,
       status: 404,

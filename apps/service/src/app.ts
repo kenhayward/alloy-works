@@ -93,6 +93,8 @@ import { serviceIdentityHandlers } from './service-identities.js';
 import { webhookHandlers } from './webhooks.js';
 import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
+import { registerBridge } from './bridge/plugin.js';
+import { bridgeSettingsHandlers } from './bridge/settings.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
@@ -369,6 +371,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
   registerMcp(app, db, (hostname) => tenants.resolve(hostname));
+  // CT Studio's delivery bridge (ADR-0071), served only where its signing keys are set.
+  const bridgeKeys = (secrets.get('bridge_keys') ?? '')
+    .split(',')
+    .map((key) => key.trim())
+    .filter((key) => key !== '');
+  if (bridgeKeys.length > 0) {
+    if (!options.objects) throw new Error('The bridge needs an object store for its packages');
+    registerBridge(app, {
+      db,
+      objects: options.objects,
+      keys: bridgeKeys,
+      resolve: (hostname) => tenants.resolve(hostname),
+    });
+  }
   app.decorateRequest('tenant', null);
   app.decorateRequest('principal', null);
   app.decorateRequest('credential', null);
@@ -577,11 +593,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
     options.objects,
     options.events,
   );
+  // A space's CT Studio settings, and the delivery store data delivery is turned on against.
+  const bridgeSettings = bridgeSettingsHandlers({
+    tenantOf,
+    connector: options.connector,
+    deliveredUrl: secrets.get('delivered_url'),
+  });
+  app.addHook('onClose', bridgeSettings.close);
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf, boundCreation),
     ...templateHandlers(db, tenantOf, principalOf),
     ...connectionRoutes,
+    ...bridgeSettings.handlers,
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...bindingHandlers(tenantOf, options.objects),
     ...pendingHandlers(db, tenantOf, options.objects),

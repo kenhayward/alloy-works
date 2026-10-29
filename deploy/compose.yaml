@@ -56,6 +56,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: tools
     command: ['pnpm', '--filter', '@alloy-works/stand-in-idp', 'start']
     environment:
@@ -78,6 +80,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: tools
     command: ['pnpm', 'dev:setup']
     environment:
@@ -103,6 +107,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: service
     environment:
       DATABASE_URL: postgres://aw_service:aw_service_dev@postgres:5432/alloy_dev
@@ -122,16 +128,27 @@ services:
       # to it: the connector's CONNECTOR_KEY. A development-only value, as every key here is.
       CONNECTOR_URL: http://connector:8090
       SECRET_CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
+      # CT Studio's delivery bridge: the keys its signed requests may carry, comma separated, so one can
+      # be rotated. Unset, the service starts and /bridge is simply not mounted. Set it in deploy/.env
+      # (or the shell) to a throwaway value; no key is baked in here.
+      SECRET_BRIDGE_KEYS: ${SECRET_BRIDGE_KEYS:-}
+      # The delivery store, as its owner: where data packages become tables (ct-studio-sink.md, "Data
+      # tables"). TLS is required; `uselibpqcompat` makes `sslmode=require` mean what libpq means (encrypt,
+      # do not verify), which the snakeoil certificate needs.
+      SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     ports:
       - '127.0.0.1:${SERVICE_PORT:-8088}:${SERVICE_PORT:-8088}'
     networks:
       - default
       - connector-private
+      - delivered
     depends_on:
       setup:
         condition: service_completed_successfully
       stand-in-idp:
         condition: service_started
+      delivered-postgres:
+        condition: service_healthy
 
   worker:
     build:
@@ -139,6 +156,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: worker
     environment:
       DATABASE_URL: postgres://aw_worker:aw_worker_dev@postgres:5432/alloy_dev
@@ -156,12 +175,17 @@ services:
       # And the key that opens its re-checks of cited entries alone, the connector's
       # CONNECTOR_REFERENCE_KEY (the XR plan, XR-E).
       SECRET_CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
+      # The delivery store, as the service has it: a data package is written there by the worker.
+      SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     networks:
       - default
       - connector-private
+      - delivered
     depends_on:
       setup:
         condition: service_completed_successfully
+      delivered-postgres:
+        condition: service_healthy
 
   # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
   # networks and no others: `connector-private`, which it shares with the service and the worker, and
@@ -176,6 +200,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: connector
     environment:
       CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
@@ -279,6 +305,44 @@ services:
       timeout: 5s
       retries: 45
 
+  # The delivery store (ct-studio-sink.md, "Data tables"): a PostgreSQL of its own, apart from the
+  # platform's because the connector has no route to the platform. The service and the worker write
+  # a tenant's delivered tables there as its owner (SECRET_DELIVERED_URL) over the `delivered` network;
+  # the connector reads them with a read-only account per tenant over `connector-egress`, reaching it
+  # as `delivered-postgres`, as it reaches `source-postgres`. TLS on with the image's snakeoil pair; in
+  # production the deployment's own certificate. Pinned by digest, as `source-postgres` is. It holds
+  # nothing until a space turns data delivery on, and publishes no port. The owner password is an
+  # invented development value, as every one here is.
+  delivered-postgres:
+    # Postgres 17, the platform database's own image: the delivery store follows its major version.
+    image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
+    # Writes its pg_hba, then starts the image's own entrypoint with TLS on: from anywhere only the
+    # tenants' read roles (group `delivered_readers`), the owner only from the `delivered` subnet,
+    # everything else refused (./delivered/start.sh).
+    entrypoint: ['sh', '/srv/delivered/start.sh']
+    environment:
+      POSTGRES_PASSWORD: delivered-postgres-dev-password
+      POSTGRES_DB: delivered
+      DELIVERED_SUBNET: ${DELIVERED_SUBNET:-10.213.71.0/24}
+    volumes:
+      - delivered-data:/var/lib/postgresql/data
+      - ./delivered/start.sh:/srv/delivered/start.sh:ro
+    networks:
+      - connector-egress
+      - delivered
+    healthcheck:
+      # By the socket as the postgres OS user, whom the pg_hba admits by peer, asking the server what
+      # it listens on: the image's first server listens on its socket alone, so only the real one
+      # answers `*`. Over TCP the pg_hba would refuse the check and log it every two seconds.
+      test:
+        [
+          'CMD-SHELL',
+          '[ "$$(gosu postgres psql -d delivered -tAc ''show listen_addresses'')" = "*" ]',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 45
+
   # Development and CI only, in the `sources` profile: a tenant's own HTTPS API (the D6 plan, task
   # 1), the fake the connector's suite runs, answering at https://source-http/v1 with the invented key
   # `source-http-dev-key` in `x-api-key`. Its certificate is the development CA's beside it, which the
@@ -338,7 +402,24 @@ networks:
     internal: true
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
+  # Between the delivery store and the service and worker that write it, and no one else. Its
+  # subnet is fixed because the store's pg_hba admits the owner only from it; set DELIVERED_SUBNET
+  # where the default collides with a network the host already has.
+  delivered:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+    ipam:
+      config:
+        - subnet: ${DELIVERED_SUBNET:-10.213.71.0/24}
+
+# The bridge contract package comes from GitHub Packages; the image builds read its token from the
+# environment (a GitHub token with read:packages, e.g. NODE_AUTH_TOKEN=$(gh auth token)).
+secrets:
+  npm_token:
+    environment: NODE_AUTH_TOKEN
 
 volumes:
   postgres-data:
   seaweedfs-data:
+  delivered-data:

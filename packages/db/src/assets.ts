@@ -213,12 +213,14 @@ export async function uploadForDatasetImage(
 /**
  * The `ingest` job's success: the asset, in the upload's space, at version 0.1 by its uploader, with
  * what the check read and the description the uploader gave; and the upload `ready`, naming it. One
- * transaction, so an upload is never ready without its asset or the other way round.
+ * transaction, so an upload is never ready without its asset or the other way round. A delivery's
+ * image carries the delivery's note on its version, as every version it writes does (API-071).
  */
 export async function recordAsset(
   trx: TenantTransaction,
   id: string,
   header: ImageHeader,
+  options: { readonly note?: string } = {},
 ): Promise<StoredVersion> {
   const upload = await readAssetUpload(trx, id);
   if (!upload || upload.state !== 'checking') throw new Error(`Upload ${id} is not being checked`);
@@ -242,6 +244,7 @@ export async function recordAsset(
   const version = await createArtifact(trx, {
     spaceId: upload.spaceId,
     author: upload.uploader,
+    ...(options.note === undefined ? {} : { note: options.note }),
     substance: { kind: 'asset', content },
   });
   await trx
@@ -347,6 +350,19 @@ export async function objectInUse(
       await sql`select 1 from translation_job_return where object_key = ${key} limit 1`.execute(
         trx,
       );
+    if (kept.length > 0) return true;
+  }
+  // A package a delivery from CT Studio waits on (0172), until the delivery is written or refused.
+  const { rows: deliveries } = await sql<{ stored: boolean }>`
+    select to_regclass(current_schema() || '.bridge_delivery') is not null as stored`.execute(trx);
+  if (deliveries[0]?.stored === true) {
+    const { rows: waiting } =
+      await sql`select 1 from bridge_delivery where package_key = ${key} limit 1`.execute(trx);
+    if (waiting.length > 0) return true;
+    // An SVG's original a written delivery kept by its hash, beside the PNG made of it (Ruling 27).
+    const { rows: kept } = await sql`select 1 from bridge_delivery
+       where provenance -> 'originals' @> jsonb_build_array(jsonb_build_object('key', ${key}::text))
+       limit 1`.execute(trx);
     if (kept.length > 0) return true;
   }
   const upload = await trx

@@ -385,6 +385,12 @@ export {
   personalPromptRoutes,
 } from './personal-prompts.js';
 export {
+  BridgeSettingsBody,
+  BridgeSettingsRefusal,
+  BridgeSettingsView,
+  bridgeSettingsRoutes,
+} from './bridge-settings.js';
+export {
   RangePageParams,
   RangePreviewParams,
   RangePreviewView,

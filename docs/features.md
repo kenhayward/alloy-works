@@ -289,6 +289,23 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Terms published.** A defined term prints its approved forms by the theme's rule: expanded on first use in reading order, then its abbreviation, or always or never expanded; a heading prints its preferred label and is no use. Labels are the document's language, else the term's base. A glossary and a list of abbreviations of the terms used follow the last node where the layout places them, as the default layout does. A draft or unreadable term prints the words it covers; it, a deprecated term and a label in the base language are reported on the request without stopping it. The term versions read are recorded and a baseline pins them.
 - **Index entries.** **Index entry** on the editor's toolbar, or Ctrl or Cmd, Shift and 1, marks an index entry at the cursor: a term, offered from the terms the component already marks, an optional sub-entry, and whether it locates this place, sends the reader to another term ("see") or locates it and names others ("see also"). Each is one line of up to 200 characters; what the content model would refuse is named in the dialog. A marker is drawn as a chip naming its entry and saying it prints nothing; selected, it is changed the same way or deleted. The read text, word count and plain-text copy leave it out. Markers are kept through copying, import, conditions and translation, where each term is translated once; an assistant's proposal that rewrites a paragraph keeps its markers, at the end of the paragraph.
 - **The index published.** Where the layout places an index (`matter.index`), as the default layout's 0.14 does, the PDF, Word and HTML end with one: entries merged on the term and sorted in the document's language, sub-entries under their entry, "see" and "see also" in the layout's words. The PDF gives each locator's page as a link, Word an index field Word fills with pages, and HTML a link to the section. A "see" or "see also" naming a term no marker carries, or a "see" on a term other markers locate, fails the publish naming the marker. Page ranges, sort keys and letter groups are not yet offered.
+- **CT Studio's deliveries.** An environment answers as a sink for CT Studio's delivery bridge at
+  `/bridge`, acting as a service identity whose token the bridge holds, so a delivery can do what
+  that identity's grants allow and no more. A decomposed document lands as a document with no
+  proposal to accept: a section node per CT Studio section, a component per section's text,
+  images as assets, footnotes and table notes carried, properties filling the template's fields
+  an administrator mapped, and every version noting where it came from. A delivery is all or
+  nothing, written once per key (a repeat answers the first receipt), keeps its identifiers from
+  one delivery to the next, and is refused, changing nothing, where a person has edited what it
+  would replace; it reads back what it wrote before it says it succeeded, and lists in its
+  receipt what it could not carry. A data package lands as rows in real PostgreSQL tables in a
+  delivery store of its own, a schema per environment, which the space reads through an
+  ordinary connection and an SQL query definition. `PUT /v1/spaces/{space}/bridge-settings` says
+  which component type and template delivered documents take, which template field each
+  property fills, and turns data on; every delivery is audited and can be followed by webhook
+  (`bridge.delivered`, `bridge.refused`). There is no page for the settings, and a delivered
+  document cannot be withdrawn from CT Studio: a person removes it here
+  ([the guide](guides/ct-studio-sink.md)).
 - **Groups, and your organisation's directory.** An administrator of the whole environment makes groups
   in Administration's **Groups** and grants a role to one as to a person, from any access page: everybody
   in it holds that role there. Groups lists each group in a table you can search, with where its members come from and who
@@ -1512,7 +1529,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   administrator's with a signed-in session.
 - **Webhook subscriptions, through the API.** An administrator subscribes a service identity's HTTPS
   endpoint to event types at `/v1/webhooks`: content cut and restored, archiving, workflow,
-  approval, review rounds, publication and notifications. Its signing secret is shown once, sealed
+  approval, review rounds, publication, CT Studio deliveries and notifications. Its signing secret is shown once, sealed
   so only the connector can use it, and rotated with the old one still signing for a day. Every
   change is recorded in the audit log, never its URL. Each event an act records is queued in the
   act's own transaction for every subscription wanting it. The worker sends each through the

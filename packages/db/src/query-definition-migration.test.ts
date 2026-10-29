@@ -259,6 +259,7 @@ describe('migration 0046, over an environment made before it', () => {
       '0169_default_layout_index',
       '0170_translation_policy_history',
       '0171_publication_locale_data',
+      '0172_bridge',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

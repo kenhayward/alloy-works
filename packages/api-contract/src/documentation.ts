@@ -199,6 +199,11 @@ export const documentationGroups = [
           'Subscribe a service identity’s endpoint to events, signed, and manage its secret.',
       },
       {
+        name: 'CT Studio bridge',
+        description:
+          'Set up a space to take deliveries from CT Studio: the component type and template it uses, which template field each property fills, and whether data tables are delivered to it.',
+      },
+      {
         name: 'Service identities',
         description:
           'Make and disable service identities for integrations and agents, and issue them tokens.',
@@ -586,6 +591,7 @@ const operationTags = {
     'listWebhookDeliveries',
     'getWebhookDelivery',
   ],
+  'CT Studio bridge': ['getBridgeSettings', 'putBridgeSettings'],
   'Service identities': [
     'listServiceIdentities',
     'createServiceIdentity',
@@ -1306,6 +1312,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists a subscription’s deliveries, newest first: each one’s event type, sequence, state and how many attempts it has had. Kept 30 days. Needs administer at the environment, with a signed-in session.',
   getWebhookDelivery:
     'Returns one delivery: exactly what was sent, identifiers and versions and never content, and at each attempt what the receiver answered, its status, how long it took and at most 2 KiB of its reply, or why there was no answer. Needs administer at the environment, with a signed-in session.',
+  getBridgeSettings:
+    'Returns a space’s settings for CT Studio deliveries: its component type and template, the template field each property fills, whether data delivery is on, and the connection data delivery made, never its credential. A space never set up answers the empty settings. Needs administer on the space.',
+  putBridgeSettings:
+    'Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs administer on the space.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   getErasure:

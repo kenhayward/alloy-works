@@ -348,6 +348,7 @@ export {
 export { sha256Hex, versionDigests, type VersionDigests } from './version-digest.js';
 export {
   archiveSpace,
+  checkSpaceLive,
   createSpace,
   listSpacesFor,
   readSpace,
@@ -1343,3 +1344,43 @@ export {
   type EntryStatus,
 } from './entry-status.js';
 export { interfaceLanguageOf, setInterfaceLanguage } from './preferences.js';
+export {
+  elementsOf,
+  finishDelivery,
+  lockBridgeProvision,
+  readBridgeSettings,
+  readDelivery,
+  recordElements,
+  recordNonce,
+  refuseDelivery,
+  startDelivery,
+  writeBridgeSettings,
+  type BridgeElement,
+  type BridgeSettings,
+  type DeliveryFamily,
+  type DeliveryRefusal,
+  type DeliveryState,
+  type NewBridgeSettings,
+  type NewDelivery,
+  type StartedDelivery,
+  type StoredDelivery,
+} from './bridge-store.js';
+export {
+  deliveryNote,
+  writeDocumentDelivery,
+  type CheckedImage,
+  type DeliveryObjects,
+  type DocumentDelivery,
+  type DocumentRefused,
+  type DocumentWritten,
+  type ExpectedComponent,
+  type SinkReceipt,
+} from './bridge-documents.js';
+export {
+  createDeliveredStore,
+  tenantNames as deliveredNames,
+  type DeliveredAccess,
+  type DeliveredRefused,
+  type DeliveredStore,
+  type DeliveredWritten,
+} from './delivered.js';

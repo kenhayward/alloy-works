@@ -101,7 +101,9 @@ describe('the service', () => {
           route.url !== '/openapi/v1.json' &&
           route.url !== '/asyncapi/v1.json' &&
           // The MCP surface, outside the contract (ADR-0065): JSON-RPC, never a REST route.
-          route.url !== '/mcp',
+          route.url !== '/mcp' &&
+          // CT Studio's delivery bridge, outside the contract too (ADR-0071): the bridge's own shapes.
+          !route.url.startsWith('/bridge'),
       )
       .map((route) => key(route.method, route.url));
     expect(served.sort()).toEqual(declared.sort());

@@ -761,6 +761,34 @@ export const auditKindSpecs = {
   'support.granted': kind(['LIF-072', 'ADM-042'], empty, LATER),
   'support.used': kind(['LIF-072', 'ADM-024'], empty, LATER),
   'support.revoked': kind(['LIF-072', 'ADM-042'], empty, LATER),
+  // A delivery from CT Studio written (the CS plan, Task 5; API-071): the delivery and its family.
+  // The document or tables are the event's subject.
+  'bridge.delivered': kind(
+    ['API-071'],
+    z.strictObject({ delivery: Id, family: z.enum(['document', 'data']) }),
+    'packages/db/src/bridge-store.ts',
+  ),
+  // A delivery refused (API-067, API-071): the contract's class and code, never its message.
+  'bridge.refused': kind(
+    ['API-071'],
+    z.strictObject({
+      delivery: Id,
+      family: z.enum(['document', 'data']),
+      class: AuditName,
+      code: AuditName,
+    }),
+    'packages/db/src/bridge-store.ts',
+  ),
+  // A space's bridge settings written (API-071): which of them changed, by name.
+  'bridge.settings_changed': kind(
+    ['API-071'],
+    z.strictObject({
+      changed: z.array(
+        z.enum(['componentType', 'template', 'propertyMap', 'connection', 'tableSchema']),
+      ),
+    }),
+    'packages/db/src/bridge-store.ts',
+  ),
   'channel.changed': kind(['LIF-072'], empty, LATER),
   // A tool call through MCP (the G8 plan, G8-F): identifiers kept, any text its length and digest,
   // never its words (LIF-030).

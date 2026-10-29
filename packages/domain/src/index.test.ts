@@ -27,6 +27,8 @@ describe('the domain package', () => {
         'LANGUAGE_LABEL',
         'forbiddenInPreformatted',
         'isLanguageLabel',
+        // Receiving CT Studio's decomposed documents, as one namespace.
+        'bridge',
         // The admission pipeline, promoted in the plan that built it.
         'admissionLimits',
         'admit',

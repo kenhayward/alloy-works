@@ -5,6 +5,13 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { recordEvent } from './audit.js';
 import { bootstrapCluster } from './bootstrap.js';
+import {
+  finishDelivery,
+  refuseDelivery,
+  startDelivery,
+  writeBridgeSettings,
+} from './bridge-store.js';
+import { readableOf } from './inbox.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { grant } from './grants.js';
@@ -237,6 +244,86 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
     );
     const listed = [...rows[0]!.source.matchAll(/'([a-z_]+\.[a-z_]+)'/g)].map((match) => match[1]);
     expect(listed.toSorted()).toEqual([...webhookAuditTypes].toSorted());
+  });
+
+  it('API-071 queues a bridge delivery and a bridge refusal for a subscriber, and a settings change for none', async () => {
+    const wanting = await subscribe(['bridge.delivered', 'bridge.refused']);
+    const space = (
+      await as((trx) =>
+        trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow(),
+      )
+    ).id;
+    const input = (key: string) => ({
+      key,
+      spaceId: space,
+      family: 'document' as const,
+      tokenId: randomUUID(),
+      principalId: randomUUID(),
+      packageKey: null,
+      provenance: {},
+    });
+    const document = randomUUID();
+    const ok = await as((trx) => startDelivery(trx, input('hook-ok')));
+    const no = await as((trx) => startDelivery(trx, input('hook-no')));
+    if (ok.answer !== 'started' || no.answer !== 'started') throw new Error('not started');
+    await as((trx) => finishDelivery(trx, ok.id, {}, [], { subject: document }));
+    await as((trx) =>
+      refuseDelivery(trx, no.id, { class: 'permanent', code: 'content_rejected', message: 'x' }),
+    );
+    await as((trx) =>
+      writeBridgeSettings(trx, {
+        spaceId: space,
+        componentType: null,
+        template: null,
+        propertyMap: {},
+        connectionId: null,
+        tableSchema: null,
+        changedBy: ada,
+      }),
+    );
+    const queued = await deliveries(wanting.id);
+    expect(queued.map((each) => [each.type, each.artifact_id])).toEqual([
+      ['bridge.delivered', document],
+      ['bridge.refused', space],
+    ]);
+  });
+
+  it('API-071 reaches a refused delivery’s subscriber who can read the space, and no other', async () => {
+    const space = (
+      await as((trx) =>
+        trx
+          .selectFrom('space')
+          .select('id')
+          .where('name', '=', 'General')
+          .executeTakeFirstOrThrow(),
+      )
+    ).id;
+    const reader = (
+      await as((trx) =>
+        createServiceIdentity(trx, { name: 'Reader bot', description: '', by: ada }),
+      )
+    ).id;
+    const stranger = (
+      await as((trx) =>
+        createServiceIdentity(trx, { name: 'Stranger bot', description: '', by: ada }),
+      )
+    ).id;
+    const author = (await as((trx) => findRole(trx, 'Author')))!;
+    await as((trx) =>
+      grant(trx, {
+        roleId: author.id,
+        subject: { principal: reader },
+        level: { kind: 'space', id: space },
+        effect: 'allow',
+        grantedBy: ada,
+      }),
+    );
+    expect((await as((trx) => readableOf(trx, reader, [space]))).has(space)).toBe(true);
+    expect((await as((trx) => readableOf(trx, stranger, [space]))).has(space)).toBe(false);
   });
 
   /** A live identity's subscription, and one act queued for it: its delivery's id. */

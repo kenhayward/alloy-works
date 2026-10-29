@@ -404,6 +404,14 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getTemplate: read,
   recordTemplateVersion: writes('content.version_cut'),
   listConnections: read,
+  getBridgeSettings: read,
+  // Data delivery turned on makes the space's connection and sets its credential (API-072).
+  putBridgeSettings: writes(
+    'bridge.settings_changed',
+    'content.version_cut',
+    'connection.made',
+    'connection.credential_set',
+  ),
   createConnection: writes('content.version_cut', 'connection.made'),
   getConnection: read,
   recordConnectionVersion: writes(
@@ -581,6 +589,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     import: { none: 'importing' },
     // Each component it applies cut, and what came back recorded (the XL plan, XL-F).
     translation_return: writes('translation.job_returned', 'content.version_cut'),
+    // A delivery written, its versions cut as the identity, or refused (the CS plan, Task 10).
+    bridge_deliver: writes('bridge.delivered', 'bridge.refused', 'content.version_cut'),
   },
   /** The worker's sweeps (apps/worker/src/sweep.ts). */
   sweeps: {

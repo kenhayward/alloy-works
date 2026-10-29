@@ -817,6 +817,50 @@ export interface MachineDraftTable {
   accepted_at: ColumnType<Date | null, never, Date>;
 }
 
+/** A delivery the bridge was asked for (0172; API-068): keyed while open or written, kept when refused. */
+export interface BridgeDeliveryTable {
+  id: Generated<string>;
+  key: ColumnType<string | null, string, string | null>;
+  space_id: ColumnType<string, string, never>;
+  family: ColumnType<'document' | 'data', 'document' | 'data', never>;
+  state: ColumnType<
+    'running' | 'written' | 'refused',
+    'running' | undefined,
+    'written' | 'refused'
+  >;
+  token_id: ColumnType<string, string, never>;
+  principal_id: ColumnType<string, string, never>;
+  package_key: ColumnType<string | null, string | null, string | null>;
+  persistent_id: ColumnType<string | null, string | null, string | null>;
+  receipt: ColumnType<unknown, string | null | undefined, string | null>;
+  refusal: ColumnType<unknown, string | null | undefined, string | null>;
+  carried: ColumnType<unknown, string | undefined, string>;
+  /** Gains what the job learns as it writes (unmapped properties, kept originals), never loses any. */
+  provenance: ColumnType<unknown, string, string>;
+  created_at: Generated<Date>;
+  finished_at: ColumnType<Date | null, never, Date | null>;
+}
+
+/** The artifact a source document's element became, by the document's persistent identity (0172). */
+export interface BridgeElementTable {
+  persistent_id: ColumnType<string, string, never>;
+  element: ColumnType<string, string, never>;
+  artifact_id: ColumnType<string, string, string>;
+  node: ColumnType<string | null, string | null, string | null>;
+}
+
+/** A target space's bridge settings (0172): what delivery makes there, and the fields it fills. */
+export interface BridgeSettingsTable {
+  space_id: ColumnType<string, string, never>;
+  component_type: ColumnType<string | null, string | null, string | null>;
+  template: ColumnType<string | null, string | null, string | null>;
+  property_map: ColumnType<unknown, string | undefined, string>;
+  connection_id: ColumnType<string | null, string | null, string | null>;
+  table_schema: ColumnType<string | null, string | null, string | null>;
+  changed_by: ColumnType<string, string, string>;
+  changed_at: ColumnType<Date, Date | undefined, Date>;
+}
+
 /** A job's file returned (0164; XL-F): kept by its hash, read by the worker. */
 export interface TranslationJobReturnTable {
   id: ColumnType<string, string | undefined, never>;
@@ -1258,6 +1302,9 @@ export interface TenantTables {
   translation_job_item: TranslationJobItemTable;
   translation_job_return: TranslationJobReturnTable;
   machine_draft: MachineDraftTable;
+  bridge_delivery: BridgeDeliveryTable;
+  bridge_element: BridgeElementTable;
+  bridge_settings: BridgeSettingsTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;

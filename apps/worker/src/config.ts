@@ -38,6 +38,12 @@ export interface WorkerConfig {
   };
   /** How often the webhook delivery loop runs, apart from the sweeps (WB-I). */
   readonly deliverIntervalMs: number;
+  /**
+   * The delivery store's owner URL, `SECRET_DELIVERED_URL`, as the service has it
+   * (docs/design/ct-studio-sink.md, "Data tables"); none given, a data delivery is refused
+   * `not_configured`.
+   */
+  readonly deliveredUrl?: string;
 }
 
 export class WorkerConfigError extends Error {}
@@ -73,6 +79,10 @@ const Environment = z.object({
   SECRET_CONNECTOR_DELIVER_KEY: z.string().min(1).optional(),
   SECRET_CONNECTOR_REFERENCE_KEY: z.string().min(1).optional(),
   DELIVER_INTERVAL_MS: z.coerce.number().int().min(500).default(5000),
+  SECRET_DELIVERED_URL: z
+    .string()
+    .refine((value) => /^postgres(ql)?:\/\/.+/.test(value), { error: 'must be a postgres:// URL' })
+    .optional(),
 });
 
 /** Read once, at start-up. Messages name the variable and the rule, never the value. */
@@ -109,6 +119,7 @@ export function loadWorkerConfig(env: Readonly<Record<string, string | undefined
     sweepIntervalMs: data.SWEEP_INTERVAL_MS,
     logLevel: data.LOG_LEVEL,
     deliverIntervalMs: data.DELIVER_INTERVAL_MS,
+    ...(data.SECRET_DELIVERED_URL === undefined ? {} : { deliveredUrl: data.SECRET_DELIVERED_URL }),
     ...(data.CONNECTOR_URL === undefined
       ? {}
       : {
@@ -142,5 +153,7 @@ export function describeWorkerConfig(config: WorkerConfig): Record<string, strin
     leaseMs: config.leaseMs,
     logLevel: config.logLevel,
     connector: config.connector?.url ?? 'none',
+    // Whether there is one, and nothing of where: its URL holds the owner's password.
+    deliveredStore: config.deliveredUrl === undefined ? 'none' : 'set',
   };
 }

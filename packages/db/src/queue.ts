@@ -13,7 +13,8 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * An `embed` embeds an artifact's blocks its latest version lacks vectors for, its subject the artifact
  * (the G7 plan, G7-F). An `import` reads an import's file into its proposal, its subject the import (the
  * IM plan, IM-C). A `translation_return` reads a translation job's returned file, its subject the
- * return (the XL plan, XL-F).
+ * return (the XL plan, XL-F). A `bridge_deliver` writes a delivery CT Studio's bridge asked for, its
+ * subject the delivery (docs/design/ct-studio-sink.md, "Where it lives").
  */
 export type JobKind =
   | 'sample_pdf'
@@ -28,7 +29,8 @@ export type JobKind =
   | 'range'
   | 'embed'
   | 'import'
-  | 'translation_return';
+  | 'translation_return'
+  | 'bridge_deliver';
 
 /** What a worker is told: whose work, of what kind, about which id. Never any content. */
 export interface Job {
@@ -39,6 +41,12 @@ export interface Job {
   readonly attempts: number;
   readonly maxAttempts: number;
 }
+
+/**
+ * How long a bridge request's nonce is kept: twice the signing window. A timestamp is taken up to 300 s
+ * either way, so a request stamped 300 s ahead is still taken until 600 s after its nonce was recorded.
+ */
+const BRIDGE_NONCE_KEPT_SECONDS = 600;
 
 /** Waking a worker that is waiting rather than polling. The payload is empty, so it carries nothing. */
 export const JOB_CHANNEL = 'aw_jobs';
@@ -90,6 +98,12 @@ export interface JobQueue {
    * `waiting` is.
    */
   givenUp(tenantId: string, kind: JobKind): Promise<ReadonlyMap<string, number>>;
+  /**
+   * Deletes the bridge's nonces older than 600 seconds, twice the signing window (300 seconds either
+   * way), which no signed request can carry again (docs/design/ct-studio-sink.md, "Signing"): the worker's to do on its idle tick,
+   * as `aw_worker` alone may delete them. Answers how many went.
+   */
+  sweepBridgeNonces(): Promise<number>;
   close(): Promise<void>;
 }
 
@@ -188,6 +202,14 @@ export function createJobQueue(url: string): JobQueue {
            and failed_at is not null
          group by subject_id`.execute(db);
       return new Map(rows.map((row) => [row.subject_id, row.given_up]));
+    },
+
+    async sweepBridgeNonces() {
+      const result = await sql`delete from platform.bridge_nonce
+                                where at < now() - make_interval(secs => ${BRIDGE_NONCE_KEPT_SECONDS}::double precision)`.execute(
+        db,
+      );
+      return Number(result.numAffectedRows ?? 0n);
     },
 
     close: () => db.destroy(),

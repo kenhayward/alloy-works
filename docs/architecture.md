@@ -2261,6 +2261,7 @@ Every component and document in one state of its kind's workflow, built by
 | `migrations/tenant/0163_translation_jobs` to `0165_machine_drafts`, `domain: src/translation/xliff.ts`, `src/translation/machine.ts`, `readers: src/xliff.ts`, `db: src/translation-jobs.ts`, `src/machine-drafts.ts`, `worker: src/jobs/translation-return.ts`, `service: src/generation/machine-drafts.ts`, `web: src/translation/TranslationJobs.tsx`                                                                                                                     | Translation jobs and machine drafts (XL): a document’s components needing a language sent as one XLIFF 2.1 job, its file written at download; a returned file read in a worker thread, each component cut by `cutReturned` as a translation of the source version sent, or held for a person where the source, the line or its lock moved, the conflict policy offering a decision first; machine drafts through the `translate` endpoint in pieces, read back by the same mapping, marked until a person with approve accepts them, the send policy enforced against the endpoint’s boundary                      |
 | `migrations/tenant/0169_default_layout_index`, `domain: src/content/model/inline.ts` (`indexMarkerNodeSchema`), `src/publishing/indexing.ts`, `src/word/write.ts`, `src/html/write.ts`, `editor: src/indexEntries.ts`, `worker: templates/publication/27`, `web: src/editor/IndexEntryDialog.tsx`                                                                                                                                                                            | The index (IX): an index marker in content, kept through every path, conditions and translation; an index the layout's `matter.index` places, the default layout's 0.14 among them, merged, collated and anchored once by `assemble`, with pages in the PDF, `XE` and a prefilled `INDEX` field in Word and section links in HTML; marked from the editor's Index entry dialog, drawn as a chip that prints nothing                                                                                                                                                                                                |
 | `migrations/tenant/0170_translation_policy_history`, `0171_publication_locale_data`, `db: src/translation.ts` (`translationStatusSql`), `domain: src/interface/content-languages.ts` (`CONTENT_LANGUAGES`), `service: src/app.ts` (`GET /v1/about`), `tests/browser: src/pseudo.test.ts`, `src/dialogs.test.ts`                                                                                                                                                              | Translation's open ends (TE): status computed in SQL, held to `translationStatus` by a parity test, on the components listing, search's hits and a space's report keyset-paged in the reader's collation; the policy's insert-only history, a publish or preview in a language recording the change it ran under; `CONTENT_LANGUAGES` generated from the pinned CLDR 48.2.0; a publication's `locale_data` and the service's on `GET /v1/about`, signed in; the pseudo walk opens every dialog the census finds, or names why not, and measures overlap                                                            |
+| `migrations/platform/0003_bridge_nonces`, `migrations/tenant/0172_bridge`, `domain: src/bridge/`, `db: src/bridge-documents.ts`, `src/bridge-store.ts`, `src/delivered.ts`, `service: src/bridge/`, `worker: src/jobs/bridge-deliver.ts`, `deploy/compose.yaml` (`delivered-postgres`)                                                                                                                                                                                       | CT Studio's sink: the signed `/bridge` contract, the mapping, the one-transaction write, the delivery store                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `web: src/lifecycle/Approvals.tsx`, `data/QueryDefinitionPage.tsx`, `publishing/PublicationPage.tsx`                                                                                                                                                                                                                                                                                                                                                                         | A gate's count and decisions in a header, Approve and publish, approvals beside the versions, a definition's state on its page, Approved on a publication                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Publishing
@@ -4206,6 +4207,51 @@ in the table's order, and the body, a decoration's widget and `render.ts` draw t
 | `tests/browser: src/table-notes.test.ts`                   | Notes added by the keyboard, rotated, axe, published       |
 | `tests/e2e: src/bound-tables.test.ts`                      | A note whose row a source change removed fails the publish |
 
+## CT Studio deliveries
+
+CT Studio's delivery bridge delivers a decomposed document, and the data tables it extracts, to a
+sink it holds a target for. Alloy Works is one, served by the service itself
+([`design/ct-studio-sink.md`](design/ct-studio-sink.md), [ADR-0071](decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md),
+built by [the CS plan](plans/2026-10-29-cs-ct-studio-sink.md)); it is the one place content lands
+without a person accepting a proposal (API-065).
+
+```text
+bridge --signed--> service /bridge --stores package by hash, queues bridge_deliver--> worker
+                        |                                                               |
+            token -> service identity                                    one tenant transaction
+                                                       documents, versions, assets   |   data rows
+                                                          (platform Postgres)        |  (delivered Postgres)
+                                                                                     v
+                                                  connection + SQL query definition via the connector
+```
+
+- **The service** (`apps/service/src/bridge/`) is a Fastify scope with its own raw-body parser and
+  error handler, mounted at `/bridge` when `SECRET_BRIDGE_KEYS` is set. A request is accepted on the
+  bridge's signature over the path relative to `/bridge`, a nonce inserted under a unique constraint
+  (`bridge_nonce`, swept by the job queue), and the target's `awt_` token, which must belong to a
+  service identity in the tenant its hostname names. The token's id is recorded; the token is not.
+  `GET /deliveries/{id}` answers from the job and `bridge_delivery`.
+- **The contract** is `@kenhayward/bridge-contract` 0.10.0, pinned exactly and installed from GitHub
+  Packages through a scoped registry line in `.npmrc` and a build secret in the images and CI. The
+  conformance suite runs in process in the service's tests, and against a running stack.
+- **The mapping** is pure and lives in `packages/domain/src/bridge/`: blocks and inlines, the table
+  plan, properties, the outline, the ids derived by UUIDv5 and SHA-256, and the read-back's
+  comparison. `packages/db/src/bridge-documents.ts` writes a mapped document inside one tenant
+  transaction, locking each artifact in id order, checking `expected` and recording the versions;
+  `bridge-store.ts` holds `bridge_delivery`, `bridge_element` and the settings.
+- **The job** `bridge_deliver` (`apps/worker/src/jobs/bridge-deliver.ts`) reads the stored package,
+  checks the token's identity and its grants for `create` or `edit` as the request would have been
+  checked, checks the images, writes, reads back, finishes the delivery and emits `bridge.delivered`
+  or `bridge.refused`. It is durable on the Postgres queue.
+- **The delivery store** (`packages/db/src/delivered.ts`) is a second Postgres 17, `delivered-postgres`, on
+  `connector-egress` (read by the connector with a read-only role per tenant) and on `delivered`
+  (written by the service and worker as its owner, `SECRET_DELIVERED_URL`). A schema per tenant,
+  a table per CT Studio table with provenance columns, replaced by source and recipe. Turning data
+  on in a space's bridge settings provisions the schema and role and seals the role's password in the
+  space's own connection, checked on every reuse to still point at this store.
+- **Settings** are `PUT` and `GET /v1/spaces/{space}/bridge-settings`: the component type, the
+  template, the property map and whether data is on. Audited as `bridge.settings_changed`.
+
 ## Containers and images
 
 One `Dockerfile`, in [`deploy/`](../deploy/) with everything else the system is deployed by, holds
@@ -4260,7 +4306,8 @@ routed network so the connector reaches sources on the machine and its network, 
 from the platform by `CONNECTOR_DENY` (Docker's bridge ranges and Docker Desktop's); `deploy/BringUpDev.cmd`
 brings the development stack up with it. The `sources` profile adds
 `source-postgres`, the development source, seeded from `deploy/sources/postgres.sql`, on
-`connector-egress` alone. Two of those services answer to a name rather than only a container: the object store is also
+`connector-egress` alone. `delivered-postgres`, CT Studio's delivery store, is on `connector-egress` too and on `delivered`,
+an isolated network it shares with the service and the worker alone. Two of those services answer to a name rather than only a container: the object store is also
 `store.localhost` and the provider `idp.localhost`. Any `*.localhost` name resolves to the local
 machine in a browser and to the container inside the compose network, so **one address works on both
 sides** - which is what a signed download link and a sign-in redirect need, since each carries the

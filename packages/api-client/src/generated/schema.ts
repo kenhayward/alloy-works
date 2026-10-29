@@ -6103,6 +6103,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spaces/{space}/bridge-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A space's settings for CT Studio deliveries
+         * @description Returns a space’s settings for CT Studio deliveries: its component type and template, the template field each property fills, whether data delivery is on, and the connection data delivery made, never its credential. A space never set up answers the empty settings. Needs administer on the space.
+         */
+        get: operations["getBridgeSettings"];
+        /**
+         * Set a space's settings for CT Studio deliveries, and turn data delivery on or off
+         * @description Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs administer on the space.
+         */
+        put: operations["putBridgeSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/spaces/{space}/cohorts": {
         parameters: {
             query?: never;
@@ -102166,6 +102190,357 @@ export interface operations {
             };
         };
     };
+    getBridgeSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings; a space never set up answers the empty ones, data delivery off */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "componentType": "00000000-0000-4000-8000-000000000001",
+                     *       "template": "00000000-0000-4000-8000-000000000001",
+                     *       "propertyMap": {},
+                     *       "data": false,
+                     *       "connection": "00000000-0000-4000-8000-000000000001"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The component type delivered components take; none means the environment default */
+                        componentType: (string & (unknown & unknown)) | null;
+                        /** @description The template delivered documents are made from; none means a blank document, whose properties are all unmapped */
+                        template: (string & (unknown & unknown)) | null;
+                        /** @description CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document */
+                        propertyMap: {
+                            [key: string]: string & (unknown & unknown);
+                        };
+                        /** @description Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries */
+                        data: boolean;
+                        /** @description The connection to the delivery store that data delivery made for this space, kept while data delivery is off; none until it was first turned on. Query definitions over the delivered tables are made on it. Its credential is never shown */
+                        connection: (string & (unknown & unknown)) | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    putBridgeSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "componentType": "00000000-0000-4000-8000-000000000001",
+                 *       "template": "00000000-0000-4000-8000-000000000001",
+                 *       "propertyMap": {},
+                 *       "data": false
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The component type delivered components take; none means the environment default */
+                    componentType: (string & (unknown & unknown)) | null;
+                    /** @description The template delivered documents are made from; none means a blank document, whose properties are all unmapped */
+                    template: (string & (unknown & unknown)) | null;
+                    /** @description CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document */
+                    propertyMap: {
+                        [key: string]: string & (unknown & unknown);
+                    };
+                    /** @description Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries */
+                    data: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description The settings as now stored */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "componentType": "00000000-0000-4000-8000-000000000001",
+                     *       "template": "00000000-0000-4000-8000-000000000001",
+                     *       "propertyMap": {},
+                     *       "data": false,
+                     *       "connection": "00000000-0000-4000-8000-000000000001"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description The component type delivered components take; none means the environment default */
+                        componentType: (string & (unknown & unknown)) | null;
+                        /** @description The template delivered documents are made from; none means a blank document, whose properties are all unmapped */
+                        template: (string & (unknown & unknown)) | null;
+                        /** @description CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document */
+                        propertyMap: {
+                            [key: string]: string & (unknown & unknown);
+                        };
+                        /** @description Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries */
+                        data: boolean;
+                        /** @description The connection to the delivery store that data delivery made for this space, kept while data delivery is off; none until it was first turned on. Query definitions over the delivered tables are made on it. Its credential is never shown */
+                        connection: (string & (unknown & unknown)) | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the space but may not administer it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such space in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `space_archived`: the space is archived, and nothing new is made in it; `delivery_credential_not_set`: the delivery connection took no credential */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `bridge_settings_invalid`: a component type or template that is not here, or a property mapped to a field the template does not give a document; each is named and nothing is changed; `delivery_connection_refused`: the connection to the delivery store could not be made */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        problems?: {
+                            /** @description Where in the body: `componentType`, `template` or `propertyMap.<property>` */
+                            path: string;
+                            /** @enum {string} */
+                            reason: "component_type_missing" | "template_missing" | "template_unresolved" | "field_not_in_template";
+                        }[];
+                    };
+                };
+            };
+            /** @description `delivery_store_unavailable`: this environment has no delivery store, or it did not answer; `connector_unavailable`: no connector is configured or it did not answer. Data delivery is not turned on and nothing is changed */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     submitCohort: {
         parameters: {
             query?: never;
@@ -114276,7 +114651,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -114406,7 +114781,7 @@ export interface operations {
                      */
                     description?: string;
                     /** @description The events it receives, by their audit kind’s name */
-                    eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                    eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                 };
             };
         };
@@ -114442,7 +114817,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -114602,7 +114977,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -114837,7 +115212,7 @@ export interface operations {
                     /** @description What receives it and who looks after it: at most 500 characters, trimmed */
                     description?: string;
                     /** @description The events it receives, by their audit kind’s name */
-                    eventTypes?: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                    eventTypes?: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                     /**
                      * @description On again after it was turned off, its failures counted afresh; its service identity must be enabled
                      * @constant
@@ -114878,7 +115253,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -115029,7 +115404,7 @@ export interface operations {
                             /** @description The payload’s `id`, the `webhook-id` it was sent as */
                             id: string;
                             /** @enum {string} */
-                            type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created";
+                            type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created";
                             /** @description `audit:<n>` or `notification:<n>`: the order its source holds */
                             sequence: string;
                             /**
@@ -115188,7 +115563,7 @@ export interface operations {
                         /** @description The payload’s `id`, the `webhook-id` it was sent as */
                         id: string;
                         /** @enum {string} */
-                        type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created";
+                        type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created";
                         /** @description `audit:<n>` or `notification:<n>`: the order its source holds */
                         sequence: string;
                         /**
@@ -115344,7 +115719,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
