@@ -162,3 +162,6 @@ export {
   type ManifestAnswer,
   type ManifestRequest,
 } from './extensions/manifest.js';
+
+// Receiving CT Studio's decomposed documents: their blocks and inlines mapped to the content model.
+export * as bridge from './bridge/index.js';
