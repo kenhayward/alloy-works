@@ -434,9 +434,14 @@ system behaves now.
   space is refused `content_rejected` reason `document_in_another_space`; `documentMissing` stays for
   a document that is no longer in Alloy Works, which CT Studio answers by forgetting the link.
 - **Grants are checked by the job.** At run time, for the token's identity in the space, the job
-  decides `create` (a new document) or `edit` (an update) before anything is written. A grant
-  removed since the delivery was accepted refuses it, `credential_rejected`, as does a token revoked
-  or expired in between; a space archived or no longer readable answers `not_found`.
+  requires `create` for every delivery, and `create` and `edit` both for one with `update`, document
+  or data alike, as the route does at accept, before anything is written. A grant removed since the
+  delivery was accepted refuses it, `credential_rejected`, as does a token revoked or expired in
+  between; a space archived or no longer readable answers `not_found`.
+- **A last attempt that found a store down is `sink_unavailable`.** When the object store, the
+  platform database or the delivery store is out of reach on the job's last attempt, the delivery is
+  refused `sink_unavailable` (retryable), as the route answers; anything else unexpected is
+  `internal`.
 - **Images.** An SVG original the delivery keeps is held against release like any referenced
   object: `objectInUse` counts it, so a release elsewhere cannot delete bytes the delivery says it
   kept. Finding the originals in use is by a GIN index on `bridge_delivery.provenance`. An SVG

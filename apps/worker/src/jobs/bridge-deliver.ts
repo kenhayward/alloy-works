@@ -75,9 +75,53 @@ class Refused extends Error {
   }
 }
 
+/** The object store failed, whatever went wrong there: retryable, `sink_unavailable` at the last. */
+class StoreUnavailable extends Error {
+  constructor(cause: unknown) {
+    super('The object store failed', { cause });
+  }
+}
+
+/** The tenant's store with every failure of it marked as the store's. */
+const marked = (store: TenantStore): TenantStore => {
+  const reach =
+    <A extends unknown[], R>(call: (...args: A) => Promise<R>) =>
+    async (...args: A): Promise<R> => {
+      try {
+        return await call(...args);
+      } catch (error) {
+        throw new StoreUnavailable(error);
+      }
+    };
+  return {
+    put: reach(store.put.bind(store)),
+    putFile: reach(store.putFile.bind(store)),
+    get: reach(store.get.bind(store)),
+    remove: reach(store.remove.bind(store)),
+    signedLink: reach(store.signedLink.bind(store)),
+  };
+};
+
+/**
+ * Whether a last failure was the store's or a database's (the platform's or the delivery store's) being
+ * out of reach: a connection refused, reset or timed out, Postgres's connection exceptions (class 08),
+ * or its shutting down (57P01 to 57P03). The design answers these `sink_unavailable`.
+ */
+function unavailable(error: unknown): boolean {
+  if (error instanceof StoreUnavailable) return true;
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code !== 'string') return false;
+  return (
+    ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EPIPE', 'ENOTFOUND', 'EAI_AGAIN'].includes(code) ||
+    /^08[0-9A-Z]{3}$/.test(code) ||
+    /^57P0[1-3]$/.test(code)
+  );
+}
+
 const SYSTEM: AuditContext = { actorKind: 'system' };
 /** The fixed message of anything unexpected: never a cause, which could carry a credential or SQL. */
 const UNEXPECTED = 'The delivery failed unexpectedly.';
+const UNAVAILABLE = 'Alloy Works cannot take this now; try again.';
 const DPI = 300;
 const MM_PER_INCH = 25.4;
 const OBJECT_HASH = /\/sha256\/([0-9a-f]{64})$/;
@@ -439,6 +483,15 @@ export function bridgeDeliverJob(deps: {
   ) => {
     const refused = (error: BridgeError) =>
       refuse(tenant, store, delivery, new Refused(error, identity));
+    // An update needs `edit` as well, as the route asked of it at accept.
+    if (accepted.update !== undefined) {
+      const now = await db.withTenant(
+        tenant,
+        (trx) => admitted(trx, delivery, ['create', 'edit']),
+        SYSTEM,
+      );
+      if (now instanceof Refused) return refuse(tenant, store, delivery, now);
+    }
     const data = accepted.package.data;
     let receipt: Receipt = { written: [] };
     // Files or images alone are accepted and written as nothing (Ruling 24).
@@ -496,7 +549,7 @@ export function bridgeDeliverJob(deps: {
         tenant,
         async (trx) => ({
           delivery: await readDelivery(trx, id),
-          store: await deps.stores.forTenant(trx, tenant),
+          store: marked(await deps.stores.forTenant(trx, tenant)),
         }),
         SYSTEM,
       );
@@ -527,7 +580,7 @@ export function bridgeDeliverJob(deps: {
       const bytes = await store.get(delivery.packageKey);
       if (createHash('sha256').update(bytes).digest('hex') !== sha256[1]) {
         // The store answered with other bytes than the key names: its fault, tried again.
-        throw new Error('The stored package does not match its hash');
+        throw new StoreUnavailable(new Error('The stored package does not match its hash'));
       }
       let json: unknown;
       try {
@@ -562,7 +615,13 @@ export function bridgeDeliverJob(deps: {
           const store = await deps.stores.forTenant(trx, tenant);
           const delivery = await readDelivery(trx, id);
           if (delivery?.state !== 'running') return { store, removable: null };
-          const refused = await refuseDelivery(trx, id, bridgeError('internal', UNEXPECTED));
+          const refused = await refuseDelivery(
+            trx,
+            id,
+            unavailable(cause)
+              ? bridgeError('sink_unavailable', UNAVAILABLE)
+              : bridgeError('internal', UNEXPECTED),
+          );
           return { store, removable: refused ? await releasable(trx, delivery.packageKey) : null };
         },
         SYSTEM,

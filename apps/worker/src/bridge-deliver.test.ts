@@ -494,7 +494,6 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
       ]),
       {
         tokenId,
-        principalId: identity,
         update: {
           persistentId: randomUUID(),
           expected: [{ kind: 'map', id: randomUUID(), version: randomUUID(), element: null }],
@@ -770,6 +769,93 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     });
   });
 
+  it('a data update by a token scoped without edit refuses, writing no rows', async () => {
+    const tokenId = await token(['create']);
+    const delivery = await accepted(dataPackage(rates), {
+      tokenId,
+      destination: { space: general, tableSet: 'noedit' },
+      update: {
+        persistentId: randomUUID(),
+        expected: [{ kind: 'map', id: randomUUID(), version: randomUUID(), element: null }],
+      },
+    });
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: { code: 'credential_rejected', details: { permission: 'edit' } },
+    });
+    const admin = new pg.Client({ connectionString: DELIVERED });
+    await admin.connect();
+    try {
+      const found = await admin.query(
+        `select 1 from information_schema.tables where table_schema = $1 and table_name = 'noedit_prices'`,
+        [schema],
+      );
+      expect(found.rowCount).toBe(0);
+    } finally {
+      await admin.end();
+    }
+  });
+
+  it('a delivery whose last attempt found the store down is refused as sink_unavailable', async () => {
+    const delivery = await accepted(dataPackage(rates));
+    // A store that cannot be reached: every read fails as the client does.
+    const down: ObjectStores = {
+      forTenant: async (trx, t) => {
+        const real = await stores.forTenant(trx, t);
+        return {
+          ...real,
+          get: () =>
+            Promise.reject(
+              Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+            ),
+        };
+      },
+    };
+    const job = bridgeDeliverJob({ db: worker, stores: down, delivered });
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      for (const expected of ['retry', 'retry', 'failed']) {
+        await admin.query('update platform.job set run_after = now() where subject_id = $1', [
+          delivery.id,
+        ]);
+        expect(await work({ bridge_deliver: job })).toBe(expected);
+      }
+    } finally {
+      await admin.end();
+    }
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: { class: 'retryable', code: 'sink_unavailable' },
+    });
+  });
+
+  it('a delivery whose last attempt found the database out of reach is refused as sink_unavailable', async () => {
+    const delivery = await accepted(dataPackage(rates));
+    const failing: JobHandler = {
+      run: () =>
+        Promise.reject(Object.assign(new Error('terminating connection'), { code: '57P01' })),
+      failed: (t, job, cause) => handlers['bridge_deliver']!.failed(t, job, cause),
+    };
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      for (const expected of ['retry', 'retry', 'failed']) {
+        await admin.query('update platform.job set run_after = now() where subject_id = $1', [
+          delivery.id,
+        ]);
+        expect(await work({ bridge_deliver: failing })).toBe(expected);
+      }
+    } finally {
+      await admin.end();
+    }
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: { class: 'retryable', code: 'sink_unavailable' },
+    });
+  });
+
   it('a worker with no delivery store refuses a data package as not configured', async () => {
     const delivery = await accepted(dataPackage(rates));
     const without = { bridge_deliver: bridgeDeliverJob({ db: worker, stores }) };
@@ -789,10 +875,10 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     });
   });
 
-  it('a delivery whose last attempt failed is refused as internal', async () => {
+  it('a delivery whose last attempt failed unexpectedly is refused as internal', async () => {
     const delivery = await accepted(dataPackage(rates));
     const failing: JobHandler = {
-      run: () => Promise.reject(new Error('the store is down')),
+      run: () => Promise.reject(new Error('something unexpected')),
       failed: (t, job, cause) => handlers['bridge_deliver']!.failed(t, job, cause),
     };
     const admin = new pg.Client({ connectionString: db.adminUrl });
