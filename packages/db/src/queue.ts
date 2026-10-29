@@ -42,6 +42,9 @@ export interface Job {
   readonly maxAttempts: number;
 }
 
+/** How long a bridge request's nonce is kept: the signing window, past which no request is taken. */
+const BRIDGE_NONCE_WINDOW_SECONDS = 300;
+
 /** Waking a worker that is waiting rather than polling. The payload is empty, so it carries nothing. */
 export const JOB_CHANNEL = 'aw_jobs';
 
@@ -92,6 +95,12 @@ export interface JobQueue {
    * `waiting` is.
    */
   givenUp(tenantId: string, kind: JobKind): Promise<ReadonlyMap<string, number>>;
+  /**
+   * Deletes the bridge's nonces older than the signing window, 300 seconds, which no signed request
+   * can carry again (docs/design/ct-studio-sink.md, "Signing"): the worker's to do on its idle tick,
+   * as `aw_worker` alone may delete them. Answers how many went.
+   */
+  sweepBridgeNonces(): Promise<number>;
   close(): Promise<void>;
 }
 
@@ -190,6 +199,14 @@ export function createJobQueue(url: string): JobQueue {
            and failed_at is not null
          group by subject_id`.execute(db);
       return new Map(rows.map((row) => [row.subject_id, row.given_up]));
+    },
+
+    async sweepBridgeNonces() {
+      const result = await sql`delete from platform.bridge_nonce
+                                where at < now() - make_interval(secs => ${BRIDGE_NONCE_WINDOW_SECONDS}::double precision)`.execute(
+        db,
+      );
+      return Number(result.numAffectedRows ?? 0n);
     },
 
     close: () => db.destroy(),

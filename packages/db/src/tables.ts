@@ -834,7 +834,8 @@ export interface BridgeDeliveryTable {
   receipt: ColumnType<unknown, string | null | undefined, string | null>;
   refusal: ColumnType<unknown, string | null | undefined, string | null>;
   carried: ColumnType<unknown, string | undefined, string>;
-  provenance: ColumnType<unknown, string, never>;
+  /** Gains what the job learns as it writes (unmapped properties, kept originals), never loses any. */
+  provenance: ColumnType<unknown, string, string>;
   created_at: Generated<Date>;
   finished_at: ColumnType<Date | null, never, Date | null>;
 }

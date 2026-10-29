@@ -157,6 +157,8 @@ export async function acceptDelivery(
   identity: Identity,
   request: SinkDeliverRequest,
   traceId: string,
+  /** The tenant's address the request came to, `https://<hostname>`: the receipt links the document there. */
+  origin: string,
 ): Promise<SinkDeliverResult> {
   for (const part of REFUSED_PARTS) {
     if (request.package[part] != null) {
@@ -207,6 +209,7 @@ export async function acceptDelivery(
           source: request.package.provenance,
           producer: request.package.producer,
           actingUser: request.actingUser,
+          origin,
         },
       });
       if (started.answer === 'started') {

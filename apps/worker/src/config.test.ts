@@ -93,6 +93,17 @@ describe("the worker's configuration", () => {
     expect(JSON.stringify(describeWorkerConfig(config))).not.toContain(referenceKey);
   });
 
+  it('holds the delivery store, if given, never in its description', () => {
+    expect(loadWorkerConfig(env).deliveredUrl).toBeUndefined();
+    const url = 'postgres://delivered_owner:owner-pw@delivered-postgres:5432/delivered';
+    const config = loadWorkerConfig({ ...env, SECRET_DELIVERED_URL: url });
+    expect(config.deliveredUrl).toBe(url);
+    expect(JSON.stringify(describeWorkerConfig(config))).not.toContain('owner-pw');
+    expect(() => loadWorkerConfig({ ...env, SECRET_DELIVERED_URL: 'http://x' })).toThrow(
+      /SECRET_DELIVERED_URL must be a postgres:\/\/ URL/,
+    );
+  });
+
   it('describes itself for a log without its secrets', () => {
     const described = JSON.stringify(describeWorkerConfig(loadWorkerConfig(env)));
     expect(described).not.toContain('secret-pw');

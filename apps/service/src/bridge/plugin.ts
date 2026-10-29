@@ -298,7 +298,14 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
         const asked = read(SinkDeliverRequestSchema, body);
         checkInstance(tenant, asked.instanceId);
         const identity = await identityOf(db, tenant, asked.credential, request.id);
-        return acceptDelivery(deps, tenant, identity, asked, request.id);
+        return acceptDelivery(
+          deps,
+          tenant,
+          identity,
+          asked,
+          request.id,
+          `https://${request.hostname}`,
+        );
       });
 
       scope.get('/deliveries/:id', limited, async (request) => {

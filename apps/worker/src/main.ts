@@ -1,12 +1,18 @@
 // The process: read the configuration, wait for work, and stop cleanly. Everything it decides lives
 // in modules with tests of their own; this file only wires them and loops.
-import { createJobQueue, createTenantDatabase, JOB_CHANNEL } from '@alloy-works/db';
+import {
+  createDeliveredStore,
+  createJobQueue,
+  createTenantDatabase,
+  JOB_CHANNEL,
+} from '@alloy-works/db';
 import { createObjectStores } from '@alloy-works/objects';
 import pg from 'pg';
 import pino from 'pino';
 import { describeWorkerConfig, loadWorkerConfig } from './config.js';
 import { loadPinnedFonts, PINNED_FONT_FILES } from './fonts.js';
 import { auditExportJob } from './jobs/audit-export.js';
+import { bridgeDeliverJob } from './jobs/bridge-deliver.js';
 import { tenantExportJob } from './jobs/tenant-export.js';
 import { createWarmPool, rangePreviewJob } from './jobs/range-preview.js';
 import { impactReportJob } from './jobs/impact-report.js';
@@ -87,6 +93,14 @@ const referencer =
   config.connector?.referenceKey === undefined
     ? undefined
     : connectorReferencer({ url: config.connector.url, key: config.connector.referenceKey });
+// The delivery store CT Studio's data packages are written to; none configured, none (the CS plan).
+const delivered =
+  config.deliveredUrl === undefined ? undefined : createDeliveredStore(config.deliveredUrl);
+const bridgeDeliver = bridgeDeliverJob({
+  db,
+  stores,
+  ...(delivered === undefined ? {} : { delivered }),
+});
 /** A returned file read within a third of the lease, as an import's is. */
 const returnBudget = { timeMs: config.leaseMs / 3, memoryMb: 512 };
 
@@ -106,6 +120,8 @@ const handlers: Record<string, JobHandler> = {
   import: importJob({ db, stores, budget: { timeMs: config.leaseMs / 3, memoryMb: 512 } }),
   // A translation job's returned file, read as an import's is (the XL plan, XL-F).
   translation_return: translationReturnJob({ db, stores, budget: returnBudget }),
+  // A delivery CT Studio's bridge asked for, written end to end (the CS plan, Task 10).
+  bridge_deliver: bridgeDeliver,
 };
 
 // A connection of its own, held open: NOTIFY wakes the worker between polls.
@@ -226,6 +242,7 @@ const stop = async (signal: string) => {
   await listener.end();
   await checker.close();
   await warmPool.close();
+  await delivered?.close();
   await queue.close();
   await db.close();
 };
@@ -253,6 +270,10 @@ while (running) {
     return 'idle' as const;
   });
   if (outcome === 'idle' && running) {
+    // The bridge's nonces past the signing window, while there is nothing else to do (API-066).
+    void queue
+      .sweepBridgeNonces()
+      .catch((error: unknown) => log.error({ err: error }, 'nonce sweep failed'));
     await new Promise<void>((resolve) => {
       const timer = setTimeout(resolve, config.pollIntervalMs);
       wake = () => {

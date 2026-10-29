@@ -145,17 +145,28 @@ export async function readDelivery(
  * source document's persistent identity where it has one, and lets go of the package it no longer
  * needs. Undefined when the delivery is not running. Recorded as bridge.delivered, about the document
  * (`subject`) of a document delivery, and about the space of a data delivery, which has none.
+ * `provenance` is what the writing learnt - the properties with nowhere to go (Ruling 15), the
+ * originals kept - added to the provenance stored at accept, which keeps everything it had.
  */
 export async function finishDelivery(
   trx: TenantTransaction,
   id: string,
   receipt: unknown,
   carried: readonly unknown[],
-  options: { readonly persistentId?: string; readonly subject?: string } = {},
+  options: {
+    readonly persistentId?: string;
+    readonly subject?: string;
+    readonly provenance?: Readonly<Record<string, unknown>>;
+  } = {},
 ): Promise<StoredDelivery | undefined> {
   const row = await trx
     .updateTable('bridge_delivery')
     .set({
+      ...(options.provenance === undefined
+        ? {}
+        : {
+            provenance: sql<string>`provenance || ${JSON.stringify(options.provenance)}::jsonb`,
+          }),
       state: 'written',
       receipt: JSON.stringify(receipt),
       carried: JSON.stringify(carried),
