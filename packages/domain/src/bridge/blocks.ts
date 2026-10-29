@@ -297,7 +297,7 @@ class Mapping {
     );
 
     const anchors: CellScope['anchors'] = new Map();
-    const tableNotes: Footnote[] = [];
+    const tableNotes: InlineNode[] = [];
     for (const note of table.notes) {
       const cells = named.get(note.marker);
       const key = `${table.id}/note/${note.marker}`;
@@ -314,7 +314,16 @@ class Mapping {
           ),
         });
       } else {
-        tableNotes.push(this.footnote(key, { kind: 'table' }, note.inlines, table.id));
+        // Plain text in the table's own note (CNT-038): the marker, a space, the note's words. A
+        // footnote anchored to the table is one publish refuses.
+        const words: Inline[] = [
+          { kind: 'text', text: `${note.marker} `, marks: [] },
+          ...note.inlines,
+        ];
+        tableNotes.push(
+          ...(tableNotes.length > 0 ? this.text(' ', []) : []),
+          ...this.inlines(key, words, 'space', table.id),
+        );
         this.carried.push(carry('note_anchored_table', table.id, note.marker));
       }
     }
@@ -338,7 +347,7 @@ class Mapping {
       caption: this.inlines(`${table.id}/caption`, table.caption, 'space', table.id),
       headerRows: table.headerRows,
       headerColumns: this.headerColumns(table, starts),
-      ...(tableNotes.length > 0 ? { note: tableNotes } : {}),
+      ...(tableNotes.length > 0 ? { note: joinRuns(tableNotes) } : {}),
       ...(table.numbered ? {} : { numbered: false as const }),
       ...(table.wide ? { wide: 'rotate' as const } : {}),
       rows,
@@ -395,7 +404,7 @@ class Mapping {
   }
 
   private pieces(key: string, inlines: readonly Inline[], options: Options): Piece[] {
-    return mergeRuns(inlines).flatMap((inline, index) =>
+    return mergeRuns(inlines, options.cell !== undefined).flatMap((inline, index) =>
       this.piece(`${key}.${index}`, inline, options),
     );
   }
@@ -405,19 +414,25 @@ class Mapping {
     return text === '' ? [] : [{ type: 'text', value: text, marks }];
   }
 
+  private run(path: string, inline: Extract<Inline, { kind: 'text' }>, options: Options): Piece[] {
+    const own = [...new Set(inline.marks)].map((mark): Mark => ({
+      type: MARKS[mark],
+      id: this.id(`${path}/${MARKS[mark]}`),
+    }));
+    return this.text(inline.text, [...own, ...options.outer]);
+  }
+
   private piece(path: string, inline: Inline, options: Options): Piece[] {
     switch (inline.kind) {
       case 'text': {
         const cell = options.cell;
         if (cell !== undefined && inline.marks.includes('superscript')) {
           const markers = noteMarkers(clean(inline.text), cell.known);
-          if (markers !== undefined) return this.placeNotes(markers, cell);
+          if (markers !== undefined && markers.some((marker) => cell.anchors.has(marker))) {
+            return this.placeNotes(markers, cell, inline, path, options);
+          }
         }
-        const own = [...new Set(inline.marks)].map((mark): Mark => ({
-          type: MARKS[mark],
-          id: this.id(`${path}/${MARKS[mark]}`),
-        }));
-        return this.text(inline.text, [...own, ...options.outer]);
+        return this.run(path, inline, options);
       }
       case 'break':
         return options.breaks === 'split' ? [BREAK] : this.text(' ', options.outer);
@@ -543,16 +558,29 @@ class Mapping {
     return { type: 'paragraph', id: this.id(`${key}/empty`), style: 'body', content: [] };
   }
 
-  /** A cell's note markers become the footnotes anchored there; markers of a table-anchored note vanish. */
-  private placeNotes(markers: readonly string[], cell: CellScope): Piece[] {
+  /**
+   * A cell's note markers become the footnotes anchored there. A marker of a note the table carries in
+   * its own note stays in the cell as the text it was, so a reader can match it to that note.
+   */
+  private placeNotes(
+    markers: readonly string[],
+    cell: CellScope,
+    run: Extract<Inline, { kind: 'text' }>,
+    path: string,
+    options: Options,
+  ): Piece[] {
     const placed: Piece[] = [];
+    const kept: string[] = [];
     for (const marker of markers) {
       const anchored = cell.anchors.get(marker);
-      if (anchored === undefined || anchored.placed) continue;
-      anchored.placed = true;
-      placed.push(anchored.footnote);
+      if (anchored === undefined) kept.push(marker);
+      else if (!anchored.placed) {
+        anchored.placed = true;
+        placed.push(anchored.footnote);
+      }
     }
-    return placed;
+    if (kept.length === 0) return placed;
+    return [...placed, ...this.run(path, { ...run, text: kept.join(',') }, options)];
   }
 
   /** A block's text, for a note that holds more than paragraphs. */
@@ -619,13 +647,14 @@ const allowed = (scheme: string | undefined): boolean =>
   scheme !== undefined && (allowedLinkSchemes as readonly string[]).includes(scheme);
 
 /** Adjacent text runs that carry the same marks are one run, before any identifier is derived. */
-function mergeRuns(inlines: readonly Inline[]): Inline[] {
+function mergeRuns(inlines: readonly Inline[], keepMarkers: boolean): Inline[] {
   const merged: Inline[] = [];
   for (const inline of inlines) {
     const last = merged[merged.length - 1];
     if (
       inline.kind === 'text' &&
       last?.kind === 'text' &&
+      !(keepMarkers && inline.marks.includes('superscript')) &&
       [...new Set(last.marks)].sort().join() === [...new Set(inline.marks)].sort().join()
     ) {
       merged[merged.length - 1] = { ...last, text: last.text + inline.text };

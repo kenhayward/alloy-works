@@ -331,7 +331,7 @@ describe('mapping decomposed blocks to the content model', () => {
     expect(carried).toEqual([]);
   });
 
-  it('API-073 a note whose marker is in no cell is anchored to the table and reported', () => {
+  it('API-073 a note whose marker is in no cell is carried as text in the table note and reported', () => {
     const { blocks, carried } = map([
       table({
         notes: [{ marker: 'a', inlines: [text('Loose note.')] }],
@@ -339,15 +339,18 @@ describe('mapping decomposed blocks to the content model', () => {
       }),
     ]);
     const grid = blocks[0] as Table_;
-    expect(grid.note).toHaveLength(1);
-    expect(grid.note![0]).toMatchObject({ type: 'footnote', anchor: { kind: 'table' } });
+    expect(grid.note).toEqual([run('a Loose note.')]);
+    expect(JSON.stringify(grid)).not.toContain('footnote');
     expect(carried).toEqual([{ code: 'note_anchored_table', element: 't1', detail: 'a' }]);
   });
 
-  it('API-073 a note whose marker is in more than one cell is anchored to the table, the markers removed', () => {
+  it('API-073 a note whose marker is in more than one cell is carried as text in the table note, the markers kept in the cells', () => {
     const { blocks, carried } = map([
       table({
-        notes: [{ marker: '1', inlines: [text('Twice.')] }],
+        notes: [
+          { marker: '1', inlines: [text('Twice.')] },
+          { marker: '2', inlines: [text('None.')] },
+        ],
         rows: [
           {
             cells: [
@@ -359,10 +362,63 @@ describe('mapping decomposed blocks to the content model', () => {
       }),
     ]);
     const grid = blocks[0] as Table_;
-    expect(grid.note![0]).toMatchObject({ anchor: { kind: 'table' } });
-    expect(JSON.stringify(grid.rows)).not.toContain('footnote');
-    expect(JSON.stringify(grid.rows)).not.toContain('superscript');
-    expect(carried).toEqual([expect.objectContaining({ code: 'note_anchored_table' })]);
+    expect(grid.note).toEqual([run('1 Twice. 2 None.')]);
+    expect(JSON.stringify(grid)).not.toContain('footnote');
+    const first = contentOf(grid.rows[0]!.cells[0]!.content[0]);
+    expect(first[1]).toMatchObject({ type: 'text', value: '1' });
+    expect(contentOf(grid.rows[0]!.cells[1]!.content[0])[1]).toMatchObject({ value: '1' });
+    expect(carried.map((each) => each.detail)).toEqual(['1', '2']);
+  });
+
+  it('API-073 adjacent superscript markers are read one by one, not merged into one run', () => {
+    const { blocks } = map([
+      table({
+        notes: [
+          { marker: '1', inlines: [text('One.')] },
+          { marker: '2', inlines: [text('Two.')] },
+        ],
+        rows: [
+          {
+            cells: [
+              cell([para('c1', text('A'), text('1', 'superscript'), text('2', 'superscript'))]),
+            ],
+          },
+        ],
+      }),
+    ]);
+    const content = contentOf((blocks[0] as Table_).rows[0]!.cells[0]!.content[0]);
+    expect(content.map((each) => each.type)).toEqual(['text', 'footnote', 'footnote']);
+  });
+
+  it('a note marker twice in one cell, or in a list in a cell, anchors once to that cell', () => {
+    const { blocks, carried } = map([
+      table({
+        notes: [{ marker: '1', inlines: [text('One.')] }],
+        rows: [
+          {
+            cells: [
+              cell([
+                para(
+                  'c1',
+                  text('A'),
+                  text('1', 'superscript'),
+                  text('B'),
+                  text('1', 'superscript'),
+                ),
+                {
+                  kind: 'list',
+                  id: 'l',
+                  ordered: false,
+                  items: [{ blocks: [para('c2', text('x'), text('1', 'superscript'))] }],
+                },
+              ]),
+            ],
+          },
+        ],
+      }),
+    ]);
+    expect(JSON.stringify(blocks[0]).match(/"type":"footnote"/g)).toHaveLength(1);
+    expect(carried).toEqual([]);
   });
 
   it('a run naming several notes puts a footnote for each, and a run with another part stays text', () => {

@@ -136,32 +136,35 @@ and **AST-001** (the asset door).
 
 ### Blocks and inlines
 
-| CT Studio                                                    | Alloy Works                                                                                                                                    |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `paragraph`                                                  | `paragraph`, style `body`                                                                                                                      |
-| `list`                                                       | `list`, ordered or unordered, its items' blocks carried                                                                                        |
-| `table`                                                      | `table`: caption, `headerRows`, cells with `colspan` and `rowspan`, `numbered`; `wide` as `rotate`                                             |
-| A cell marked `header` outside the header rows               | `headerColumns` when every such cell is a leading column; otherwise an ordinary cell, reported                                                 |
-| `columnWidths`, `hAlign`, `vAlign`, `captionPosition`        | Not carried: they are presentation, which a theme owns here (CNT-094); reported                                                                |
-| Table `notes`                                                | A `footnote` anchored to the cell whose superscript marker names it; anchored to the table when no cell, or more than one, names it, reported  |
-| `figure`, `image`                                            | `figure` pinning the asset version, its caption and alternative                                                                                |
-| `equation` with MathML                                       | `equation` with `mathml`, `latex` kept when sent, `numbered`                                                                                   |
-| `equation` that is an image only                             | A `figure` of that image, its alternative the equation's text where CT Studio has one; reported                                                |
-| `text` marks bold, italic, underline, superscript, subscript | `strong`, `emphasis`, `underline`, `superscript`, `subscript`                                                                                  |
-| `note_ref`                                                   | An inline `footnote` holding the note's content as paragraphs; anything else in a note is flattened to its text, reported                      |
-| `xref`                                                       | A `crossReference` to the block or outline node it names, `display: number`; one to an element outside the document becomes its text, reported |
-| `link`                                                       | A `hyperlink` mark for `http`, `https` and `mailto`; any other scheme kept as text, reported                                                   |
-| `inline_equation`                                            | An inline `equation` with MathML; an image-only one an inline `image`                                                                          |
-| `inline_image`                                               | An inline `image`                                                                                                                              |
-| `break`                                                      | Splits the paragraph in two, since the model has no line break; in a title or caption a space                                                  |
+| CT Studio                                                    | Alloy Works                                                                                                                                                                            |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `paragraph`                                                  | `paragraph`, style `body`                                                                                                                                                              |
+| `list`                                                       | `list`, ordered or unordered, its items' blocks carried                                                                                                                                |
+| `table`                                                      | `table`: caption, `headerRows`, cells with `colspan` and `rowspan`, `numbered`; `wide` as `rotate`                                                                                     |
+| A cell marked `header` outside the header rows               | `headerColumns` when every such cell is a leading column; otherwise an ordinary cell, reported                                                                                         |
+| `columnWidths`, `hAlign`, `vAlign`, `captionPosition`        | Not carried: they are presentation, which a theme owns here (CNT-094); reported                                                                                                        |
+| Table `notes`                                                | A `footnote` anchored to the cell whose superscript marker names it; when no cell, or more than one, names it, plain text in the table's `note` (marker, a space, the words), reported |
+| `figure`, `image`                                            | `figure` pinning the asset version, its caption and alternative                                                                                                                        |
+| `equation` with MathML                                       | `equation` with `mathml`, `latex` kept when sent, `numbered`                                                                                                                           |
+| `equation` that is an image only                             | A `figure` of that image, its alternative the equation's text where CT Studio has one; reported                                                                                        |
+| `text` marks bold, italic, underline, superscript, subscript | `strong`, `emphasis`, `underline`, `superscript`, `subscript`                                                                                                                          |
+| `note_ref`                                                   | An inline `footnote` holding the note's content as paragraphs; anything else in a note is flattened to its text, reported                                                              |
+| `xref`                                                       | A `crossReference` to the block or outline node it names, `display: number`; one to an element outside the document becomes its text, reported                                         |
+| `link`                                                       | A `hyperlink` mark for `http`, `https` and `mailto`; any other scheme kept as text, reported                                                                                           |
+| `inline_equation`                                            | An inline `equation` with MathML; an image-only one an inline `image`                                                                                                                  |
+| `inline_image`                                               | An inline `image`                                                                                                                                                                      |
+| `break`                                                      | Splits the paragraph in two, since the model has no line break; in a title or caption a space                                                                                          |
 
 - **The note markers are matched as 3ds-sink and CT Studio's readers match them**: a superscript run
   whose parts, split on whitespace, commas, semicolons, parentheses and brackets, are all markers of
   the table's notes (`1)`, `1)2)`, `1,2`, `a`). A run with any other part stays text. Two notes with
   one marker refuse the delivery, `content_rejected`, before anything is written. Unlike 3ds-sink, a
-  note whose marker is in no cell is **not refused**: the model can anchor a footnote to the table, so
-  it is anchored there and reported. The markers themselves are removed from the cell text, since a
-  theme draws a footnote's callout.
+  note whose marker is in no cell is **not refused**: it is carried as plain text in the table's own
+  `note` (the marker, a space, the note's words; several are run on in order) and reported. The same
+  goes for a note named in more than one cell. A `footnote` anchored to the table is not used, since
+  publishing refuses one. The markers of a note anchored to one cell are removed from the cell text,
+  since a theme draws a footnote's callout; the markers of a note carried in the table's `note` stay in
+  the cells as written, so a reader can match them.
 - **Everything is held to the model by `parseContentDocument` and `parseOutlineDocument`**
   (IMP-N03). `admit()` is not used: it always runs `reidentify`, and identifiers here are derived
   ([Identifiers](#identifiers)). The mapping builds model nodes directly, so the sanitising admission
