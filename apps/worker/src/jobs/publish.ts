@@ -18,6 +18,7 @@ import {
 import {
   assemble,
   canonicalResultSchema,
+  CONTENT_LANGUAGES_CLDR,
   OUTPUT_CONTENT_TYPES,
   provenanceBytes,
   publishedProvenance,
@@ -52,11 +53,15 @@ import {
 import type { RootImage, Typst } from '../typst.js';
 import type { JobHandler } from '../worker.js';
 
-/** The locale data this worker holds, as Node names it (TE-F): recorded on every publication. */
+/**
+ * The locale data this worker holds, as Node names it (TE-F), and the CLDR the domain's plural rules
+ * were compiled from (the MF plan, MF-H): recorded on every publication.
+ */
 export const LOCALE_DATA = {
   icu: process.versions.icu ?? 'none',
   unicode: process.versions.unicode ?? 'none',
   cldr: process.versions.cldr ?? 'none',
+  plurals: CONTENT_LANGUAGES_CLDR,
 };
 
 /**

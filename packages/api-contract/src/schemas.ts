@@ -77,6 +77,11 @@ export const About = z.object({
       icu: z.string().describe("The ICU version the service's runtime carries"),
       unicode: z.string().describe('The Unicode version it carries'),
       cldr: z.string().describe('The CLDR version it carries'),
+      plurals: z
+        .string()
+        .describe(
+          "The CLDR version the domain's plural rules were compiled from, which message forms are selected by",
+        ),
       collations: z
         .array(
           z.object({

@@ -50,7 +50,7 @@ describe('the environment panel', () => {
     expect(screen.queryByText(/locale data/)).toBeNull();
   });
 
-  it("LOC-044 says the service's locale data and each collation's version to a signed-in person", async () => {
+  it("LOC-044 says the service's locale data, its plural rules' CLDR and each collation's version to a signed-in person", async () => {
     render(
       <Environment
         fetch={
@@ -62,6 +62,7 @@ describe('the environment panel', () => {
                 icu: '78.3',
                 unicode: '17.0',
                 cldr: '48.0',
+                plurals: '48.2.0',
                 collations: [{ language: 'ar-XB', collation: 'ar-x-icu', version: '153.120.42' }],
               },
             },
@@ -73,6 +74,8 @@ describe('the environment panel', () => {
     expect(
       await screen.findByText("The service's locale data: ICU 78.3, Unicode 17.0, CLDR 48.0."),
     ).toBeInTheDocument();
+    // The CLDR its plural rules were compiled from (the MF plan, MF-H).
+    expect(screen.getByText('Plural rules from CLDR 48.2.0.')).toBeInTheDocument();
     expect(
       screen.getByText('Listings in ar-XB sort by ar-x-icu, version 153.120.42.'),
     ).toBeInTheDocument();

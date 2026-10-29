@@ -14879,6 +14879,10 @@
                           "type": "string",
                           "description": "The CLDR version it carries"
                         },
+                        "plurals": {
+                          "type": "string",
+                          "description": "The CLDR version the domain's plural rules were compiled from, which message forms are selected by"
+                        },
                         "collations": {
                           "type": "array",
                           "items": {
@@ -14913,6 +14917,7 @@
                         "icu",
                         "unicode",
                         "cldr",
+                        "plurals",
                         "collations"
                       ],
                       "description": "The locale data the service sorts and formats with, recorded so that a change in it is visible; a publication records the worker's"
@@ -14927,6 +14932,7 @@
                     "icu": "example",
                     "unicode": "example",
                     "cldr": "example",
+                    "plurals": "example",
                     "collations": []
                   }
                 }
@@ -247052,6 +247058,10 @@
                               "type": "string"
                             },
                             "cldr": {
+                              "type": "string"
+                            },
+                            "plurals": {
+                              "description": "The CLDR version the plural rules it selected message forms by were compiled from; absent from one made before they were recorded",
                               "type": "string"
                             }
                           },

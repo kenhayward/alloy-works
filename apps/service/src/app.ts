@@ -48,6 +48,7 @@ import {
   setInterfaceLanguage,
 } from '@alloy-works/db';
 import {
+  CONTENT_LANGUAGES_CLDR,
   decide,
   formatLevel,
   permissions,
@@ -685,6 +686,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
           icu: process.versions.icu ?? 'none',
           unicode: process.versions.unicode ?? 'none',
           cldr: process.versions.cldr ?? 'none',
+          // The CLDR the domain's plural rules were compiled from (the MF plan, MF-H).
+          plurals: CONTENT_LANGUAGES_CLDR,
           collations: collations.map((each) => ({ ...each })),
         },
       };
