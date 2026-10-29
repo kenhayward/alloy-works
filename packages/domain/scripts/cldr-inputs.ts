@@ -32,11 +32,7 @@ export function cldrInputs(): CldrInputs {
       // A locale with no characters of its own declares nothing.
     }
   }
-  const rules = (
-    json(join(core, 'supplemental', 'plurals.json')) as {
-      supplemental: { 'plurals-type-cardinal': Record<string, Record<string, string>> };
-    }
-  ).supplemental['plurals-type-cardinal'];
+  const rules = cldrPluralRules();
   const plurals = Object.fromEntries(
     Object.entries(rules).map(([key, each]) => [
       key,
@@ -44,6 +40,15 @@ export function cldrInputs(): CldrInputs {
     ]),
   );
   return { cldr: version, available: availableLocales.full, exemplars, plurals };
+}
+
+/** Each CLDR locale's cardinal rules, `pluralRule-count-one` to its rule and samples (MF-B). */
+export function cldrPluralRules(): Record<string, Record<string, string>> {
+  return (
+    json(join(root('cldr-core'), 'supplemental', 'plurals.json')) as {
+      supplemental: { 'plurals-type-cardinal': Record<string, Record<string, string>> };
+    }
+  ).supplemental['plurals-type-cardinal'];
 }
 
 /** The default theme's body face and its fallbacks, in order (STY-075). */
