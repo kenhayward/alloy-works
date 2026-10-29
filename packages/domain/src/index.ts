@@ -86,6 +86,14 @@ export * from './workflow/index.js';
 export * from './interface/languages.js';
 export * from './interface/declared-languages.js';
 export * from './interface/content-languages.js';
+// Plural categories from the pinned CLDR's compiled rules (the MF plan, MF-B).
+export {
+  PLURAL_CATEGORIES,
+  pluralCategory,
+  pluralSamples,
+  type PluralCategory,
+  type PluralSample,
+} from './interface/plurals.js';
 // Translation: language lines and their status (docs/design/translation.md).
 export * from './translation/index.js';
 // Generation: model endpoints, and the connector's model call and its events (docs/design/generation.md).

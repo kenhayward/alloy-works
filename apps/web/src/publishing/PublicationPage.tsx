@@ -81,6 +81,8 @@ interface Shown {
     readonly icu: string;
     readonly unicode: string;
     readonly cldr: string;
+    /** The CLDR its plural rules were compiled from (MF-H); none before they were recorded. */
+    readonly plurals: string | null;
   } | null;
 }
 
@@ -193,7 +195,13 @@ function shownIn(data: unknown): Shown | undefined {
       typeof data.localeData.icu === 'string' &&
       typeof data.localeData.unicode === 'string' &&
       typeof data.localeData.cldr === 'string'
-        ? { icu: data.localeData.icu, unicode: data.localeData.unicode, cldr: data.localeData.cldr }
+        ? {
+            icu: data.localeData.icu,
+            unicode: data.localeData.unicode,
+            cldr: data.localeData.cldr,
+            // Absent from one made before MFa.
+            plurals: typeof data.localeData.plurals === 'string' ? data.localeData.plurals : null,
+          }
         : null,
   };
 }
@@ -445,7 +453,16 @@ export function PublicationPage({
           </p>
         )}
         {shown.localeData !== null && (
-          <p>{words('publishing.locale-data', { ...shown.localeData })}</p>
+          <p>
+            {words('publishing.locale-data', {
+              icu: shown.localeData.icu,
+              unicode: shown.localeData.unicode,
+              cldr: shown.localeData.cldr,
+            })}
+          </p>
+        )}
+        {shown.localeData?.plurals != null && (
+          <p>{words('publishing.plural-rules', { cldr: shown.localeData.plurals })}</p>
         )}
         {shown.engine !== null && shown.template !== null && (
           <p>

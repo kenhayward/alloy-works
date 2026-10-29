@@ -106,6 +106,10 @@ Built by [the TE plan](../plans/2026-10-28-te-translation-ends.md), TE-E and TE-
   records the worker's `process.versions` ICU, Unicode and CLDR (`publication.locale_data`, 0171), and
   shows them; `GET /v1/about`, to a signed-in person only, gives the service's and each interface language's collation version
   (`pg_collation_actual_version`); About shows both. Node is pinned to a patch in `deploy/Dockerfile`.
+- **Plural rules** (the MF plan, MF-B, MF-H): the list's generator also compiles CLDR's cardinal rules
+  into the domain's `pluralCategory`, read from a canonical value at its scale, never `Intl`. Its CLDR
+  is recorded as `plurals` in `locale_data` and `GET /v1/about`, and About shows it. FormatJS 6.3.15
+  agrees on whole numbers; on decimals it departs from CLDR's samples (`plural-parity.test.ts`).
 - **A tab's own sorts** are the browser's collation, and About says so.
 
 ## The API

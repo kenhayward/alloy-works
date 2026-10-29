@@ -1045,6 +1045,10 @@ describe('the domain package', () => {
         'deriveContentLanguages',
         'exemplarCodePoints',
         'renderContentLanguages',
+        // MFa: a value's plural category from the pinned CLDR's compiled rules, and their samples.
+        'PLURAL_CATEGORIES',
+        'pluralCategory',
+        'pluralSamples',
         // XLc: machine drafts and the policy that sends them.
         'TRANSLATE_INSTRUCTIONS',
         'TRANSLATE_INSTRUCTIONS_VERSION',

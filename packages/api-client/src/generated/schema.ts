@@ -9679,6 +9679,7 @@ export interface operations {
                      *         "icu": "example",
                      *         "unicode": "example",
                      *         "cldr": "example",
+                     *         "plurals": "example",
                      *         "collations": []
                      *       }
                      *     }
@@ -9692,6 +9693,8 @@ export interface operations {
                             unicode: string;
                             /** @description The CLDR version it carries */
                             cldr: string;
+                            /** @description The CLDR version the domain's plural rules were compiled from, which message forms are selected by */
+                            plurals: string;
                             /** @description The collation each interface language sorts by, where the database holds one */
                             collations: {
                                 /** @description An interface language */
@@ -85710,6 +85713,8 @@ export interface operations {
                             icu: string;
                             unicode: string;
                             cldr: string;
+                            /** @description The CLDR version the plural rules it selected message forms by were compiled from; absent from one made before they were recorded */
+                            plurals?: string;
                         } | null;
                         /** @description One per format, the PDF first, and `provenance.json` last wherever the publication prints a value */
                         outputs: ({

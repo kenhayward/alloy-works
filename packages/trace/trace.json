@@ -8015,9 +8015,18 @@
       "area": "LOC",
       "statement": "Locale-aware formatting inside content must use the same mechanism as the interface (LOC-027): where a sentence in a variant varies by a number or a gender that a bound value supplies, it must be a locale-aware message form rather than text assembled around the value (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted)",
       "tranche": "T6",
-      "status": "Specified",
+      "status": "Superseded by LOC-045",
       "document": "LOC-localisation-and-translation.md",
       "line": 89
+    },
+    {
+      "id": "LOC-045",
+      "area": "LOC",
+      "statement": "Locale-aware formatting inside content must use the same locale data and rules as the interface (LOC-027): where a sentence in a variant varies by a number that a bound value supplies, it must be a plural message form - an arm for each plural category the variant's own language declares, and optionally exact arms for the values 0 to 9 - rather than text assembled around the value. A sentence varying by gender is a named gap until a column type carries one (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted)",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "LOC-localisation-and-translation.md",
+      "line": 90
     },
     {
       "id": "LOC-013",
@@ -8026,7 +8035,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "LOC-014",
@@ -8035,7 +8044,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "LOC-015",
@@ -8044,7 +8053,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "LOC-016",
@@ -8053,7 +8062,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "LOC-017",
@@ -8062,7 +8071,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "LOC-030",
@@ -8071,7 +8080,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "LOC-031",
@@ -8080,7 +8089,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "LOC-032",
@@ -8089,7 +8098,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 117
+      "line": 118
     },
     {
       "id": "LOC-040",
@@ -8098,7 +8107,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 118
+      "line": 119
     },
     {
       "id": "LOC-018",
@@ -8107,7 +8116,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "LOC-019",
@@ -8116,7 +8125,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "LOC-020",
@@ -8125,7 +8134,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "LOC-021",
@@ -8134,7 +8143,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "LOC-022",
@@ -8143,7 +8152,7 @@
       "tranche": "T6",
       "status": "Superseded by LOC-033",
       "document": "LOC-localisation-and-translation.md",
-      "line": 149
+      "line": 150
     },
     {
       "id": "LOC-033",
@@ -8152,7 +8161,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "LOC-035",
@@ -8161,7 +8170,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "LOC-043",
@@ -8170,7 +8179,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "LOC-023",
@@ -8179,7 +8188,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "LOC-024",
@@ -8188,7 +8197,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 176
+      "line": 177
     },
     {
       "id": "LOC-025",
@@ -8197,7 +8206,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 177
+      "line": 178
     },
     {
       "id": "LOC-026",
@@ -8206,7 +8215,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "LOC-041",
@@ -8215,7 +8224,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "MET-001",
@@ -14760,31 +14769,31 @@
       "id": "LOC-N01",
       "statement": "**Not a translation management system.** Vendor selection, quoting and translator workbenches belong to a TMS",
       "document": "LOC-localisation-and-translation.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "LOC-N02",
       "statement": "**No translation memory of its own.** That belongs with the vendor's tooling",
       "document": "LOC-localisation-and-translation.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "LOC-N03",
       "statement": "**No automatic publication of machine translation** (LOC-024)",
       "document": "LOC-localisation-and-translation.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "LOC-N04",
       "statement": "**No mixed-language output by accident.** A fallback is a document-level policy and is marked in the output (LOC-037, which superseded LOC-011)",
       "document": "LOC-localisation-and-translation.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "LOC-N05",
       "statement": "**No translating a binding.** A bound value is translated at resolution against a declared lookup, or it is not translated at all (LOC-043). Editing a resolved value inside a variant is how a document comes to disagree with its own data",
       "document": "LOC-localisation-and-translation.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "MET-N01",
@@ -15637,35 +15646,35 @@
       "question": "**Can the source language differ per component, or is it per space?** An acquired department may author in another language",
       "settledBy": "Real customers. Per component is more general and complicates every status calculation",
       "document": "LOC-localisation-and-translation.md",
-      "line": 200
+      "line": 201
     },
     {
       "id": "LOC-Q02",
       "question": "**What granularity does translation status need (LOC-015)?** Per component is simple; per block is what avoids retranslating a page for one word",
       "settledBy": "The cost of retranslation in practice, which is a commercial question",
       "document": "LOC-localisation-and-translation.md",
-      "line": 201
+      "line": 202
     },
     {
       "id": "LOC-Q03",
       "question": "**Do bound values get translated?** A number does not; a category name returned by a query might",
       "settledBy": "**Settled: yes, at resolution, never in the variant.** A declared lookup keyed by what the source returned (LOC-043), so the binding stays inert as LOC-020 requires. Where no lookup exists the value renders as the source gave it and is reported as untranslated",
       "document": "LOC-localisation-and-translation.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "LOC-Q04",
       "question": "**Does a document's outline translate?** Section titles are content; the structure is not",
       "settledBy": "Whether translated documents ever differ structurally, which in regulated submissions they sometimes must",
       "document": "LOC-localisation-and-translation.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "LOC-Q05",
       "question": "**Which languages and locales are supported at launch (LOC-044)?** The list is declared and the locale data versioned either way; what is open is which entries it starts with, and which right-to-left locale the suite runs against",
       "settledBy": "**Answered (Ken, 2026-10-28): every language CLDR has data for written in the Latin, Greek, Cyrillic, Hebrew or Arabic script**, the scripts the default theme sets (STY-075); the Chinese, Japanese, Korean and Indic scripts join with STY-085. The suite's right-to-left locale is the pseudo-locale `ar-XB`",
       "document": "LOC-localisation-and-translation.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "MET-Q01",
@@ -21051,7 +21060,7 @@
     {
       "id": "LOC-044",
       "file": "apps/service/src/about-routes.test.ts",
-      "line": 16,
+      "line": 17,
       "kind": "title"
     },
     {
@@ -25347,7 +25356,7 @@
     {
       "id": "PUB-004",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 108,
+      "line": 120,
       "kind": "title"
     },
     {
@@ -25359,25 +25368,25 @@
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 859,
+      "line": 871,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 920,
+      "line": 932,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 883,
+      "line": 895,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 586,
+      "line": 598,
       "kind": "title"
     },
     {
@@ -27141,91 +27150,91 @@
     {
       "id": "LOC-044",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 682,
+      "line": 683,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 431,
+      "line": 432,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 473,
+      "line": 474,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 366,
+      "line": 367,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 895,
+      "line": 898,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 570,
+      "line": 571,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 586,
+      "line": 587,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 691,
+      "line": 694,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1595,
+      "line": 1598,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1510,
+      "line": 1513,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 913,
+      "line": 916,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 380,
+      "line": 381,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 840,
+      "line": 843,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 672,
+      "line": 673,
       "kind": "title"
     },
     {
       "id": "REU-048",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 652,
+      "line": 653,
       "kind": "title"
     },
     {
@@ -27573,7 +27582,13 @@
     {
       "id": "LIB-036",
       "file": "packages/api-contract/src/publishing.test.ts",
-      "line": 339,
+      "line": 350,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "packages/api-contract/src/publishing.test.ts",
+      "line": 235,
       "kind": "title"
     },
     {
@@ -31197,13 +31212,19 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1080,
+      "line": 1084,
       "kind": "title"
     },
     {
       "id": "LOC-044",
       "file": "packages/domain/src/interface/declared-languages.test.ts",
       "line": 18,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "packages/domain/src/interface/plurals.test.ts",
+      "line": 9,
       "kind": "title"
     },
     {

@@ -37,6 +37,7 @@ import {
 import {
   assemble,
   blockIdentifierFrom,
+  CONTENT_LANGUAGES_CLDR,
   DEFINITION_SCHEMA_VERSION,
   DRAFT_NOTICE,
   OUTPUT_CONTENT_TYPES,
@@ -679,12 +680,14 @@ describe('publishing a document, from the request to the stored PDF', () => {
     expect(row).toMatchObject({ profile: { values: { audience: ['regulator'] } } });
   });
 
-  it('LOC-044 records the locale data it was made with: the ICU, Unicode and CLDR the worker holds', async () => {
+  it('LOC-044 records the locale data it was made with: the ICU, Unicode and CLDR the worker holds, and its plural rules', async () => {
     const { request } = await published();
     expect((await publicationOf(request))!.locale_data).toEqual({
       icu: process.versions.icu,
       unicode: process.versions.unicode,
       cldr: process.versions.cldr,
+      // The CLDR the domain's plural rules were compiled from (the MF plan, MF-H).
+      plurals: CONTENT_LANGUAGES_CLDR,
     });
   });
 
