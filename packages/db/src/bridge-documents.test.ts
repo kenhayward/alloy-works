@@ -445,6 +445,38 @@ describe('a document delivery', () => {
     expect((await latest(made.artifactId))!.id).toBe(made.id);
   });
 
+  it('API-069 an update to a document no delivery wrote is refused even when expected names its current map', async () => {
+    const made = await as(async (trx) => {
+      const document = await createDocument(trx, {
+        spaceId: space,
+        title: 'Written by a person',
+        language: 'en-GB',
+        direction: 'ltr',
+        author: ada,
+      });
+      if (document.answer !== 'created') throw new Error(document.answer);
+      return document.version;
+    });
+    const before = await countArtifacts();
+    const answer = await deliver({
+      update: {
+        persistentId: made.artifactId,
+        expected: [{ kind: 'map', id: made.artifactId, version: made.id, element: null }],
+      },
+    });
+    expect(answer).toMatchObject({
+      answer: 'refused',
+      error: {
+        code: 'changed_in_target',
+        details: {
+          changed: [{ id: made.artifactId, expected: 'not delivered', actual: made.id }],
+        },
+      },
+    });
+    expect(await countArtifacts()).toBe(before);
+    expect((await latest(made.artifactId))!.id).toBe(made.id);
+  });
+
   it('API-069 an update after a new image version is refused', async () => {
     const receipt = written(await deliver({ images: [checked('img-1', withChunk(PNG, 'b'))] }));
     const asset = entry(receipt, 'asset', 'img-1');

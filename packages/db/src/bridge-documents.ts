@@ -550,11 +550,13 @@ export async function writeDocumentDelivery(
     }
     // The document's map and every component this delivery writes that CT Studio did not send back
     // are held to the version their last delivery left them at, so an edit made since is refused
-    // rather than written over; a document no delivery wrote compares against 'not delivered'.
+    // rather than written over; a document no delivery wrote compares against 'not delivered',
+    // whatever `expected` names for it.
     const named = new Set(expected.map((each) => each.id));
     const delivered = await lastDelivered(trx, persistentId);
     for (const component of [persistentId, ...componentIds]) {
-      if (named.has(component)) continue;
+      if (named.has(component) && !(component === persistentId && !delivered.has(component)))
+        continue;
       const actual = (await currentOf(trx, component))?.id;
       if (actual === undefined) continue;
       const was = delivered.get(component) ?? 'not delivered';
