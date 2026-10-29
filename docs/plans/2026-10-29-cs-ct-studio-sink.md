@@ -70,7 +70,7 @@ signature is as the code has it at the plan's base (`2bcaa436`).
 | CS-I | **Metadata through a template** (default): bridge settings name a template; documents are created bound to it; property values go to its document fields, checked by `checkWrittenValues`.                                                                                                                      |
 | CS-J | **Data in `delivered`** (Ken): its own Postgres, a schema and read role per tenant, provisioned when delivery is turned on for a space; the read credential sealed by the connector's `seal` and set by `setConnectionCredential`.                                                                              |
 | CS-K | **Settings are a contract route** (default): `GET` and `PUT /v1/spaces/{space}/bridge-settings`, `administer` on the space; in `packages/api-contract`, documented, in `openapi.json`, covered by the access and cross-tenant harnesses.                                                                        |
-| CS-L | **Audit** (default): `bridge.delivered`, `bridge.refused`, `bridge.settings_changed`; not webhook event types in this slice.                                                                                                                                                                                    |
+| CS-L | **Audit** (default): `bridge.delivered`, `bridge.refused`, `bridge.settings_changed`; not webhook event types in this slice. Ruling 11 changed this: `bridge.delivered` and `bridge.refused` are webhook event types, and `bridge.settings_changed` is audit only.                                              |
 
 ## Risks
 

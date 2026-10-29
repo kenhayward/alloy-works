@@ -268,8 +268,8 @@ typed metadata against definitions. Nothing is created on the fly:
 
 ## Data tables
 
-3ds-sink writes CT Studio's extracted `data` as CSV files that Data Factory loads into SGI for
-querying. Alloy Works has no SGI; its equivalent is an SQL query definition over a Postgres
+3ds-sink writes CT Studio's extracted `data` as CSV files that the other sink's data platform loads
+for querying. Alloy Works has no such platform; its equivalent is an SQL query definition over a Postgres
 connection (DAT). So a data package becomes **rows in real Postgres tables** (Ken, 2026-10-29), read
 the way any source is read.
 
@@ -377,7 +377,9 @@ The `content_rejected` reasons, each answered before anything is written:
 
 - **Conformance**: the contract's `conformanceSuite` run in process against the plugin in the
   service's tests, all checks including the seven document ones, as 3ds-sink does; and once,
-  before merge, from CT Studio's `ct-bridge-conformance` image against the staging stack.
+  before merge, from CT Studio's `ct-bridge-conformance` image against a throwaway stack built from
+  this branch's compose file (Ruling 32), not the staging stack. A run against staging is the
+  owner's to make, since that stack runs from another checkout with its own configuration.
 - **The mapping**: CT Studio's published fixtures, and the decomposed fixtures, through
   `packages/domain/src/bridge/` to stored shapes; each row of the tables above a test citing its
   requirement.

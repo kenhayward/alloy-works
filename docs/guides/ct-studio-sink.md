@@ -95,6 +95,12 @@ The settings answer carries `connection`, the connection's id. Turning data off 
 deliveries and keeps the connection and the tables. If the environment has no delivery store, or the
 store does not answer, the route answers `delivery_store_unavailable` and nothing is changed.
 
+**The schema is the environment's, not the space's.** Delivered rows carry no space. Every space of
+the environment whose connection reads the schema sees every space's tables, whichever space they
+were delivered to. A later delivery from the same source and recipe replaces that source's rows
+wherever they came from, so a delivery to one space can replace rows another space received. Turn
+data on for a space only where its people may see all of the environment's delivered data.
+
 ## 5. Deliver, and read what arrived
 
 Deliver from CT Studio to the target. A delivery's result lists what was written: for a document,
