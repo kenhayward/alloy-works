@@ -114276,7 +114276,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -114406,7 +114406,7 @@ export interface operations {
                      */
                     description?: string;
                     /** @description The events it receives, by their audit kind’s name */
-                    eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                    eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                 };
             };
         };
@@ -114442,7 +114442,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -114602,7 +114602,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -114837,7 +114837,7 @@ export interface operations {
                     /** @description What receives it and who looks after it: at most 500 characters, trimmed */
                     description?: string;
                     /** @description The events it receives, by their audit kind’s name */
-                    eventTypes?: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                    eventTypes?: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                     /**
                      * @description On again after it was turned off, its failures counted afresh; its service identity must be enabled
                      * @constant
@@ -114878,7 +114878,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;
@@ -115029,7 +115029,7 @@ export interface operations {
                             /** @description The payload’s `id`, the `webhook-id` it was sent as */
                             id: string;
                             /** @enum {string} */
-                            type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created";
+                            type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created";
                             /** @description `audit:<n>` or `notification:<n>`: the order its source holds */
                             sequence: string;
                             /**
@@ -115188,7 +115188,7 @@ export interface operations {
                         /** @description The payload’s `id`, the `webhook-id` it was sent as */
                         id: string;
                         /** @enum {string} */
-                        type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created";
+                        type: "content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created";
                         /** @description `audit:<n>` or `notification:<n>`: the order its source holds */
                         sequence: string;
                         /**
@@ -115344,7 +115344,7 @@ export interface operations {
                             serviceIdentity: string;
                             url: string;
                             description: string;
-                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "notification.created")[];
+                            eventTypes: ("content.version_cut" | "content.restored" | "artifact.archived" | "artifact.unarchived" | "workflow.transitioned" | "approval.given" | "gate.rejected" | "revision.effective" | "round.opened" | "round.closed" | "review.completed" | "review.reopened" | "review.lapsed" | "publication.requested" | "publication.produced" | "publication.failed" | "bridge.delivered" | "bridge.refused" | "notification.created")[];
                             createdBy: string | null;
                             createdAt: string;
                             disabledAt: string | null;

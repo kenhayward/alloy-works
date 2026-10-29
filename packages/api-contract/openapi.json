@@ -334795,6 +334795,8 @@
                                 "publication.requested",
                                 "publication.produced",
                                 "publication.failed",
+                                "bridge.delivered",
+                                "bridge.refused",
                                 "notification.created"
                               ]
                             }
@@ -335103,7 +335105,7 @@
                   },
                   "eventTypes": {
                     "minItems": 1,
-                    "maxItems": 17,
+                    "maxItems": 19,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -335124,6 +335126,8 @@
                         "publication.requested",
                         "publication.produced",
                         "publication.failed",
+                        "bridge.delivered",
+                        "bridge.refused",
                         "notification.created"
                       ]
                     },
@@ -335192,6 +335196,8 @@
                               "publication.requested",
                               "publication.produced",
                               "publication.failed",
+                              "bridge.delivered",
+                              "bridge.refused",
                               "notification.created"
                             ]
                           }
@@ -335834,6 +335840,8 @@
                               "publication.requested",
                               "publication.produced",
                               "publication.failed",
+                              "bridge.delivered",
+                              "bridge.refused",
                               "notification.created"
                             ]
                           }
@@ -336147,7 +336155,7 @@
                   },
                   "eventTypes": {
                     "minItems": 1,
-                    "maxItems": 17,
+                    "maxItems": 19,
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -336168,6 +336176,8 @@
                         "publication.requested",
                         "publication.produced",
                         "publication.failed",
+                        "bridge.delivered",
+                        "bridge.refused",
                         "notification.created"
                       ]
                     },
@@ -336230,6 +336240,8 @@
                               "publication.requested",
                               "publication.produced",
                               "publication.failed",
+                              "bridge.delivered",
+                              "bridge.refused",
                               "notification.created"
                             ]
                           }
@@ -336626,6 +336638,8 @@
                               "publication.requested",
                               "publication.produced",
                               "publication.failed",
+                              "bridge.delivered",
+                              "bridge.refused",
                               "notification.created"
                             ]
                           },
@@ -336997,6 +337011,8 @@
                         "publication.requested",
                         "publication.produced",
                         "publication.failed",
+                        "bridge.delivered",
+                        "bridge.refused",
                         "notification.created"
                       ]
                     },
@@ -337378,6 +337394,8 @@
                               "publication.requested",
                               "publication.produced",
                               "publication.failed",
+                              "bridge.delivered",
+                              "bridge.refused",
                               "notification.created"
                             ]
                           }

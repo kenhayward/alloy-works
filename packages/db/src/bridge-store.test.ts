@@ -168,6 +168,44 @@ describe('the bridge store', () => {
     ).toBeUndefined();
   });
 
+  it('API-067 a refused delivery stays as the record: the runtime role may not delete it', async () => {
+    const first = await as((trx) => startDelivery(trx, delivery('record-key')));
+    if (first.answer !== 'started') throw new Error(first.answer);
+    await as((trx) =>
+      refuseDelivery(trx, first.id, { class: 'permanent', code: 'internal', message: 'x' }),
+    );
+    await expect(
+      as((trx) => trx.deleteFrom('bridge_delivery').where('id', '=', first.id).execute()),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it('API-071 names a refusal about the space, and a data delivery about the space too', async () => {
+    const no = await as((trx) => startDelivery(trx, delivery('subject-no')));
+    const data = await as((trx) =>
+      startDelivery(trx, delivery('subject-data', { family: 'data' })),
+    );
+    if (no.answer !== 'started' || data.answer !== 'started') throw new Error('not started');
+    await as((trx) =>
+      refuseDelivery(trx, no.id, { class: 'permanent', code: 'internal', message: 'x' }),
+    );
+    await as((trx) => finishDelivery(trx, data.id, {}, []));
+    const events = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select(['kind', 'subject_kind', 'subject'])
+        .where('kind', 'like', 'bridge.%')
+        .where('subject_kind', '=', 'space')
+        .where('kind', '<>', 'bridge.settings_changed')
+        .orderBy('sequence', 'desc')
+        .limit(2)
+        .execute(),
+    );
+    expect(events.map((event) => [event.kind, event.subject])).toEqual([
+      ['bridge.delivered', space],
+      ['bridge.refused', space],
+    ]);
+  });
+
   it('API-071 records a written and a refused delivery as audit events', async () => {
     const ok = await as((trx) => startDelivery(trx, delivery('audit-ok')));
     const no = await as((trx) => startDelivery(trx, delivery('audit-no', { family: 'data' })));

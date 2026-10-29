@@ -23,6 +23,8 @@ export const webhookAuditTypes = [
   'publication.requested',
   'publication.produced',
   'publication.failed',
+  'bridge.delivered',
+  'bridge.refused',
 ] as const satisfies readonly AuditKind[];
 
 export const webhookEventTypes = [...webhookAuditTypes, 'notification.created'] as const;

@@ -143,8 +143,8 @@ export async function readDelivery(
 /**
  * Records a running delivery as written, with its receipt, what it carried along unplaced and the
  * source document's persistent identity where it has one, and lets go of the package it no longer
- * needs. Undefined when the delivery is not running. Recorded as bridge.delivered, about the artifact
- * named by `subject` (the document, or the first table's) where given.
+ * needs. Undefined when the delivery is not running. Recorded as bridge.delivered, about the document
+ * (`subject`) of a document delivery, and about the space of a data delivery, which has none.
  */
 export async function finishDelivery(
   trx: TenantTransaction,
@@ -173,7 +173,7 @@ export async function finishDelivery(
     space: row.space_id,
     subject:
       options.subject === undefined
-        ? { kind: 'bridge_delivery', id }
+        ? { kind: 'space', id: row.space_id }
         : { kind: 'artifact', id: options.subject },
     detail: { delivery: id, family: row.family },
   });
@@ -208,7 +208,7 @@ export async function refuseDelivery(
     kind: 'bridge.refused',
     outcome: 'refused',
     space: row.space_id,
-    subject: { kind: 'bridge_delivery', id },
+    subject: { kind: 'space', id: row.space_id },
     detail: { delivery: id, family: row.family, class: error.class, code: error.code },
   });
   return deliveryOf(row);

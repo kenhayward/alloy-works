@@ -204,3 +204,45 @@ alter table audit_event add constraint audit_event_kind check (
       'workflow.transitioned'
     )
 );
+
+-- A delivery is a record, kept when it is refused (API-067): the runtime role may change its state and
+-- receipt but not delete it. An element's mapping is not a record of an act, and is replaced in place.
+do $$
+begin
+  execute format('revoke delete, truncate on bridge_delivery from %I', current_schema());
+end
+$$;
+
+-- bridge.delivered and bridge.refused are webhook event types (API-071), queued as 0142 queues the
+-- rest. A refusal is recorded with the outcome 'refused', which the guard admits for the bridge's kinds; its
+-- subject is the space, whose readability the delivery worker asks of the subscriber.
+create or replace function webhook_queue_audit() returns trigger
+language plpgsql
+as $$
+begin
+  if (new.outcome <> 'done' and new.kind not like 'bridge.%') or new.kind not in ('content.version_cut', 'content.restored', 'artifact.archived', 'artifact.unarchived', 'workflow.transitioned', 'approval.given', 'gate.rejected', 'revision.effective', 'round.opened', 'round.closed', 'review.completed', 'review.reopened', 'review.lapsed', 'publication.requested', 'publication.produced', 'publication.failed', 'bridge.delivered', 'bridge.refused') then
+    return null;
+  end if;
+  insert into webhook_delivery (id, subscription_id, type, sequence, artifact_id, payload)
+  select d.id, d.subscription, new.kind, 'audit:' || new.sequence, new.subject,
+         jsonb_build_object(
+           'type', new.kind,
+           'id', d.id,
+           'sequence', 'audit:' || new.sequence,
+           'at', new.at,
+           'subject', jsonb_build_object(
+             'kind', new.subject_kind, 'id', new.subject, 'version', new.subject_version),
+           'detail', new.detail)
+  from (select gen_random_uuid() as id, s.id as subscription
+          from webhook_subscription s
+         where s.disabled_at is null and new.kind = any (s.event_types)) d;
+  return null;
+end
+$$;
+
+-- A subscription may want them: the check is the domain's list again (webhookEventTypes).
+alter table webhook_subscription drop constraint webhook_subscription_event_types_check;
+alter table webhook_subscription add constraint webhook_subscription_event_types_check check (
+  event_types <@ array['content.version_cut', 'content.restored', 'artifact.archived', 'artifact.unarchived', 'workflow.transitioned', 'approval.given', 'gate.rejected', 'revision.effective', 'round.opened', 'round.closed', 'review.completed', 'review.reopened', 'review.lapsed', 'publication.requested', 'publication.produced', 'publication.failed', 'bridge.delivered', 'bridge.refused', 'notification.created']::text[]
+  and cardinality(event_types) between 1 and 19
+);

@@ -69,7 +69,10 @@ export interface StoredNotification {
   readonly readAt: Date | null;
 }
 
-/** Which of these artifacts a person may read now, decided on their grants as every read is. */
+/**
+ * Which of these artifacts a person may read now, decided on their grants as every read is. A space's
+ * id may be asked too (a webhook about a space, API-071): it is answered when they may read the space.
+ */
 export async function readableOf(
   trx: TenantTransaction,
   principal: string,
@@ -86,7 +89,8 @@ export async function readableOf(
     .where((eb) => readableArtifacts(eb, readable))
     .where(notDeletedAs('a'))
     .execute();
-  return new Set(rows.map((row) => row.id));
+  const spaces = asked.filter((id) => readable.spaces.includes(id));
+  return new Set([...rows.map((row) => row.id), ...spaces]);
 }
 
 /** A person's cadence for each kind: their choice, or the default (COL-034). */
