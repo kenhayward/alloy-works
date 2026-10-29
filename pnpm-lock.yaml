@@ -138,6 +138,9 @@ importers:
       '@fastify/static':
         specifier: ^10.1.3
         version: 10.1.3
+      '@kenhayward/bridge-contract':
+        specifier: 0.10.0
+        version: 0.10.0
       '@scalar/api-reference':
         specifier: 1.72.2
         version: 1.72.2(axios@1.20.0)(change-case@5.4.4)(tailwindcss@4.3.3)(typescript@5.9.3)(zod@4.6.1)
@@ -287,6 +290,9 @@ importers:
       '@alloy-works/readers':
         specifier: workspace:^
         version: link:../../packages/readers
+      '@kenhayward/bridge-contract':
+        specifier: 0.10.0
+        version: 0.10.0
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
@@ -430,6 +436,9 @@ importers:
 
   packages/domain:
     dependencies:
+      '@kenhayward/bridge-contract':
+        specifier: 0.10.0
+        version: 0.10.0
       citeproc:
         specifier: 2.4.63
         version: 2.4.63
@@ -1589,6 +1598,9 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@kenhayward/bridge-contract@0.10.0':
+    resolution: {integrity: sha512-1wl98hwaqFu/bgMsIGjtsWVyLepJUWP11QBaeTfAJ6JfjvcM/9t0b0oIjkIummykjslAGx0U5fcSGK/eU1483Q==, tarball: https://npm.pkg.github.com/download/@kenhayward/bridge-contract/0.10.0/6199c825851353230d4f832a7a87d4090505510e}
 
   '@keyv/bigmap@1.3.1':
     resolution: {integrity: sha512-WbzE9sdmQtKy8vrNPa9BRnwZh5UF4s1KTmSK0KUVLo3eff5BlQNNWDnFOouNpKfPKDnms9xynJjsMYjMaT/aFQ==}
@@ -5323,6 +5335,9 @@ packages:
   zod@4.6.1:
     resolution: {integrity: sha512-341aRWQsve0rvronKNTqZpjmzdbUDlFuzHaI/XLg/Ej82qffDJRRfBTCuv7+9q/rMjB6LSLyEBnW4InJeMtt/Q==}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
@@ -6355,6 +6370,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
+
+  '@kenhayward/bridge-contract@0.10.0':
+    dependencies:
+      zod: 4.6.7
 
   '@keyv/bigmap@1.3.1(keyv@5.6.0)':
     dependencies:
@@ -10796,5 +10815,7 @@ snapshots:
       zod: 4.6.1
 
   zod@4.6.1: {}
+
+  zod@4.6.7: {}
 
   zwitch@2.0.4: {}

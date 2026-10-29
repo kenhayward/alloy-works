@@ -45,7 +45,10 @@ COPY packages/readers/package.json packages/readers/
 COPY packages/sealing/package.json packages/sealing/
 COPY packages/stand-in-idp/package.json packages/stand-in-idp/
 # Only what the containers need: this is what keeps Electron and the renderer out of the image.
-RUN pnpm install --frozen-lockfile \
+# The bridge contract comes from GitHub Packages; its token is a build secret, mounted for this step
+# only and never stored in a layer: --secret id=npm_token,env=NODE_AUTH_TOKEN
+RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
+    pnpm install --frozen-lockfile \
       --filter "@alloy-works/service..." \
       --filter "@alloy-works/worker..." \
       --filter "@alloy-works/stand-in-idp..." \

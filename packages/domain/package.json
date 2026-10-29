@@ -30,6 +30,7 @@
     "generate:languages": "tsx scripts/generate-content-languages.ts"
   },
   "dependencies": {
+    "@kenhayward/bridge-contract": "0.10.0",
     "citeproc": "2.4.63",
     "fflate": "^0.8.3",
     "zod": "^4.6.1"
