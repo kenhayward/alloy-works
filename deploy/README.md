@@ -55,15 +55,16 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 
 ## What it starts
 
-| Service        | Image or target            | Where                 | For                                                                             |
-| -------------- | -------------------------- | --------------------- | ------------------------------------------------------------------------------- |
-| `postgres`     | `pgvector/pgvector:pg17`   | `127.0.0.1:5432`      | Every environment's schema, and the job queue; pgvector 0.8.6, pinned by digest |
-| `seaweedfs`    | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment                       |
-| `stand-in-idp` | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google                         |
-| `setup`        | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each                  |
-| `service`      | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                             |
-| `worker`       | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                           |
-| `connector`    | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                           |
+| Service              | Image or target            | Where                 | For                                                                                                                                 |
+| -------------------- | -------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`           | `pgvector/pgvector:pg17`   | `127.0.0.1:5432`      | Every environment's schema, and the job queue; pgvector 0.8.6, pinned by digest                                                     |
+| `seaweedfs`          | `chrislusf/seaweedfs:4.46` | `127.0.0.1:8333`      | Documents, by content hash under a prefix per environment                                                                           |
+| `stand-in-idp`       | `tools`                    | `127.0.0.1:9090`      | Signing in, as an organisation's provider and as Google                                                                             |
+| `setup`              | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each                                                                      |
+| `service`            | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                                                                                 |
+| `worker`             | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                                                                               |
+| `connector`          | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                                                                               |
+| `delivered-postgres` | `postgres`, pinned         | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered` |
 
 `service` and `worker` wait for `setup` to finish, and `setup` waits for the database and the store
 to be healthy, so one `up` is enough from nothing.
@@ -338,6 +339,8 @@ files above set the same ones for a run from source; these are the ones worth kn
 | `ALLOY_SERVICE_URL`                            | the desktop app        | Which environment its window opens                                                                                                                                                                                           |
 | `CONNECTOR_URL`                                | service                | Where the connector answers, `http://connector:8090` in the stack; set with `SECRET_CONNECTOR_KEY`, or neither                                                                                                               |
 | `SECRET_CONNECTOR_KEY`                         | service                | The key the service presents to the connector: the connector's `CONNECTOR_KEY`                                                                                                                                               |
+| `SECRET_BRIDGE_KEYS`                           | service                | CT Studio's delivery bridge: the signing keys its requests may carry, comma separated; unset, the service starts and `/bridge` is not mounted ([the guide](../docs/guides/ct-studio-sink.md))                                |
+| `SECRET_DELIVERED_URL`                         | service, worker        | The delivery store's owner URL, `delivered-postgres` in the stack, TLS required; without it data delivery answers `delivery_store_unavailable` or `not_configured`                                                           |
 | `CONNECTOR_KEY`                                | connector              | 32 bytes of base64 the service must present; read once at start and deleted from the environment                                                                                                                             |
 | `CONNECTOR_SEALING_KEY`                        | connector              | 32 bytes of base64, another key, that seals and opens every source credential; the service never holds it                                                                                                                    |
 | `CONNECTOR_DENY`                               | connector              | Required: the platform's own address ranges, as CIDRs separated by commas, or `none` where the networks already hold it apart; the connector refuses its networks' gateways and its own addresses whatever this says         |

@@ -128,16 +128,27 @@ services:
       # to it: the connector's CONNECTOR_KEY. A development-only value, as every key here is.
       CONNECTOR_URL: http://connector:8090
       SECRET_CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
+      # CT Studio's delivery bridge: the keys its signed requests may carry, comma separated, so one can
+      # be rotated. Unset, the service starts and /bridge is simply not mounted. Set it in deploy/.env
+      # (or the shell) to a throwaway value; no key is baked in here.
+      SECRET_BRIDGE_KEYS: ${SECRET_BRIDGE_KEYS:-}
+      # The delivery store, as its owner: where data packages become tables (ct-studio-sink.md, "Data
+      # tables"). TLS is required; `uselibpqcompat` makes `sslmode=require` mean what libpq means (encrypt,
+      # do not verify), which the snakeoil certificate needs.
+      SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     ports:
       - '127.0.0.1:${SERVICE_PORT:-8088}:${SERVICE_PORT:-8088}'
     networks:
       - default
       - connector-private
+      - delivered
     depends_on:
       setup:
         condition: service_completed_successfully
       stand-in-idp:
         condition: service_started
+      delivered-postgres:
+        condition: service_healthy
 
   worker:
     build:
@@ -164,12 +175,17 @@ services:
       # And the key that opens its re-checks of cited entries alone, the connector's
       # CONNECTOR_REFERENCE_KEY (the XR plan, XR-E).
       SECRET_CONNECTOR_REFERENCE_KEY: ZGV2ZWxvcG1lbnQtb25seS1yZWZlcmVuY2Uta2V5LTE=
+      # The delivery store, as the service has it: a data package is written there by the worker.
+      SECRET_DELIVERED_URL: postgres://postgres:delivered-postgres-dev-password@delivered-postgres:5432/delivered?sslmode=require&uselibpqcompat=true
     networks:
       - default
       - connector-private
+      - delivered
     depends_on:
       setup:
         condition: service_completed_successfully
+      delivered-postgres:
+        condition: service_healthy
 
   # The one process that reaches a tenant's own source (data.md, "The connector"). It is on two
   # networks and no others: `connector-private`, which it shares with the service and the worker, and
@@ -289,6 +305,41 @@ services:
       timeout: 5s
       retries: 45
 
+  # The delivery store (ct-studio-sink.md, "Data tables"): a PostgreSQL of its own, apart from the
+  # platform's because the connector has no route to the platform. The service and the worker write
+  # a tenant's delivered tables there as its owner (SECRET_DELIVERED_URL) over the `delivered` network;
+  # the connector reads them with a read-only account per tenant over `connector-egress`, reaching it
+  # as `delivered-postgres`, as it reaches `source-postgres`. TLS on with the image's snakeoil pair; in
+  # production the deployment's own certificate. Pinned by digest, as `source-postgres` is. It holds
+  # nothing until a space turns data delivery on, and publishes no port. The owner password is an
+  # invented development value, as every one here is.
+  delivered-postgres:
+    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    command:
+      [
+        'postgres',
+        '-c',
+        'ssl=on',
+        '-c',
+        'ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem',
+        '-c',
+        'ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key',
+      ]
+    environment:
+      POSTGRES_PASSWORD: delivered-postgres-dev-password
+      POSTGRES_DB: delivered
+    volumes:
+      - delivered-data:/var/lib/postgresql/data
+    networks:
+      - connector-egress
+      - delivered
+    healthcheck:
+      # Over TCP, as `source-postgres` is: the image's first server listens on its socket alone.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d delivered']
+      interval: 2s
+      timeout: 5s
+      retries: 45
+
   # Development and CI only, in the `sources` profile: a tenant's own HTTPS API (the D6 plan, task
   # 1), the fake the connector's suite runs, answering at https://source-http/v1 with the invented key
   # `source-http-dev-key` in `x-api-key`. Its certificate is the development CA's beside it, which the
@@ -348,6 +399,11 @@ networks:
     internal: true
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
+  # Between the delivery store and the service and worker that write it, and no one else.
+  delivered:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
 
 # The bridge contract package comes from GitHub Packages; the image builds read its token from the
 # environment (a GitHub token with read:packages, e.g. NODE_AUTH_TOKEN=$(gh auth token)).
@@ -358,3 +414,4 @@ secrets:
 volumes:
   postgres-data:
   seaweedfs-data:
+  delivered-data:
