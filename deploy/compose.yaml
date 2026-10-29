@@ -314,7 +314,8 @@ services:
   # nothing until a space turns data delivery on, and publishes no port. The owner password is an
   # invented development value, as every one here is.
   delivered-postgres:
-    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    # Postgres 17, the platform database's own image: the delivery store follows its major version.
+    image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     command:
       [
         'postgres',
