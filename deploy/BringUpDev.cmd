@@ -96,6 +96,10 @@ goto :probe
 
 %COMPOSE% ps
 echo.
+rem The proxy's ports, as compose took them: from the environment or deploy\.env, else its defaults.
+for %%v in (LAN_SERVICE_PORT LAN_IDP_PORT LAN_STORE_PORT) do if not defined %%v if exist deploy\.env (
+  for /f "tokens=1,* delims==" %%a in ('findstr /b /c:"%%v=" deploy\.env') do set "%%v=%%b"
+)
 if not defined LAN_SERVICE_PORT set "LAN_SERVICE_PORT=8443"
 if not defined LAN_IDP_PORT set "LAN_IDP_PORT=9443"
 if not defined LAN_STORE_PORT set "LAN_STORE_PORT=8343"
