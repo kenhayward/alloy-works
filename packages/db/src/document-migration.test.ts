@@ -244,6 +244,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0169_default_layout_index',
       '0170_translation_policy_history',
       '0171_publication_locale_data',
+      '0172_bridge',
     ]);
 
     // The component and its version are as they were.
@@ -479,6 +480,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0169_default_layout_index',
       '0170_translation_policy_history',
       '0171_publication_locale_data',
+      '0172_bridge',
     ]);
 
     const { rows } = await queryAs(

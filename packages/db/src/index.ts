@@ -1343,3 +1343,23 @@ export {
   type EntryStatus,
 } from './entry-status.js';
 export { interfaceLanguageOf, setInterfaceLanguage } from './preferences.js';
+export {
+  elementsOf,
+  finishDelivery,
+  readBridgeSettings,
+  readDelivery,
+  recordElements,
+  recordNonce,
+  refuseDelivery,
+  startDelivery,
+  writeBridgeSettings,
+  type BridgeElement,
+  type BridgeSettings,
+  type DeliveryFamily,
+  type DeliveryRefusal,
+  type DeliveryState,
+  type NewBridgeSettings,
+  type NewDelivery,
+  type StartedDelivery,
+  type StoredDelivery,
+} from './bridge-store.js';

@@ -349,6 +349,14 @@ export async function objectInUse(
       );
     if (kept.length > 0) return true;
   }
+  // A package a delivery from CT Studio waits on (0172), until the delivery is written or refused.
+  const { rows: deliveries } = await sql<{ stored: boolean }>`
+    select to_regclass(current_schema() || '.bridge_delivery') is not null as stored`.execute(trx);
+  if (deliveries[0]?.stored === true) {
+    const { rows: waiting } =
+      await sql`select 1 from bridge_delivery where package_key = ${key} limit 1`.execute(trx);
+    if (waiting.length > 0) return true;
+  }
   const upload = await trx
     .selectFrom('asset_upload')
     .select('id')
