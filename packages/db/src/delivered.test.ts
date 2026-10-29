@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import type { bridge } from '@alloy-works/domain';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createDeliveredStore, type DeliveredStore } from './delivered.js';
+import { createDeliveredStore, tenantNames, type DeliveredStore } from './delivered.js';
 
 // The throwaway server only (never 5432); the database is made here if it is absent.
 const SERVER = new URL(
@@ -80,7 +80,12 @@ describe('the delivery store', () => {
     for (const id of tenants) {
       const schema = `t_${id}`;
       await admin.query(`drop schema if exists "${schema}" cascade`);
-      await admin.query(`drop role if exists "${schema}_read"`);
+      const role = `${schema}_read`;
+      const found = await admin.query('select 1 from pg_roles where rolname = $1', [role]);
+      if (found.rowCount === 0) continue;
+      // Revokes the grants (connect, schema, default privileges) the role holds.
+      await admin.query(`drop owned by "${role}"`);
+      await admin.query(`drop role "${role}"`);
     }
     await admin.end();
     await store.close();
@@ -299,5 +304,183 @@ describe('the delivery store', () => {
     const rows = await read(last, `select a from "${first.schema}"."rates_prices"`);
     expect(rows.rows).toEqual([{ a: 'kept' }]);
     await expect(read(third, 'select 1')).rejects.toThrow(/password authentication failed/);
+  });
+
+  it('an empty value is null for a non-text column and kept as the empty string in text', async () => {
+    const access = await store.provision(tenant('empty'));
+    await store.write(
+      access.schema,
+      [
+        plan(
+          [
+            { name: 't', type: 'text' },
+            { name: 'n', type: 'numeric' },
+            { name: 'i', type: 'bigint' },
+            { name: 'd', type: 'date' },
+            { name: 'ts', type: 'timestamptz' },
+            { name: 'b', type: 'boolean' },
+          ],
+          [['', '', '', '', '', '', ...provenanceCells('s', 'r', 1, 1)]],
+        ),
+      ],
+      { sha256: 's', recipeId: 'r' },
+    );
+    const rows = await read(
+      access,
+      `select t, n, i, d, ts, b from "${access.schema}"."rates_prices"`,
+    );
+    expect(rows.rows).toEqual([{ t: '', n: null, i: null, d: null, ts: null, b: null }]);
+  });
+
+  it('a value that will not cast is refused with its table, column and row, changing nothing', async () => {
+    const access = await store.provision(tenant('invalid'));
+    await store.write(
+      access.schema,
+      [plan([{ name: 'a', type: 'text' }], [['kept', ...provenanceCells('s', 'r', 1, 1)]])],
+      { sha256: 's', recipeId: 'r' },
+    );
+    const result = await store.write(
+      access.schema,
+      [
+        plan([{ name: 'a', type: 'text' }], [['y', ...provenanceCells('s', 'r', 2, 1)]], 'fresh'),
+        plan(
+          [
+            { name: 'a', type: 'text' },
+            { name: 'n', type: 'bigint' },
+          ],
+          [
+            ['ok', '1', ...provenanceCells('s', 'r', 2, 1)],
+            ['bad', '3.5', ...provenanceCells('s', 'r', 2, 2)],
+          ],
+        ),
+      ],
+      { sha256: 's', recipeId: 'r' },
+    );
+    expect(result).toEqual({
+      refused: 'value_invalid',
+      table: 'rates_prices',
+      column: 'n',
+      row: 2,
+    });
+    const rows = await read(access, `select a from "${access.schema}"."rates_prices"`);
+    expect(rows.rows).toEqual([{ a: 'kept' }]);
+    const columns = await admin.query(
+      `select column_name from information_schema.columns where table_schema = $1 and table_name = 'rates_prices'`,
+      [access.schema],
+    );
+    expect(columns.rows.map((row: { column_name: string }) => row.column_name)).not.toContain('n');
+    const fresh = await admin.query(`select to_regclass($1) as found`, [`${access.schema}.fresh`]);
+    expect(fresh.rows[0].found).toBeNull();
+  });
+
+  it('a read role can still connect once public may not', async () => {
+    const access = await store.provision(tenant('connect'));
+    await store.provision(tenant('connect2'));
+    const rows = await read(access, 'select current_user as me');
+    expect(rows.rows).toEqual([{ me: access.account }]);
+    const privilege = await admin.query(
+      `select has_database_privilege('public', current_database(), 'connect') as open`,
+    );
+    expect(privilege.rows[0].open).toBe(false);
+  });
+
+  it('a zone-less timestamp lands as UTC whatever the server is set to', async () => {
+    await admin.query(`alter database ${DATABASE} set timezone = 'America/New_York'`);
+    const zoned = createDeliveredStore(urlFor());
+    try {
+      const access = await zoned.provision(tenant('utc'));
+      await zoned.write(
+        access.schema,
+        [
+          plan(
+            [{ name: 'ts', type: 'timestamptz' }],
+            [['2026-01-02 03:04:05', ...provenanceCells('s', 'r', 1, 1)]],
+          ),
+        ],
+        { sha256: 's', recipeId: 'r' },
+      );
+      const rows = await read(access, `select ts from "${access.schema}"."rates_prices"`);
+      expect(rows.rows[0].ts).toEqual(new Date('2026-01-02T03:04:05.000Z'));
+    } finally {
+      await zoned.close();
+      await admin.query(`alter database ${DATABASE} reset timezone`);
+    }
+  });
+
+  it('hostile table and column names are quoted, not interpreted', async () => {
+    const access = await store.provision(tenant('hostile'));
+    const table = 'x"; drop schema ' + access.schema + ' cascade; --';
+    const column = 'c"; select 1; --';
+    const result = await store.write(
+      access.schema,
+      [plan([{ name: column, type: 'text' }], [['v', ...provenanceCells('s', 'r', 1, 1)]], table)],
+      { sha256: 's', recipeId: 'r' },
+    );
+    expect(result).toEqual({ written: [`${access.schema}.${table}`] });
+    const rows = await read(
+      access,
+      `select "${column.replaceAll('"', '""')}" as v from "${access.schema}"."${table.replaceAll('"', '""')}"`,
+    );
+    expect(rows.rows).toEqual([{ v: 'v' }]);
+  });
+
+  it('replace keeps the same source rows under another recipe id', async () => {
+    const access = await store.provision(tenant('recipes'));
+    const write = (recipe: string, item: string) =>
+      store.write(
+        access.schema,
+        [plan([{ name: 'item', type: 'text' }], [[item, ...provenanceCells('s', recipe, 1, 1)]])],
+        { sha256: 's', recipeId: recipe },
+      );
+    await write('one', 'a');
+    await write('two', 'b');
+    await write('one', 'c');
+    const rows = await read(
+      access,
+      `select item from "${access.schema}"."rates_prices" order by item`,
+    );
+    expect(rows.rows).toEqual([{ item: 'b' }, { item: 'c' }]);
+  });
+});
+
+describe('the names a tenant takes', () => {
+  const SAFE = /^t_[a-z0-9_]+$/;
+
+  it('lower-cases and replaces what is not [a-z0-9_], marking the change with a hash', () => {
+    for (const id of ['Acme', 'a-b', 'a b']) {
+      const { schema, account } = tenantNames(id);
+      expect(schema).toMatch(SAFE);
+      expect(account).toMatch(SAFE);
+      expect(schema).toMatch(/__[0-9a-f]{8}$/);
+    }
+    expect(tenantNames('acme').schema).toBe('t_acme');
+    expect(tenantNames('acme').account).toBe('t_acme_read');
+  });
+
+  it('cuts a long id so schema and role stay within 63 bytes', () => {
+    const long = tenantNames('a'.repeat(200));
+    expect(Buffer.byteLength(long.schema)).toBeLessThanOrEqual(63);
+    expect(Buffer.byteLength(long.account)).toBeLessThanOrEqual(63);
+    const exactMax = tenantNames('a'.repeat(40));
+    expect(Buffer.byteLength(exactMax.account)).toBeLessThanOrEqual(63);
+    expect(tenantNames('a'.repeat(200)).schema).not.toBe(tenantNames('a'.repeat(201)).schema);
+  });
+
+  it('gives the empty id a defined, safe name', () => {
+    expect(tenantNames('').schema).toMatch(/^t___[0-9a-f]{8}$/);
+  });
+
+  it('is deterministic, and different odd ids give different names', () => {
+    expect(tenantNames('A-b')).toEqual(tenantNames('A-b'));
+    const ids = ['A-b', 'a-b', 'a_b', 'a b', 'A B', 'ab', '', '-', '_'];
+    expect(new Set(ids.map((id) => tenantNames(id).schema)).size).toBe(ids.length);
+    expect(new Set(ids.map((id) => tenantNames(id).account)).size).toBe(ids.length);
+  });
+
+  it('no exact id can equal a hashed name', () => {
+    const hashed = tenantNames('ABC').schema.slice(2);
+    expect(hashed).toContain('__');
+    expect(tenantNames(hashed).schema).not.toBe(tenantNames('ABC').schema);
+    expect(tenantNames(hashed).schema).toMatch(/__[0-9a-f]{8}$/);
   });
 });
