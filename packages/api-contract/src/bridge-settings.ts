@@ -112,10 +112,13 @@ export const bridgeSettingsRoutes = {
         description: 'No such space in this environment, or none the caller may read',
         schema: ErrorBody,
       },
-      409: { description: SPACE_ARCHIVED, schema: ErrorBody },
+      409: {
+        description: `${SPACE_ARCHIVED}; \`delivery_credential_not_set\`: the delivery connection took no credential`,
+        schema: ErrorBody,
+      },
       422: {
         description:
-          '`bridge_settings_invalid`: a component type or template that is not here, or a property mapped to a field the template does not give a document; each is named and nothing is changed',
+          '`bridge_settings_invalid`: a component type or template that is not here, or a property mapped to a field the template does not give a document; each is named and nothing is changed; `delivery_connection_refused`: the connection to the delivery store could not be made',
         schema: BridgeSettingsRefusal,
       },
       503: {

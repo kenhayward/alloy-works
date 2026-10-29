@@ -230,6 +230,17 @@ export async function recordNonce(
   return (result.numAffectedRows ?? 0n) > 0n ? 'new' : 'replayed';
 }
 
+/**
+ * Takes the tenant's lock on turning data delivery on, held to the end of the transaction: of two
+ * turn-ons at once, in different spaces, the second reads the first's connections once it commits,
+ * so the credentials it seals are never from the older of two passwords.
+ */
+export async function lockBridgeProvision(trx: TenantTransaction, tenantId: string): Promise<void> {
+  await sql`select pg_advisory_xact_lock(hashtextextended(${`alloy-works:bridge-provision:${tenantId}`}, 0))`.execute(
+    trx,
+  );
+}
+
 /** A space's bridge settings. */
 export interface BridgeSettings {
   readonly spaceId: string;

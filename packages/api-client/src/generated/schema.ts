@@ -102453,7 +102453,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `space_archived`: the space is archived, and nothing new is made in it */
+            /** @description `space_archived`: the space is archived, and nothing new is made in it; `delivery_credential_not_set`: the delivery connection took no credential */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102473,7 +102473,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `bridge_settings_invalid`: a component type or template that is not here, or a property mapped to a field the template does not give a document; each is named and nothing is changed */
+            /** @description `bridge_settings_invalid`: a component type or template that is not here, or a property mapped to a field the template does not give a document; each is named and nothing is changed; `delivery_connection_refused`: the connection to the delivery store could not be made */
             422: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

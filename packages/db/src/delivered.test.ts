@@ -281,6 +281,23 @@ describe('the delivery store', () => {
     expect((await read(access, `select a from ${table}`)).rows).toEqual([{ a: 'x' }]);
   });
 
+  it('ensure leaves a role its password and setPassword changes only that', async () => {
+    const id = tenant('ensure');
+    const first = await store.provision(id);
+    const ensured = await store.ensure(id);
+    expect(ensured).toEqual({ schema: first.schema, account: first.account });
+    // The password it had still signs in.
+    expect((await read(first, 'select 1 as ok')).rows).toEqual([{ ok: 1 }]);
+    const next = randomBytes(24).toString('hex');
+    await store.setPassword(id, next);
+    expect((await read({ account: first.account, password: next }, 'select 1 as ok')).rows).toEqual(
+      [{ ok: 1 }],
+    );
+    await expect(read(first, 'select 1')).rejects.toThrow();
+    // Only hex is taken, so nothing can break out of the statement.
+    await expect(store.setPassword(id, "x'; drop role postgres; --")).rejects.toThrow();
+  });
+
   it('provisioning twice keeps the schema', async () => {
     const id = tenant('twice');
     const first = await store.provision(id);

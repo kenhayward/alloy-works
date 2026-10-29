@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import type {
   BridgeSettingsBody,
   BridgeSettingsView,
@@ -7,6 +8,8 @@ import {
   checkSpaceLive,
   createConnection,
   createDeliveredStore,
+  deliveredNames,
+  lockBridgeProvision,
   readBridgeSettings,
   readConnection,
   readDefinitionLatest,
@@ -56,7 +59,7 @@ function viewOf(settings: BridgeSettings | undefined): BridgeSettingsView {
 }
 
 /** The connection data delivery makes: the tenant's read-only account on the delivery store. */
-const connectionSettings = (access: DeliveredAccess): PostgresSettings => ({
+const connectionSettings = (account: string): PostgresSettings => ({
   schemaVersion: 1,
   name: 'CT Studio delivered data',
   description:
@@ -66,12 +69,22 @@ const connectionSettings = (access: DeliveredAccess): PostgresSettings => ({
     host: STORE_HOST,
     port: STORE_PORT,
     database: STORE_DATABASE,
-    account: access.account,
+    account,
     tls: 'require',
   },
   identity: { kind: 'service' },
   retired: false,
 });
+
+/** Whether a connection is the delivery store's own, as this one is made: a credential is sealed only for that. */
+const pointsAtStore = (found: StoredConnection['settings'], store: PostgresSettings): boolean =>
+  found.type === 'postgres' &&
+  !found.retired &&
+  found.source.host === store.source.host &&
+  found.source.port === store.source.port &&
+  found.source.database === store.source.database &&
+  found.source.account === store.source.account &&
+  found.source.tls === store.source.tls;
 
 const storeUnavailable = (message: string) =>
   new AppError(503, 'delivery_store_unavailable', message);
@@ -106,6 +119,15 @@ export function bridgeSettingsHandlers(options: {
     store ??= createDeliveredStore(options.deliveredUrl);
     return store;
   };
+
+  /** The store's own words may name its host: said to the log by code alone, never to the caller. */
+  function storeFailed(request: FastifyRequest, error: unknown): AppError {
+    request.log.warn(
+      { code: (error as { code?: unknown }).code },
+      'the delivery store did not answer',
+    );
+    return storeUnavailable('The delivery store did not answer, so data cannot be delivered.');
+  }
 
   /** Seals a password for a connection through the connector, which alone holds the sealing key. */
   async function seal(
@@ -173,10 +195,13 @@ export function bridgeSettingsHandlers(options: {
   }
 
   /**
-   * Turns data delivery on for a space: the tenant's schema and read account made if absent, the
-   * account given a new password, and that password sealed onto the space's connection (made, or the
-   * one it has) - and onto every other delivery connection of the tenant, since the account is
-   * shared and its old password is gone. Answers the connection's id and the schema.
+   * Turns data delivery on for a space where it needs a password: the space has no delivery
+   * connection that points at the store, or names no schema. The service makes the password, seals it
+   * for the space's connection (made, or the one it has) and for every other delivery connection that
+   * points at the store, since the account is the tenant's and has one password, and stores those
+   * credentials; the store's role is given the password last (`commit`), after the settings are
+   * written and just before the transaction commits, so a failure before then changes nothing there.
+   * A space with a working connection and a schema needs none, and rotates nothing.
    */
   async function turnOn(
     trx: TenantTransaction,
@@ -184,37 +209,44 @@ export function bridgeSettingsHandlers(options: {
     principalId: string,
     spaceId: string,
     before: BridgeSettings | undefined,
-  ): Promise<{ readonly connection: string; readonly schema: string }> {
+  ): Promise<{
+    readonly connection: string;
+    readonly schema: string;
+    readonly commit: () => Promise<void>;
+  }> {
     const tenant = options.tenantOf(request);
-    const store = delivered();
-    if (!client) throw connectorUnavailable();
-    let access: DeliveredAccess;
-    try {
-      access = await store.provision(tenant.id);
-    } catch (error) {
-      // The store's own words may name its host: said to the log by code alone, and never to the caller.
-      request.log.warn(
-        { code: (error as { code?: unknown }).code },
-        'the delivery store could not be provisioned',
-      );
-      throw storeUnavailable('The delivery store did not answer, so data cannot be delivered.');
-    }
+    const { account } = deliveredNames(tenant.id);
+    const settings = connectionSettings(account);
     const existing =
       before?.connectionId == null ? undefined : await readConnection(trx, before.connectionId);
-    let connection: StoredConnection;
-    if (existing && !existing.settings.retired) connection = existing;
-    else {
+    const reusable = existing && pointsAtStore(existing.settings, settings) ? existing : undefined;
+    if (reusable && before?.tableSchema != null) {
+      return { connection: reusable.id, schema: before.tableSchema, commit: async () => {} };
+    }
+    const store = delivered();
+    if (!client) throw connectorUnavailable();
+    let access: Omit<DeliveredAccess, 'password'>;
+    try {
+      access = await store.ensure(tenant.id);
+    } catch (error) {
+      throw storeFailed(request, error);
+    }
+    let connection = reusable;
+    if (!connection) {
       const made = await createConnection(trx, {
         author: principalId,
         spaceId,
-        settings: connectionSettings(access),
+        settings: connectionSettings(access.account),
       });
       if (made.answer !== 'created') {
-        throw new Error(`The delivery connection was refused: ${made.answer}`);
+        throw new AppError(
+          422,
+          'delivery_connection_refused',
+          'The connection to the delivery store could not be made, so data cannot be delivered.',
+        );
       }
       connection = made.connection;
     }
-    // The account has one password for the tenant, so every connection to it takes the new one.
     const others = await trx
       .selectFrom('bridge_settings')
       .select('connection_id')
@@ -224,18 +256,15 @@ export function bridgeSettingsHandlers(options: {
     const sealing: StoredConnection[] = [connection];
     for (const row of others) {
       const other = await readConnection(trx, row.connection_id!);
-      if (
-        other &&
-        !other.settings.retired &&
-        other.settings.type === 'postgres' &&
-        other.settings.source.account === access.account
-      ) {
+      if (other && other.id !== connection.id && pointsAtStore(other.settings, settings)) {
         sealing.push(other);
       }
     }
+    // Hex, from the system's random source; the store's role changes to it only at the very end.
+    const password = randomBytes(24).toString('hex');
     // All sealed before any is stored, so a connector that fails part way stores none of them.
     const sealed = new Map<string, string>();
-    for (const each of sealing) sealed.set(each.id, await seal(tenant, each, access.password));
+    for (const each of sealing) sealed.set(each.id, await seal(tenant, each, password));
     for (const each of sealing) {
       const set = await setConnectionCredential(trx, {
         id: each.id,
@@ -243,9 +272,25 @@ export function bridgeSettingsHandlers(options: {
         by: principalId,
         sealedFor: each.settings,
       });
-      if (set.answer !== 'set') throw new Error(`The credential of ${each.id} was not set`);
+      if (set.answer !== 'set') {
+        throw new AppError(
+          409,
+          'delivery_credential_not_set',
+          'The delivery connection refused its credential, so data cannot be delivered.',
+        );
+      }
     }
-    return { connection: connection.id, schema: access.schema };
+    return {
+      connection: connection.id,
+      schema: access.schema,
+      commit: async () => {
+        try {
+          await store.setPassword(tenant.id, password);
+        } catch (error) {
+          throw storeFailed(request, error);
+        }
+      },
+    };
   }
 
   return {
@@ -269,6 +314,8 @@ export function bridgeSettingsHandlers(options: {
             { problems },
           );
         }
+        // One turn-on at a time for the tenant, so a second reads what the first stored.
+        if (body.data) await lockBridgeProvision(trx, options.tenantOf(request).id);
         const before = await readBridgeSettings(trx, space);
         // Off keeps the connection and the tables, and names no schema: a delivery to a space with
         // none is refused not_configured, so no new data arrives (API-072).
@@ -282,6 +329,8 @@ export function bridgeSettingsHandlers(options: {
           tableSchema: on?.schema ?? null,
           changedBy: principalId,
         });
+        // The store's password changes last, so nothing above it can have left it changed.
+        await on?.commit();
         return viewOf(written);
       },
     },

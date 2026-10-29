@@ -1347,6 +1347,7 @@ export { interfaceLanguageOf, setInterfaceLanguage } from './preferences.js';
 export {
   elementsOf,
   finishDelivery,
+  lockBridgeProvision,
   readBridgeSettings,
   readDelivery,
   recordElements,
@@ -1377,6 +1378,7 @@ export {
 } from './bridge-documents.js';
 export {
   createDeliveredStore,
+  tenantNames as deliveredNames,
   type DeliveredAccess,
   type DeliveredRefused,
   type DeliveredStore,

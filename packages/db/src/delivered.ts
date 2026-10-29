@@ -27,7 +27,11 @@ export type DeliveredRefused =
  * role per tenant. The tables are an ordinary SQL source to the connector.
  */
 export interface DeliveredStore {
-  /** The tenant's schema and read role, made if absent. The read role always gets a new password. */
+  /** The tenant's schema and read role, made if absent. An existing role keeps the password it has. */
+  ensure(tenantId: string): Promise<Omit<DeliveredAccess, 'password'>>;
+  /** Gives the tenant's read role this password (hex, 32 to 128 digits); the role must exist. */
+  setPassword(tenantId: string, password: string): Promise<void>;
+  /** `ensure`, then a new random password: the role is left with it, and it is answered once. */
   provision(tenantId: string): Promise<DeliveredAccess>;
   /**
    * Plans written into `schema` in one transaction: the table made if absent, new columns added, the
@@ -43,6 +47,7 @@ export interface DeliveredStore {
 }
 
 const MAX_IDENTIFIER = 63;
+const HEX_PASSWORD = /^[0-9a-f]{32,128}$/;
 const SCHEMA_NAME = /^t_[a-z0-9_]{1,61}$/;
 /** Bind parameters per statement are capped at 65535 by the protocol; stay well under. */
 const PARAMETER_BUDGET = 30_000;
@@ -138,10 +143,10 @@ export function createDeliveredStore(url: string): DeliveredStore {
     sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`.execute(trx);
 
   return {
-    async provision(tenantId) {
+    async ensure(tenantId) {
       const { schema, account } = tenantNames(tenantId);
-      // Hex only, so a literal in CREATE ROLE (which takes no bind parameter) cannot be broken.
-      const password = randomBytes(24).toString('hex');
+      // A new role is made with a password nobody is told; an existing one keeps the password it has.
+      const unusable = randomBytes(24).toString('hex');
       await db.transaction().execute(async (trx) => {
         // One provision at a time: the database-level REVOKE below would otherwise collide
         // ("tuple concurrently updated") when two tenants are provisioned together.
@@ -150,11 +155,9 @@ export function createDeliveredStore(url: string): DeliveredStore {
         const existing = await sql<{ rolname: string }>`
           select rolname from pg_roles where rolname = ${account}`.execute(trx);
         if (existing.rows.length === 0) {
-          await sql`create role ${sql.id(account)} login password ${sql.lit(password)}`.execute(
+          await sql`create role ${sql.id(account)} login password ${sql.lit(unusable)}`.execute(
             trx,
           );
-        } else {
-          await sql`alter role ${sql.id(account)} login password ${sql.lit(password)}`.execute(trx);
         }
         const current = await sql<{ name: string }>`select current_database() as name`.execute(trx);
         const database = current.rows[0]!.name;
@@ -169,7 +172,25 @@ export function createDeliveredStore(url: string): DeliveredStore {
           trx,
         );
       });
-      return { schema, account, password };
+      return { schema, account };
+    },
+
+    async setPassword(tenantId, password) {
+      // Hex only, so a literal in ALTER ROLE (which takes no bind parameter) cannot be broken.
+      if (!HEX_PASSWORD.test(password))
+        throw new Error('A delivery password is hex, 32 to 128 digits');
+      const { account } = tenantNames(tenantId);
+      await db.transaction().execute(async (trx) => {
+        await lock(trx, 'delivered-provision');
+        await sql`alter role ${sql.id(account)} login password ${sql.lit(password)}`.execute(trx);
+      });
+    },
+
+    async provision(tenantId) {
+      const access = await this.ensure(tenantId);
+      const password = randomBytes(24).toString('hex');
+      await this.setPassword(tenantId, password);
+      return { ...access, password };
     },
 
     async write(schema, plans, source) {

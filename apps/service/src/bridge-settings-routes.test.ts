@@ -6,6 +6,7 @@ import {
   createTemplate,
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
+  archiveSpace,
   STARTER_COMPONENT_TYPE_ID,
   usableCredentialOf,
 } from '@alloy-works/db';
@@ -56,6 +57,30 @@ describe('bridge settings through the service', () => {
     );
     return usable.answer === 'usable' ? usable.sealed : undefined;
   };
+  /** Signs in to the delivery store as a connection's account with a password: throws if refused. */
+  const signInAs = (account: string, password: string) => {
+    const url = new URL(OWNER_URL);
+    url.username = account;
+    url.password = password;
+    return queryAs(url.toString(), 'select 1 as ok');
+  };
+  const accountOf = async (connection: string) =>
+    (
+      (await h.call('ada', 'GET', `/v1/connections/${connection}`)).json() as {
+        settings: { source: { account: string } };
+      }
+    ).settings.source.account;
+  const seals = () =>
+    h.connector.asked
+      .filter((each) => each.path === '/v1/seal')
+      .map(
+        (each) =>
+          each.body as {
+            connection: string;
+            secret: string;
+            settings: { source: { host: string } };
+          },
+      );
   const events = (kind: string) =>
     h.tenantDb.withTenant(h.tenant, (trx) =>
       trx.selectFrom('audit_event').select('detail').where('kind', '=', kind).execute(),
@@ -231,7 +256,10 @@ describe('bridge settings through the service', () => {
     expect(body.settings.source.account).toMatch(/_read$/);
     expect(body.credential.set).toBe(true);
 
-    // Sealed by the connector, once, from a password nobody was told.
+    // Sealed by the connector, once, for the delivery store and no other host, from a password
+    // nobody was told.
+    expect(seals()).toHaveLength(1);
+    expect(seals()[0]!.settings.source.host).toBe('delivered-postgres');
     const [password] = sealedFor(view.connection!);
     expect(password).toMatch(/^[0-9a-f]{48}$/);
     const sealed = await credentialOf(view.connection!);
@@ -255,24 +283,30 @@ describe('bridge settings through the service', () => {
     expect((await events('connection.credential_set')).length).toBeGreaterThan(0);
   });
 
-  it('turning data on again makes a new password and seals it onto the connection it has', async () => {
+  it('turning data on again with data already on, to change a mapping, rotates and seals nothing', async () => {
     const before = (await h.call('ada', 'GET', settingsUrl(h.general))).json<BridgeSettingsView>();
     const first = await credentialOf(before.connection!);
+    const asked = seals().length;
+    const password = sealedFor(before.connection!).at(-1)!;
+    const account = await accountOf(before.connection!);
     const answer = await put(h.general, {
       componentType: null,
       template,
-      propertyMap: PROPERTY_MAP,
+      propertyMap: {},
       data: true,
     });
     expect(answer.statusCode, answer.body).toBe(200);
-    expect(answer.json<BridgeSettingsView>().connection).toBe(before.connection);
-    const passwords = sealedFor(before.connection!);
-    expect(passwords.length).toBeGreaterThanOrEqual(2);
-    expect(new Set(passwords).size).toBe(passwords.length);
-    expect(await credentialOf(before.connection!)).not.toBe(first);
-    for (const password of passwords) {
-      for (const text of seen) expect(text).not.toContain(password);
-    }
+    expect(answer.json<BridgeSettingsView>()).toMatchObject({
+      connection: before.connection,
+      data: true,
+      propertyMap: {},
+    });
+    expect(seals()).toHaveLength(asked);
+    expect(await credentialOf(before.connection!)).toBe(first);
+    // The password the connection holds still signs in.
+    await signInAs(account, password);
+    // Put the mapping back for the tests that follow.
+    await put(h.general, { componentType: null, template, propertyMap: PROPERTY_MAP, data: true });
   });
 
   it('a second space reuses the schema, gets a connection of its own, and the first keeps working', async () => {
@@ -338,6 +372,109 @@ describe('bridge settings through the service', () => {
       expect(read.json()).toMatchObject({ data: false, connection: null });
     } finally {
       h.connector.mode = 'answer';
+    }
+  });
+
+  it('a seal that fails leaves the old password working and the old credential in place', async () => {
+    const before = (await h.call('ada', 'GET', settingsUrl(h.general))).json<BridgeSettingsView>();
+    const account = await accountOf(before.connection!);
+    const password = sealedFor(before.connection!).at(-1)!;
+    const credential = await credentialOf(before.connection!);
+    await put(h.general, { componentType: null, template, propertyMap: PROPERTY_MAP, data: false });
+    h.connector.mode = 'unreachable';
+    try {
+      const answer = await put(h.general, {
+        componentType: null,
+        template,
+        propertyMap: PROPERTY_MAP,
+        data: true,
+      });
+      expect(answer.statusCode, answer.body).toBe(503);
+    } finally {
+      h.connector.mode = 'answer';
+    }
+    await signInAs(account, password);
+    expect(await credentialOf(before.connection!)).toBe(credential);
+    const read = await h.call('ada', 'GET', settingsUrl(h.general));
+    expect(read.json()).toMatchObject({ data: false, connection: before.connection });
+    // And on, once the connector answers, rotates and signs in with the new one.
+    const on = await put(h.general, {
+      componentType: null,
+      template,
+      propertyMap: PROPERTY_MAP,
+      data: true,
+    });
+    expect(on.statusCode, on.body).toBe(200);
+    const fresh = sealedFor(before.connection!).at(-1)!;
+    expect(fresh).not.toBe(password);
+    await signInAs(account, fresh);
+  });
+
+  it('a delivery connection edited to point elsewhere is never sealed for, and the space gets a new one', async () => {
+    const fourth = (await h.tenantDb.withTenant(h.tenant, (trx) => createSpace(trx, 'Fourth'))).id;
+    await h.allow(h.ids.ada!, h.roles.Administrator!, { kind: 'space', id: fourth });
+    const made = (await put(fourth, { ...off, data: true })).json<BridgeSettingsView>();
+    const view = (await h.call('ada', 'GET', `/v1/connections/${made.connection}`)).json<{
+      version: { id: string };
+      settings: { source: Record<string, unknown> };
+    }>();
+    const edited = await h.call('ada', 'POST', `/v1/connections/${made.connection}/versions`, {
+      openedFrom: view.version.id,
+      settings: {
+        ...view.settings,
+        source: { ...view.settings.source, host: 'elsewhere.example.test' },
+      },
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    const asked = seals().length;
+    // Turning it on again (its connection no longer points at the store), here and in another space.
+    const again = (await put(fourth, { ...off, data: true })).json<BridgeSettingsView>();
+    expect(again.connection).not.toBe(made.connection);
+    const elsewhere = (await put(third, { ...off, data: true })).json<BridgeSettingsView>();
+    expect(elsewhere.data).toBe(true);
+    const after = seals().slice(asked);
+    expect(after.length).toBeGreaterThan(0);
+    for (const each of after) {
+      expect(each.settings.source.host).toBe('delivered-postgres');
+      expect(each.connection).not.toBe(made.connection);
+    }
+  });
+
+  it('a delivery store that is set but does not answer is refused 503, naming neither it nor its URL', async () => {
+    const url = 'postgres://owner:hunter2-canary@127.0.0.1:1/delivered_test';
+    const down = await startHarness({ secrets: { SECRET_DELIVERED_URL: url } });
+    try {
+      const answer = await down.call('ada', 'PUT', settingsUrl(down.general), {
+        ...off,
+        data: true,
+      });
+      expect(answer.statusCode, answer.body).toBe(503);
+      expect(answer.json()).toMatchObject({ code: 'delivery_store_unavailable' });
+      for (const text of [answer.body, ...down.lines]) {
+        expect(text).not.toContain('hunter2-canary');
+        expect(text).not.toContain('127.0.0.1:1');
+      }
+      const read = await down.call('ada', 'GET', settingsUrl(down.general));
+      expect(read.json()).toEqual({ ...off, connection: null });
+    } finally {
+      await down.close();
+    }
+  });
+
+  it('turning data on in an archived space is refused 409 space_archived', async () => {
+    const archived = (await h.tenantDb.withTenant(h.tenant, (trx) => createSpace(trx, 'Old'))).id;
+    await h.tenantDb.withTenant(h.tenant, (trx) => archiveSpace(trx, archived, h.ids.ada!));
+    const answer = await h.call('ada', 'PUT', settingsUrl(archived), { ...off, data: true });
+    expect(answer.statusCode, answer.body).toBe(409);
+    expect(answer.json()).toMatchObject({ code: 'space_archived' });
+  });
+
+  it('no password the connector was asked to seal is in any response, the audit log or the logs', async () => {
+    const passwords = new Set(seals().map((each) => each.secret));
+    expect(passwords.size).toBeGreaterThan(3);
+    const audit = JSON.stringify(await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx)));
+    for (const password of passwords) {
+      for (const text of [...seen, audit, ...h.lines]) expect(text).not.toContain(password);
     }
   });
 });
