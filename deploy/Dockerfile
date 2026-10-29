@@ -27,7 +27,7 @@ WORKDIR /repo
 
 FROM base AS build
 # The manifests first, so a change to source does not reinstall the world.
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
 COPY apps/connector/package.json apps/connector/
 COPY apps/desktop/package.json apps/desktop/
 COPY apps/service/package.json apps/service/
@@ -62,12 +62,14 @@ COPY apps/connector/ apps/connector/
 COPY apps/service/ apps/service/
 COPY apps/web/ apps/web/
 COPY apps/worker/ apps/worker/
-RUN pnpm --filter "@alloy-works/service..." build \
+RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
+    pnpm --filter "@alloy-works/service..." build \
  && pnpm --filter "@alloy-works/worker..." build \
  && pnpm --filter "@alloy-works/web..." build \
  && pnpm --filter "@alloy-works/connector..." build
 # Each app, with its own production dependencies and nothing else.
-RUN pnpm deploy --filter @alloy-works/service --prod /prod/service \
+RUN --mount=type=secret,id=npm_token,env=NODE_AUTH_TOKEN \
+    pnpm deploy --filter @alloy-works/service --prod /prod/service \
  && pnpm deploy --filter @alloy-works/worker --prod /prod/worker \
  && pnpm deploy --filter @alloy-works/connector --prod /prod/connector
 

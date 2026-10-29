@@ -56,6 +56,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: tools
     command: ['pnpm', '--filter', '@alloy-works/stand-in-idp', 'start']
     environment:
@@ -78,6 +80,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: tools
     command: ['pnpm', 'dev:setup']
     environment:
@@ -103,6 +107,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: service
     environment:
       DATABASE_URL: postgres://aw_service:aw_service_dev@postgres:5432/alloy_dev
@@ -139,6 +145,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: worker
     environment:
       DATABASE_URL: postgres://aw_worker:aw_worker_dev@postgres:5432/alloy_dev
@@ -176,6 +184,8 @@ services:
       # Dockerfile live here, one level down.
       context: ..
       dockerfile: deploy/Dockerfile
+      secrets:
+        - npm_token
       target: connector
     environment:
       CONNECTOR_KEY: ZGV2ZWxvcG1lbnQtb25seS1jb25uZWN0b3Ita2V5LTE=
@@ -338,6 +348,12 @@ networks:
     internal: true
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
+
+# The bridge contract package comes from GitHub Packages; the image builds read its token from the
+# environment (a GitHub token with read:packages, e.g. NODE_AUTH_TOKEN=$(gh auth token)).
+secrets:
+  npm_token:
+    environment: NODE_AUTH_TOKEN
 
 volumes:
   postgres-data:

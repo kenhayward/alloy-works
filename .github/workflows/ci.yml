@@ -18,6 +18,11 @@ permissions:
   issues: write
   packages: read
 
+# Every pnpm command reads .npmrc, which interpolates this; unset, pnpm warns on each run. The same
+# value feeds the image builds below as the npm_token build secret.
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 # A second push to the same branch supersedes the first; no point burning minutes on a stale commit.
 concurrency:
   group: ci-${{ github.ref }}
@@ -46,8 +51,6 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - id: decide
         run: |
@@ -116,8 +119,6 @@ jobs:
       # This step is NOT continue-on-error - a lock file that will not install should stop the run.
       - name: Install
         run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The object store the objects and worker suites run against. A service container cannot take
       # a command, and SeaweedFS needs one, so it is started as a step.
@@ -200,8 +201,6 @@ jobs:
       - name: Images
         if: env.FULL == 'true'
         uses: docker/bake-action@v6
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           source: .
           files: deploy/compose.yaml
@@ -276,8 +275,6 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Object store
         if: ${{ matrix.suite == 'service' || matrix.suite == 'worker' }}
@@ -359,8 +356,6 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The pinned Chromium, cached by the file that pins it: a new pin is a new key, so a cached build
       # is only ever the one the pin names, and fetch-chromium checks its hash whenever it downloads.
@@ -384,8 +379,6 @@ jobs:
 
       - name: The images
         uses: docker/bake-action@v6
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           source: .
           files: deploy/compose.yaml
@@ -501,8 +494,6 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Every job's reports: the build job's, each suite's and the whole system's.
       - name: The reports
