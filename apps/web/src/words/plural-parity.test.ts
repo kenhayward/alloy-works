@@ -64,7 +64,7 @@ describe('the domain’s plural rules and the interface’s (the MF plan, MF-B)'
     }
   });
 
-  it('LOC-045 selects what the interface selects for every whole-number sample of every CLDR locale', () => {
+  it('selects what the interface selects for every whole-number sample of every CLDR locale', () => {
     let compared = 0;
     for (const [locale, rules] of Object.entries(cldr)) {
       // A deprecated tag asked for as FormatJS resolves it: it cannot resolve `sh` itself.

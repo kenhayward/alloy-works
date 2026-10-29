@@ -998,7 +998,9 @@ describe('the citations in the committed model', () => {
     // 2173 (2026-10-28): TEc cites LOC-044 in eleven files: the declared languages, the CLDR pin, the
     // picker, About, a publication's locale data, 0171, the collations and the Node pin.
     // 2174 (2026-10-28): TEd cites LOC-029 in the pseudo walk, every page and dialog in both pseudo-locales.
-    expect(model.citations).toHaveLength(2174);
+    // 2176 (2026-10-29): MFa cites LOC-044 for the compiled plural rules and the contract's record;
+    // their FormatJS parity cites nothing until a design claims LOC-045 (MFd).
+    expect(model.citations).toHaveLength(2176);
   });
 
   it('cites no identifier the corpus does not hold', () => {

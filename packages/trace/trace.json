@@ -21060,7 +21060,7 @@
     {
       "id": "LOC-044",
       "file": "apps/service/src/about-routes.test.ts",
-      "line": 16,
+      "line": 17,
       "kind": "title"
     },
     {
@@ -25356,7 +25356,7 @@
     {
       "id": "PUB-004",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 108,
+      "line": 120,
       "kind": "title"
     },
     {
@@ -25368,25 +25368,25 @@
     {
       "id": "PUB-059",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 859,
+      "line": 871,
       "kind": "title"
     },
     {
       "id": "PUB-060",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 920,
+      "line": 932,
       "kind": "title"
     },
     {
       "id": "PUB-084",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 883,
+      "line": 895,
       "kind": "title"
     },
     {
       "id": "PUB-100",
       "file": "apps/web/src/publishing/PublicationPage.test.tsx",
-      "line": 586,
+      "line": 598,
       "kind": "title"
     },
     {
@@ -27150,91 +27150,91 @@
     {
       "id": "LOC-044",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 682,
+      "line": 683,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 431,
+      "line": 432,
       "kind": "title"
     },
     {
       "id": "PUB-006",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 473,
+      "line": 474,
       "kind": "title"
     },
     {
       "id": "PUB-021",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 366,
+      "line": 367,
       "kind": "title"
     },
     {
       "id": "PUB-053",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 895,
+      "line": 898,
       "kind": "title"
     },
     {
       "id": "PUB-061",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 570,
+      "line": 571,
       "kind": "title"
     },
     {
       "id": "PUB-062",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 586,
+      "line": 587,
       "kind": "title"
     },
     {
       "id": "PUB-063",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 691,
+      "line": 694,
       "kind": "title"
     },
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1595,
+      "line": 1598,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1510,
+      "line": 1513,
       "kind": "title"
     },
     {
       "id": "PUB-086",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 913,
+      "line": 916,
       "kind": "title"
     },
     {
       "id": "PUB-093",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 380,
+      "line": 381,
       "kind": "title"
     },
     {
       "id": "PUB-094",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 840,
+      "line": 843,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 672,
+      "line": 673,
       "kind": "title"
     },
     {
       "id": "REU-048",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 652,
+      "line": 653,
       "kind": "title"
     },
     {
@@ -27582,7 +27582,13 @@
     {
       "id": "LIB-036",
       "file": "packages/api-contract/src/publishing.test.ts",
-      "line": 339,
+      "line": 350,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "packages/api-contract/src/publishing.test.ts",
+      "line": 235,
       "kind": "title"
     },
     {
@@ -31206,13 +31212,19 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1080,
+      "line": 1084,
       "kind": "title"
     },
     {
       "id": "LOC-044",
       "file": "packages/domain/src/interface/declared-languages.test.ts",
       "line": 18,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-044",
+      "file": "packages/domain/src/interface/plurals.test.ts",
+      "line": 9,
       "kind": "title"
     },
     {
