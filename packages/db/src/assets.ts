@@ -359,6 +359,11 @@ export async function objectInUse(
     const { rows: waiting } =
       await sql`select 1 from bridge_delivery where package_key = ${key} limit 1`.execute(trx);
     if (waiting.length > 0) return true;
+    // An SVG's original a written delivery kept by its hash, beside the PNG made of it (Ruling 27).
+    const { rows: kept } = await sql`select 1 from bridge_delivery
+       where provenance -> 'originals' @> jsonb_build_array(jsonb_build_object('key', ${key}::text))
+       limit 1`.execute(trx);
+    if (kept.length > 0) return true;
   }
   const upload = await trx
     .selectFrom('asset_upload')

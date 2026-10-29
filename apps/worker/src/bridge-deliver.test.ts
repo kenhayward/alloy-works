@@ -3,9 +3,11 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import {
+  archiveSpace,
   createDeliveredStore,
   createJobQueue,
   createServiceIdentity,
+  createSpace,
   createTenant,
   enqueueJob,
   findRole,
@@ -28,11 +30,17 @@ import {
 import { freshDatabase, type TestDatabase, testTenantDatabase } from '@alloy-works/db/testing';
 import { createObjectStores, type ObjectStores, type TenantStore } from '@alloy-works/objects';
 import { testObjectStore, type TestObjectStore } from '@alloy-works/objects/testing';
-import type { BridgePackage, DecomposedDocument, Receipt } from '@kenhayward/bridge-contract';
+import type { Permission } from '@alloy-works/domain';
+import type {
+  BridgePackage,
+  ComponentVersion,
+  DecomposedDocument,
+  Receipt,
+} from '@kenhayward/bridge-contract';
 import pg from 'pg';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { bridgeDeliverJob } from './jobs/bridge-deliver.js';
+import { bridgeDeliverJob, imagesOf } from './jobs/bridge-deliver.js';
 import { processNext, type JobHandler, type WorkerLog } from './worker.js';
 
 const require = createRequire(import.meta.url);
@@ -182,7 +190,7 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     processNext({ queue, db: worker, handlers: with_, workerId: 'worker-1', leaseMs: 60_000, log });
 
   /** A token of the identity, as a connection holds one, by its id. */
-  const token = () =>
+  const token = (scopes: Permission[] = ['create', 'edit']) =>
     service.withTenant(
       tenant,
       async (trx) =>
@@ -191,7 +199,7 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
             principalId: identity,
             name: `CT Studio ${randomUUID()}`,
             tokenHash: createHash('sha256').update(randomUUID()).digest('hex'),
-            scopes: ['create', 'edit'],
+            scopes,
             expiresAt: new Date(Date.now() + 86_400_000),
           })
         ).id,
@@ -203,14 +211,21 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
    */
   const accepted = async (
     pkg: BridgePackage,
-    over: { tokenId?: string; destination?: Record<string, string> } = {},
+    over: {
+      tokenId?: string;
+      destination?: Record<string, string>;
+      spaceId?: string;
+      update?: { persistentId: string; expected: ComponentVersion[] };
+    } = {},
   ): Promise<StoredDelivery> => {
     const tokenId = over.tokenId ?? (await token());
+    const spaceId = over.spaceId ?? general;
     const bytes = Buffer.from(
       JSON.stringify({
-        destination: over.destination ?? { space: general },
+        destination: over.destination ?? { space: spaceId },
         idempotencyKey: randomUUID(),
         actingUser: { id: 'u-1', name: 'Example Operator', email: null },
+        ...(over.update === undefined ? {} : { update: over.update }),
         package: pkg,
       }),
       'utf8',
@@ -219,7 +234,7 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     return service.withTenant(tenant, async (trx) => {
       const started = await startDelivery(trx, {
         key: randomUUID(),
-        spaceId: general,
+        spaceId,
         family: pkg.document ? 'document' : 'data',
         tokenId,
         packageKey: stored.key,
@@ -236,6 +251,26 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     });
   };
   const deliveryOf = (id: string) => service.withTenant(tenant, (trx) => readDelivery(trx, id));
+  /** Who the delivery's bridge.refused event was recorded as. */
+  const refusedAs = (id: string) =>
+    service.withTenant(tenant, async (trx) => {
+      const events = await trx
+        .selectFrom('audit_event')
+        .select(['actor_kind', 'actor', 'token', 'detail'])
+        .where('kind', '=', 'bridge.refused')
+        .execute();
+      return events.find((event) => event.detail['delivery'] === id);
+    });
+  /** As an administrator, outside the tenant's grants: for state a test needs and no role may set. */
+  const asAdmin = async (text: string, values: unknown[] = []) => {
+    const admin = new pg.Client({ connectionString: db.adminUrl });
+    await admin.connect();
+    try {
+      return await admin.query(text, values);
+    } finally {
+      await admin.end();
+    }
+  };
   const gone = (key: string) =>
     store.get(key).then(
       () => false,
@@ -416,6 +451,131 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
       refusal: { class: 'needs_user', code: 'credential_rejected' },
     });
     expect(await countArtifacts()).toBe(before);
+    // Its token is gone, so nothing names the identity: recorded as the system.
+    expect(await refusedAs(delivery.id)).toMatchObject({
+      actor_kind: 'system',
+      actor: null,
+      token: null,
+    });
+  });
+
+  it('an expired token refuses, audited as the identity it names', async () => {
+    const tokenId = await token();
+    const delivery = await accepted(
+      documentPackage(documentOf(), [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(31) },
+      ]),
+      { tokenId },
+    );
+    await asAdmin(
+      `update "${tenant.schema}".api_token
+          set created_at = now() - interval '2 days', expires_at = now() - interval '1 day'
+        where id = $1`,
+      [tokenId],
+    );
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: { code: 'credential_rejected' },
+    });
+    expect(await refusedAs(delivery.id)).toMatchObject({
+      actor_kind: 'token',
+      actor: identity,
+      token: tokenId,
+    });
+  });
+
+  it('an update by a token scoped without edit refuses, audited as the identity', async () => {
+    const tokenId = await token(['create']);
+    const delivery = await accepted(
+      documentPackage(documentOf(), [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(32) },
+      ]),
+      {
+        tokenId,
+        update: {
+          persistentId: randomUUID(),
+          expected: [{ kind: 'map', id: randomUUID(), version: randomUUID(), element: null }],
+        },
+      },
+    );
+    const before = await countArtifacts();
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      packageKey: null,
+      refusal: { code: 'credential_rejected', details: { permission: 'edit' } },
+    });
+    expect(await countArtifacts()).toBe(before);
+    expect(await refusedAs(delivery.id)).toMatchObject({
+      actor_kind: 'token',
+      actor: identity,
+      token: tokenId,
+    });
+  });
+
+  it('a space archived between accept and run refuses not_found', async () => {
+    const archived = await service.withTenant(tenant, async (trx) => {
+      const made = await createSpace(trx, `Archive ${randomUUID().slice(0, 8)}`);
+      const author = await findRole(trx, 'Author');
+      await grant(trx, {
+        roleId: author!.id,
+        subject: { principal: identity },
+        level: { kind: 'space', id: made.id },
+        effect: 'allow',
+        grantedBy: ada,
+      });
+      return made.id;
+    });
+    const delivery = await accepted(
+      documentPackage(documentOf(), [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(33) },
+      ]),
+      { spaceId: archived },
+    );
+    await service.withTenant(tenant, (trx) => archiveSpace(trx, archived, ada));
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: { code: 'not_found' },
+    });
+  });
+
+  it('a package whose bytes do not match its key is tried again, never refused', async () => {
+    const delivery = await accepted(
+      documentPackage(documentOf(), [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(34) },
+      ]),
+    );
+    // A store that answers other bytes than the key names.
+    const lying: ObjectStores = {
+      forTenant: async (trx, t) => {
+        const real = await stores.forTenant(trx, t);
+        return {
+          ...real,
+          get: async (key) => Buffer.concat([await real.get(key), Buffer.from(' ')]),
+        };
+      },
+    };
+    expect(await work({ bridge_deliver: bridgeDeliverJob({ db: worker, stores: lying }) })).toBe(
+      'retry',
+    );
+    expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'running' });
+    expect(await gone(delivery.packageKey!)).toBe(false);
+    // The next attempt, from a store that answers truly, writes it.
+    await asAdmin('update platform.job set run_after = now() where subject_id = $1', [delivery.id]);
+    expect(await work()).toBe('done');
+    expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'written' });
+  });
+
+  it('an image the document does not describe is refused, never drawn', async () => {
+    const pkg = documentPackage(documentOf('image/svg+xml', 25.4), [
+      { id: 'other', contentType: 'image/svg+xml', bytes: SVG },
+    ]);
+    expect(await imagesOf(pkg, undefined)).toMatchObject({
+      code: 'content_rejected',
+      details: { reason: 'image_refused', image: 'other', refusal: 'undescribed' },
+    });
   });
 
   it('read-back is ok for every decomposed fixture', async () => {
@@ -530,6 +690,81 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
         code: 'content_rejected',
         details: { reason: 'name_conflict', field: 'tableSet' },
       },
+    });
+  });
+
+  it('API-072 a column whose type has changed refuses, naming it, and its rows stay', async () => {
+    const first = await accepted(dataPackage(rates), {
+      destination: { space: general, tableSet: 'typed' },
+    });
+    expect(await work()).toBe('done');
+    expect((await deliveryOf(first.id))!.state).toBe('written');
+    const retyped = {
+      ...rates,
+      tables: [
+        {
+          ...rates.tables[0]!,
+          columns: [
+            { id: 'item', title: 'Item', type: 'text' },
+            { id: 'price', title: 'Price', type: 'date' },
+          ],
+        },
+      ],
+    };
+    const second = await accepted(dataPackage(retyped), {
+      destination: { space: general, tableSet: 'typed' },
+    });
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(second.id)).toMatchObject({
+      state: 'refused',
+      refusal: {
+        code: 'content_rejected',
+        details: { reason: 'type_changed', table: 'typed_prices', column: 'price' },
+      },
+    });
+  });
+
+  it('API-072 a value its column cannot hold refuses, naming its row', async () => {
+    const bad = {
+      ...rates,
+      tables: [
+        {
+          ...rates.tables[0]!,
+          rows: [
+            { item: 'Nets', price: '4.50' },
+            { item: 'Jars', price: 'lots' },
+          ],
+        },
+      ],
+    };
+    const delivery = await accepted(dataPackage(bad), {
+      destination: { space: general, tableSet: 'valued' },
+    });
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: {
+        code: 'content_rejected',
+        details: { reason: 'value_invalid', table: 'valued_prices', column: 'price', row: 2 },
+      },
+    });
+  });
+
+  it('API-072 a column named as provenance is refused', async () => {
+    const reserved = {
+      ...rates,
+      tables: [
+        {
+          ...rates.tables[0]!,
+          columns: [...rates.tables[0]!.columns, { id: 'ct_note', title: null, type: 'text' }],
+        },
+      ],
+    };
+    const delivery = await accepted(dataPackage(reserved));
+    expect(await work()).toBe('failed');
+    expect(await deliveryOf(delivery.id)).toMatchObject({
+      state: 'refused',
+      refusal: { code: 'content_rejected', details: { reason: 'reserved_column' } },
     });
   });
 

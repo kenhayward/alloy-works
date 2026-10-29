@@ -341,8 +341,13 @@ The `content_rejected` reasons, each answered before anything is written:
 - `outline_invalid` - the outline as mapped is refused by the outline model.
 - `metadata_incomplete` - the document's values fail its template's rules, or a required field has none.
 - `component_locked` - a person holds a lock on a component the delivery writes (API-039).
-- `not_configured` - a data package for a space whose settings name no delivery store.
-- `invalid_request` - the request is not the contract's shape, its body not JSON, or its destination names no space.
+- `not_configured` - a space with no bridge settings, for a document or a data package, or a data package for a space whose settings name no delivery store (or a worker given none).
+- `invalid_request` - the request is not the contract's shape, its body not JSON, or its destination names no space; or a package whose provenance is not its family's (a document's decomposition, a data package's extraction).
+- `image_refused` - an image does not pass the check an upload is held to, an SVG cannot be drawn, or the document does not describe it; `details.image` names it.
+- `name_conflict` - two of a data package's tables, or two columns of one, become one name; `details.field` is `tableSet`.
+- `reserved_column` - a data package's column id starts `ct_`, which the provenance columns take.
+- `type_changed` - a column of a delivered table would change type; `details.table` and `details.column` name it.
+- `value_invalid` - a value its column's type cannot hold; `details.table`, `details.column` and `details.row` (1-based, as `ct_row`) name it.
 - `too_large` - the request body is over the 100 MiB limit.
 - `key_reused` - the idempotency key names a delivery to another space, or by another service identity; it never answers that delivery's receipt.
 

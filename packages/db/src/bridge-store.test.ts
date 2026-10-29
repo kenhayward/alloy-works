@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { objectInUse } from './assets.js';
+import { releaseObject } from './imports.js';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   elementsOf,
@@ -304,5 +305,32 @@ describe('the bridge store', () => {
     expect(await as((trx) => objectInUse(trx, key, randomUUID()))).toBe(true);
     await as((trx) => finishDelivery(trx, started.id, {}, []));
     expect(await as((trx) => objectInUse(trx, key, randomUUID()))).toBe(false);
+  });
+
+  it('keeps an SVG original a delivery kept: a release of the same key leaves it (Ruling 27)', async () => {
+    const sha256 = 'd'.repeat(64);
+    const key = `t_x/sha256/${sha256}`;
+    const started = await as((trx) => startDelivery(trx, delivery('original-key')));
+    if (started.answer !== 'started') throw new Error(started.answer);
+    await as((trx) =>
+      finishDelivery(trx, started.id, {}, [], {
+        provenance: {
+          originals: [{ image: 'img-1', key, sha256, contentType: 'image/svg+xml' }],
+        },
+      }),
+    );
+    const removed: string[] = [];
+    const released = await as((trx) =>
+      releaseObject(trx, { key, sha256 }, (each) => {
+        removed.push(each);
+        return Promise.resolve();
+      }),
+    );
+    expect(released).toBe(false);
+    expect(removed).toEqual([]);
+    // Another key is not held by it.
+    expect(await as((trx) => objectInUse(trx, `t_x/sha256/${'e'.repeat(64)}`, randomUUID()))).toBe(
+      false,
+    );
   });
 });

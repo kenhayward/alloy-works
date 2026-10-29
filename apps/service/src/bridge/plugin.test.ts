@@ -405,6 +405,21 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     expect(after.rows).toEqual([{ jobs: 1 }]);
   });
 
+  it('a delivery keeps the address it was asked at, lower-cased and with its port, for its link', async () => {
+    const asked = delivery();
+    const answer = await signed('POST', '/deliveries', asked, { host: 'ACME.Alloy.Test:8443' });
+    expect(answer.statusCode, answer.body).toBe(200);
+    const { sinkJobId } = answer.json<{ sinkJobId: string }>();
+    const row = await h.tenantDb.withTenant(h.tenant, (trx) =>
+      trx
+        .selectFrom('bridge_delivery')
+        .select('provenance')
+        .where('id', '=', sinkJobId)
+        .executeTakeFirstOrThrow(),
+    );
+    expect(row.provenance).toMatchObject({ origin: 'https://acme.alloy.test:8443' });
+  });
+
   it('API-068 a package over 1 MiB of files alone is accepted, and needs no settings', async () => {
     // Ruling 24: files alone are taken and written as nothing; Inbox has no bridge settings.
     const files = fixture('package-document.json');

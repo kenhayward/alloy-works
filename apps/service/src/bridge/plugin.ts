@@ -304,7 +304,8 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
           identity,
           asked,
           request.id,
-          `https://${request.hostname}`,
+          // The address as asked for, port and all (one tenant's whatever its case), lower-cased.
+          `https://${request.host.toLowerCase()}`,
         );
       });
 

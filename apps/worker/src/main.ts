@@ -132,6 +132,7 @@ let wake: () => void = () => {};
 listener.on('notification', () => wake());
 
 let running = true;
+let sweepingNonces = false;
 const sweep = setInterval(() => {
   void sweepExpiredSignIns(db)
     .then((removed) => removed > 0 && log.info({ removed }, 'swept expired sign-ins'))
@@ -270,10 +271,17 @@ while (running) {
     return 'idle' as const;
   });
   if (outcome === 'idle' && running) {
-    // The bridge's nonces past the signing window, while there is nothing else to do (API-066).
-    void queue
-      .sweepBridgeNonces()
-      .catch((error: unknown) => log.error({ err: error }, 'nonce sweep failed'));
+    // The bridge's nonces past the signing window, while there is nothing else to do (API-066),
+    // never two sweeps at once.
+    if (!sweepingNonces) {
+      sweepingNonces = true;
+      void queue
+        .sweepBridgeNonces()
+        .catch((error: unknown) => log.error({ err: error }, 'nonce sweep failed'))
+        .finally(() => {
+          sweepingNonces = false;
+        });
+    }
     await new Promise<void>((resolve) => {
       const timer = setTimeout(resolve, config.pollIntervalMs);
       wake = () => {

@@ -62,9 +62,15 @@ interface Original {
   readonly sha256: string;
 }
 
-/** A refusal found inside a transaction, thrown to roll everything it wrote back. */
+/**
+ * A refusal, thrown inside a transaction to roll everything it wrote back, and `as` the identity it is
+ * audited as where the delivery's token still names one; the system only where it does not.
+ */
 class Refused extends Error {
-  constructor(readonly error: BridgeError) {
+  constructor(
+    readonly error: BridgeError,
+    readonly as?: Identity,
+  ) {
     super(error.code);
   }
 }
@@ -119,7 +125,7 @@ export async function rasterise(svg: Buffer, widthMm: number): Promise<Buffer | 
  * PNG, its original kept. The first image refused refuses the delivery, naming it, before anything
  * is written.
  */
-async function imagesOf(
+export async function imagesOf(
   pkg: BridgePackage,
   decode: Decode | undefined,
 ): Promise<{ checked: CheckedImage[]; originals: Original[] } | BridgeError> {
@@ -135,9 +141,11 @@ async function imagesOf(
         image: image.id,
         refusal,
       });
+    // An image the document does not describe has no width to be drawn at, nor alternative text.
+    if (meta === undefined) return refused('undescribed');
     let bytes: Buffer = sent;
-    if ((meta?.contentType ?? image.contentType) === 'image/svg+xml') {
-      const drawn = await rasterise(sent, meta?.widthMm ?? 0);
+    if (meta.contentType === 'image/svg+xml' || image.contentType === 'image/svg+xml') {
+      const drawn = await rasterise(sent, meta.widthMm);
       if (drawn === undefined) return refused('undecodable');
       bytes = drawn;
       originals.push({
@@ -153,7 +161,7 @@ async function imagesOf(
       bytes: new Uint8Array(bytes),
       sha256: createHash('sha256').update(bytes).digest('hex'),
       header: check.header,
-      alternative: meta?.alt ?? null,
+      alternative: meta.alt ?? null,
     });
   }
   return { checked, originals };
@@ -162,7 +170,8 @@ async function imagesOf(
 /**
  * The identity the delivery's token resolves to now, held to what the request was (Ruling 17): the
  * token still there and unexpired and a service identity's, its grants in the space, masked by the
- * token's scopes, holding each permission asked; and the space live.
+ * token's scopes, holding each permission asked; and the space live. A refusal names the identity
+ * where the token's row still does, expired or not, so it is audited as that identity.
  */
 async function admitted(
   trx: TenantTransaction,
@@ -173,23 +182,21 @@ async function admitted(
     .selectFrom('api_token as t')
     .innerJoin('principal as p', 'p.id', 't.principal_id')
     .select(['t.id', 't.scopes', 'p.id as principal_id', 'p.kind', 'p.display_name'])
+    .select('t.expires_at')
     .where('t.id', '=', delivery.tokenId)
-    .where('t.expires_at', '>', new Date())
     .executeTakeFirst();
-  if (token?.kind !== 'service') {
-    return new Refused(
-      bridgeError(
-        'credential_rejected',
-        'The token the delivery was asked with is no longer a live token of a service identity.',
-      ),
-    );
-  }
+  const gone = bridgeError(
+    'credential_rejected',
+    'The token the delivery was asked with is no longer a live token of a service identity.',
+  );
+  if (token?.kind !== 'service') return new Refused(gone);
   const identity: Identity = {
     tokenId: token.id,
     principalId: token.principal_id,
     name: token.display_name ?? 'Service identity',
     scopes: token.scopes.filter(isPermission),
   };
+  if (token.expires_at <= new Date()) return new Refused(gone, identity);
   await decideOnly(trx);
   const loaded = await loadFacts(trx, identity.principalId, {
     kind: 'space',
@@ -197,7 +204,7 @@ async function admitted(
   });
   const facts = loaded && { ...loaded, scopes: identity.scopes };
   if (!facts || !decide('read', facts).allowed) {
-    return new Refused(bridgeError('not_found', 'The space is not there.'));
+    return new Refused(bridgeError('not_found', 'The space is not there.'), identity);
   }
   for (const permission of permissions) {
     if (!decide(permission, facts).allowed) {
@@ -207,6 +214,7 @@ async function admitted(
           `The service identity may not ${permission} in this space.`,
           { permission },
         ),
+        identity,
       );
     }
   }
@@ -216,6 +224,7 @@ async function admitted(
     if (error instanceof SpaceArchived) {
       return new Refused(
         bridgeError('not_found', 'The space is archived: nothing new is made in it.'),
+        identity,
       );
     }
     throw error;
@@ -249,37 +258,54 @@ export function bridgeDeliverJob(deps: {
 }): JobHandler {
   const { db } = deps;
 
-  /** The package let go, unless something else holds the same bytes. */
-  const release = async (trx: TenantTransaction, store: TenantStore, key: string | null) => {
+  /**
+   * Whether the package may go, asked inside the transaction that finishes the delivery: the key to
+   * remove once that transaction has committed, or null where something else holds the same bytes.
+   * Removed only after the commit, so a commit that fails leaves the package for the retry.
+   */
+  const releasable = async (trx: TenantTransaction, key: string | null) => {
     const sha256 = key === null ? undefined : OBJECT_HASH.exec(key)?.[1];
-    if (key === null || sha256 === undefined) return;
-    await releaseObject(trx, { key, sha256 }, (each) => store.remove(each));
+    if (key === null || sha256 === undefined) return null;
+    let removable: string | null = null;
+    await releaseObject(trx, { key, sha256 }, (each) => {
+      removable = each;
+      return Promise.resolve();
+    });
+    return removable;
+  };
+  const remove = async (store: TenantStore, key: string | null) => {
+    if (key !== null) await store.remove(key);
   };
 
-  /** The delivery refused, its key freed and its package removed, then the job finished at once. */
+  /**
+   * The delivery refused, its key freed and its package removed, then the job finished at once;
+   * audited as the identity the refusal names, else as the system.
+   */
   const refuse = async (
     tenant: Tenant,
     store: TenantStore,
     delivery: StoredDelivery,
-    error: BridgeError,
-    context: AuditContext,
+    refusal: Refused,
   ): Promise<never> => {
-    await db.withTenant(
+    const { error } = refusal;
+    const removable = await db.withTenant(
       tenant,
-      async (trx) => {
-        if (await refuseDelivery(trx, delivery.id, error)) {
-          await release(trx, store, delivery.packageKey);
-        }
-      },
-      context,
+      async (trx) =>
+        (await refuseDelivery(trx, delivery.id, error))
+          ? releasable(trx, delivery.packageKey)
+          : null,
+      refusal.as === undefined ? SYSTEM : contextOf(refusal.as),
     );
+    await remove(store, removable);
     throw new JobRefused(`bridge_${error.code}`, error.message);
   };
 
-  /** The delivery written, with its receipt, what it carried along and what its provenance gains. */
+  /**
+   * The delivery written, with its receipt, what it carried along and what its provenance gains;
+   * answers the package's key to remove once committed.
+   */
   const finish = async (
     trx: TenantTransaction,
-    store: TenantStore,
     delivery: StoredDelivery,
     receipt: Receipt,
     carried: readonly unknown[],
@@ -293,7 +319,7 @@ export function bridgeDeliverJob(deps: {
     if (!finished) {
       throw new Error(`Delivery ${delivery.id} was finished by another attempt`);
     }
-    await release(trx, store, delivery.packageKey);
+    return releasable(trx, delivery.packageKey);
   };
 
   /** A document delivery: its images read, then everything written in one transaction (API-067). */
@@ -311,18 +337,19 @@ export function bridgeDeliverJob(deps: {
         tenant,
         store,
         delivery,
-        rejected('A document needs the provenance of its decomposition.', {
-          reason: 'invalid_request',
-        }),
-        contextOf(identity),
+        new Refused(
+          rejected('A document needs the provenance of its decomposition.', {
+            reason: 'invalid_request',
+          }),
+          identity,
+        ),
       );
     }
     const images = await imagesOf(pkg, deps.decode);
-    if ('code' in images) return refuse(tenant, store, delivery, images, contextOf(identity));
+    if ('code' in images) return refuse(tenant, store, delivery, new Refused(images, identity));
     const origin = (delivery.provenance as { origin?: unknown } | null)?.origin;
-    const context = contextOf(identity);
     try {
-      await db.withTenant(
+      const removable = await db.withTenant(
         tenant,
         async (trx) => {
           const now = await admitted(
@@ -338,6 +365,7 @@ export function bridgeDeliverJob(deps: {
           if (settings === undefined) {
             throw new Refused(
               rejected('The space is not set up for delivery.', { reason: 'not_configured' }),
+              now,
             );
           }
           const answer = await writeDocumentDelivery(trx, {
@@ -357,7 +385,7 @@ export function bridgeDeliverJob(deps: {
             store,
             ...(typeof origin === 'string' && ORIGIN.test(origin) ? { origin } : {}),
           });
-          if (answer.answer === 'refused') throw new Refused(answer.error);
+          if (answer.answer === 'refused') throw new Refused(answer.error, now);
           // Kept by their hash, so a later decision to take SVG as an asset can recover them.
           const originals = [];
           for (const original of images.originals) {
@@ -377,9 +405,8 @@ export function bridgeDeliverJob(deps: {
               .map((entry) => entry.element),
           );
           const persistentId = answer.receipt.document!.persistentId;
-          await finish(
+          return finish(
             trx,
-            store,
             delivery,
             answer.receipt,
             answer.carried,
@@ -392,10 +419,11 @@ export function bridgeDeliverJob(deps: {
             { persistentId, subject: persistentId },
           );
         },
-        context,
+        contextOf(identity),
       );
+      await remove(store, removable);
     } catch (error) {
-      if (error instanceof Refused) return refuse(tenant, store, delivery, error.error, context);
+      if (error instanceof Refused) return refuse(tenant, store, delivery, error);
       throw error;
     }
   };
@@ -409,26 +437,23 @@ export function bridgeDeliverJob(deps: {
     identity: Identity,
     settings: BridgeSettings | undefined,
   ) => {
-    const context = contextOf(identity);
+    const refused = (error: BridgeError) =>
+      refuse(tenant, store, delivery, new Refused(error, identity));
     const data = accepted.package.data;
     let receipt: Receipt = { written: [] };
     // Files or images alone are accepted and written as nothing (Ruling 24).
     if (data) {
       const provenance = accepted.package.provenance;
       if (!isExtractionProvenance(provenance)) {
-        return refuse(
-          tenant,
-          store,
-          delivery,
+        return refused(
           rejected("A data package needs its extraction's provenance.", {
             reason: 'invalid_request',
           }),
-          context,
         );
       }
       const schema = settings?.tableSchema ?? null;
       if (deps.delivered === undefined || schema === null || settings?.connectionId == null) {
-        return refuse(tenant, store, delivery, notConfigured(), context);
+        return refused(notConfigured());
       }
       const plans = bridge.planTables(data, provenance, accepted.destination['tableSet']);
       if ('refused' in plans) {
@@ -436,7 +461,7 @@ export function bridgeDeliverJob(deps: {
           plans.refused === 'name_conflict'
             ? { reason: 'name_conflict', field: 'tableSet', detail: plans.detail }
             : { reason: 'reserved_column', detail: plans.detail };
-        return refuse(tenant, store, delivery, rejected(plans.detail, details), context);
+        return refused(rejected(plans.detail, details));
       }
       const written = await deps.delivered.write(schema, plans, {
         sha256: provenance.sourceSha256,
@@ -449,13 +474,18 @@ export function bridgeDeliverJob(deps: {
           written.refused === 'type_changed'
             ? `The column ${written.column} of ${written.table} has changed type.`
             : `Row ${written.row} of ${written.table} holds a value its column ${written.column} cannot.`;
-        return refuse(tenant, store, delivery, rejected(message, { reason, ...where }), context);
+        return refused(rejected(message, { reason, ...where }));
       }
       receipt = {
         written: written.written.map((id) => ({ kind: 'table', id, label: null, url: null })),
       };
     }
-    await db.withTenant(tenant, (trx) => finish(trx, store, delivery, receipt, [], {}), context);
+    const removable = await db.withTenant(
+      tenant,
+      (trx) => finish(trx, delivery, receipt, [], {}),
+      contextOf(identity),
+    );
+    await remove(store, removable);
   };
 
   return {
@@ -482,9 +512,7 @@ export function bridgeDeliverJob(deps: {
         },
         SYSTEM,
       );
-      if (first.identity instanceof Refused) {
-        return refuse(tenant, store, delivery, first.identity.error, SYSTEM);
-      }
+      if (first.identity instanceof Refused) return refuse(tenant, store, delivery, first.identity);
       const identity = first.identity;
       const sha256 =
         delivery.packageKey === null ? undefined : OBJECT_HASH.exec(delivery.packageKey);
@@ -493,8 +521,7 @@ export function bridgeDeliverJob(deps: {
           tenant,
           store,
           delivery,
-          bridgeError('internal', UNEXPECTED),
-          contextOf(identity),
+          new Refused(bridgeError('internal', UNEXPECTED), identity),
         );
       }
       const bytes = await store.get(delivery.packageKey);
@@ -514,8 +541,7 @@ export function bridgeDeliverJob(deps: {
           tenant,
           store,
           delivery,
-          bridgeError('internal', UNEXPECTED),
-          contextOf(identity),
+          new Refused(bridgeError('internal', UNEXPECTED), identity),
         );
       }
       if (delivery.family === 'document') {
@@ -530,18 +556,18 @@ export function bridgeDeliverJob(deps: {
       // Refused on its merits: already recorded as such.
       if (job.subjectId === null || cause instanceof JobRefused) return;
       const id = job.subjectId;
-      await db.withTenant(
+      const { store, removable } = await db.withTenant(
         tenant,
         async (trx) => {
-          const delivery = await readDelivery(trx, id);
-          if (delivery?.state !== 'running') return;
           const store = await deps.stores.forTenant(trx, tenant);
-          if (await refuseDelivery(trx, id, bridgeError('internal', UNEXPECTED))) {
-            await release(trx, store, delivery.packageKey);
-          }
+          const delivery = await readDelivery(trx, id);
+          if (delivery?.state !== 'running') return { store, removable: null };
+          const refused = await refuseDelivery(trx, id, bridgeError('internal', UNEXPECTED));
+          return { store, removable: refused ? await releasable(trx, delivery.packageKey) : null };
         },
         SYSTEM,
       );
+      await remove(store, removable);
     },
   };
 }
