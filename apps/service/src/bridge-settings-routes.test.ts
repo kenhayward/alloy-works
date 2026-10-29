@@ -14,9 +14,7 @@ import { auditEvents, queryAs } from '@alloy-works/db/testing';
 import { DEFINITION_SCHEMA_VERSION, TEMPLATE_SCHEMA_VERSION } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
-
-/** The throwaway Postgres of the CS plan; the delivery store's database in it is made below. */
-const OWNER_URL = 'postgres://postgres:postgres@127.0.0.1:5436/delivered_test';
+import { DELIVERED_URL, ensureDeliveredDatabase } from './test/delivered.js';
 
 const TITLE_FIELD = 'b9a10000-0000-4000-8000-000000000001';
 const SCHEMA = 'b9a10000-0000-4000-8000-000000000003';
@@ -59,7 +57,7 @@ describe('bridge settings through the service', () => {
   };
   /** Signs in to the delivery store as a connection's account with a password: throws if refused. */
   const signInAs = (account: string, password: string) => {
-    const url = new URL(OWNER_URL);
+    const url = new URL(DELIVERED_URL);
     url.username = account;
     url.password = password;
     return queryAs(url.toString(), 'select 1 as ok');
@@ -87,15 +85,9 @@ describe('bridge settings through the service', () => {
     );
 
   beforeAll(async () => {
-    // The delivery store's database: owned by the throwaway Postgres' superuser, as the real one is.
-    const server = OWNER_URL.replace('delivered_test', 'postgres');
-    const found = await queryAs(
-      server,
-      "select 1 from pg_database where datname = 'delivered_test'",
-    );
-    if (found.rowCount === 0) await queryAs(server, 'create database delivered_test');
+    await ensureDeliveredDatabase();
 
-    h = await startHarness({ secrets: { SECRET_DELIVERED_URL: OWNER_URL } });
+    h = await startHarness({ secrets: { SECRET_DELIVERED_URL: DELIVERED_URL } });
     bare = await startHarness();
     await h.tenantDb.withTenant(h.tenant, async (trx) => {
       other = (await createSpace(trx, 'Other')).id;
@@ -270,7 +262,7 @@ describe('bridge settings through the service', () => {
     const audit = await h.tenantDb.withTenant(h.tenant, (trx) => auditEvents(trx));
     for (const text of [...seen, JSON.stringify(audit), ...h.lines]) {
       expect(text).not.toContain(password);
-      expect(text).not.toContain(OWNER_URL);
+      expect(text).not.toContain(DELIVERED_URL);
       expect(text).not.toContain('postgres:postgres');
     }
     expect(sealed).not.toContain(password);

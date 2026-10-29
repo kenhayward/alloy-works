@@ -25,10 +25,9 @@ import { bridgeDeliverJob } from '../../../worker/src/jobs/bridge-deliver.js';
 import { processNext, type JobHandler } from '../../../worker/src/worker.js';
 import { hashToken } from '../sessions.js';
 import { HOST, startHarness, type Harness } from '../test/bindings-harness.js';
+import { DELIVERED_URL, dropDelivered, ensureDeliveredDatabase } from '../test/delivered.js';
 import { newTokenSecret } from '../tokens.js';
 
-/** The throwaway Postgres of the CS plan; the delivery store's database in it is made below. */
-const DELIVERED_URL = 'postgres://postgres:postgres@127.0.0.1:5436/delivered_test';
 /** The second tenant's address, in the same organisation as the harness's `acme.alloy.test`. */
 const DEV_HOST = 'dev.acme.alloy.test';
 
@@ -63,8 +62,9 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
   let worker: TenantDatabase;
   let queue: JobQueue;
   let handlers: Record<string, JobHandler>;
-  // One signing key for the deployment, as the bridge holds one per sink: the token and the hostname
-  // are what tell the tenants apart.
+  // One key set serves the deployment (SECRET_BRIDGE_KEYS), every tenant's hostname alike, as the
+  // bridge holds one per sink: a request signed with another key is refused before any tenant is
+  // asked, and the token and the hostname are what tell the tenants apart.
   const key = randomBytes(32).toString('hex');
   let acme: Side;
   let dev: Side;
@@ -118,7 +118,19 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
 
   const artifactIds = (tenant: Tenant) =>
     h.tenantDb.withTenant(tenant, async (trx) =>
-      (await trx.selectFrom('artifact').select('id').execute()).map((each) => each.id),
+      (await trx.selectFrom('artifact').select('id').orderBy('id').execute()).map(
+        (each) => each.id,
+      ),
+    );
+  /** Every version of every artifact in a tenant, so any write there shows. */
+  const versionsOf = (tenant: Tenant) =>
+    h.tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('artifact_version')
+        .select(['artifact_id', 'id'])
+        .orderBy('artifact_id')
+        .orderBy('id')
+        .execute(),
     );
   const deliveryIds = (tenant: Tenant) =>
     h.tenantDb.withTenant(tenant, async (trx) =>
@@ -133,12 +145,7 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
   };
 
   beforeAll(async () => {
-    const server = DELIVERED_URL.replace('delivered_test', 'postgres');
-    const found = await queryAs(
-      server,
-      "select 1 from pg_database where datname = 'delivered_test'",
-    );
-    if (found.rowCount === 0) await queryAs(server, 'create database delivered_test');
+    await ensureDeliveredDatabase();
 
     h = await startHarness({
       secrets: { SECRET_BRIDGE_KEYS: key, SECRET_DELIVERED_URL: DELIVERED_URL },
@@ -235,24 +242,38 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
   }, 120_000);
 
   afterAll(async () => {
-    for (const side of [acme, dev]) {
-      if (!side) continue;
-      await queryAs(DELIVERED_URL, `drop schema if exists "${side.schema}" cascade`);
-      const role = await queryAs(DELIVERED_URL, 'select 1 from pg_roles where rolname = $1', [
-        side.account,
-      ]);
-      if (role.rowCount) {
-        await queryAs(DELIVERED_URL, `drop owned by "${side.account}"`);
-        await queryAs(DELIVERED_URL, `drop role "${side.account}"`);
-      }
-    }
+    for (const side of [acme, dev]) if (side) await dropDelivered(side.tenant.id);
     await delivered?.close();
     await queue?.close();
     await worker?.close();
     await h?.close();
   });
 
-  it("one tenant's key, token or hostname never reaches another's documents or tables", async () => {
+  it("API-065 API-068 one tenant's key, token or hostname never reaches another's documents or tables", async () => {
+    // A key that is not the deployment's is refused at either address.
+    for (const host of [acme.host, dev.host]) {
+      const payload = JSON.stringify({
+        instanceId: acme.tenant.id,
+        credential: { token: acme.token },
+      });
+      const forged = await h.app.inject({
+        method: 'POST',
+        url: '/bridge/connections:test',
+        headers: {
+          host,
+          ...signRequest(randomBytes(32).toString('hex'), {
+            method: 'POST',
+            path: '/connections:test',
+            body: payload,
+          }),
+          'content-type': 'application/json',
+        },
+        payload,
+      });
+      expect(forged.statusCode).toBe(401);
+      expect(forged.json()).toMatchObject({ code: 'credential_rejected' });
+    }
+
     // Each address answers its own tenant alone.
     for (const [side, other] of [
       [acme, dev],
@@ -332,7 +353,10 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
     expect(theirs.sinkJobId).not.toBe(document.sinkJobId);
     expect(theirs.receipt.document!.persistentId).not.toBe(written.persistentId);
     expect(await artifactIds(acme.tenant)).not.toContain(theirs.receipt.document!.persistentId);
-    // An update at Development naming Production's document finds nothing to update there.
+    // An update at Development naming Production's document finds nothing to update there, and
+    // changes nothing in either tenant.
+    const acmeBefore = await versionsOf(acme.tenant);
+    const devBefore = await artifactIds(dev.tenant);
     const update = await signed(dev.host, 'POST', '/deliveries', {
       instanceId: dev.tenant.id,
       credential: { token: dev.token },
@@ -353,7 +377,14 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
       status: 'failed',
       error: { code: 'not_found', details: { reason: 'document_missing' } },
     });
-    expect(await artifactIds(acme.tenant)).toContain(written.persistentId);
+    expect(await versionsOf(acme.tenant)).toEqual(acmeBefore);
+    expect(acmeBefore.map((each) => each.artifact_id)).toEqual(
+      expect.arrayContaining([written.persistentId, ...written.components.map((each) => each.id)]),
+    );
+    for (const component of written.components) {
+      expect(acmeBefore).toContainEqual({ artifact_id: component.id, id: component.version });
+    }
+    expect(await artifactIds(dev.tenant)).toEqual(devBefore);
     await deliver(dev, fixture('package-document.json'), randomBytes(32).toString('hex'));
 
     // Each read role reads its own tenant's tables and never the other's, nor its schema.

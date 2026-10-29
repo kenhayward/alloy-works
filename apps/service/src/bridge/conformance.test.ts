@@ -15,9 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bridgeDeliverJob } from '../../../worker/src/jobs/bridge-deliver.js';
 import { processNext, type WorkerLog } from '../../../worker/src/worker.js';
 import { HOST, startHarness, type Harness } from '../test/bindings-harness.js';
-
-/** The throwaway Postgres of the CS plan; the delivery store's database in it is made below. */
-const DELIVERED_URL = 'postgres://postgres:postgres@127.0.0.1:5436/delivered_test';
+import { DELIVERED_URL, dropDelivered, ensureDeliveredDatabase } from '../test/delivered.js';
 
 const inAMonth = () => new Date(Date.now() + 30 * 86_400_000).toISOString();
 
@@ -54,12 +52,7 @@ describe("CT Studio's conformance suite against the bridge, deliveries run by th
   };
 
   beforeAll(async () => {
-    const server = DELIVERED_URL.replace('delivered_test', 'postgres');
-    const found = await queryAs(
-      server,
-      "select 1 from pg_database where datname = 'delivered_test'",
-    );
-    if (found.rowCount === 0) await queryAs(server, 'create database delivered_test');
+    await ensureDeliveredDatabase();
 
     h = await startHarness({
       secrets: { SECRET_BRIDGE_KEYS: key, SECRET_DELIVERED_URL: DELIVERED_URL },
@@ -93,17 +86,7 @@ describe("CT Studio's conformance suite against the bridge, deliveries run by th
   }, 120_000);
 
   afterAll(async () => {
-    if (h) {
-      const { schema, account } = deliveredNames(h.tenant.id);
-      await queryAs(DELIVERED_URL, `drop schema if exists "${schema}" cascade`);
-      const role = await queryAs(DELIVERED_URL, 'select 1 from pg_roles where rolname = $1', [
-        account,
-      ]);
-      if (role.rowCount) {
-        await queryAs(DELIVERED_URL, `drop owned by "${account}"`);
-        await queryAs(DELIVERED_URL, `drop role "${account}"`);
-      }
-    }
+    if (h) await dropDelivered(h.tenant.id);
     await delivered?.close();
     await queue?.close();
     await worker?.close();
