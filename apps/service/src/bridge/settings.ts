@@ -175,7 +175,7 @@ export function bridgeSettingsHandlers(options: {
         ));
       if (!template || !readable) {
         problems.push({ path: 'template', reason: 'template_missing' });
-      } else if (Object.keys(body.propertyMap).length > 0) {
+      } else if (Object.values(body.propertyMap).some((field) => field !== null)) {
         const resolved = resolveTemplate(
           template.definition,
           await templateReferences(trx, template.definition),
@@ -186,7 +186,8 @@ export function bridgeSettingsHandlers(options: {
     }
     if (fields !== undefined) {
       for (const [property, field] of Object.entries(body.propertyMap)) {
-        if (!fields.has(field)) {
+        // An ignored property names no field, so there is nothing to find.
+        if (field !== null && !fields.has(field)) {
           problems.push({ path: `propertyMap.${property}`, reason: 'field_not_in_template' });
         }
       }

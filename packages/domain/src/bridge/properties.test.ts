@@ -4,7 +4,7 @@ import { DEFINITION_SCHEMA_VERSION } from '../metadata/definition.js';
 import type { FieldDefinition } from '../metadata/field.js';
 import type { EffectiveField } from '../metadata/resolve.js';
 
-import { mapProperties, type DecomposedProperty } from './properties.js';
+import { mapProperties, unlistedNames, type DecomposedProperty } from './properties.js';
 
 const effective = (field: Record<string, unknown>): EffectiveField => ({
   field: {
@@ -102,16 +102,49 @@ describe('document properties to metadata values', () => {
     expect(result.carried[0]).toMatchObject({ code: 'property_unconverted', element: 'S' });
   });
 
-  it('API-073 a property with no mapping, or a field the template lacks, is unmapped', () => {
+  it('API-073 a property with no mapping is unlisted, one naming a field the template lacks unmapped', () => {
     const lone = prop('Author', 'A');
     const lost = prop('Lost', 'B');
     const result = mapProperties([lone, lost], { Lost: 'gone' }, fields);
     expect(result.unmapped).toEqual([lone, lost]);
     expect(result.carried.map((entry) => [entry.code, entry.element])).toEqual([
-      ['property_unmapped', 'Author'],
+      ['property_unlisted', 'Author'],
       ['property_unmapped', 'Lost'],
     ]);
     expect(result.values).toEqual({});
+  });
+
+  it('API-076 an ignored property is neither filled nor reported', () => {
+    expect(mapProperties([prop('Ignored', 'x')], { Ignored: null }, fields)).toEqual({
+      values: {},
+      carried: [],
+      unmapped: [],
+    });
+  });
+
+  it('API-076 a property the map does not name is reported unlisted', () => {
+    const owner = prop('Owner', 'alice');
+    const result = mapProperties([owner], {}, fields);
+    expect(result.carried).toEqual([{ code: 'property_unlisted', element: 'Owner' }]);
+    expect(result.unmapped).toEqual([owner]);
+  });
+
+  it('API-076 a mapped field gone from the template is still property_unmapped', () => {
+    const gone = '0b5a4c9e-1d2f-4a3b-8c7d-6e5f4a3b2c1d';
+    const result = mapProperties([prop('Owner', 'alice')], { Owner: gone }, fields);
+    expect(result.carried).toEqual([
+      {
+        code: 'property_unmapped',
+        element: 'Owner',
+        detail: `field ${gone} is not in the template`,
+      },
+    ]);
+  });
+
+  it('API-076 unlistedNames lists each absent name once', () => {
+    expect(
+      unlistedNames([prop('A', '1'), prop('B', '2'), prop('A', '3'), prop('C', '4')], { B: null }),
+    ).toEqual(['A', 'C']);
   });
 
   it('a user field is never filled from a property', () => {

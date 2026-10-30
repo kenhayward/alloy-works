@@ -469,4 +469,16 @@ describe('bridge settings through the service', () => {
       for (const text of [...seen, audit, ...h.lines]) expect(text).not.toContain(password);
     }
   });
+
+  it('API-076 a property mapped to null is stored and read back as ignored', async () => {
+    const answer = await put(h.general, {
+      componentType: null,
+      template: null,
+      propertyMap: { Draft: null },
+      data: false,
+    });
+    expect(answer.statusCode, answer.body).toBe(200);
+    const read = await h.call('ada', 'GET', settingsUrl(h.general));
+    expect(read.json()).toMatchObject({ propertyMap: { Draft: null } });
+  });
 });

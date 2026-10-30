@@ -264,7 +264,8 @@ export interface BridgeSettings {
   readonly componentType: string | null;
   readonly template: string | null;
   /** Property name to the template's document field it fills. */
-  readonly propertyMap: Readonly<Record<string, string>>;
+  /** Each CT Studio property name to the field it fills, or `null` for one the space ignores. */
+  readonly propertyMap: Readonly<Record<string, string | null>>;
   readonly connectionId: string | null;
   readonly tableSchema: string | null;
   readonly changedBy: string;
@@ -288,7 +289,7 @@ export async function readBridgeSettings(
     spaceId: row.space_id,
     componentType: row.component_type,
     template: row.template,
-    propertyMap: row.property_map as Record<string, string>,
+    propertyMap: row.property_map as Record<string, string | null>,
     connectionId: row.connection_id,
     tableSchema: row.table_schema,
     changedBy: row.changed_by,

@@ -442,10 +442,13 @@ export function bridgeDeliverJob(deps: {
               contentType: 'image/svg+xml',
             });
           }
-          // A property with nowhere to go is kept with the provenance, never dropped (Ruling 15).
+          // A property with nowhere to go is kept with the provenance, never dropped (Ruling 15); an
+          // ignored one is the space's choice to drop.
           const unmapped = new Set(
             answer.carried
-              .filter((entry) => entry.code === 'property_unmapped')
+              .filter(
+                (entry) => entry.code === 'property_unmapped' || entry.code === 'property_unlisted',
+              )
               .map((entry) => entry.element),
           );
           const persistentId = answer.receipt.document!.persistentId;

@@ -19,12 +19,12 @@ export const BridgeSettingsBody = z.strictObject({
     'The template delivered documents are made from; none means a blank document, whose properties are all unmapped',
   ),
   propertyMap: z
-    .record(z.string().min(1).max(200), LowercaseUuid)
+    .record(z.string().min(1).max(200), LowercaseUuid.nullable())
     .refine((map) => Object.keys(map).length <= MAX_MAPPED, {
       message: `At most ${MAX_MAPPED} properties are mapped`,
     })
     .describe(
-      "CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document",
+      "CT Studio property names to the id of the template's document field each fills, or null for a property the space ignores; every field must be one the template gives a document. A delivered property this does not name is reported `property_unlisted` and listed in `unlisted`",
     ),
   data: z
     .boolean()
