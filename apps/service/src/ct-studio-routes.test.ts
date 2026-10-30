@@ -318,10 +318,13 @@ describe('the delivery store password changing last on connect', () => {
       sinkId: 'alloy-acme',
     };
     return h.tenantDb.withTenant(h.tenant, (trx) =>
-      handlers.connectCtStudio({ body } as unknown as FastifyRequest, {
-        trx,
-        principalId: h.ids.ada!,
-      } as unknown as Authorised),
+      handlers.connectCtStudio(
+        { body } as unknown as FastifyRequest,
+        {
+          trx,
+          principalId: h.ids.ada!,
+        } as unknown as Authorised,
+      ),
     );
   };
 

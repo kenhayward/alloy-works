@@ -287,7 +287,9 @@ export function CtStudioSettings({
                 ))}
                 {/* A field the list does not hold is kept as it is, never shown as ignore. */}
                 {row.field !== null && !fields.some((each) => each.id === row.field) && (
-                  <option value={row.field}>{say('admin.a-field-this-template-does-not-give')}</option>
+                  <option value={row.field}>
+                    {say('admin.a-field-this-template-does-not-give')}
+                  </option>
                 )}
               </select>
             </label>

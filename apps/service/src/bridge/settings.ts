@@ -315,7 +315,13 @@ export function bridgeSettingsHandlers(options: {
 
       putBridgeSettings: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
         const { space } = request.params as SpaceParams;
-        const saved = await save(trx, request, principalId, space, request.body as BridgeSettingsBody);
+        const saved = await save(
+          trx,
+          request,
+          principalId,
+          space,
+          request.body as BridgeSettingsBody,
+        );
         await saved.commit();
         return saved.view;
       },

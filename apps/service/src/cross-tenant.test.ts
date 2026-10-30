@@ -960,6 +960,16 @@ const VALID_INPUT: Readonly<
   extendGrant: { payload: {} },
   createToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   createServiceIdentity: { payload: { name: 'Elsewhere' } },
+  connectCtStudio: {
+    payload: {
+      space: '55555555-5555-4555-8555-555555555555',
+      identity: { make: true },
+      settings: { componentType: null, template: null, propertyMap: {}, data: false },
+      address: 'https://elsewhere.example.test',
+      sinkId: 'alloy-elsewhere',
+    },
+  },
+  issueCtStudioToken: { payload: { replaceIdentity: false } },
   createWebhook: {
     payload: {
       serviceIdentity: '55555555-5555-4555-8555-555555555555',

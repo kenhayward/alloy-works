@@ -178,10 +178,13 @@ describe('a route that changes access', () => {
     const declaring = allRoutes.filter(
       (route) => route.access.check === 'permission' && route.access.changesAccess === true,
     );
+    // Connecting CT Studio and issuing its token grant its identity Author (API-074).
     expect(declaring.map((route) => route.operationId).sort()).toEqual([
+      'connectCtStudio',
       'deleteGroup',
       'erasePrincipal',
       'extendGrant',
+      'issueCtStudioToken',
       'makeGrant',
       'removeGrant',
       'revokePublicationShare',

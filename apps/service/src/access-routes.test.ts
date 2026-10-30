@@ -1882,6 +1882,23 @@ describe('routes that check a permission', () => {
     }),
     // Service identities are an administrator's of the whole environment (G8-G).
     listServiceIdentities: () => ({ url: '/v1/service-identities', status: 403 }),
+    getCtStudio: () => ({ url: '/v1/ct-studio', status: 403 }),
+    connectCtStudio: () => ({
+      url: '/v1/ct-studio/connections',
+      status: 403,
+      payload: {
+        space: clinical,
+        identity: { make: true },
+        settings: { componentType: null, template: null, propertyMap: {}, data: false },
+        address: 'https://acme.alloy.test',
+        sinkId: 'alloy-acme',
+      },
+    }),
+    issueCtStudioToken: () => ({
+      url: '/v1/ct-studio/tokens',
+      status: 403,
+      payload: { replaceIdentity: false },
+    }),
     createServiceIdentity: () => ({
       url: '/v1/service-identities',
       status: 403,

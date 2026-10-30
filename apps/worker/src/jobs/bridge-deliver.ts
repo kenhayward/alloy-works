@@ -462,10 +462,9 @@ export function bridgeDeliverJob(deps: {
               .map((entry) => entry.element),
           );
           // A count is never a reason the delivery is not written: a failure is rolled back to here.
+          const names = unlisted.names;
           try {
-            await inSavepoint(trx, () =>
-              recordUnlisted(trx, delivery.spaceId, unlisted.names, new Date()),
-            );
+            await inSavepoint(trx, () => recordUnlisted(trx, delivery.spaceId, names, new Date()));
           } catch (error) {
             deps.log?.warn(
               { delivery: delivery.id, error: String(error) },
