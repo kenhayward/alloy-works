@@ -107,7 +107,7 @@ describe('the Rounds panel in Review (the RR plan, Task 4)', () => {
     await userEvent.type(within(form).getByLabelText('Title'), 'Second review');
     await userEvent.click(within(form).getByRole('checkbox', { name: 'Grace' }));
     await userEvent.click(within(form).getByRole('checkbox', { name: '1 Method' }));
-    await userEvent.type(within(form).getByLabelText('Due'), '2026-10-30T09:00');
+    await userEvent.type(within(form).getByLabelText('Due'), '2099-10-30T09:00');
     await userEvent.click(within(form).getByRole('button', { name: 'Open the round' }));
     await waitFor(() =>
       expect(
