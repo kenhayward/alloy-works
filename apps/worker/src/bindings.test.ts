@@ -5,6 +5,7 @@ import {
   createArtifact,
   createComponent,
   createConnection,
+  createDefinition,
   createDocument,
   createJobQueue,
   createQueryDefinition,
@@ -34,6 +35,7 @@ import {
   canonicalResultBytes,
   DEFAULT_CATALOGUE_VERSIONS,
   defaultLimits,
+  DEFINITION_SCHEMA_VERSION,
   formatValue,
   type Binding,
   type CanonicalResult,
@@ -449,9 +451,9 @@ describe('publishing a document holding a value', () => {
     expect(await work()).toBe('done');
     const outputs = await outputsOf(request);
     expect(outputs.map((each) => [each.format, each.producer, each.producer_version])).toEqual(
-      expect.arrayContaining([['provenance', 'pipeline', '31']]),
+      expect.arrayContaining([['provenance', 'pipeline', '32']]),
     );
-    expect(outputs[0]!.pipeline_version).toBe('31');
+    expect(outputs[0]!.pipeline_version).toBe('32');
     const kept = outputs.find((each) => each.format === 'provenance')!;
     const text = (await bytesOf(kept.object_key)).toString('utf8');
     const provenance = JSON.parse(text);
@@ -512,7 +514,7 @@ describe('publishing a document holding a value', () => {
     expect(await work()).toBe('done');
     const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
     const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
-    expect(provenance.schemaVersion).toBe(5);
+    expect(provenance.schemaVersion).toBe(6);
     expect(provenance.values).toMatchObject([
       {
         printed: '-4,300.00',
@@ -547,6 +549,383 @@ describe('publishing a document holding a value', () => {
     expect(outputs.map((each) => each.format).sort()).toEqual(['pdf', 'provenance']);
     const kept = outputs.find((each) => each.format === 'provenance')!;
     expect(JSON.parse((await bytesOf(kept.object_key)).toString('utf8')).values).toEqual([]);
+  });
+
+  describe('a message form (the MF plan, MF-I)', () => {
+    const EN = 'e'.repeat(26);
+    const AR = 'a'.repeat(26);
+    // Each value a row's: the counts an integer column's, 1.5 a decimal's at scale 1.
+    const COUNTS = ['0', '1', '2', '3', '11', '100'];
+    const PART_TYPE = { base: 'decimal', precision: 3, scale: 1 } as const;
+    let visits: { id: string; version: { id: string } };
+    let checksum: string;
+
+    type Arms = Record<string, readonly unknown[]>;
+    const v = { type: 'messageValue' };
+    const t = (value: string) => ({ type: 'text', value, marks: [] });
+    const formOf = (id: string, row: number, arms: Arms) => ({
+      type: 'messageForm',
+      id,
+      kind: 'plural',
+      binding: {
+        type: 'binding',
+        id: `${id}-n`,
+        query: visits.id,
+        parameters: {},
+        mode: 'checked',
+        take: { key: { id: String(row) }, column: row === 7 ? 'part' : 'count' },
+      },
+      arms,
+    });
+    const EN_ARMS: Arms = { '=0': [t('no sites')], one: [v, t(' site')], other: [v, t(' sites')] };
+    const AR_ARMS: Arms = {
+      zero: [t('لا مواقع')],
+      one: [t('موقع واحد')],
+      two: [t('موقعان')],
+      few: [v, t(' مواقع')],
+      many: [v, t(' موقعًا')],
+      other: [v, t(' موقع')],
+    };
+    /** Seven paragraphs, each one form, by row: the six counts, then 1.5. */
+    const formsIn = (prefix: string, arms: Arms) =>
+      [1, 2, 3, 4, 5, 6, 7].map((row) => ({
+        type: 'paragraph',
+        id: `${prefix}p${row}`,
+        style: 'body',
+        content: [formOf(`${prefix}${row}`, row, arms)],
+      }));
+
+    beforeAll(async () => {
+      const result: CanonicalResult = {
+        columns: [
+          ['id', 'integer'],
+          ['count', 'integer'],
+          ['part', 'decimal'],
+        ],
+        rows: [...COUNTS, '0'].map((count, at) => [String(at + 1), count, at === 6 ? '1.5' : '0']),
+      };
+      const bytes = Buffer.from(canonicalResultBytes(result), 'utf8');
+      checksum = createHash('sha256').update(bytes).digest('hex');
+      await within(async (trx) => {
+        await (await stores.forTenant(trx, tenant)).put(bytes, 'application/json');
+        const defined = await createQueryDefinition(trx, {
+          author: ada,
+          spaceId: general,
+          definition: {
+            schemaVersion: 1,
+            title: 'Visits by row',
+            description: '',
+            connection: connection.id,
+            parameters: [],
+            fetch: {
+              kind: 'sql',
+              text: 'select id, count, part from secret_schema.visits order by id',
+            },
+            columns: [
+              { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+              { name: 'count', from: { column: 'count' }, type: { base: 'integer' } },
+              { name: 'part', from: { column: 'part' }, type: PART_TYPE },
+            ],
+            key: ['id'],
+            order: [{ column: 'id', direction: 'ascending' }],
+            empty: 'valid',
+            limits: { ...defaultLimits },
+            retired: false,
+          },
+        });
+        if (defined.answer !== 'created') throw new Error(defined.answer);
+        visits = defined.definition;
+        const axis = await createDefinition(trx, {
+          kind: 'conditionAxis',
+          definition: {
+            schemaVersion: DEFINITION_SCHEMA_VERSION,
+            name: 'Audience',
+            key: 'audience',
+            values: [
+              { key: 'regulator', label: 'Regulator' },
+              { key: 'internal', label: 'Internal' },
+            ],
+          },
+          author: ada,
+        });
+        if (axis.answer !== 'created') throw new Error(axis.answer);
+      });
+    });
+
+    /** A component in a language holding the blocks given, recorded. */
+    const componentOf = async (
+      trx: TenantTransaction,
+      title: string,
+      language: string,
+      direction: 'ltr' | 'rtl',
+      blocks: readonly unknown[],
+    ) => {
+      const made = await createComponent(trx, {
+        spaceId: general,
+        title,
+        language,
+        direction,
+        author: ada,
+      });
+      if (made.answer !== 'created') throw new Error(made.answer);
+      const substance = substanceOf(made.version);
+      if (substance.kind !== 'component') throw new Error('not a component');
+      const content = {
+        ...(made.version.content as ContentDocument),
+        content: blocks,
+      } as ContentDocument;
+      const recorded = await recordVersion(trx, {
+        artifactId: made.version.artifactId,
+        openedFrom: made.version.id,
+        author: ada,
+        substance: { ...substance, content },
+      });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      return { artifactId: made.version.artifactId, content };
+    };
+
+    /**
+     * A document placing an English component and an Arabic one, each holding seven forms - and, in
+     * the English one, a form beside a passage for staff and one inside it - every binding resolved.
+     */
+    const documentHoldingForms = () =>
+      within(async (trx) => {
+        const english = await componentOf(trx, 'Visits', 'en-GB', 'ltr', [
+          ...formsIn('en', EN_ARMS),
+          {
+            type: 'paragraph',
+            id: 'enp8',
+            style: 'body',
+            content: [
+              t('Open: '),
+              formOf('kept', 4, { other: [v, t(' ponds kept')] }),
+              {
+                type: 'text',
+                value: ' Staff only: ',
+                marks: [{ type: 'condition', id: 'c1', axis: 'audience', values: ['internal'] }],
+              },
+              formOf('hidden', 4, { other: [v, t(' wells hidden')] }),
+              {
+                type: 'text',
+                value: 'internal.',
+                marks: [{ type: 'condition', id: 'c1', axis: 'audience', values: ['internal'] }],
+              },
+            ],
+          },
+        ]);
+        const arabic = await componentOf(trx, 'الزيارات', 'ar', 'rtl', formsIn('ar', AR_ARMS));
+        const document = await createDocument(trx, {
+          spaceId: general,
+          title: 'The visits report',
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ada,
+        });
+        if (document.answer !== 'created') throw new Error(document.answer);
+        const reference = (id: string, component: string) => ({
+          type: 'reference' as const,
+          id,
+          component,
+          mode: { kind: 'latest' as const },
+          numbered: true,
+          matter: 'body' as const,
+          pageBreak: 'none' as const,
+          values: {},
+          children: [],
+        });
+        const version = await recordVersion(trx, {
+          artifactId: document.version.artifactId,
+          openedFrom: document.version.id,
+          author: ada,
+          substance: {
+            kind: 'document',
+            content: {
+              ...(document.version.content as OutlineDocument),
+              nodes: [reference(EN, english.artifactId), reference(AR, arabic.artifactId)],
+            },
+          },
+        });
+        if (version.answer !== 'recorded') throw new Error(version.answer);
+        const dataset = await recordDatasetVersion(trx, {
+          author: ada,
+          provenance: {
+            schemaVersion: 1,
+            queryDefinition: { artifact: visits.id, version: visits.version.id },
+            connection: { artifact: connection.id, version: connection.version.id },
+            parameters: {},
+            ran: { sql: 'select id, count, part from secret_schema.visits order by id' },
+            identity: { kind: 'service' },
+            at: '2026-10-30T09:00:00.000Z',
+            durationMs: 5,
+            rowCount: 7,
+            columns: [
+              { name: 'id', from: { column: 'id' }, type: { base: 'integer' } },
+              { name: 'count', from: { column: 'count' }, type: { base: 'integer' } },
+              { name: 'part', from: { column: 'part' }, type: PART_TYPE },
+            ],
+            canonical: 1,
+            checksum,
+            images: {},
+          },
+        });
+        await nameDataset(trx, { dataset: dataset.dataset.id, name: 'Visits', by: ada });
+        for (const [node, { content }] of [
+          [EN, english],
+          [AR, arabic],
+        ] as const) {
+          for (const block of content.content) {
+            for (const inline of (block as { content: { type: string; binding?: Binding }[] })
+              .content) {
+              if (inline.type !== 'messageForm') continue;
+              await recordResolution(trx, {
+                document: document.version.artifactId,
+                node,
+                binding: inline.binding!.id,
+                digest: sha256Hex(bindingDigestInput(inline.binding!)),
+                version: dataset.version.id,
+                replaces: null,
+                act: 'resolve',
+                by: ada,
+              });
+            }
+          }
+        }
+        return version.version;
+      });
+
+    const provenanceOf = async (request: string) => {
+      const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
+      return JSON.parse((await bytesOf(kept.object_key)).toString('utf8')) as {
+        schemaVersion: number;
+        values: { node: string; binding: string; printed: string; messageForm?: unknown }[];
+      };
+    };
+    const armsOf = (
+      values: Awaited<ReturnType<typeof provenanceOf>>['values'],
+      node: string,
+      prefix: string,
+    ) =>
+      values
+        .filter((each) => each.node === node && each.binding.startsWith(prefix))
+        .map((each) => each.messageForm);
+
+    /** A request for the document, as the regulator's: the passage for staff left out. */
+    const requested = (
+      version: { artifactId: string; id: string },
+      formats: string[],
+      language?: string,
+    ) =>
+      within(async (trx) => {
+        const answer = await requestPublication(trx, {
+          documentId: version.artifactId,
+          version: version.id,
+          formats,
+          requester: ada,
+          profile: { values: { audience: ['regulator'] } },
+          ...(language ? { language } : {}),
+        });
+        if (answer.answer !== 'requested') throw new Error(answer.answer);
+        return answer.request.id;
+      });
+
+    it("selects each form's arm by its value in its component's language, the same in the PDF, Word and HTML, and records the arm in provenance.json", async () => {
+      const version = await documentHoldingForms();
+      const request = await requested(version, ['pdf', 'docx', 'html']);
+      expect(await work()).toBe('done');
+      const provenance = await provenanceOf(request);
+      expect(provenance.schemaVersion).toBe(6);
+      expect(armsOf(provenance.values, EN, 'en')).toEqual(
+        ['=0', 'one', 'other', 'other', 'other', 'other', 'other'].map((arm, at) => ({
+          id: `en${at + 1}`,
+          arm,
+        })),
+      );
+      expect(armsOf(provenance.values, AR, 'ar')).toEqual(
+        ['zero', 'one', 'two', 'few', 'many', 'other', 'other'].map((arm, at) => ({
+          id: `ar${at + 1}`,
+          arm,
+        })),
+      );
+
+      const english = [
+        'no sites',
+        '1 site',
+        '2 sites',
+        '3 sites',
+        '11 sites',
+        '100 sites',
+        '1.5 sites',
+      ];
+      const printed = (row: number) =>
+        provenance.values.find((each) => each.binding === `ar${row}-n`)!.printed;
+      const arabic = [
+        'لا مواقع',
+        'موقع واحد',
+        'موقعان',
+        `${printed(4)} مواقع`,
+        `${printed(5)} موقعًا`,
+        `${printed(6)} موقع`,
+        `${printed(7)} موقع`,
+      ];
+      const outputs = await outputsOf(request);
+      const bytesIn = async (format: string) =>
+        bytesOf(outputs.find((each) => each.format === format)!.object_key);
+
+      const pdf = await bytesIn('pdf');
+      expect(await checkPdfUa1(pdf)).toMatchObject({ compliant: true, failedRules: 0 });
+      const tagged = spoken((await readPdf(pdf)).taggedText.flat());
+      // pdf.js reads Arabic in its visual order, so the Arabic arms are pinned in Word and HTML.
+      expect(tagged).toContain(english.join(' '));
+
+      const docx = await bytesIn('docx');
+      expect(wordText(docx)).toContain(english.join(''));
+      expect(wordText(docx)).toContain(arabic.join(''));
+      expect(await checkOoxml(docx)).toEqual([]);
+
+      const html = (await bytesIn('html')).toString('utf8');
+      for (const each of [...english, ...arabic]) expect(html).toContain(`>${each}</p>`);
+    }, 180_000);
+
+    it("selects by the component's own language where it publishes untranslated, never the document's", async () => {
+      const version = await documentHoldingForms();
+      const request = await requested(version, ['pdf'], 'fr-FR');
+      expect(await work()).toBe('done');
+      const { warnings } = await within((trx) =>
+        trx
+          .selectFrom('publication_request')
+          .select('warnings')
+          .where('id', '=', request)
+          .executeTakeFirstOrThrow(),
+      );
+      expect(warnings).toEqual(
+        expect.arrayContaining([{ code: 'component_untranslated', node: EN, language: 'en-GB' }]),
+      );
+      const provenance = await provenanceOf(request);
+      // French says 1.5 with `one`; English, the component's, says it with `other`.
+      expect(armsOf(provenance.values, EN, 'en7')).toEqual([{ id: 'en7', arm: 'other' }]);
+      expect(armsOf(provenance.values, AR, 'ar7')).toEqual([{ id: 'ar7', arm: 'other' }]);
+    }, 120_000);
+
+    it('REU-048 publishes a form beside an excluded passage and nothing of one inside it', async () => {
+      const version = await documentHoldingForms();
+      const request = await requested(version, ['pdf', 'docx', 'html']);
+      expect(await work()).toBe('done');
+      const outputs = await outputsOf(request);
+      const bytesIn = async (format: string) =>
+        bytesOf(outputs.find((each) => each.format === format)!.object_key);
+      const texts = [
+        spoken((await readPdf(await bytesIn('pdf'))).taggedText.flat()),
+        wordText(await bytesIn('docx')),
+        (await bytesIn('html')).toString('utf8'),
+      ];
+      for (const text of texts) {
+        expect(text).toContain('3 ponds kept');
+        expect(text).not.toContain('wells hidden');
+      }
+      const provenance = await provenanceOf(request);
+      expect(provenance.values.map((each) => each.binding)).toContain('kept-n');
+      expect(provenance.values.map((each) => each.binding)).not.toContain('hidden-n');
+    }, 120_000);
   });
 
   it("STY-082 prints a value from the theme's value catalogue alone, the same in the PDF and in Word, under formats unlike the default", async () => {
@@ -877,7 +1256,7 @@ describe('publishing a document holding a value', () => {
       expect(await work()).toBe('done');
       const kept = (await outputsOf(request)).find((each) => each.format === 'provenance')!;
       const provenance = JSON.parse((await bytesOf(kept.object_key)).toString('utf8'));
-      expect(provenance.schemaVersion).toBe(5);
+      expect(provenance.schemaVersion).toBe(6);
       expect(provenance.values).toMatchObject(
         [
           ['p1', 'i1', NORTH_SAYS],

@@ -412,9 +412,29 @@ nothing edits either until the footnotes slice.
 
 ## Inlines and marks
 
-`text` is the only leaf. Nine inline nodes: `text`, `equation`, `footnote`, `crossReference`,
-`citation`, `indexMarker`, `variable`, `binding`, `image`. An `indexMarker` is an index entry, printing
-nothing where it stands ([publishing.md](publishing.md#the-index)).
+`text` is the only leaf. Ten inline nodes: `text`, `equation`, `footnote`, `crossReference`,
+`citation`, `indexMarker`, `variable`, `binding`, `messageForm`, `image`. An `indexMarker` is an index
+entry, printing nothing where it stands ([publishing.md](publishing.md#the-index)).
+
+**A message form** (the [MF plan](../plans/2026-10-29-mf-message-forms.md), MF-C to MF-E): words that
+vary by a number, ICU's `{n, plural, ...}` whole. `{ type: 'messageForm', id, kind: 'plural',
+binding, arms }`: `binding` its own inline binding, `arms` a record from key to inlines - text with a
+footnote paragraph's marks, no condition or suggestion inside an arm, and `messageValue` at most once,
+printing the value (ICU's `#`). Keys are CLDR's six categories and `=0` to `=9`; `other` is required.
+Keys are not checked against the component's language, which can change after a form is written: the
+binding stage fails a category the arms lack (`message_form_arm_missing`, [bindings.md](bindings.md#failures)).
+It stands wherever a binding does, never in a title or another form; content schema 1, in place.
+
+- **Every path keeps it**: the editor schema and its mapping both ways, the product clipboard,
+  re-identification (a new id for the form and its binding), search (every arm's words), comparison
+  (per arm), conditions (inside an excluded passage it goes with the passage) and `bindingsIn` (place
+  `form`, a non-number column `value_not_number`). The assistant is told a paragraph holds one and
+  leaves it.
+- **Selected in the binding stage**: an exact arm where the value equals it, else the CLDR category of
+  the value in the occurrence's language (`content.language`, so an untranslated occurrence selects
+  by its source), the arm's inlines printed in the form's place. `provenance.json` records the arm, at
+  its schema 6.
+- **Gaps, named**: gender (`select`) and ordinals; text assembled around a value is not refused.
 
 **A footnote's anchor** is one of six kinds: `span`, where it stands in text; `cell` by key,
 `cellPosition` and `table`, which nothing makes; and, only in a bound table's `notes` and only there,
