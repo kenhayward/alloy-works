@@ -1005,7 +1005,8 @@ describe('the citations in the committed model', () => {
     // 2206 (2026-10-29): CS cites API-065 to API-073 in the bridge's tests, from the contract and the
     // mapping to the routes, the job and the conformance suite.
     // 2216 (2026-10-30): CC cites API-074 to API-076 in its db, service and web tests.
-    expect(model.citations).toHaveLength(2216);
+    // 2217 (2026-10-30): the service's secrets test cites API-065 for SINK_BRIDGE_KEYS.
+    expect(model.citations).toHaveLength(2217);
   });
 
   it('cites no identifier the corpus does not hold', () => {

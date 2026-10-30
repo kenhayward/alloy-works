@@ -23426,6 +23426,12 @@
       "kind": "title"
     },
     {
+      "id": "API-065",
+      "file": "apps/service/src/secrets.test.ts",
+      "line": 11,
+      "kind": "title"
+    },
+    {
       "id": "IAM-033",
       "file": "apps/service/src/service-identity-routes.test.ts",
       "line": 47,
@@ -24286,13 +24292,13 @@
     {
       "id": "API-074",
       "file": "apps/web/src/admin/CtStudio.test.tsx",
-      "line": 186,
+      "line": 194,
       "kind": "title"
     },
     {
       "id": "API-075",
       "file": "apps/web/src/admin/CtStudio.test.tsx",
-      "line": 170,
+      "line": 176,
       "kind": "title"
     },
     {
@@ -31618,7 +31624,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1086,
+      "line": 1084,
       "kind": "title"
     },
     {
