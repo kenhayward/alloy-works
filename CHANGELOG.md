@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.219.0 - 2026-10-30 (PR #PR_NUMBER)
+
+Words that vary by a number (the MF plan, T6's eleventh slice).
+
+### Added
+
+- **Words that vary by a number.** A message form prints the arm its bound value selects, by the plural rules of the component's language, in the PDF, Word and HTML. A value not a number, or a category with no arm, fails the publish by name, and `provenance.json` records the arm chosen.
+- **Message forms in translation.** A translation job's file sends each form's wording once for each plural category of the target language, with a note giving example numbers, and the returned file rebuilds the form. Machine drafts do the same.
+- **Message form in the editor.** Select a value bound to a number and press **Message form** (Ctrl or Cmd, Alt and P) to write its sentence for each plural category of the component's language. The text, a document's text and a copy show the words the value selects; selected, a form opens its words for each category to edit, and words for exactly 0 to 9 can be added or removed.
+
 ## 0.218.0 - 2026-10-30 (PR #822)
 
 CT Studio's hand-off made clear, after the first real connection.
