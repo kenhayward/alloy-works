@@ -22066,7 +22066,7 @@
     {
       "id": "API-074",
       "file": "apps/service/src/ct-studio-routes.test.ts",
-      "line": 34,
+      "line": 39,
       "kind": "title"
     },
     {
@@ -24298,7 +24298,7 @@
     {
       "id": "API-076",
       "file": "apps/web/src/admin/CtStudioSettings.test.tsx",
-      "line": 87,
+      "line": 99,
       "kind": "title"
     },
     {
@@ -27034,7 +27034,7 @@
     {
       "id": "API-072",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 695,
+      "line": 721,
       "kind": "title"
     },
     {
