@@ -3,6 +3,20 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.217.0 - 2026-10-30 (PR #821)
+
+Connecting CT Studio from Administration (the CC plan).
+
+### Added
+
+- **Connect CT Studio without the API.** Administration has a CT Studio section. **Connect a space** makes the identity CT Studio delivers as, or adopts one made by hand, grants it the space, issues its token and sets what deliveries become, then ends on what to paste into CT Studio: the token, shown once, its `.env` entry and the steps. A later space reuses the same identity and token.
+- **A token or an identity replaced when it is due.** The section shows when CT Studio's token expires, offers a new one in its last 30 days, replaces an identity that was disabled, and grants a space again that lost its grant.
+- **Properties mapped, ignored or noticed.** A space's CT Studio settings map each CT Studio property to a template field or ignore it, and list the properties deliveries carried that nobody decided about, to map or ignore from there.
+
+### Fixed
+
+- **A review round test that expired.** COL-028's test typed a due date of this morning, which the form now refuses as past.
+
 ## 0.216.0 - 2026-10-29 (PR #817)
 
 CT Studio's deliveries (the CS plan).

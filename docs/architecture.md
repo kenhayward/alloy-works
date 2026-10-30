@@ -4231,6 +4231,14 @@ bridge --signed--> service /bridge --stores package by hash, queues bridge_deliv
   (`bridge_nonce`, swept by the job queue), and the target's `awt_` token, which must belong to a
   service identity in the tenant its hostname names. The token's id is recorded; the token is not.
   `GET /deliveries/{id}` answers from the job and `bridge_delivery`.
+- **Connecting CT Studio** (`apps/service/src/bridge/ct-studio.ts`, `apps/web/src/admin/CtStudio.tsx`;
+  [ct-studio-connect.md](design/ct-studio-connect.md)): `GET /v1/ct-studio` is what is connected,
+  `POST /v1/ct-studio/connections` makes or adopts the identity, grants Author, issues the token and
+  saves the space's settings in one transaction, and `POST /v1/ct-studio/tokens` issues a new token or
+  a replacement identity. The environment's one CT Studio is the `ct_studio` row (0174); the signing
+  key is never read there, only whether it is set. A property the map does not name is reported
+  `property_unlisted` and counted per space in `bridge_unlisted_property` (0173), for a delivery
+  written or refused; a property mapped to `null` is ignored.
 - **The contract** is `@kenhayward/bridge-contract` 0.10.0, pinned exactly and installed from GitHub
   Packages through a scoped registry line in `.npmrc` and a build secret in the images and CI. The
   conformance suite runs in process in the service's tests, and against a running stack.

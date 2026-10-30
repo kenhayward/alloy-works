@@ -283,6 +283,8 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0170_translation_policy_history',
       '0171_publication_locale_data',
       '0172_bridge',
+      '0173_bridge_unlisted',
+      '0174_ct_studio',
     ]);
     const kept = await queryAs(
       db.adminUrl,

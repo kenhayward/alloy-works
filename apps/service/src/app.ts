@@ -94,6 +94,7 @@ import { webhookHandlers } from './webhooks.js';
 import { extensionHandlers } from './extensions.js';
 import { registerMcp } from './mcp/route.js';
 import { registerBridge } from './bridge/plugin.js';
+import { ctStudioHandlers } from './bridge/ct-studio.js';
 import { bridgeSettingsHandlers } from './bridge/settings.js';
 import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
@@ -244,6 +245,8 @@ type Success<R extends RouteContract> = R['responses'] extends {
 /** The routes answering a secret once, never kept by a cache on the way (G8-H, WB-G). */
 const ANSWERS_A_SECRET: ReadonlySet<string> = new Set([
   'issueServiceIdentityToken',
+  'connectCtStudio',
+  'issueCtStudioToken',
   'createWebhook',
   'changeWebhook',
   'rotateWebhookSecret',
@@ -600,12 +603,20 @@ export function buildApp(options: AppOptions): FastifyInstance {
     deliveredUrl: secrets.get('delivered_url'),
   });
   app.addHook('onClose', bridgeSettings.close);
+  // Administration's CT Studio section: what is connected, and connecting a space.
+  const ctStudio = ctStudioHandlers({
+    db,
+    tenantOf,
+    bridgeOn: bridgeKeys.length > 0,
+    saveSettings: bridgeSettings.save,
+  });
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf, boundCreation),
     ...templateHandlers(db, tenantOf, principalOf),
     ...connectionRoutes,
     ...bridgeSettings.handlers,
+    ...ctStudio.handlers,
     ...queryDefinitionHandlers(db, tenantOf, principalOf),
     ...bindingHandlers(tenantOf, options.objects),
     ...pendingHandlers(db, tenantOf, options.objects),

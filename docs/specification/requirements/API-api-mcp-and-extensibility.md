@@ -165,6 +165,9 @@ answers API-Q05 for this integration only.
 | **API-071** | Every delivered version must record the source file, its hash, the decomposer version, the delivery key and the CT Studio user it was delivered for                                                                                                                | T6      | Specified |
 | **API-072** | Delivered data tables must be real Postgres tables outside the platform's database, readable by an SQL query definition through a connection                                                                                                                       | T6      | Specified |
 | **API-073** | What a delivery could not carry must be reported in its receipt and kept with the delivery, never dropped silently                                                                                                                                                 | T6      | Specified |
+| **API-074** | An administrator must be able to connect a space to CT Studio from the interface, the first time and for every space after, without calling the API                                                                                                                | T6      | Specified |
+| **API-075** | Connecting must end on what CT Studio needs: its `.env` entry and short steps, with the token shown once and the signing key never shown                                                                                                                           | T6      | Specified |
+| **API-076** | A delivered property must be mapped to a field, ignored, or unlisted; an unlisted one must be reported with the delivery and listed for the space                                                                                                                  | T6      | Specified |
 
 ## 7. MCP
 
@@ -258,6 +261,7 @@ value it saw is exactly the silent staleness this specification rules out everyw
 | API-037 to API-053 | [The v1 review](<../../reviews/API - api and mcp specification.md>); section 13                             |
 | API-062            | [Requirement issue #352](https://github.com/kenhayward/alloy-works/issues/352)                              |
 | API-065 to API-073 | [ADR-0071](../../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md), Ken on 2026-10-29 |
+| API-074 to API-076 | [ct-studio-connect.md](../../design/ct-studio-connect.md), Ken on 2026-10-30                                |
 
 ## 13. Change history
 

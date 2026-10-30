@@ -64,6 +64,10 @@ describe('the tenant database', () => {
     expect(await service.resolveHostname('nobody.alloy.test')).toBeUndefined();
   });
 
+  it('lists the hostnames a tenant answers at', async () => {
+    expect(await service.hostnames(development.id)).toContain('dev.acme.alloy.test');
+  });
+
   it('reads and writes the tenant own tables', async () => {
     const ada = await service.withTenant(production, (trx) =>
       trx

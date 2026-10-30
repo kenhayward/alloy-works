@@ -556,6 +556,19 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   changeServiceIdentity: writes('service_identity.renamed'),
   disableServiceIdentity: writes('service_identity.disabled', 'token.revoked', 'webhook.changed'),
   issueServiceIdentityToken: writes('token.issued'),
+  getCtStudio: read,
+  // Connecting makes or adopts CT Studio's identity, grants it Author, issues its token and saves
+  // the space's settings as PUT bridge-settings does (API-074).
+  connectCtStudio: writes(
+    'service_identity.created',
+    'access.granted',
+    'token.issued',
+    'bridge.settings_changed',
+    'content.version_cut',
+    'connection.made',
+    'connection.credential_set',
+  ),
+  issueCtStudioToken: writes('service_identity.created', 'access.granted', 'token.issued'),
   getErasure: read,
   erasePrincipal: writes(
     'authentication.signed_out',

@@ -7,6 +7,7 @@ import {
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
   archiveSpace,
+  recordUnlisted,
   STARTER_COMPONENT_TYPE_ID,
   usableCredentialOf,
 } from '@alloy-works/db';
@@ -144,7 +145,7 @@ describe('bridge settings through the service', () => {
   it('answers the empty settings, data delivery off, for a space never set up', async () => {
     const answer = await h.call('ada', 'GET', settingsUrl(h.general));
     expect(answer.statusCode, answer.body).toBe(200);
-    expect(answer.json()).toEqual({ ...off, connection: null });
+    expect(answer.json()).toEqual({ ...off, connection: null, unlisted: [] });
   });
 
   it("API-071 stores a space's component type, template and property map, and records the change", async () => {
@@ -161,6 +162,7 @@ describe('bridge settings through the service', () => {
       propertyMap: PROPERTY_MAP,
       data: false,
       connection: null,
+      unlisted: [],
     });
     const read = await h.call('ada', 'GET', settingsUrl(h.general));
     expect(read.json()).toEqual(answer.json());
@@ -351,7 +353,7 @@ describe('bridge settings through the service', () => {
     expect(answer.statusCode, answer.body).toBe(503);
     expect(answer.json()).toMatchObject({ code: 'delivery_store_unavailable' });
     const read = await bare.call('ada', 'GET', settingsUrl(bare.general));
-    expect(read.json()).toEqual({ ...off, connection: null });
+    expect(read.json()).toEqual({ ...off, connection: null, unlisted: [] });
   });
 
   it('a connector that does not answer refuses turning data on 503 and stores nothing', async () => {
@@ -447,7 +449,7 @@ describe('bridge settings through the service', () => {
         expect(text).not.toContain('127.0.0.1:1');
       }
       const read = await down.call('ada', 'GET', settingsUrl(down.general));
-      expect(read.json()).toEqual({ ...off, connection: null });
+      expect(read.json()).toEqual({ ...off, connection: null, unlisted: [] });
     } finally {
       await down.close();
     }
@@ -468,5 +470,49 @@ describe('bridge settings through the service', () => {
     for (const password of passwords) {
       for (const text of [...seen, audit, ...h.lines]) expect(text).not.toContain(password);
     }
+  });
+
+  it('API-076 a property mapped to null is stored and read back as ignored', async () => {
+    const answer = await put(h.general, {
+      componentType: null,
+      template: null,
+      propertyMap: { Draft: null },
+      data: false,
+    });
+    expect(answer.statusCode, answer.body).toBe(200);
+    const read = await h.call('ada', 'GET', settingsUrl(h.general));
+    expect(read.json()).toMatchObject({ propertyMap: { Draft: null } });
+  });
+
+  it('API-076 the settings view lists unlisted properties and saving a mapping drops them', async () => {
+    const at = new Date('2026-10-30T09:00:00Z');
+    await h.tenantDb.withTenant(h.tenant, (trx) =>
+      recordUnlisted(trx, h.general, ['Owner', 'Draft'], at),
+    );
+    const read = await h.call('ada', 'GET', settingsUrl(h.general));
+    expect((read.json() as BridgeSettingsView).unlisted).toEqual([
+      {
+        name: 'Draft',
+        firstDelivered: at.toISOString(),
+        lastDelivered: at.toISOString(),
+        deliveries: 1,
+      },
+      {
+        name: 'Owner',
+        firstDelivered: at.toISOString(),
+        lastDelivered: at.toISOString(),
+        deliveries: 1,
+      },
+    ]);
+    const saved = await put(h.general, {
+      componentType: null,
+      template: null,
+      propertyMap: { Owner: null },
+      data: false,
+    });
+    expect(saved.statusCode, saved.body).toBe(200);
+    expect((saved.json() as BridgeSettingsView).unlisted.map((each) => each.name)).toEqual([
+      'Draft',
+    ]);
   });
 });

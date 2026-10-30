@@ -810,7 +810,7 @@ describe('a document delivery', () => {
     expect(answer.carried.map((each) => [each.code, each.element])).toEqual(
       expect.arrayContaining([
         ['property_unconverted', 'Pages'],
-        ['property_unmapped', 'Author'],
+        ['property_unlisted', 'Author'],
       ]),
     );
   });

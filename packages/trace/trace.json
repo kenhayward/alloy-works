@@ -910,13 +910,40 @@
       "line": 167
     },
     {
+      "id": "API-074",
+      "area": "API",
+      "statement": "An administrator must be able to connect a space to CT Studio from the interface, the first time and for every space after, without calling the API",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "API-api-mcp-and-extensibility.md",
+      "line": 168
+    },
+    {
+      "id": "API-075",
+      "area": "API",
+      "statement": "Connecting must end on what CT Studio needs: its `.env` entry and short steps, with the token shown once and the signing key never shown",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "API-api-mcp-and-extensibility.md",
+      "line": 169
+    },
+    {
+      "id": "API-076",
+      "area": "API",
+      "statement": "A delivered property must be mapped to a field, ignored, or unlisted; an unlisted one must be reported with the delivery and listed for the space",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "API-api-mcp-and-extensibility.md",
+      "line": 170
+    },
+    {
       "id": "API-018",
       "area": "API",
       "statement": "The MCP surface must be a small set of task-shaped tools over the API, never a generated mirror of it",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 173
+      "line": 176
     },
     {
       "id": "API-019",
@@ -925,7 +952,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 174
+      "line": 177
     },
     {
       "id": "API-020",
@@ -934,7 +961,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 175
+      "line": 178
     },
     {
       "id": "API-021",
@@ -943,7 +970,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 176
+      "line": 179
     },
     {
       "id": "API-022",
@@ -952,7 +979,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 177
+      "line": 180
     },
     {
       "id": "API-023",
@@ -961,7 +988,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 178
+      "line": 181
     },
     {
       "id": "API-024",
@@ -970,7 +997,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 179
+      "line": 182
     },
     {
       "id": "API-025",
@@ -979,7 +1006,7 @@
       "tranche": "T5",
       "status": "Superseded by API-060",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 189
+      "line": 192
     },
     {
       "id": "API-026",
@@ -988,7 +1015,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 190
+      "line": 193
     },
     {
       "id": "API-027",
@@ -997,7 +1024,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 191
+      "line": 194
     },
     {
       "id": "API-028",
@@ -1006,7 +1033,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 192
+      "line": 195
     },
     {
       "id": "API-029",
@@ -1015,7 +1042,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 193
+      "line": 196
     },
     {
       "id": "API-060",
@@ -1024,7 +1051,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 194
+      "line": 197
     },
     {
       "id": "API-045",
@@ -1033,7 +1060,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 195
+      "line": 198
     },
     {
       "id": "API-046",
@@ -1042,7 +1069,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 196
+      "line": 199
     },
     {
       "id": "API-030",
@@ -1051,7 +1078,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 209
+      "line": 212
     },
     {
       "id": "API-031",
@@ -1060,7 +1087,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 210
+      "line": 213
     },
     {
       "id": "API-032",
@@ -1069,7 +1096,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 211
+      "line": 214
     },
     {
       "id": "API-033",
@@ -1078,7 +1105,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 212
+      "line": 215
     },
     {
       "id": "API-034",
@@ -1087,7 +1114,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 213
+      "line": 216
     },
     {
       "id": "API-048",
@@ -1096,7 +1123,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 214
+      "line": 217
     },
     {
       "id": "API-049",
@@ -1105,7 +1132,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 215
+      "line": 218
     },
     {
       "id": "AST-001",
@@ -14472,31 +14499,31 @@
       "id": "API-N01",
       "statement": "**No MCP surface generated from the API** (API-018)",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 226
+      "line": 229
     },
     {
       "id": "API-N02",
       "statement": "**No privileged internal API** that the product's own clients use and others cannot (API-001)",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 227
+      "line": 230
     },
     {
       "id": "API-N03",
       "statement": "**No arbitrary code execution as an extension point.** Extensions are declared and sandboxed, or they are not extensions",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 228
+      "line": 231
     },
     {
       "id": "API-N04",
       "statement": "**No GraphQL surface alongside the REST one**, unless something forces it. Two APIs are two contracts and two sets of bugs",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 229
+      "line": 232
     },
     {
       "id": "API-N05",
       "statement": "**No unattended bulk import through the API.** Bringing foreign content in is **IMP**'s attended flow (IMP-001 to IMP-003): a proposal a person accepts, and a report of what was dropped. An endpoint that skipped it would skip the person",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 230
+      "line": 233
     },
     {
       "id": "AST-N01",
@@ -15202,49 +15229,49 @@
       "question": "**Which realtime transport, and is it one channel or several?** Open decision 7 in scope §10",
       "settledBy": "**Settled** by a spike. One Server-Sent Events stream per open document for presence, locks and notification nudges, fanned out through Postgres `LISTEN`/`NOTIFY`; model output streams on the request that asked for it. See [ADR-0018](../../decisions/0018-realtime-one-push-channel-postgres-fan-out.md)",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 236
+      "line": 239
     },
     {
       "id": "API-Q02",
       "question": "**How many MCP tools is the right number (API-024)?** Too few and an agent cannot do the job; too many and it does none of them well",
       "settledBy": "Evaluation against real tasks, which is the only way to find out",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 237
+      "line": 240
     },
     {
       "id": "API-Q03",
       "question": "**Where do extensions run?** In-process is fast and dangerous; out-of-process is safe and slow, and both are a support burden",
       "settledBy": "The architecture, and how much a connector is expected to do",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 238
+      "line": 241
     },
     {
       "id": "API-Q04",
       "question": "**Is the API public, or for integrators under contract?** It changes what deprecation costs and how much the specification must promise",
       "settledBy": "A commercial decision as much as a technical one",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 239
+      "line": 242
     },
     {
       "id": "API-Q05",
       "question": "**Do batch create and update endpoints exist for native content?** API-N05 rules out unattended import of foreign documents; content this product already holds, moving between tenants or systems that speak its format, is a different case",
       "settledBy": "**Settled for CT Studio only** by [ADR-0071](../../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md): its bridge delivers straight in (API-065 to API-073). General batch endpoints for native content stay open, for the next integration that needs them",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 240
+      "line": 243
     },
     {
       "id": "API-Q06",
       "question": "**Are extensions versioned and pinned per tenant (API-048)?** An extension updated under a tenant that depended on its old behaviour is the same failure as an unversioned API, one layer out",
       "settledBy": "The architecture decision in API-Q03. Where extensions run largely decides whether pinning is cheap",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 241
+      "line": 244
     },
     {
       "id": "API-Q07",
       "question": "**What are the synchronous surface's availability and latency numbers (API-050)?** Scope §11 budgets opening, publishing, keystrokes and search, and names an availability target, but no number covers an ordinary API request",
       "settledBy": "The first load testing against real content, and the commercial answer to API-Q04 - what is promised depends on who it is promised to",
       "document": "API-api-mcp-and-extensibility.md",
-      "line": 242
+      "line": 245
     },
     {
       "id": "AST-Q01",
@@ -17350,6 +17377,23 @@
         {
           "id": "AST-039",
           "howItIsMet": "Inherited alternative text carries the asset's language; a figure's own text takes the language of the component holding it"
+        }
+      ]
+    },
+    {
+      "document": "ct-studio-connect.md",
+      "owns": [
+        {
+          "id": "API-074",
+          "howItIsMet": "Administration → CT Studio connects a space, first or later, without the API"
+        },
+        {
+          "id": "API-075",
+          "howItIsMet": "The hand-off page gives CT Studio's `.env` entry and steps, with the token shown once and no key"
+        },
+        {
+          "id": "API-076",
+          "howItIsMet": "A property is mapped, ignored, or unlisted; an unlisted one is reported and listed for the space"
         }
       ]
     },
@@ -21488,13 +21532,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 688,
+      "line": 701,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 701,
+      "line": 714,
       "kind": "title"
     },
     {
@@ -21746,13 +21790,19 @@
     {
       "id": "API-071",
       "file": "apps/service/src/bridge-settings-routes.test.ts",
-      "line": 150,
+      "line": 151,
       "kind": "title"
     },
     {
       "id": "API-072",
       "file": "apps/service/src/bridge-settings-routes.test.ts",
-      "line": 223,
+      "line": 225,
+      "kind": "title"
+    },
+    {
+      "id": "API-076",
+      "file": "apps/service/src/bridge-settings-routes.test.ts",
+      "line": 475,
       "kind": "title"
     },
     {
@@ -22010,7 +22060,13 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2153,
+      "line": 2163,
+      "kind": "title"
+    },
+    {
+      "id": "API-074",
+      "file": "apps/service/src/ct-studio-routes.test.ts",
+      "line": 39,
       "kind": "title"
     },
     {
@@ -24188,19 +24244,25 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1563,
+      "line": 1579,
+      "kind": "title"
+    },
+    {
+      "id": "API-074",
+      "file": "apps/web/src/admin/Administration.test.tsx",
+      "line": 110,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1705,
+      "line": 1721,
       "kind": "title"
     },
     {
       "id": "VER-038",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 557,
+      "line": 573,
       "kind": "title"
     },
     {
@@ -24219,6 +24281,24 @@
       "id": "STY-023",
       "file": "apps/web/src/admin/CitationStyles.test.tsx",
       "line": 91,
+      "kind": "title"
+    },
+    {
+      "id": "API-074",
+      "file": "apps/web/src/admin/CtStudio.test.tsx",
+      "line": 186,
+      "kind": "title"
+    },
+    {
+      "id": "API-075",
+      "file": "apps/web/src/admin/CtStudio.test.tsx",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "API-076",
+      "file": "apps/web/src/admin/CtStudioSettings.test.tsx",
+      "line": 99,
       "kind": "title"
     },
     {
@@ -26948,13 +27028,19 @@
     {
       "id": "API-067",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 390,
+      "line": 392,
       "kind": "title"
     },
     {
       "id": "API-072",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 655,
+      "line": 721,
+      "kind": "title"
+    },
+    {
+      "id": "API-076",
+      "file": "apps/worker/src/bridge-deliver.test.ts",
+      "line": 644,
       "kind": "title"
     },
     {
@@ -27740,7 +27826,7 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 197,
+      "line": 199,
       "kind": "title"
     },
     {
@@ -28148,25 +28234,31 @@
     {
       "id": "API-067",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 145,
+      "line": 148,
       "kind": "title"
     },
     {
       "id": "API-068",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 98,
+      "line": 101,
       "kind": "title"
     },
     {
       "id": "API-069",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 232,
+      "line": 235,
       "kind": "title"
     },
     {
       "id": "API-071",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 185,
+      "line": 188,
+      "kind": "title"
+    },
+    {
+      "id": "API-076",
+      "file": "packages/db/src/bridge-store.test.ts",
+      "line": 351,
       "kind": "title"
     },
     {
@@ -28287,6 +28379,12 @@
       "id": "MET-042",
       "file": "packages/db/src/creation.test.ts",
       "line": 109,
+      "kind": "title"
+    },
+    {
+      "id": "API-074",
+      "file": "packages/db/src/ct-studio.test.ts",
+      "line": 41,
       "kind": "title"
     },
     {
@@ -29870,13 +29968,13 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/tenant-database.test.ts",
-      "line": 132,
+      "line": 136,
       "kind": "title"
     },
     {
       "id": "SCH-008",
       "file": "packages/db/src/tenant-database.test.ts",
-      "line": 132,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -30525,6 +30623,12 @@
       "id": "API-073",
       "file": "packages/domain/src/bridge/properties.test.ts",
       "line": 42,
+      "kind": "title"
+    },
+    {
+      "id": "API-076",
+      "file": "packages/domain/src/bridge/properties.test.ts",
+      "line": 117,
       "kind": "title"
     },
     {
@@ -33926,13 +34030,13 @@
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 823,
+      "line": 833,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 823,
+      "line": 833,
       "kind": "title"
     },
     {

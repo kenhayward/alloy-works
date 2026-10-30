@@ -861,6 +861,25 @@ export interface BridgeSettingsTable {
   changed_at: ColumnType<Date, Date | undefined, Date>;
 }
 
+/** The environment's one CT Studio: its identity, its token, and its hand-off's address and sink (0174). */
+export interface CtStudioTable {
+  singleton: ColumnType<boolean, boolean | undefined, never>;
+  identity_id: ColumnType<string, string, string>;
+  token_id: ColumnType<string | null, string | null | undefined, string | null>;
+  address: ColumnType<string | null, string | null | undefined, string | null>;
+  sink_id: ColumnType<string | null, string | null | undefined, string | null>;
+  updated_at: ColumnType<Date, Date | undefined, Date>;
+}
+
+/** A property delivered to a space that its property map does not name (0173). */
+export interface BridgeUnlistedPropertyTable {
+  space_id: ColumnType<string, string, never>;
+  name: ColumnType<string, string, never>;
+  first_delivered: ColumnType<Date, Date, never>;
+  last_delivered: ColumnType<Date, Date, Date>;
+  deliveries: ColumnType<number, number, number>;
+}
+
 /** A job's file returned (0164; XL-F): kept by its hash, read by the worker. */
 export interface TranslationJobReturnTable {
   id: ColumnType<string, string | undefined, never>;
@@ -1305,6 +1324,8 @@ export interface TenantTables {
   bridge_delivery: BridgeDeliveryTable;
   bridge_element: BridgeElementTable;
   bridge_settings: BridgeSettingsTable;
+  bridge_unlisted_property: BridgeUnlistedPropertyTable;
+  ct_studio: CtStudioTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;

@@ -150,6 +150,9 @@ describe('what each route checks', () => {
         'setExtensionSecret',
         'listWebhookDeliveries',
         'getWebhookDelivery',
+        'getCtStudio',
+        'connectCtStudio',
+        'issueCtStudioToken',
       ].sort(),
     );
     for (const route of allRoutes) {

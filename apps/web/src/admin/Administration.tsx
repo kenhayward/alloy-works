@@ -11,6 +11,7 @@ import { AuditLog } from './AuditLog.js';
 import { Guardrails } from './Guardrails.js';
 import { ModelSpending } from './ModelSpending.js';
 import { Webhooks } from './Webhooks.js';
+import { CtStudio } from './CtStudio.js';
 import { Models } from './Models.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
@@ -127,6 +128,14 @@ const SECTIONS = [
     slug: 'webhooks',
     get title() {
       return words('admin.webhooks');
+    },
+    group: 'environment',
+  },
+  // CT Studio's identity, its token and the spaces it delivers to, connected here (API-074).
+  {
+    slug: 'ctstudio',
+    get title() {
+      return words('admin.ct-studio');
     },
     group: 'environment',
   },
@@ -475,6 +484,7 @@ export function Administration({
         )}
         {shown === 'spending' && <ModelSpending client={client} />}
         {shown === 'webhooks' && <Webhooks client={client} />}
+        {shown === 'ctstudio' && <CtStudio client={client} />}
         {shown === 'extensions' && <Extensions client={client} />}
         {shown === 'about' && <About about={about} />}
       </div>

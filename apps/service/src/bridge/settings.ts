@@ -9,10 +9,12 @@ import {
   createConnection,
   createDeliveredStore,
   deliveredNames,
+  dropUnlisted,
   lockBridgeProvision,
   readBridgeSettings,
   readConnection,
   readDefinitionLatest,
+  readUnlisted,
   readTemplate,
   setConnectionCredential,
   templateReferences,
@@ -23,6 +25,7 @@ import {
   type StoredConnection,
   type Tenant,
   type TenantTransaction,
+  type UnlistedProperty,
 } from '@alloy-works/db';
 import { resolveTemplate, type PostgresSettings } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -48,13 +51,22 @@ type Problem = {
 };
 
 /** A space's settings as the API answers them: data delivery is on while a delivery schema is named. */
-function viewOf(settings: BridgeSettings | undefined): BridgeSettingsView {
+function viewOf(
+  settings: BridgeSettings | undefined,
+  unlisted: readonly UnlistedProperty[],
+): BridgeSettingsView {
   return {
     componentType: settings?.componentType ?? null,
     template: settings?.template ?? null,
     propertyMap: { ...settings?.propertyMap },
     data: settings?.tableSchema != null,
     connection: settings?.connectionId ?? null,
+    unlisted: unlisted.map((each) => ({
+      name: each.name,
+      firstDelivered: each.firstDelivered.toISOString(),
+      lastDelivered: each.lastDelivered.toISOString(),
+      deliveries: each.deliveries,
+    })),
   };
 }
 
@@ -175,7 +187,7 @@ export function bridgeSettingsHandlers(options: {
         ));
       if (!template || !readable) {
         problems.push({ path: 'template', reason: 'template_missing' });
-      } else if (Object.keys(body.propertyMap).length > 0) {
+      } else if (Object.values(body.propertyMap).some((field) => field !== null)) {
         const resolved = resolveTemplate(
           template.definition,
           await templateReferences(trx, template.definition),
@@ -186,7 +198,8 @@ export function bridgeSettingsHandlers(options: {
     }
     if (fields !== undefined) {
       for (const [property, field] of Object.entries(body.propertyMap)) {
-        if (!fields.has(field)) {
+        // An ignored property names no field, so there is nothing to find.
+        if (field !== null && !fields.has(field)) {
           problems.push({ path: `propertyMap.${property}`, reason: 'field_not_in_template' });
         }
       }
@@ -297,46 +310,76 @@ export function bridgeSettingsHandlers(options: {
     handlers: {
       getBridgeSettings: async (request: FastifyRequest, { trx }: Authorised) => {
         const { space } = request.params as SpaceParams;
-        return viewOf(await readBridgeSettings(trx, space));
+        return viewOf(await readBridgeSettings(trx, space), await readUnlisted(trx, space));
       },
 
       putBridgeSettings: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
         const { space } = request.params as SpaceParams;
-        const body = request.body as BridgeSettingsBody;
-        await checkSpaceLive(trx, space);
-        const problems = await problemsOf(trx, request, body);
-        if (problems.length > 0) {
-          throw new AppError(
-            422,
-            'bridge_settings_invalid',
-            'These settings name something this environment does not have. Nothing was changed.',
-            undefined,
-            { problems },
-          );
-        }
-        // One turn-on at a time for the tenant, so a second reads what the first stored.
-        if (body.data) await lockBridgeProvision(trx, options.tenantOf(request).id);
-        const before = await readBridgeSettings(trx, space);
-        // Off keeps the connection and the tables, and names no schema: a delivery to a space with
-        // none is refused not_configured, so no new data arrives (API-072).
-        const on = body.data ? await turnOn(trx, request, principalId, space, before) : undefined;
-        const written = await writeBridgeSettings(trx, {
-          spaceId: space,
-          componentType: body.componentType,
-          template: body.template,
-          propertyMap: body.propertyMap,
-          connectionId: on?.connection ?? before?.connectionId ?? null,
-          tableSchema: on?.schema ?? null,
-          changedBy: principalId,
-        });
-        // The store's password changes last, so nothing above it can have left it changed.
-        await on?.commit();
-        return viewOf(written);
+        const saved = await save(
+          trx,
+          request,
+          principalId,
+          space,
+          request.body as BridgeSettingsBody,
+        );
+        await saved.commit();
+        return saved.view;
       },
     },
+    save,
     /** Lets go of the delivery store's connections, with the app. */
     close: async () => {
       await store?.close();
     },
   };
+
+  /**
+   * A space's settings written whole, as PUT bridge-settings writes them, in the caller's transaction:
+   * refused whole with each problem named, data turned on or off, and the space's unlisted properties
+   * the map now names forgotten. Connecting CT Studio saves through here too. The delivery store's
+   * password is not changed here: the caller runs `commit` as its last step, once nothing else it
+   * reads or writes can fail and roll back the credential sealed for that password.
+   */
+  async function save(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    principalId: string,
+    space: string,
+    body: BridgeSettingsBody,
+  ): Promise<{ readonly view: BridgeSettingsView; readonly commit: () => Promise<void> }> {
+    await checkSpaceLive(trx, space);
+    const problems = await problemsOf(trx, request, body);
+    if (problems.length > 0) {
+      throw new AppError(
+        422,
+        'bridge_settings_invalid',
+        'These settings name something this environment does not have. Nothing was changed.',
+        undefined,
+        { problems },
+      );
+    }
+    // One turn-on at a time for the tenant, so a second reads what the first stored.
+    if (body.data) await lockBridgeProvision(trx, options.tenantOf(request).id);
+    const before = await readBridgeSettings(trx, space);
+    // Off keeps the connection and the tables, and names no schema: a delivery to a space with
+    // none is refused not_configured, so no new data arrives (API-072).
+    const on = body.data ? await turnOn(trx, request, principalId, space, before) : undefined;
+    const written = await writeBridgeSettings(trx, {
+      spaceId: space,
+      componentType: body.componentType,
+      template: body.template,
+      propertyMap: body.propertyMap,
+      connectionId: on?.connection ?? before?.connectionId ?? null,
+      tableSchema: on?.schema ?? null,
+      changedBy: principalId,
+    });
+    // A property the map now names, to a field or to ignore, is no longer unlisted.
+    await dropUnlisted(trx, space, Object.keys(body.propertyMap));
+    return {
+      view: viewOf(written, await readUnlisted(trx, space)),
+      commit: async () => {
+        await on?.commit();
+      },
+    };
+  }
 }

@@ -16,7 +16,9 @@ import {
   migrate,
   prepareDatabase,
   readAssetVersion,
+  readBridgeSettings,
   readDelivery,
+  readUnlisted,
   recordNonce,
   revokeApiToken,
   startDelivery,
@@ -632,6 +634,70 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     expect((await deliveryOf(delivery.id))!.provenance).toMatchObject({
       unmappedProperties: [{ name: 'Client', value: 'Acme', origin: 'custom' }],
     });
+  });
+
+  const clientDeliveries = async () =>
+    (await service.withTenant(tenant, (trx) => readUnlisted(trx, general))).find(
+      (each) => each.name === 'Client',
+    )?.deliveries ?? 0;
+
+  it('API-076 a delivered document records the properties its space does not list', async () => {
+    const before = await clientDeliveries();
+    await accepted(
+      documentPackage(documentOf(), [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(71) },
+      ]),
+    );
+    expect(await work()).toBe('done');
+    expect(await clientDeliveries()).toBe(before + 1);
+  });
+
+  it('API-076 a delivery whose unlisted count cannot be written is still written', async () => {
+    const before = await clientDeliveries();
+    const count = (deliveries: number) =>
+      service.withTenant(tenant, (trx) =>
+        trx
+          .updateTable('bridge_unlisted_property')
+          .set({ deliveries })
+          .where('space_id', '=', general)
+          .where('name', '=', 'Client')
+          .execute(),
+      );
+    // The count's next increment is past what the column holds, so its write fails.
+    await count(2_147_483_647);
+    try {
+      const delivery = await accepted(
+        documentPackage(documentOf(), [
+          { id: 'img-1', contentType: 'image/png', bytes: await png(73) },
+        ]),
+      );
+      expect(await work()).toBe('done');
+      expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'written' });
+    } finally {
+      await count(before);
+    }
+  });
+
+  it('API-076 a delivery refused after its settings are read still records its unlisted properties', async () => {
+    const settings = await service.withTenant(tenant, (trx) => readBridgeSettings(trx, general));
+    const set = (componentType: string | null) =>
+      service.withTenant(tenant, (trx) =>
+        writeBridgeSettings(trx, { ...settings!, componentType, changedBy: ada }),
+      );
+    const before = await clientDeliveries();
+    await set(randomUUID());
+    try {
+      const delivery = await accepted(
+        documentPackage(documentOf(), [
+          { id: 'img-1', contentType: 'image/png', bytes: await png(72) },
+        ]),
+      );
+      expect(await work()).toBe('failed');
+      expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'refused' });
+      expect(await clientDeliveries()).toBe(before + 1);
+    } finally {
+      await set(settings!.componentType);
+    }
   });
 
   const rates = {

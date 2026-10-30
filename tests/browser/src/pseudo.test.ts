@@ -489,7 +489,17 @@ const administration = (ada: Adas): readonly Surface[] => [
     ['Administration, its roles', '#/admin/roles', 'admin.roles'],
     // The policy and its history (the TE plan, TE-D).
     ['Administration, its translation policy', '#/admin/translation', 'admin.translation'],
+    // Connecting CT Studio (API-074).
+    ['Administration, its CT Studio', '#/admin/ctstudio', 'admin.ct-studio'],
   ]),
+  byButton(
+    'The Connect CT Studio dialog',
+    'admin/CtStudio.tsx',
+    '#/admin/ctstudio',
+    heading('admin.ct-studio'),
+    'admin.connect-a-space',
+    (language) => say(language, 'admin.connect-a-space-to-ct-studio'),
+  ),
   byButton(
     'The New space dialog',
     'admin/SpaceDialogs.tsx',
