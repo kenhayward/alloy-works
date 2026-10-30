@@ -138,7 +138,7 @@ export function machineDraftHandlers(
     const source = await translationSource(trx, input.artifactId);
     if (!source || source.kind !== 'component') throw notFound();
     const content = parseContentDocument(source.content);
-    const pieces = translationPieces(content);
+    const pieces = translationPieces(content, language);
     if (pieces.length === 0) {
       throw refused(
         409,
@@ -152,7 +152,7 @@ export function machineDraftHandlers(
       .select('space_id')
       .where('id', '=', input.artifactId)
       .executeTakeFirst();
-    const used = [...new Set(xliffUnits(content).flatMap((unit) => unit.terms))];
+    const used = [...new Set(xliffUnits(content, language).flatMap((unit) => unit.terms))];
     const terms =
       space?.space_id && used.length > 0
         ? await termsInSpace(trx, input.principalId, space.space_id, used)

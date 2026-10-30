@@ -89,7 +89,9 @@ export * from './interface/content-languages.js';
 // Plural categories from the pinned CLDR's compiled rules (the MF plan, MF-B).
 export {
   PLURAL_CATEGORIES,
+  pluralCategoriesOf,
   pluralCategory,
+  pluralExamples,
   pluralSamples,
   type PluralCategory,
   type PluralSample,

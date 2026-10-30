@@ -272,7 +272,7 @@ async function jobTerms(
     .execute();
   for (const file of files) {
     const space = spaces.find((row) => row.id === file.component)?.space_id;
-    const used = [...new Set(xliffUnits(file.content).flatMap((unit) => unit.terms))];
+    const used = [...new Set(xliffUnits(file.content, target).flatMap((unit) => unit.terms))];
     if (!space || used.length === 0) continue;
     for (const [id, { term }] of await termsInSpace(trx, principal, space, used)) {
       const translated = term.labels.find((label) => speaksFor(label.language, target));

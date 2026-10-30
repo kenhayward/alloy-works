@@ -31655,7 +31655,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1084,
+      "line": 1086,
       "kind": "title"
     },
     {
@@ -31667,7 +31667,7 @@
     {
       "id": "LOC-044",
       "file": "packages/domain/src/interface/plurals.test.ts",
-      "line": 9,
+      "line": 16,
       "kind": "title"
     },
     {
@@ -33275,19 +33275,19 @@
     {
       "id": "LOC-023",
       "file": "packages/domain/src/translation/machine.test.ts",
-      "line": 31,
+      "line": 32,
       "kind": "title"
     },
     {
       "id": "LOC-025",
       "file": "packages/domain/src/translation/machine.test.ts",
-      "line": 75,
+      "line": 80,
       "kind": "title"
     },
     {
       "id": "LOC-026",
       "file": "packages/domain/src/translation/machine.test.ts",
-      "line": 93,
+      "line": 98,
       "kind": "title"
     },
     {
@@ -33335,7 +33335,7 @@
     {
       "id": "LOC-019",
       "file": "packages/domain/src/translation/xliff.test.ts",
-      "line": 181,
+      "line": 182,
       "kind": "title"
     },
     {
