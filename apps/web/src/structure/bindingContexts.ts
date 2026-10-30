@@ -495,15 +495,21 @@ function heldOf(
   if ('value' in taken) {
     // A person's value stands in front of the query's (RV-I; DAT-115): shown in its place, marked.
     const revision = standingRevision(state);
+    const value = revision === undefined ? taken.value : revision.value;
     return {
       binding,
       shown:
         revision === undefined
-          ? { value: shownValue(taken, formats), waiting: state.waiting !== null }
+          ? {
+              value: shownValue(taken, formats),
+              waiting: state.waiting !== null,
+              ...numberOf(taken.column.type, value),
+            }
           : {
               value: shownValue({ ...taken, value: revision.value }, formats),
               waiting: state.waiting !== null,
               revised: true,
+              ...numberOf(taken.column.type, value),
             },
     };
   }
@@ -518,6 +524,18 @@ function heldOf(
     };
   }
   return { binding, shown: failureHeld(taken, state.binding) };
+}
+
+/**
+ * A number's canonical decimal and its column's scale, which a message form selects its arm by as the
+ * publish does (the MF plan, MF-G); nothing for a value of another type.
+ */
+function numberOf(
+  type: ValueType,
+  value: unknown,
+): { readonly number?: { readonly value: string; readonly scale: number } } {
+  if ((type.base !== 'integer' && type.base !== 'decimal') || typeof value !== 'string') return {};
+  return { number: { value, scale: type.base === 'decimal' ? type.scale : 0 } };
 }
 
 /** A take's failure as the editor's words for it read it: the column from the binding where unsaid. */

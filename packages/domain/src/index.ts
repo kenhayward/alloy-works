@@ -96,6 +96,14 @@ export {
   type PluralCategory,
   type PluralSample,
 } from './interface/plurals.js';
+// A message form's arms and the one rule selecting among them (the MF plan, MF-G).
+export { armFor } from './content/model/message-form.js';
+export {
+  EXACT_ARMS,
+  type MessageArm,
+  type MessageArmKey,
+  type MessageFormNode,
+} from './content/model/inline.js';
 // Translation: language lines and their status (docs/design/translation.md).
 export * from './translation/index.js';
 // Generation: model endpoints, and the connector's model call and its events (docs/design/generation.md).

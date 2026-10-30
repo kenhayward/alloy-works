@@ -90,6 +90,7 @@ const LABELS = [
   'Index entry',
   'Value',
   'Variable',
+  'Message form',
   'Condition',
   'Equation',
   'Symbols',

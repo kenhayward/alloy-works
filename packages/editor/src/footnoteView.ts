@@ -14,6 +14,8 @@ import { DecorationSet, EditorView, type NodeView } from 'prosemirror-view';
 
 import { bindingsShown } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingView } from './bindingView.js';
+import { messageFormsShown } from './messageForms.js';
+import { messageFormDecorations, messageFormView } from './messageFormView.js';
 import {
   citationDecorations,
   citationFlagsOf,
@@ -174,6 +176,9 @@ export function footnoteView(
         equation: (node) => equationView(node, document),
         // And a binding as one in the component's is (B1-D), from the surface's context.
         binding: (node, _view, _getPos, decorations) => bindingView(node, document, decorations),
+        // And a message form, its arms in the component's language (the MF plan, MF-G).
+        messageForm: (node, view, getPos, decorations) =>
+          messageFormView(node, view, getPos, decorations, language),
         // And a citation, from the surface's forms (CId).
         citation: (node, _view, _getPos, decorations) => citationView(node, document, decorations),
       },
@@ -189,6 +194,7 @@ export function footnoteView(
         const references = DecorationSet.create(state.doc, [
           ...shown.find(),
           ...bindingDecorations(state.doc, bindingContextOf(outer.state)).find(),
+          ...messageFormDecorations(state.doc, bindingContextOf(outer.state), language()).find(),
           ...citationDecorations(
             state.doc,
             citationFormsOf(outer.state),
@@ -343,7 +349,12 @@ function copyFromFootnote(
   const bindings = bindingsShown(view.state.doc, bindingContextOf(outer.state)).filter(({ pos }) =>
     ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
   );
-  const { html, text } = copiedAsShown(view, view.state.selection.content(), [], bindings);
+  const forms = messageFormsShown(
+    view.state.doc,
+    bindingContextOf(outer.state),
+    outer.state.doc.attrs.language as string,
+  ).filter(({ pos }) => ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos));
+  const { html, text } = copiedAsShown(view, view.state.selection.content(), [], bindings, forms);
   data.clearData();
   data.setData('text/html', html);
   data.setData('text/plain', text);

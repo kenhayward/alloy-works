@@ -15,6 +15,8 @@ import { equationView } from './equationView.js';
 import { figureView } from './figureView.js';
 import { bindingsShown, type BindingShown } from './bindings.js';
 import { bindingContextOf, bindingView } from './bindingView.js';
+import { messageFormsShown, type MessageFormShown } from './messageForms.js';
+import { messageFormView } from './messageFormView.js';
 import { citationView } from './citations.js';
 import { indexMarkerView } from './indexEntries.js';
 import { holdBoundTableColumn } from './boundTableFocus.js';
@@ -133,6 +135,9 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       // A binding, drawn with what its decoration carries (the B1 plan, B1-D).
       binding: (node, owner, _getPos, decorations) =>
         bindingView(node, owner.dom.ownerDocument, decorations),
+      // A message form, its selected arm as a chip and its arms while selected (the MF plan, MF-G).
+      messageForm: (node, owner, getPos, decorations) =>
+        messageFormView(node, owner, getPos, decorations, () => live().attrs.language as string),
       // A citation, drawn with the form its decoration carries (CId).
       citation: (node, owner, _getPos, decorations) =>
         citationView(node, owner.dom.ownerDocument, decorations),
@@ -245,6 +250,7 @@ function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean
     view.state.selection.content(),
     copiedReferences(view),
     copiedBindings(view),
+    copiedForms(view),
   );
   data.clearData();
   data.setData('text/html', html);
@@ -267,6 +273,14 @@ function writeClipboard(view: EditorView, event: ClipboardEvent, remove: boolean
 function copiedReferences(view: EditorView): readonly ReferenceShown[] {
   const { ranges } = view.state.selection;
   return referencesShown(view.state.doc, referenceContextOf(view.state)).filter(({ pos }) =>
+    ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
+  );
+}
+
+/** What each message form the selection copies shows on the surface: its selected arm (MF-G). */
+function copiedForms(view: EditorView): readonly MessageFormShown[] {
+  const { ranges } = view.state.selection;
+  return messageFormsShown(view.state.doc, bindingContextOf(view.state)).filter(({ pos }) =>
     ranges.some(({ $from, $to }) => pos >= $from.pos && pos < $to.pos),
   );
 }

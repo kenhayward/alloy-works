@@ -1051,6 +1051,9 @@ describe('the domain package', () => {
         'pluralCategory',
         'pluralExamples',
         'pluralSamples',
+        // MFd: the arm a value selects, and the exact arms, for the editor (MF-G).
+        'armFor',
+        'EXACT_ARMS',
         // XLc: machine drafts and the policy that sends them.
         'TRANSLATE_INSTRUCTIONS',
         'TRANSLATE_INSTRUCTIONS_VERSION',
