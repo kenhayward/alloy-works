@@ -315,7 +315,9 @@ export function bridgeSettingsHandlers(options: {
 
       putBridgeSettings: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
         const { space } = request.params as SpaceParams;
-        return save(trx, request, principalId, space, request.body as BridgeSettingsBody);
+        const saved = await save(trx, request, principalId, space, request.body as BridgeSettingsBody);
+        await saved.commit();
+        return saved.view;
       },
     },
     save,
@@ -328,7 +330,9 @@ export function bridgeSettingsHandlers(options: {
   /**
    * A space's settings written whole, as PUT bridge-settings writes them, in the caller's transaction:
    * refused whole with each problem named, data turned on or off, and the space's unlisted properties
-   * the map now names forgotten. Connecting CT Studio saves through here too.
+   * the map now names forgotten. Connecting CT Studio saves through here too. The delivery store's
+   * password is not changed here: the caller runs `commit` as its last step, once nothing else it
+   * reads or writes can fail and roll back the credential sealed for that password.
    */
   async function save(
     trx: TenantTransaction,
@@ -336,7 +340,7 @@ export function bridgeSettingsHandlers(options: {
     principalId: string,
     space: string,
     body: BridgeSettingsBody,
-  ): Promise<BridgeSettingsView> {
+  ): Promise<{ readonly view: BridgeSettingsView; readonly commit: () => Promise<void> }> {
     await checkSpaceLive(trx, space);
     const problems = await problemsOf(trx, request, body);
     if (problems.length > 0) {
@@ -365,8 +369,11 @@ export function bridgeSettingsHandlers(options: {
     });
     // A property the map now names, to a field or to ignore, is no longer unlisted.
     await dropUnlisted(trx, space, Object.keys(body.propertyMap));
-    // The store's password changes last, so nothing above it can have left it changed.
-    await on?.commit();
-    return viewOf(written, await readUnlisted(trx, space));
+    return {
+      view: viewOf(written, await readUnlisted(trx, space)),
+      commit: async () => {
+        await on?.commit();
+      },
+    };
   }
 }

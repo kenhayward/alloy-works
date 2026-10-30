@@ -33849,7 +33849,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `ct_studio_token_unusable`: the token to adopt is not the identity's, or is revoked or expired; or `bridge_settings_invalid` as PUT bridge-settings gives it. Nothing is made */
+            /** @description `ct_studio_token_unusable`: the token to adopt is not the identity's, cannot both create and edit, or is revoked or expired; or `bridge_settings_invalid` as PUT bridge-settings gives it. Nothing is made */
             422: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -34065,7 +34065,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `ct_studio_not_set_up`: there is no CT Studio identity; `ct_studio_identity_disabled`: it is disabled and was not asked to be replaced */
+            /** @description `ct_studio_not_set_up`: there is no CT Studio identity; `ct_studio_identity_disabled`: it is disabled and was not asked to be replaced; `ct_studio_identity_enabled`: it was asked to be replaced while still enabled */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

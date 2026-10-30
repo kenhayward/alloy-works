@@ -50,11 +50,18 @@ const identityDisabled = () =>
     "CT Studio's identity is disabled, so it is issued nothing and delivers nowhere.",
     'API-074',
   );
+const identityEnabled = () =>
+  new AppError(
+    409,
+    'ct_studio_identity_enabled',
+    "CT Studio's identity is still enabled, so it is not replaced. Issue a new token instead.",
+    'API-074',
+  );
 const tokenUnusable = () =>
   new AppError(
     422,
     'ct_studio_token_unusable',
-    'That token is not one this identity holds, or it is revoked or has expired. Nothing was changed.',
+    'That token is not one this identity holds, cannot both create and edit, or is revoked or has expired. Nothing was changed.',
     'API-074',
   );
 
@@ -75,7 +82,7 @@ export function ctStudioHandlers(options: {
     principalId: string,
     space: string,
     body: BridgeSettingsBody,
-  ) => Promise<BridgeSettingsView>;
+  ) => Promise<{ readonly view: BridgeSettingsView; readonly commit: () => Promise<void> }>;
 }) {
   /** What is connected, as the summary shows it. */
   async function statusOf(trx: TenantTransaction, tenant: Tenant): Promise<CtStudioStatus> {
@@ -182,7 +189,7 @@ export function ctStudioHandlers(options: {
     return made.id;
   }
 
-  /** The identity to adopt, enabled, and its token, live and its own; refused otherwise. */
+  /** The identity to adopt, enabled, and its token, live, its own and able to deliver; refused otherwise. */
   async function adoptable(
     trx: TenantTransaction,
     identityId: string,
@@ -193,12 +200,15 @@ export function ctStudioHandlers(options: {
     if (identity.disabledAt !== null) throw identityDisabled();
     const token = await trx
       .selectFrom('api_token')
-      .select('id')
+      .select('scopes')
       .where('id', '=', tokenId)
       .where('principal_id', '=', identityId)
       .where('expires_at', '>', new Date())
       .executeTakeFirst();
-    if (token === undefined) throw tokenUnusable();
+    // A delivery creates or edits, so a token that cannot do both is refused every second one.
+    if (token === undefined || !TOKEN_SCOPES.every((scope) => token.scopes.includes(scope))) {
+      throw tokenUnusable();
+    }
   }
 
   return {
@@ -241,8 +251,7 @@ export function ctStudioHandlers(options: {
           address: body.address,
           sinkId: body.sinkId,
         });
-        // Last, as PUT bridge-settings: the delivery store's password changes after all else.
-        const settings = await options.saveSettings(
+        const saved = await options.saveSettings(
           trx,
           request,
           principalId,
@@ -254,12 +263,10 @@ export function ctStudioHandlers(options: {
           .select(['id', 'name'])
           .where('id', '=', body.space)
           .executeTakeFirstOrThrow();
-        return {
-          status: await statusOf(trx, options.tenantOf(request)),
-          issued,
-          space,
-          settings,
-        };
+        const status = await statusOf(trx, options.tenantOf(request));
+        // Last, as PUT bridge-settings: the delivery store's password changes once nothing else can fail.
+        await saved.commit();
+        return { status, issued, space, settings: saved.view };
       },
 
       issueCtStudioToken: async (
@@ -270,16 +277,19 @@ export function ctStudioHandlers(options: {
         const record = await readCtStudio(trx);
         if (record === undefined) throw notSetUp();
         let identityId = record.identityId;
+        const held = await serviceIdentity(trx, identityId, { lock: true });
+        const disabled = held === undefined || held.disabledAt !== null;
         if (body.replaceIdentity) {
+          // An identity is replaced only once disabled: an enabled one is given a new token.
+          if (!disabled) throw identityEnabled();
           // Every space CT Studio was connected to, granted to the new identity as to the old.
           const spaces = await trx.selectFrom('bridge_settings').select('space_id').execute();
           identityId = await makeIdentity(trx, principalId);
           for (const { space_id } of spaces) {
             await grantAuthor(trx, identityId, space_id, principalId);
           }
-        } else {
-          const held = await serviceIdentity(trx, identityId, { lock: true });
-          if (held === undefined || held.disabledAt !== null) throw identityDisabled();
+        } else if (disabled) {
+          throw identityDisabled();
         }
         const issued = await issueToken(trx, identityId);
         await writeCtStudio(trx, { identityId, tokenId: issued.id });

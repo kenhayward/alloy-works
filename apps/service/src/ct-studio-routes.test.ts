@@ -1,11 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import type {
+  BridgeSettingsView,
   CtStudioConnected,
   CtStudioStatus,
   CtStudioTokenIssued,
 } from '@alloy-works/api-contract';
 import { writeBridgeSettings, writeCtStudio, createServiceIdentity } from '@alloy-works/db';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { Tenant } from '@alloy-works/db';
+import type { FastifyRequest } from 'fastify';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { Authorised } from './access.js';
+import { ctStudioHandlers } from './bridge/ct-studio.js';
 import { HOST, startHarness, type Harness } from './test/bindings-harness.js';
 import { DELIVERED_URL, ensureDeliveredDatabase } from './test/delivered.js';
 
@@ -200,6 +205,16 @@ describe('connecting a space to CT Studio (docs/design/ct-studio-connect.md)', (
     expect(answer.headers['cache-control']).toBe('no-store');
   });
 
+  it('API-074 replacing an identity that is still enabled is refused ct_studio_identity_enabled', async () => {
+    const [identity] = await identities();
+    const answer = await h.call('ada', 'POST', '/v1/ct-studio/tokens', { replaceIdentity: true });
+    expect(answer.statusCode, answer.body).toBe(409);
+    expect(answer.json()).toMatchObject({ code: 'ct_studio_identity_enabled' });
+    expect(await identities()).toHaveLength(1);
+    const status = (await h.call('ada', 'GET', '/v1/ct-studio')).json<CtStudioStatus>();
+    expect(status.identity!.id).toBe(identity!.id);
+  });
+
   it('API-074 replacing a disabled identity grants the new one at every connected space', async () => {
     const [old] = await identities();
     const disabled = await h.call('ada', 'POST', `/v1/service-identities/${old!.id}/disablement`);
@@ -225,7 +240,7 @@ describe('adopting a service identity made by hand', () => {
       address: 'https://acme.alloy.test',
       sinkId: 'alloy-acme',
     });
-  const handMade = async () => {
+  const handMade = async (scopes: readonly string[] = ['create', 'edit']) => {
     const made = await h.call('ada', 'POST', '/v1/service-identities', {
       name: 'By hand',
       description: '',
@@ -233,7 +248,7 @@ describe('adopting a service identity made by hand', () => {
     const identity = made.json<{ id: string }>().id;
     const issued = await h.call('ada', 'POST', `/v1/service-identities/${identity}/tokens`, {
       name: 'CT Studio',
-      scopes: ['create', 'edit'],
+      scopes,
       expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
     });
     return { identity, token: issued.json<{ id: string }>().id };
@@ -258,6 +273,15 @@ describe('adopting a service identity made by hand', () => {
     expect(status.identity).toBeNull();
   });
 
+  it('API-074 adopting a token that cannot both create and edit is refused ct_studio_token_unusable', async () => {
+    const { identity, token } = await handMade(['create']);
+    const answer = await adopt(identity, token);
+    expect(answer.statusCode, answer.body).toBe(422);
+    expect(answer.json()).toMatchObject({ code: 'ct_studio_token_unusable' });
+    const status = (await h.call('ada', 'GET', '/v1/ct-studio')).json<CtStudioStatus>();
+    expect(status.identity).toBeNull();
+  });
+
   it('API-074 adopting a disabled identity is refused ct_studio_identity_disabled', async () => {
     const { identity, token } = await handMade();
     await h.call('ada', 'POST', `/v1/service-identities/${identity}/disablement`);
@@ -273,5 +297,55 @@ describe('adopting a service identity made by hand', () => {
     const body = answer.json<CtStudioConnected>();
     expect(body.issued).toBeNull();
     expect(body.status).toMatchObject({ identity: { id: identity }, token: { id: token } });
+  });
+});
+
+describe('the delivery store password changing last on connect', () => {
+  let h: Harness;
+  const view = { data: true } as unknown as BridgeSettingsView;
+  const connectWith = (tenantOf: () => Tenant, commit: () => Promise<void>) => {
+    const { handlers } = ctStudioHandlers({
+      db: h.tenantDb,
+      tenantOf,
+      bridgeOn: true,
+      saveSettings: async () => ({ view, commit }),
+    });
+    const body = {
+      space: h.general,
+      identity: { make: true },
+      settings: { componentType: null, template: null, propertyMap: {}, data: true },
+      address: 'https://acme.alloy.test',
+      sinkId: 'alloy-acme',
+    };
+    return h.tenantDb.withTenant(h.tenant, (trx) =>
+      handlers.connectCtStudio({ body } as unknown as FastifyRequest, {
+        trx,
+        principalId: h.ids.ada!,
+      } as unknown as Authorised),
+    );
+  };
+
+  beforeAll(async () => {
+    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+  });
+
+  afterAll(async () => {
+    await h?.close();
+  });
+
+  it('API-074 a connect that fails after the settings are saved leaves the password unchanged', async () => {
+    const commit = vi.fn(async () => {});
+    const failing = () => {
+      throw new Error('the status read failed');
+    };
+    await expect(connectWith(failing, commit)).rejects.toThrow('the status read failed');
+    expect(commit).not.toHaveBeenCalled();
+  });
+
+  it('API-074 a connect that answers changes the password once, after everything else', async () => {
+    const commit = vi.fn(async () => {});
+    const answer = await connectWith(() => h.tenant, commit);
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(answer.settings).toBe(view);
   });
 });
