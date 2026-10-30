@@ -9,7 +9,9 @@ import type { BlockNode } from './blocks.js';
 import { canonicalise } from './canonical.js';
 import {
   CURRENT_SCHEMA_VERSION,
+  checkInlineContent,
   contentDocumentSchema,
+  newScope,
   parseContentDocument,
   type ContentDocument,
 } from './document.js';
@@ -2471,5 +2473,82 @@ describe('how a table too wide for its measure is set (the TB3 plan, TB3-G)', ()
   it('leaves a table stored without it as it was: no member, so its canonical form is unchanged', () => {
     const stored = parseContentDocument(doc([table(), boundTable()]));
     expect(stored.content.every((block) => !('wide' in block))).toBe(true);
+  });
+});
+
+describe('a message form (the MF plan, MF-C, MF-D)', () => {
+  const run = (value: string, marks: unknown[] = []) => ({ type: 'text', value, marks });
+  const value = { type: 'messageValue' };
+  const binding = (id = 'k1') => ({
+    type: 'binding',
+    id,
+    query: '00000000-0000-4000-8000-00000000d001',
+    parameters: {},
+    mode: 'checked',
+    take: { column: 'count' },
+  });
+  const form = (over: Record<string, unknown> = {}) => ({
+    type: 'messageForm',
+    id: 'mf1',
+    kind: 'plural',
+    binding: binding(),
+    arms: { one: [value, run(' item')], other: [value, run(' items')] },
+    ...over,
+  });
+  const holding = (...inlines: unknown[]) => ({
+    type: 'paragraph',
+    id: 'p1',
+    style: 'body',
+    content: [run('There are '), ...inlines, run('.')],
+  });
+
+  it('keeps a form through the parse of what the parse returned', () => {
+    const once = parseContentDocument(doc([holding(form())]));
+    expect(once.content[0]).toMatchObject({ content: [{}, form(), {}] });
+    expect(parseContentDocument(once)).toEqual(once);
+  });
+
+  it("merges an arm's runs and puts them in NFC, as a paragraph's", () => {
+    const split = form({ arms: { other: [value, run(' cafe'), run('́s')] } });
+    const once = parseContentDocument(doc([holding(split)]));
+    expect(once.content[0]).toMatchObject({
+      content: [{}, { arms: { other: [value, run(' cafés')] } }, {}],
+    });
+  });
+
+  it("claims the form's identifier and its binding's with the component's others", () => {
+    expect(() => parseContentDocument(doc([holding(form({ id: 'p1' }))]))).toThrow(/p1/);
+    expect(() => parseContentDocument(doc([holding(form({ binding: binding('mf1') }))]))).toThrow(
+      /mf1/,
+    );
+    expect(() => parseContentDocument(doc([holding(form(), binding('k1'))]))).toThrow(/k1/);
+    expect(() =>
+      parseContentDocument(doc([holding(form(), form({ binding: binding('k2') }))])),
+    ).toThrow(/mf1/);
+  });
+
+  it('stands in no section title', () => {
+    expect(() => checkInlineContent([form()] as never, 'title', newScope())).toThrow(/title/);
+  });
+
+  it('makes each arm a range of its own, as a footnote', () => {
+    const em = { type: 'emphasis', id: 'e1' };
+    const inArm = form({ arms: { other: [value, run(' items', [em])] } });
+    expect(parseContentDocument(doc([holding(inArm)]))).toBeTruthy();
+    const around = {
+      ...holding(),
+      content: [run('There are ', [em]), inArm, run('.', [em])],
+    };
+    expect(() => parseContentDocument(doc([around]))).toThrow(/e1.*two separate ranges/);
+    const twice = form({ arms: { one: [run('one', [em])], other: [run('more', [em])] } });
+    expect(() => parseContentDocument(doc([holding(twice)]))).toThrow(/e1.*two separate ranges/);
+    const outer = { ...holding(), content: [run('There are ', [em]), form(), run('.', [em])] };
+    expect(parseContentDocument(doc([outer]))).toBeTruthy();
+  });
+
+  it("refuses a mark identifier in an arm that is not in NFC", () => {
+    const decomposed = { type: 'emphasis', id: 'é' };
+    const marked = form({ arms: { other: [run('items', [decomposed])] } });
+    expect(() => parseContentDocument(doc([holding(marked)]))).toThrow(/NFC/);
   });
 });

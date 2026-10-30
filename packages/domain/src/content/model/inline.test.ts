@@ -225,4 +225,73 @@ describe('the inline vocabulary', () => {
       expect(inlineNodeSchema.parse({ ...marker, term: 'Caf\u00e9' })).toBeTruthy();
     });
   });
+
+  describe('a message form (the MF plan, MF-C)', () => {
+    const binding = {
+      type: 'binding',
+      id: 'k1',
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: {},
+      mode: 'checked',
+      take: { column: 'count' },
+    };
+    const value = { type: 'messageValue' };
+    const form = (arms: Record<string, unknown[]>) => ({
+      type: 'messageForm',
+      id: 'mf1',
+      kind: 'plural',
+      binding,
+      arms,
+    });
+    const ok = form({ one: [value, text(' item')], other: [value, text(' items')] });
+
+    it('is a plural over its own binding, with arms of text and the value', () => {
+      expect(inlineNodeSchema.parse(ok)).toEqual(ok);
+      expect(() => inlineNodeSchema.parse({ ...ok, kind: 'select' })).toThrow();
+      expect(() => inlineNodeSchema.parse({ ...ok, value: '3' })).toThrow();
+      expect(() =>
+        inlineNodeSchema.parse({ ...ok, binding: { ...binding, take: undefined } }),
+      ).toThrow();
+    });
+
+    it('requires an other arm, and keys among the six categories and =0 to =9', () => {
+      expect(() => inlineNodeSchema.parse(form({ one: [text('one')] }))).toThrow();
+      for (const key of ['zero', 'one', 'two', 'few', 'many', '=0', '=9']) {
+        expect(inlineNodeSchema.parse(form({ [key]: [text('x')], other: [text('y')] }))).toBeTruthy();
+      }
+      for (const key of ['=10', '=-1', '=1.5', 'single', 'One', '']) {
+        expect(
+          () => inlineNodeSchema.parse(form({ [key]: [text('x')], other: [text('y')] })),
+          key,
+        ).toThrow();
+      }
+    });
+
+    it('prints the value at most once an arm, and holds nothing but text and the value', () => {
+      expect(() => inlineNodeSchema.parse(form({ other: [value, text(' and '), value] }))).toThrow();
+      expect(inlineNodeSchema.parse(form({ other: [] }))).toBeTruthy();
+      for (const inner of [binding, { type: 'variable', name: 'v' }, { ...ok }]) {
+        expect(() => inlineNodeSchema.parse(form({ other: [inner] }))).toThrow();
+      }
+    });
+
+    it('carries no condition or suggestion inside an arm', () => {
+      const marked = (mark: unknown) => form({ other: [text('x', [mark])] });
+      expect(inlineNodeSchema.parse(marked({ type: 'emphasis', id: 'e1' }))).toBeTruthy();
+      expect(() =>
+        inlineNodeSchema.parse(
+          marked({ type: 'condition', id: 'c1', axis: 'audience', values: ['a'] }),
+        ),
+      ).toThrow();
+      expect(() =>
+        inlineNodeSchema.parse(
+          marked({ type: 'suggestion', id: 's1', operation: 'insert', author: 'Ada' }),
+        ),
+      ).toThrow();
+    });
+
+    it('is not a value standing outside a form', () => {
+      expect(() => inlineNodeSchema.parse(value)).toThrow();
+    });
+  });
 });

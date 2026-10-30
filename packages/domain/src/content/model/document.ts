@@ -10,7 +10,7 @@ import {
   type BlockNode,
 } from './blocks.js';
 import { marksAsASet } from './canonical.js';
-import type { InlineNode } from './inline.js';
+import type { InlineNode, MessageArm, MessageFormNode } from './inline.js';
 import type { Mark } from './marks.js';
 import { codePointSpelling, forbiddenInPreformatted, isLanguageLabel } from './preformatted.js';
 
@@ -227,8 +227,8 @@ function markSetOf(run: { marks: readonly unknown[] }): string {
  *
  * Empty runs go first, so two runs one stood between still meet.
  */
-function mergeRuns(inlines: readonly InlineNode[]): InlineNode[] {
-  const merged: InlineNode[] = [];
+function mergeRuns<T extends InlineNode | MessageArm[number]>(inlines: readonly T[]): T[] {
+  const merged: T[] = [];
   let previousMarks: string | undefined;
   for (const inline of inlines) {
     if (inline.type !== 'text') {
@@ -330,30 +330,13 @@ export function checkInlineContent(
   // First of everything, so that a document carrying two spellings of one identifier is told what is
   // actually wrong with it: `claimRange` and `claimMark` both key their maps in NFC, so either would
   // otherwise answer with a complaint about ranges or values when the problem is normalisation.
-  for (const inline of inlines) {
-    if (inline.type !== 'text') continue;
-    for (const mark of inline.marks) refuseUnnormalised(mark.id, 'Mark identifier');
-  }
+  refuseUnnormalisedMarks(inlines);
   return mergeRuns(inlines).map((inline) => {
     if (inline.type === 'text') {
-      // The identifiers this one run carries, which `claimRange` is asked about once each: a second
-      // mark of one run wearing an identifier the first already wore is not a second range - there
-      // is one run and no gap - and `claimMark` has the accurate answer for it, that one identifier
-      // cannot carry two values. A caller hands that message back as a failure, so which of the two
-      // rules answers decides what an author is told.
-      const own = new Set<string>();
-      for (const mark of inline.marks) {
-        // Every identifier reaching here is in NFC already, refused above if not, so `normalize` is
-        // keying these maps rather than deciding anything.
-        const id = mark.id.normalize('NFC');
-        if (!own.has(id)) claimRange(mark, claimed);
-        own.add(id);
-        claimMark(mark, claimed);
-      }
-      claimed.carried.clear();
-      for (const id of own) claimed.carried.add(id);
+      claimRun(inline, claimed);
       return inline;
     }
+    if (inline.type === 'messageForm') return checkMessageForm(inline, home, claimed);
     if (inline.type === 'crossReference') {
       claim(inline.id, claimed.ids);
       if (inline.target.kind === 'block' || inline.target.kind === 'component') {
@@ -410,6 +393,62 @@ export function checkInlineContent(
     for (const id of outside) claimed.carried.add(id);
     return { ...inline, content: paragraphs };
   });
+}
+
+/** Every mark identifier the runs arrived with, refused unless in NFC (`checkInlineContent` says why). */
+function refuseUnnormalisedMarks(inlines: readonly (InlineNode | MessageArm[number])[]): void {
+  for (const inline of inlines) {
+    if (inline.type !== 'text') continue;
+    for (const mark of inline.marks) refuseUnnormalised(mark.id, 'Mark identifier');
+  }
+}
+
+/** One text run's marks, claimed by value and by range, the run then the last one returned. */
+function claimRun(run: { marks: readonly Mark[] }, claimed: Claimed): void {
+  // The identifiers this one run carries, which `claimRange` is asked about once each: a second
+  // mark of one run wearing an identifier the first already wore is not a second range - there
+  // is one run and no gap - and `claimMark` has the accurate answer for it, that one identifier
+  // cannot carry two values. A caller hands that message back as a failure, so which of the two
+  // rules answers decides what an author is told.
+  const own = new Set<string>();
+  for (const mark of run.marks) {
+    // Every identifier reaching here is in NFC already, refused before if not, so `normalize` is
+    // keying these maps rather than deciding anything.
+    const id = mark.id.normalize('NFC');
+    if (!own.has(id)) claimRange(mark, claimed);
+    own.add(id);
+    claimMark(mark, claimed);
+  }
+  claimed.carried.clear();
+  for (const id of own) claimed.carried.add(id);
+}
+
+/**
+ * A message form (the MF plan, MF-C, MF-D): stands where a binding does and nowhere else, so never in
+ * a title; claims its own identifier and its binding's; and each arm, a range of its own as a
+ * footnote's paragraphs are, comes back merged and in NFC as a paragraph's runs do.
+ */
+function checkMessageForm(
+  form: MessageFormNode,
+  home: InlineHome,
+  claimed: Claimed,
+): MessageFormNode {
+  if (home === 'title') throw new Error(`Message form ${form.id} stands in a title`);
+  claim(form.id, claimed.ids);
+  claim(form.binding.id, claimed.ids);
+  const outside = [...claimed.carried];
+  const arms: MessageFormNode['arms'] = {};
+  for (const [key, arm] of Object.entries(form.arms) as [keyof MessageFormNode['arms'], MessageArm][]) {
+    claimed.carried.clear();
+    refuseUnnormalisedMarks(arm);
+    arms[key] = mergeRuns(arm).map((inline) => {
+      if (inline.type === 'text') claimRun(inline, claimed);
+      return inline;
+    });
+  }
+  claimed.carried.clear();
+  for (const id of outside) claimed.carried.add(id);
+  return { ...form, arms };
 }
 
 /**
