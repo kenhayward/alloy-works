@@ -1363,6 +1363,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   chosen from those declared, shown by its key; a publish prints its value, records where it came
   from, and fails by name where it has none. No page yet declares one, and a section title holding one
   is not edited in the outline.
+- **Words that vary by a number.** Select a value bound to a number and press **Message form** (Ctrl or
+  Cmd, Alt and P): the sentence around it becomes words for each plural category of the component's
+  language, such as _one_ and _other_ in English and six in Arabic, each saying which numbers it is
+  for, with words for exactly 0 to 9 added where wanted. The text shows the words the value selects,
+  as do a document's text and a copy; a publish selects by the same rules, CLDR 48.2.0's, and prints
+  them in PDF, Word and HTML, failing by name where the value is no number or the category has no
+  words, and `provenance.json` records which were chosen. A translator receives words for each
+  category of the target language, noted with example numbers, and machine drafts fill them. Words
+  varying by gender, and refusing a number typed into text rather than bound, are not there yet.
 - **Conditions and profiles.** Declare a condition axis through the API (`POST /v1/definitions`, kind
   `conditionAxis`) with its values. In the editor, **Condition** (Ctrl or Cmd, Alt and O) keeps selected
   text for some readers alone; several conditions can cover one passage, and conditional text is

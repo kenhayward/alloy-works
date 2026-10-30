@@ -55,6 +55,8 @@ const PATHS: Record<string, readonly string[]> = {
     'M5 4.2c0-.9 1.3-1.4 3-1.4s3 .5 3 1.4v5.6c0 .9-1.3 1.4-3 1.4s-3-.5-3-1.4z',
     'M5 4.2c0 .9 1.3 1.4 3 1.4s3-.5 3-1.4',
   ],
+  // A number sign, and words forking from it: the arm a number selects (the MF plan, MF-G).
+  'Message form': ['M2.5 6h5.5M2 10h5.5M5 3.5 4 12.5M8 3.5l-1 9', 'M10 8h1.5l2-3M11.5 8l2 3'],
   // A line that forks, one branch for each reader: text kept for some profiles alone (R6-H).
   Condition: ['M4 2.5v11', 'M4 9c0-3 2.2-4.5 5-4.5h3.5', 'M10.5 2.5l2 2-2 2'],
   // Braces round an x: a name standing for a value (the R5 plan, R5b).

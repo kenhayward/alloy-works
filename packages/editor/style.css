@@ -650,6 +650,86 @@
   white-space: nowrap;
 }
 
+/* A message form (the MF plan, MF-G): the arm its value selects, set as the text it stands in, with a
+ * dotted underline and, unlike a value, always - its words vary - and drawn apart as a failed binding
+ * where it shows none. Selected, its arms stand beneath its paragraph as a footnote's text does. */
+.aw-message-form {
+  position: relative;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+.aw-message-form.ProseMirror-selectednode .aw-message-form-chip {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.aw-message-form.aw-binding-failed .aw-message-form-chip {
+  border: 1px dashed var(--danger);
+  color: var(--danger);
+  font-style: italic;
+  text-decoration: underline wavy var(--danger);
+}
+
+.ProseMirror p:has(.aw-message-form-arms) {
+  z-index: 2;
+}
+
+.aw-message-form-arms {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: max-content minmax(12em, 1fr) max-content;
+  gap: 0.25em 0.5em;
+  align-items: center;
+  min-width: 24em;
+  margin-top: 0.25em;
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--strong-border);
+  border-radius: 4px;
+  background: var(--bg);
+  font-size: 0.9em;
+  font-style: normal;
+  text-decoration: none;
+}
+
+.aw-message-form-arms:focus-within {
+  border-color: var(--accent);
+}
+
+.aw-message-arm {
+  display: contents;
+}
+
+.aw-message-arm-label {
+  color: var(--muted);
+}
+
+.aw-message-arm-editor {
+  grid-column: 2;
+  padding: 0 0.25em;
+  border-bottom: 1px solid var(--strong-border);
+}
+
+.aw-message-arm-remove {
+  grid-column: 3;
+}
+
+.aw-message-arm-add {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+/* Where an arm prints the value: a chip, as an index marker's is. */
+.aw-message-value {
+  padding: 0 0.3em;
+  border-radius: 3px;
+  background: var(--sunken);
+  font-style: italic;
+}
+
 /* An equation (equations 1, ruling R5): its stored MathML drawn natively, in the reader's own maths
  * font - no maths face is shipped for the screen in this slice. Inline, it sits on the baseline of the
  * text it stands in, as MathML's own layout sets it; a block stands on its own line, centred, with

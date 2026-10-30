@@ -83,6 +83,11 @@ export interface BindingHeld {
          * which a copy's plain text writes.
          */
         readonly image?: { readonly asset: string; readonly alt: string };
+        /**
+         * Where the value is a number (the MF plan, MF-G): its canonical decimal and its column's
+         * scale, which a message form selects its arm by, as the publish does (`armFor`).
+         */
+        readonly number?: { readonly value: string; readonly scale: number };
       }
     | { readonly table: TableHeld }
     | BindingFailureHeld;
@@ -298,7 +303,7 @@ const asksFor = (take: Binding['take']): string =>
     : take.column;
 
 /** One binding's words in `context`. */
-function shownFor(
+export function shownFor(
   binding: Binding,
   context: BindingContext | null,
 ): Omit<BindingShown, 'pos' | 'id'> {

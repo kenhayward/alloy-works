@@ -138,6 +138,23 @@ export {
   type BoundImage,
 } from './bindings.js';
 export { bindingContextOf, setBindingContext } from './bindingView.js';
+// A message form: what it shows, how it is made and its arms (the MF plan, MF-G).
+export {
+  addExactArm,
+  armsListed,
+  messageFormsShown,
+  removeArm,
+  setArm,
+  wrapInMessageForm,
+  type ArmListed,
+  type MessageFormShown,
+} from './messageForms.js';
+export {
+  armEditorOf,
+  armLabel,
+  messageFormDecorations,
+  messageFormView,
+} from './messageFormView.js';
 // Terms: offered as typed, and flagged where deprecated (the TM plan, TMc).
 export {
   applySuggestedTerm,

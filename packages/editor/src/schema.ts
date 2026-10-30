@@ -834,6 +834,26 @@ export const editorSchema = new Schema({
       ],
     },
     /**
+     * One arm of a message form, as its own editor holds it (MF-G): never in a component's document,
+     * whose expressions do not name it, but the document of an arm's nested editor, as a footnote is
+     * its own. Text with a footnote paragraph's marks but a condition, and the form's value at most
+     * once, which the content model holds on save (MF-C).
+     */
+    messageArm: {
+      content: '(text | messageValue)*',
+      marks:
+        'emphasis strong underline subscript superscript inlineCode definedTerm quotedPhrase hyperlink language',
+    },
+    /** Where an arm prints its form's value, formatted (ICU's `#`, MF-C): in an arm alone. */
+    messageValue: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      toDOM: () => ['span', { class: 'aw-message-value' }, say('message-form.value')],
+    },
+    /**
      * A variable (the R5 plan, R5b): inline, an atom, naming a declared variable by its key, which a
      * publish prints from the document's parameters and fields (REU-017). **No marks**, as a binding
      * has none, and it stands wherever a binding does. `toDOM` shows its key, which a read-only

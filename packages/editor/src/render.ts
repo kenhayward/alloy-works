@@ -17,6 +17,7 @@ import { fillBoundTable, noteLabel } from './boundTableView.js';
 import { drawEquation } from './equationView.js';
 import { fillBoundFigure } from './figureView.js';
 import { toEditor } from './mapping.js';
+import { messageFormsShown, type MessageFormShown } from './messageForms.js';
 import { BROKEN_CLASS, referencesShown, type ReferenceContext } from './referenceText.js';
 import { editorSchema } from './schema.js';
 import { drawPlaces } from './places.js';
@@ -59,6 +60,7 @@ export function renderContent(
   const rendered = identifiedSerializer().serializeFragment(opened.doc.content, { document });
   drawReferences(rendered, referencesShown(opened.doc, context));
   drawBindings(rendered, bindingsShown(opened.doc, bindings), bindings);
+  drawMessageForms(rendered, messageFormsShown(opened.doc, bindings));
   drawBoundFigures(rendered, boundFiguresShown(opened.doc, bindings));
   drawBoundTables(rendered, boundTablesShown(opened.doc, bindings), bindings);
   drawEquations(rendered, opened.doc);
@@ -217,6 +219,24 @@ export function drawBindings(
 }
 
 /**
+ * Each message form as the surface draws it (the MF plan, MF-G): its selected arm's words, filled by
+ * `fillBinding` as a binding's are, and drawn apart where it shows none. The serializer writes the
+ * spans in the order `messageFormsShown` walks the document in.
+ */
+export function drawMessageForms(
+  rendered: HTMLElement | DocumentFragment,
+  shown: readonly MessageFormShown[],
+): void {
+  const spans = rendered.querySelectorAll<HTMLElement>('span[data-message-form]');
+  shown.forEach((each, index) => {
+    const span = spans[index];
+    if (span === undefined) return;
+    if (each.failed) span.classList.add(FAILED_CLASS);
+    fillBinding(span, each);
+  });
+}
+
+/**
  * Each bound figure's image as the surface draws it (B6.2), by `figureView`'s own `fillBoundFigure`:
  * the image the document holds for its binding, or why there is none, in place. The serializer writes
  * the figures in the order `boundFiguresShown` walks the document in.
@@ -276,6 +296,7 @@ export function copiedAsShown(
   slice: Slice,
   references: readonly { readonly text: string; readonly broken: boolean }[],
   bindings: readonly BindingShown[],
+  forms: readonly MessageFormShown[] = [],
 ): { readonly html: string; readonly text: string } {
   const { dom } = view.serializeForClipboard(slice);
   drawReferences(dom, references);
@@ -284,14 +305,21 @@ export function copiedAsShown(
     bindings.map((each) => ({ ...each, hidden: '', marker: null, resolved: false })),
     null,
   );
+  drawMessageForms(
+    dom,
+    forms.map((each) => ({ ...each, hidden: '', marker: null })),
+  );
   const words = references.map((each) => each.text);
   const values = bindings.map((each) => each.text);
+  const arms = forms.map((each) => each.text);
   const text = slice.content.textBetween(0, slice.content.size, '\n\n', (leaf) =>
     leaf.type.name === 'crossReference'
       ? (words.shift() ?? '')
       : leaf.type.name === 'binding'
         ? (values.shift() ?? '')
-        : (leaf.type.spec.leafText?.(leaf) ?? ''),
+        : leaf.type.name === 'messageForm'
+          ? (arms.shift() ?? '')
+          : (leaf.type.spec.leafText?.(leaf) ?? ''),
   );
   return { html: dom.innerHTML, text };
 }

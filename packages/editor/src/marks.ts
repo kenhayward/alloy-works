@@ -255,6 +255,17 @@ const ROWS: readonly CommandRow[] = [
     shortcut: 'Mod-Alt-v',
     prompts: true,
   },
+  // The MF plan, MF-G: beside Variable, on its chord with P, for plural. It prompts for nothing: it
+  // wraps the binding selected. Checked for its plan: nothing in this registry, the base keymap or the
+  // renderer takes it, and no browser binds an accelerator to it; where AltGr and P type a character,
+  // that character is typed, and the toolbar's button is the way in.
+  {
+    kind: 'block',
+    action: 'messageForm',
+    label: 'Message form',
+    shortcut: 'Mod-Alt-p',
+    prompts: false,
+  },
   // The R6 plan, R6-H: beside Variable, prompting as it does, for the axis and values only the author
   // can choose. On the same chord with O, for "only": C and K open developer tools on a Mac.
   {

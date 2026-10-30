@@ -4,6 +4,7 @@ import {
   type ContentDocument,
   type InlineNode,
   type Mark,
+  type MessageArm,
 } from '@alloy-works/domain';
 import type { Mark as EditorMark, Node } from 'prosemirror-model';
 
@@ -130,11 +131,21 @@ function marksWithNoType(
       inline.type === 'crossReference' ||
       inline.type === 'equation' ||
       inline.type === 'binding' ||
-      inline.type === 'messageForm' ||
       inline.type === 'variable' ||
       inline.type === 'citation' ||
       inline.type === 'indexMarker'
     ) {
+      continue;
+    }
+    // A form's arms' runs, which its own editors hold (the MF plan, MF-G): a mark with no type there
+    // opens the component read-only by name, as one in a paragraph does.
+    if (inline.type === 'messageForm') {
+      for (const arm of Object.values(inline.arms)) {
+        marksWithNoType(
+          arm.filter((each) => each.type === 'text'),
+          found,
+        );
+      }
       continue;
     }
     if (inline.type === 'image' && inParagraph) continue;
@@ -297,6 +308,24 @@ function toRun(inline: InlineNode): Node[] {
   const text = inline as Extract<InlineNode, { type: 'text' }>;
   if (text.value === '') return [];
   return [editorSchema.text(text.value, text.marks.map(toMark))];
+}
+
+/**
+ * One arm of a message form as its own editor holds it (the MF plan, MF-G): a `messageArm` over its
+ * runs, its value a `messageValue`.
+ */
+export function armToEditor(arm: MessageArm): Node {
+  return editorSchema.nodes.messageArm!.create(
+    null,
+    arm.flatMap((inline) =>
+      inline.type === 'messageValue' ? [editorSchema.nodes.messageValue!.create()] : toRun(inline),
+    ),
+  );
+}
+
+/** An arm's editor's document as the form stores the arm: `armToEditor` read back. */
+export function armFromEditor(node: Node): MessageArm {
+  return runsOf(node, '') as MessageArm;
 }
 
 /**
@@ -616,6 +645,10 @@ function runsOf(textblock: Node, id: string): unknown[] {
       // Its LaTeX only where one was typed: absent is the stored spelling of none.
       const { mathml, latex } = child.attrs;
       runs.push({ type: 'equation', mathml, ...(latex === null ? {} : { latex }) });
+      return;
+    }
+    if (child.type.name === 'messageValue') {
+      runs.push({ type: 'messageValue' });
       return;
     }
     if (child.type.name !== 'text') {

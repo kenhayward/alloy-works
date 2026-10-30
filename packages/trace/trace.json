@@ -17372,6 +17372,10 @@
           "howItIsMet": "Structure, marks, references, bindings and terms are nodes and members rather than text, so a round-trip has nothing to lose and nothing translatable to mistake them for"
         },
         {
+          "id": "LOC-045",
+          "howItIsMet": "A message form is a node, its arms the plural categories of CLDR 48.2.0 compiled into the domain and held to the interface's FormatJS by a parity test; the publish and the editor select by one function (`armFor`), and a translator fills the target language's arms. Gender and refusing assembled text are named gaps below"
+        },
+        {
           "id": "AST-012",
           "howItIsMet": "A figure's alternative text may be inherited, which is the state that reads the asset's default"
         },
@@ -25133,13 +25137,13 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 221,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "CNT-164",
       "file": "apps/web/src/editor/EditorToolbar.test.tsx",
-      "line": 667,
+      "line": 668,
       "kind": "title"
     },
     {
@@ -25320,6 +25324,12 @@
       "id": "CNT-045",
       "file": "apps/web/src/editor/equationView.test.ts",
       "line": 110,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-045",
+      "file": "apps/web/src/editor/messageForms.test.ts",
+      "line": 143,
       "kind": "title"
     },
     {
@@ -26982,6 +26992,12 @@
       "id": "DAT-098",
       "file": "apps/worker/src/bindings.test.ts",
       "line": 1213,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-045",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 831,
       "kind": "title"
     },
     {
@@ -31655,7 +31671,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1086,
+      "line": 1089,
       "kind": "title"
     },
     {
@@ -32322,6 +32338,12 @@
       "id": "DAT-115",
       "file": "packages/domain/src/publishing/bind.test.ts",
       "line": 1256,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-045",
+      "file": "packages/domain/src/publishing/bind.test.ts",
+      "line": 1468,
       "kind": "title"
     },
     {
@@ -33345,6 +33367,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-045",
+      "file": "packages/domain/src/translation/xliff.test.ts",
+      "line": 460,
+      "kind": "title"
+    },
+    {
       "id": "PUB-067",
       "file": "packages/domain/src/word/omml.test.ts",
       "line": 775,
@@ -33803,19 +33831,25 @@
     {
       "id": "CNT-004",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 225,
+      "line": 226,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 664,
+      "line": 665,
       "kind": "title"
     },
     {
       "id": "CNT-127",
       "file": "packages/editor/src/marks.test.ts",
-      "line": 343,
+      "line": 344,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-045",
+      "file": "packages/editor/src/messageForms.test.ts",
+      "line": 106,
       "kind": "title"
     },
     {

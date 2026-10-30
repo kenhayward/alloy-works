@@ -11,6 +11,7 @@ import { canPlaceCitation } from './citations.js';
 import { canPlaceIndexMarker } from './indexEntries.js';
 import { canPlaceCondition } from './conditions.js';
 import { canPlaceEquation } from './equations.js';
+import { wrapInMessageForm } from './messageForms.js';
 import { insertFootnote } from './footnotes.js';
 import { canPlaceReference } from './references.js';
 import { editorSchema } from './schema.js';
@@ -162,7 +163,8 @@ export type BlockAction =
   | 'variable'
   | 'cite'
   | 'indexEntry'
-  | 'condition';
+  | 'condition'
+  | 'messageForm';
 
 /** The innermost list the cursor stands in, with the position it stands at, or null. */
 function innermostList(state: EditorState): { node: Node; pos: number } | null {
@@ -955,6 +957,9 @@ export function blockCommand(action: BlockAction, newIdentifier: () => string): 
     // which runs `setCondition` or `addAlternative` with the answer.
     case 'condition':
       return canPlaceCondition;
+    // The MF plan, MF-G: no prompt, since what it wraps is the binding selected.
+    case 'messageForm':
+      return wrapInMessageForm(newIdentifier);
   }
 }
 

@@ -31,6 +31,7 @@ import { imagesUnmarked, marksPastImages } from './images.js';
 import { commandKeymap, spansOf } from './marks.js';
 import type { BindingContext } from './bindings.js';
 import { bindingContextOf, bindingDecorations, bindingsPlugin } from './bindingView.js';
+import { messageFormDecorations } from './messageFormView.js';
 import {
   citationDecorations,
   citationFlagsOf,
@@ -615,6 +616,8 @@ export function createEditorState(options: EditorStateOptions): EditorState {
               ...unresolvedOf(state).find(),
               ...referenceDecorations(state.doc, referenceContextOf(state)).find(),
               ...bindingDecorations(state.doc, bindingContextOf(state)).find(),
+              // What each message form shows, by the same context (the MF plan, MF-G).
+              ...messageFormDecorations(state.doc, bindingContextOf(state)).find(),
               ...citationDecorations(
                 state.doc,
                 citationFormsOf(state),
