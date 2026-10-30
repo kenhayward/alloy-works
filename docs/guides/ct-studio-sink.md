@@ -46,7 +46,13 @@ key:       <the shared signing key>
 ```
 
 A second environment is a second entry with its own key; one environment's key never signs for
-another. The bridge must be able to reach the hostname over https.
+another. The bridge must be able to reach the hostname over https, as the bridge sees it: from a
+bridge in a container, `127.0.0.1` and `localhost` are the container itself. On the development
+stack that is the LAN proxy, `https://<ALLOY_LAN_ADDRESS>:8443/bridge`, with the proxy's root
+(`https://<ALLOY_LAN_ADDRESS>:9443/lan-proxy/root.crt`) given to the bridge as `NODE_EXTRA_CA_CERTS`.
+
+The key goes in the entry and nowhere else in CT Studio; the token of step 2 goes only in CT Studio's
+connection, never in its `.env`.
 
 ## 2. Make a service identity and a token
 

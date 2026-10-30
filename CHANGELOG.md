@@ -13,8 +13,15 @@ Connecting CT Studio from Administration (the CC plan).
 - **A token or an identity replaced when it is due.** The section shows when CT Studio's token expires, offers a new one in its last 30 days, replaces an identity that was disabled, and grants a space again that lost its grant.
 - **Properties mapped, ignored or noticed.** A space's CT Studio settings map each CT Studio property to a template field or ignore it, and list the properties deliveries carried that nobody decided about, to map or ignore from there.
 
+### Changed
+
+- **The signing key is `SINK_BRIDGE_KEYS`.** The service reads CT Studio's signing key from `SINK_BRIDGE_KEYS`, as 3ds-sink does, so one variable has one name on every sink. A deployment that set `SECRET_BRIDGE_KEYS` in 0.216.0 renames it, or `/bridge` is not served.
+
 ### Fixed
 
+- **A hand-off you can read.** What CT Studio needs is one column of steps, each holding what to copy, the entry wrapping inside the dialog rather than running off it. The steps say which secret goes where: the signing key in CT Studio's `BRIDGE_SINKS` entry, the token only in its connection.
+- **An address CT Studio can reach.** The address is typed, with suggestions, and refused unless it is https and not 127.0.0.1 or localhost, which from CT Studio's bridge name its own machine. It no longer offers `https://127.0.0.1` with no port.
+- **The web dev server loads again.** Since 0.216.0 it showed a blank page: the domain package's CT Studio code, which hashes with Node's crypto, was reached from the renderer. It now has an entry of its own.
 - **A review round test that expired.** COL-028's test typed a due date of this morning, which the form now refuses as past.
 
 ## 0.216.0 - 2026-10-29 (PR #817)

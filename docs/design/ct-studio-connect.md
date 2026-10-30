@@ -197,5 +197,13 @@ design left open:
   commit, through the connector.
 - **The field list** on the settings form comes from the template's document-level schemas and their
   entries; the service still refuses a mapping to a field the template does not give, against its row.
-- **The address** is chosen from the page's own origin, when https, and `https://` before each of the
-  environment's hostnames; it cannot be typed.
+- **The address** is typed, suggested from the page's own origin and `https://` before each of the
+  environment's hostnames, and refused unless it is https and not a loopback name: from CT Studio's
+  bridge, `127.0.0.1` and `localhost` name its own machine. A hostname carries no port, so on the
+  development stack the address is the LAN proxy's, `https://<ALLOY_LAN_ADDRESS>:8443`, port and all.
+  (First built as a list that could not be typed; it offered `https://127.0.0.1`, which no bridge
+  reaches.)
+- **The signing key's name** is `SINK_BRIDGE_KEYS`, as 3ds-sink names it, so one variable has one name
+  on every sink (first built as `SECRET_BRIDGE_KEYS`).
+- **The hand-off** names the two secrets apart in every step: the signing key goes in CT Studio's
+  `BRIDGE_SINKS` entry, the token only in its connection.
