@@ -164,4 +164,5 @@ export {
 } from './extensions/manifest.js';
 
 // Receiving CT Studio's decomposed documents: their blocks and inlines mapped to the content model.
-export * as bridge from './bridge/index.js';
+// CT Studio's bridge is `@alloy-works/domain/bridge`: it hashes with node:crypto, so the renderer
+// never loads it from here.
