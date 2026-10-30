@@ -125,11 +125,16 @@ The settings of step 3, also reachable afterwards from the summary for each conn
 The mapping today pairs a property with a field, and a property with no pairing is reported
 `property_unmapped`. It becomes three cases:
 
-| A delivered property is  | What happens                                                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| **mapped** to a field    | as today: converted and filled, or reported `property_unconverted`                                              |
-| **ignored**              | nothing: not filled, not reported, not kept with the delivery                                                   |
-| **unlisted** (not named) | reported `property_unlisted` in the receipt, kept with the delivery as today, and recorded for the space's list |
+| A delivered property is  | What happens                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **mapped** to a field    | as today: converted and filled, or reported `property_unconverted`                                                        |
+| **ignored**              | nothing: not filled, not reported, not kept with the delivery                                                             |
+| **unlisted** (not named) | reported `property_unlisted` in the delivery's record, kept with the delivery as today, and recorded for the space's list |
+
+**Where the flag shows.** The contract's receipt has no place for warnings (its schema is strict and
+CT Studio's to change), so CT Studio is not told. The flag is in Alloy Works: the delivery's record
+carries `property_unlisted`, and the space's CT Studio section lists the name. Telling CT Studio waits for a contract that carries warnings. _(Found while planning,
+2026-10-30.)_
 
 `property_unmapped` stays for a mapped property whose field has gone from the template or is a
 `user` field. None of the three refuses a delivery; `metadata_incomplete` still does, for a required
