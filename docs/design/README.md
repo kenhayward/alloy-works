@@ -52,6 +52,7 @@ understand the storage layer, rather than something to be thrown away.
 | [interface-localisation.md](interface-localisation.md) | The interface in each person's own language: catalogues of ICU messages, bundled CLDR, pseudo-locales the suites walk                                                  |
 | [import.md](import.md)                                 | A Word, Markdown or HTML file read in the worker into a proposal of sections and components, reviewed, accepted or abandoned                                           |
 | [ct-studio-sink.md](ct-studio-sink.md)                 | A document decomposed by CT Studio delivered straight in through its bridge contract, as a service identity; its data tables as real Postgres tables                   |
+| [ct-studio-connect.md](ct-studio-connect.md)           | An administrator connects CT Studio from Administration: identity, grant, token and settings in one flow, ending on what to paste into CT Studio                       |
 | [reference-sources.md](reference-sources.md)           | Crossref and PubMed searched through the connector and cited; a cited source's retraction or correction found, flagged and told                                        |
 
 ## Why these are not one per requirement area
