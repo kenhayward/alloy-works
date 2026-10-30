@@ -164,6 +164,8 @@ export function messageFormView(
   };
 
   const openPanel = () => {
+    // Where the focus was, kept across a rebuild: an arm emptied away, or one added or removed.
+    const focused = [...editors].find(([, view]) => view.hasFocus())?.[0];
     closePanel();
     const arms = armsOf();
     const listing = armsListed(language(), arms);
@@ -224,6 +226,7 @@ export function messageFormView(
       panel.append(add);
     }
     dom.append(panel);
+    if (focused !== undefined) (editors.get(focused) ?? outer).focus();
   };
 
   /** Each open arm's editor brought to the form's arm, where a change came from outside it. */

@@ -143,7 +143,8 @@ describe('a message form in a document, in Chromium (the MF plan, MF-G)', () => 
     await withPage(async (page) => {
       await page.goto(`${SERVICE}/#/documents/${placed}`);
       await form(page).waitFor();
-      expect(await form(page).textContent()).toMatch(/^1 site recorded/);
+      // Drawn first with no context, then with the value once the document's arrive.
+      await expect.poll(() => form(page).textContent()).toMatch(/^1 site recorded/);
       for (const mode of ['Reading', 'Authoring'] as const) {
         await page.getByRole('radio', { name: mode }).check();
         await checkAxe(page, `a message form in ${mode}`, task.meta, { shows: form(page) });
