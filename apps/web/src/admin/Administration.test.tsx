@@ -87,7 +87,14 @@ describe('Administration', () => {
     expect(section('Overview')).toHaveAttribute('aria-current', 'page');
     // In the menu, and in the section.
     expect(await within(dialog).findAllByText('Development')).toHaveLength(2);
-    for (const name of ['Spaces', 'People', 'Roles', 'Groups', 'About and release notes']) {
+    for (const name of [
+      'Spaces',
+      'People',
+      'Roles',
+      'Groups',
+      'CT Studio',
+      'About and release notes',
+    ]) {
       expect(section(name)).toBeInTheDocument();
     }
     // What nothing answers yet is not offered.
@@ -98,6 +105,15 @@ describe('Administration', () => {
     expect(await screen.findByRole('heading', { name: 'Roles', level: 1 })).toBeInTheDocument();
     expect(section('Roles')).toHaveAttribute('aria-current', 'page');
     expect(section('Overview')).not.toHaveAttribute('aria-current');
+  });
+
+  it('API-074 lists CT Studio among the environment sections, opened at #/admin/ctstudio', async () => {
+    window.location.hash = '#/admin/ctstudio';
+    const { client } = service(everything);
+    render(<Administration client={client} about={null} />);
+    expect(await screen.findByRole('heading', { name: 'CT Studio', level: 1 })).toBeInTheDocument();
+    expect(section('CT Studio')).toHaveAttribute('aria-current', 'page');
+    window.location.hash = '';
   });
 
   it('lists the spaces, the people and the waiting invitations, and the roles with what each holds', async () => {
