@@ -16,7 +16,7 @@ definition read like any other source.
   environment from the hostname a request arrives at, so a sink is registered per environment.
 - **Whoever runs CT Studio's bridge**, who edits its `BRIDGE_SINKS` and holds its connections.
 - **A shared signing key** for the environment: chosen by the operator, set on the service as
-  `SECRET_BRIDGE_KEYS` (a comma-separated list, so a key can be replaced without a gap). Without it
+  `SINK_BRIDGE_KEYS` (a comma-separated list, so a key can be replaced without a gap). Without it
   the service runs and `/bridge` is not served. For data tables the service and worker also need the
   delivery store (`SECRET_DELIVERED_URL`); [deploy/README.md](../../deploy/README.md) says how.
 

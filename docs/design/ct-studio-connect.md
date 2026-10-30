@@ -30,7 +30,7 @@ for every environment and every space that receives deliveries.
 - **Non-goal:** a "test the bridge" button. Only the bridge can sign a `/bridge` call; CT Studio's own
   connection test is where reachability is checked.
 - **Anti-goal:** the signing key shown, stored or asked for anywhere in the interface. It is a
-  deployment secret (`SECRET_BRIDGE_KEYS`) and stays one.
+  deployment secret (`SINK_BRIDGE_KEYS`) and stays one.
 - **Anti-goal:** the token kept anywhere after the hand-off page closes, as for every other token.
 
 ## The flow
@@ -39,7 +39,7 @@ for every environment and every space that receives deliveries.
 administrator. The section opens on a summary of what is connected: the identity, its token's expiry,
 and the spaces it can deliver to with each one's settings. **Connect a space** starts the flow.
 
-If the service was started without `SECRET_BRIDGE_KEYS`, the section says so above everything else:
+If the service was started without `SINK_BRIDGE_KEYS`, the section says so above everything else:
 setup still works, but CT Studio is refused until the key is set and the service restarted.
 
 1. **Choose the space.** Any space the administrator administers. One already connected opens its
@@ -75,12 +75,12 @@ setup still works, but CT Studio is refused until the key is set and the service
      date. Then a block ready to paste into CT Studio's `.env`:
 
      ```
-     BRIDGE_SINKS=[{"id":"<sink id>","url":"<address>/bridge","key":"<the value of SECRET_BRIDGE_KEYS>"}]
+     BRIDGE_SINKS=[{"id":"<sink id>","url":"<address>/bridge","key":"<the value of SINK_BRIDGE_KEYS>"}]
      ```
 
      and short steps:
      1. Put the block in CT Studio's `.env`, replacing the key placeholder with the value of
-        `SECRET_BRIDGE_KEYS` from this deployment. If `BRIDGE_SINKS` is already set, add the entry to
+        `SINK_BRIDGE_KEYS` from this deployment. If `BRIDGE_SINKS` is already set, add the entry to
         its list instead. Restart CT Studio's bridge.
      2. If this address's certificate is not from a public authority (a LAN or development address),
         make CT Studio's bridge trust it with `NODE_EXTRA_CA_CERTS`.
@@ -155,7 +155,7 @@ field left empty.
   settings (provisioning data as the settings route does), and answer with the secret once, the
   identity, the space and what was made. One call, so a half-made connection comes from a failure in
   the middle, which leaves what was made before it and is resumable by running the flow again.
-- **A status route** for the summary: whether `SECRET_BRIDGE_KEYS` is set (yes or no only), the
+- **A status route** for the summary: whether `SINK_BRIDGE_KEYS` is set (yes or no only), the
   identity and whether it is disabled, its token's expiry, the connected spaces, the environment's
   hostnames, and the remembered address and sink id.
 - **A token route** for **Issue a new token**.

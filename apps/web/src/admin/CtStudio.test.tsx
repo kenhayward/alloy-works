@@ -169,7 +169,7 @@ async function connectSpace(space: string, identity?: 'make' | 'adopt') {
 describe("Administration's CT Studio", () => {
   it('API-075 sinkEntry gives the BRIDGE_SINKS line with the key as a placeholder', () => {
     expect(sinkEntry('alloy-acme', 'https://192.168.1.129:8443')).toBe(
-      'BRIDGE_SINKS=[{"id":"alloy-acme","url":"https://192.168.1.129:8443/bridge","key":"<the value of SECRET_BRIDGE_KEYS>"}]',
+      'BRIDGE_SINKS=[{"id":"alloy-acme","url":"https://192.168.1.129:8443/bridge","key":"<the value of SINK_BRIDGE_KEYS>"}]',
     );
   });
 
@@ -186,7 +186,7 @@ describe("Administration's CT Studio", () => {
   it('API-074 bridge off is said above everything', async () => {
     const { client } = service({ ...fresh, bridgeOn: false });
     render(<CtStudio client={client} />);
-    expect(await screen.findByRole('alert')).toHaveTextContent('SECRET_BRIDGE_KEYS');
+    expect(await screen.findByRole('alert')).toHaveTextContent('SINK_BRIDGE_KEYS');
   });
 
   it('API-074 the first connection ends on the token, the entry and four steps', async () => {

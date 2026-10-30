@@ -27,7 +27,7 @@ describe('connecting CT Studio through the service (docs/design/ct-studio-connec
   };
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
     keyless = await startHarness();
   });
 
@@ -122,7 +122,7 @@ describe('connecting a space to CT Studio (docs/design/ct-studio-connect.md)', (
   beforeAll(async () => {
     await ensureDeliveredDatabase();
     h = await startHarness({
-      secrets: { SECRET_BRIDGE_KEYS: KEY, SECRET_DELIVERED_URL: DELIVERED_URL },
+      secrets: { SINK_BRIDGE_KEYS: KEY, SECRET_DELIVERED_URL: DELIVERED_URL },
     });
   });
 
@@ -255,7 +255,7 @@ describe('adopting a service identity made by hand', () => {
   };
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
   });
 
   afterAll(async () => {
@@ -329,7 +329,7 @@ describe('the delivery store password changing last on connect', () => {
   };
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
   });
 
   afterAll(async () => {

@@ -6,7 +6,7 @@ import { formats, words as say } from '../words/words.js';
 /** The `.env` line CT Studio's bridge reads (docs/design/ct-studio-connect.md, "Hand-off page"). */
 export function sinkEntry(sinkId: string, address: string): string {
   return `BRIDGE_SINKS=${JSON.stringify([
-    { id: sinkId, url: `${address}/bridge`, key: '<the value of SECRET_BRIDGE_KEYS>' },
+    { id: sinkId, url: `${address}/bridge`, key: '<the value of SINK_BRIDGE_KEYS>' },
   ])}`;
 }
 

@@ -47,7 +47,7 @@ and **AST-001** (the asset door).
 ## Where it lives
 
 - **A Fastify plugin in `apps/service`**, `apps/service/src/bridge/`, mounted at `/bridge` when
-  `SECRET_BRIDGE_KEYS` is set. It is not a `RouteContract` in `packages/api-contract`: its shapes,
+  `SINK_BRIDGE_KEYS` is set. It is not a `RouteContract` in `packages/api-contract`: its shapes,
   errors (`{class, code, message, details?}`) and signing are the bridge contract's, not ours, so it
   has its own raw-body parser, error handler and not-found handler, as 3ds-sink's does. It is not a
   privileged internal API (API-N02): nothing of Alloy Works' own uses it, and it can do nothing the
@@ -88,7 +88,7 @@ and **AST-001** (the asset door).
 - **Signing**: the bridge's HMAC over method, path, timestamp, nonce and body hash, with the path
   **relative to `/bridge`** (`/describe`, not `/bridge/describe`), as the bridge's `HttpSink` and the
   conformance suite sign it. This settles the ambiguity 3ds-sink leaves open by accepting both. The
-  keys are a comma-separated `SECRET_BRIDGE_KEYS`, so a key can be rotated. `verifyRequest` checks
+  keys are a comma-separated `SINK_BRIDGE_KEYS`, so a key can be rotated. `verifyRequest` checks
   the signature and window with a store that admits every nonce, since its store is synchronous;
   the nonce is then inserted into a platform table under a unique constraint, and a conflict is the
   replay refusal (`credential_rejected`, `details.reason: "replayed"`). Rows older than 600
@@ -357,7 +357,7 @@ The `content_rejected` reasons, each answered before anything is written:
 
 ## Deployment
 
-- **The service** mounts `/bridge` when `SECRET_BRIDGE_KEYS` is set; nothing is published that is not
+- **The service** mounts `/bridge` when `SINK_BRIDGE_KEYS` is set; nothing is published that is not
   already, since `/bridge` is on the service's own port.
 - **The delivery store** is a Postgres service in `deploy/compose.yaml`, `delivered-postgres`, on
   `connector-egress` (where the connector reaches `source-postgres`) and `delivered`, a network of its

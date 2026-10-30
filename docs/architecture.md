@@ -4226,7 +4226,7 @@ bridge --signed--> service /bridge --stores package by hash, queues bridge_deliv
 ```
 
 - **The service** (`apps/service/src/bridge/`) is a Fastify scope with its own raw-body parser and
-  error handler, mounted at `/bridge` when `SECRET_BRIDGE_KEYS` is set. A request is accepted on the
+  error handler, mounted at `/bridge` when `SINK_BRIDGE_KEYS` is set. A request is accepted on the
   bridge's signature over the path relative to `/bridge`, a nonce inserted under a unique constraint
   (`bridge_nonce`, swept by the job queue), and the target's `awt_` token, which must belong to a
   service identity in the tenant its hostname names. The token's id is recorded; the token is not.

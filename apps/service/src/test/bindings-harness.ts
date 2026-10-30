@@ -203,7 +203,7 @@ export interface HarnessOptions {
   readonly events?: boolean;
   /** Whether development's content is seeded once everyone has signed in: its Report among it. */
   readonly development?: boolean;
-  /** The service's secrets, as `SECRET_*` variables would hold them: `SECRET_BRIDGE_KEYS`, say. */
+  /** The service's secrets, as its environment would hold them: `SINK_BRIDGE_KEYS` or `SECRET_DELIVERED_URL`, say. */
   readonly secrets?: Readonly<Record<string, string>>;
 }
 

@@ -36,7 +36,7 @@ const BODY_LIMIT = 100 * 1024 * 1024;
 export interface BridgeDeps {
   readonly db: TenantDatabase;
   readonly objects: ObjectStores;
-  /** SECRET_BRIDGE_KEYS: any one of them may sign, so a key can be rotated. */
+  /** SINK_BRIDGE_KEYS: any one of them may sign, so a key can be rotated. */
   readonly keys: readonly string[];
   readonly resolve: (hostname: string) => Promise<Tenant | undefined>;
 }
