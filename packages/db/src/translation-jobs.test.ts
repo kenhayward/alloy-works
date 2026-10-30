@@ -141,7 +141,7 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
   /** Each unit of a version's content, its words put in brackets: a vendor's translation. */
   const translatedUnits = (version: StoredVersion) =>
     new Map(
-      xliffUnits(parseContentDocument(version.content)).map((unit) => [
+      xliffUnits(parseContentDocument(version.content), 'fr-FR').map((unit) => [
         unit.id,
         unit.parts.map((part): XliffPart =>
           part.kind === 'text' ? { kind: 'text', text: `[${part.text}]` } : part,

@@ -1,6 +1,7 @@
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
-import type { IndexMarkerNode, InlineNode } from '../content/model/inline.js';
+import type { IndexMarkerNode, InlineNode, MessageFormNode } from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
+import { pluralCategoriesOf, pluralExamples, type PluralCategory } from '../interface/plurals.js';
 
 /**
  * **A component as XLIFF 2.1, and back** (docs/design/translation.md, "Translation jobs"; the XL plan,
@@ -12,7 +13,9 @@ import type { Mark } from '../content/model/marks.js';
  * and comes back from the source, never from the file; so is text in code or in another language.
  * A mark is an `<sc>`/`<ec>` pair, overlapping and split as it likes, its attributes kept here by its
  * place. Pending insertions and comments are not sent: a variant has its own. An index marker's words
- * are sent once a distinct term or sub-entry, after the rest (the IX plan, IX-G).
+ * are sent once a distinct term or sub-entry, after the rest (the IX plan, IX-G). A message form's
+ * arms are units of their own after its text, one per category of the target language (the MF plan,
+ * MF-F).
  */
 
 /** One piece of a unit's text, as it is sent and as it comes back. */
@@ -36,6 +39,8 @@ export interface XliffUnit {
   readonly marks: ReadonlyMap<string, Mark>;
   /** Each term its text uses, by the term's identity (XL-B). */
   readonly terms: readonly string[];
+  /** A message form's arm: the source's inlines it was sent as, and its category and examples (MF-F). */
+  readonly arm?: { readonly from: readonly InlineNode[]; readonly note: string };
 }
 
 /** Marks a sent text never carries: a variant has its own suggestions and comments. */
@@ -151,19 +156,21 @@ function rewriteMarkers(
 
 /**
  * **Every unit of a component** (XL-A), in reading order: each translatable text, inline or words,
- * with where it stands. A block equation, preformatted text and a bound table's rows send nothing.
+ * with where it stands, for a `target` language, whose categories a form's arms are sent in. A block
+ * equation, preformatted text and a bound table's rows send nothing.
  */
-export function xliffUnits(content: ContentDocument): XliffUnit[] {
+export function xliffUnits(content: ContentDocument, target: string): XliffUnit[] {
   const units: XliffUnit[] = [];
   const inline = (id: string, path: Path, inlines: unknown) => {
     if (!Array.isArray(inlines) || inlines.length === 0) return;
     const encoded = encode(inlines as InlineNode[]);
     // A text that is all a pending insertion sends nothing: nothing of it is the variant's.
     if (encoded.parts.length > 0) units.push({ id, kind: 'inline', path, ...encoded });
-    // A footnote's paragraphs and an image's own alternative text are units of their own, after
-    // the text they stand in.
+    // A footnote's paragraphs, an image's own alternative text and a form's arms are units of their
+    // own, after the text they stand in.
     (inlines as InlineNode[]).forEach((node, index) => {
       if (node.type === 'footnote') blocks(node.content, [...path, index, 'content']);
+      if (node.type === 'messageForm') arms(`${id}.mf.${index}`, [...path, index, 'arms'], node);
       if (node.type === 'image' && node.alternative.kind === 'own') {
         words(
           `${id}.image.${index}`,
@@ -172,6 +179,32 @@ export function xliffUnits(content: ContentDocument): XliffUnit[] {
         );
       }
     });
+  };
+  // One arm a category of the target language, the source's of that category or else its `other`,
+  // then each exact arm the source has: a variant's arms are its own language's (MF-F).
+  const arms = (id: string, path: Path, form: MessageFormNode) => {
+    const exact = Object.keys(form.arms).filter((key) => key.startsWith('='));
+    for (const key of [...pluralCategoriesOf(target), ...exact]) {
+      const own = form.arms[key as keyof typeof form.arms] as InlineNode[] | undefined;
+      // A category sent as `other` is a copy: its marks take ids of their own, unique in the variant.
+      const from =
+        own ??
+        (form.arms.other as InlineNode[]).map((node) =>
+          node.type === 'text'
+            ? { ...node, marks: node.marks.map((mark) => ({ ...mark, id: `${mark.id}.${key}` })) }
+            : node,
+        );
+      const note = key.startsWith('=')
+        ? `${key}: exactly ${key.slice(1)}`
+        : `${key}: ${pluralExamples(target, key as PluralCategory).join(', ')}`;
+      units.push({
+        id: `${id}.${key}`,
+        kind: 'inline',
+        path: [...path, key],
+        ...encode(from),
+        arm: { from, note },
+      });
+    }
   };
   const words = (id: string, path: Path, text: unknown) => {
     if (typeof text !== 'string' || text === '') return;
@@ -317,7 +350,10 @@ function decode(
       }
     }
   }
-  if (used.size !== now.size) return 'placeholder_missing';
+  // An arm may leave its value out: "one site", "no sites" (MF-F).
+  if ([...now].some(([id, node]) => !used.has(id) && node.type !== 'messageValue')) {
+    return 'placeholder_missing';
+  }
   if (nodes.length === 0) return 'empty';
   return nodes;
 }
@@ -338,13 +374,15 @@ export function xliffTarget(
       readonly ok: false;
       readonly problems: readonly XliffProblem[];
     } {
-  const units = xliffUnits(source);
+  const units = xliffUnits(source, language);
   const problems: XliffProblem[] = [];
   const known = new Set(units.map((unit) => unit.id));
   for (const id of targets.keys()) {
     if (!known.has(id)) problems.push({ unit: id, problem: 'unknown' });
   }
   let working = structuredClone(source) as unknown;
+  // A form's arms are the file's alone: none of the source's categories stays unless sent (MF-F).
+  for (const unit of units) if (unit.arm) put(working, unit.path.slice(0, -1), {});
   const applied: { readonly unit: string; readonly write: (root: unknown) => unknown }[] = [];
   // An index's words stand in no one place: every marker naming them is rewritten after the rest,
   // from the source's words, so a term translated as another term's source is not rewritten twice.
@@ -394,7 +432,7 @@ export function xliffTarget(
       else apply(unit, text);
       continue;
     }
-    const current = (at(working, unit.path) ?? []) as InlineNode[];
+    const current = unit.arm?.from ?? ((at(working, unit.path) ?? []) as InlineNode[]);
     const decoded = decode(unit, target, current);
     if (typeof decoded === 'string') problems.push({ unit: unit.id, problem: decoded });
     else apply(unit, decoded);
@@ -488,7 +526,10 @@ function partsXml(unit: XliffUnit): string {
         case 'text':
           return withCodePoints(part.text);
         case 'ph':
-          return `<ph id="${part.id}" canCopy="no" canDelete="no"/>`;
+          // An arm's value may be left out (MF-F); nothing else may.
+          return unit.placeholders.get(part.id)?.type === 'messageValue'
+            ? `<ph id="${part.id}" canCopy="no"/>`
+            : `<ph id="${part.id}" canCopy="no" canDelete="no"/>`;
         case 'sc':
           return `<sc id="${part.id}"${pairType(unit.marks.get(part.id)!)} canCopy="no" canDelete="no"/>`;
         case 'ec':
@@ -520,7 +561,7 @@ export function writeXliff(input: {
   readonly terms: ReadonlyMap<string, XliffTerm>;
 }): string {
   const files = input.files.map((file) => {
-    const units = xliffUnits(file.content);
+    const units = xliffUnits(file.content, input.target);
     const body = units.flatMap((unit, index) => {
       if (file.units !== undefined && !file.units.has(unit.id)) return [];
       const glossary = unit.terms.flatMap((term) => {
@@ -534,9 +575,12 @@ export function writeXliff(input: {
             `</gls:glossEntry>`,
         ];
       });
-      const context = [plain(units[index - 1]), plain(units[index + 1])]
-        .filter((each) => each !== '')
-        .map((each) => `<note category="context">${escape(each)}</note>`);
+      const context = [
+        ...(unit.arm ? [`<note category="plural">${escape(unit.arm.note)}</note>`] : []),
+        ...[plain(units[index - 1]), plain(units[index + 1])]
+          .filter((each) => each !== '')
+          .map((each) => `<note category="context">${escape(each)}</note>`),
+      ];
       return (
         `<unit id="${attribute(unit.id)}">` +
         (glossary.length === 0 ? '' : `<gls:glossary>${glossary.join('')}</gls:glossary>`) +

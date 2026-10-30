@@ -1047,7 +1047,9 @@ describe('the domain package', () => {
         'renderContentLanguages',
         // MFa: a value's plural category from the pinned CLDR's compiled rules, and their samples.
         'PLURAL_CATEGORIES',
+        'pluralCategoriesOf',
         'pluralCategory',
+        'pluralExamples',
         'pluralSamples',
         // XLc: machine drafts and the policy that sends them.
         'TRANSLATE_INSTRUCTIONS',

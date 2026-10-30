@@ -47,7 +47,7 @@ line holds its own editing lock, so translators and the author edit at once.
 | **LOC-016** | Status shows on reference rows, the header, the listing and search; a space's report is paged and filtered      |
 | **LOC-036** | All four policies are declared settings with stated defaults, audited, and versioned as the policy's history    |
 
-LOC-039's message forms are their own slice, MF (the TE plan, TE-A).
+LOC-039's message forms are their own slice, MF (the TE plan, TE-A); their arms are sent per target language (Translation jobs, below).
 
 LOC-036 wants every policy it names - fallback, refusal, an external service, a conflicted
 import - declared, versioned and audited. All four are `translation_policy`'s columns, their defaults
@@ -145,6 +145,15 @@ not text, and text in code or another language, is a `<ph>` by its place; a mark
 pair; none may be copied or deleted. A unit's target is read back by the same mapping: every
 placeholder exactly once, nothing invented, structure the source's. Pending insertions and comments are
 not sent. A vendor's file leaves by a person's act, so no policy governs it.
+
+**A message form** (the [MF plan](../plans/2026-10-29-mf-message-forms.md), MF-F) is a `<ph>` in its
+paragraph's unit, and each arm a unit after it, `{unit}.mf.{n}.{key}`: one per category of the
+**target** language, sent as the source's arm of that category or else its `other` (whose marks then
+take ids of their own), then each exact arm the source has. A `<note category="plural">` gives the
+category and its first examples, found by the compiled rules ("few: 3, 4, 5"), since XLIFF 2.1 has no
+plural module. The arm's value is a `<ph>` that may be deleted, so "un seul site" reads back. On return
+the form's arms are the file's alone, its binding the source's; an empty arm is refused naming its
+unit, so its category. Machine drafts send the same units; their instructions (`translate-2`) say so.
 
 `GET` and `POST /v1/documents/{id}/translation-jobs` list and make; `GET .../{job}/file` downloads;
 `POST .../{job}/close` closes. **Translation jobs** in the Publishing panel does each.

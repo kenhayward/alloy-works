@@ -188,3 +188,26 @@ export function pluralCategory(language: string, value: string, scale: number): 
   }
   return 'other';
 }
+
+/** The categories a language uses (MF-F), in CLDR's order, `other` last. */
+export function pluralCategoriesOf(language: string): PluralCategory[] {
+  const used = new Set(ruleSetOf(language).map(([category]) => category));
+  return PLURAL_CATEGORIES.filter((category) => category === 'other' || used.has(category));
+}
+
+/** What the examples are drawn from, in order: whole numbers, large round ones, then tenths. */
+const PROBES: readonly PluralSample[] = [
+  ...Array.from({ length: 201 }, (_, at) => ({ value: String(at), scale: 0 })),
+  ...['1000', '10000', '100000', '1000000'].map((value) => ({ value, scale: 0 })),
+  ...Array.from({ length: 21 }, (_, at) => ({ value: (at / 10).toFixed(1), scale: 1 })),
+];
+
+/**
+ * **A category's first examples in a language** (MF-F), for a translator's note: the rules are compiled
+ * without CLDR's samples, so these are found by the rules themselves, as `pluralCategory` selects.
+ */
+export function pluralExamples(language: string, category: PluralCategory, count = 3): string[] {
+  return PROBES.filter((probe) => pluralCategory(language, probe.value, probe.scale) === category)
+    .slice(0, count)
+    .map((probe) => probe.value);
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseContentDocument } from '../content/model/document.js';
 import {
   TRANSLATE_INSTRUCTIONS,
+  TRANSLATE_INSTRUCTIONS_VERSION,
   machineAllowed,
   missedTerms,
   translationCall,
@@ -32,6 +33,10 @@ describe('a machine draft', () => {
     const call = translationCall('model-a', '<xliff version="2.1"/>');
     expect(call.system).toBe(TRANSLATE_INSTRUCTIONS);
     expect(call.tools).toEqual([]);
+    // A form's arms (the MF plan, MF-F): what a plural note says, and a number that may go.
+    expect(TRANSLATE_INSTRUCTIONS).toContain('a <ph/> without canDelete="no" is a number');
+    expect(TRANSLATE_INSTRUCTIONS).toContain('a note of category "plural"');
+    expect(TRANSLATE_INSTRUCTIONS_VERSION).toBe('translate-2');
     expect(call.messages[0]!.content[0]).toEqual({
       type: 'text',
       text: '<content source="xliff">\n<xliff version="2.1"/>\n</content>',
@@ -45,7 +50,7 @@ describe('a machine draft', () => {
       paragraph('p3', [text('c'.repeat(100))]),
       paragraph('p4', [text('d'.repeat(10))]),
     ]);
-    expect(translationPieces(content, 90).map((piece) => [...piece])).toEqual([
+    expect(translationPieces(content, 'fr', 90).map((piece) => [...piece])).toEqual([
       ['b.p1', 'b.p2'],
       ['b.p3'],
       ['b.p4'],

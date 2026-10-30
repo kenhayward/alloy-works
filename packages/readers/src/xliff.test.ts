@@ -71,7 +71,7 @@ describe('a returned XLIFF file', () => {
     ]);
     const variant = xliffTarget(source, new Map(units as Map<string, never>), 'fr-FR');
     if (!variant.ok) throw new Error(JSON.stringify(variant.problems));
-    expect(xliffUnits(variant.content).map((unit) => unit.parts)).toEqual([
+    expect(xliffUnits(variant.content, 'fr-FR').map((unit) => unit.parts)).toEqual([
       [
         { kind: 'text', text: 'Voir ' },
         { kind: 'ph', id: 'p1' },
@@ -83,6 +83,80 @@ describe('a returned XLIFF file', () => {
       ],
       [{ kind: 'text', text: 'Douze ont été échantillonnés.' }],
     ]);
+  });
+
+  it("reads a message form's arms back: one per category of the target language, a value left out where the translator leaves it", () => {
+    const counted = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Visits',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        {
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            text('We visited '),
+            {
+              type: 'messageForm',
+              id: 'mf1',
+              kind: 'plural',
+              binding: {
+                type: 'binding',
+                id: 'n1',
+                query: '00000000-0000-4000-8000-00000000d001',
+                parameters: {},
+                mode: 'checked',
+                take: { column: 'count' },
+              },
+              arms: {
+                one: [{ type: 'messageValue' }, text(' site')],
+                other: [{ type: 'messageValue' }, text(' sites')],
+              },
+            },
+            text('.'),
+          ],
+        },
+      ],
+    });
+    const written = writeXliff({
+      job: 'job-1',
+      source: 'en-GB',
+      target: 'fr-FR',
+      files: [{ component: 'c1', title: 'Visits', type: '', content: counted }],
+      terms: new Map(),
+    });
+    // French: one, many and other. A tool writes each target, the `one` arm without the value.
+    const returned = written
+      .replace(
+        '<source>We visited <ph id="p1" canCopy="no" canDelete="no"/>.</source>',
+        (whole) => whole + '<target>Nous avons visité <ph id="p1"/>.</target>',
+      )
+      .replace(/(<unit id="b\.p1\.mf\.1\.one">.*?<\/source>)/, '$1<target>un seul site</target>')
+      .replace(
+        /(<unit id="b\.p1\.mf\.1\.many">.*?<\/source>)/,
+        '$1<target><ph id="p1"/> de sites</target>',
+      )
+      .replace(
+        /(<unit id="b\.p1\.mf\.1\.other">.*?<\/source>)/,
+        '$1<target><ph id="p1"/> sites</target>',
+      );
+    expect(written).toContain('<note category="plural">many: 1000000</note>');
+    const read = readXliff(bytes(returned));
+    if (!read.ok) throw new Error(JSON.stringify(read));
+    const variant = xliffTarget(
+      counted,
+      new Map(read.files.get('f.c1')! as Map<string, never>),
+      'fr-FR',
+    );
+    if (!variant.ok) throw new Error(JSON.stringify(variant.problems));
+    const form = (variant.content.content[0] as { content: { arms?: unknown }[] }).content[1]!;
+    expect(form.arms).toEqual({
+      one: [text('un seul site')],
+      many: [{ type: 'messageValue' }, text(' de sites')],
+      other: [{ type: 'messageValue' }, text(' sites')],
+    });
   });
 
   it('reads UTF-16, either order, and a code point as its character', () => {

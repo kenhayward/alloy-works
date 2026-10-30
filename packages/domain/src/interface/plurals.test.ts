@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { cldrPluralRules } from '../../scripts/cldr-inputs.js';
 import { CONTENT_LANGUAGES } from './content-languages.js';
 import { PLURAL_RULE_OF, PLURAL_RULES } from './plural-rules.js';
-import { compilePluralRules, pluralCategory, pluralSamples, renderPluralRules } from './plurals.js';
+import {
+  compilePluralRules,
+  pluralCategoriesOf,
+  pluralCategory,
+  pluralExamples,
+  pluralSamples,
+  renderPluralRules,
+} from './plurals.js';
 
 describe('the compiled plural rules (the MF plan, MF-B)', () => {
   it('LOC-044 are the rules the pinned CLDR gives, regenerated and compared', () => {
@@ -119,5 +126,21 @@ describe('the compiled plural rules (the MF plan, MF-B)', () => {
     });
     expect(renderPluralRules(compiled)).toContain('export const PLURAL_RULE_OF');
     expect(() => compilePluralRules({ xx: { 'pluralRule-count-one': 'n within 1..2' } })).toThrow();
+  });
+});
+
+describe("a language's categories and examples (the MF plan, MF-F)", () => {
+  it('gives the categories a language uses, in CLDR order, other last', () => {
+    expect(pluralCategoriesOf('en-GB')).toEqual(['one', 'other']);
+    expect(pluralCategoriesOf('ar')).toEqual(['zero', 'one', 'two', 'few', 'many', 'other']);
+    expect(pluralCategoriesOf('ja')).toEqual(['other']);
+  });
+
+  it("gives a category's first examples, whole numbers before decimals", () => {
+    expect(pluralExamples('ar', 'few')).toEqual(['3', '4', '5']);
+    expect(pluralExamples('ar', 'many')).toEqual(['11', '12', '13']);
+    expect(pluralExamples('ru', 'one')).toEqual(['1', '21', '31']);
+    expect(pluralExamples('fr', 'many')).toEqual(['1000000']);
+    expect(pluralExamples('en', 'other')).toEqual(['0', '2', '3']);
   });
 });

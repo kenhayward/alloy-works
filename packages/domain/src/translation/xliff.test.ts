@@ -109,12 +109,12 @@ const source = document([
 const translate = (parts: readonly XliffPart[]): XliffPart[] =>
   parts.map((part) => (part.kind === 'text' ? { kind: 'text', text: `[${part.text}]` } : part));
 
-const allTranslated = (content: ContentDocument) =>
-  new Map(xliffUnits(content).map((unit) => [unit.id, translate(unit.parts)]));
+const allTranslated = (content: ContentDocument, target = 'fr') =>
+  new Map(xliffUnits(content, target).map((unit) => [unit.id, translate(unit.parts)]));
 
 describe('a component as XLIFF units', () => {
   it('gives a unit for each translatable text, wherever it stands, and none for code or preformatted text', () => {
-    expect(xliffUnits(source).map((unit) => unit.id)).toEqual([
+    expect(xliffUnits(source, 'fr').map((unit) => unit.id)).toEqual([
       'b.p1',
       'b.p-note',
       'b.p1.image.12',
@@ -138,7 +138,7 @@ describe('a component as XLIFF units', () => {
   });
 
   it('LOC-020 holds every inline node that is not text, and code and other languages, as placeholders, and marks as pairs', () => {
-    const [p1] = xliffUnits(source);
+    const [p1] = xliffUnits(source, 'fr');
     expect(p1!.parts).toEqual([
       { kind: 'text', text: 'See ' },
       { kind: 'ph', id: 'p1' },
@@ -171,6 +171,7 @@ describe('a component as XLIFF units', () => {
           text(' gone', [{ type: 'suggestion', id: 's2', operation: 'delete', author: 'Ada' }]),
         ]),
       ]),
+      'fr',
     );
     expect(unit!.parts).toEqual([
       { kind: 'text', text: 'Kept' },
@@ -179,7 +180,7 @@ describe('a component as XLIFF units', () => {
   });
 
   it('LOC-019 names the terms a text uses', () => {
-    expect(xliffUnits(source)[3]!.terms).toEqual(['term-pond']);
+    expect(xliffUnits(source, 'fr')[3]!.terms).toEqual(['term-pond']);
   });
 });
 
@@ -190,8 +191,8 @@ describe('a variant from a returned file', () => {
     if (!result.ok) return;
     expect(result.content.language).toBe('fr');
     // The variant read again gives the same units, each with the translated words.
-    expect(xliffUnits(result.content).map((unit) => unit.parts)).toEqual(
-      xliffUnits(source).map((unit) => translate(unit.parts)),
+    expect(xliffUnits(result.content, 'fr').map((unit) => unit.parts)).toEqual(
+      xliffUnits(source, 'fr').map((unit) => translate(unit.parts)),
     );
     const p1 = result.content.content[0] as { content: { type: string }[] };
     expect(p1.content.map((node) => node.type)).toEqual(
@@ -298,7 +299,7 @@ describe('a job file', () => {
       '<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" xmlns:gls="urn:oasis:names:tc:xliff:glossary:2.0" version="2.1" srcLang="en-GB" trgLang="fr">',
     );
     expect(file).toContain('<file id="f.c1" original="component:c1">');
-    expect(file.match(/<unit /g)).toHaveLength(xliffUnits(source).length);
+    expect(file.match(/<unit /g)).toHaveLength(xliffUnits(source, 'fr').length);
     expect(file).toContain(
       '<source>See <ph id="p1" canCopy="no" canDelete="no"/> for the <sc id="m1" type="fmt" subType="xlf:b" canCopy="no" canDelete="no"/>large',
     );
@@ -344,7 +345,7 @@ describe('a target the content model would refuse (the XL final review)', () => 
       ]),
       paragraph('p2', [text('Kept.')]),
     ]);
-    expect(xliffUnits(pending).map((unit) => unit.id)).toEqual(['b.p2']);
+    expect(xliffUnits(pending, 'fr').map((unit) => unit.id)).toEqual(['b.p2']);
     expect(xliffTarget(pending, allTranslated(pending), 'fr').ok).toBe(true);
   });
 });
@@ -370,7 +371,7 @@ describe('index markers, translated (the IX plan, IX-G)', () => {
   ]);
 
   it('sends each distinct term and sub-entry once, as words, and each marker as a placeholder', () => {
-    const units = xliffUnits(indexed);
+    const units = xliffUnits(indexed, 'fr');
     expect(units.filter((unit) => unit.id.startsWith('ix.'))).toEqual(
       ['Pond', 'Lake', 'Mere']
         .map((words, k) =>
@@ -423,5 +424,153 @@ describe('index markers, translated (the IX plan, IX-G)', () => {
       'fr',
     );
     expect(result).toEqual({ ok: false, problems: [{ unit: 'ix.term.2', problem: 'invalid' }] });
+  });
+});
+
+describe('a message form, translated (the MF plan, MF-F)', () => {
+  const v = { type: 'messageValue' };
+  const counted = document([
+    paragraph('p1', [
+      text('We visited '),
+      {
+        type: 'messageForm',
+        id: 'mf1',
+        kind: 'plural',
+        binding: {
+          type: 'binding',
+          id: 'n1',
+          query: '00000000-0000-4000-8000-00000000d001',
+          parameters: {},
+          mode: 'checked',
+          take: { column: 'count' },
+        },
+        arms: {
+          '=0': [text('no sites')],
+          one: [v, text(' site')],
+          other: [v, text(' sites', [strong])],
+        },
+      },
+      text('.'),
+    ]),
+  ]);
+  const formOf = (content: ContentDocument) =>
+    (content.content[0] as { content: { type: string; arms?: unknown; binding?: unknown }[] })
+      .content[1]!;
+
+  it("sends the form as a placeholder and an arm for each of the target language's categories, then each exact arm, each noting its examples", () => {
+    const units = xliffUnits(counted, 'ar');
+    expect(units.map((unit) => unit.id)).toEqual([
+      'b.p1',
+      'b.p1.mf.1.zero',
+      'b.p1.mf.1.one',
+      'b.p1.mf.1.two',
+      'b.p1.mf.1.few',
+      'b.p1.mf.1.many',
+      'b.p1.mf.1.other',
+      'b.p1.mf.1.=0',
+    ]);
+    expect(units[0]!.parts).toEqual([
+      { kind: 'text', text: 'We visited ' },
+      { kind: 'ph', id: 'p1' },
+      { kind: 'text', text: '.' },
+    ]);
+    // A category the source has no arm for is sent as its `other`.
+    const few = units.find((unit) => unit.id === 'b.p1.mf.1.few')!;
+    expect(few.parts).toEqual([
+      { kind: 'ph', id: 'p1' },
+      { kind: 'sc', id: 'm1' },
+      { kind: 'text', text: ' sites' },
+      { kind: 'ec', startRef: 'm1' },
+    ]);
+    expect(few.arm?.note).toBe('few: 3, 4, 5');
+    expect(units.find((unit) => unit.id === 'b.p1.mf.1.one')!.parts).toEqual([
+      { kind: 'ph', id: 'p1' },
+      { kind: 'text', text: ' site' },
+    ]);
+    expect(units.at(-1)!.arm?.note).toBe('=0: exactly 0');
+    // Japanese has one category: one arm, and the exact one.
+    expect(xliffUnits(counted, 'ja').map((unit) => unit.id)).toEqual([
+      'b.p1',
+      'b.p1.mf.1.other',
+      'b.p1.mf.1.=0',
+    ]);
+  });
+
+  it("rebuilds the arms from the target language's units, the binding from the source", () => {
+    const result = xliffTarget(counted, allTranslated(counted, 'ar'), 'ar');
+    if (!result.ok) throw new Error(JSON.stringify(result.problems));
+    const form = formOf(result.content);
+    expect(Object.keys(form.arms as object)).toEqual([
+      'zero',
+      'one',
+      'two',
+      'few',
+      'many',
+      'other',
+      '=0',
+    ]);
+    // A category sent as `other` keeps its marks, under ids of its own.
+    expect((form.arms as Record<string, unknown>).few).toEqual([
+      v,
+      text('[ sites]', [{ ...strong, id: 'm-strong.few' }]),
+    ]);
+    expect((form.arms as Record<string, unknown>).other).toEqual([v, text('[ sites]', [strong])]);
+    expect(form.binding).toEqual(formOf(counted).binding);
+    expect(result.content.language).toBe('ar');
+  });
+
+  it("lets an arm leave the value out, and refuses an empty arm or the value twice, naming the arm's unit", () => {
+    const targets = allTranslated(counted, 'ar');
+    const without = xliffTarget(
+      counted,
+      new Map([
+        ...targets,
+        ['b.p1.mf.1.one', [{ kind: 'text', text: 'موقع واحد' }] as XliffPart[]],
+      ]),
+      'ar',
+    );
+    if (!without.ok) throw new Error(JSON.stringify(without.problems));
+    expect((formOf(without.content).arms as Record<string, unknown>).one).toEqual([
+      text('موقع واحد'),
+    ]);
+    expect(
+      xliffTarget(
+        counted,
+        new Map([
+          ...targets,
+          ['b.p1.mf.1.few', [] as XliffPart[]],
+          [
+            'b.p1.mf.1.many',
+            [
+              { kind: 'ph', id: 'p1' },
+              { kind: 'ph', id: 'p1' },
+            ] as XliffPart[],
+          ],
+        ]),
+        'ar',
+      ),
+    ).toEqual({
+      ok: false,
+      problems: [
+        { unit: 'b.p1.mf.1.few', problem: 'empty' },
+        { unit: 'b.p1.mf.1.many', problem: 'placeholder_repeated' },
+      ],
+    });
+  });
+
+  it("writes an arm's note for the translator and lets its value be deleted", () => {
+    const xml = writeXliff({
+      job: 'job-1',
+      source: 'en-GB',
+      target: 'ar',
+      files: [{ component: 'c1', title: 'Visits', type: '', content: counted }],
+      terms: new Map(),
+    });
+    expect(xml).toContain('<note category="plural">few: 3, 4, 5</note>');
+    expect(xml).toContain(
+      '<unit id="b.p1.mf.1.few"><notes><note category="plural">few: 3, 4, 5</note>',
+    );
+    expect(xml).toMatch(/<unit id="b\.p1\.mf\.1\.few">.*?<source><ph id="p1" canCopy="no"\/>/);
+    expect(xml).toContain('<source>We visited <ph id="p1" canCopy="no" canDelete="no"/>.</source>');
   });
 });
