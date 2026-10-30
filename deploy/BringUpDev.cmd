@@ -51,6 +51,20 @@ if not "%MINE%"=="yes" (
 )
 echo Network address %ALLOY_LAN_ADDRESS% (%ADDRESS_FROM%)
 
+rem The build installs the bridge contract from GitHub Packages, with a token that can read packages:
+rem NODE_AUTH_TOKEN from the environment or deploy\.env (compose reads that itself), else the GitHub
+rem CLI's own. The token is only passed on, never printed.
+set "TOKEN_FROM="
+if defined NODE_AUTH_TOKEN set "TOKEN_FROM=the environment"
+if not defined TOKEN_FROM if exist deploy\.env findstr /b /c:"NODE_AUTH_TOKEN=" deploy\.env >nul 2>&1 && set "TOKEN_FROM=deploy\.env"
+if not defined TOKEN_FROM (
+  where gh >nul 2>&1 || (call :fail "No package token: set NODE_AUTH_TOKEN in deploy\.env, or install the GitHub CLI and run: gh auth login" & goto :end)
+  for /f "delims=" %%t in ('gh auth token 2^>nul') do set "NODE_AUTH_TOKEN=%%t"
+)
+if not defined TOKEN_FROM if not defined NODE_AUTH_TOKEN (call :fail "The GitHub CLI is not signed in, so there is no package token. Run: gh auth login" & goto :end)
+if not defined TOKEN_FROM set "TOKEN_FROM=the GitHub CLI"
+echo Package token from %TOKEN_FROM%
+
 echo == Checking the repo
 git rev-parse --is-inside-work-tree >nul 2>&1 || (call :fail "%CD% is not a Git checkout." & goto :end)
 set "BRANCH="
