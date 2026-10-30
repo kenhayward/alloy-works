@@ -21,6 +21,8 @@ export interface TenantDatabase {
   ): Promise<T>;
   /** The tenant a hostname belongs to, from the platform table; undefined when none does. */
   resolveHostname(hostname: string): Promise<Tenant | undefined>;
+  /** The hostnames a tenant answers at, sorted. */
+  hostnames(tenantId: string): Promise<string[]>;
   /** Every tenant, for work that visits each in turn. */
   tenants(): Promise<Tenant[]>;
   /** The tenant a job names; undefined when it has gone. */
@@ -78,6 +80,16 @@ export function createTenantDatabase(
         .where('h.hostname', '=', hostname.toLowerCase())
         .executeTakeFirst();
       return row && { id: row.id, schema: row.schema_name, role: row.role_name };
+    },
+
+    async hostnames(tenantId) {
+      const rows = await db
+        .selectFrom('platform.tenant_hostname')
+        .select('hostname')
+        .where('tenant_id', '=', tenantId)
+        .orderBy('hostname')
+        .execute();
+      return rows.map((row) => row.hostname);
     },
 
     async tenants() {

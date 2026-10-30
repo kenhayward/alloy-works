@@ -35,6 +35,7 @@ import { embeddingRoutes } from './model-embedding.js';
 import { personalPromptRoutes } from './personal-prompts.js';
 import { rangePreviewRoutes } from './range-previews.js';
 import { bridgeSettingsRoutes } from './bridge-settings.js';
+import { ctStudioRoutes } from './ct-studio.js';
 import { erasureRoutes } from './erasure.js';
 import { retentionRoutes } from './retention.js';
 import { workflowRoutes } from './workflows.js';
@@ -436,7 +437,8 @@ type Routes = typeof ownRoutes &
   typeof embeddingRoutes &
   typeof personalPromptRoutes &
   typeof rangePreviewRoutes &
-  typeof bridgeSettingsRoutes;
+  typeof bridgeSettingsRoutes &
+  typeof ctStudioRoutes;
 
 export const routes: Routes = {
   ...ownRoutes,
@@ -514,6 +516,7 @@ export const routes: Routes = {
   ...personalPromptRoutes,
   ...rangePreviewRoutes,
   ...bridgeSettingsRoutes,
+  ...ctStudioRoutes,
 } as const satisfies Record<string, RouteContract>;
 
 export const allRoutes: readonly RouteContract[] = Object.values(routes);

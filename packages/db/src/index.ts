@@ -1369,6 +1369,7 @@ export {
   type StoredDelivery,
   type UnlistedProperty,
 } from './bridge-store.js';
+export { readCtStudio, writeCtStudio, type CtStudioRecord } from './ct-studio.js';
 export {
   deliveryNote,
   writeDocumentDelivery,
