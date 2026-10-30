@@ -5,6 +5,7 @@ import {
   fromEditor,
   mountEditor,
   NodeSelection,
+  openFootnote as openFootnoteEditor,
   renderContent,
   Selection,
   toEditor,
@@ -190,6 +191,44 @@ describe('a message form on the editing surface (the MF plan, MF-G)', () => {
     view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
     const chip = view.dom.querySelector('.aw-footnote-editor .aw-message-form-chip')!;
     expect(chip.firstChild!.textContent).toBe('1 visit');
+  });
+
+  it("undoes an arm's typing from its own keys in the component's history, in a footnote's text too", () => {
+    const view = mount();
+    let at = -1;
+    view.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'footnote') at = pos;
+    });
+    view.dispatch(view.state.tr.setSelection(NodeSelection.create(view.state.doc, at)));
+    const footnote = openFootnoteEditor(view)!;
+    let form = -1;
+    footnote.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'messageForm') form = pos;
+    });
+    footnote.dispatch(
+      footnote.state.tr.setSelection(NodeSelection.create(footnote.state.doc, form)),
+    );
+    const textbox = view.dom.querySelector<HTMLElement>(
+      '.aw-footnote-editor [role="group"] [role="textbox"]',
+    )!;
+    const one = armEditorOf(textbox)!;
+    one.dispatch(one.state.tr.insertText('s', one.state.doc.content.size));
+    const armOf = () => {
+      let arms: Record<string, unknown> = {};
+      view.state.doc.descendants((node) => {
+        if (node.type.name === 'messageForm' && node.attrs.id === 'f2') {
+          arms = node.attrs.arms as Record<string, unknown>;
+        }
+      });
+      return arms.one;
+    };
+    expect(armOf()).toEqual([{ type: 'messageValue' }, text(' visits')]);
+    const mac = /Mac|iP(hone|[oa]d)/.test(navigator.platform);
+    const undone = one.someProp('handleKeyDown', (handle) =>
+      handle(one, { key: 'z', keyCode: 90, ctrlKey: !mac, metaKey: mac } as never),
+    );
+    expect(undone).toBe(true);
+    expect(armOf()).toEqual([{ type: 'messageValue' }, text(' visit')]);
   });
 
   it('is copied as its selected arm, and read so in the read text', () => {

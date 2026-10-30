@@ -72,6 +72,8 @@ export function messageFormView(
   getPos: () => number | undefined,
   decorations: readonly Decoration[],
   language: () => string,
+  /** Whose history `Ctrl+Z` reaches: the surface's, which a footnote's own editor has none of. */
+  surface: EditorView = outer,
 ): NodeView {
   let shown = node;
   const document = outer.dom.ownerDocument;
@@ -105,7 +107,7 @@ export function messageFormView(
   const armsOf = () => shown.attrs.arms as MessageFormNode['arms'];
 
   const history = (command: typeof undo) => () =>
-    outer.editable && command(outer.state, (tr) => outer.dispatch(tr));
+    surface.editable && command(surface.state, (tr) => surface.dispatch(tr));
 
   const armEditor = (holder: HTMLElement, key: MessageArmKey, label: string) => {
     let view: EditorView | null = null;

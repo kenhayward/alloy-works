@@ -131,11 +131,21 @@ function marksWithNoType(
       inline.type === 'crossReference' ||
       inline.type === 'equation' ||
       inline.type === 'binding' ||
-      inline.type === 'messageForm' ||
       inline.type === 'variable' ||
       inline.type === 'citation' ||
       inline.type === 'indexMarker'
     ) {
+      continue;
+    }
+    // A form's arms' runs, which its own editors hold (the MF plan, MF-G): a mark with no type there
+    // opens the component read-only by name, as one in a paragraph does.
+    if (inline.type === 'messageForm') {
+      for (const arm of Object.values(inline.arms)) {
+        marksWithNoType(
+          arm.filter((each) => each.type === 'text'),
+          found,
+        );
+      }
       continue;
     }
     if (inline.type === 'image' && inParagraph) continue;

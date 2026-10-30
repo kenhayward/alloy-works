@@ -231,6 +231,25 @@ describe('the arms of a message form (the MF plan, MF-G)', () => {
     ]);
   });
 
+  it('opens read-only, by name, a component whose arm carries a mark this editor has no type for', () => {
+    const commented = {
+      ...form,
+      arms: {
+        other: [
+          { type: 'text', value: 'visits', marks: [{ type: 'comment', id: 'c1', threadId: 't1' }] },
+        ],
+      },
+    };
+    const opened = toEditor({
+      schemaVersion: 1,
+      title: 'Site visits',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [{ type: 'paragraph', id: 'b1', style: 'body', content: [commented] }],
+    } as unknown as ContentDocument);
+    expect(opened).toEqual({ editable: false, unsupported: ['mark:comment'] });
+  });
+
   it('maps an arm to its own editor node and back, keeping its marks and its value', () => {
     const arm = form.arms.other;
     const node = armToEditor(arm as never);

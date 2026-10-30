@@ -178,7 +178,7 @@ export function footnoteView(
         binding: (node, _view, _getPos, decorations) => bindingView(node, document, decorations),
         // And a message form, its arms in the component's language (the MF plan, MF-G).
         messageForm: (node, view, getPos, decorations) =>
-          messageFormView(node, view, getPos, decorations, language),
+          messageFormView(node, view, getPos, decorations, language, outer),
         // And a citation, from the surface's forms (CId).
         citation: (node, _view, _getPos, decorations) => citationView(node, document, decorations),
       },
