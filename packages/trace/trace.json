@@ -21719,49 +21719,49 @@
     {
       "id": "DAT-015",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 268,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "DAT-025",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 811,
+      "line": 840,
       "kind": "title"
     },
     {
       "id": "DAT-037",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 509,
+      "line": 538,
       "kind": "title"
     },
     {
       "id": "DAT-053",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 155,
+      "line": 184,
       "kind": "title"
     },
     {
       "id": "DAT-066",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 759,
+      "line": 788,
       "kind": "title"
     },
     {
       "id": "DAT-070",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 390,
+      "line": 419,
       "kind": "title"
     },
     {
       "id": "DAT-071",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 190,
+      "line": 219,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 354,
+      "line": 383,
       "kind": "title"
     },
     {
@@ -21773,25 +21773,25 @@
     {
       "id": "DAT-084",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 312,
+      "line": 341,
       "kind": "title"
     },
     {
       "id": "DAT-086",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 955,
+      "line": 984,
       "kind": "title"
     },
     {
       "id": "DAT-090",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 671,
+      "line": 700,
       "kind": "title"
     },
     {
       "id": "DAT-093",
       "file": "apps/service/src/bindings-routes.test.ts",
-      "line": 468,
+      "line": 497,
       "kind": "title"
     },
     {
@@ -26951,49 +26951,55 @@
     {
       "id": "DAT-042",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 446,
+      "line": 448,
       "kind": "title"
     },
     {
       "id": "DAT-046",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 431,
+      "line": 433,
       "kind": "title"
     },
     {
       "id": "DAT-062",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 483,
+      "line": 485,
       "kind": "title"
     },
     {
       "id": "DAT-088",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 399,
+      "line": 401,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 834,
+      "line": 1213,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 834,
+      "line": 1213,
       "kind": "title"
     },
     {
       "id": "PUB-049",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 446,
+      "line": 448,
+      "kind": "title"
+    },
+    {
+      "id": "REU-048",
+      "file": "apps/worker/src/bindings.test.ts",
+      "line": 909,
       "kind": "title"
     },
     {
       "id": "STY-082",
       "file": "apps/worker/src/bindings.test.ts",
-      "line": 552,
+      "line": 931,
       "kind": "title"
     },
     {
@@ -30701,7 +30707,7 @@
     {
       "id": "VER-051",
       "file": "packages/domain/src/compare/content.test.ts",
-      "line": 220,
+      "line": 264,
       "kind": "title"
     },
     {
@@ -30791,175 +30797,175 @@
     {
       "id": "CNT-001",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 37,
+      "line": 39,
       "kind": "title"
     },
     {
       "id": "CNT-002",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 78,
+      "line": 80,
       "kind": "title"
     },
     {
       "id": "CNT-011",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 47,
+      "line": 49,
       "kind": "title"
     },
     {
       "id": "CNT-016",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 226,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "CNT-017",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 239,
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 307,
+      "line": 309,
       "kind": "title"
     },
     {
       "id": "CNT-019",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 314,
+      "line": 316,
       "kind": "title"
     },
     {
       "id": "CNT-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 285,
+      "line": 287,
       "kind": "title"
     },
     {
       "id": "CNT-022",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 239,
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "CNT-023",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 122,
+      "line": 124,
       "kind": "title"
     },
     {
       "id": "CNT-059",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 65,
+      "line": 67,
       "kind": "title"
     },
     {
       "id": "CNT-107",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 226,
+      "line": 228,
       "kind": "title"
     },
     {
       "id": "CNT-117",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 170,
+      "line": 172,
       "kind": "title"
     },
     {
       "id": "CNT-118",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 209,
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "CNT-124",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 74,
+      "line": 76,
       "kind": "title"
     },
     {
       "id": "CNT-129",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 373,
+      "line": 375,
       "kind": "title"
     },
     {
       "id": "CNT-140",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 59,
+      "line": 61,
       "kind": "title"
     },
     {
       "id": "CNT-142",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 54,
+      "line": 56,
       "kind": "title"
     },
     {
       "id": "CNT-146",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 41,
+      "line": 43,
       "kind": "title"
     },
     {
       "id": "CNT-153",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 630,
+      "line": 632,
       "kind": "title"
     },
     {
       "id": "CNT-173",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 296,
+      "line": 298,
       "kind": "title"
     },
     {
       "id": "DAT-097",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2072,
+      "line": 2074,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2048,
+      "line": 2050,
       "kind": "title"
     },
     {
       "id": "STR-025",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 1997,
+      "line": 1999,
       "kind": "title"
     },
     {
       "id": "TAB-001",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2178,
+      "line": 2180,
       "kind": "title"
     },
     {
       "id": "TAB-021",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2237,
+      "line": 2239,
       "kind": "title"
     },
     {
       "id": "TAB-036",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2189,
+      "line": 2191,
       "kind": "title"
     },
     {
       "id": "TAB-043",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2223,
+      "line": 2225,
       "kind": "title"
     },
     {
       "id": "TAB-048",
       "file": "packages/domain/src/content/model/document.test.ts",
-      "line": 2196,
+      "line": 2198,
       "kind": "title"
     },
     {
@@ -32717,13 +32723,13 @@
     {
       "id": "SCH-056",
       "file": "packages/domain/src/search/entries.test.ts",
-      "line": 378,
+      "line": 409,
       "kind": "title"
     },
     {
       "id": "SCH-061",
       "file": "packages/domain/src/search/entries.test.ts",
-      "line": 457,
+      "line": 488,
       "kind": "title"
     },
     {

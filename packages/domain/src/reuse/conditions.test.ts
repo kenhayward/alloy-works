@@ -236,7 +236,12 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
         mode: 'checked' as const,
         take: { column: 'count' },
       },
-      arms: { other: [{ type: 'messageValue' as const }, { type: 'text' as const, value: word, marks: [] }] },
+      arms: {
+        other: [
+          { type: 'messageValue' as const },
+          { type: 'text' as const, value: word, marks: [] },
+        ],
+      },
     });
 
     it('REU-048 drops a form inside an excluded passage with the passage, and keeps one outside', () => {

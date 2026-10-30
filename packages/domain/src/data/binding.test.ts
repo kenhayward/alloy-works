@@ -402,10 +402,12 @@ describe('a binding in a component', () => {
       content: [paragraph('np', [form('mf2')])],
     };
     const stored = parseContentDocument(doc([paragraph('p1', [form('mf1'), note])]));
-    expect(bindingsIn(stored).map(({ binding, path, place }) => [binding.id, path, place])).toEqual([
-      ['mf1-count', 'content.0.content.0.binding', 'form'],
-      ['mf2-count', 'content.0.content.1.content.0.content.0.binding', 'form'],
-    ]);
+    expect(bindingsIn(stored).map(({ binding, path, place }) => [binding.id, path, place])).toEqual(
+      [
+        ['mf1-count', 'content.0.content.0.binding', 'form'],
+        ['mf2-count', 'content.0.content.1.content.0.content.0.binding', 'form'],
+      ],
+    );
   });
 });
 

@@ -2546,7 +2546,7 @@ describe('a message form (the MF plan, MF-C, MF-D)', () => {
     expect(parseContentDocument(doc([outer]))).toBeTruthy();
   });
 
-  it("refuses a mark identifier in an arm that is not in NFC", () => {
+  it('refuses a mark identifier in an arm that is not in NFC', () => {
     const decomposed = { type: 'emphasis', id: 'é' };
     const marked = form({ arms: { other: [run('items', [decomposed])] } });
     expect(() => parseContentDocument(doc([holding(marked)]))).toThrow(/NFC/);

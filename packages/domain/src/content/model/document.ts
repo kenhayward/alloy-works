@@ -438,7 +438,10 @@ function checkMessageForm(
   claim(form.binding.id, claimed.ids);
   const outside = [...claimed.carried];
   const arms: MessageFormNode['arms'] = {};
-  for (const [key, arm] of Object.entries(form.arms) as [keyof MessageFormNode['arms'], MessageArm][]) {
+  for (const [key, arm] of Object.entries(form.arms) as [
+    keyof MessageFormNode['arms'],
+    MessageArm,
+  ][]) {
     claimed.carried.clear();
     refuseUnnormalisedMarks(arm);
     arms[key] = mergeRuns(arm).map((inline) => {

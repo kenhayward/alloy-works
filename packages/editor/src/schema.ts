@@ -296,7 +296,8 @@ export const editorSchema = new Schema({
      * is what makes a term inline content rather than a string.
      */
     term: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'dt' }],
@@ -460,7 +461,8 @@ export const editorSchema = new Schema({
      * Isolating, as a table's note is, so a Backspace at its start reaches nothing above it.
      */
     boundTableEmpty: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -489,7 +491,8 @@ export const editorSchema = new Schema({
     },
     /** A bound table's source (TAB-027): beneath the table and its note, isolating as they are. */
     boundTableSource: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -501,7 +504,8 @@ export const editorSchema = new Schema({
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
@@ -514,7 +518,8 @@ export const editorSchema = new Schema({
      * never reaches into the table above it.
      */
     tableNote: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -606,7 +611,8 @@ export const editorSchema = new Schema({
     },
     /** A figure's caption: inline content below the image, typed in place as a table's is. */
     figureCaption: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
@@ -682,7 +688,8 @@ export const editorSchema = new Schema({
      * is the mapping's second spelling of it, as `definitionList` is of a list.
      */
     footnoteParagraph: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
@@ -910,7 +917,8 @@ export const editorSchema = new Schema({
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
+      content:
+        '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],

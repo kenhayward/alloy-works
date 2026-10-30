@@ -516,7 +516,12 @@ export function bind(
       fail('value_not_number', block, form.id);
       return [form];
     }
-    const chosen = armFor(form.arms, shown, type.base === 'decimal' ? type.scale : 0, content.language);
+    const chosen = armFor(
+      form.arms,
+      shown,
+      type.base === 'decimal' ? type.scale : 0,
+      content.language,
+    );
     if ('missing' in chosen) {
       fail('message_form_arm_missing', block, `${form.id}: ${chosen.missing}`);
       return [form];

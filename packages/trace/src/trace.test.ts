@@ -1008,7 +1008,8 @@ describe('the citations in the committed model', () => {
     // 2216 (2026-10-30): CC cites API-074 to API-076 in its db, service and web tests.
     // 2217 (2026-10-30): the service's secrets test cites API-065 for SINK_BRIDGE_KEYS.
     // 2219 (2026-10-30): the service and web tests cite API-077, disconnecting a space.
-    expect(model.citations).toHaveLength(2219);
+    // 2220 (2026-10-30): MFb's worker case cites REU-048 for a form inside an excluded passage.
+    expect(model.citations).toHaveLength(2220);
   });
 
   it('cites no identifier the corpus does not hold', () => {

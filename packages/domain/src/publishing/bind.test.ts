@@ -1496,7 +1496,13 @@ describe('a message form (the MF plan, MF-E)', () => {
       holding('3'),
     );
     expect(failures).toEqual([
-      { stage: 'bind', code: 'message_form_arm_missing', node: NODE, block: 'p1', detail: 'mf1: few' },
+      {
+        stage: 'bind',
+        code: 'message_form_arm_missing',
+        node: NODE,
+        block: 'p1',
+        detail: 'mf1: few',
+      },
     ]);
     expect((bound.content[0] as { content: { type: string }[] }).content[1]!.type).toBe(
       'messageForm',
@@ -1546,7 +1552,10 @@ describe('a message form (the MF plan, MF-E)', () => {
   });
 
   it('prints nothing of a failed form where it stood', () => {
-    const content = inLanguage('ar', paragraph('p1', text('We visited '), form({ other: [text('x')] })));
+    const content = inLanguage(
+      'ar',
+      paragraph('p1', text('We visited '), form({ other: [text('x')] })),
+    );
     const failed = bind(NODE, content, new Map(), DEFAULT_VALUE_FORMATS);
     expect(failed.failures).toHaveLength(1);
     const published = assembled(content, new Map());

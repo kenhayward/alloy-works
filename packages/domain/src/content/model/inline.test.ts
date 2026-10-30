@@ -257,7 +257,9 @@ describe('the inline vocabulary', () => {
     it('requires an other arm, and keys among the six categories and =0 to =9', () => {
       expect(() => inlineNodeSchema.parse(form({ one: [text('one')] }))).toThrow();
       for (const key of ['zero', 'one', 'two', 'few', 'many', '=0', '=9']) {
-        expect(inlineNodeSchema.parse(form({ [key]: [text('x')], other: [text('y')] }))).toBeTruthy();
+        expect(
+          inlineNodeSchema.parse(form({ [key]: [text('x')], other: [text('y')] })),
+        ).toBeTruthy();
       }
       for (const key of ['=10', '=-1', '=1.5', 'single', 'One', '']) {
         expect(
@@ -268,7 +270,9 @@ describe('the inline vocabulary', () => {
     });
 
     it('prints the value at most once an arm, and holds nothing but text and the value', () => {
-      expect(() => inlineNodeSchema.parse(form({ other: [value, text(' and '), value] }))).toThrow();
+      expect(() =>
+        inlineNodeSchema.parse(form({ other: [value, text(' and '), value] })),
+      ).toThrow();
       expect(inlineNodeSchema.parse(form({ other: [] }))).toBeTruthy();
       for (const inner of [binding, { type: 'variable', name: 'v' }, { ...ok }]) {
         expect(() => inlineNodeSchema.parse(form({ other: [inner] }))).toThrow();

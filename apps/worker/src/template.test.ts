@@ -527,6 +527,8 @@ describe('the pipeline version', () => {
     '30': '40dae467acf5f0777cc594b68e827102ef320122c3f40579e1e3f32ac434da6c',
     // `publishing/27` (IXb, 2026-10-28): the document's `back` holds the index.
     '31': '43aeead996388eca63984283cecab470f718d4fd73d08bc3dff41e4aeb157191',
+    // MFb (2026-10-30): a message form's arm selected; an input holding none is made as '31' made it.
+    '32': '43aeead996388eca63984283cecab470f718d4fd73d08bc3dff41e4aeb157191',
   };
   // The theme is an input as the layout is, recorded on a publication beside the pipeline, so the
   // input is fixed at one: the default theme's 0.3, which '13' to '15' were pinned under. The default moving

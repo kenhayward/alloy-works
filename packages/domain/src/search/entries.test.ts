@@ -143,7 +143,7 @@ describe('what search reads from a version', () => {
     });
   });
 
-  it("reads every arm of a message form, each apart (the MF plan, MF-D)", () => {
+  it('reads every arm of a message form, each apart (the MF plan, MF-D)', () => {
     const content = parseContentDocument({
       schemaVersion: 1,
       title: 'Visits',

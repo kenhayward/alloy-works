@@ -126,7 +126,9 @@ function tokensOf(inlines: readonly InlineNode[] | undefined): Token[] {
         tokens.push({ key: `a${key}`, text: ' ' });
         for (const each of node.arms[key as keyof typeof node.arms]!) {
           if (each.type === 'messageValue') tokens.push({ key: 'v', text: '￼' });
-          else for (const word of each.value.match(WORD) ?? []) tokens.push({ key: `t${word}`, text: word });
+          else
+            for (const word of each.value.match(WORD) ?? [])
+              tokens.push({ key: `t${word}`, text: word });
         }
       }
     } else tokens.push({ key: `n${canonicalJson(node)}`, text: '￼' });

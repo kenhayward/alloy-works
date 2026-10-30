@@ -149,7 +149,11 @@ export const ProvenanceView = provenanceSchema.extend({
  * Why what a take gave cannot stand where its binding is placed: an image (the B6 plan, B6-D), or a
  * message form's value that is no number (the MF plan, MF-D).
  */
-export const PLACEMENT_FAILURES = ['value_not_image', 'image_not_placeable', 'value_not_number'] as const;
+export const PLACEMENT_FAILURES = [
+  'value_not_image',
+  'image_not_placeable',
+  'value_not_number',
+] as const;
 
 /**
  * What a binding's take gave from a dataset version (B1-H): the value, in its column's canonical form,
