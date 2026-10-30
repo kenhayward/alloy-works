@@ -41,9 +41,13 @@ export type TakenImage = Extract<TakeOutcome, { readonly image: unknown }> & {
 };
 
 /** Why an image cannot stand where its binding is placed, as the view decides it (B6-D). */
-export type PlacementFailure = 'value_not_image' | 'image_not_placeable';
+export type PlacementFailure = 'value_not_image' | 'image_not_placeable' | 'value_not_number';
 
-const PLACEMENT_FAILURES: readonly unknown[] = ['value_not_image', 'image_not_placeable'];
+const PLACEMENT_FAILURES: readonly unknown[] = [
+  'value_not_image',
+  'image_not_placeable',
+  'value_not_number',
+];
 
 /**
  * What a take gave where its binding is placed - a value, an image with its asset version, or why

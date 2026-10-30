@@ -515,6 +515,7 @@ function rangeToMark(state: EditorState, type: MarkType): { from: number; to: nu
     (state.selection.node.type.name === 'image' ||
       state.selection.node.type.name === 'crossReference' ||
       state.selection.node.type.name === 'binding' ||
+      state.selection.node.type.name === 'messageForm' ||
       state.selection.node.type.name === 'variable' ||
       state.selection.node.type.name === 'citation' ||
       state.selection.node.type.name === 'indexMarker' ||

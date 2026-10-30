@@ -40,7 +40,9 @@ export type BindingFailureShown =
   | 'unavailable'
   // Where an image a take gave cannot stand (the B6 plan, B6-D): the view's, never a take's.
   | 'value_not_image'
-  | 'image_not_placeable';
+  | 'image_not_placeable'
+  // A message form's value that is no number (the MF plan, MF-D): the view's too.
+  | 'value_not_number';
 
 /**
  * A failure as the host tells it: `take_invalid` with the column, taken or key, the version does not
@@ -258,6 +260,7 @@ export const BINDING_FAILURE_WORDS = {
     say('binding.image-description-missing', { column: held.column }),
   value_not_image: () => say('binding.value-not-image'),
   image_not_placeable: () => say('binding.image-not-placeable'),
+  value_not_number: () => say('binding.value-not-number'),
 } satisfies {
   readonly [K in BindingFailureShown]: (
     binding: AnyBinding,

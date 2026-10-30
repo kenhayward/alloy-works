@@ -497,6 +497,59 @@ describe('the re-identify stage', () => {
     );
   });
 
+  it("gives a pasted message form and its binding new identifiers, and its arms' marks (the MF plan, MF-D)", () => {
+    const form = (id: string, bound: string, mark: string) => ({
+      type: 'messageForm',
+      id,
+      kind: 'plural',
+      binding: binding(bound),
+      arms: {
+        one: [{ type: 'messageValue' }, text(' site')],
+        other: [{ type: 'messageValue' }, text(' sites', [{ type: 'emphasis', id: mark }])],
+      },
+    });
+    const report = createReport();
+    const identified = reidentify(
+      { schemaVersion: 1, content: [paragraph('old-paragraph', [form('mf1', 'k1', 'e1')])] },
+      receiver(),
+      report,
+    );
+    expect(identified).toEqual({
+      ok: true,
+      value: { schemaVersion: 1, content: [paragraph('n3', [form('n4', 'n5', 'n6')])] },
+      renamed: new Map([['old-paragraph', 'n3']]),
+      bindingsRenamed: new Map([['k1', 'n5']]),
+    });
+    expect(report.entries.map(({ message: _, ...entry }) => entry)).toEqual([
+      { stage: 'reidentify', action: 'rewritten', subject: 'blockIdentifier', count: 2 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'bindingCopied', count: 1 },
+      { stage: 'reidentify', action: 'rewritten', subject: 'markIdentifier', count: 1 },
+    ]);
+
+    // Neither the form nor its binding is a reference's target, in the receiver or in the paste.
+    const holding: ContentDocument = {
+      ...document,
+      content: [paragraph('n1', [form('f1', 'b1', 'e1')]) as ContentDocument['content'][number]],
+    };
+    for (const block of ['f1', 'b1']) {
+      expect(
+        run(
+          {
+            schemaVersion: 1,
+            content: [paragraph('old-paragraph', [reference('old-x1', { kind: 'block', block })])],
+          },
+          receiver({ document: holding }),
+        ).entries,
+        block,
+      ).toContainEqual({
+        stage: 'reidentify',
+        action: 'kept',
+        subject: 'crossReferenceUnresolved',
+        count: 1,
+      });
+    }
+  });
+
   it("gives a pasted figure's binding a new identifier, as an inline one's (B6-A)", () => {
     const bound: Record<string, unknown> = { ...figure('f1', '', 'Site'), binding: binding('k1') };
     delete bound.asset;

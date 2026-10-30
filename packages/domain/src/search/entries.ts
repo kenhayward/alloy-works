@@ -164,6 +164,11 @@ function inlineWords(inlines: readonly InlineNode[] | undefined): string {
     else if (inline.type === 'equation') out += ` ${equationAlternative(inline.mathml) ?? ''} `;
     else if (inline.type === 'image' && inline.alternative.kind === 'own') {
       out += ` ${inline.alternative.text} `;
+    } else if (inline.type === 'messageForm') {
+      // Every arm, each apart, since any may print (the MF plan, MF-D); the value is no word.
+      for (const arm of Object.values(inline.arms)) {
+        out += ` ${arm.map((each) => (each.type === 'text' ? each.value : '')).join('')} `;
+      }
     }
   }
   return out;

@@ -70,7 +70,7 @@ const numbering = {
 describe('publishedProvenance', () => {
   it('records each value: where, what was printed and from what, and the result it was taken from', () => {
     expect(publishedProvenance([value], datasets, numbering)).toEqual({
-      schemaVersion: 5,
+      schemaVersion: 6,
       variables: [],
       values: [
         {
@@ -117,7 +117,7 @@ describe('publishedProvenance', () => {
       datasetVersion: VERSION,
     };
     const made = publishedProvenance([value, image], datasets, numbering);
-    expect(made.schemaVersion).toBe(5);
+    expect(made.schemaVersion).toBe(6);
     const [, recorded] = made.values;
     expect(recorded).toMatchObject({
       block: 'f1',
@@ -156,7 +156,7 @@ describe('publishedProvenance', () => {
       },
     };
     const made = publishedProvenance([value, table], datasets, numbering);
-    expect(made.schemaVersion).toBe(5);
+    expect(made.schemaVersion).toBe(6);
     const [, recorded] = made.values;
     expect(recorded).toEqual({
       node: NODE,
@@ -224,7 +224,7 @@ describe('publishedProvenance', () => {
       datasets,
       numbering,
     );
-    expect(made.schemaVersion).toBe(5);
+    expect(made.schemaVersion).toBe(6);
     expect(made.values[0]).toMatchObject({ printed: '4,300.00', value: '4200.5', revision });
     // A value no person revised carries none.
     expect(publishedProvenance([value], datasets, numbering).values[0]).not.toHaveProperty(
@@ -280,7 +280,7 @@ describe('publishedProvenance', () => {
       },
     ]);
     expect(made).toEqual({
-      schemaVersion: 5,
+      schemaVersion: 6,
       values: [],
       variables: [
         {
@@ -294,5 +294,12 @@ describe('publishedProvenance', () => {
         },
       ],
     });
+  });
+  it('records a value printed in a message form with the form and the arm it selected, at 6 (the MF plan, MF-E)', () => {
+    const counted: PrintedValue = { ...value, messageForm: { id: 'mf1', arm: 'other' } };
+    const made = publishedProvenance([value, counted], datasets, numbering);
+    expect(made.schemaVersion).toBe(6);
+    expect(made.values[0]).not.toHaveProperty('messageForm');
+    expect(made.values[1]).toMatchObject({ messageForm: { id: 'mf1', arm: 'other' } });
   });
 });

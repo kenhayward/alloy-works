@@ -237,6 +237,16 @@ describe("the assistant's terms", () => {
       'It holds a definedTerm mark, which a proposal cannot write.',
     );
     expect(editableProblem(table)).toBe('It is a table, which a proposal cannot write.');
+    // A message form, named in words (the MF plan, MF-D).
+    const counted = {
+      type: 'paragraph',
+      id: 'p4',
+      style: 'body',
+      content: [{ type: 'messageForm', id: 'mf1', kind: 'plural', arms: { other: [] } }],
+    } as unknown as BlockNode;
+    expect(editableProblem(counted)).toBe(
+      'It holds a message form, which a proposal cannot write.',
+    );
     expect(
       editableProblem(paragraph('p3', 'plain', [{ type: 'strong', id: 'm2' }])),
     ).toBeUndefined();

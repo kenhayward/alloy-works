@@ -1498,11 +1498,18 @@ type Taken = TakeOutcome | { readonly unavailable: true };
  * **What a take gives where its binding is placed** (the B6 plan, B6-D), as the view answers it: an
  * image with the asset version its dataset version's provenance admitted it as, or `unavailable` where
  * that names none; an image in a footnote's text `image_not_placeable` (CNT-129), and a figure's
- * binding taking anything but an image `value_not_image` - decided here and by the publish's stage,
+ * binding taking anything but an image `value_not_image`, and a message form's anything but a number
+ * `value_not_number` (the MF plan, MF-D) - decided here and by the publish's stage,
  * never recorded, since `dataset_take` keys an outcome by the version and the take alone.
  */
 function placedTaken(place: BindingPlace, taken: Taken, provenance: Provenance): TakeOutcomeView {
   if ('unavailable' in taken || 'failure' in taken) return taken;
+  // A message form's binding takes a number (the MF plan, MF-D), as the publish's stage refuses.
+  if (place === 'form') {
+    if (!('value' in taken)) return { failure: 'value_not_number' };
+    const base = taken.column.type.base;
+    return base === 'integer' || base === 'decimal' ? taken : { failure: 'value_not_number' };
+  }
   if ('value' in taken) return place === 'figure' ? { failure: 'value_not_image' } : taken;
   if (place === 'footnote' || place === 'caption') return { failure: 'image_not_placeable' };
   const assetVersion = provenance.images[taken.image];

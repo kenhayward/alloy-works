@@ -386,6 +386,29 @@ describe('a binding in a component', () => {
       ['f2-caption', undefined],
     ]);
   });
+
+  it("finds a message form's binding, placed as a form's, in a line and in a footnote (the MF plan, MF-D)", () => {
+    const form = (id: string) => ({
+      type: 'messageForm',
+      id,
+      kind: 'plural',
+      binding: binding({ id: `${id}-count`, take: { column: 'visits' } }),
+      arms: { other: [{ type: 'messageValue' }, words(' visits')] },
+    });
+    const note = {
+      type: 'footnote',
+      id: 'n1',
+      anchor: { kind: 'span' },
+      content: [paragraph('np', [form('mf2')])],
+    };
+    const stored = parseContentDocument(doc([paragraph('p1', [form('mf1'), note])]));
+    expect(bindingsIn(stored).map(({ binding, path, place }) => [binding.id, path, place])).toEqual(
+      [
+        ['mf1-count', 'content.0.content.0.binding', 'form'],
+        ['mf2-count', 'content.0.content.1.content.0.content.0.binding', 'form'],
+      ],
+    );
+  });
 });
 
 describe('what a binding takes, against the definition it resolves to', () => {

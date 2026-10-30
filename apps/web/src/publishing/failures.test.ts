@@ -82,3 +82,17 @@ describe("an index marker's failure, in words (the IX plan, IX-I)", () => {
     );
   });
 });
+
+describe("a message form's failure, in words (the MF plan, MF-E)", () => {
+  const at = (code: string, detail: string | null) =>
+    failureWords({ stage: 'bind', code, node: null, block: 'p1', detail } as never);
+
+  it('says which form a value selects that is missing, and a value that is no number', () => {
+    expect(at('message_form_arm_missing', 'mf1: few')).toBe(
+      'A sentence here varies by a number, and has no "few" form for the value it now holds. Add that form, or change the value.',
+    );
+    expect(at('value_not_number', 'mf1')).toBe(
+      'A sentence here varies by a value that is not a number. Bind it to a number, or write the sentence without varying.',
+    );
+  });
+});

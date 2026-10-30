@@ -188,6 +188,7 @@ describe('bindingsShown, in a document (B1-J)', () => {
         'image_description_missing',
         'value_not_image',
         'image_not_placeable',
+        'value_not_number',
       ].sort(),
     );
   });

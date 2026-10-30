@@ -222,4 +222,53 @@ describe('applying conditions (the R6 plan, R6-C)', () => {
       ).toBe('Grain Alloy tempering Steel Iron Metal Alloy');
     });
   });
+
+  describe('a message form (the MF plan, MF-D)', () => {
+    const form = (id: string, word: string) => ({
+      type: 'messageForm' as const,
+      id,
+      kind: 'plural' as const,
+      binding: {
+        type: 'binding' as const,
+        id: `${id}-count`,
+        query: '00000000-0000-4000-8000-00000000d001',
+        parameters: {},
+        mode: 'checked' as const,
+        take: { column: 'count' },
+      },
+      arms: {
+        other: [
+          { type: 'messageValue' as const },
+          { type: 'text' as const, value: word, marks: [] },
+        ],
+      },
+    });
+
+    it('REU-048 drops a form inside an excluded passage with the passage, and keeps one outside', () => {
+      const applied = applyConditions(
+        doc({
+          type: 'paragraph',
+          id: 'p1',
+          style: 'body',
+          content: [
+            run('Open. '),
+            form('mf1', ' kept sites'),
+            run('Internal ', ['audience', ['internal']]),
+            form('mf2', ' hidden sites'),
+            run('only.', ['audience', ['internal']]),
+            run(' Open again.'),
+          ],
+        }),
+        regulator,
+      );
+      const printed = JSON.stringify(applied.content);
+      expect(printed).toContain('kept sites');
+      expect(printed).not.toContain('hidden sites');
+      expect(applied.excluded).toEqual(['Internal only.']);
+    });
+
+    it("REU-048 collects a form's arms' words, so the scan probes for them where its block is excluded", () => {
+      expect(wordsOf([form('mf1', ' sites')])).toBe('sites');
+    });
+  });
 });

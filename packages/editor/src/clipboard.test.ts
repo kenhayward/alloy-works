@@ -829,6 +829,37 @@ describe('copying, cutting and pasting a binding', () => {
     expect(counts(again)).toEqual([{ action: 'rewritten', subject: 'bindingCopied', count: 1 }]);
   });
 
+  it("gives a message form's binding its identifier back when cut and pasted, and a copy a new one (the MF plan, MF-D)", () => {
+    const form: Inline = {
+      type: 'messageForm',
+      id: 'mf1',
+      kind: 'plural',
+      binding: bound('k1') as Extract<Inline, { type: 'binding' }>,
+      arms: { other: [{ type: 'messageValue' }, { type: 'text', value: ' sites', marks: [] }] },
+    };
+    const formsIn = (state: EditorState): unknown[] => {
+      const found: unknown[] = [];
+      state.doc.descendants((node) => {
+        if (node.type.name === 'messageForm') {
+          found.push((node.attrs.binding as { id: string }).id);
+        }
+      });
+      return found;
+    };
+    const state = stateOf([withRuns('b1', text('We visited '), form), paragraph('b2', 'End')]);
+    const { state: copied, report } = pasted(atEndOf(state, 'b2'), copyOf(state, 'b1'));
+    const [original, copy] = formsIn(copied);
+    expect(original).toBe('k1');
+    expect(copy).not.toBe('k1');
+    expect(counts(report)).toEqual([{ action: 'rewritten', subject: 'bindingCopied', count: 1 }]);
+    expect(() => fromEditor(copied.doc)).not.toThrow();
+
+    const clipped = copyOf(state, 'b1');
+    const { state: back, report: moved } = pasted(atEndOf(cut(state, 'b1'), 'b2'), clipped);
+    expect(formsIn(back)).toEqual(['k1']);
+    expect(counts(moved)).toEqual([{ action: 'kept', subject: 'bindingIdentifier', count: 1 }]);
+  });
+
   it("never points a reference left behind at a binding's copy, though its target names the binding", () => {
     // Content the API could have stored: a reference whose block target is a binding's identifier,
     // which no block holds. The binding arrives from elsewhere under that identifier.

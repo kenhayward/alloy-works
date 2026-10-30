@@ -267,6 +267,8 @@ function inlineProblem(content: readonly InlineNode[]): string | undefined {
   for (const node of content) {
     // An index marker prints nothing, so a paragraph holding one stays open (the IX plan, IX-F).
     if (node.type === 'indexMarker') continue;
+    // A message form is named in words (the MF plan, MF-D): its type is no word an author reads.
+    if (node.type === 'messageForm') return 'a message form';
     if (node.type !== 'text') return `a ${node.type}`;
     for (const mark of node.marks ?? []) {
       if (!EDITABLE_MARKS.has(mark.type)) return `a ${mark.type} mark`;

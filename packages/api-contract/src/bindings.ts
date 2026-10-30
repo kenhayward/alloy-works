@@ -145,8 +145,15 @@ export const ProvenanceView = provenanceSchema.extend({
   ]),
 });
 
-/** Why an image a take gave cannot stand where its binding is placed (the B6 plan, B6-D). */
-export const PLACEMENT_FAILURES = ['value_not_image', 'image_not_placeable'] as const;
+/**
+ * Why what a take gave cannot stand where its binding is placed: an image (the B6 plan, B6-D), or a
+ * message form's value that is no number (the MF plan, MF-D).
+ */
+export const PLACEMENT_FAILURES = [
+  'value_not_image',
+  'image_not_placeable',
+  'value_not_number',
+] as const;
 
 /**
  * What a binding's take gave from a dataset version (B1-H): the value, in its column's canonical form,
@@ -190,7 +197,7 @@ export const TakeOutcomeView = z
       failure: z
         .enum([...TAKE_FAILURES, ...PLACEMENT_FAILURES])
         .describe(
-          "`take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image",
+          "`take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal",
         ),
       count: z.number().int().min(2).optional().describe('`value_many`: how many rows there were'),
       column: z

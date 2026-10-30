@@ -701,7 +701,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: '0.15.1',
       template: 'publication',
       template_version: 27,
-      pipeline_version: '31',
+      pipeline_version: '32',
       layout_version_id: (await requestRow(request)).layout_version_id,
     });
     expect(row!.layout_version_id).not.toBeNull();
@@ -1199,7 +1199,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: null,
       template: null,
       template_version: null,
-      pipeline_version: '31',
+      pipeline_version: '32',
       format: 'docx',
       standard: null,
       producer: 'word',
@@ -1353,7 +1353,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
       engine_version: '0.15.1',
       template: 'publication',
       template_version: 27,
-      pipeline_version: '31',
+      pipeline_version: '32',
       format: 'pdf',
       standard: 'ua-1',
       producer: 'typst',
@@ -1459,7 +1459,7 @@ describe('publishing a document, from the request to the stored PDF', () => {
     );
     expect(await work()).toBe('done');
     const [pdf, docx] = await outputsOf(id);
-    expect(pdf).toMatchObject({ format: 'pdf', template_version: 27, pipeline_version: '31' });
+    expect(pdf).toMatchObject({ format: 'pdf', template_version: 27, pipeline_version: '32' });
     expect(docx!.report).toContainEqual({
       kind: 'table_reflowed',
       node,

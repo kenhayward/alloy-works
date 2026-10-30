@@ -4,6 +4,7 @@ import { isKeptMathml } from '../admission/mathml.js';
 import { canonicalValueSchema, PARAMETER_NAME } from '../../data/definition.js';
 import { MAX_LIST_ITEMS } from '../../data/parameters.js';
 import { sourceNameSchema } from '../../data/protocol.js';
+import { PLURAL_CATEGORIES } from '../../interface/plurals.js';
 import { disallowed, setWithoutAGlyph } from '../../publishing/glyphs.js';
 import { storableText } from '../../stored/storable.js';
 
@@ -271,6 +272,52 @@ export const tableBindingSchema = z
     { message: 'A binding holds every string in NFC' },
   );
 
+/** Where a form's binding's formatted value prints in an arm: ICU's `#`, and nowhere but an arm. */
+export const messageValueNodeSchema = z.strictObject({ type: z.literal('messageValue') });
+
+/** The exact arms (MF-A), chosen before any category where the value equals one numerically. */
+export const EXACT_ARMS = ['=0', '=1', '=2', '=3', '=4', '=5', '=6', '=7', '=8', '=9'] as const;
+
+/** An arm's key (MF-A): one of CLDR's six cardinal categories, or an exact arm `=0` to `=9`. */
+export const MESSAGE_ARM_KEYS = [...PLURAL_CATEGORIES, ...EXACT_ARMS] as const;
+export type MessageArmKey = (typeof MESSAGE_ARM_KEYS)[number];
+
+/** A run in an arm: a footnote paragraph's, but with no condition and no suggestion (MF-C). */
+const armTextSchema = textNodeSchema.refine(
+  (run) => run.marks.every((mark) => mark.type !== 'condition' && mark.type !== 'suggestion'),
+  'An arm of a message form carries no condition or suggestion',
+);
+
+const armSchema = z
+  .array(z.discriminatedUnion('type', [armTextSchema, messageValueNodeSchema]))
+  .refine(
+    (inlines) => inlines.filter((inline) => inline.type === 'messageValue').length <= 1,
+    'An arm prints its value at most once',
+  );
+
+/** What an arm holds, as `armSchema` parses it. */
+export type MessageArm = z.infer<typeof armSchema>;
+
+/**
+ * **A message form** (the MF plan, MF-C): ICU's `{n, plural, ...}` whole - a binding of its own and
+ * an arm for each category its sentence takes, `other` required. Which arm prints is the binding
+ * stage's to select, by the occurrence's language (MF-E). The keys are not checked against the
+ * component's language here: the language can change after the form is written, and the inline schema
+ * is checked without its component.
+ */
+export const messageFormNodeSchema = z.strictObject({
+  type: z.literal('messageForm'),
+  id: z.string().min(1),
+  kind: z.literal('plural'),
+  binding: bindingNodeSchema,
+  arms: z
+    .partialRecord(z.enum(MESSAGE_ARM_KEYS), armSchema)
+    .refine((arms) => arms.other !== undefined, 'A message form has an other arm'),
+});
+
+/** A message form, as `messageFormNodeSchema` holds it. */
+export type MessageFormNode = z.infer<typeof messageFormNodeSchema>;
+
 export const imageNodeSchema = z.strictObject({
   type: z.literal('image'),
   // An asset version, pinned, as a figure's is (figures 1, R4).
@@ -321,6 +368,7 @@ export const inlineNodeSchema = z.discriminatedUnion('type', [
   indexMarkerNodeSchema,
   variableNodeSchema,
   bindingNodeSchema,
+  messageFormNodeSchema,
   imageNodeSchema,
 ]);
 

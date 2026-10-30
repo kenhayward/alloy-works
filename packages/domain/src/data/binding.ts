@@ -64,9 +64,10 @@ export type BindingAt =
 /**
  * How a binding taking a value is placed: `figure` a figure's image, `footnote` in a footnote's text,
  * `caption` in a table's or a figure's caption - where no image stands (`image_in_caption`) - else
- * `line`. A bound table's own binding is placed `table` (TB1-C) and takes nothing.
+ * `line`; a message form's, `form` (the MF plan, MF-D), which takes a number. A bound table's own
+ * binding is placed `table` (TB1-C) and takes nothing.
  */
-export type BindingPlace = 'line' | 'footnote' | 'caption' | 'figure';
+export type BindingPlace = 'line' | 'footnote' | 'caption' | 'figure' | 'form';
 
 /**
  * Every binding in a component, in reading order, wherever its content admits an inline (D3-D): a
@@ -147,6 +148,11 @@ function inlines(
   sequence.forEach((inline, at) => {
     const here = `${path}.${at}`;
     if (inline.type === 'binding') found.push({ binding: inline, path: here, place });
+    // A message form's (the MF plan, MF-D): placed as a form's, wherever the form stands, so the
+    // bindings view refuses a take that is no number as the publish does (`value_not_number`).
+    if (inline.type === 'messageForm') {
+      found.push({ binding: inline.binding, path: `${here}.binding`, place: 'form' });
+    }
     if (inline.type === 'footnote') {
       blocks(inline.content as BlockNode[], `${here}.content`, found, 'footnote');
     }

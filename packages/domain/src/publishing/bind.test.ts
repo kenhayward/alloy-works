@@ -1378,3 +1378,190 @@ describe('a value revised by hand, through the binding stage (the RV plan, RV-F)
     ]);
   });
 });
+
+describe('a message form (the MF plan, MF-E)', () => {
+  const VERSION = '00000000-0000-4000-8000-0000000000d1';
+  const FORM_COLUMNS: Column[] = [
+    { name: 'site', from: { column: 'site_code' }, type: { base: 'text' } },
+    { name: 'count', from: { column: 'count' }, type: { base: 'integer' } },
+    {
+      name: 'reading',
+      from: { column: 'reading_kpa' },
+      type: { base: 'decimal', precision: 10, scale: 2 },
+    },
+  ];
+  const holding = (count: CanonicalValue, reading: CanonicalValue = '1.00'): Held => ({
+    result: {
+      columns: [
+        ['site', 'text'],
+        ['count', 'integer'],
+        ['reading', 'decimal'],
+      ],
+      rows: [['north', count, reading]],
+    },
+    columns: FORM_COLUMNS,
+    datasetVersion: VERSION,
+    images: {},
+    key: ['site'],
+  });
+  const value = { type: 'messageValue' };
+  const form = (arms: Record<string, unknown[]>, column = 'count') => ({
+    type: 'messageForm',
+    id: 'mf1',
+    kind: 'plural',
+    binding: binding('b1', { column }),
+    arms,
+  });
+  const ENGLISH = {
+    '=0': [text('no sites')],
+    one: [value, text(' site')],
+    other: [value, text(' sites')],
+  };
+  const inLanguage = (language: string, ...content: unknown[]) =>
+    parseContentDocument({
+      schemaVersion: 1,
+      title: 'Calibration',
+      language,
+      direction: 'ltr',
+      content,
+    });
+  const run = (language: string, arms: Record<string, unknown[]>, from: Held, column?: string) =>
+    bind(
+      NODE,
+      inLanguage(language, paragraph('p1', text('We visited '), form(arms, column), text('.'))),
+      new Map([['b1', from]]),
+      DEFAULT_VALUE_FORMATS,
+    );
+
+  it('replaces a form with the arm its value selects, the value printed where the arm says', () => {
+    const printed = (count: string) => {
+      const { bound, failures } = run('en-GB', ENGLISH, holding(count));
+      expect(failures).toEqual([]);
+      return bound.content[0];
+    };
+    expect(printed('0')).toEqual(paragraph('p1', text('We visited '), text('no sites'), text('.')));
+    expect(printed('1')).toEqual(
+      paragraph('p1', text('We visited '), text('1'), text(' site'), text('.')),
+    );
+    expect(printed('1200')).toEqual(
+      paragraph('p1', text('We visited '), text('1,200'), text(' sites'), text('.')),
+    );
+  });
+
+  it('records the value once, with the form and the arm it selected', () => {
+    const { values } = run('en-GB', ENGLISH, holding('1'));
+    expect(values).toEqual([
+      {
+        node: NODE,
+        block: 'p1',
+        binding: 'b1',
+        take: { column: 'count' },
+        printed: '1',
+        value: '1',
+        column: { name: 'count', type: { base: 'integer' } },
+        datasetVersion: VERSION,
+        messageForm: { id: 'mf1', arm: 'one' },
+      },
+    ]);
+  });
+
+  it("selects by the component's language, and an exact arm by the value's number before any category", () => {
+    const arabic = {
+      zero: [text('zero')],
+      one: [text('one')],
+      two: [text('two')],
+      few: [text('few')],
+      many: [text('many')],
+      other: [text('other')],
+    };
+    const chosen = (count: string) =>
+      (run('ar', arabic, holding(count)).bound.content[0] as { content: unknown[] }).content[1];
+    expect(['0', '1', '2', '3', '11', '100'].map(chosen)).toEqual(
+      ['zero', 'one', 'two', 'few', 'many', 'other'].map((each) => text(each)),
+    );
+    // 1.00 meets =1, numerically; with no =1 it is English's other, as it prints, at scale 2.
+    const decimal = (arms: Record<string, unknown[]>) =>
+      (run('en', arms, holding('3', '1.00'), 'reading').bound.content[0] as { content: unknown[] })
+        .content[1];
+    expect(decimal({ '=1': [text('exactly one')], other: [text('other')] })).toEqual(
+      text('exactly one'),
+    );
+    expect(decimal({ one: [text('one')], other: [text('other')] })).toEqual(text('other'));
+  });
+
+  it('fails a form whose arm the value calls for is missing, naming the category, and leaves it a form', () => {
+    const { bound, failures } = run(
+      'ar',
+      { one: [text('one')], other: [text('other')] },
+      holding('3'),
+    );
+    expect(failures).toEqual([
+      {
+        stage: 'bind',
+        code: 'message_form_arm_missing',
+        node: NODE,
+        block: 'p1',
+        detail: 'mf1: few',
+      },
+    ]);
+    expect((bound.content[0] as { content: { type: string }[] }).content[1]!.type).toBe(
+      'messageForm',
+    );
+  });
+
+  it('fails a form whose binding takes no number, value_not_number, and a take that fails by its own code', () => {
+    expect(run('en', ENGLISH, holding('3'), 'site').failures).toEqual([
+      { stage: 'bind', code: 'value_not_number', node: NODE, block: 'p1', detail: 'mf1' },
+    ]);
+    expect(run('en', ENGLISH, holding(null)).failures).toEqual([
+      { stage: 'bind', code: 'value_null', node: NODE, block: 'p1', detail: 'b1' },
+    ]);
+    const unresolved = bind(
+      NODE,
+      inLanguage('en', paragraph('p1', form(ENGLISH))),
+      new Map(),
+      DEFAULT_VALUE_FORMATS,
+    );
+    expect(unresolved.failures).toEqual([
+      { stage: 'bind', code: 'binding_unresolved', node: NODE, block: 'p1', detail: 'b1' },
+    ]);
+  });
+
+  it('selects by the revision standing in front of the value, as it prints it', () => {
+    const revised: Held = {
+      ...(holding('1') as Exclude<Held, 'unreadable'>),
+      revisions: new Map([
+        [
+          revisionCellKey(null),
+          {
+            id: '7',
+            cell: null,
+            value: '5',
+            by: { id: '00000000-0000-4000-8000-0000000000a1', name: 'Ada' },
+            at: '2026-10-30T10:00:00.000Z',
+            reason: 'Recounted on site.',
+          },
+        ],
+      ]),
+    };
+    const { bound, values } = run('en', ENGLISH, revised);
+    expect(bound.content[0]).toEqual(
+      paragraph('p1', text('We visited '), text('5'), text(' sites'), text('.')),
+    );
+    expect(values[0]).toMatchObject({ value: '1', printed: '5', messageForm: { arm: 'other' } });
+  });
+
+  it('prints nothing of a failed form where it stood', () => {
+    const content = inLanguage(
+      'ar',
+      paragraph('p1', text('We visited '), form({ other: [text('x')] })),
+    );
+    const failed = bind(NODE, content, new Map(), DEFAULT_VALUE_FORMATS);
+    expect(failed.failures).toHaveLength(1);
+    const published = assembled(content, new Map());
+    expect(published.ok).toBe(false);
+    if (published.ok) return;
+    // Its own failure alone: never a second, for a node the writers cannot set.
+    expect(published.failures.map((each) => each.code)).toEqual(['binding_unresolved']);
+  });
+});

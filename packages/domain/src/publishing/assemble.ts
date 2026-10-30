@@ -1372,8 +1372,9 @@ export function assemble(given: AssembleInput): Assembled {
         if (equation !== null) runs.push({ equation });
         continue;
       }
-      // A binding still here is one the binding stage failed by name (B3-D): nothing is printed.
-      if (inline.type === 'binding') continue;
+      // A binding still here is one the binding stage failed by name (B3-D): nothing is printed. So
+      // is a message form, whose arm the stage could not select (the MF plan, MF-E).
+      if (inline.type === 'binding' || inline.type === 'messageForm') continue;
       // An index marker prints nothing where it stands (IX-F): its anchor where the layout places an
       // index, unless what holds it is set again (IX-I), and its entry for Word's `XE` field.
       if (inline.type === 'indexMarker') {

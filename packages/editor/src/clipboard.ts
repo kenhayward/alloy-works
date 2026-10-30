@@ -25,6 +25,7 @@ export const PRODUCT_CLIPBOARD_TYPE = 'application/vnd.alloy-works.content+json'
 const crossReferenceNode = editorSchema.nodes.crossReference!;
 const equationNode = editorSchema.nodes.equation!;
 const bindingNode = editorSchema.nodes.binding!;
+const messageFormNode = editorSchema.nodes.messageForm!;
 const variableNode = editorSchema.nodes.variable!;
 const citationNode = editorSchema.nodes.citation!;
 const figureNode = editorSchema.nodes.figure!;
@@ -186,6 +187,7 @@ export function pasteInto(
           child.type !== crossReferenceNode &&
           child.type !== equationNode &&
           child.type !== bindingNode &&
+          child.type !== messageFormNode &&
           child.type !== variableNode &&
           child.type !== citationNode
         ) {
@@ -264,10 +266,11 @@ function bindingsGivenBack(
   renamed: ReadonlyMap<string, string>,
 ): { kept: number; copied: number } {
   const doc = placed.doc;
-  // A figure's binding (the B6 plan, B6-A) and a bound table's (the TB2 plan, TB2-C) are attributes
-  // holding their own identifiers, each given back as an inline binding's is.
+  // A figure's binding (the B6 plan, B6-A), a bound table's (the TB2 plan, TB2-C) and a message
+  // form's (the MF plan, MF-D) are attributes holding their own identifiers, each given back as an
+  // inline binding's is.
   const figureBinding = (node: Node) =>
-    node.type === figureNode || node.type === boundTableNode
+    node.type === figureNode || node.type === boundTableNode || node.type === messageFormNode
       ? (node.attrs.binding as { id: string } | null)
       : null;
   const held = new Map<string, number>();

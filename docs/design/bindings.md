@@ -578,7 +578,8 @@ description, a previous publication's value, or the derived `dataset_take` row (
   as an output of its own, `format: 'provenance'`, by its hash, wherever the publication printed a
   value: for each, the node and its number, the binding and the block it stood in, **what was
   printed**, the canonical value the query returned and its column, the take, the dataset by name and
-  version, the revision standing - value, who, when, why - and the dataset version's provenance **as
+  version, the revision standing - value, who, when, why - a message form's id and the arm it
+  selected (schema 6, MF-E), and the dataset version's provenance **as
   every reader of the publication may see it**: without the SQL, the connection and each column's
   source, which D3 shows only to a reader of the definition. A reader who may read the definition
   follows its identifiers. The publication's page lists it beside the PDF and Word, and
@@ -692,6 +693,8 @@ definition where the act has one (DAT-086).
 | `row_missing`                | query       | In place, the stage      | No row holds the key, naming it                                                                     |
 | `value_null`, `value_empty`  | query       | In place, the stage      | The cell is null, or text of no characters or spaces alone (DAT-032)                                |
 | `image_description_missing`  | query       | In place, the stage (D8) | A bound image's description cell is null or empty (DAT-097)                                         |
+| `value_not_number`           | query       | In place, the stage      | A message form's column is not integer or decimal (the MF plan, MF-E)                               |
+| `message_form_arm_missing`   | query       | The stage                | No exact arm matches and the value's category has no arm, naming it (MF-E)                          |
 | `binding_unresolved`         | product     | The request; the stage   | No resolution matching the binding's digest: never resolved, or changed since (DAT-087)             |
 | `result_unreadable`          | product     | The stage                | A result object missing from the store, or its bytes not its checksum                               |
 | `confirm_not_possible`       | product     | Confirm                  | The binding's question changed: its definition, its pin, its parameters, or the definition moved on |

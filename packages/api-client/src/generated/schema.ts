@@ -9475,6 +9475,110 @@ export interface components {
                 };
             } | {
                 /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
+                };
+            } | {
+                /** @constant */
                 type: "image";
                 asset: string;
                 imageStyle: string;
@@ -9669,6 +9773,110 @@ export interface components {
                         [key: string]: string | boolean | null;
                     };
                     column: string;
+                };
+            } | {
+                /** @constant */
+                type: "messageForm";
+                id: string;
+                /** @constant */
+                kind: "plural";
+                binding: {
+                    /** @constant */
+                    type: "binding";
+                    id: string;
+                    query: string;
+                    version?: string;
+                    parameters: {
+                        [key: string]: {
+                            literal: (string | boolean | null) | (string | boolean | null)[];
+                        } | {
+                            document: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    mode: "checked" | "pinned";
+                    take: {
+                        column: string;
+                    } | {
+                        key: {
+                            [key: string]: string | boolean | null;
+                        };
+                        column: string;
+                    };
+                };
+                arms: {
+                    [key: string]: ({
+                        /** @constant */
+                        type: "text";
+                        value: string;
+                        /** @default [] */
+                        marks: ({
+                            /** @constant */
+                            type: "emphasis";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "strong";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "underline";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "subscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "superscript";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "inlineCode";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "quotedPhrase";
+                            id: string;
+                        } | {
+                            /** @constant */
+                            type: "definedTerm";
+                            id: string;
+                            term: string;
+                        } | {
+                            /** @constant */
+                            type: "condition";
+                            id: string;
+                            axis: string;
+                            values: string[];
+                        } | {
+                            /** @constant */
+                            type: "suggestion";
+                            id: string;
+                            /** @enum {string} */
+                            operation: "insert" | "delete" | "replace";
+                            author: string;
+                        } | {
+                            /** @constant */
+                            type: "comment";
+                            id: string;
+                            threadId: string;
+                        } | {
+                            /** @constant */
+                            type: "hyperlink";
+                            id: string;
+                            href: string;
+                            title?: string;
+                        } | {
+                            /** @constant */
+                            type: "language";
+                            id: string;
+                            tag: string;
+                        })[];
+                    } | {
+                        /** @constant */
+                        type: "messageValue";
+                    })[];
                 };
             } | {
                 /** @constant */
@@ -13673,7 +13881,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -13808,7 +14016,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -14683,10 +14891,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -14926,10 +15134,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -38320,7 +38528,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -38470,7 +38678,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -38800,10 +39008,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -39043,10 +39251,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -39583,10 +39791,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -39826,10 +40034,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -40281,10 +40489,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -40524,10 +40732,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -41093,10 +41301,10 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
                                 /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -41336,10 +41544,10 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
                                 /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -41718,10 +41926,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -41961,10 +42169,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -42376,10 +42584,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -42619,10 +42827,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -43034,10 +43242,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -43277,10 +43485,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -43939,10 +44147,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -44182,10 +44390,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -44577,10 +44785,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -44820,10 +45028,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -45371,10 +45579,10 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
                                 /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -45614,10 +45822,10 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
                                 /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -45996,10 +46204,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -46239,10 +46447,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -46694,10 +46902,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -46937,10 +47145,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -47538,10 +47746,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -47781,10 +47989,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -48198,10 +48406,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -48441,10 +48649,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -48856,10 +49064,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -49099,10 +49307,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -49494,10 +49702,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -49737,10 +49945,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -50294,10 +50502,10 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
                                 /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -50537,10 +50745,10 @@ export interface operations {
                                 };
                             } | {
                                 /**
-                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                 * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                  * @enum {string}
                                  */
-                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                 /** @description `value_many`: how many rows there were */
                                 count?: number;
                                 /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -50919,10 +51127,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -51162,10 +51370,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -51617,10 +51825,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -51860,10 +52068,10 @@ export interface operations {
                                     };
                                 } | {
                                     /**
-                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image
+                                     * @description `take_invalid`: the result has no such column, taken, key or an image's description; `value_none`: no rows; `value_many`: more than one row; `row_missing`: no row the key names; `value_null`: a null; `value_empty`: text of no characters or spaces alone; `image_description_missing`: an image whose description is null, or text of no characters or spaces alone; `value_not_image`: a figure's binding taking a column that is not an image; `image_not_placeable`: an image taken in a footnote's text or a caption, which holds no image; `value_not_number`: a message form's binding taking a value that is not an integer or a decimal
                                      * @enum {string}
                                      */
-                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable";
+                                    failure: "take_invalid" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "image_description_missing" | "value_not_image" | "image_not_placeable" | "value_not_number";
                                     /** @description `value_many`: how many rows there were */
                                     count?: number;
                                     /** @description `take_invalid`: the column, taken, key or description, the result does not have; `image_description_missing`: the image's description column */
@@ -53815,6 +54023,110 @@ export interface operations {
                                 };
                             } | {
                                 /** @constant */
+                                type: "messageForm";
+                                id: string;
+                                /** @constant */
+                                kind: "plural";
+                                binding: {
+                                    /** @constant */
+                                    type: "binding";
+                                    id: string;
+                                    query: string;
+                                    version?: string;
+                                    parameters: {
+                                        [key: string]: {
+                                            literal: (string | boolean | null) | (string | boolean | null)[];
+                                        } | {
+                                            document: string;
+                                        };
+                                    };
+                                    /** @enum {string} */
+                                    mode: "checked" | "pinned";
+                                    take: {
+                                        column: string;
+                                    } | {
+                                        key: {
+                                            [key: string]: string | boolean | null;
+                                        };
+                                        column: string;
+                                    };
+                                };
+                                arms: {
+                                    [key: string]: ({
+                                        /** @constant */
+                                        type: "text";
+                                        value: string;
+                                        /** @default [] */
+                                        marks?: ({
+                                            /** @constant */
+                                            type: "emphasis";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "strong";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "underline";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "subscript";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "superscript";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "inlineCode";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "quotedPhrase";
+                                            id: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "definedTerm";
+                                            id: string;
+                                            term: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "condition";
+                                            id: string;
+                                            axis: string;
+                                            values: string[];
+                                        } | {
+                                            /** @constant */
+                                            type: "suggestion";
+                                            id: string;
+                                            /** @enum {string} */
+                                            operation: "insert" | "delete" | "replace";
+                                            author: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "comment";
+                                            id: string;
+                                            threadId: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "hyperlink";
+                                            id: string;
+                                            href: string;
+                                            title?: string;
+                                        } | {
+                                            /** @constant */
+                                            type: "language";
+                                            id: string;
+                                            tag: string;
+                                        })[];
+                                    } | {
+                                        /** @constant */
+                                        type: "messageValue";
+                                    })[];
+                                };
+                            } | {
+                                /** @constant */
                                 type: "image";
                                 asset: string;
                                 imageStyle: string;
@@ -54030,6 +54342,110 @@ export interface operations {
                                     [key: string]: string | boolean | null;
                                 };
                                 column: string;
+                            };
+                        } | {
+                            /** @constant */
+                            type: "messageForm";
+                            id: string;
+                            /** @constant */
+                            kind: "plural";
+                            binding: {
+                                /** @constant */
+                                type: "binding";
+                                id: string;
+                                query: string;
+                                version?: string;
+                                parameters: {
+                                    [key: string]: {
+                                        literal: (string | boolean | null) | (string | boolean | null)[];
+                                    } | {
+                                        document: string;
+                                    };
+                                };
+                                /** @enum {string} */
+                                mode: "checked" | "pinned";
+                                take: {
+                                    column: string;
+                                } | {
+                                    key: {
+                                        [key: string]: string | boolean | null;
+                                    };
+                                    column: string;
+                                };
+                            };
+                            arms: {
+                                [key: string]: ({
+                                    /** @constant */
+                                    type: "text";
+                                    value: string;
+                                    /** @default [] */
+                                    marks?: ({
+                                        /** @constant */
+                                        type: "emphasis";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "strong";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "underline";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "subscript";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "superscript";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "inlineCode";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "quotedPhrase";
+                                        id: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "definedTerm";
+                                        id: string;
+                                        term: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "condition";
+                                        id: string;
+                                        axis: string;
+                                        values: string[];
+                                    } | {
+                                        /** @constant */
+                                        type: "suggestion";
+                                        id: string;
+                                        /** @enum {string} */
+                                        operation: "insert" | "delete" | "replace";
+                                        author: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "comment";
+                                        id: string;
+                                        threadId: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "hyperlink";
+                                        id: string;
+                                        href: string;
+                                        title?: string;
+                                    } | {
+                                        /** @constant */
+                                        type: "language";
+                                        id: string;
+                                        tag: string;
+                                    })[];
+                                } | {
+                                    /** @constant */
+                                    type: "messageValue";
+                                })[];
                             };
                         } | {
                             /** @constant */
@@ -56932,6 +57348,110 @@ export interface operations {
                         };
                     } | {
                         /** @constant */
+                        type: "messageForm";
+                        id: string;
+                        /** @constant */
+                        kind: "plural";
+                        binding: {
+                            /** @constant */
+                            type: "binding";
+                            id: string;
+                            query: string;
+                            version?: string;
+                            parameters: {
+                                [key: string]: {
+                                    literal: (string | boolean | null) | (string | boolean | null)[];
+                                } | {
+                                    document: string;
+                                };
+                            };
+                            /** @enum {string} */
+                            mode: "checked" | "pinned";
+                            take: {
+                                column: string;
+                            } | {
+                                key: {
+                                    [key: string]: string | boolean | null;
+                                };
+                                column: string;
+                            };
+                        };
+                        arms: {
+                            [key: string]: ({
+                                /** @constant */
+                                type: "text";
+                                value: string;
+                                /** @default [] */
+                                marks?: ({
+                                    /** @constant */
+                                    type: "emphasis";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "strong";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "underline";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "subscript";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "superscript";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "inlineCode";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "quotedPhrase";
+                                    id: string;
+                                } | {
+                                    /** @constant */
+                                    type: "definedTerm";
+                                    id: string;
+                                    term: string;
+                                } | {
+                                    /** @constant */
+                                    type: "condition";
+                                    id: string;
+                                    axis: string;
+                                    values: string[];
+                                } | {
+                                    /** @constant */
+                                    type: "suggestion";
+                                    id: string;
+                                    /** @enum {string} */
+                                    operation: "insert" | "delete" | "replace";
+                                    author: string;
+                                } | {
+                                    /** @constant */
+                                    type: "comment";
+                                    id: string;
+                                    threadId: string;
+                                } | {
+                                    /** @constant */
+                                    type: "hyperlink";
+                                    id: string;
+                                    href: string;
+                                    title?: string;
+                                } | {
+                                    /** @constant */
+                                    type: "language";
+                                    id: string;
+                                    tag: string;
+                                })[];
+                            } | {
+                                /** @constant */
+                                type: "messageValue";
+                            })[];
+                        };
+                    } | {
+                        /** @constant */
                         type: "image";
                         asset: string;
                         imageStyle: string;
@@ -58254,7 +58774,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -60307,7 +60827,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */
@@ -86276,7 +86796,7 @@ export interface operations {
                             /** @enum {string} */
                             stage: "resolve" | "bind" | "compose" | "engine" | "store";
                             /** @enum {string} */
-                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located";
+                            code: "occurrence_unreadable" | "occurrence_unresolved" | "asset_unreadable" | "component_metadata_invalid" | "title_not_publishable" | "block_not_publishable" | "inline_not_publishable" | "style_missing" | "language_not_publishable" | "glyph_missing" | "character_disallowed" | "nothing_to_publish" | "layout_glyph_missing" | "layout_language_not_publishable" | "code_glyph_missing" | "line_too_wide" | "table_without_caption" | "table_header_spans_body" | "figure_without_caption" | "alternative_missing" | "caption_too_long" | "image_too_wide" | "image_in_caption" | "footnote_not_publishable_here" | "footnote_anchor_unresolved" | "footnote_empty" | "footnote_unnumbered" | "cross_reference_unresolved" | "cross_reference_excluded" | "cross_reference_form_unavailable" | "equation_unrenderable" | "equation_unnumbered" | "math_glyph_missing" | "style_not_applicable" | "typeface_not_embeddable" | "typeface_unavailable" | "continuation_words_missing" | "word_not_yet" | "format_unsupported" | "numbering_not_in_word" | "list_not_in_word" | "cross_reference_not_in_word" | "preview_words_missing" | "heading_too_deep" | "binding_unresolved" | "value_none" | "value_many" | "row_missing" | "value_null" | "value_empty" | "take_invalid" | "result_unreadable" | "image_description_missing" | "image_not_placeable" | "value_not_image" | "column_missing" | "column_image" | "format_mismatch" | "table_too_long" | "table_words_missing" | "key_required" | "note_row_missing" | "revision_row_missing" | "revision_column_unavailable" | "subtotal_not_boolean" | "subtotal_ambiguous" | "transpose_too_long" | "table_too_wide" | "engine_failed" | "store_failed" | "occurrence_gone" | "override_stale" | "variable_unresolved" | "axis_unset" | "condition_leaked" | "generated_unaccepted" | "citation_unresolved" | "entry_incomplete" | "style_invalid" | "occurrence_untranslated" | "translation_out_of_date" | "translation_machine_drafted" | "page_reference_without_pages" | "html_not_yet" | "index_reference_unresolved" | "index_see_located" | "value_not_number" | "message_form_arm_missing";
                             /** @description The outline node it concerns */
                             node: string | null;
                             /** @description The block within that node's component */

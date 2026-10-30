@@ -1,3 +1,4 @@
+import type { MessageArmKey } from '../content/model/inline.js';
 import type { Binding } from '../data/binding.js';
 import type { PrintedVariable, VariableSource } from '../reuse/variables.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
@@ -45,9 +46,10 @@ interface FromResult {
 /**
  * The version every new `provenance.json` is written at: 2 since a value gained an image arm (B6-I),
  * 3 since a bound table's (TB1-J), 4 since a value or a cell revised by hand carries its revision (RV-G),
- * 5 since the variables printed are recorded with the source of each (REU-038; the R5 plan, R5-E).
+ * 5 since the variables printed are recorded with the source of each (REU-038; the R5 plan, R5-E), 6
+ * since a value printed in a message form carries the form and the arm it selected (the MF plan, MF-E).
  */
-export const PUBLISHED_PROVENANCE_VERSION = 5;
+export const PUBLISHED_PROVENANCE_VERSION = 6;
 
 /**
  * **`provenance.json`** (the B3 plan, B3-G; DAT-042, PUB-049): every value a publication printed,
@@ -79,6 +81,8 @@ export interface PublishedProvenance {
         readonly value: string | boolean;
         readonly column: { readonly name: string; readonly type: ValueType };
         readonly revision?: RevisionRecord;
+        /** At 6: the message form it was printed in, and the arm it selected (the MF plan, MF-E). */
+        readonly messageForm?: { readonly id: string; readonly arm: MessageArmKey };
       })
     | (FromResult & {
         readonly take: Binding['take'];
@@ -200,6 +204,9 @@ export function publishedProvenance(
         value: each.value,
         column: { name: each.column.name, type: each.column.type },
         ...(each.revision === undefined ? {} : { revision: each.revision }),
+        ...(each.messageForm === undefined
+          ? {}
+          : { messageForm: { id: each.messageForm.id, arm: each.messageForm.arm } }),
       };
     }),
   };

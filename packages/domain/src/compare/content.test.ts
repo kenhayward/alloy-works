@@ -107,6 +107,50 @@ describe('comparing two versions of a component', () => {
     ]);
   });
 
+  it("compares a message form's arms word by word, each in its place (the MF plan, MF-D)", () => {
+    const formIn = (other: string, emphasised = false): BlockNode => ({
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [
+        text('We visited '),
+        {
+          type: 'messageForm',
+          id: 'mf1',
+          kind: 'plural',
+          binding: {
+            type: 'binding',
+            id: 'k1',
+            query: '00000000-0000-4000-8000-00000000d001',
+            parameters: {},
+            mode: 'checked',
+            take: { column: 'count' },
+          },
+          arms: {
+            one: [{ type: 'messageValue' }, text(' site')],
+            other: [
+              { type: 'messageValue' },
+              emphasised
+                ? { type: 'text', value: other, marks: [{ type: 'emphasis', id: 'e1' }] }
+                : text(other),
+            ],
+          },
+        },
+        text('.'),
+      ],
+    });
+    const [change] = compareContent(docOf(formIn(' sites')), docOf(formIn(' places'))).changes;
+    if (change?.change !== 'matched' || change.edited === null || !('ops' in change.edited)) {
+      throw new Error('not edited');
+    }
+    expect(change.edited.ops.filter((op) => op.op !== 'keep')).toEqual([
+      { op: 'delete', text: 'sites' },
+      { op: 'insert', text: 'places' },
+    ]);
+    const [marked] = compareContent(docOf(formIn(' sites')), docOf(formIn(' sites', true))).changes;
+    expect(marked).toMatchObject({ change: 'matched', edited: null, changed: ['marks'] });
+  });
+
   it('keys a list item by its first block, so an item added is one insertion and its term an edit of the item', () => {
     const list = (items: { first: string; term: string }[]): BlockNode => ({
       type: 'list',

@@ -22,6 +22,7 @@ const inlineTypes = [
   'indexMarker',
   'variable',
   'binding',
+  'messageForm',
   'image',
 ];
 

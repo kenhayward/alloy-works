@@ -65,6 +65,9 @@ export const EDITOR_WORDS = {
   'binding.image-description-missing': 'No image - the row has no description in {column}',
   'binding.value-not-image': 'No image - the column is not an image',
   'binding.image-not-placeable': 'No image - a footnote or a caption cannot hold one',
+  'message-form.varies-by-number': 'Words varying by a number',
+  'binding.value-not-number':
+    'No number - a message form varies by a number, and this column holds none',
   'bound-table.never-resolved': 'No rows - never resolved',
   'bound-table.changed': 'No rows - the binding changed since it was resolved',
   'bound-table.unavailable': 'No rows - the result cannot be read',

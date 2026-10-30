@@ -143,6 +143,37 @@ describe('what search reads from a version', () => {
     });
   });
 
+  it('reads every arm of a message form, each apart (the MF plan, MF-D)', () => {
+    const content = parseContentDocument({
+      schemaVersion: 1,
+      title: 'Visits',
+      language: 'en-GB',
+      direction: 'ltr',
+      content: [
+        para('p1', text('We visited'), {
+          type: 'messageForm',
+          id: 'mf1',
+          kind: 'plural',
+          binding: {
+            type: 'binding',
+            id: 'k1',
+            query: '00000000-0000-4000-8000-00000000d001',
+            parameters: {},
+            mode: 'checked',
+            take: { column: 'count' },
+          },
+          arms: {
+            '=0': [text('no sites')],
+            one: [{ type: 'messageValue' }, text(' site')],
+            other: [{ type: 'messageValue' }, text(' sites')],
+          },
+        }),
+      ],
+    });
+    const [entry] = entriesOf({ kind: 'component', content, values: {} }, context);
+    expect(places(entry!)['block:p1']).toBe('We visited no sites site sites');
+  });
+
   it("reads a bound table by its caption, headers, empty statement, note and source, and its source's footnote as a block", () => {
     const content = parseContentDocument({
       schemaVersion: 1,

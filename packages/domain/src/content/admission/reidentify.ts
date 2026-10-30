@@ -213,7 +213,12 @@ function namesIn(value: unknown): { reserved: Set<string>; targetable: Set<strin
     const record = node as Record<string, unknown>;
     if (typeof record.id === 'string') {
       reserved.add(record.id);
-      if (!inMarks && record.type !== 'crossReference' && record.type !== 'binding') {
+      if (
+        !inMarks &&
+        record.type !== 'crossReference' &&
+        record.type !== 'binding' &&
+        record.type !== 'messageForm'
+      ) {
         targetable.add(record.id);
       }
     }
@@ -361,6 +366,31 @@ function reidentifyInline(value: unknown, state: State): unknown[] {
     state.bindings.add(id);
     if (typeof inline.id === 'string') recordRenamed(state.bindingsRenamed, inline.id, id);
     return [{ ...inline, id }];
+  }
+  // A message form (the MF plan, MF-D): its own identifier, then its binding's as an inline one's,
+  // then its arms' marks, in the order a reader meets them.
+  if (inline.type === 'messageForm') {
+    const id = allocate(state);
+    state.reidentified += 1;
+    const binding = reidentifyInline(inline.binding, state)[0];
+    const arms = asRecord(inline.arms);
+    return [
+      {
+        ...inline,
+        id,
+        binding,
+        ...(arms === undefined
+          ? {}
+          : {
+              arms: Object.fromEntries(
+                Object.entries(arms).map(([key, arm]) => [
+                  key,
+                  mapArray(arm, (member) => reidentifyInline(member, state)),
+                ]),
+              ),
+            }),
+      },
+    ];
   }
   if (inline.type === 'footnote') {
     const id = allocate(state);
