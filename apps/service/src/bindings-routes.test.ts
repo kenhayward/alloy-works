@@ -152,6 +152,35 @@ describe('bindings and datasets through the service', () => {
     }
   });
 
+  it("resolves a message form's binding as an inline one's, and answers one taking text value_not_number (the MF plan, MF-D)", async () => {
+    const definition = await h.definition(connection.id);
+    const form = (id: string, column: string) => ({
+      type: 'messageForm',
+      id,
+      kind: 'plural',
+      binding: binding(`${id}-count`, definition.id, { take: { column } }),
+      arms: { other: [{ type: 'messageValue' }, { type: 'text', value: ' sites', marks: [] }] },
+    });
+    const { document, node } = await placed(form('mf1', 'id'), form('mf2', 'name'));
+    h.connector.mode = 'answer';
+    h.connector.run = ranOk([['1', 'North']]);
+    const answer = await resolve('ada', document.id, [
+      { node, binding: 'mf1-count' },
+      { node, binding: 'mf2-count' },
+    ]);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const taken = Object.fromEntries(
+      (await states('ada', document.id)).map((each) => [
+        each.binding.id,
+        (each.held as unknown as { taken: unknown } | null)?.taken,
+      ]),
+    );
+    expect(taken).toEqual({
+      'mf1-count': { value: '1', column: { name: 'id', type: { base: 'integer' } } },
+      'mf2-count': { failure: 'value_not_number' },
+    });
+  });
+
   it("DAT-053 records each resolve's and check's runs against their query definition and document, and totals them by each", async () => {
     const definition = await h.definition(connection.id);
     const { document, node } = await placed(binding('b1', definition.id));

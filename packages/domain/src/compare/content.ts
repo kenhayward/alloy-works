@@ -118,14 +118,38 @@ function tokensOf(inlines: readonly InlineNode[] | undefined): Token[] {
     } else if (node.type === 'footnote') {
       // By identifier: its content is compared beneath it, never as part of the text it stands in.
       tokens.push({ key: `f${node.id}`, text: '￼' });
+    } else if (node.type === 'messageForm') {
+      // The form by its identity and binding, then each arm's words in key order, each arm opened by a
+      // token of its own, so a word changed in one arm is that word's change (the MF plan, MF-D).
+      tokens.push({ key: `m${canonicalJson({ id: node.id, binding: node.binding })}`, text: '￼' });
+      for (const key of Object.keys(node.arms).sort()) {
+        tokens.push({ key: `a${key}`, text: ' ' });
+        for (const each of node.arms[key as keyof typeof node.arms]!) {
+          if (each.type === 'messageValue') tokens.push({ key: 'v', text: '￼' });
+          else for (const word of each.value.match(WORD) ?? []) tokens.push({ key: `t${word}`, text: word });
+        }
+      }
     } else tokens.push({ key: `n${canonicalJson(node)}`, text: '￼' });
   }
   return tokens;
 }
 
-/** The marks over a run of text, by run, which formatting changes alone touch. */
+/** The marks over a run of text, by run - an arm's runs among them - which formatting changes alone touch. */
 const marksOf = (inlines: readonly InlineNode[] | undefined) =>
-  canonicalJson((inlines ?? []).map((node) => (node.type === 'text' ? node.marks : null)));
+  canonicalJson(
+    (inlines ?? []).map((node) =>
+      node.type === 'text'
+        ? node.marks
+        : node.type === 'messageForm'
+          ? Object.fromEntries(
+              Object.entries(node.arms).map(([key, arm]) => [
+                key,
+                arm.map((each) => (each.type === 'text' ? each.marks : null)),
+              ]),
+            )
+          : null,
+    ),
+  );
 
 const plain = (tokens: readonly Token[] | null) => (tokens ?? []).map((each) => each.text).join('');
 

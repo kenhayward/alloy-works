@@ -202,8 +202,15 @@ export function applyConditions(
           continue;
         }
         // A marker inside an excluded passage goes with it (the IX plan, IX-F): its entry would
-        // locate words that are not there, and print its term from them.
-        if (passage !== null && isRecord(member) && member['type'] === 'indexMarker') continue;
+        // locate words that are not there, and print its term from them. So does a message form (the
+        // MF plan, MF-D), whose words are the passage's sentence.
+        if (
+          passage !== null &&
+          isRecord(member) &&
+          (member['type'] === 'indexMarker' || member['type'] === 'messageForm')
+        ) {
+          continue;
+        }
         if (isRun(member) && member.marks.some(isCondition)) {
           // Each asked, so every unset axis on the run is reported, not the first alone (REU-053).
           const answers = member.marks.filter(isCondition).map((mark) => selects(mark, block));
