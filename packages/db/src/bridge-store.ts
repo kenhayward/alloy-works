@@ -404,8 +404,9 @@ export async function recordUnlisted(
   if (names.length === 0) return;
   await trx
     .insertInto('bridge_unlisted_property')
+    // In one order for every delivery, so two that carry the same names lock their rows alike.
     .values(
-      [...new Set(names)].map((name) => ({
+      [...new Set(names)].sort().map((name) => ({
         space_id: spaceId,
         name,
         first_delivered: at,

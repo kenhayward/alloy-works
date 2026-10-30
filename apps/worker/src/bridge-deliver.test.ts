@@ -652,6 +652,32 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     expect(await clientDeliveries()).toBe(before + 1);
   });
 
+  it('API-076 a delivery whose unlisted count cannot be written is still written', async () => {
+    const before = await clientDeliveries();
+    const count = (deliveries: number) =>
+      service.withTenant(tenant, (trx) =>
+        trx
+          .updateTable('bridge_unlisted_property')
+          .set({ deliveries })
+          .where('space_id', '=', general)
+          .where('name', '=', 'Client')
+          .execute(),
+      );
+    // The count's next increment is past what the column holds, so its write fails.
+    await count(2_147_483_647);
+    try {
+      const delivery = await accepted(
+        documentPackage(documentOf(), [
+          { id: 'img-1', contentType: 'image/png', bytes: await png(73) },
+        ]),
+      );
+      expect(await work()).toBe('done');
+      expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'written' });
+    } finally {
+      await count(before);
+    }
+  });
+
   it('API-076 a delivery refused after its settings are read still records its unlisted properties', async () => {
     const settings = await service.withTenant(tenant, (trx) => readBridgeSettings(trx, general));
     const set = (componentType: string | null) =>

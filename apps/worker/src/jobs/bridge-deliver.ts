@@ -7,6 +7,7 @@ import {
   loadFacts,
   readBridgeSettings,
   readDelivery,
+  inSavepoint,
   recordUnlisted,
   refuseDelivery,
   releaseObject,
@@ -460,7 +461,17 @@ export function bridgeDeliverJob(deps: {
               )
               .map((entry) => entry.element),
           );
-          await recordUnlisted(trx, delivery.spaceId, unlisted.names, new Date());
+          // A count is never a reason the delivery is not written: a failure is rolled back to here.
+          try {
+            await inSavepoint(trx, () =>
+              recordUnlisted(trx, delivery.spaceId, unlisted.names, new Date()),
+            );
+          } catch (error) {
+            deps.log?.warn(
+              { delivery: delivery.id, error: String(error) },
+              'The unlisted properties of a written delivery were not recorded',
+            );
+          }
           const persistentId = answer.receipt.document!.persistentId;
           return finish(
             trx,
