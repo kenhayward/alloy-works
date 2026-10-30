@@ -7,6 +7,7 @@ import {
   loadFacts,
   readBridgeSettings,
   readDelivery,
+  recordUnlisted,
   refuseDelivery,
   releaseObject,
   SpaceArchived,
@@ -40,7 +41,7 @@ import {
 } from '@kenhayward/bridge-contract';
 import sharp from 'sharp';
 import { JobRefused } from '../refusal.js';
-import type { JobHandler } from '../worker.js';
+import type { JobHandler, WorkerLog } from '../worker.js';
 import { checkImage, type Decode } from './ingest.js';
 
 /** What `POST /bridge/deliveries` stores for the job: the request without its instance or credential. */
@@ -299,6 +300,8 @@ export function bridgeDeliverJob(deps: {
   /** The delivery store (`SECRET_DELIVERED_URL`); without it a data package is refused `not_configured`. */
   readonly delivered?: DeliveredStore;
   readonly decode?: Decode;
+  /** Where what the job passes over is said; none, nowhere. */
+  readonly log?: WorkerLog;
 }): JobHandler {
   const { db } = deps;
 
@@ -392,6 +395,9 @@ export function bridgeDeliverJob(deps: {
     const images = await imagesOf(pkg, deps.decode);
     if ('code' in images) return refuse(tenant, store, delivery, new Refused(images, identity));
     const origin = (delivery.provenance as { origin?: unknown } | null)?.origin;
+    // The properties the space's map does not name, once its settings are read: recorded for the space
+    // whether the delivery is written or refused (docs/design/ct-studio-connect.md).
+    let unlisted: { readonly names: readonly string[] } | undefined;
     try {
       const removable = await db.withTenant(
         tenant,
@@ -412,6 +418,9 @@ export function bridgeDeliverJob(deps: {
               now,
             );
           }
+          unlisted = {
+            names: bridge.unlistedNames(pkg.document!.properties, settings.propertyMap),
+          };
           const answer = await writeDocumentDelivery(trx, {
             deliveryId: delivery.id,
             spaceId: delivery.spaceId,
@@ -451,6 +460,7 @@ export function bridgeDeliverJob(deps: {
               )
               .map((entry) => entry.element),
           );
+          await recordUnlisted(trx, delivery.spaceId, unlisted.names, new Date());
           const persistentId = answer.receipt.document!.persistentId;
           return finish(
             trx,
@@ -470,8 +480,34 @@ export function bridgeDeliverJob(deps: {
       );
       await remove(store, removable);
     } catch (error) {
-      if (error instanceof Refused) return refuse(tenant, store, delivery, error);
+      if (error instanceof Refused) {
+        if (unlisted !== undefined) await recordRefusedUnlisted(tenant, delivery, unlisted.names);
+        return refuse(tenant, store, delivery, error);
+      }
       throw error;
+    }
+  };
+
+  /**
+   * A refused delivery's unlisted properties, in a transaction of their own as the delivery's was rolled
+   * back. Never a reason the refusal does not stand: a failure here is logged and passed over.
+   */
+  const recordRefusedUnlisted = async (
+    tenant: Tenant,
+    delivery: StoredDelivery,
+    names: readonly string[],
+  ) => {
+    try {
+      await db.withTenant(
+        tenant,
+        (trx) => recordUnlisted(trx, delivery.spaceId, names, new Date()),
+        SYSTEM,
+      );
+    } catch (error) {
+      deps.log?.warn(
+        { delivery: delivery.id, error: String(error) },
+        'The unlisted properties of a refused delivery were not recorded',
+      );
     }
   };
 

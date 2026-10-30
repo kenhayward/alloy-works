@@ -102218,7 +102218,8 @@ export interface operations {
                      *       "template": "00000000-0000-4000-8000-000000000001",
                      *       "propertyMap": {},
                      *       "data": false,
-                     *       "connection": "00000000-0000-4000-8000-000000000001"
+                     *       "connection": "00000000-0000-4000-8000-000000000001",
+                     *       "unlisted": []
                      *     }
                      */
                     "application/json": {
@@ -102226,14 +102227,31 @@ export interface operations {
                         componentType: (string & (unknown & unknown)) | null;
                         /** @description The template delivered documents are made from; none means a blank document, whose properties are all unmapped */
                         template: (string & (unknown & unknown)) | null;
-                        /** @description CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document */
+                        /** @description CT Studio property names to the id of the template's document field each fills, or null for a property the space ignores; every field must be one the template gives a document. A delivered property this does not name is reported `property_unlisted` and listed in `unlisted` */
                         propertyMap: {
-                            [key: string]: string & (unknown & unknown);
+                            [key: string]: (string & (unknown & unknown)) | null;
                         };
                         /** @description Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries */
                         data: boolean;
                         /** @description The connection to the delivery store that data delivery made for this space, kept while data delivery is off; none until it was first turned on. Query definitions over the delivered tables are made on it. Its credential is never shown */
                         connection: (string & (unknown & unknown)) | null;
+                        /** @description The properties deliveries carried that `propertyMap` does not name, the most recently delivered first; one leaves the list when the map names it, to a field or to ignore */
+                        unlisted: {
+                            /** @description The CT Studio property name */
+                            name: string;
+                            /**
+                             * Format: date-time
+                             * @description When a delivery first carried it
+                             */
+                            firstDelivered: string;
+                            /**
+                             * Format: date-time
+                             * @description When a delivery last carried it
+                             */
+                            lastDelivered: string;
+                            /** @description How many deliveries carried it */
+                            deliveries: number;
+                        }[];
                     };
                 };
             };
@@ -102348,9 +102366,9 @@ export interface operations {
                     componentType: (string & (unknown & unknown)) | null;
                     /** @description The template delivered documents are made from; none means a blank document, whose properties are all unmapped */
                     template: (string & (unknown & unknown)) | null;
-                    /** @description CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document */
+                    /** @description CT Studio property names to the id of the template's document field each fills, or null for a property the space ignores; every field must be one the template gives a document. A delivered property this does not name is reported `property_unlisted` and listed in `unlisted` */
                     propertyMap: {
-                        [key: string]: string & (unknown & unknown);
+                        [key: string]: (string & (unknown & unknown)) | null;
                     };
                     /** @description Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries */
                     data: boolean;
@@ -102374,7 +102392,8 @@ export interface operations {
                      *       "template": "00000000-0000-4000-8000-000000000001",
                      *       "propertyMap": {},
                      *       "data": false,
-                     *       "connection": "00000000-0000-4000-8000-000000000001"
+                     *       "connection": "00000000-0000-4000-8000-000000000001",
+                     *       "unlisted": []
                      *     }
                      */
                     "application/json": {
@@ -102382,14 +102401,31 @@ export interface operations {
                         componentType: (string & (unknown & unknown)) | null;
                         /** @description The template delivered documents are made from; none means a blank document, whose properties are all unmapped */
                         template: (string & (unknown & unknown)) | null;
-                        /** @description CT Studio property names to the id of the template's document field each fills; every field must be one the template gives a document */
+                        /** @description CT Studio property names to the id of the template's document field each fills, or null for a property the space ignores; every field must be one the template gives a document. A delivered property this does not name is reported `property_unlisted` and listed in `unlisted` */
                         propertyMap: {
-                            [key: string]: string & (unknown & unknown);
+                            [key: string]: (string & (unknown & unknown)) | null;
                         };
                         /** @description Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries */
                         data: boolean;
                         /** @description The connection to the delivery store that data delivery made for this space, kept while data delivery is off; none until it was first turned on. Query definitions over the delivered tables are made on it. Its credential is never shown */
                         connection: (string & (unknown & unknown)) | null;
+                        /** @description The properties deliveries carried that `propertyMap` does not name, the most recently delivered first; one leaves the list when the map names it, to a field or to ignore */
+                        unlisted: {
+                            /** @description The CT Studio property name */
+                            name: string;
+                            /**
+                             * Format: date-time
+                             * @description When a delivery first carried it
+                             */
+                            firstDelivered: string;
+                            /**
+                             * Format: date-time
+                             * @description When a delivery last carried it
+                             */
+                            lastDelivered: string;
+                            /** @description How many deliveries carried it */
+                            deliveries: number;
+                        }[];
                     };
                 };
             };

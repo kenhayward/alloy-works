@@ -388,6 +388,7 @@ export {
   BridgeSettingsBody,
   BridgeSettingsRefusal,
   BridgeSettingsView,
+  UnlistedPropertyView,
   bridgeSettingsRoutes,
 } from './bridge-settings.js';
 export {

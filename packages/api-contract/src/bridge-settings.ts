@@ -34,10 +34,24 @@ export const BridgeSettingsBody = z.strictObject({
 });
 export type BridgeSettingsBody = z.infer<typeof BridgeSettingsBody>;
 
+/** A property delivered to the space that its property map does not name (API-076). */
+export const UnlistedPropertyView = z.object({
+  name: z.string().describe('The CT Studio property name'),
+  firstDelivered: z.iso.datetime().describe('When a delivery first carried it'),
+  lastDelivered: z.iso.datetime().describe('When a delivery last carried it'),
+  deliveries: z.number().int().positive().describe('How many deliveries carried it'),
+});
+export type UnlistedPropertyView = z.infer<typeof UnlistedPropertyView>;
+
 export const BridgeSettingsView = BridgeSettingsBody.extend({
   connection: LowercaseUuid.nullable().describe(
     'The connection to the delivery store that data delivery made for this space, kept while data delivery is off; none until it was first turned on. Query definitions over the delivered tables are made on it. Its credential is never shown',
   ),
+  unlisted: z
+    .array(UnlistedPropertyView)
+    .describe(
+      'The properties deliveries carried that `propertyMap` does not name, the most recently delivered first; one leaves the list when the map names it, to a field or to ignore',
+    ),
 });
 export type BridgeSettingsView = z.infer<typeof BridgeSettingsView>;
 

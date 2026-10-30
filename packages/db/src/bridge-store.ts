@@ -263,7 +263,6 @@ export interface BridgeSettings {
   readonly spaceId: string;
   readonly componentType: string | null;
   readonly template: string | null;
-  /** Property name to the template's document field it fills. */
   /** Each CT Studio property name to the field it fills, or `null` for one the space ignores. */
   readonly propertyMap: Readonly<Record<string, string | null>>;
   readonly connectionId: string | null;
@@ -384,5 +383,75 @@ export async function recordElements(
         node: eb.ref('excluded.node'),
       })),
     )
+    .execute();
+}
+
+/** A property delivered to a space that its property map does not name. */
+export interface UnlistedProperty {
+  readonly name: string;
+  readonly firstDelivered: Date;
+  readonly lastDelivered: Date;
+  readonly deliveries: number;
+}
+
+/** Records one delivery of each of `names` to the space: the first time kept, the last set, counted. */
+export async function recordUnlisted(
+  trx: TenantTransaction,
+  spaceId: string,
+  names: readonly string[],
+  at: Date,
+): Promise<void> {
+  if (names.length === 0) return;
+  await trx
+    .insertInto('bridge_unlisted_property')
+    .values(
+      [...new Set(names)].map((name) => ({
+        space_id: spaceId,
+        name,
+        first_delivered: at,
+        last_delivered: at,
+        deliveries: 1,
+      })),
+    )
+    .onConflict((conflict) =>
+      conflict.columns(['space_id', 'name']).doUpdateSet((eb) => ({
+        last_delivered: at,
+        deliveries: eb('bridge_unlisted_property.deliveries', '+', 1),
+      })),
+    )
+    .execute();
+}
+
+/** The space's unlisted properties, the most recently delivered first. */
+export async function readUnlisted(
+  trx: TenantTransaction,
+  spaceId: string,
+): Promise<UnlistedProperty[]> {
+  const rows = await trx
+    .selectFrom('bridge_unlisted_property')
+    .selectAll()
+    .where('space_id', '=', spaceId)
+    .orderBy('last_delivered', 'desc')
+    .orderBy('name')
+    .execute();
+  return rows.map((row) => ({
+    name: row.name,
+    firstDelivered: row.first_delivered,
+    lastDelivered: row.last_delivered,
+    deliveries: row.deliveries,
+  }));
+}
+
+/** Forgets the named properties for the space, as its property map now names them. */
+export async function dropUnlisted(
+  trx: TenantTransaction,
+  spaceId: string,
+  names: readonly string[],
+): Promise<void> {
+  if (names.length === 0) return;
+  await trx
+    .deleteFrom('bridge_unlisted_property')
+    .where('space_id', '=', spaceId)
+    .where('name', 'in', [...names])
     .execute();
 }

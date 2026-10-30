@@ -11,6 +11,9 @@ import {
   readDelivery,
   recordElements,
   recordNonce,
+  dropUnlisted,
+  readUnlisted,
+  recordUnlisted,
   refuseDelivery,
   startDelivery,
   writeBridgeSettings,
@@ -343,5 +346,22 @@ describe('the bridge store', () => {
     expect(await as((trx) => objectInUse(trx, `t_x/sha256/${'e'.repeat(64)}`, randomUUID()))).toBe(
       false,
     );
+  });
+
+  it('API-076 recordUnlisted counts each delivery and keeps the first time', async () => {
+    const t1 = new Date('2026-10-30T09:00:00Z');
+    const t2 = new Date('2026-10-30T10:00:00Z');
+    await as((trx) => recordUnlisted(trx, space, ['A'], t1));
+    await as((trx) => recordUnlisted(trx, space, ['A', 'B'], t2));
+    expect(await as((trx) => readUnlisted(trx, space))).toEqual([
+      { name: 'A', firstDelivered: t1, lastDelivered: t2, deliveries: 2 },
+      { name: 'B', firstDelivered: t2, lastDelivered: t2, deliveries: 1 },
+    ]);
+  });
+
+  it('API-076 dropUnlisted removes only the named', async () => {
+    await as((trx) => dropUnlisted(trx, space, ['A']));
+    expect((await as((trx) => readUnlisted(trx, space))).map((each) => each.name)).toEqual(['B']);
+    await as((trx) => dropUnlisted(trx, space, ['B']));
   });
 });

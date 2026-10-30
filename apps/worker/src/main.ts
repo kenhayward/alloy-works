@@ -99,6 +99,7 @@ const delivered =
 const bridgeDeliver = bridgeDeliverJob({
   db,
   stores,
+  log,
   ...(delivered === undefined ? {} : { delivered }),
 });
 /** A returned file read within a third of the lease, as an import's is. */

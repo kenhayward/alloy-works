@@ -9,10 +9,12 @@ import {
   createConnection,
   createDeliveredStore,
   deliveredNames,
+  dropUnlisted,
   lockBridgeProvision,
   readBridgeSettings,
   readConnection,
   readDefinitionLatest,
+  readUnlisted,
   readTemplate,
   setConnectionCredential,
   templateReferences,
@@ -23,6 +25,7 @@ import {
   type StoredConnection,
   type Tenant,
   type TenantTransaction,
+  type UnlistedProperty,
 } from '@alloy-works/db';
 import { resolveTemplate, type PostgresSettings } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
@@ -48,13 +51,22 @@ type Problem = {
 };
 
 /** A space's settings as the API answers them: data delivery is on while a delivery schema is named. */
-function viewOf(settings: BridgeSettings | undefined): BridgeSettingsView {
+function viewOf(
+  settings: BridgeSettings | undefined,
+  unlisted: readonly UnlistedProperty[],
+): BridgeSettingsView {
   return {
     componentType: settings?.componentType ?? null,
     template: settings?.template ?? null,
     propertyMap: { ...settings?.propertyMap },
     data: settings?.tableSchema != null,
     connection: settings?.connectionId ?? null,
+    unlisted: unlisted.map((each) => ({
+      name: each.name,
+      firstDelivered: each.firstDelivered.toISOString(),
+      lastDelivered: each.lastDelivered.toISOString(),
+      deliveries: each.deliveries,
+    })),
   };
 }
 
@@ -298,7 +310,7 @@ export function bridgeSettingsHandlers(options: {
     handlers: {
       getBridgeSettings: async (request: FastifyRequest, { trx }: Authorised) => {
         const { space } = request.params as SpaceParams;
-        return viewOf(await readBridgeSettings(trx, space));
+        return viewOf(await readBridgeSettings(trx, space), await readUnlisted(trx, space));
       },
 
       putBridgeSettings: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
@@ -330,9 +342,11 @@ export function bridgeSettingsHandlers(options: {
           tableSchema: on?.schema ?? null,
           changedBy: principalId,
         });
+        // A property the map now names, to a field or to ignore, is no longer unlisted.
+        await dropUnlisted(trx, space, Object.keys(body.propertyMap));
         // The store's password changes last, so nothing above it can have left it changed.
         await on?.commit();
-        return viewOf(written);
+        return viewOf(written, await readUnlisted(trx, space));
       },
     },
     /** Lets go of the delivery store's connections, with the app. */

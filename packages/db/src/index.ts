@@ -1348,10 +1348,13 @@ export {
   elementsOf,
   finishDelivery,
   lockBridgeProvision,
+  dropUnlisted,
   readBridgeSettings,
   readDelivery,
+  readUnlisted,
   recordElements,
   recordNonce,
+  recordUnlisted,
   refuseDelivery,
   startDelivery,
   writeBridgeSettings,
@@ -1364,6 +1367,7 @@ export {
   type NewDelivery,
   type StartedDelivery,
   type StoredDelivery,
+  type UnlistedProperty,
 } from './bridge-store.js';
 export {
   deliveryNote,

@@ -861,6 +861,15 @@ export interface BridgeSettingsTable {
   changed_at: ColumnType<Date, Date | undefined, Date>;
 }
 
+/** A property delivered to a space that its property map does not name (0173). */
+export interface BridgeUnlistedPropertyTable {
+  space_id: ColumnType<string, string, never>;
+  name: ColumnType<string, string, never>;
+  first_delivered: ColumnType<Date, Date, never>;
+  last_delivered: ColumnType<Date, Date, Date>;
+  deliveries: ColumnType<number, number, number>;
+}
+
 /** A job's file returned (0164; XL-F): kept by its hash, read by the worker. */
 export interface TranslationJobReturnTable {
   id: ColumnType<string, string | undefined, never>;
@@ -1305,6 +1314,7 @@ export interface TenantTables {
   bridge_delivery: BridgeDeliveryTable;
   bridge_element: BridgeElementTable;
   bridge_settings: BridgeSettingsTable;
+  bridge_unlisted_property: BridgeUnlistedPropertyTable;
   unsaved_discarded: UnsavedDiscardedTable;
   iteration: IterationTable;
   principal: PrincipalTable;
