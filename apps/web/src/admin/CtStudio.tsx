@@ -135,16 +135,16 @@ export function CtStudio({ client }: { client: Client }) {
             </>
           ) : (
             <>
-              <p>
+              {/* Near its end, or with none recorded, the token is said as an alert; a new one is
+                  always offered, as the way out once a hand-off was closed before it was copied. */}
+              <p {...(due || status.token === null ? { role: 'alert' } : {})}>
                 {status.token === null
                   ? say('admin.no-token-is-recorded-for-ct-studio')
                   : say('admin.its-token-expires-on', { date: when(status.token.expiresAt) })}
               </p>
-              {(due || status.token === null) && (
-                <button type="button" onClick={() => void newToken(false)}>
-                  {say('admin.issue-a-new-token')}
-                </button>
-              )}
+              <button type="button" onClick={() => void newToken(false)}>
+                {say('admin.issue-a-new-token')}
+              </button>
             </>
           )}
         </div>

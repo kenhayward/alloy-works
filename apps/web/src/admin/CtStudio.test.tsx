@@ -262,6 +262,12 @@ describe("Administration's CT Studio", () => {
     });
   });
 
+  it('API-074 an enabled identity is always offered Issue a new token, not only near its expiry', async () => {
+    const { client } = service(connected);
+    render(<CtStudio client={client} />);
+    expect(await screen.findByRole('button', { name: 'Issue a new token' })).toBeInTheDocument();
+  });
+
   it('API-074 a space without its grant offers Grant again', async () => {
     const { client, sent } = service({
       ...connected,

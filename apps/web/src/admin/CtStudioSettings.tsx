@@ -1,5 +1,5 @@
 import type { createApiClient, paths } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { everyPage } from '../paging.js';
@@ -106,6 +106,8 @@ export function CtStudioSettings({
   const [problems, setProblems] = useState<ReadonlyMap<string, string>>(new Map());
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Whether the settings last read or saved delivered data, so a save that turns it on tests it. */
+  const dataWas = useRef(false);
 
   const show = (view: BridgeSettingsView) => {
     setComponentType(view.componentType ?? '');
@@ -118,6 +120,7 @@ export function CtStudioSettings({
     );
     setData(view.data);
     setUnlisted(view.unlisted);
+    dataWas.current = view.data;
   };
 
   useEffect(() => {
@@ -190,8 +193,18 @@ export function CtStudioSettings({
         body: bodyOf(componentType, template, rows, data),
       });
       if (saved) {
+        const turnedOn = saved.data && !dataWas.current;
         show(saved);
         setSaid(say('admin.saved'));
+        // Data on: the connection is tested at once, as Connect CT Studio tests it.
+        if (turnedOn && saved.connection !== null) {
+          await client
+            .POST('/v1/connections/{id}/test', {
+              params: { path: { id: saved.connection } },
+              body: {},
+            })
+            .catch(() => undefined);
+        }
         return;
       }
       const listed = (error as { problems?: { path: string; reason: string }[] } | undefined)
@@ -272,6 +285,10 @@ export function CtStudioSettings({
                     {each.name}
                   </option>
                 ))}
+                {/* A field the list does not hold is kept as it is, never shown as ignore. */}
+                {row.field !== null && !fields.some((each) => each.id === row.field) && (
+                  <option value={row.field}>{say('admin.a-field-this-template-does-not-give')}</option>
+                )}
               </select>
             </label>
             <button

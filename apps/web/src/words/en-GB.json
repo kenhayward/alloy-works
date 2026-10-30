@@ -3423,6 +3423,7 @@
   "admin.ct-studio-property": "CT Studio property {number}",
   "admin.fills": "Fills {number}",
   "admin.ignore": "Ignore",
+  "admin.a-field-this-template-does-not-give": "A field this template does not give",
   "admin.remove-the-property": "Remove property {number}",
   "admin.add-a-property": "Add a property",
   "admin.deliver-data-tables-to-this-space": "Deliver data tables to this space",

@@ -13,6 +13,8 @@ const TEMPLATE = '6a1d9c2e-7b3f-4e8a-9c5d-1f2e3a4b5c6d';
 const SCHEMA = '7c2e0d3f-8c4a-4f9b-8d6e-2a3b4c5d6e7f';
 const OWNER_FIELD = '11111111-1111-4111-8111-111111111111';
 const TYPE = '22222222-2222-4222-8222-222222222222';
+const GONE_FIELD = '33333333-3333-4333-8333-333333333333';
+const CONNECTION = '44444444-4444-4444-8444-444444444444';
 
 interface Settings {
   componentType: string | null;
@@ -35,6 +37,7 @@ function service(start: Partial<Settings> = {}, refuse?: unknown) {
     ...start,
   };
   const sent: unknown[] = [];
+  const tested: string[] = [];
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url).pathname;
@@ -71,14 +74,23 @@ function service(start: Partial<Settings> = {}, refuse?: unknown) {
         settings = {
           ...settings,
           ...body,
+          connection: body.data ? CONNECTION : settings.connection,
           unlisted: settings.unlisted.filter((each) => !(each.name in body.propertyMap)),
         };
       }
       return json(200, settings);
     }
+    if (url === `/v1/connections/${CONNECTION}/test` && request.method === 'POST') {
+      tested.push(CONNECTION);
+      return json(200, { ok: true });
+    }
     return json(404, {});
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), sent };
+  return {
+    client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }),
+    sent,
+    tested,
+  };
 }
 
 const at = '2026-10-30T09:00:00.000Z';
@@ -104,6 +116,30 @@ describe("a space's CT Studio settings", () => {
         data: false,
       },
     ]);
+  });
+
+  it('API-076 a row naming a field the template does not give keeps it, not ignore', async () => {
+    const { client, sent } = service({ template: TEMPLATE, propertyMap: { Client: GONE_FIELD } });
+    render(<CtStudioSettings client={client} space={SPACE} />);
+    await screen.findByRole('option', { name: 'Owner' });
+    expect(screen.getByLabelText('Fills 1')).toHaveValue(GONE_FIELD);
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Saved.');
+    expect(sent).toEqual([
+      { componentType: null, template: TEMPLATE, propertyMap: { Client: GONE_FIELD }, data: false },
+    ]);
+  });
+
+  it('API-076 turning data on from the section tests the connection once', async () => {
+    const { client, tested } = service();
+    render(<CtStudioSettings client={client} space={SPACE} />);
+    await userEvent.click(await screen.findByLabelText('Deliver data tables to this space'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Saved.');
+    await waitFor(() => expect(tested).toEqual([CONNECTION]));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Saved.');
+    expect(tested).toEqual([CONNECTION]);
   });
 
   it('API-076 with no template, ignore is the only choice', async () => {
