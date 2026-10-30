@@ -126,6 +126,8 @@ describe('the OpenAPI document', () => {
         if (
           issuing === 'createToken' ||
           issuing === 'issueServiceIdentityToken' ||
+          issuing === 'connectCtStudio' ||
+          issuing === 'issueCtStudioToken' ||
           issuing === 'createWebhook' ||
           issuing === 'changeWebhook' ||
           issuing === 'rotateWebhookSecret'

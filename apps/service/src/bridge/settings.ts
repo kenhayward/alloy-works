@@ -315,43 +315,58 @@ export function bridgeSettingsHandlers(options: {
 
       putBridgeSettings: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
         const { space } = request.params as SpaceParams;
-        const body = request.body as BridgeSettingsBody;
-        await checkSpaceLive(trx, space);
-        const problems = await problemsOf(trx, request, body);
-        if (problems.length > 0) {
-          throw new AppError(
-            422,
-            'bridge_settings_invalid',
-            'These settings name something this environment does not have. Nothing was changed.',
-            undefined,
-            { problems },
-          );
-        }
-        // One turn-on at a time for the tenant, so a second reads what the first stored.
-        if (body.data) await lockBridgeProvision(trx, options.tenantOf(request).id);
-        const before = await readBridgeSettings(trx, space);
-        // Off keeps the connection and the tables, and names no schema: a delivery to a space with
-        // none is refused not_configured, so no new data arrives (API-072).
-        const on = body.data ? await turnOn(trx, request, principalId, space, before) : undefined;
-        const written = await writeBridgeSettings(trx, {
-          spaceId: space,
-          componentType: body.componentType,
-          template: body.template,
-          propertyMap: body.propertyMap,
-          connectionId: on?.connection ?? before?.connectionId ?? null,
-          tableSchema: on?.schema ?? null,
-          changedBy: principalId,
-        });
-        // A property the map now names, to a field or to ignore, is no longer unlisted.
-        await dropUnlisted(trx, space, Object.keys(body.propertyMap));
-        // The store's password changes last, so nothing above it can have left it changed.
-        await on?.commit();
-        return viewOf(written, await readUnlisted(trx, space));
+        return save(trx, request, principalId, space, request.body as BridgeSettingsBody);
       },
     },
+    save,
     /** Lets go of the delivery store's connections, with the app. */
     close: async () => {
       await store?.close();
     },
   };
+
+  /**
+   * A space's settings written whole, as PUT bridge-settings writes them, in the caller's transaction:
+   * refused whole with each problem named, data turned on or off, and the space's unlisted properties
+   * the map now names forgotten. Connecting CT Studio saves through here too.
+   */
+  async function save(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    principalId: string,
+    space: string,
+    body: BridgeSettingsBody,
+  ): Promise<BridgeSettingsView> {
+    await checkSpaceLive(trx, space);
+    const problems = await problemsOf(trx, request, body);
+    if (problems.length > 0) {
+      throw new AppError(
+        422,
+        'bridge_settings_invalid',
+        'These settings name something this environment does not have. Nothing was changed.',
+        undefined,
+        { problems },
+      );
+    }
+    // One turn-on at a time for the tenant, so a second reads what the first stored.
+    if (body.data) await lockBridgeProvision(trx, options.tenantOf(request).id);
+    const before = await readBridgeSettings(trx, space);
+    // Off keeps the connection and the tables, and names no schema: a delivery to a space with
+    // none is refused not_configured, so no new data arrives (API-072).
+    const on = body.data ? await turnOn(trx, request, principalId, space, before) : undefined;
+    const written = await writeBridgeSettings(trx, {
+      spaceId: space,
+      componentType: body.componentType,
+      template: body.template,
+      propertyMap: body.propertyMap,
+      connectionId: on?.connection ?? before?.connectionId ?? null,
+      tableSchema: on?.schema ?? null,
+      changedBy: principalId,
+    });
+    // A property the map now names, to a field or to ignore, is no longer unlisted.
+    await dropUnlisted(trx, space, Object.keys(body.propertyMap));
+    // The store's password changes last, so nothing above it can have left it changed.
+    await on?.commit();
+    return viewOf(written, await readUnlisted(trx, space));
+  }
 }

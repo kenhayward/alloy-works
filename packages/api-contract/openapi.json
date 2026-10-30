@@ -83544,6 +83544,1387 @@
         }
       }
     },
+    "/v1/ct-studio/connections": {
+      "post": {
+        "operationId": "connectCtStudio",
+        "summary": "Connect a space to CT Studio: its identity, its Author grant, its token and its settings",
+        "description": "Connects a space to CT Studio in one transaction: the first time it makes the service identity CT Studio’s deliveries act as (or adopts one made by hand, with the token CT Studio already holds), and afterwards reuses it; grants it Author at the space unless it holds that already; issues its token the first time, with scopes create and edit for 365 days; and sets the space’s bridge settings as PUT bridge-settings does. Anything refused leaves nothing made. The token’s secret is answered this once and never kept. Needs administer at the environment, with a signed-in session.",
+        "tags": [
+          "CT Studio bridge"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "space": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ],
+                    "description": "The space deliveries go to"
+                  },
+                  "identity": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "make": {
+                                "type": "boolean",
+                                "const": true
+                              }
+                            },
+                            "required": [
+                              "make"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "adopt": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ],
+                                "description": "A service identity made by hand, to be CT Studio's"
+                              },
+                              "token": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ],
+                                "description": "Which of its tokens CT Studio holds"
+                              }
+                            },
+                            "required": [
+                              "adopt",
+                              "token"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The first time, `make` one or `adopt` one made by hand; afterwards null, reusing the recorded one"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "componentType": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The component type delivered components take; none means the environment default"
+                      },
+                      "template": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "The template delivered documents are made from; none means a blank document, whose properties are all unmapped"
+                      },
+                      "propertyMap": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "additionalProperties": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "description": "CT Studio property names to the id of the template's document field each fills, or null for a property the space ignores; every field must be one the template gives a document. A delivered property this does not name is reported `property_unlisted` and listed in `unlisted`"
+                      },
+                      "data": {
+                        "type": "boolean",
+                        "description": "Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries"
+                      }
+                    },
+                    "required": [
+                      "componentType",
+                      "template",
+                      "propertyMap",
+                      "data"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The space's bridge settings, as PUT bridge-settings takes them"
+                  },
+                  "address": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "The address CT Studio reaches this environment at, without `/bridge`"
+                  },
+                  "sinkId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,64}$",
+                    "description": "The id CT Studio registers this sink under: lowercase letters, digits and hyphens"
+                  }
+                },
+                "required": [
+                  "space",
+                  "identity",
+                  "settings",
+                  "address",
+                  "sinkId"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "space": "00000000-0000-4000-8000-000000000001",
+                "identity": {
+                  "make": true
+                },
+                "settings": {
+                  "componentType": "00000000-0000-4000-8000-000000000001",
+                  "template": "00000000-0000-4000-8000-000000000001",
+                  "propertyMap": {},
+                  "data": false
+                },
+                "address": "https://example.com/",
+                "sinkId": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connected, with a new token shown this once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "object",
+                      "properties": {
+                        "bridgeOn": {
+                          "type": "boolean",
+                          "description": "Whether the service was started with a signing key, so `/bridge` answers CT Studio"
+                        },
+                        "identity": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "The service identity, by its principal"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "disabled": {
+                                  "type": "boolean",
+                                  "description": "Disabled identities are refused every delivery"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "disabled"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "CT Studio's identity; none before the first connection"
+                        },
+                        "token": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "expiresAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "expiresAt"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The token CT Studio holds; none once revoked, or for an adopted identity whose token was not named"
+                        },
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "granted": {
+                                "type": "boolean",
+                                "description": "Whether CT Studio's identity holds Author here; without it deliveries are refused"
+                              },
+                              "data": {
+                                "type": "boolean",
+                                "description": "Whether data packages are delivered here"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "granted",
+                              "data"
+                            ]
+                          },
+                          "description": "Every space with CT Studio settings, by name"
+                        },
+                        "hostnames": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The hostnames this environment answers at"
+                        },
+                        "address": {
+                          "description": "The address the hand-off page last gave CT Studio",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sinkId": {
+                          "description": "The sink id the hand-off page last gave CT Studio",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "bridgeOn",
+                        "identity",
+                        "token",
+                        "spaces",
+                        "hostnames",
+                        "address",
+                        "sinkId"
+                      ]
+                    },
+                    "issued": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "What the person called it, to tell their tokens apart"
+                            },
+                            "scopes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "create",
+                                  "edit",
+                                  "comment",
+                                  "suggest",
+                                  "approve",
+                                  "publish",
+                                  "design",
+                                  "manage_definitions",
+                                  "administer",
+                                  "use_connection",
+                                  "write_sql",
+                                  "retire"
+                                ]
+                              },
+                              "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string",
+                              "description": "When it stops working; nothing extends a token"
+                            },
+                            "lastUsedAt": {
+                              "description": "When a request last used it, to the minute, or null for never",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "secret": {
+                              "type": "string",
+                              "description": "The token, awt_ and 43 characters, shown this once: only its hash is kept"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "scopes",
+                            "createdAt",
+                            "expiresAt",
+                            "lastUsedAt",
+                            "secret"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "CT Studio's new token, with its secret shown this once; none when the identity was reused or adopted"
+                    },
+                    "space": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "settings": {
+                      "type": "object",
+                      "properties": {
+                        "componentType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The component type delivered components take; none means the environment default"
+                        },
+                        "template": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The template delivered documents are made from; none means a blank document, whose properties are all unmapped"
+                        },
+                        "propertyMap": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "description": "CT Studio property names to the id of the template's document field each fills, or null for a property the space ignores; every field must be one the template gives a document. A delivered property this does not name is reported `property_unlisted` and listed in `unlisted`"
+                        },
+                        "data": {
+                          "type": "boolean",
+                          "description": "Whether data packages are delivered to this space. Turning it on makes the environment's delivery schema and this space's connection to it, and sets the connection's credential, which no response shows; turning it off keeps the connection and the tables and stops new data deliveries"
+                        },
+                        "connection": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The connection to the delivery store that data delivery made for this space, kept while data delivery is off; none until it was first turned on. Query definitions over the delivered tables are made on it. Its credential is never shown"
+                        },
+                        "unlisted": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "description": "The CT Studio property name"
+                              },
+                              "firstDelivered": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                                "description": "When a delivery first carried it"
+                              },
+                              "lastDelivered": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                                "description": "When a delivery last carried it"
+                              },
+                              "deliveries": {
+                                "type": "integer",
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "How many deliveries carried it"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "firstDelivered",
+                              "lastDelivered",
+                              "deliveries"
+                            ]
+                          },
+                          "description": "The properties deliveries carried that `propertyMap` does not name, the most recently delivered first; one leaves the list when the map names it, to a field or to ignore"
+                        }
+                      },
+                      "required": [
+                        "componentType",
+                        "template",
+                        "propertyMap",
+                        "data",
+                        "connection",
+                        "unlisted"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "issued",
+                    "space",
+                    "settings"
+                  ]
+                },
+                "example": {
+                  "status": {
+                    "bridgeOn": false,
+                    "identity": {
+                      "id": "example",
+                      "name": "example",
+                      "disabled": false
+                    },
+                    "token": {
+                      "id": "example",
+                      "name": "example",
+                      "expiresAt": "example"
+                    },
+                    "spaces": [],
+                    "hostnames": [],
+                    "address": "example",
+                    "sinkId": "example"
+                  },
+                  "issued": {
+                    "id": "example",
+                    "name": "example",
+                    "scopes": [],
+                    "createdAt": "example",
+                    "expiresAt": "example",
+                    "lastUsedAt": "example",
+                    "secret": "example"
+                  },
+                  "space": {
+                    "id": "example",
+                    "name": "example"
+                  },
+                  "settings": {
+                    "componentType": "00000000-0000-4000-8000-000000000001",
+                    "template": "00000000-0000-4000-8000-000000000001",
+                    "propertyMap": {},
+                    "data": false,
+                    "connection": "00000000-0000-4000-8000-000000000001",
+                    "unlisted": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such space, or no such identity to adopt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`ct_studio_not_set_up`: no identity is recorded to reuse; `ct_studio_already_set_up`: one is, so none is made or adopted; `ct_studio_identity_disabled`: the identity is disabled; or a refusal PUT bridge-settings gives",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`ct_studio_token_unusable`: the token to adopt is not the identity's, or is revoked or expired; or `bridge_settings_invalid` as PUT bridge-settings gives it. Nothing is made",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "As PUT bridge-settings, turning data on",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ct-studio/tokens": {
+      "post": {
+        "operationId": "issueCtStudioToken",
+        "summary": "Issue CT Studio a new token, or a new identity in place of a disabled one",
+        "description": "Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.",
+        "tags": [
+          "CT Studio bridge"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "replaceIdentity": {
+                    "type": "boolean",
+                    "description": "Make a new identity in place of a disabled one, granted Author at every connected space, and issue its token"
+                  }
+                },
+                "required": [
+                  "replaceIdentity"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "replaceIdentity": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Issued, with its secret shown this once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "object",
+                      "properties": {
+                        "bridgeOn": {
+                          "type": "boolean",
+                          "description": "Whether the service was started with a signing key, so `/bridge` answers CT Studio"
+                        },
+                        "identity": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "The service identity, by its principal"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "disabled": {
+                                  "type": "boolean",
+                                  "description": "Disabled identities are refused every delivery"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "disabled"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "CT Studio's identity; none before the first connection"
+                        },
+                        "token": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "expiresAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "expiresAt"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "The token CT Studio holds; none once revoked, or for an adopted identity whose token was not named"
+                        },
+                        "spaces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "granted": {
+                                "type": "boolean",
+                                "description": "Whether CT Studio's identity holds Author here; without it deliveries are refused"
+                              },
+                              "data": {
+                                "type": "boolean",
+                                "description": "Whether data packages are delivered here"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "granted",
+                              "data"
+                            ]
+                          },
+                          "description": "Every space with CT Studio settings, by name"
+                        },
+                        "hostnames": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The hostnames this environment answers at"
+                        },
+                        "address": {
+                          "description": "The address the hand-off page last gave CT Studio",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "sinkId": {
+                          "description": "The sink id the hand-off page last gave CT Studio",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "bridgeOn",
+                        "identity",
+                        "token",
+                        "spaces",
+                        "hostnames",
+                        "address",
+                        "sinkId"
+                      ]
+                    },
+                    "issued": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "What the person called it, to tell their tokens apart"
+                        },
+                        "scopes": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "create",
+                              "edit",
+                              "comment",
+                              "suggest",
+                              "approve",
+                              "publish",
+                              "design",
+                              "manage_definitions",
+                              "administer",
+                              "use_connection",
+                              "write_sql",
+                              "retire"
+                            ]
+                          },
+                          "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "description": "When it stops working; nothing extends a token"
+                        },
+                        "lastUsedAt": {
+                          "description": "When a request last used it, to the minute, or null for never",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "secret": {
+                          "type": "string",
+                          "description": "The token, awt_ and 43 characters, shown this once: only its hash is kept"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "scopes",
+                        "createdAt",
+                        "expiresAt",
+                        "lastUsedAt",
+                        "secret"
+                      ],
+                      "description": "CT Studio's new token, with its secret shown this once"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "issued"
+                  ]
+                },
+                "example": {
+                  "status": {
+                    "bridgeOn": false,
+                    "identity": {
+                      "id": "example",
+                      "name": "example",
+                      "disabled": false
+                    },
+                    "token": {
+                      "id": "example",
+                      "name": "example",
+                      "expiresAt": "example"
+                    },
+                    "spaces": [],
+                    "hostnames": [],
+                    "address": "example",
+                    "sinkId": "example"
+                  },
+                  "issued": {
+                    "id": "example",
+                    "name": "example",
+                    "scopes": [],
+                    "createdAt": "example",
+                    "expiresAt": "example",
+                    "lastUsedAt": "example",
+                    "secret": "example"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`ct_studio_not_set_up`: there is no CT Studio identity; `ct_studio_identity_disabled`: it is disabled and was not asked to be replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/data/usage": {
       "get": {
         "operationId": "getQueryUsage",

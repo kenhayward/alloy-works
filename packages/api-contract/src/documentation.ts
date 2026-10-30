@@ -591,7 +591,13 @@ const operationTags = {
     'listWebhookDeliveries',
     'getWebhookDelivery',
   ],
-  'CT Studio bridge': ['getBridgeSettings', 'putBridgeSettings', 'getCtStudio'],
+  'CT Studio bridge': [
+    'getBridgeSettings',
+    'putBridgeSettings',
+    'getCtStudio',
+    'connectCtStudio',
+    'issueCtStudioToken',
+  ],
   'Service identities': [
     'listServiceIdentities',
     'createServiceIdentity',
@@ -1318,6 +1324,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs administer on the space.',
   getCtStudio:
     'Returns the environment’s CT Studio as Administration shows it: whether the service has a signing key (never the key), the service identity CT Studio’s deliveries act as and whether it is disabled, the token CT Studio holds and when it expires, every space with CT Studio settings and whether the identity may still deliver there, the environment’s hostnames, and the address and sink id last handed to CT Studio. Needs administer at the environment, with a signed-in session.',
+  connectCtStudio:
+    'Connects a space to CT Studio in one transaction: the first time it makes the service identity CT Studio’s deliveries act as (or adopts one made by hand, with the token CT Studio already holds), and afterwards reuses it; grants it Author at the space unless it holds that already; issues its token the first time, with scopes create and edit for 365 days; and sets the space’s bridge settings as PUT bridge-settings does. Anything refused leaves nothing made. The token’s secret is answered this once and never kept. Needs administer at the environment, with a signed-in session.',
+  issueCtStudioToken:
+    'Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
   listPrincipals: 'Lists people already signed in or invited who may be named by an access grant.',
   getErasure:

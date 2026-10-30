@@ -245,6 +245,8 @@ type Success<R extends RouteContract> = R['responses'] extends {
 /** The routes answering a secret once, never kept by a cache on the way (G8-H, WB-G). */
 const ANSWERS_A_SECRET: ReadonlySet<string> = new Set([
   'issueServiceIdentityToken',
+  'connectCtStudio',
+  'issueCtStudioToken',
   'createWebhook',
   'changeWebhook',
   'rotateWebhookSecret',
@@ -602,7 +604,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
   app.addHook('onClose', bridgeSettings.close);
   // Administration's CT Studio section: what is connected, and connecting a space.
-  const ctStudio = ctStudioHandlers({ db, tenantOf, bridgeOn: bridgeKeys.length > 0 });
+  const ctStudio = ctStudioHandlers({
+    db,
+    tenantOf,
+    bridgeOn: bridgeKeys.length > 0,
+    saveSettings: bridgeSettings.save,
+  });
   const handlers: Handlers = {
     ...componentHandlers(db, tenantOf, principalOf),
     ...documentHandlers(db, tenantOf, principalOf, boundCreation),

@@ -391,7 +391,14 @@ export {
   UnlistedPropertyView,
   bridgeSettingsRoutes,
 } from './bridge-settings.js';
-export { CtStudioStatus, ctStudioRoutes } from './ct-studio.js';
+export {
+  CtStudioConnectBody,
+  CtStudioConnected,
+  CtStudioStatus,
+  CtStudioTokenBody,
+  CtStudioTokenIssued,
+  ctStudioRoutes,
+} from './ct-studio.js';
 export {
   RangePageParams,
   RangePreviewParams,
