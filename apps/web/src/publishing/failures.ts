@@ -743,6 +743,14 @@ export function failureWords(failure: Failure, wordOffered = false): string {
         : words('publishing.an-index-entry-here-says');
     case 'index_see_located':
       return words('publishing.an-index-entry-here-says-2');
+    // A message form (the MF plan, MF-E): `detail` is the form, and `<form>: <category>` for a
+    // category with no arm, its category said as the form an author gives it.
+    case 'message_form_arm_missing':
+      return words('publishing.a-sentence-here-varies-by', {
+        category: failure.detail?.split(': ')[1] ?? '',
+      });
+    case 'value_not_number':
+      return words('publishing.a-sentence-here-varies-by-2');
     default:
       return words('publishing.the-publication-could-not-be-4');
   }
@@ -798,6 +806,12 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   },
   get index_see_located() {
     return words('publishing.an-index-entry-in-it-2');
+  },
+  get message_form_arm_missing() {
+    return words('publishing.a-sentence-in-it-varies');
+  },
+  get value_not_number() {
+    return words('publishing.a-sentence-in-it-varies-2');
   },
   get occurrence_unresolved() {
     return words('publishing.a-reference-in-it-waits');

@@ -166,7 +166,7 @@ export const editorSchema = new Schema({
       // list, a quotation, a table's cell. A cross-reference and an equation stand here as in every
       // inline home (cross-references 1, ruling R4; equations 1, ruling R3).
       content:
-        '(text | image | footnote | crossReference | citation | indexMarker | equation | binding | variable)*',
+        '(text | image | footnote | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing is read back from the DOM through these rules, so a paragraph the browser makes is
@@ -296,7 +296,7 @@ export const editorSchema = new Schema({
      * is what makes a term inline content rather than a string.
      */
     term: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'dt' }],
@@ -460,7 +460,7 @@ export const editorSchema = new Schema({
      * Isolating, as a table's note is, so a Backspace at its start reaches nothing above it.
      */
     boundTableEmpty: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -489,7 +489,7 @@ export const editorSchema = new Schema({
     },
     /** A bound table's source (TAB-027): beneath the table and its note, isolating as they are. */
     boundTableSource: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -501,7 +501,7 @@ export const editorSchema = new Schema({
     },
     /** The caption: inline content, typed in place above the table, as a quotation's attribution is. */
     tableCaption: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption' }],
@@ -514,7 +514,7 @@ export const editorSchema = new Schema({
      * never reaches into the table above it.
      */
     tableNote: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       isolating: true,
@@ -606,7 +606,7 @@ export const editorSchema = new Schema({
     },
     /** A figure's caption: inline content below the image, typed in place as a table's is. */
     figureCaption: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'figcaption[data-figure-caption]', priority: 60 }],
@@ -682,7 +682,7 @@ export const editorSchema = new Schema({
      * is the mapping's second spelling of it, as `definitionList` is of a list.
      */
     footnoteParagraph: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       attrs: { id: { default: null }, style: { default: 'body' } },
       // Typing in the footnote's own editor is read back through this rule, which wins over a
@@ -808,6 +808,25 @@ export const editorSchema = new Schema({
       ],
     },
     /**
+     * A message form (the MF plan, MF-C): inline, an atom, carrying the stored form's members - `id`,
+     * `kind`, its `binding` and its `arms` - as the objects they are stored as, so a save keeps every
+     * arm. **No marks**, and it stands wherever a binding does. `toDOM` says what it is; the surface's
+     * chip and its arms are MFd's. No `parseDOM`, for a binding's reason.
+     */
+    messageForm: {
+      inline: true,
+      atom: true,
+      selectable: true,
+      draggable: false,
+      marks: '',
+      attrs: { id: { default: null }, kind: { default: 'plural' }, binding: {}, arms: {} },
+      toDOM: () => [
+        'span',
+        { class: 'aw-message-form', 'data-message-form': '' },
+        say('message-form.varies-by-number'),
+      ],
+    },
+    /**
      * A variable (the R5 plan, R5b): inline, an atom, naming a declared variable by its key, which a
      * publish prints from the document's parameters and fields (REU-017). **No marks**, as a binding
      * has none, and it stands wherever a binding does. `toDOM` shows its key, which a read-only
@@ -891,7 +910,7 @@ export const editorSchema = new Schema({
     ...tableSpecs,
     /** Outside the block group, as a term is: it belongs to its quotation, not to a sequence. */
     attribution: {
-      content: '(text | crossReference | citation | indexMarker | equation | binding | variable)*',
+      content: '(text | crossReference | citation | indexMarker | equation | binding | messageForm | variable)*',
       marks: '_',
       defining: true,
       parseDOM: [{ tag: 'footer' }],

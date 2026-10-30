@@ -130,6 +130,7 @@ function marksWithNoType(
       inline.type === 'crossReference' ||
       inline.type === 'equation' ||
       inline.type === 'binding' ||
+      inline.type === 'messageForm' ||
       inline.type === 'variable' ||
       inline.type === 'citation' ||
       inline.type === 'indexMarker'
@@ -260,6 +261,11 @@ function toRun(inline: InlineNode): Node[] {
         take,
       }),
     ];
+  }
+  if (inline.type === 'messageForm') {
+    // Every stored member, as stored, its binding and arms as objects (the MF plan, MF-D).
+    const { id, kind, binding, arms } = inline;
+    return [editorSchema.nodes.messageForm!.create({ id, kind, binding, arms })];
   }
   if (inline.type === 'variable') {
     return [editorSchema.nodes.variable!.create({ name: inline.name })];
@@ -568,6 +574,19 @@ function runsOf(textblock: Node, id: string): unknown[] {
         parameters: parameters as object,
         mode: mode as string,
         take: take as object,
+      });
+      return;
+    }
+    if (child.type.name === 'messageForm') {
+      // Named by the block it stands in where it has no identifier, as a binding is; its binding and
+      // arms as held. The content model's parse holds it to MF-C on every save.
+      const { kind, binding, arms } = child.attrs;
+      runs.push({
+        type: 'messageForm',
+        id: identifierOf(child, id),
+        kind: kind as string,
+        binding: binding as object,
+        arms: arms as object,
       });
       return;
     }

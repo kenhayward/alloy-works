@@ -1544,3 +1544,94 @@ describe('an index marker through the mapping (the IX plan, IX-F)', () => {
     expect(node.spec.parseDOM).toBeUndefined();
   });
 });
+
+describe('a message form through the mapping (the MF plan, MF-D)', () => {
+  type Inline = Extract<BlockNode, { type: 'paragraph' }>['content'][number];
+  const text = (value: string): Inline => ({ type: 'text', value, marks: [] });
+  const word = (value: string) => ({ type: 'text' as const, value, marks: [] });
+  const form = (id: string): Inline => ({
+    type: 'messageForm',
+    id,
+    kind: 'plural',
+    binding: {
+      type: 'binding',
+      id: `${id}-count`,
+      query: '00000000-0000-4000-8000-00000000d001',
+      parameters: { site: { literal: 'north' } },
+      mode: 'checked',
+      take: { column: 'visits' },
+    },
+    arms: {
+      '=0': [word('no visits')],
+      one: [{ type: 'messageValue' }, word(' visit')],
+      other: [
+        { type: 'messageValue' },
+        { type: 'text', value: ' visits', marks: [{ type: 'emphasis', id: `${id}-e` }] },
+      ],
+    },
+  });
+
+  it('opens for editing a component holding forms in a paragraph, a footnote, a cell, a caption, a term and an attribution, and stores each with every member', () => {
+    const stored = parseContentDocument(
+      document([
+        {
+          type: 'paragraph',
+          id: 'p0',
+          style: 'body',
+          content: [
+            text('We made '),
+            form('mf1'),
+            {
+              type: 'footnote',
+              id: 'f1',
+              anchor: { kind: 'span' },
+              content: [{ type: 'paragraph', id: 'fp1', style: 'body', content: [form('mf2')] }],
+            },
+          ],
+        },
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: [text('Visits '), form('mf3')],
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [{ type: 'paragraph', id: 'c1', style: 'body', content: [form('mf4')] }],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'list',
+          id: 'l1',
+          kind: 'definition',
+          items: [{ term: [text('Visits '), form('mf5')], content: [paragraph('l1p', 'Many.')] }],
+        },
+        {
+          type: 'blockquote',
+          id: 'q1',
+          content: [paragraph('q1p', 'Words.')],
+          attribution: [text('Ada, '), form('mf6')],
+        },
+      ]),
+    );
+    const opened = openedDoc(stored);
+    expect(() => opened.check()).not.toThrow();
+    expect(fromEditor(opened)).toEqual(stored);
+  });
+
+  it('is an inline atom with no marks, never in preformatted text or a title, never guessed from an element', () => {
+    const node = editorSchema.nodes.messageForm!;
+    expect(editorSchema.nodes.preformatted!.contentMatch.matchType(node)).toBeNull();
+    expect(node.spec.marks).toBe('');
+    expect(node.isAtom && node.isInline).toBe(true);
+    expect(node.spec.parseDOM).toBeUndefined();
+  });
+});
