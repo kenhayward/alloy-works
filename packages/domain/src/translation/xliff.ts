@@ -1,5 +1,10 @@
 import { parseContentDocument, type ContentDocument } from '../content/model/document.js';
-import type { IndexMarkerNode, InlineNode, MessageFormNode } from '../content/model/inline.js';
+import type {
+  IndexMarkerNode,
+  InlineNode,
+  MessageArm,
+  MessageFormNode,
+} from '../content/model/inline.js';
 import type { Mark } from '../content/model/marks.js';
 import { pluralCategoriesOf, pluralExamples, type PluralCategory } from '../interface/plurals.js';
 
@@ -27,6 +32,9 @@ export type XliffPart =
 
 type Path = readonly (string | number)[];
 
+/** What a unit's text is made of: inline nodes, or a form's arm's members (MF-F). */
+type Sent = InlineNode | MessageArm[number];
+
 /** A unit as the source gives it: where its text stands, and the text, with what it holds apart. */
 export interface XliffUnit {
   readonly id: string;
@@ -35,31 +43,31 @@ export interface XliffUnit {
   readonly path: Path;
   readonly parts: readonly XliffPart[];
   /** Each placeholder's node, by its id; each pair's mark, by its start's id. */
-  readonly placeholders: ReadonlyMap<string, InlineNode>;
+  readonly placeholders: ReadonlyMap<string, Sent>;
   readonly marks: ReadonlyMap<string, Mark>;
   /** Each term its text uses, by the term's identity (XL-B). */
   readonly terms: readonly string[];
   /** A message form's arm: the source's inlines it was sent as, and its category and examples (MF-F). */
-  readonly arm?: { readonly from: readonly InlineNode[]; readonly note: string };
+  readonly arm?: { readonly from: readonly Sent[]; readonly note: string };
 }
 
 /** Marks a sent text never carries: a variant has its own suggestions and comments. */
 const unsent = (mark: Mark) => mark.type === 'suggestion' || mark.type === 'comment';
 
 /** Text held whole, as a placeholder: code, and words in another language (XL-A). */
-const held = (node: InlineNode) =>
+const held = (node: Sent) =>
   node.type !== 'text' ||
   node.marks.some((mark) => mark.type === 'inlineCode' || mark.type === 'language');
 
 /** A text another's suggestion inserts, pending: not sent, and not the variant's. */
-const pending = (node: InlineNode) =>
+const pending = (node: Sent) =>
   node.type === 'text' &&
   node.marks.some((mark) => mark.type === 'suggestion' && mark.operation === 'insert');
 
 /** An inline array as a unit's parts. */
-function encode(inlines: readonly InlineNode[]) {
+function encode(inlines: readonly Sent[]) {
   const parts: XliffPart[] = [];
-  const placeholders = new Map<string, InlineNode>();
+  const placeholders = new Map<string, Sent>();
   const marks = new Map<string, Mark>();
   const terms = new Set<string>();
   let open: { readonly mark: Mark; readonly id: string }[] = [];
@@ -185,11 +193,11 @@ export function xliffUnits(content: ContentDocument, target: string): XliffUnit[
   const arms = (id: string, path: Path, form: MessageFormNode) => {
     const exact = Object.keys(form.arms).filter((key) => key.startsWith('='));
     for (const key of [...pluralCategoriesOf(target), ...exact]) {
-      const own = form.arms[key as keyof typeof form.arms] as InlineNode[] | undefined;
+      const own = form.arms[key as keyof typeof form.arms];
       // A category sent as `other` is a copy: its marks take ids of their own, unique in the variant.
       const from =
         own ??
-        (form.arms.other as InlineNode[]).map((node) =>
+        (form.arms.other ?? []).map((node) =>
           node.type === 'text'
             ? { ...node, marks: node.marks.map((mark) => ({ ...mark, id: `${mark.id}.${key}` })) }
             : node,
@@ -311,14 +319,14 @@ function put(root: unknown, path: Path, value: unknown) {
 function decode(
   unit: XliffUnit,
   target: readonly XliffPart[],
-  current: readonly InlineNode[],
-): InlineNode[] | XliffProblem['problem'] {
+  current: readonly Sent[],
+): Sent[] | XliffProblem['problem'] {
   // The source's placeholders, in the order they were sent, read from the text as it stands now, so
   // a footnote whose paragraphs were translated already comes back translated.
   const now = encode(current).placeholders;
   const used = new Set<string>();
   const open: Mark[] = [];
-  const nodes: InlineNode[] = [];
+  const nodes: Sent[] = [];
   for (const part of target) {
     if (part.kind === 'ph') {
       const node = now.get(part.id);
@@ -432,7 +440,7 @@ export function xliffTarget(
       else apply(unit, text);
       continue;
     }
-    const current = unit.arm?.from ?? ((at(working, unit.path) ?? []) as InlineNode[]);
+    const current = unit.arm?.from ?? ((at(working, unit.path) ?? []) as Sent[]);
     const decoded = decode(unit, target, current);
     if (typeof decoded === 'string') problems.push({ unit: unit.id, problem: decoded });
     else apply(unit, decoded);
