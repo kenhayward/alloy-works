@@ -209,7 +209,11 @@ describe("Administration's CT Studio", () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
     const address = await screen.findByLabelText('Address CT Studio reaches this environment at');
     const connect = screen.getByRole('button', { name: 'Connect' });
-    for (const each of ['https://127.0.0.1:8443', 'https://dev.acme.localhost', 'http://192.168.1.129:8088']) {
+    for (const each of [
+      'https://127.0.0.1:8443',
+      'https://dev.acme.localhost',
+      'http://192.168.1.129:8088',
+    ]) {
       await userEvent.clear(address);
       await userEvent.type(address, each);
       expect(connect).toBeDisabled();
