@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.219.0 - 2026-10-30 (PR #PR_NUMBER)
+## 0.219.0 - 2026-10-30 (PR #826)
 
 Words that vary by a number (the MF plan, T6's eleventh slice).
 
