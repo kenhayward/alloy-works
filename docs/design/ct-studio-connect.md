@@ -178,3 +178,24 @@ each lands in the OpenAPI contract and the generated client.
 The screens' layout and wording within the interface's conventions and catalogue; the route paths
 and bodies; the table for unlisted properties and where CT Studio's identity is recorded; how the
 flow is split into components; the tests, each starting with its requirement's id.
+
+## As CC built it
+
+Built by [the CC plan](../plans/2026-10-30-cc-connect-ct-studio.md). Where the build settled what this
+design left open:
+
+- **Routes.** `GET /v1/ct-studio`, `POST /v1/ct-studio/connections` and `POST /v1/ct-studio/tokens`,
+  each administer at the environment with a session. The two that issue a token declare that they
+  change access and take no idempotency key, so no remembered answer holds a secret.
+- **The record.** A single `ct_studio` row (migration 0174): the identity, the token CT Studio holds
+  (null once revoked, as a revoked token's row is gone), the address and the sink id.
+- **Unlisted properties.** `bridge_unlisted_property` (0173). Recorded for any refusal after the
+  space's settings are read, not only `metadata_incomplete`, in a transaction of its own that never
+  fails the refusal.
+- **Testing the data connection.** The page calls `POST /v1/connections/{id}/test` once connect has
+  answered, rather than the connect route running the test: the test is answered after its own
+  commit, through the connector.
+- **The field list** on the settings form comes from the template's document-level schemas and their
+  entries; the service still refuses a mapping to a field the template does not give, against its row.
+- **The address** is chosen from the page's own origin, when https, and `https://` before each of the
+  environment's hostnames; it cannot be typed.

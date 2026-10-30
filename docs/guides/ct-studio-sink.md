@@ -20,6 +20,20 @@ definition read like any other source.
   the service runs and `/bridge` is not served. For data tables the service and worker also need the
   delivery store (`SECRET_DELIVERED_URL`); [deploy/README.md](../../deploy/README.md) says how.
 
+## The short way: Administration → CT Studio
+
+Steps 2 to 4 below, and the `BRIDGE_SINKS` entry of step 1, are one flow in **Administration → CT
+Studio** ([the design](../design/ct-studio-connect.md)). **Connect a space** chooses the space, makes
+CT Studio's service identity the first time (or adopts one made by hand through the API, keeping the
+token CT Studio already holds), grants it Author there, issues its token, takes the space's settings,
+and ends on a page to copy from: the token, shown once, the `.env` entry with the key as a
+placeholder, and what to do in CT Studio. A later space reuses the identity and its token, so only
+the target is new. The section says when the token nears its end, offers a new one, replaces a
+disabled identity, and grants a space again that lost its grant. Each space's **Settings** lists the
+properties deliveries carried that its map does not name, to map or to ignore.
+
+The steps below are the same thing through the API, and what each part is.
+
 ## 1. Register the environment in CT Studio
 
 In the bridge's `BRIDGE_SINKS`, add **one entry per environment hostname**. The address is that
