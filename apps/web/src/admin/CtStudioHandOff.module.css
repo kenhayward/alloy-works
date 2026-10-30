@@ -1,0 +1,81 @@
+/*
+ * The CT Studio hand-off: one column inside the dialog, each step holding what it asks to be copied.
+ * Wrapped in a frame of its own so the dialog's two-column form grid does not take it.
+ */
+.frame {
+  min-width: 0;
+}
+
+.handOff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+
+.handOff h2 {
+  margin: 0;
+  padding-inline-end: var(--space-40);
+  font-size: var(--size-16);
+}
+
+.handOff p {
+  margin: 0;
+}
+
+.warning {
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--warn);
+  border-inline-start-width: 3px;
+  border-radius: var(--radius-8);
+}
+
+/* A value and the button that copies it, the button its own width. */
+.copyable {
+  display: flex;
+  gap: var(--space-8);
+  align-items: flex-start;
+  margin-top: var(--space-8);
+}
+
+.copyable > :is(input, textarea) {
+  flex: 1;
+  min-width: 0;
+}
+
+.copyable > button {
+  flex: none;
+}
+
+.code {
+  font-family: var(--mono);
+  font-size: var(--size-13);
+}
+
+/* The entry wraps inside the frame and grows to hold it all, never scrolling sideways. */
+.entry {
+  box-sizing: border-box;
+  field-sizing: content;
+  min-height: 3lh;
+  resize: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  margin: 0;
+  padding-inline-start: var(--space-24);
+}
+
+.steps li {
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
