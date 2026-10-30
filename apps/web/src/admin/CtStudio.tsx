@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { CtStudioHandOff, sinkEntry } from './CtStudioHandOff.js';
@@ -21,10 +22,39 @@ const DAY_MS = 86_400_000;
 /** A token this near its end is offered a replacement (the design: within 30 days). */
 const NEAR_DAYS = 30;
 
-/** The address CT Studio is handed by default: this page's own when it is https, port and all. */
+/** A host that, from CT Studio's bridge, names the bridge's own machine rather than this one. */
+const loopback = (host: string): boolean =>
+  host === 'localhost' || host.endsWith('.localhost') || host === '[::1]' || /^127\./.test(host);
+
+/**
+ * Whether CT Studio's bridge can be handed `address`: an https origin, port and all, whose host is not
+ * a loopback name. The service tells environments apart by the hostname a request arrives at, so the
+ * address is one of this environment's hostnames as the bridge reaches it.
+ */
+export function reachable(address: string): boolean {
+  try {
+    const url = new URL(address);
+    return (
+      url.protocol === 'https:' &&
+      !loopback(url.hostname) &&
+      url.pathname === '/' &&
+      url.search === '' &&
+      url.hash === ''
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The address CT Studio is handed by default: this page's own when the bridge could reach it, port
+ * and all, else `https://` and the first hostname that is not a loopback name, else none. A hostname
+ * carries no port, so a default from one may need it added.
+ */
 export function defaultAddress(pageOrigin: string, hostnames: readonly string[]): string {
-  if (pageOrigin.startsWith('https://')) return pageOrigin;
-  return hostnames.length === 0 ? pageOrigin : `https://${hostnames[0]}`;
+  if (reachable(pageOrigin)) return pageOrigin;
+  const host = hostnames.find((each) => !loopback(each));
+  return host === undefined ? '' : `https://${host}`;
 }
 
 /** The sink id CT Studio is handed by default: `alloy-` and the first hostname's first label. */
@@ -56,6 +86,8 @@ export function CtStudio({ client }: { client: Client }) {
   const [handOff, setHandOff] = useState<HandOff | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState('');
+  /** The space whose disconnection is being asked about. */
+  const [disconnecting, setDisconnecting] = useState<{ id: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await client.GET('/v1/ct-studio');
@@ -91,6 +123,20 @@ export function CtStudio({ client }: { client: Client }) {
       space: null,
       oldToken: replaceIdentity ? null : oldToken,
     });
+  }
+
+  async function disconnect(space: { id: string; name: string }) {
+    const { data, error } = await client.DELETE('/v1/ct-studio/connections/{space}', {
+      params: { path: { space: space.id } },
+    });
+    if (!data) {
+      setSaid(refusal(error, say('admin.the-space-could-not-be-disconnected')));
+      throw new Error('not disconnected');
+    }
+    setStatus(data);
+    if (open === space.id) setOpen(null);
+    setDisconnecting(null);
+    setSaid(say('admin.space-is-disconnected-from-ct-studio', { space: space.name }));
   }
 
   async function grantAgain(space: { id: string; name: string }) {
@@ -187,6 +233,9 @@ export function CtStudio({ client }: { client: Client }) {
                   >
                     {say('admin.settings-for', { space: space.name })}
                   </button>
+                  <button type="button" onClick={() => setDisconnecting(space)}>
+                    {say('admin.disconnect-space', { space: space.name })}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -200,6 +249,16 @@ export function CtStudio({ client }: { client: Client }) {
       </button>
       <p role="status">{said}</p>
 
+      {disconnecting !== null && (
+        <ConfirmDialog
+          question={say('admin.disconnect-space-from-ct-studio', { space: disconnecting.name })}
+          sentence={say('admin.ct-studio-can-no-longer-deliver-here')}
+          keep={say('admin.keep-it')}
+          act={say('admin.disconnect')}
+          onKeep={() => setDisconnecting(null)}
+          onAct={() => disconnect(disconnecting)}
+        />
+      )}
       {flow && (
         <ConnectFlow
           client={client}
@@ -229,6 +288,7 @@ export function CtStudio({ client }: { client: Client }) {
             address={status.address ?? address}
             identity={status.identity?.name ?? ''}
             space={handOff.space}
+            bridgeOn={status.bridgeOn}
             {...(handOff.oldToken === null || status.identity === null
               ? {}
               : {
@@ -344,7 +404,14 @@ function ConnectFlow({
   }, [client, adopt]);
 
   const keep = useCallback((body: BridgeSettingsBody) => setSettings(body), []);
-  const addresses = [...new Set([suggested, ...status.hostnames.map((each) => `https://${each}`)])];
+  const addresses = [
+    ...new Set(
+      [
+        suggested,
+        ...status.hostnames.filter((each) => !loopback(each)).map((each) => `https://${each}`),
+      ].filter(reachable),
+    ),
+  ];
 
   async function connect() {
     if (settings === null) return;
@@ -356,7 +423,7 @@ function ConnectFlow({
           space,
           identity: !first ? null : how === 'make' ? { make: true } : { adopt, token },
           settings,
-          address,
+          address: new URL(address).origin,
           sinkId,
         },
       });
@@ -473,19 +540,31 @@ function ConnectFlow({
         <>
           <label className={styles['filter']}>
             {say('admin.address-ct-studio-reaches-this-environment-at')}
-            <select value={address} onChange={(change) => setAddress(change.target.value)}>
+            <input
+              type="url"
+              list="ct-studio-addresses"
+              value={address}
+              spellCheck={false}
+              aria-describedby="ct-studio-address-hint"
+              onChange={(change) => setAddress(change.target.value.trim())}
+            />
+            <datalist id="ct-studio-addresses">
               {addresses.map((each) => (
-                <option key={each} value={each}>
-                  {each}
-                </option>
+                <option key={each} value={each} />
               ))}
-            </select>
+            </datalist>
           </label>
+          <p id="ct-studio-address-hint">{say('admin.ct-studio-address-hint')}</p>
           <label className={styles['filter']}>
             {say('admin.sink-id')}
             <input value={sinkId} onChange={(change) => setSinkId(change.target.value)} />
           </label>
-          <button type="button" className="primary" disabled={busy} onClick={() => void connect()}>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy || !reachable(address)}
+            onClick={() => void connect()}
+          >
             {say('admin.connect')}
           </button>
         </>

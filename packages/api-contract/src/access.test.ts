@@ -153,6 +153,7 @@ describe('what each route checks', () => {
         'getCtStudio',
         'connectCtStudio',
         'issueCtStudioToken',
+        'disconnectCtStudio',
       ].sort(),
     );
     for (const route of allRoutes) {

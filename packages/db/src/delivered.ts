@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import type { bridge } from '@alloy-works/domain';
+import type * as bridge from '@alloy-works/domain/bridge';
 import { Kysely, PostgresDialect, sql, type RawBuilder, type Transaction } from 'kysely';
 import { createPool } from './pool.js';
 

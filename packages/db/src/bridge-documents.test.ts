@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import {
-  bridge,
   DEFINITION_SCHEMA_VERSION,
   readImageHeader,
   TEMPLATE_SCHEMA_VERSION,
   type OutlineDocument,
 } from '@alloy-works/domain';
+import * as bridge from '@alloy-works/domain/bridge';
 import type { Block, DecomposedDocument, Inline } from '@kenhayward/bridge-contract';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';

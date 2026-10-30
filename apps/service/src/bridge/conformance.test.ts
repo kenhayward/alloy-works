@@ -55,7 +55,7 @@ describe("CT Studio's conformance suite against the bridge, deliveries run by th
     await ensureDeliveredDatabase();
 
     h = await startHarness({
-      secrets: { SECRET_BRIDGE_KEYS: key, SECRET_DELIVERED_URL: DELIVERED_URL },
+      secrets: { SINK_BRIDGE_KEYS: key, SECRET_DELIVERED_URL: DELIVERED_URL },
     });
     delivered = createDeliveredStore(DELIVERED_URL);
     worker = testTenantDatabase(h.db.workerUrl);

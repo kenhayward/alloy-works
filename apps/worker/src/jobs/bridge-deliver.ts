@@ -24,12 +24,12 @@ import {
 } from '@alloy-works/db';
 import {
   ASSET_MAX_PIXELS,
-  bridge,
   decide,
   isPermission,
   type AuditContext,
   type Permission,
 } from '@alloy-works/domain';
+import * as bridge from '@alloy-works/domain/bridge';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import {
   bridgeError,

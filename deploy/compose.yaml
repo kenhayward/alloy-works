@@ -131,7 +131,7 @@ services:
       # CT Studio's delivery bridge: the keys its signed requests may carry, comma separated, so one can
       # be rotated. Unset, the service starts and /bridge is simply not mounted. Set it in deploy/.env
       # (or the shell) to a throwaway value; no key is baked in here.
-      SECRET_BRIDGE_KEYS: ${SECRET_BRIDGE_KEYS:-}
+      SINK_BRIDGE_KEYS: ${SINK_BRIDGE_KEYS:-}
       # The delivery store, as its owner: where data packages become tables (ct-studio-sink.md, "Data
       # tables"). TLS is required; `uselibpqcompat` makes `sslmode=require` mean what libpq means (encrypt,
       # do not verify), which the snakeoil certificate needs.

@@ -182,6 +182,7 @@ describe('a route that changes access', () => {
     expect(declaring.map((route) => route.operationId).sort()).toEqual([
       'connectCtStudio',
       'deleteGroup',
+      'disconnectCtStudio',
       'erasePrincipal',
       'extendGrant',
       'issueCtStudioToken',

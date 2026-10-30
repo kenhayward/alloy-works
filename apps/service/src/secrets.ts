@@ -11,9 +11,18 @@ export interface SecretStore {
   get(name: string): string | undefined;
 }
 
-/** The secret named `object_store_key` is the variable `SECRET_OBJECT_STORE_KEY`. */
+/**
+ * Secrets named as every sink of CT Studio's bridge names them, so an operator sets one variable by one
+ * name whichever sink it is (3ds-sink reads `SINK_BRIDGE_KEYS` too).
+ */
+const SHARED_NAMES: Readonly<Record<string, string>> = { bridge_keys: 'SINK_BRIDGE_KEYS' };
+
+/**
+ * The secret named `object_store_key` is the variable `SECRET_OBJECT_STORE_KEY`; `bridge_keys` is
+ * `SINK_BRIDGE_KEYS`.
+ */
 export function environmentSecrets(env: Readonly<Record<string, string | undefined>>): SecretStore {
-  return { get: (name) => env[`SECRET_${name.toUpperCase()}`] };
+  return { get: (name) => env[SHARED_NAMES[name] ?? `SECRET_${name.toUpperCase()}`] };
 }
 
 /**

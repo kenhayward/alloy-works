@@ -1894,6 +1894,7 @@ describe('routes that check a permission', () => {
         sinkId: 'alloy-acme',
       },
     }),
+    disconnectCtStudio: () => ({ url: `/v1/ct-studio/connections/${clinical}`, status: 403 }),
     issueCtStudioToken: () => ({
       url: '/v1/ct-studio/tokens',
       status: 403,

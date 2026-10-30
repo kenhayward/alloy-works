@@ -16,7 +16,7 @@ definition read like any other source.
   environment from the hostname a request arrives at, so a sink is registered per environment.
 - **Whoever runs CT Studio's bridge**, who edits its `BRIDGE_SINKS` and holds its connections.
 - **A shared signing key** for the environment: chosen by the operator, set on the service as
-  `SECRET_BRIDGE_KEYS` (a comma-separated list, so a key can be replaced without a gap). Without it
+  `SINK_BRIDGE_KEYS` (a comma-separated list, so a key can be replaced without a gap). Without it
   the service runs and `/bridge` is not served. For data tables the service and worker also need the
   delivery store (`SECRET_DELIVERED_URL`); [deploy/README.md](../../deploy/README.md) says how.
 
@@ -46,7 +46,13 @@ key:       <the shared signing key>
 ```
 
 A second environment is a second entry with its own key; one environment's key never signs for
-another. The bridge must be able to reach the hostname over https.
+another. The bridge must be able to reach the hostname over https, as the bridge sees it: from a
+bridge in a container, `127.0.0.1` and `localhost` are the container itself. On the development
+stack that is the LAN proxy, `https://<ALLOY_LAN_ADDRESS>:8443/bridge`, with the proxy's root
+(`https://<ALLOY_LAN_ADDRESS>:9443/lan-proxy/root.crt`) given to the bridge as `NODE_EXTRA_CA_CERTS`.
+
+The key goes in the entry and nowhere else in CT Studio; the token of step 2 goes only in CT Studio's
+connection, never in its `.env`.
 
 ## 2. Make a service identity and a token
 

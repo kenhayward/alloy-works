@@ -14,6 +14,8 @@ import {
   findRole,
   grant,
   readCtStudio,
+  removeBridgeSettings,
+  removeGrant,
   serviceIdentity,
   writeCtStudio,
   type Tenant,
@@ -49,6 +51,13 @@ const identityDisabled = () =>
     'ct_studio_identity_disabled',
     "CT Studio's identity is disabled, so it is issued nothing and delivers nowhere.",
     'API-074',
+  );
+const notConnected = () =>
+  new AppError(
+    404,
+    'ct_studio_not_connected',
+    'That space is not connected to CT Studio.',
+    'API-077',
   );
 const identityEnabled = () =>
   new AppError(
@@ -267,6 +276,39 @@ export function ctStudioHandlers(options: {
         // Last, as PUT bridge-settings: the delivery store's password changes once nothing else can fail.
         await saved.commit();
         return { status, issued, space, settings: saved.view };
+      },
+
+      disconnectCtStudio: async (
+        request: FastifyRequest,
+        { trx }: Authorised,
+      ): Promise<CtStudioStatus> => {
+        const { space } = request.params as { space: string };
+        // A space that is not here is not found, before anything says whether CT Studio is.
+        const here = await trx
+          .selectFrom('space')
+          .select('id')
+          .where('id', '=', space)
+          .executeTakeFirst();
+        if (here === undefined) throw notFound();
+        const record = await readCtStudio(trx);
+        if (record === undefined) throw notSetUp();
+        if (!(await removeBridgeSettings(trx, space))) throw notConnected();
+        // Every live Author allow the identity holds there, so CT Studio can no longer deliver to it.
+        const author = await findRole(trx, 'Author');
+        const grants =
+          author === undefined
+            ? []
+            : await trx
+                .selectFrom('access_grant')
+                .select('id')
+                .where('principal_id', '=', record.identityId)
+                .where('role_id', '=', author.id)
+                .where('level', '=', 'space')
+                .where('space_id', '=', space)
+                .where('effect', '=', 'allow')
+                .execute();
+        for (const { id } of grants) await removeGrant(trx, id);
+        return statusOf(trx, options.tenantOf(request));
       },
 
       issueCtStudioToken: async (

@@ -27,7 +27,7 @@ describe('connecting CT Studio through the service (docs/design/ct-studio-connec
   };
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
     keyless = await startHarness();
   });
 
@@ -122,7 +122,7 @@ describe('connecting a space to CT Studio (docs/design/ct-studio-connect.md)', (
   beforeAll(async () => {
     await ensureDeliveredDatabase();
     h = await startHarness({
-      secrets: { SECRET_BRIDGE_KEYS: KEY, SECRET_DELIVERED_URL: DELIVERED_URL },
+      secrets: { SINK_BRIDGE_KEYS: KEY, SECRET_DELIVERED_URL: DELIVERED_URL },
     });
   });
 
@@ -255,7 +255,7 @@ describe('adopting a service identity made by hand', () => {
   };
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
   });
 
   afterAll(async () => {
@@ -329,7 +329,7 @@ describe('the delivery store password changing last on connect', () => {
   };
 
   beforeAll(async () => {
-    h = await startHarness({ secrets: { SECRET_BRIDGE_KEYS: KEY } });
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
   });
 
   afterAll(async () => {
@@ -350,5 +350,74 @@ describe('the delivery store password changing last on connect', () => {
     const answer = await connectWith(() => h.tenant, commit);
     expect(commit).toHaveBeenCalledTimes(1);
     expect(answer.settings).toBe(view);
+  });
+});
+
+describe('disconnecting a space from CT Studio', () => {
+  let h: Harness;
+  const blank = { componentType: null, template: null, propertyMap: {}, data: false };
+  const connect = (space: string, identity: unknown) =>
+    h.call('ada', 'POST', '/v1/ct-studio/connections', {
+      space,
+      identity,
+      settings: blank,
+      address: 'https://acme.alloy.test',
+      sinkId: 'alloy-acme',
+    });
+  const disconnect = (space: string) =>
+    h.call('ada', 'DELETE', `/v1/ct-studio/connections/${space}`);
+  const authorGrants = (principal: string, space: string) =>
+    h.tenantDb.withTenant(h.tenant, (trx) =>
+      trx
+        .selectFrom('access_grant')
+        .select('id')
+        .where('principal_id', '=', principal)
+        .where('role_id', '=', h.roles.Author!)
+        .where('space_id', '=', space)
+        .execute(),
+    );
+
+  beforeAll(async () => {
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
+  });
+
+  afterAll(async () => {
+    await h?.close();
+  });
+
+  it('API-077 disconnecting before anything is set up is refused ct_studio_not_set_up', async () => {
+    const answer = await disconnect(h.general);
+    expect(answer.statusCode, answer.body).toBe(409);
+    expect(answer.json()).toMatchObject({ code: 'ct_studio_not_set_up' });
+  });
+
+  it('API-077 disconnecting a space removes its grant and settings and keeps the identity, token and other spaces', async () => {
+    expect((await connect(h.general, { make: true })).statusCode).toBe(200);
+    expect((await connect(h.quality, null)).statusCode).toBe(200);
+    const before = (await h.call('ada', 'GET', '/v1/ct-studio')).json<CtStudioStatus>();
+    const answer = await disconnect(h.quality);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const status = answer.json<CtStudioStatus>();
+    expect(status.spaces.map((space) => space.id)).toEqual([h.general]);
+    expect(status.identity).toEqual(before.identity);
+    expect(status.token).toEqual(before.token);
+    expect(await authorGrants(before.identity!.id, h.quality)).toEqual([]);
+    expect(await authorGrants(before.identity!.id, h.general)).toHaveLength(1);
+    const settings = await h.call('ada', 'GET', `/v1/spaces/${h.quality}/bridge-settings`);
+    expect(settings.json()).toMatchObject({ template: null, propertyMap: {}, data: false });
+  });
+
+  it('API-077 disconnecting a space that is not connected is refused 404 ct_studio_not_connected', async () => {
+    const answer = await disconnect(h.quality);
+    expect(answer.statusCode, answer.body).toBe(404);
+    expect(answer.json()).toMatchObject({ code: 'ct_studio_not_connected' });
+  });
+
+  it('API-077 a disconnected space connects again on the same token, nothing issued', async () => {
+    const answer = await connect(h.quality, null);
+    expect(answer.statusCode, answer.body).toBe(200);
+    const body = answer.json<CtStudioConnected>();
+    expect(body.issued).toBeNull();
+    expect(body.status.spaces.find((space) => space.id === h.quality)?.granted).toBe(true);
   });
 });

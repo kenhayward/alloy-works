@@ -30,7 +30,7 @@ for every environment and every space that receives deliveries.
 - **Non-goal:** a "test the bridge" button. Only the bridge can sign a `/bridge` call; CT Studio's own
   connection test is where reachability is checked.
 - **Anti-goal:** the signing key shown, stored or asked for anywhere in the interface. It is a
-  deployment secret (`SECRET_BRIDGE_KEYS`) and stays one.
+  deployment secret (`SINK_BRIDGE_KEYS`) and stays one.
 - **Anti-goal:** the token kept anywhere after the hand-off page closes, as for every other token.
 
 ## The flow
@@ -39,7 +39,7 @@ for every environment and every space that receives deliveries.
 administrator. The section opens on a summary of what is connected: the identity, its token's expiry,
 and the spaces it can deliver to with each one's settings. **Connect a space** starts the flow.
 
-If the service was started without `SECRET_BRIDGE_KEYS`, the section says so above everything else:
+If the service was started without `SINK_BRIDGE_KEYS`, the section says so above everything else:
 setup still works, but CT Studio is refused until the key is set and the service restarted.
 
 1. **Choose the space.** Any space the administrator administers. One already connected opens its
@@ -75,12 +75,12 @@ setup still works, but CT Studio is refused until the key is set and the service
      date. Then a block ready to paste into CT Studio's `.env`:
 
      ```
-     BRIDGE_SINKS=[{"id":"<sink id>","url":"<address>/bridge","key":"<the value of SECRET_BRIDGE_KEYS>"}]
+     BRIDGE_SINKS=[{"id":"<sink id>","url":"<address>/bridge","key":"<the value of SINK_BRIDGE_KEYS>"}]
      ```
 
      and short steps:
      1. Put the block in CT Studio's `.env`, replacing the key placeholder with the value of
-        `SECRET_BRIDGE_KEYS` from this deployment. If `BRIDGE_SINKS` is already set, add the entry to
+        `SINK_BRIDGE_KEYS` from this deployment. If `BRIDGE_SINKS` is already set, add the entry to
         its list instead. Restart CT Studio's bridge.
      2. If this address's certificate is not from a public authority (a LAN or development address),
         make CT Studio's bridge trust it with `NODE_EXTRA_CA_CERTS`.
@@ -155,7 +155,7 @@ field left empty.
   settings (provisioning data as the settings route does), and answer with the secret once, the
   identity, the space and what was made. One call, so a half-made connection comes from a failure in
   the middle, which leaves what was made before it and is resumable by running the flow again.
-- **A status route** for the summary: whether `SECRET_BRIDGE_KEYS` is set (yes or no only), the
+- **A status route** for the summary: whether `SINK_BRIDGE_KEYS` is set (yes or no only), the
   identity and whether it is disabled, its token's expiry, the connected spaces, the environment's
   hostnames, and the remembered address and sink id.
 - **A token route** for **Issue a new token**.
@@ -167,11 +167,12 @@ each lands in the OpenAPI contract and the generated client.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------ |
-| **API-074** | Administration → CT Studio connects a space, first or later, without the API                     |
-| **API-075** | The hand-off page gives CT Studio's `.env` entry and steps, with the token shown once and no key |
-| **API-076** | A property is mapped, ignored, or unlisted; an unlisted one is reported and listed for the space |
+| ID          | How it is met                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| **API-074** | Administration → CT Studio connects a space, first or later, without the API                                |
+| **API-075** | The hand-off page gives CT Studio's `.env` entry and steps, with the token shown once and no key            |
+| **API-076** | A property is mapped, ignored, or unlisted; an unlisted one is reported and listed for the space            |
+| **API-077** | Each space's row disconnects it: its grant and settings go, its deliveries, the token and other spaces stay |
 
 ## Left to the builder
 
@@ -184,8 +185,8 @@ flow is split into components; the tests, each starting with its requirement's i
 Built by [the CC plan](../plans/2026-10-30-cc-connect-ct-studio.md). Where the build settled what this
 design left open:
 
-- **Routes.** `GET /v1/ct-studio`, `POST /v1/ct-studio/connections` and `POST /v1/ct-studio/tokens`,
-  each administer at the environment with a session. The two that issue a token declare that they
+- **Routes.** `GET /v1/ct-studio`, `POST /v1/ct-studio/connections`, `POST /v1/ct-studio/tokens` and
+  `DELETE /v1/ct-studio/connections/{space}`, each administer at the environment with a session. The two that issue a token declare that they
   change access and take no idempotency key, so no remembered answer holds a secret.
 - **The record.** A single `ct_studio` row (migration 0174): the identity, the token CT Studio holds
   (null once revoked, as a revoked token's row is gone), the address and the sink id.
@@ -197,5 +198,19 @@ design left open:
   commit, through the connector.
 - **The field list** on the settings form comes from the template's document-level schemas and their
   entries; the service still refuses a mapping to a field the template does not give, against its row.
-- **The address** is chosen from the page's own origin, when https, and `https://` before each of the
-  environment's hostnames; it cannot be typed.
+- **The address** is typed, suggested from the page's own origin and `https://` before each of the
+  environment's hostnames, and refused unless it is https and not a loopback name: from CT Studio's
+  bridge, `127.0.0.1` and `localhost` name its own machine. A hostname carries no port, so on the
+  development stack the address is the LAN proxy's, `https://<ALLOY_LAN_ADDRESS>:8443`, port and all.
+  (First built as a list that could not be typed; it offered `https://127.0.0.1`, which no bridge
+  reaches.)
+- **The signing key's name** is `SINK_BRIDGE_KEYS`, as 3ds-sink names it, so one variable has one name
+  on every sink (first built as `SECRET_BRIDGE_KEYS`).
+- **The hand-off** names the two secrets apart in every step: the signing key goes in CT Studio's
+  `BRIDGE_SINKS` entry, the token only in its connection.
+- **Disconnecting a space** (added after the first real connection, API-077). Each space's row has
+  **Disconnect**, confirmed first: CT Studio's identity loses its Author grant there, and the space's
+  CT Studio settings and unlisted properties go. What CT Studio delivered stays, and so does the
+  space's data connection; the identity, its token and every other space are kept, so connecting the
+  space again issues nothing. A lost token is answered by **Issue a new token**, never by
+  disconnecting.

@@ -4226,7 +4226,7 @@ bridge --signed--> service /bridge --stores package by hash, queues bridge_deliv
 ```
 
 - **The service** (`apps/service/src/bridge/`) is a Fastify scope with its own raw-body parser and
-  error handler, mounted at `/bridge` when `SECRET_BRIDGE_KEYS` is set. A request is accepted on the
+  error handler, mounted at `/bridge` when `SINK_BRIDGE_KEYS` is set. A request is accepted on the
   bridge's signature over the path relative to `/bridge`, a nonce inserted under a unique constraint
   (`bridge_nonce`, swept by the job queue), and the target's `awt_` token, which must belong to a
   service identity in the tenant its hostname names. The token's id is recorded; the token is not.
@@ -4234,8 +4234,9 @@ bridge --signed--> service /bridge --stores package by hash, queues bridge_deliv
 - **Connecting CT Studio** (`apps/service/src/bridge/ct-studio.ts`, `apps/web/src/admin/CtStudio.tsx`;
   [ct-studio-connect.md](design/ct-studio-connect.md)): `GET /v1/ct-studio` is what is connected,
   `POST /v1/ct-studio/connections` makes or adopts the identity, grants Author, issues the token and
-  saves the space's settings in one transaction, and `POST /v1/ct-studio/tokens` issues a new token or
-  a replacement identity. The environment's one CT Studio is the `ct_studio` row (0174); the signing
+  saves the space's settings in one transaction, `POST /v1/ct-studio/tokens` issues a new token or
+  a replacement identity, and `DELETE /v1/ct-studio/connections/{space}` disconnects a space, its
+  Author grant and settings removed and its deliveries kept. The environment's one CT Studio is the `ct_studio` row (0174); the signing
   key is never read there, only whether it is set. A property the map does not name is reported
   `property_unlisted` and counted per space in `bridge_unlisted_property` (0173), for a delivery
   written or refused; a property mapped to `null` is ignored.

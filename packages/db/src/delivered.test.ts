@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import type { bridge } from '@alloy-works/domain';
+import type * as bridge from '@alloy-works/domain/bridge';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDeliveredStore, tenantNames, type DeliveredStore } from './delivered.js';

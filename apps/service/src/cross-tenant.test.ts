@@ -506,6 +506,7 @@ const OTHER_TENANT_IDS: Readonly<
   getTemplate: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   recordTemplateVersion: async (tenant, db) => ({ id: await templateIdIn(tenant, db) }),
   getBridgeSettings: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
+  disconnectCtStudio: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   putBridgeSettings: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   createConnection: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getConnection: async (tenant, db) => ({ id: await connectionIdIn(tenant, db) }),

@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'kysely';
 import {
   assetAlternativeSchema,
-  bridge,
   carryForward,
   checkDocumentParameters,
   checkWrittenValues,
@@ -18,6 +17,7 @@ import {
   type MetadataValues,
   type OutlineDocument,
 } from '@alloy-works/domain';
+import * as bridge from '@alloy-works/domain/bridge';
 import {
   bridgeError,
   changedInTargetDetails,

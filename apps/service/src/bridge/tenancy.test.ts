@@ -62,7 +62,7 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
   let worker: TenantDatabase;
   let queue: JobQueue;
   let handlers: Record<string, JobHandler>;
-  // One key set serves the deployment (SECRET_BRIDGE_KEYS), every tenant's hostname alike, as the
+  // One key set serves the deployment (SINK_BRIDGE_KEYS), every tenant's hostname alike, as the
   // bridge holds one per sink: a request signed with another key is refused before any tenant is
   // asked, and the token and the hostname are what tell the tenants apart.
   const key = randomBytes(32).toString('hex');
@@ -148,7 +148,7 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
     await ensureDeliveredDatabase();
 
     h = await startHarness({
-      secrets: { SECRET_BRIDGE_KEYS: key, SECRET_DELIVERED_URL: DELIVERED_URL },
+      secrets: { SINK_BRIDGE_KEYS: key, SECRET_DELIVERED_URL: DELIVERED_URL },
     });
     delivered = createDeliveredStore(DELIVERED_URL);
     worker = testTenantDatabase(h.db.workerUrl);

@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.218.0 - 2026-10-30 (PR #822)
+
+CT Studio's hand-off made clear, after the first real connection.
+
+### Added
+
+- **Disconnect a space from CT Studio.** Each space in Administration → CT Studio has **Disconnect**, asked first: CT Studio can no longer deliver there and its settings for the space go, while what it delivered, its token and its other spaces stay, so connecting the space again needs no new token.
+
+### Changed
+
+- **The signing key is `SINK_BRIDGE_KEYS`.** The service reads CT Studio's signing key from `SINK_BRIDGE_KEYS`, as 3ds-sink does, so one variable has one name on every sink. A deployment that set `SECRET_BRIDGE_KEYS` in 0.216.0 renames it, or `/bridge` is not served.
+
+### Fixed
+
+- **A hand-off you can read.** What CT Studio needs is one column of steps, each holding what to copy, the entry wrapping inside the dialog rather than running off it. The steps say which secret goes where: the signing key in CT Studio's `BRIDGE_SINKS` entry, the token only in its connection.
+- **An address CT Studio can reach.** The address is typed, with suggestions, and refused unless it is https and not 127.0.0.1 or localhost, which from CT Studio's bridge name its own machine. It no longer offers `https://127.0.0.1` with no port.
+- **The web dev server loads again.** Since 0.216.0 it showed a blank page: the domain package's CT Studio code, which hashes with Node's crypto, was reached from the renderer. It now has an entry of its own.
+
 ## 0.217.0 - 2026-10-30 (PR #821)
 
 Connecting CT Studio from Administration (the CC plan).

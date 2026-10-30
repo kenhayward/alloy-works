@@ -114,7 +114,7 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
 
   beforeAll(async () => {
     h = await startHarness({
-      secrets: { SECRET_BRIDGE_KEYS: `${retiring}, ${key}` },
+      secrets: { SINK_BRIDGE_KEYS: `${retiring}, ${key}` },
       objects: failable,
     });
     instance = h.tenant.id;

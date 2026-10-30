@@ -45,7 +45,7 @@ const connected: Status = {
     expiresAt: new Date(Date.now() + 300 * DAY).toISOString(),
   },
   spaces: [{ ...GENERAL, granted: true, data: false }],
-  address: 'https://dev.acme.localhost',
+  address: 'https://192.168.1.129:8443',
   sinkId: 'alloy-dev',
 };
 const issued = {
@@ -97,6 +97,11 @@ function service(status: Status) {
       });
     }
     if (url === '/v1/ct-studio/tokens') return json(200, { status: now, issued });
+    if (url.startsWith('/v1/ct-studio/connections/') && request.method === 'DELETE') {
+      const gone = url.split('/').at(-1);
+      now = { ...now, spaces: now.spaces.filter((each) => each.id !== gone) };
+      return json(200, now);
+    }
     if (url === '/v1/spaces') {
       return json(200, {
         items: [GENERAL, QUALITY].map((each) => ({ ...each, archived: false })),
@@ -146,6 +151,9 @@ function service(status: Status) {
   return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), sent };
 }
 
+/** The address CT Studio's bridge reaches the development stack at: the LAN proxy, port and all. */
+const LAN = 'https://192.168.1.129:8443';
+
 /** Through the flow to its hand-off: the space, the identity if asked, the settings, the address. */
 async function connectSpace(space: string, identity?: 'make' | 'adopt') {
   await userEvent.click(await screen.findByRole('button', { name: 'Connect a space' }));
@@ -163,49 +171,85 @@ async function connectSpace(space: string, identity?: 'make' | 'adopt') {
   }
   await screen.findByLabelText('Deliver data tables to this space');
   await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-  await userEvent.click(await screen.findByRole('button', { name: 'Connect' }));
+  const address = await screen.findByLabelText('Address CT Studio reaches this environment at');
+  await userEvent.clear(address);
+  await userEvent.type(address, LAN);
+  await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
 }
 
 describe("Administration's CT Studio", () => {
   it('API-075 sinkEntry gives the BRIDGE_SINKS line with the key as a placeholder', () => {
     expect(sinkEntry('alloy-acme', 'https://192.168.1.129:8443')).toBe(
-      'BRIDGE_SINKS=[{"id":"alloy-acme","url":"https://192.168.1.129:8443/bridge","key":"<the value of SECRET_BRIDGE_KEYS>"}]',
+      'BRIDGE_SINKS=[{"id":"alloy-acme","url":"https://192.168.1.129:8443/bridge","key":"<the value of SINK_BRIDGE_KEYS>"}]',
     );
   });
 
-  it('API-075 defaultAddress prefers an https page origin, port and all', () => {
+  it('API-075 defaultAddress prefers an https page origin, port and all, and never a loopback name', () => {
     expect(defaultAddress('https://192.168.1.129:8443', ['dev.acme.localhost'])).toBe(
       'https://192.168.1.129:8443',
     );
-    expect(defaultAddress('http://127.0.0.1:8088', ['dev.acme.localhost'])).toBe(
-      'https://dev.acme.localhost',
-    );
+    expect(
+      defaultAddress('http://127.0.0.1:8088', ['dev.acme.localhost', '127.0.0.1', '192.168.1.129']),
+    ).toBe('https://192.168.1.129');
+    expect(defaultAddress('http://127.0.0.1:8088', ['dev.acme.localhost'])).toBe('');
+    expect(defaultAddress('https://dev.acme.localhost:8443', ['localhost'])).toBe('');
     expect(defaultSinkId(['dev.acme.localhost'])).toBe('alloy-dev');
   });
 
   it('API-074 bridge off is said above everything', async () => {
     const { client } = service({ ...fresh, bridgeOn: false });
     render(<CtStudio client={client} />);
-    expect(await screen.findByRole('alert')).toHaveTextContent('SECRET_BRIDGE_KEYS');
+    expect(await screen.findByRole('alert')).toHaveTextContent('SINK_BRIDGE_KEYS');
   });
 
-  it('API-074 the first connection ends on the token, the entry and four steps', async () => {
+  it('API-074 an address CT Studio cannot reach, loopback or not https, cannot be connected', async () => {
+    const { client } = service(fresh);
+    render(<CtStudio client={client} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Connect a space' }));
+    await userEvent.selectOptions(await screen.findByLabelText('Space'), 'General');
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await userEvent.click(await screen.findByLabelText('Make a new identity'));
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByLabelText('Deliver data tables to this space');
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    const address = await screen.findByLabelText('Address CT Studio reaches this environment at');
+    const connect = screen.getByRole('button', { name: 'Connect' });
+    for (const each of [
+      'https://127.0.0.1:8443',
+      'https://dev.acme.localhost',
+      'http://192.168.1.129:8088',
+    ]) {
+      await userEvent.clear(address);
+      await userEvent.type(address, each);
+      expect(connect).toBeDisabled();
+    }
+    await userEvent.clear(address);
+    await userEvent.type(address, LAN);
+    expect(connect).toBeEnabled();
+  });
+
+  it('API-074 the first connection ends on the token, the entry and five steps', async () => {
     const { client, sent } = service(fresh);
     render(<CtStudio client={client} />);
     await connectSpace('General', 'make');
     const token = await screen.findByLabelText('Token');
     expect(token).toHaveValue(issued.secret);
     expect(token).toHaveAttribute('readonly');
-    expect(screen.getByText(/^BRIDGE_SINKS=/)).toHaveTextContent(
-      'BRIDGE_SINKS=[{"id":"alloy-dev","url":"https://dev.acme.localhost/bridge"',
+    expect(screen.getByLabelText("CT Studio's BRIDGE_SINKS entry")).toHaveValue(
+      'BRIDGE_SINKS=[{"id":"alloy-dev","url":"https://192.168.1.129:8443/bridge","key":"<the value of SINK_BRIDGE_KEYS>"}]',
     );
-    expect(
-      within(screen.getByRole('list', { name: 'In CT Studio' })).getAllByRole('listitem'),
-    ).toHaveLength(4);
+    const steps = within(screen.getByRole('list', { name: 'In CT Studio' })).getAllByRole(
+      'listitem',
+    );
+    expect(steps).toHaveLength(5);
+    // Which secret goes where: the signing key in the entry, the token only in the connection.
+    expect(steps[1]).toHaveTextContent('SINK_BRIDGE_KEYS');
+    expect(steps[1]).toHaveTextContent('not the token');
+    expect(steps[3]).toHaveTextContent('Paste the token');
     expect(sent.find((each) => each.url === '/v1/ct-studio/connections')!.body).toMatchObject({
       space: GENERAL.id,
       identity: { make: true },
-      address: 'https://dev.acme.localhost',
+      address: LAN,
       sinkId: 'alloy-dev',
     });
     await userEvent.click(screen.getByRole('button', { name: 'Done' }));
@@ -244,6 +288,9 @@ describe("Administration's CT Studio", () => {
     const { unmount } = render(<CtStudio client={first.client} />);
     await userEvent.click(await screen.findByRole('button', { name: 'Issue a new token' }));
     expect(await screen.findByLabelText('Token')).toHaveValue(issued.secret);
+    expect(screen.getByRole('list', { name: 'In CT Studio' })).toHaveTextContent(
+      'replace its token with the new one',
+    );
     expect(first.sent.at(-1)).toEqual({
       url: '/v1/ct-studio/tokens',
       body: { replaceIdentity: false },
@@ -266,6 +313,29 @@ describe("Administration's CT Studio", () => {
     const { client } = service(connected);
     render(<CtStudio client={client} />);
     expect(await screen.findByRole('button', { name: 'Issue a new token' })).toBeInTheDocument();
+  });
+
+  it('API-077 a space is disconnected from its row once confirmed, and leaves the list', async () => {
+    const { client, sent } = service({
+      ...connected,
+      spaces: [
+        { ...GENERAL, granted: true, data: false },
+        { ...QUALITY, granted: true, data: false },
+      ],
+    });
+    render(<CtStudio client={client} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Disconnect Quality' }));
+    const asked = await screen.findByRole('dialog', { name: 'Disconnect Quality from CT Studio?' });
+    await userEvent.click(within(asked).getByRole('button', { name: 'Keep it' }));
+    expect(sent.some((each) => each.url.startsWith('/v1/ct-studio/connections/'))).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Disconnect Quality' }));
+    const again = await screen.findByRole('dialog', { name: 'Disconnect Quality from CT Studio?' });
+    await userEvent.click(within(again).getByRole('button', { name: 'Disconnect' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Disconnect Quality' })).not.toBeInTheDocument(),
+    );
+    expect(sent.at(-1)!.url).toBe(`/v1/ct-studio/connections/${QUALITY.id}`);
+    expect(screen.getByRole('button', { name: 'Disconnect General' })).toBeInTheDocument();
   });
 
   it('API-074 a space without its grant offers Grant again', async () => {
