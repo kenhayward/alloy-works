@@ -568,6 +568,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'connection.made',
     'connection.credential_set',
   ),
+  // A disconnected space's grant removed and its settings gone (API-077).
+  disconnectCtStudio: writes('access.revoked', 'bridge.settings_changed'),
   issueCtStudioToken: writes('service_identity.created', 'access.granted', 'token.issued'),
   getErasure: read,
   erasePrincipal: writes(

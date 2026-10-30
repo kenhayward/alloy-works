@@ -1999,6 +1999,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ct-studio/connections/{space}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect a space from CT Studio: its Author grant and its settings go
+         * @description Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs administer at the environment, with a signed-in session.
+         */
+        delete: operations["disconnectCtStudio"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ct-studio/tokens": {
         parameters: {
             query?: never;
@@ -33871,6 +33891,188 @@ export interface operations {
             };
             /** @description As PUT bridge-settings, turning data on */
             503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    disconnectCtStudio: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disconnected: what is connected now */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "bridgeOn": false,
+                     *       "identity": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "disabled": false
+                     *       },
+                     *       "token": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "expiresAt": "example"
+                     *       },
+                     *       "spaces": [],
+                     *       "hostnames": [],
+                     *       "address": "example",
+                     *       "sinkId": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Whether the service was started with a signing key, so `/bridge` answers CT Studio */
+                        bridgeOn: boolean;
+                        /** @description CT Studio's identity; none before the first connection */
+                        identity: {
+                            /** @description The service identity, by its principal */
+                            id: string;
+                            name: string;
+                            /** @description Disabled identities are refused every delivery */
+                            disabled: boolean;
+                        } | null;
+                        /** @description The token CT Studio holds; none once revoked, or for an adopted identity whose token was not named */
+                        token: {
+                            id: string;
+                            name: string;
+                            expiresAt: string;
+                        } | null;
+                        /** @description Every space with CT Studio settings, by name */
+                        spaces: {
+                            id: string;
+                            name: string;
+                            /** @description Whether CT Studio's identity holds Author here; without it deliveries are refused */
+                            granted: boolean;
+                            /** @description Whether data packages are delivered here */
+                            data: boolean;
+                        }[];
+                        /** @description The hostnames this environment answers at */
+                        hostnames: string[];
+                        /** @description The address the hand-off page last gave CT Studio */
+                        address: string | null;
+                        /** @description The sink id the hand-off page last gave CT Studio */
+                        sinkId: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `ct_studio_not_connected`: the space has no CT Studio settings */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `ct_studio_not_set_up`: there is no CT Studio identity */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

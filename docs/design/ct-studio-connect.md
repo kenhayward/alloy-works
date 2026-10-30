@@ -167,11 +167,12 @@ each lands in the OpenAPI contract and the generated client.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------ |
-| **API-074** | Administration → CT Studio connects a space, first or later, without the API                     |
-| **API-075** | The hand-off page gives CT Studio's `.env` entry and steps, with the token shown once and no key |
-| **API-076** | A property is mapped, ignored, or unlisted; an unlisted one is reported and listed for the space |
+| ID          | How it is met                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| **API-074** | Administration → CT Studio connects a space, first or later, without the API                                |
+| **API-075** | The hand-off page gives CT Studio's `.env` entry and steps, with the token shown once and no key            |
+| **API-076** | A property is mapped, ignored, or unlisted; an unlisted one is reported and listed for the space            |
+| **API-077** | Each space's row disconnects it: its grant and settings go, its deliveries, the token and other spaces stay |
 
 ## Left to the builder
 
@@ -184,8 +185,8 @@ flow is split into components; the tests, each starting with its requirement's i
 Built by [the CC plan](../plans/2026-10-30-cc-connect-ct-studio.md). Where the build settled what this
 design left open:
 
-- **Routes.** `GET /v1/ct-studio`, `POST /v1/ct-studio/connections` and `POST /v1/ct-studio/tokens`,
-  each administer at the environment with a session. The two that issue a token declare that they
+- **Routes.** `GET /v1/ct-studio`, `POST /v1/ct-studio/connections`, `POST /v1/ct-studio/tokens` and
+  `DELETE /v1/ct-studio/connections/{space}`, each administer at the environment with a session. The two that issue a token declare that they
   change access and take no idempotency key, so no remembered answer holds a secret.
 - **The record.** A single `ct_studio` row (migration 0174): the identity, the token CT Studio holds
   (null once revoked, as a revoked token's row is gone), the address and the sink id.
@@ -207,3 +208,9 @@ design left open:
   on every sink (first built as `SECRET_BRIDGE_KEYS`).
 - **The hand-off** names the two secrets apart in every step: the signing key goes in CT Studio's
   `BRIDGE_SINKS` entry, the token only in its connection.
+- **Disconnecting a space** (added after the first real connection, API-077). Each space's row has
+  **Disconnect**, confirmed first: CT Studio's identity loses its Author grant there, and the space's
+  CT Studio settings and unlisted properties go. What CT Studio delivered stays, and so does the
+  space's data connection; the identity, its token and every other space are kept, so connecting the
+  space again issues nothing. A lost token is answered by **Issue a new token**, never by
+  disconnecting.

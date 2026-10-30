@@ -597,6 +597,7 @@ const operationTags = {
     'getCtStudio',
     'connectCtStudio',
     'issueCtStudioToken',
+    'disconnectCtStudio',
   ],
   'Service identities': [
     'listServiceIdentities',
@@ -1326,6 +1327,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Returns the environment’s CT Studio as Administration shows it: whether the service has a signing key (never the key), the service identity CT Studio’s deliveries act as and whether it is disabled, the token CT Studio holds and when it expires, every space with CT Studio settings and whether the identity may still deliver there, the environment’s hostnames, and the address and sink id last handed to CT Studio. Needs administer at the environment, with a signed-in session.',
   connectCtStudio:
     'Connects a space to CT Studio in one transaction: the first time it makes the service identity CT Studio’s deliveries act as (or adopts one made by hand, with the token CT Studio already holds), and afterwards reuses it; grants it Author at the space unless it holds that already; issues its token the first time, with scopes create and edit for 365 days; and sets the space’s bridge settings as PUT bridge-settings does. Anything refused leaves nothing made. The token’s secret is answered this once and never kept. Needs administer at the environment, with a signed-in session.',
+  disconnectCtStudio:
+    'Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs administer at the environment, with a signed-in session.',
   issueCtStudioToken:
     'Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',

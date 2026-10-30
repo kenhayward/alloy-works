@@ -168,6 +168,7 @@ answers API-Q05 for this integration only.
 | **API-074** | An administrator must be able to connect a space to CT Studio from the interface, the first time and for every space after, without calling the API                                                                                                                | T6      | Specified |
 | **API-075** | Connecting must end on what CT Studio needs: its `.env` entry and short steps, with the token shown once and the signing key never shown                                                                                                                           | T6      | Specified |
 | **API-076** | A delivered property must be mapped to a field, ignored, or unlisted; an unlisted one must be reported with the delivery and listed for the space                                                                                                                  | T6      | Specified |
+| **API-077** | An administrator must be able to disconnect a space from CT Studio from the interface; what CT Studio delivered there, its token and its other spaces stay                                                                                                         | T6      | Specified |
 
 ## 7. MCP
 
@@ -261,7 +262,7 @@ value it saw is exactly the silent staleness this specification rules out everyw
 | API-037 to API-053 | [The v1 review](<../../reviews/API - api and mcp specification.md>); section 13                             |
 | API-062            | [Requirement issue #352](https://github.com/kenhayward/alloy-works/issues/352)                              |
 | API-065 to API-073 | [ADR-0071](../../decisions/0071-ct-studio-delivers-straight-in-as-a-service-identity.md), Ken on 2026-10-29 |
-| API-074 to API-076 | [ct-studio-connect.md](../../design/ct-studio-connect.md), Ken on 2026-10-30                                |
+| API-074 to API-077 | [ct-studio-connect.md](../../design/ct-studio-connect.md), Ken on 2026-10-30                                |
 
 ## 13. Change history
 

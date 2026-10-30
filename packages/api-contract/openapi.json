@@ -84470,6 +84470,432 @@
         }
       }
     },
+    "/v1/ct-studio/connections/{space}": {
+      "delete": {
+        "operationId": "disconnectCtStudio",
+        "summary": "Disconnect a space from CT Studio: its Author grant and its settings go",
+        "description": "Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs administer at the environment, with a signed-in session.",
+        "tags": [
+          "CT Studio bridge"
+        ],
+        "x-alloy-token-enabled": false,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "space",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disconnected: what is connected now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "bridgeOn": {
+                      "type": "boolean",
+                      "description": "Whether the service was started with a signing key, so `/bridge` answers CT Studio"
+                    },
+                    "identity": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "The service identity, by its principal"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "disabled": {
+                              "type": "boolean",
+                              "description": "Disabled identities are refused every delivery"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "disabled"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "CT Studio's identity; none before the first connection"
+                    },
+                    "token": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "expiresAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "expiresAt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The token CT Studio holds; none once revoked, or for an adopted identity whose token was not named"
+                    },
+                    "spaces": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "granted": {
+                            "type": "boolean",
+                            "description": "Whether CT Studio's identity holds Author here; without it deliveries are refused"
+                          },
+                          "data": {
+                            "type": "boolean",
+                            "description": "Whether data packages are delivered here"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "granted",
+                          "data"
+                        ]
+                      },
+                      "description": "Every space with CT Studio settings, by name"
+                    },
+                    "hostnames": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The hostnames this environment answers at"
+                    },
+                    "address": {
+                      "description": "The address the hand-off page last gave CT Studio",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sinkId": {
+                      "description": "The sink id the hand-off page last gave CT Studio",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "bridgeOn",
+                    "identity",
+                    "token",
+                    "spaces",
+                    "hostnames",
+                    "address",
+                    "sinkId"
+                  ]
+                },
+                "example": {
+                  "bridgeOn": false,
+                  "identity": {
+                    "id": "example",
+                    "name": "example",
+                    "disabled": false
+                  },
+                  "token": {
+                    "id": "example",
+                    "name": "example",
+                    "expiresAt": "example"
+                  },
+                  "spaces": [],
+                  "hostnames": [],
+                  "address": "example",
+                  "sinkId": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`ct_studio_not_connected`: the space has no CT Studio settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`ct_studio_not_set_up`: there is no CT Studio identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/ct-studio/tokens": {
       "post": {
         "operationId": "issueCtStudioToken",

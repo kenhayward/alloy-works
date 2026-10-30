@@ -7,6 +7,10 @@ topmost version matches `version.json`. Up to 0.132.3, every pull request had it
 
 CT Studio's hand-off made clear, after the first real connection.
 
+### Added
+
+- **Disconnect a space from CT Studio.** Each space in Administration → CT Studio has **Disconnect**, asked first: CT Studio can no longer deliver there and its settings for the space go, while what it delivered, its token and its other spaces stay, so connecting the space again needs no new token.
+
 ### Changed
 
 - **The signing key is `SINK_BRIDGE_KEYS`.** The service reads CT Studio's signing key from `SINK_BRIDGE_KEYS`, as 3ds-sink does, so one variable has one name on every sink. A deployment that set `SECRET_BRIDGE_KEYS` in 0.216.0 renames it, or `/bridge` is not served.

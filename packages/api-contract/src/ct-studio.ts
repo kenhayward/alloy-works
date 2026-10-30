@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { BridgeSettingsBody, BridgeSettingsView } from './bridge-settings.js';
+import { SpaceParams } from './components.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 import { TokenIssued } from './tokens.js';
 
@@ -182,6 +183,28 @@ export const ctStudioRoutes = {
       409: {
         description:
           '`ct_studio_not_set_up`: there is no CT Studio identity; `ct_studio_identity_disabled`: it is disabled and was not asked to be replaced; `ct_studio_identity_enabled`: it was asked to be replaced while still enabled',
+        schema: ErrorBody,
+      },
+    },
+  },
+  disconnectCtStudio: {
+    operationId: 'disconnectCtStudio',
+    method: 'DELETE',
+    path: '/v1/ct-studio/connections/{space}',
+    summary: 'Disconnect a space from CT Studio: its Author grant and its settings go',
+    tenantScoped: true,
+    access: CHANGES_ACCESS,
+    params: SpaceParams,
+    responses: {
+      200: { description: 'Disconnected: what is connected now', schema: CtStudioStatus },
+      401: unauthenticated,
+      403: notAdministering,
+      404: {
+        description: '`ct_studio_not_connected`: the space has no CT Studio settings',
+        schema: ErrorBody,
+      },
+      409: {
+        description: '`ct_studio_not_set_up`: there is no CT Studio identity',
         schema: ErrorBody,
       },
     },

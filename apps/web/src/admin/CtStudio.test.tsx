@@ -97,6 +97,11 @@ function service(status: Status) {
       });
     }
     if (url === '/v1/ct-studio/tokens') return json(200, { status: now, issued });
+    if (url.startsWith('/v1/ct-studio/connections/') && request.method === 'DELETE') {
+      const gone = url.split('/').at(-1);
+      now = { ...now, spaces: now.spaces.filter((each) => each.id !== gone) };
+      return json(200, now);
+    }
     if (url === '/v1/spaces') {
       return json(200, {
         items: [GENERAL, QUALITY].map((each) => ({ ...each, archived: false })),
@@ -308,6 +313,29 @@ describe("Administration's CT Studio", () => {
     const { client } = service(connected);
     render(<CtStudio client={client} />);
     expect(await screen.findByRole('button', { name: 'Issue a new token' })).toBeInTheDocument();
+  });
+
+  it('API-077 a space is disconnected from its row once confirmed, and leaves the list', async () => {
+    const { client, sent } = service({
+      ...connected,
+      spaces: [
+        { ...GENERAL, granted: true, data: false },
+        { ...QUALITY, granted: true, data: false },
+      ],
+    });
+    render(<CtStudio client={client} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Disconnect Quality' }));
+    const asked = await screen.findByRole('dialog', { name: 'Disconnect Quality from CT Studio?' });
+    await userEvent.click(within(asked).getByRole('button', { name: 'Keep it' }));
+    expect(sent.some((each) => each.url.startsWith('/v1/ct-studio/connections/'))).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Disconnect Quality' }));
+    const again = await screen.findByRole('dialog', { name: 'Disconnect Quality from CT Studio?' });
+    await userEvent.click(within(again).getByRole('button', { name: 'Disconnect' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Disconnect Quality' })).not.toBeInTheDocument(),
+    );
+    expect(sent.at(-1)!.url).toBe(`/v1/ct-studio/connections/${QUALITY.id}`);
+    expect(screen.getByRole('button', { name: 'Disconnect General' })).toBeInTheDocument();
   });
 
   it('API-074 a space without its grant offers Grant again', async () => {

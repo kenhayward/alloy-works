@@ -339,6 +339,31 @@ export async function writeBridgeSettings(
   return { ...input, changedAt: now };
 }
 
+/**
+ * Removes a space's bridge settings and its unlisted properties, recording bridge.settings_changed with
+ * the names that held something, as if each were written empty. False where the space has none.
+ */
+export async function removeBridgeSettings(
+  trx: TenantTransaction,
+  spaceId: string,
+): Promise<boolean> {
+  const before = await readBridgeSettings(trx, spaceId);
+  if (before === undefined) return false;
+  await trx.deleteFrom('bridge_unlisted_property').where('space_id', '=', spaceId).execute();
+  await trx.deleteFrom('bridge_settings').where('space_id', '=', spaceId).execute();
+  const was = named(before);
+  const is = named(undefined);
+  await recordEvent(trx, {
+    kind: 'bridge.settings_changed',
+    space: spaceId,
+    subject: { kind: 'space', id: spaceId },
+    detail: {
+      changed: (Object.keys(is) as (keyof typeof is)[]).filter((name) => was[name] !== is[name]),
+    },
+  });
+  return true;
+}
+
 /** An element a source document's persistent identity has made. */
 export interface BridgeElement {
   readonly element: string;

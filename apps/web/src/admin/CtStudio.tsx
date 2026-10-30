@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { CtStudioHandOff, sinkEntry } from './CtStudioHandOff.js';
@@ -85,6 +86,8 @@ export function CtStudio({ client }: { client: Client }) {
   const [handOff, setHandOff] = useState<HandOff | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [said, setSaid] = useState('');
+  /** The space whose disconnection is being asked about. */
+  const [disconnecting, setDisconnecting] = useState<{ id: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await client.GET('/v1/ct-studio');
@@ -120,6 +123,20 @@ export function CtStudio({ client }: { client: Client }) {
       space: null,
       oldToken: replaceIdentity ? null : oldToken,
     });
+  }
+
+  async function disconnect(space: { id: string; name: string }) {
+    const { data, error } = await client.DELETE('/v1/ct-studio/connections/{space}', {
+      params: { path: { space: space.id } },
+    });
+    if (!data) {
+      setSaid(refusal(error, say('admin.the-space-could-not-be-disconnected')));
+      throw new Error('not disconnected');
+    }
+    setStatus(data);
+    if (open === space.id) setOpen(null);
+    setDisconnecting(null);
+    setSaid(say('admin.space-is-disconnected-from-ct-studio', { space: space.name }));
   }
 
   async function grantAgain(space: { id: string; name: string }) {
@@ -216,6 +233,9 @@ export function CtStudio({ client }: { client: Client }) {
                   >
                     {say('admin.settings-for', { space: space.name })}
                   </button>
+                  <button type="button" onClick={() => setDisconnecting(space)}>
+                    {say('admin.disconnect-space', { space: space.name })}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -229,6 +249,16 @@ export function CtStudio({ client }: { client: Client }) {
       </button>
       <p role="status">{said}</p>
 
+      {disconnecting !== null && (
+        <ConfirmDialog
+          question={say('admin.disconnect-space-from-ct-studio', { space: disconnecting.name })}
+          sentence={say('admin.ct-studio-can-no-longer-deliver-here')}
+          keep={say('admin.keep-it')}
+          act={say('admin.disconnect')}
+          onKeep={() => setDisconnecting(null)}
+          onAct={() => disconnect(disconnecting)}
+        />
+      )}
       {flow && (
         <ConnectFlow
           client={client}

@@ -1349,6 +1349,7 @@ export {
   finishDelivery,
   lockBridgeProvision,
   dropUnlisted,
+  removeBridgeSettings,
   readBridgeSettings,
   readDelivery,
   readUnlisted,
