@@ -1,6 +1,13 @@
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
-import type { Alternative, FootnoteNode, InlineNode } from '../content/model/inline.js';
+import type {
+  Alternative,
+  FootnoteNode,
+  InlineNode,
+  MessageArmKey,
+  MessageFormNode,
+} from '../content/model/inline.js';
+import { armFor } from '../content/model/message-form.js';
 import type { Binding } from '../data/binding.js';
 import type { CanonicalResult, CanonicalValue } from '../data/canonical.js';
 import type { ColumnType, ImageColumnType, ValueType } from '../data/columns.js';
@@ -141,6 +148,8 @@ export type PrintedValue =
       readonly column: { readonly name: string; readonly type: ValueType };
       /** The revision printed, where one stands (the RV plan, RV-F). */
       readonly revision?: RevisionRecord;
+      /** The message form it was printed in, and the arm it selected (the MF plan, MF-E). */
+      readonly messageForm?: { readonly id: string; readonly arm: MessageArmKey };
     })
   | (Placed & {
       readonly image: { readonly hash: string; readonly assetVersion: string };
@@ -479,29 +488,79 @@ export function bind(
     return { result: { columns: from.result.columns, rows }, at, gone };
   };
 
+  /**
+   * **A message form set as its selected arm** (the MF plan, MF-E): its binding taken as an inline
+   * one's, a revision first, and the arm the value selects in the occurrence's language - the
+   * component's, or its translation's, never the document's - in place of the form, each
+   * `messageValue` the value as printed. A take that fails, a value that is no number
+   * (`value_not_number`) and a category with no arm (`message_form_arm_missing`) each leave the form,
+   * which `assemble` prints nothing of.
+   */
+  const selected = (form: MessageFormNode, block: string): InlineNode[] => {
+    const got = take(form.binding, block);
+    if (got === undefined) return [form];
+    const { placed, taken } = got;
+    if ('image' in taken) {
+      fail('value_not_number', block, form.id);
+      return [form];
+    }
+    const type = taken.column.type;
+    if (type.base !== 'integer' && type.base !== 'decimal') {
+      fail('value_not_number', block, form.id);
+      return [form];
+    }
+    const from = held.get(form.binding.id);
+    const revision = from === 'unreadable' ? undefined : from?.revisions?.get('');
+    const shown = revision?.value ?? taken.value;
+    if (typeof shown !== 'string') {
+      fail('value_not_number', block, form.id);
+      return [form];
+    }
+    const chosen = armFor(form.arms, shown, type.base === 'decimal' ? type.scale : 0, content.language);
+    if ('missing' in chosen) {
+      fail('message_form_arm_missing', block, `${form.id}: ${chosen.missing}`);
+      return [form];
+    }
+    const printed = formatValue(shown, type, formats);
+    values.push({
+      ...placed,
+      printed,
+      value: taken.value,
+      column: taken.column,
+      ...(revision === undefined ? {} : { revision: revisionRecord(revision) }),
+      messageForm: { id: form.id, arm: chosen.arm },
+    });
+    return form.arms[chosen.arm]!.map((inline) =>
+      inline.type === 'messageValue' ? { type: 'text', value: printed, marks: [] } : inline,
+    );
+  };
+
   const inlines = (sequence: readonly InlineNode[], block: string, noImage = false): InlineNode[] =>
-    sequence.map((inline): InlineNode => {
+    sequence.flatMap((inline): InlineNode[] => {
       if (inline.type === 'footnote') {
-        return { ...inline, content: blocks(inline.content as BlockNode[], true) };
+        return [{ ...inline, content: blocks(inline.content as BlockNode[], true) }];
       }
-      if (inline.type !== 'binding') return inline;
+      if (inline.type === 'messageForm') return selected(inline, block);
+      if (inline.type !== 'binding') return [inline];
       const got = take(inline, block);
-      if (got === undefined) return inline;
+      if (got === undefined) return [inline];
       const { placed, taken } = got;
       if ('image' in taken) {
         // A footnote holds no image (CNT-129), and a caption sets none (`image_in_caption`), so a bound
         // one is placed in neither (B6-D), as the bindings view says.
         if (noImage) {
           fail('image_not_placeable', block, inline.id);
-          return inline;
+          return [inline];
         }
         placedImage(placed, taken);
-        return {
-          type: 'image',
-          asset: taken.assetVersion,
-          imageStyle: 'inline',
-          alternative: describedBy(taken),
-        };
+        return [
+          {
+            type: 'image',
+            asset: taken.assetVersion,
+            imageStyle: 'inline',
+            alternative: describedBy(taken),
+          },
+        ];
       }
       // A revision stands in front of the value (the RV plan, RV-F): printed in its place, unmarked
       // (DAT-115), the query's value recorded beside it (DAT-062).
@@ -515,7 +574,7 @@ export function bind(
         column: taken.column,
         ...(revision === undefined ? {} : { revision: revisionRecord(revision) }),
       });
-      return { type: 'text', value: printed, marks: [] };
+      return [{ type: 'text', value: printed, marks: [] }];
     });
 
   const blocks = (sequence: readonly BlockNode[], inFootnote = false): BlockNode[] =>

@@ -265,6 +265,12 @@ export const publishFailureCodes = [
   // the marker's node and block.
   'index_reference_unresolved',
   'index_see_located',
+  // bind, from MFb (the MF plan, MF-E): a message form whose binding takes a value that is no number,
+  // `detail` the form; and one whose value selects a category it has no arm for, and no exact arm
+  // matches, `detail` `<form>: <category>`. Each names the block. The take's own failures name the
+  // form's binding, as an inline binding's do.
+  'value_not_number',
+  'message_form_arm_missing',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

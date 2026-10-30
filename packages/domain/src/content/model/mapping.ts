@@ -108,6 +108,11 @@ export const outputMapping: {
       ooxml: 'The resolved value as runs, in the w:tc or w:p it resolved into',
       tagged: 'No element of its own; the content of the enclosing TD or P',
     },
+    messageForm: {
+      ooxml: "The selected arm's runs, its value as a binding's",
+      tagged: "No element of its own; the selected arm's text in the enclosing P",
+      note: 'An arm is selected in the binding stage, so no writer sees a form (the MF plan, MF-E)',
+    },
     image: {
       ooxml: 'An inline w:drawing, with the alternative in wp:docPr/@descr',
       tagged: 'Figure carrying /Alt, or an Artifact where the alternative is decorative',
