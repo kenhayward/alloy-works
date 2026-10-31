@@ -14,6 +14,7 @@ export default defineConfig({
       'src/undecided.test.ts',
       'src/targets.test.ts',
       'src/dialogs.test.ts',
+      'src/parts.test.ts',
     ],
     // Pinned rather than left implicit: the default reporter varies by platform, and a run
     // that swallows console output on Windows makes a noisy suite look pristine locally.

@@ -798,7 +798,10 @@ pnpm test:browser                                   # with every target set: bel
 It is **left out of `pnpm test`** for the reason the end-to-end suite is, and `packages/trace` exempts
 its report from "no report at all" as it exempts e2e's, while still refusing one that failed or is
 stale; CI's gate job refuses to run without it, and without e2e's. Its report is
-`.trace-results/browser.json`. Its files run one at a time, since every file drives the one stack.
+`.trace-results/browser.json`. Its files run one at a time, since every file drives the one stack. CI
+runs it in parts, each against a stack of its own: `ALLOY_BROWSER_PART` names one
+(`src/testing/parts.ts`), which writes `browser-<part>.json` instead, and `rest` runs every file no part
+names.
 The workspace has two configurations: `vitest.config.ts`, the suite, run by its `test:browser` script,
 and `vitest.pin.config.ts`, the tests that need no stack - the pin's, and `undecided`'s - which are its
 `test` script, so `pnpm test` runs them on every machine, into `.trace-results/browser-pin.json`.
@@ -875,7 +878,7 @@ ALLOY_BROWSER_SERVICE=http://dev.acme.localhost:8188 ALLOY_BROWSER_API=http://12
 docker compose -p aw-browser -f deploy/compose.yaml down -v
 ```
 
-**CI runs it in the whole-system job**, after the end-to-end suite and against the same containers, but for
+**CI runs it in the whole-system jobs**, one part each, the end-to-end suite first in `rest` and against the same containers, but for
 `budgets.test.ts`, which runs only off CI (below), with every variable set to them, whenever the stack came up; neither step is `continue-on-error`. Its report goes to the traceability
 gate's own job with the rest ([CI, branches and releases](ci-and-releases.md)).
 

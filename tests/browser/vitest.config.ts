@@ -1,9 +1,14 @@
 import { configDefaults, defineConfig } from 'vitest/config';
 
+import { browserPart } from './src/testing/parts.js';
+
+// One part of the suite, on CI, where each part has a stack of its own; unset, all of it.
+const part = browserPart(process.env['ALLOY_BROWSER_PART']);
+
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: part.only === null ? ['src/**/*.test.ts'] : [...part.only],
     // The tests that need no stack run in `pnpm test` from vitest.pin.config.ts instead.
     exclude: [
       ...configDefaults.exclude,
@@ -11,8 +16,10 @@ export default defineConfig({
       'src/undecided.test.ts',
       'src/targets.test.ts',
       'src/dialogs.test.ts',
+      'src/parts.test.ts',
       // The navigation budgets bind only off a shared runner (B-P), so CI does not run them.
       ...(process.env['CI'] === 'true' ? ['src/budgets.test.ts'] : []),
+      ...part.without,
     ],
     // Signed in once for the run, in the browser through the stand-in's own page, and in Node for the
     // fixtures the tests make through the API (the W13 plan's B-B and B-C). It imports the suite's
@@ -27,6 +34,6 @@ export default defineConfig({
     // Pinned rather than left implicit: the default reporter varies by platform, and a run
     // that swallows console output on Windows makes a noisy suite look pristine locally.
     reporters: ['default', 'json'],
-    outputFile: { json: '../../.trace-results/browser.json' },
+    outputFile: { json: `../../.trace-results/${part.report}` },
   },
 });

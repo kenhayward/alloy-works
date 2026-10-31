@@ -11,13 +11,13 @@ A newer push to a branch cancels the older run.
 | Fast | Any other PR                                                                             | Lint, format, typecheck, build, `pnpm trace check`, and the tests of the packages the change reaches |
 | Full | A close (`version.json` changed), a PR changing `.github/` or `deploy/`, `main`, nightly | Every suite, the whole system and the gate                                                           |
 
-| Job                 | Runs                                                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| What changed        | The path, and what the change reaches: `.github/scripts/reach.js` over `turbo ls --affected`, the changed packages and their dependents |
-| Lint, typecheck...  | The checks, every package's tests but the five suites', and on the full run the images built and started                                |
-| The `<suite>` suite | The connector's, service's, database's, web's and worker's suites, a job each, on either path, each only if reached                     |
-| The whole system    | Full run: the stack in containers, `pnpm test:e2e` and `pnpm test:browser` but `budgets.test.ts`                                        |
-| Traceability gate   | Full run: `pnpm trace gate` over every job's reports                                                                                    |
+| Job                 | Runs                                                                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What changed        | The path, and what the change reaches: `.github/scripts/reach.js` over `turbo ls --affected`, the changed packages and their dependents                  |
+| Lint, typecheck...  | The checks, every package's tests but the five suites', and on the full run the images built and started                                                 |
+| The `<suite>` suite | The connector's, service's, database's, web's and worker's suites, a job each, on either path, each only if reached                                      |
+| The whole system    | Full run, four parts at once, each its own stack: `pnpm test:browser` but `budgets.test.ts` split by `ALLOY_BROWSER_PART`, and `pnpm test:e2e` in `rest` |
+| Traceability gate   | Full run: `pnpm trace gate` over every job's reports                                                                                                     |
 
 - **`Checks` is the one required check**: every job passed or was not asked for. On `main` a red
   full run opens an issue, `main is red`, or comments on the open one; a close runs the full run, so
@@ -47,7 +47,7 @@ A newer push to a branch cancels the older run.
 
 - a requirement the newest baseline includes is not verified;
 - the baseline itself is malformed;
-- a report is failed, stale, or missing (`e2e.json` and `browser.json` are checked for explicitly).
+- a report is failed, stale, or missing (`e2e.json` and each part's `browser-<part>.json` are checked for explicitly).
 
 A baseline is declared at every slice or tranche close ([ADR-0037](decisions/0037-change-fragments-and-versions-at-a-close.md)),
 so the gate grows with what has shipped.
