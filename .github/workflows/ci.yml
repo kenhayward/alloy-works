@@ -336,12 +336,18 @@ jobs:
 
   # The whole system, as a person's browser would meet it. Its own job because the stack publishes
   # the same ports the job above gives to a Postgres service container and a SeaweedFS step, and
-  # two things cannot hold one port.
+  # two things cannot hold one port. In parts, each with a stack of its own, so the browser suite's files
+  # run four at a time rather than one after another (tests/browser/src/testing/parts.ts); the
+  # end-to-end suite runs in `rest`, the lightest.
   end-to-end:
-    name: The whole system
+    name: The whole system (${{ matrix.part }})
     needs: changes
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [accessibility, navigation, surfaces, rest]
     env:
       TURBO_LOG_ORDER: stream
     steps:
@@ -417,6 +423,7 @@ jobs:
       # to the stack this job just started: neither suite has a default, and each refuses to run with
       # any of its targets unset, so it can never reach a stack it was not pointed at (#363).
       - name: End to end
+        if: matrix.part == 'rest'
         env:
           ALLOY_E2E_SERVICE: http://127.0.0.1:8088
           ALLOY_E2E_IDP: http://127.0.0.1:9090
@@ -438,6 +445,7 @@ jobs:
           ALLOY_BROWSER_IDP: http://idp.localhost:9090
           ALLOY_BROWSER_DATABASE: postgres://aw_service:aw_service_dev@127.0.0.1:5432/alloy_dev
           ALLOY_BROWSER_STORE_AT: 127.0.0.1
+          ALLOY_BROWSER_PART: ${{ matrix.part }}
         run: pnpm exec turbo run test:browser --filter=@alloy-works/browser -- --retry=1
 
       - name: Flakes
@@ -455,7 +463,7 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: compose-logs
+          name: compose-logs-${{ matrix.part }}
           path: compose-logs.txt
 
       # The end-to-end and browser suites' reports, for the gate. None at all means the stack never
@@ -464,7 +472,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: trace-results-system
+          name: trace-results-system-${{ matrix.part }}
           path: .trace-results
           include-hidden-files: true
           if-no-files-found: error
@@ -503,15 +511,15 @@ jobs:
           path: .trace-results
           merge-multiple: true
 
-      # Both suites that drive the stack must have reported. `pnpm trace gate` exempts their reports
-      # from "no report at all", since `pnpm test` never writes them, so without this a run whose
-      # browser step never ran - the stack came up and the end-to-end step died with nothing written -
-      # would pass the gate on the build job's reports alone.
+      # Both suites that drive the stack must have reported, the browser suite once a part. `pnpm trace
+      # gate` exempts their reports from "no report at all", since `pnpm test` never writes them, so
+      # without this a run whose browser step never ran - the stack came up and the end-to-end step died
+      # with nothing written - would pass the gate on the build job's reports alone.
       - name: Both system reports
         run: |
-          for report in e2e browser; do
+          for report in e2e browser-accessibility browser-navigation browser-surfaces browser-rest; do
             if [ ! -f ".trace-results/$report.json" ]; then
-              echo "::error::.trace-results/$report.json is missing: the whole-system job did not report its $report suite"
+              echo "::error::.trace-results/$report.json is missing: the whole-system jobs did not write it"
               exit 1
             fi
           done
