@@ -66,6 +66,7 @@ exist.
 | [0070](0070-html-is-a-third-output-served-sandboxed.md)                           | HTML is a third output, served sandboxed                                      | Accepted           |
 | [0071](0071-ct-studio-delivers-straight-in-as-a-service-identity.md)              | CT Studio delivers straight in, as a service identity                         | Accepted           |
 | [0072](0072-the-desktop-app-asks-which-environment.md)                            | The desktop app asks which environment to connect to                          | Accepted           |
+| [0073](0073-desktop-releases-live-in-a-public-releases-repository.md)             | Desktop releases live in a public releases repository                         | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

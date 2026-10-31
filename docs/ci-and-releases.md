@@ -98,9 +98,15 @@ and `apps/desktop/package.json` (electron-builder stamps it into the installer).
 **A close publishes the desktop app** ([`release.yml`](../.github/workflows/release.yml), the
 [DR plan](plans/2026-10-31-dr-desktop-releases.md); ADM-052):
 
-- **When:** after CI passes on a push to `main` whose `version.json` has no tag yet. It tags
-  `vX.Y.Z` on the commit CI passed and creates a GitHub release. A later green push finds the tag and
-  stops, so a failed release is tried again on the next.
+- **When:** after CI passes on a push to `main` whose version has no release yet. It tags `vX.Y.Z`
+  on the commit CI passed and creates the release. A later green push finds the release and stops, so
+  a failed release is tried again on the next.
+- **Where:** [`kenhayward/aw-releases`](https://github.com/kenhayward/aw-releases), public, which the
+  updater reads with no token however this repository is kept
+  ([ADR-0073](decisions/0073-desktop-releases-live-in-a-public-releases-repository.md)). The workflow
+  writes it with the `RELEASES_TOKEN` secret: a fine-grained token, Contents read and write, on that
+  repository alone. While this repository is public, each release is published here too, for copies
+  of 0.220.0.
 - **What:** `AlloyWorks-Setup-X.Y.Z.exe`, its blockmap and `latest.yml`, built on `windows-latest`
   with `--publish never` and attached by `gh release create`; the notes are the version's
   `CHANGELOG.md` entry. No spaces in the name: GitHub turns them to dots and `latest.yml` would miss

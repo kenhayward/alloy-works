@@ -23,7 +23,7 @@ describe('the release workflow (the DR plan, DR-F)', () => {
     expect(workflow).toContain(
       'ref: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}',
     );
-    expect(workflow).toContain('--target "$SHA"');
+    expect(workflow).toContain('git tag "v$VERSION" "$SHA"');
     // By hand, or on a pull request changing the release, it uploads what it built and publishes nothing.
     expect(workflow).toMatch(
       /if: github\.event_name != 'workflow_run'\s+uses: actions\/upload-artifact@v\d/,
@@ -35,7 +35,9 @@ describe('the release workflow (the DR plan, DR-F)', () => {
 
   it('ADM-052 builds on Windows, releases a version once, and never cancels a release under way', () => {
     expect(workflow).toContain('runs-on: windows-latest');
-    expect(workflow).toContain('git ls-remote --exit-code --tags origin "refs/tags/v$VERSION"');
+    expect(workflow).toContain(
+      'git ls-remote --exit-code --tags "https://github.com/$RELEASES.git" "refs/tags/v$VERSION"',
+    );
     expect(workflow).toMatch(/concurrency:\s+group: release\s+cancel-in-progress: false/);
     expect(workflow).toContain('pnpm install --frozen-lockfile');
     expect(workflow).toContain('pnpm exec turbo run build --filter=@alloy-works/desktop...');
@@ -51,7 +53,17 @@ describe('the release workflow (the DR plan, DR-F)', () => {
     for (const [, action, ref] of actions) {
       if (!action!.startsWith('actions/')) expect(ref).toMatch(/^[0-9a-f]{40}$/);
     }
-    expect(workflow).not.toMatch(/secrets\.(?!GITHUB_TOKEN)/);
+    expect(workflow).not.toMatch(/secrets\.(?!GITHUB_TOKEN|RELEASES_TOKEN)/);
+  });
+
+  it('ADM-052 publishes to the public releases repository, with its one secret in the one step that writes there', () => {
+    expect(workflow).toContain('RELEASES: kenhayward/aw-releases');
+    expect(workflow.match(/secrets\.RELEASES_TOKEN/g)).toHaveLength(1);
+    expect(workflow).toMatch(
+      /GH_TOKEN: \$\{\{ secrets\.RELEASES_TOKEN \}\}\s+run: >-\s+gh release create "v\$VERSION" -R "\$RELEASES"/,
+    );
+    // Copies of 0.220.0 read this repository's releases, so it carries them too while it is public.
+    expect(workflow).toContain('if: github.event.repository.private == false');
   });
 
   it('ADM-052 attaches the installer, its blockmap and the update metadata, named by the version', () => {
@@ -76,7 +88,7 @@ describe('the packaging a release publishes (the DR plan, DR-G)', () => {
   });
 
   it('says where the updater looks, and installs for the person alone, so an update asks for no administrator', () => {
-    expect(builder).toMatch(/publish:\s+provider: github\s+owner: kenhayward\s+repo: alloy-works/);
+    expect(builder).toMatch(/publish:\s+provider: github\s+owner: kenhayward\s+repo: aw-releases/);
     expect(builder).toMatch(/nsis:[\s\S]*perMachine: false/);
   });
 });

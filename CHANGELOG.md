@@ -3,6 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.220.1 - 2026-10-31 (PR #0)
+
+Faster CI, and desktop releases from a public releases repository.
+
+### Changed
+
+- **Faster full CI runs.** The browser suite runs in four parts at once, each against a stack of its own.
+- **Updates come from a public releases repository.** The desktop app looks for updates in kenhayward/aw-releases, so it keeps updating however the source is kept.
+
 ## 0.220.0 - 2026-10-31 (PR #833)
 
 The desktop app released and kept up to date (the DR plan, T6's twelfth slice).
