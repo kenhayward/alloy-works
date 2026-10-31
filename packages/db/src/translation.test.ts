@@ -260,7 +260,7 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
     ]);
   });
 
-  it('LOC-014 goes out of date at the source cut, and LOC-031 takes the author declaring it needs no retranslation, revisable afterwards', async () => {
+  it('LOC-014 LOC-013 goes out of date at the source cut, and LOC-031 takes the author declaring it needs no retranslation, revisable afterwards', async () => {
     const first = await component('Methods');
     await approve(first);
     const begun = await as((trx) =>

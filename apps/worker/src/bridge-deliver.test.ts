@@ -624,7 +624,7 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     expect(await gone(bad.packageKey!)).toBe(true);
   });
 
-  it('unmapped properties are kept with the provenance', async () => {
+  it('API-076 unmapped properties are kept with the provenance', async () => {
     const delivery = await accepted(
       documentPackage(documentOf(), [
         { id: 'img-1', contentType: 'image/png', bytes: await png(70) },

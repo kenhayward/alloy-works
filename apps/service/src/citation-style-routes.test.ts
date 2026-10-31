@@ -58,7 +58,7 @@ describe('the citation style routes (the CI plan, CI-D)', () => {
     expect((await h.call('grace', 'GET', '/v1/citation-styles')).statusCode).toBe(403);
   });
 
-  it('STY-023 API-032 uploads a style as a CSL file and versions it, no release', async () => {
+  it('STY-023 API-032 CNT-102 uploads a style as a CSL file and versions it, no release', async () => {
     expect(
       (await h.call('grace', 'POST', '/v1/citation-styles', { style: style() })).statusCode,
     ).toBe(403);

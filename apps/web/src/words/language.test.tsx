@@ -61,7 +61,7 @@ describe('the interface’s language (the UI plan, UI-E)', () => {
     expect(await screen.findByRole('button', { name: /ļåñĝûåĝé/ })).toBeInTheDocument();
   });
 
-  it('opens right to left where the person chose so, before any word is read', async () => {
+  it('LOC-004 opens right to left where the person chose so, before any word is read', async () => {
     const { fetching } = service('ar-XB');
     render(
       <InterfaceLanguage fetch={fetching} browser={['en-GB']}>

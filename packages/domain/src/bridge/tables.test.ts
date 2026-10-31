@@ -167,7 +167,7 @@ describe('data tables planned as Postgres tables', () => {
     expect(long[0]?.name).toMatch(/^[a-z0-9_]+$/);
   });
 
-  it('API-072 two tables becoming one name refuse with name_conflict on tableSet', () => {
+  it('two tables becoming one name refuse with name_conflict on tableSet', () => {
     const result = planTables(data([table('Net Price'), table('net-price')]), provenance, 'x');
     expect(result).toMatchObject({ refused: 'name_conflict' });
     expect((result as { detail: string }).detail).toContain('tableSet');

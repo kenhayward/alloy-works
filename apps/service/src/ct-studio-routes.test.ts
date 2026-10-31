@@ -50,7 +50,7 @@ describe('connecting CT Studio through the service (docs/design/ct-studio-connec
     expect((await status(keyless)).json<CtStudioStatus>().bridgeOn).toBe(false);
   });
 
-  it('API-074 the status never carries the signing key', async () => {
+  it('API-074 API-075 the status never carries the signing key', async () => {
     expect((await status()).body).not.toContain(KEY);
   });
 

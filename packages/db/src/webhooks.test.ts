@@ -246,7 +246,7 @@ describe('webhook subscriptions and the deliveries their trigger queues (the WB 
     expect(listed.toSorted()).toEqual([...webhookAuditTypes].toSorted());
   });
 
-  it('API-071 queues a bridge delivery and a bridge refusal for a subscriber, and a settings change for none', async () => {
+  it('queues a bridge delivery and a bridge refusal for a subscriber, and a settings change for none', async () => {
     const wanting = await subscribe(['bridge.delivered', 'bridge.refused']);
     const space = (
       await as((trx) =>

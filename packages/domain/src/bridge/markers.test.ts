@@ -5,28 +5,28 @@ import { noteMarkers } from './markers.js';
 describe('the note markers a superscript run names', () => {
   const known = new Set(['1)', '2)', 'a']);
 
-  it('API-073 reads one marker', () => {
+  it('reads one marker', () => {
     expect(noteMarkers('1)', known)).toEqual(['1)']);
     expect(noteMarkers('a', known)).toEqual(['a']);
   });
 
-  it('API-073 splits a run of several, only when every part is a marker', () => {
+  it('splits a run of several, only when every part is a marker', () => {
     expect(noteMarkers('1)2)', known)).toEqual(['1)', '2)']);
     expect(noteMarkers('1, 2', known)).toEqual(['1)', '2)']);
     expect(noteMarkers('(1);[a]', known)).toEqual(['1)', 'a']);
   });
 
-  it('API-073 leaves a run text when any part is not a marker', () => {
+  it('leaves a run text when any part is not a marker', () => {
     expect(noteMarkers('1,x', known)).toBeUndefined();
     expect(noteMarkers('x', known)).toBeUndefined();
   });
 
-  it('API-073 reads an empty run as no marker', () => {
+  it('reads an empty run as no marker', () => {
     expect(noteMarkers('', known)).toBeUndefined();
     expect(noteMarkers(' ,; ', known)).toBeUndefined();
   });
 
-  it('API-073 matches a marker exactly when the known set holds it as written', () => {
+  it('matches a marker exactly when the known set holds it as written', () => {
     expect(noteMarkers('1,2', new Set(['1', '2']))).toEqual(['1', '2']);
   });
 });

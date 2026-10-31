@@ -148,7 +148,7 @@ describe('bridge settings through the service', () => {
     expect(answer.json()).toEqual({ ...off, connection: null, unlisted: [] });
   });
 
-  it("API-071 stores a space's component type, template and property map, and records the change", async () => {
+  it("stores a space's component type, template and property map, and records the change", async () => {
     const answer = await put(h.general, {
       componentType: STARTER_COMPONENT_TYPE_ID,
       template,

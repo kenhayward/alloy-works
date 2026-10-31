@@ -219,7 +219,7 @@ describe('the entry versions a publish reads (CIc)', () => {
     await db?.drop();
   });
 
-  it("records each entry version a citation reads, reaches a change at the next publish, and never a baseline's pin", async () => {
+  it("CNT-053 records each entry version a citation reads, reaches a change at the next publish, and never a baseline's pin", async () => {
     const entry = await entryIn(general, tides);
     const { document, node } = await placing(await citing(entry.id));
     const first = await published(document);

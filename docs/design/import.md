@@ -38,7 +38,7 @@ and loses, is said in the product.
 | **IMP-037** | A re-import reviewed as a first is, its changes suggestions that become versions                      |
 | **IMP-041** | A person's moves, merges and renames validated as made                                                |
 | **IMP-042** | A failed import leaves nothing and says what happened                                                 |
-| **IMP-013** | Markdown and HTML through the same proposal and report                                                |
+| **IMP-049** | Markdown and HTML through the same proposal and report                                                |
 | **IMP-026** | What a round trip keeps and loses stated in the product, on the import and in Help                    |
 | **IMP-029** | A proposal searched, filtered and returned to across sessions                                         |
 | **IMP-031** | How much of a proposal was accepted unchanged recorded                                                |
@@ -174,7 +174,7 @@ Acceptance still maps by email as the policy says.
 
 ## As IMe built it
 
-- **Markdown and HTML** (IMP-013): `readHtmlOutline` (and `readMarkdownOutline`, Markdown rendered
+- **Markdown and HTML** (IMP-049): `readHtmlOutline` (and `readMarkdownOutline`, Markdown rendered
   first) is the paste's reader with each heading standing in the top-level flow kept as an
   `outlineHeading`, which `readImport` makes a flow heading styled `Heading n`; one inside a
   quotation, list, table or note stays a paragraph, said as a paste's. A `data:` PNG or JPEG image

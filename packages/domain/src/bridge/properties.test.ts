@@ -39,7 +39,7 @@ const fields = [
 ];
 
 describe('document properties to metadata values', () => {
-  it('API-073 converts each mapped property to its field data type', () => {
+  it('API-073 API-076 converts each mapped property to its field data type', () => {
     const { values, carried, unmapped } = mapProperties(
       [
         prop('Title', 'Annual report'),

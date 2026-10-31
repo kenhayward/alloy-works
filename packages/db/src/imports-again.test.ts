@@ -299,7 +299,7 @@ describe('importing again (IMd)', () => {
     });
   });
 
-  it('IMP-037 accepts an import again as suggestions against each component as it is now, never versions', async () => {
+  it('IMP-037 IMP-036 accepts an import again as suggestions against each component as it is now, never versions', async () => {
     const { first, accepted, sampling, analysis, results, edited } = await firstAccepted();
     const documentId = accepted.answer === 'accepted' ? accepted.document.artifactId : '';
     const second = await again(first);

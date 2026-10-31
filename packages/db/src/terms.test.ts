@@ -425,7 +425,7 @@ describe('a term', () => {
     expect(await tenant((trx) => archiveTerm(trx, term.id, ada, 'archived'))).toBe('changed');
   });
 
-  it('SCH-056 SCH-015 LIB-026 finds a term by its labels, and content by a term or a narrower one', async () => {
+  it('SCH-056 SCH-074 LIB-059 LIB-025 finds a term by its labels, and content by a term or a narrower one', async () => {
     const definition = [{ language: 'en', text: 'Carnivorous marsupial family' }];
     const carnivore = await made(english('Dasyurid', { definition }));
     const ningaui = await made(
@@ -528,7 +528,7 @@ describe('a term', () => {
     ]);
   });
 
-  it('LIB-028 LIB-029 imports terms, merging a match by its base preferred label and relating by file identity', async () => {
+  it('LIB-060 LIB-029 imports terms, merging a match by its base preferred label and relating by file identity', async () => {
     const existing = await made(english('Phascogale'), quality);
     const answer = await tenant((trx) =>
       importTerms(trx, {

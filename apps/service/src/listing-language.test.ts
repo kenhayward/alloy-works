@@ -40,7 +40,7 @@ describe('a listing in the reader’s language (the UI plan, UI-H)', () => {
     }
   };
 
-  it('orders titles as the reader’s language does, and never continues one language’s page in another', async () => {
+  it('LOC-003 orders titles as the reader’s language does, and never continues one language’s page in another', async () => {
     expect(await walk('en-GB')).toEqual(['apple', 'zebra', 'بحر']);
     expect(await walk('ar-XB')).toEqual(['بحر', 'apple', 'zebra']);
     const first = (await page('en-GB')).json<{ next: string }>();

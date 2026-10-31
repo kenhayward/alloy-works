@@ -35,22 +35,24 @@ string in a paragraph.**
 
 ## 3. Common behaviour
 
-| ID          | Requirement                                                                                                                                                                                                                                        | Tranche    | Status    |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **LIB-001** | Every library record must belong to a space and be permissioned by it (**IAM**)                                                                                                                                                                    | T7         | Specified |
-| **LIB-002** | Every record must carry a stable identifier, allocated once and never reused                                                                                                                                                                       | Constraint | Specified |
-| **LIB-003** | Content must reference a record by identity, never repeat its contents                                                                                                                                                                             | Constraint | Specified |
-| **LIB-004** | Records must be versioned (**VER-056**), and a baseline must pin the versions it used                                                                                                                                                              | T7         | Specified |
-| **LIB-005** | Where a record is used must be listable (**REU-006**)                                                                                                                                                                                              | T7         | Specified |
-| **LIB-006** | A record must not be deletable while anything references it                                                                                                                                                                                        | Constraint | Specified |
-| **LIB-007** | A reference to a record that cannot be resolved must fail the publish, naming the record and where it was used                                                                                                                                     | Constraint | Specified |
-| **LIB-041** | A record identifier must be unique within the tenant rather than within its space, so that a library shared between spaces (LIB-030) presents one identity everywhere it appears                                                                   | Constraint | Specified |
-| **LIB-042** | A shared library must be one record seen from several spaces, never a copy per space: an edit in one is the edit everywhere, and who may see it is each space's (LIB-001)                                                                          | Constraint | Specified |
-| **LIB-043** | Two records may carry the same label in different spaces, because a label is not an identity (LIB-002). Where a shared record and a private one collide by label, both must be offered with the space each came from named, and the author chooses | T7         | Specified |
-| **LIB-047** | A change to a record must reach an unpinned reference at the next publish, and must never reach a baseline that pinned an earlier version (LIB-004, **VER**)                                                                                       | Constraint | Specified |
-| **LIB-048** | Records that have changed since a document last published must be listable for that document, so that a change reaching a reference is visible before the publish rather than after it (LIB-005)                                                   | T7         | Specified |
-| **LIB-056** | Creating, changing, deprecating and retiring a library record must be audited with who, when and what changed (**LIF-026**, **LIF-027**)                                                                                                           | Constraint | Specified |
-| **LIB-057** | Inserting a reference to a deprecated term, or to a deprecated or retired vocabulary value, must be flagged at the moment of insertion as well as where it is already used (LIB-018, LIB-023, LIB-055)                                             | T6         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                        | Tranche    | Status                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **LIB-001** | Every library record must belong to a space and be permissioned by it (**IAM**)                                                                                                                                                                    | T7         | Specified             |
+| **LIB-002** | Every record must carry a stable identifier, allocated once and never reused                                                                                                                                                                       | Constraint | Specified             |
+| **LIB-003** | Content must reference a record by identity, never repeat its contents                                                                                                                                                                             | Constraint | Specified             |
+| **LIB-004** | Records must be versioned (**VER-056**), and a baseline must pin the versions it used                                                                                                                                                              | T7         | Specified             |
+| **LIB-005** | Where a record is used must be listable (**REU-006**)                                                                                                                                                                                              | T7         | Specified             |
+| **LIB-006** | A record must not be deletable while anything references it                                                                                                                                                                                        | Constraint | Specified             |
+| **LIB-007** | A reference to a record that cannot be resolved must fail the publish, naming the record and where it was used                                                                                                                                     | Constraint | Specified             |
+| **LIB-041** | A record identifier must be unique within the tenant rather than within its space, so that a library shared between spaces (LIB-030) presents one identity everywhere it appears                                                                   | Constraint | Specified             |
+| **LIB-042** | A shared library must be one record seen from several spaces, never a copy per space: an edit in one is the edit everywhere, and who may see it is each space's (LIB-001)                                                                          | Constraint | Specified             |
+| **LIB-043** | Two records may carry the same label in different spaces, because a label is not an identity (LIB-002). Where a shared record and a private one collide by label, both must be offered with the space each came from named, and the author chooses | T7         | Specified             |
+| **LIB-047** | A change to a record must reach an unpinned reference at the next publish, and must never reach a baseline that pinned an earlier version (LIB-004, **VER**)                                                                                       | Constraint | Specified             |
+| **LIB-048** | Records that have changed since a document last published must be listable for that document, so that a change reaching a reference is visible before the publish rather than after it (LIB-005)                                                   | T7         | Specified             |
+| **LIB-056** | Creating, changing, deprecating and retiring a library record must be audited with who, when and what changed (**LIF-026**, **LIF-027**)                                                                                                           | Constraint | Specified             |
+| **LIB-057** | Inserting a reference to a deprecated term, or to a deprecated or retired vocabulary value, must be flagged at the moment of insertion as well as where it is already used (LIB-018, LIB-023, LIB-055)                                             | T6         | Superseded by LIB-062 |
+| **LIB-062** | Inserting a reference to a deprecated term must be flagged at the moment of insertion as well as where it is already used (LIB-018)                                                                                                                | T6         | Specified             |
+| **LIB-063** | Inserting a deprecated or retired vocabulary value must be flagged at the moment of insertion as well as where it is already used (LIB-023, LIB-055)                                                                                               | T7         | Specified             |
 
 **LIB-041 to LIB-043 settle what identity means here, which review found the least specified thing
 relative to what depends on it.** Sharing a glossary between spaces (LIB-030) only makes sense if the
@@ -70,16 +72,17 @@ keystroke.
 
 ## 4. Bibliography
 
-| ID          | Requirement                                                                                                                                                                                                                                            | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------- |
-| **LIB-008** | A bibliography entry must hold the fields the citation styles in use require, by source type                                                                                                                                                           | T6      | Specified |
-| **LIB-009** | Entries must be importable from standard interchange formats, and exportable the same way                                                                                                                                                              | T6      | Specified |
-| **LIB-010** | Import must detect a record that already exists rather than creating a second, and must say what it merged                                                                                                                                             | T6      | Specified |
-| **LIB-011** | An entry must be able to record where it was obtained and when it was last checked, because a source that has moved is a common defect                                                                                                                 | T6      | Specified |
-| **LIB-012** | An entry missing a field its citation style requires must fail the publish, naming both                                                                                                                                                                | T6      | Specified |
-| **LIB-044** | Creating an entry by hand must run the same duplicate detection as import (LIB-010), and must offer the existing record rather than refusing the creation                                                                                              | T6      | Specified |
-| **LIB-045** | Duplicate detection must use canonical identifiers first - DOI, PubMed identifier, ISBN, ISSN where the entry has one - and only where none exists fall back to a declared comparison of title, authors and year. Which it used must be said           | T6      | Specified |
-| **LIB-046** | An entry's in-text citation key must be generated from the fields it holds, must be unique within a document, and must not change for the life of the entry. How two entries that would render identically are told apart is the style's (**STY-022**) | T6      | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                            | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | --------------------- |
+| **LIB-008** | A bibliography entry must hold the fields the citation styles in use require, by source type                                                                                                                                                           | T6      | Specified             |
+| **LIB-009** | Entries must be importable from standard interchange formats, and exportable the same way                                                                                                                                                              | T6      | Specified             |
+| **LIB-010** | Import must detect a record that already exists rather than creating a second, and must say what it merged                                                                                                                                             | T6      | Specified             |
+| **LIB-011** | An entry must be able to record where it was obtained and when it was last checked, because a source that has moved is a common defect                                                                                                                 | T6      | Specified             |
+| **LIB-012** | An entry missing a field its citation style requires must fail the publish, naming both                                                                                                                                                                | T6      | Specified             |
+| **LIB-044** | Creating an entry by hand must run the same duplicate detection as import (LIB-010), and must offer the existing record rather than refusing the creation                                                                                              | T6      | Specified             |
+| **LIB-045** | Duplicate detection must use canonical identifiers first - DOI, PubMed identifier, ISBN, ISSN where the entry has one - and only where none exists fall back to a declared comparison of title, authors and year. Which it used must be said           | T6      | Specified             |
+| **LIB-046** | An entry's in-text citation key must be generated from the fields it holds, must be unique within a document, and must not change for the life of the entry. How two entries that would render identically are told apart is the style's (**STY-022**) | T6      | Superseded by LIB-064 |
+| **LIB-064** | An entry's in-text citation key must be generated from the fields it holds, must be unique within its space, and must not change for the life of the entry. How two entries that would render identically are told apart is the style's (**STY-022**)  | T6      | Specified             |
 
 **LIB-010 is the difference between a bibliography and a pile.** Four records for one paper produce
 four entries in a reference list, and nobody notices until a reviewer does.
@@ -203,13 +206,14 @@ TPL-008 said, and one statement now lives where fields are defined.
 
 ## 8. Relations between terms
 
-| ID          | Requirement                                                                                                                                                      | Tranche    | Status    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **LIB-025** | A term must be able to declare broader, narrower and related terms                                                                                               | T6         | Specified |
-| **LIB-026** | Search must use those relations and the alternative labels, so that looking for one term finds documents using another (**SCH**)                                 | T6         | Specified |
-| **LIB-027** | The relations must be a thesaurus and must not support inference - nothing may be concluded that somebody did not state                                          | Constraint | Specified |
-| **LIB-051** | Broader and narrower must form an acyclic graph. An edit that would create a cycle must be refused at the point of the edit, not discovered by a traversal later | Constraint | Specified |
-| **LIB-052** | Related must be symmetric: stating it once must make it true in both directions, and removing it must remove both                                                | Constraint | Specified |
+| ID          | Requirement                                                                                                                                                      | Tranche    | Status                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
+| **LIB-025** | A term must be able to declare broader, narrower and related terms                                                                                               | T6         | Specified             |
+| **LIB-026** | Search must use those relations and the alternative labels, so that looking for one term finds documents using another (**SCH**)                                 | T6         | Superseded by LIB-059 |
+| **LIB-059** | Search must use a term's alternative labels and its narrower terms, so that looking for one term finds documents using a narrower one (**SCH-074**)              | T6         | Specified             |
+| **LIB-027** | The relations must be a thesaurus and must not support inference - nothing may be concluded that somebody did not state                                          | Constraint | Specified             |
+| **LIB-051** | Broader and narrower must form an acyclic graph. An edit that would create a cycle must be refused at the point of the edit, not discovered by a traversal later | Constraint | Specified             |
+| **LIB-052** | Related must be symmetric: stating it once must make it true in both directions, and removing it must remove both                                                | Constraint | Specified             |
 
 **LIB-051 and LIB-052 are cheap now and a migration later**, which is the whole reason to write
 them down before there is data. A thesaurus that has acquired a cycle cannot be walked, and a
@@ -223,11 +227,13 @@ answer anybody can sign.
 
 ## 9. Interchange
 
-| ID          | Requirement                                                                                             | Tranche | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| **LIB-028** | Terms and vocabularies must be exportable and importable in a documented format                         | T6      | Specified |
-| **LIB-029** | Import must report what it could not represent rather than dropping it                                  | T6      | Specified |
-| **LIB-030** | A library must be shareable between spaces within a tenant, so that a house glossary is maintained once | T7      | Specified |
+| ID          | Requirement                                                                                             | Tranche | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------- | ------- | --------------------- |
+| **LIB-028** | Terms and vocabularies must be exportable and importable in a documented format                         | T6      | Superseded by LIB-060 |
+| **LIB-060** | Terms must be exportable and importable in a documented format                                          | T6      | Specified             |
+| **LIB-061** | Vocabularies must be exportable and importable in a documented format                                   | T7      | Specified             |
+| **LIB-029** | Import must report what it could not represent rather than dropping it                                  | T6      | Specified             |
+| **LIB-030** | A library must be shareable between spaces within a tenant, so that a house glossary is maintained once | T7      | Specified             |
 
 ## 10. Non-requirements
 
@@ -267,7 +273,7 @@ answer anybody can sign.
 | LIB-031 to LIB-057 | [The v1 review](<../../reviews/LIB - Reference libraries.md>); section 13                     |
 | LIB-037            | GEN-031 - content leaving the tenant boundary is configured, never discovered                 |
 | LIB-040            | GEN-008, GEN-024, GEN-052 - a tool acts as the caller and proposes                            |
-| LIB-046            | STY-022 - the style disambiguates two keys that would render alike                            |
+| LIB-064            | STY-022 - the style disambiguates two keys that would render alike                            |
 | LIB-056            | LIF-026, LIF-027 - who changed what, when, against which version                              |
 | LIB-001            | IAM-018 to IAM-021 - a space's permissions and the roles that carry them                      |
 
@@ -382,3 +388,22 @@ draw on them ([the TM plan](../../plans/2026-10-22-tm-terms.md), TM-B).
 | What was found                                                                                                | Change                              |
 | ------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | A vocabulary's labels and its external source serve a field's values, and vocabularies (**LIB-001**) are T7's | **LIB-024 and LIB-058 moved to T7** |
+
+### From the T6 audit against the code (2026-10-31)
+
+[The T6 audit](<../../reviews/T6 - Audit against the code.md>) read every T6 requirement `Covered` at
+0.220.1 against the code, and Ken accepted its decisions as recommended on 2026-10-31
+([the CL plan](../../plans/2026-10-31-cl-t6-close.md)). A row changing what the product must do is
+superseded; a row split by tranche is superseded by its T6 half, and the rest becomes a row of its
+own; a rewording for clarity is an edit.
+
+| What was found                                                                                                                                     | Change                                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| LIB-026 asked search to use every relation; it follows narrower terms alone, since broader or related terms widen a search past what was asked for | **LIB-026 superseded by LIB-059**: alternative labels and narrower terms (**SCH-074**)                       |
+| LIB-028 asked for terms and vocabularies; terms are exported and imported, and vocabularies are T7's                                               | **LIB-028 superseded by LIB-060**, terms, in T6, with **LIB-061**, vocabularies, in **T7**                   |
+| LIB-057 asked for a deprecated term and a deprecated or retired vocabulary value; the term half is built, and vocabularies are T7's                | **LIB-057 superseded by LIB-062**, a deprecated term, in T6, with **LIB-063**, a vocabulary value, in **T7** |
+| LIB-046 asked for a key unique within a document; keys are unique within a space, and a document may place another space's components (IAM-016)    | **LIB-046 superseded by LIB-064**: unique within its space                                                   |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 58, of which 1 superseded | 64, of which 5 superseded |

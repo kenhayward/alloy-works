@@ -94,7 +94,8 @@ requires it to be said; results, counts and facets remain strictly filtered.
 | **SCH-012** | Search must be tolerant of the character normalisation applied on ingest, so that two visually identical strings match (**CNT-056**)                                                                                                                                                                                           | T1         | Specified             |
 | **SCH-013** | Semantic search must be available over the same corpus, sharing the same permission filter                                                                                                                                                                                                                                     | T5         | Specified             |
 | **SCH-014** | Semantic and full-text results must be distinguishable, because they answer different questions and deserve different trust                                                                                                                                                                                                    | T5         | Specified             |
-| **SCH-015** | Search must use a term's alternative labels and its broader and narrower terms (**LIB-026**)                                                                                                                                                                                                                                   | T6         | Specified             |
+| **SCH-015** | Search must use a term's alternative labels and its broader and narrower terms (**LIB-026**)                                                                                                                                                                                                                                   | T6         | Superseded by SCH-074 |
+| **SCH-074** | Search must use a term's alternative labels and its narrower terms, so that looking for a term finds content using any term beneath it (**LIB-059**)                                                                                                                                                                           | T6         | Specified             |
 | **SCH-016** | Results must show enough context to judge relevance without opening each one                                                                                                                                                                                                                                                   | T1         | Specified             |
 | **SCH-017** | A result must link to the exact place it was found, not merely to the document containing it (**STR-044**)                                                                                                                                                                                                                     | T1         | Specified             |
 | **SCH-033** | A search must return its first page within a stated budget - provisionally p95 of 250ms, never above 500ms - for a tenant of a million components, whatever the user may see. Embedding the query text is outside it                                                                                                           | Constraint | Specified             |
@@ -231,7 +232,7 @@ looking.
 | SCH-049            | API-001, GEN-013 - the same filter on every path                                       |
 | Section 4          | Scope §7.11 permission-filtered at query time; IAM-005                                 |
 | SCH-012            | CNT-056, Unicode normalisation on ingest                                               |
-| SCH-015            | LIB-026, alternative labels and thesaurus relations                                    |
+| SCH-074            | LIB-059, alternative labels and narrower terms                                         |
 | Section 7          | REU-006, REU-010                                                                       |
 | SCH-Q01            | Scope §10 open decision 5                                                              |
 | SCH-032 to SCH-035 | ADR-0016, and the search spike's findings                                              |
@@ -415,3 +416,19 @@ them, as Ken chose on 2026-10-13.
 | Counts       | Before                     | After                      |
 | ------------ | -------------------------- | -------------------------- |
 | Requirements | 72, of which 11 superseded | 73, of which 12 superseded |
+
+### From the T6 audit against the code (2026-10-31)
+
+[The T6 audit](<../../reviews/T6 - Audit against the code.md>) read every T6 requirement `Covered` at
+0.220.1 against the code, and Ken accepted its decisions as recommended on 2026-10-31
+([the CL plan](../../plans/2026-10-31-cl-t6-close.md)). A row changing what the product must do is
+superseded; a row split by tranche is superseded by its T6 half, and the rest becomes a row of its
+own; a rewording for clarity is an edit.
+
+| What was found                                                                                                                                             | Change                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| SCH-015 asked for broader terms too; search follows narrower terms alone, since following broader or related terms widens a search past what was asked for | **SCH-015 superseded by SCH-074**: alternative labels and narrower terms |
+
+| Counts       | Before                     | After                      |
+| ------------ | -------------------------- | -------------------------- |
+| Requirements | 73, of which 12 superseded | 74, of which 13 superseded |

@@ -6348,7 +6348,7 @@
     {
       "id": "IMP-004",
       "area": "IMP",
-      "statement": "The proposal must be derived from heading structure and content, and must explain why it split where it did",
+      "statement": "The proposal must split at the heading structure, placing the content in the parts, and must explain why it split where it did",
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
@@ -6530,9 +6530,18 @@
       "area": "IMP",
       "statement": "Markdown and HTML must be importable with the same reporting requirements as Word",
       "tranche": "T6",
-      "status": "Specified",
+      "status": "Superseded by IMP-049",
       "document": "IMP-import-export-and-interchange.md",
       "line": 115
+    },
+    {
+      "id": "IMP-049",
+      "area": "IMP",
+      "statement": "Markdown and HTML must be importable with the same reporting requirements as Word, where the format carries what is reported",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "IMP-import-export-and-interchange.md",
+      "line": 116
     },
     {
       "id": "IMP-014",
@@ -6541,16 +6550,34 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "IMP-015",
       "area": "IMP",
       "statement": "Terms and vocabularies must be importable (**LIB-028**)",
       "tranche": "T6",
+      "status": "Superseded by IMP-050",
+      "document": "IMP-import-export-and-interchange.md",
+      "line": 118
+    },
+    {
+      "id": "IMP-050",
+      "area": "IMP",
+      "statement": "Terms must be importable (**LIB-060**)",
+      "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 117
+      "line": 119
+    },
+    {
+      "id": "IMP-051",
+      "area": "IMP",
+      "statement": "Vocabularies must be importable (**LIB-061**)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "IMP-import-export-and-interchange.md",
+      "line": 120
     },
     {
       "id": "IMP-016",
@@ -6559,7 +6586,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 118
+      "line": 121
     },
     {
       "id": "IMP-017",
@@ -6568,7 +6595,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 119
+      "line": 122
     },
     {
       "id": "IMP-039",
@@ -6577,7 +6604,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 120
+      "line": 123
     },
     {
       "id": "IMP-035",
@@ -6586,7 +6613,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 135
+      "line": 138
     },
     {
       "id": "IMP-036",
@@ -6595,7 +6622,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 136
+      "line": 139
     },
     {
       "id": "IMP-037",
@@ -6604,7 +6631,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 137
+      "line": 140
     },
     {
       "id": "IMP-018",
@@ -6613,7 +6640,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 150
+      "line": 153
     },
     {
       "id": "IMP-019",
@@ -6622,7 +6649,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 151
+      "line": 154
     },
     {
       "id": "IMP-020",
@@ -6631,7 +6658,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 152
+      "line": 155
     },
     {
       "id": "IMP-021",
@@ -6640,7 +6667,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 153
+      "line": 156
     },
     {
       "id": "IMP-022",
@@ -6649,7 +6676,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 154
+      "line": 157
     },
     {
       "id": "IMP-023",
@@ -6658,7 +6685,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 155
+      "line": 158
     },
     {
       "id": "IMP-024",
@@ -6667,7 +6694,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 156
+      "line": 159
     },
     {
       "id": "IMP-038",
@@ -6676,7 +6703,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 157
+      "line": 160
     },
     {
       "id": "IMP-040",
@@ -6685,7 +6712,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 158
+      "line": 161
     },
     {
       "id": "IMP-043",
@@ -6694,7 +6721,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 159
+      "line": 162
     },
     {
       "id": "IMP-044",
@@ -6703,7 +6730,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 160
+      "line": 163
     },
     {
       "id": "IMP-045",
@@ -6712,7 +6739,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 161
+      "line": 164
     },
     {
       "id": "IMP-046",
@@ -6721,7 +6748,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 162
+      "line": 165
     },
     {
       "id": "IMP-025",
@@ -6730,7 +6757,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 188
+      "line": 191
     },
     {
       "id": "IMP-026",
@@ -6739,7 +6766,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 189
+      "line": 192
     },
     {
       "id": "IMP-027",
@@ -6748,7 +6775,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 190
+      "line": 193
     },
     {
       "id": "LIB-001",
@@ -6872,9 +6899,27 @@
       "area": "LIB",
       "statement": "Inserting a reference to a deprecated term, or to a deprecated or retired vocabulary value, must be flagged at the moment of insertion as well as where it is already used (LIB-018, LIB-023, LIB-055)",
       "tranche": "T6",
-      "status": "Specified",
+      "status": "Superseded by LIB-062",
       "document": "LIB-reference-libraries.md",
       "line": 53
+    },
+    {
+      "id": "LIB-062",
+      "area": "LIB",
+      "statement": "Inserting a reference to a deprecated term must be flagged at the moment of insertion as well as where it is already used (LIB-018)",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "LIB-reference-libraries.md",
+      "line": 54
+    },
+    {
+      "id": "LIB-063",
+      "area": "LIB",
+      "statement": "Inserting a deprecated or retired vocabulary value must be flagged at the moment of insertion as well as where it is already used (LIB-023, LIB-055)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "LIB-reference-libraries.md",
+      "line": 55
     },
     {
       "id": "LIB-008",
@@ -6883,7 +6928,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 75
+      "line": 77
     },
     {
       "id": "LIB-009",
@@ -6892,7 +6937,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 76
+      "line": 78
     },
     {
       "id": "LIB-010",
@@ -6901,7 +6946,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 77
+      "line": 79
     },
     {
       "id": "LIB-011",
@@ -6910,7 +6955,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 78
+      "line": 80
     },
     {
       "id": "LIB-012",
@@ -6919,7 +6964,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 79
+      "line": 81
     },
     {
       "id": "LIB-044",
@@ -6928,7 +6973,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 80
+      "line": 82
     },
     {
       "id": "LIB-045",
@@ -6937,16 +6982,25 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 81
+      "line": 83
     },
     {
       "id": "LIB-046",
       "area": "LIB",
       "statement": "An entry's in-text citation key must be generated from the fields it holds, must be unique within a document, and must not change for the life of the entry. How two entries that would render identically are told apart is the style's (**STY-022**)",
       "tranche": "T6",
+      "status": "Superseded by LIB-064",
+      "document": "LIB-reference-libraries.md",
+      "line": 84
+    },
+    {
+      "id": "LIB-064",
+      "area": "LIB",
+      "statement": "An entry's in-text citation key must be generated from the fields it holds, must be unique within its space, and must not change for the life of the entry. How two entries that would render identically are told apart is the style's (**STY-022**)",
+      "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 82
+      "line": 85
     },
     {
       "id": "LIB-031",
@@ -6955,7 +7009,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 109
+      "line": 112
     },
     {
       "id": "LIB-032",
@@ -6964,7 +7018,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 110
+      "line": 113
     },
     {
       "id": "LIB-033",
@@ -6973,7 +7027,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 111
+      "line": 114
     },
     {
       "id": "LIB-034",
@@ -6982,7 +7036,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 112
+      "line": 115
     },
     {
       "id": "LIB-035",
@@ -6991,7 +7045,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 113
+      "line": 116
     },
     {
       "id": "LIB-036",
@@ -7000,7 +7054,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 114
+      "line": 117
     },
     {
       "id": "LIB-037",
@@ -7009,7 +7063,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 115
+      "line": 118
     },
     {
       "id": "LIB-038",
@@ -7018,7 +7072,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 116
+      "line": 119
     },
     {
       "id": "LIB-039",
@@ -7027,7 +7081,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 117
+      "line": 120
     },
     {
       "id": "LIB-040",
@@ -7036,7 +7090,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 118
+      "line": 121
     },
     {
       "id": "LIB-013",
@@ -7045,7 +7099,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 147
+      "line": 150
     },
     {
       "id": "LIB-014",
@@ -7054,7 +7108,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 148
+      "line": 151
     },
     {
       "id": "LIB-015",
@@ -7063,7 +7117,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 149
+      "line": 152
     },
     {
       "id": "LIB-016",
@@ -7072,7 +7126,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 150
+      "line": 153
     },
     {
       "id": "LIB-017",
@@ -7081,7 +7135,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 151
+      "line": 154
     },
     {
       "id": "LIB-018",
@@ -7090,7 +7144,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 152
+      "line": 155
     },
     {
       "id": "LIB-019",
@@ -7099,7 +7153,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 153
+      "line": 156
     },
     {
       "id": "LIB-049",
@@ -7108,7 +7162,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 154
+      "line": 157
     },
     {
       "id": "LIB-050",
@@ -7117,7 +7171,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 155
+      "line": 158
     },
     {
       "id": "LIB-020",
@@ -7126,7 +7180,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 178
+      "line": 181
     },
     {
       "id": "LIB-058",
@@ -7135,7 +7189,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 179
+      "line": 182
     },
     {
       "id": "LIB-021",
@@ -7144,7 +7198,7 @@
       "tranche": "T7",
       "status": "Superseded by MET-003",
       "document": "LIB-reference-libraries.md",
-      "line": 180
+      "line": 183
     },
     {
       "id": "LIB-022",
@@ -7153,7 +7207,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 181
+      "line": 184
     },
     {
       "id": "LIB-023",
@@ -7162,7 +7216,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 182
+      "line": 185
     },
     {
       "id": "LIB-024",
@@ -7171,7 +7225,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 183
+      "line": 186
     },
     {
       "id": "LIB-053",
@@ -7180,7 +7234,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 184
+      "line": 187
     },
     {
       "id": "LIB-054",
@@ -7189,7 +7243,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 185
+      "line": 188
     },
     {
       "id": "LIB-055",
@@ -7198,7 +7252,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 186
+      "line": 189
     },
     {
       "id": "LIB-025",
@@ -7207,16 +7261,25 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 208
+      "line": 211
     },
     {
       "id": "LIB-026",
       "area": "LIB",
       "statement": "Search must use those relations and the alternative labels, so that looking for one term finds documents using another (**SCH**)",
       "tranche": "T6",
+      "status": "Superseded by LIB-059",
+      "document": "LIB-reference-libraries.md",
+      "line": 212
+    },
+    {
+      "id": "LIB-059",
+      "area": "LIB",
+      "statement": "Search must use a term's alternative labels and its narrower terms, so that looking for one term finds documents using a narrower one (**SCH-074**)",
+      "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 209
+      "line": 213
     },
     {
       "id": "LIB-027",
@@ -7225,7 +7288,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 210
+      "line": 214
     },
     {
       "id": "LIB-051",
@@ -7234,7 +7297,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 211
+      "line": 215
     },
     {
       "id": "LIB-052",
@@ -7243,16 +7306,34 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 212
+      "line": 216
     },
     {
       "id": "LIB-028",
       "area": "LIB",
       "statement": "Terms and vocabularies must be exportable and importable in a documented format",
       "tranche": "T6",
+      "status": "Superseded by LIB-060",
+      "document": "LIB-reference-libraries.md",
+      "line": 232
+    },
+    {
+      "id": "LIB-060",
+      "area": "LIB",
+      "statement": "Terms must be exportable and importable in a documented format",
+      "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 228
+      "line": 233
+    },
+    {
+      "id": "LIB-061",
+      "area": "LIB",
+      "statement": "Vocabularies must be exportable and importable in a documented format",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "LIB-reference-libraries.md",
+      "line": 234
     },
     {
       "id": "LIB-029",
@@ -7261,7 +7342,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 229
+      "line": 235
     },
     {
       "id": "LIB-030",
@@ -7270,7 +7351,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 230
+      "line": 236
     },
     {
       "id": "LIF-001",
@@ -8168,9 +8249,18 @@
       "area": "LOC",
       "statement": "Locale-aware formatting inside content must use the same locale data and rules as the interface (LOC-027): where a sentence in a variant varies by a number that a bound value supplies, it must be a plural message form - an arm for each plural category the variant's own language declares, and optionally exact arms for the values 0 to 9 - rather than text assembled around the value. A sentence varying by gender is a named gap until a column type carries one (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted)",
       "tranche": "T6",
-      "status": "Specified",
+      "status": "Superseded by LOC-046",
       "document": "LOC-localisation-and-translation.md",
       "line": 90
+    },
+    {
+      "id": "LOC-046",
+      "area": "LOC",
+      "statement": "Locale-aware formatting inside content must use the same locale data and rules as the interface (LOC-027): where a sentence in a variant varies by a number that a bound value supplies, a plural message form must be available for it - an arm for each plural category the variant's own language declares, and optionally exact arms for the values 0 to 9. A sentence varying by gender is a named gap until a column type carries one (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted)",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "LOC-localisation-and-translation.md",
+      "line": 91
     },
     {
       "id": "LOC-013",
@@ -8179,7 +8269,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "LOC-014",
@@ -8188,7 +8278,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "LOC-015",
@@ -8197,7 +8287,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "LOC-016",
@@ -8206,7 +8296,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "LOC-017",
@@ -8215,7 +8305,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "LOC-030",
@@ -8224,7 +8314,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "LOC-031",
@@ -8233,7 +8323,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 117
+      "line": 118
     },
     {
       "id": "LOC-032",
@@ -8242,7 +8332,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 118
+      "line": 119
     },
     {
       "id": "LOC-040",
@@ -8251,7 +8341,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 119
+      "line": 120
     },
     {
       "id": "LOC-018",
@@ -8260,7 +8350,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "LOC-019",
@@ -8269,7 +8359,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "LOC-020",
@@ -8278,7 +8368,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 148
+      "line": 149
     },
     {
       "id": "LOC-021",
@@ -8287,7 +8377,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 149
+      "line": 150
     },
     {
       "id": "LOC-022",
@@ -8296,7 +8386,7 @@
       "tranche": "T6",
       "status": "Superseded by LOC-033",
       "document": "LOC-localisation-and-translation.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "LOC-033",
@@ -8305,7 +8395,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "LOC-035",
@@ -8314,7 +8404,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "LOC-043",
@@ -8323,7 +8413,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "LOC-023",
@@ -8332,7 +8422,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 176
+      "line": 177
     },
     {
       "id": "LOC-024",
@@ -8341,7 +8431,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 177
+      "line": 178
     },
     {
       "id": "LOC-025",
@@ -8350,7 +8440,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 178
+      "line": 179
     },
     {
       "id": "LOC-026",
@@ -8359,7 +8449,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 179
+      "line": 180
     },
     {
       "id": "LOC-041",
@@ -8368,7 +8458,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LOC-localisation-and-translation.md",
-      "line": 180
+      "line": 181
     },
     {
       "id": "MET-001",
@@ -9104,9 +9194,18 @@
       "area": "PUB",
       "statement": "A citation must be an internal link to its entry in the bibliography (**LIB**, **PUB-040**)",
       "tranche": "T6",
-      "status": "Specified",
+      "status": "Superseded by PUB-112",
       "document": "PUB-publishing-and-output.md",
       "line": 100
+    },
+    {
+      "id": "PUB-112",
+      "area": "PUB",
+      "statement": "A citation in running text must be an internal link to its entry in the bibliography; one in a heading or a caption, whose words the contents and running heads repeat, is set without one (**LIB**, **PUB-040**)",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "PUB-publishing-and-output.md",
+      "line": 101
     },
     {
       "id": "PUB-068",
@@ -9115,7 +9214,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 101
+      "line": 102
     },
     {
       "id": "PUB-069",
@@ -9124,7 +9223,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 102
+      "line": 103
     },
     {
       "id": "PUB-070",
@@ -9133,7 +9232,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 103
+      "line": 104
     },
     {
       "id": "PUB-023",
@@ -9142,7 +9241,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 127
+      "line": 128
     },
     {
       "id": "PUB-024",
@@ -9151,7 +9250,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 128
+      "line": 129
     },
     {
       "id": "PUB-025",
@@ -9160,7 +9259,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 129
+      "line": 130
     },
     {
       "id": "PUB-026",
@@ -9169,7 +9268,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "PUB-027",
@@ -9178,7 +9277,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "PUB-028",
@@ -9187,7 +9286,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "PUB-029",
@@ -9196,7 +9295,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "PUB-065",
@@ -9205,7 +9304,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "PUB-066",
@@ -9214,7 +9313,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "PUB-067",
@@ -9223,7 +9322,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "PUB-078",
@@ -9232,7 +9331,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "PUB-030",
@@ -9241,7 +9340,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-090",
       "document": "PUB-publishing-and-output.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "PUB-090",
@@ -9250,7 +9349,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-103",
       "document": "PUB-publishing-and-output.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "PUB-103",
@@ -9259,7 +9358,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "PUB-104",
@@ -9268,7 +9367,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-105",
       "document": "PUB-publishing-and-output.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "PUB-105",
@@ -9277,7 +9376,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "PUB-031",
@@ -9286,7 +9385,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "PUB-032",
@@ -9295,7 +9394,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "PUB-033",
@@ -9304,7 +9403,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "PUB-034",
@@ -9313,7 +9412,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "PUB-035",
@@ -9322,7 +9421,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-100",
       "document": "PUB-publishing-and-output.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "PUB-100",
@@ -9331,7 +9430,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 171
+      "line": 172
     },
     {
       "id": "PUB-101",
@@ -9340,7 +9439,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 172
+      "line": 173
     },
     {
       "id": "PUB-036",
@@ -9349,7 +9448,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-091",
       "document": "PUB-publishing-and-output.md",
-      "line": 173
+      "line": 174
     },
     {
       "id": "PUB-091",
@@ -9358,7 +9457,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "PUB-080",
@@ -9367,7 +9466,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "PUB-037",
@@ -9376,7 +9475,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "PUB-038",
@@ -9385,7 +9484,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "PUB-039",
@@ -9394,7 +9493,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "PUB-040",
@@ -9403,7 +9502,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "PUB-041",
@@ -9412,7 +9511,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "PUB-042",
@@ -9421,7 +9520,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "PUB-043",
@@ -9430,7 +9529,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "PUB-063",
@@ -9439,7 +9538,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "PUB-064",
@@ -9448,7 +9547,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-085",
       "document": "PUB-publishing-and-output.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "PUB-085",
@@ -9457,7 +9556,7 @@
       "tranche": "T1",
       "status": "Superseded by PUB-102",
       "document": "PUB-publishing-and-output.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "PUB-102",
@@ -9466,7 +9565,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "PUB-044",
@@ -9475,7 +9574,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "PUB-045",
@@ -9484,7 +9583,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "PUB-082",
@@ -9493,7 +9592,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "PUB-046",
@@ -9502,7 +9601,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "PUB-075",
@@ -9511,7 +9610,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 224
+      "line": 225
     },
     {
       "id": "PUB-076",
@@ -9520,7 +9619,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 225
+      "line": 226
     },
     {
       "id": "PUB-077",
@@ -9529,7 +9628,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 226
+      "line": 227
     },
     {
       "id": "PUB-047",
@@ -9538,7 +9637,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 251
+      "line": 252
     },
     {
       "id": "PUB-093",
@@ -9547,7 +9646,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 252
+      "line": 253
     },
     {
       "id": "PUB-048",
@@ -9556,7 +9655,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 253
+      "line": 254
     },
     {
       "id": "PUB-049",
@@ -9565,7 +9664,7 @@
       "tranche": "T2",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 254
+      "line": 255
     },
     {
       "id": "PUB-050",
@@ -9574,7 +9673,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 255
+      "line": 256
     },
     {
       "id": "PUB-057",
@@ -9583,7 +9682,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 256
+      "line": 257
     },
     {
       "id": "PUB-058",
@@ -9592,7 +9691,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 257
+      "line": 258
     },
     {
       "id": "PUB-059",
@@ -9601,7 +9700,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 258
+      "line": 259
     },
     {
       "id": "PUB-060",
@@ -9610,7 +9709,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 259
+      "line": 260
     },
     {
       "id": "PUB-073",
@@ -9619,7 +9718,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 260
+      "line": 261
     },
     {
       "id": "PUB-074",
@@ -9628,7 +9727,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 261
+      "line": 262
     },
     {
       "id": "PUB-081",
@@ -9637,7 +9736,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 262
+      "line": 263
     },
     {
       "id": "PUB-083",
@@ -9646,7 +9745,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 263
+      "line": 264
     },
     {
       "id": "PUB-084",
@@ -9655,7 +9754,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 264
+      "line": 265
     },
     {
       "id": "PUB-051",
@@ -9664,7 +9763,7 @@
       "tranche": "Constraint",
       "status": "Superseded by PUB-072",
       "document": "PUB-publishing-and-output.md",
-      "line": 294
+      "line": 295
     },
     {
       "id": "PUB-052",
@@ -9673,7 +9772,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 295
+      "line": 296
     },
     {
       "id": "PUB-053",
@@ -9682,7 +9781,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 296
+      "line": 297
     },
     {
       "id": "PUB-071",
@@ -9691,7 +9790,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 297
+      "line": 298
     },
     {
       "id": "PUB-072",
@@ -9700,7 +9799,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 298
+      "line": 299
     },
     {
       "id": "PUB-094",
@@ -9709,7 +9808,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 299
+      "line": 300
     },
     {
       "id": "PUB-079",
@@ -9718,7 +9817,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 300
+      "line": 301
     },
     {
       "id": "PUB-054",
@@ -9727,7 +9826,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 316
+      "line": 317
     },
     {
       "id": "PUB-055",
@@ -9736,7 +9835,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 317
+      "line": 318
     },
     {
       "id": "PUB-056",
@@ -9745,7 +9844,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "PUB-publishing-and-output.md",
-      "line": 318
+      "line": 319
     },
     {
       "id": "REL-001",
@@ -10940,9 +11039,18 @@
       "area": "SCH",
       "statement": "Search must use a term's alternative labels and its broader and narrower terms (**LIB-026**)",
       "tranche": "T6",
-      "status": "Specified",
+      "status": "Superseded by SCH-074",
       "document": "SCH-search-navigation-and-discovery.md",
       "line": 97
+    },
+    {
+      "id": "SCH-074",
+      "area": "SCH",
+      "statement": "Search must use a term's alternative labels and its narrower terms, so that looking for a term finds content using any term beneath it (**LIB-059**)",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "SCH-search-navigation-and-discovery.md",
+      "line": 98
     },
     {
       "id": "SCH-016",
@@ -10951,7 +11059,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 98
+      "line": 99
     },
     {
       "id": "SCH-017",
@@ -10960,7 +11068,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 99
+      "line": 100
     },
     {
       "id": "SCH-033",
@@ -10969,7 +11077,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 100
+      "line": 101
     },
     {
       "id": "SCH-035",
@@ -10978,7 +11086,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 101
+      "line": 102
     },
     {
       "id": "SCH-036",
@@ -10987,7 +11095,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 102
+      "line": 103
     },
     {
       "id": "SCH-037",
@@ -10996,7 +11104,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 103
+      "line": 104
     },
     {
       "id": "SCH-039",
@@ -11005,7 +11113,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 104
+      "line": 105
     },
     {
       "id": "SCH-040",
@@ -11014,7 +11122,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "SCH-041",
@@ -11023,7 +11131,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "SCH-042",
@@ -11032,7 +11140,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "SCH-045",
@@ -11041,7 +11149,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-057",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 108
+      "line": 109
     },
     {
       "id": "SCH-057",
@@ -11050,7 +11158,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 109
+      "line": 110
     },
     {
       "id": "SCH-058",
@@ -11059,7 +11167,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 110
+      "line": 111
     },
     {
       "id": "SCH-047",
@@ -11068,7 +11176,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 111
+      "line": 112
     },
     {
       "id": "SCH-018",
@@ -11077,7 +11185,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-059",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "SCH-059",
@@ -11086,7 +11194,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "SCH-060",
@@ -11095,7 +11203,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "SCH-061",
@@ -11104,7 +11212,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "SCH-052",
@@ -11113,7 +11221,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-062",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "SCH-062",
@@ -11122,7 +11230,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "SCH-063",
@@ -11131,7 +11239,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "SCH-019",
@@ -11140,7 +11248,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-064",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "SCH-064",
@@ -11149,7 +11257,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "SCH-065",
@@ -11158,7 +11266,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "SCH-020",
@@ -11167,7 +11275,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 141
+      "line": 142
     },
     {
       "id": "SCH-021",
@@ -11176,7 +11284,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 142
+      "line": 143
     },
     {
       "id": "SCH-022",
@@ -11185,7 +11293,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 143
+      "line": 144
     },
     {
       "id": "SCH-034",
@@ -11194,7 +11302,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-073",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 144
+      "line": 145
     },
     {
       "id": "SCH-073",
@@ -11203,7 +11311,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 145
+      "line": 146
     },
     {
       "id": "SCH-044",
@@ -11212,7 +11320,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 146
+      "line": 147
     },
     {
       "id": "SCH-046",
@@ -11221,7 +11329,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 147
+      "line": 148
     },
     {
       "id": "SCH-068",
@@ -11230,7 +11338,7 @@
       "tranche": "T3",
       "status": "Superseded by SCH-070",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "SCH-070",
@@ -11239,7 +11347,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "SCH-069",
@@ -11248,7 +11356,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "SCH-023",
@@ -11257,7 +11365,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "SCH-024",
@@ -11266,7 +11374,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "SCH-025",
@@ -11275,7 +11383,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "SCH-026",
@@ -11284,7 +11392,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "SCH-043",
@@ -11293,7 +11401,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "SCH-048",
@@ -11302,7 +11410,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "SCH-027",
@@ -11311,7 +11419,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-050",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "SCH-028",
@@ -11320,7 +11428,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "SCH-029",
@@ -11329,7 +11437,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "SCH-030",
@@ -11338,7 +11446,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "SCH-031",
@@ -11347,7 +11455,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "SCH-050",
@@ -11356,7 +11464,7 @@
       "tranche": "T1",
       "status": "Superseded by SCH-066",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "SCH-066",
@@ -11365,7 +11473,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "SCH-067",
@@ -11374,7 +11482,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "SCH-049",
@@ -11383,7 +11491,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "STR-001",
@@ -14805,73 +14913,73 @@
       "id": "IMP-N01",
       "statement": "**No unattended import**, at any scale (IMP-003)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 201
+      "line": 204
     },
     {
       "id": "IMP-N02",
       "statement": "**No claim of lossless Word round-tripping** (IMP-025)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 202
+      "line": 205
     },
     {
       "id": "IMP-N03",
       "statement": "**No import that bypasses validation** (IMP-017)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 203
+      "line": 206
     },
     {
       "id": "IMP-N04",
       "statement": "**No migration service disguised as a feature.** Bulk conversion of a legacy estate is a project, and it is a person's job",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 204
+      "line": 207
     },
     {
       "id": "IMP-N05",
       "statement": "**No scanning of body content for personal data.** Section 4's scope is the identities a document carries as metadata and annotations. A customer's name inside the prose of a report is content the customer wrote, and this product does not inspect, classify or redact it",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 205
+      "line": 208
     },
     {
       "id": "IMP-N06",
       "statement": "**No unattended import _of a foreign document_** (IMP-003, IMP-N01). The product's own export format is not a foreign document: it is already components, needs no split judgement, and is importable (IMP-039)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 206
+      "line": 209
     },
     {
       "id": "LIB-N01",
       "statement": "**No ontology with inference** (LIB-027)",
       "document": "LIB-reference-libraries.md",
-      "line": 236
+      "line": 242
     },
     {
       "id": "LIB-N02",
       "statement": "**No terminology as text macros.** A term is a reference; expansion is how one is inserted, not what one becomes (LIB-019)",
       "document": "LIB-reference-libraries.md",
-      "line": 237
+      "line": 243
     },
     {
       "id": "LIB-N03",
       "statement": "**No boilerplate here.** A standard phrase or paragraph is reuse, and belongs to **REU** as a component or a variable",
       "document": "LIB-reference-libraries.md",
-      "line": 238
+      "line": 244
     },
     {
       "id": "LIB-N04",
       "statement": "**Not a full termbase.** Concept-level modelling, term extraction and translation memory are separate products",
       "document": "LIB-reference-libraries.md",
-      "line": 239
+      "line": 245
     },
     {
       "id": "LIB-N05",
       "statement": "**One definition per term.** A term carrying two senses is two terms. Concept-level modelling is the termbase LIB-N04 rules out, and a single definition slot is the deliberate consequence",
       "document": "LIB-reference-libraries.md",
-      "line": 240
+      "line": 246
     },
     {
       "id": "LIB-N06",
       "statement": "**No mirror of an external source.** The product searches PubMed, Crossref and their like and keeps what a document cites (LIB-031, LIB-033). Ingesting a registry would be maintaining somebody else's database badly",
       "document": "LIB-reference-libraries.md",
-      "line": 241
+      "line": 247
     },
     {
       "id": "LIF-N01",
@@ -14913,31 +15021,31 @@
       "id": "LOC-N01",
       "statement": "**Not a translation management system.** Vendor selection, quoting and translator workbenches belong to a TMS",
       "document": "LOC-localisation-and-translation.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "LOC-N02",
       "statement": "**No translation memory of its own.** That belongs with the vendor's tooling",
       "document": "LOC-localisation-and-translation.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "LOC-N03",
       "statement": "**No automatic publication of machine translation** (LOC-024)",
       "document": "LOC-localisation-and-translation.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "LOC-N04",
       "statement": "**No mixed-language output by accident.** A fallback is a document-level policy and is marked in the output (LOC-037, which superseded LOC-011)",
       "document": "LOC-localisation-and-translation.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "LOC-N05",
       "statement": "**No translating a binding.** A bound value is translated at resolution against a declared lookup, or it is not translated at all (LOC-043). Editing a resolved value inside a variant is how a document comes to disagree with its own data",
       "document": "LOC-localisation-and-translation.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "MET-N01",
@@ -14973,25 +15081,25 @@
       "id": "PUB-N01",
       "statement": "**Not a prepress system.** No imposition, colour separation, trapping or bleed management",
       "document": "PUB-publishing-and-output.md",
-      "line": 324
+      "line": 325
     },
     {
       "id": "PUB-N02",
       "statement": "**No web publishing channel, and no anonymous distribution.** The output is documents, not a site. A report meant for the public goes on a web server, and the product's involvement ends at the file ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "document": "PUB-publishing-and-output.md",
-      "line": 325
+      "line": 326
     },
     {
       "id": "PUB-N03",
       "statement": "**No editing of output.** A published artifact is produced from a baseline; correcting it means correcting the document and publishing again",
       "document": "PUB-publishing-and-output.md",
-      "line": 326
+      "line": 327
     },
     {
       "id": "PUB-N04",
       "statement": "**Google Docs is not held to the fidelity bar**, and must not be sold as though it were",
       "document": "PUB-publishing-and-output.md",
-      "line": 327
+      "line": 328
     },
     {
       "id": "REL-N01",
@@ -15057,25 +15165,25 @@
       "id": "SCH-N01",
       "statement": "**No search across tenants**, for any purpose including support",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "SCH-N02",
       "statement": "**No index-time permission baking.** Permissions change; an index cannot be re-written every time they do (SCH-005)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "SCH-N03",
       "statement": "**No relevance tuning per user.** Two users with the same permissions must see the same results in the same order",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "SCH-N04",
       "statement": "**Not an analytics surface.** Counting what exists is a report, not a search (**ADM**)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "STR-N01",
@@ -15650,91 +15758,91 @@
       "question": "**How does assisted import scale to a legacy estate of thousands?** IMP-003 forbids unattended import and a customer will have four thousand reports",
       "settledBy": "**A measured number, from the first customer migration: documents converted per person per day, with IMP-031's accepted-unchanged rate beside it.** It settles before T6 is planned, because the two answers build different things - throughput work in the product (queued proposals, reviewer tooling, IMP-029), or a stated boundary saying an estate is a services project (IMP-N04)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 212
+      "line": 215
     },
     {
       "id": "IMP-Q02",
       "question": "**Should a model propose the breakdown (IMP-004)?** It is a good use of one and it is exactly where a bad proposal is expensive",
       "settledBy": "Whether the proposal is reviewed faster than the breakdown could be made by hand, measured the same way as IMP-Q01. IMP-030 means the answer changes who proposes and nothing else: the constraints on a proposal hold whatever produced it",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 213
+      "line": 216
     },
     {
       "id": "IMP-Q03",
       "question": "**Which XML vocabularies are worth importing (IMP-016)?** DITA is the obvious one and it is a large mapping",
       "settledBy": "A customer with an existing structured estate. Until then it stays a `should`",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 214
+      "line": 217
     },
     {
       "id": "IMP-Q04",
       "question": "**Does export include iterations?** They are recovery rather than record, and a customer leaving may still want everything",
       "settledBy": "A decision with **VER**, probably no, stated in the export",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 215
+      "line": 218
     },
     {
       "id": "IMP-Q05",
       "question": "**How far does a re-import go (IMP-036)?** Recognising the source and showing what changed is settled; reconciling a changed source against components an author has since edited is a three-way merge, and a large piece of work",
       "settledBy": "A customer who re-imports rather than edits in place. Until one exists, IMP-036 recognises, shows and offers, and a person decides component by component",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 216
+      "line": 219
     },
     {
       "id": "LIB-Q01",
       "question": "**Does a term need a lifecycle of its own?** A glossary in a regulated environment is often approved, which means states and gates",
       "settledBy": "Whether customers govern terminology the way they govern content. In pharma they do",
       "document": "LIB-reference-libraries.md",
-      "line": 247
+      "line": 253
     },
     {
       "id": "LIB-Q02",
       "question": "**Where does first-use expansion reset (LIB-016)?** Per document is obvious; per chapter is what several house styles actually require",
       "settledBy": "Real house styles. It is a publishing-layout property if it varies",
       "document": "LIB-reference-libraries.md",
-      "line": 248
+      "line": 254
     },
     {
       "id": "LIB-Q03",
       "question": "**Do bibliographies need to be per space or shared (LIB-030)?** A shared one is maintained once and permissioned coarsely",
       "settledBy": "Whether early customers' sources are confidential. In clinical work they can be",
       "document": "LIB-reference-libraries.md",
-      "line": 249
+      "line": 255
     },
     {
       "id": "LIB-Q04",
       "question": "**Should the product detect terms an author typed as text?** Suggesting a reference where somebody wrote the words is valuable and intrusive",
       "settledBy": "Whether it can be offered without becoming a spell-checker that argues",
       "document": "LIB-reference-libraries.md",
-      "line": 250
+      "line": 256
     },
     {
       "id": "LIB-Q05",
       "question": "**How are record identities scoped - space, tenant or global - and does a shared library expose one identity or a view per space?**",
       "settledBy": "**Settled.** Unique within the tenant, and a share is one record seen from several spaces rather than a copy in each (LIB-041, LIB-042). Labels may collide across spaces, because a label was never the identity (LIB-043)",
       "document": "LIB-reference-libraries.md",
-      "line": 251
+      "line": 257
     },
     {
       "id": "LIB-Q06",
       "question": "**Is bibliography dedupe enforced at manual creation as well as import, and on which fields?**",
       "settledBy": "**Settled.** Both, on the same detection (LIB-044), using canonical identifiers first - DOI, PubMed identifier, ISBN, ISSN - and a declared title-author-year comparison only where none exists (LIB-045)",
       "document": "LIB-reference-libraries.md",
-      "line": 252
+      "line": 258
     },
     {
       "id": "LIB-Q07",
       "question": "**Which external sources are in the declared list (LIB-032)?** PubMed and Crossref are the obvious two for this market; registries, standards bodies and a customer's own catalogue each cost an adapter",
       "settledBy": "The first customers' citation practice. The list is declared and extensible either way, so this decides the order it grows in rather than whether it can",
       "document": "LIB-reference-libraries.md",
-      "line": 253
+      "line": 259
     },
     {
       "id": "LIB-Q08",
       "question": "**Does a retracted source block a publish or warn (LIB-036)?**",
       "settledBy": "Whether customers treat a retraction as a control or as a record - the same question **AST-Q04** asks about a licence, and it should get the same answer",
       "document": "LIB-reference-libraries.md",
-      "line": 254
+      "line": 260
     },
     {
       "id": "LIF-Q01",
@@ -15790,35 +15898,35 @@
       "question": "**Can the source language differ per component, or is it per space?** An acquired department may author in another language",
       "settledBy": "Real customers. Per component is more general and complicates every status calculation",
       "document": "LOC-localisation-and-translation.md",
-      "line": 201
+      "line": 202
     },
     {
       "id": "LOC-Q02",
       "question": "**What granularity does translation status need (LOC-015)?** Per component is simple; per block is what avoids retranslating a page for one word",
       "settledBy": "The cost of retranslation in practice, which is a commercial question",
       "document": "LOC-localisation-and-translation.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "LOC-Q03",
       "question": "**Do bound values get translated?** A number does not; a category name returned by a query might",
       "settledBy": "**Settled: yes, at resolution, never in the variant.** A declared lookup keyed by what the source returned (LOC-043), so the binding stays inert as LOC-020 requires. Where no lookup exists the value renders as the source gave it and is reported as untranslated",
       "document": "LOC-localisation-and-translation.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "LOC-Q04",
       "question": "**Does a document's outline translate?** Section titles are content; the structure is not",
       "settledBy": "Whether translated documents ever differ structurally, which in regulated submissions they sometimes must",
       "document": "LOC-localisation-and-translation.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "LOC-Q05",
       "question": "**Which languages and locales are supported at launch (LOC-044)?** The list is declared and the locale data versioned either way; what is open is which entries it starts with, and which right-to-left locale the suite runs against",
       "settledBy": "**Answered (Ken, 2026-10-28): every language CLDR has data for written in the Latin, Greek, Cyrillic, Hebrew or Arabic script**, the scripts the default theme sets (STY-075); the Chinese, Japanese, Korean and Indic scripts join with STY-085. The suite's right-to-left locale is the pseudo-locale `ar-XB`",
       "document": "LOC-localisation-and-translation.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "MET-Q01",
@@ -15853,35 +15961,35 @@
       "question": "**Which pagination and PDF engine?**",
       "settledBy": "**Settled.** Typst, rendering the resolved content model through one fixed template. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md)",
       "document": "PUB-publishing-and-output.md",
-      "line": 333
+      "line": 334
     },
     {
       "id": "PUB-Q02",
       "question": "**Does Google Docs export survive at all?** It exists because customers ask for it and cannot express what the product is for, and it now has a second problem: writing to a user's Google Docs needs Drive scopes, which are restricted, which means app verification and a periodic security assessment - exactly what IAM-044 and [ADR-0009](../../decisions/0009-federation-and-google-accounts-no-local-passwords.md) were taken to avoid",
       "settledBy": "Whether a customer wants it enough to accept both that it is visibly worse and that it carries a compliance cost nothing else in the product does",
       "document": "PUB-publishing-and-output.md",
-      "line": 334
+      "line": 335
     },
     {
       "id": "PUB-Q03",
       "question": "**Is PDF/A required, and at which conformance level?** Archival and submission requirements differ by regime, and the levels are not interchangeable",
       "settledBy": "The first customer with a submission requirement that names one",
       "document": "PUB-publishing-and-output.md",
-      "line": 335
+      "line": 336
     },
     {
       "id": "PUB-Q04",
       "question": "**How is preview made fast enough (CNT-096) while using the same pipeline (PUB-006)?**",
       "settledBy": "**Settled.** Typst compiles incrementally, reusing unchanged layout between compiles: an edit reaches page 40 of a 300-page document in under half a second, whatever page it is on. The one difference is PUB-061. See [ADR-0013](../../decisions/0013-typst-rendering-resolved-data-through-a-fixed-template.md). Since [ADR-0027](../../decisions/0027-the-warm-range-preview-leaves-t1.md) this answers T3's warm preview; T1's is the whole document, compiled cold, and CNT-096 is withdrawn",
       "document": "PUB-publishing-and-output.md",
-      "line": 336
+      "line": 337
     },
     {
       "id": "PUB-Q05",
       "question": "**Can an incremental compilation be made byte-identical to a clean one (PUB-076)?** Reusing layout between compiles is what makes preview fast; producing the same bytes either way is what makes PUB-043 checkable",
       "settledBy": "Measurement against the engine. If it cannot, the answer is that preview compiles incrementally and publication always compiles clean - which costs seconds on a path that already takes thirty",
       "document": "PUB-publishing-and-output.md",
-      "line": 337
+      "line": 338
     },
     {
       "id": "REL-Q01",
@@ -15965,42 +16073,42 @@
       "question": "**Are full-text and semantic search one system or two?** This is open decision 5 in scope §10, and it decides how SCH-005 is implemented once or twice",
       "settledBy": "**Settled.** One: both in the tenant's Postgres schema, in one query behind one interface, restricted by the same predicate and returned as one labelled list. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "SCH-Q02",
       "question": "**How is query-time permission filtering made fast enough?** Filtering after retrieval is correct and slow; filtering inside the index is fast and stale",
       "settledBy": "**Settled** by a spike and four rules: each search planned for its own permission set, the vector strategy chosen by how much the user may see, ranking bounded, and counts capped. See [ADR-0016](../../decisions/0016-search-in-postgres-behind-one-interface.md) and [`Search_Spike_Findings.md`](../spikes/Search_Spike_Findings.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "SCH-Q03",
       "question": "**Are earlier versions searchable by default (SCH-003)?** Searching all history finds more and surfaces text that was deliberately changed",
       "settledBy": "Whether customers expect superseded wording to be findable. In regulated work, sometimes emphatically not",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "SCH-Q04",
       "question": "**Does semantic search need its own permission story?**",
       "settledBy": "**Settled.** No, and it must not have one. Vectors sit in the tenant's schema beside the content they derive from, so the permission filter is a join evaluated before ranking rather than a post-filter over results. See [ADR-0012](../../decisions/0012-relational-version-chain-hashed-content.md)",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "SCH-Q05",
       "question": "**Should a guest's ranking use statistics that include content they cannot see?** SCH-032 accepts that leak within a tenant, and a guest is an outsider inside it ([ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md))",
       "settledBy": "Whether the difference between a guest's trust and a member's justifies ranking guests without corpus statistics. Recommended: yes, since it costs a mode of the same query and not a second system",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 220
+      "line": 221
     },
     {
       "id": "SCH-Q06",
       "question": "**How much fuzzy matching (SCH-041), and where does it stop?** An edit distance that finds a typo also finds a different word, and in a regulated corpus a near miss presented as a match is worse than nothing",
       "settledBy": "Real queries against real content. The requirement is that approximation is stated where it happens; the distance itself is a number to tune",
       "document": "SCH-search-navigation-and-discovery.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "STR-Q01",
@@ -16627,16 +16735,16 @@
           "howItIsMet": "Canonical identifiers first, then title, year and first author, normalised"
         },
         {
-          "id": "LIB-046",
-          "howItIsMet": "The key is made from the fields at creation, unique in the space (so in any document), and never changes"
+          "id": "LIB-064",
+          "howItIsMet": "The key is made from the fields at creation, unique in the space, and never changes"
         },
         {
           "id": "PUB-040",
           "howItIsMet": "The bibliography is generated from the citations present, in the style's form"
         },
         {
-          "id": "PUB-097",
-          "howItIsMet": "Each citation links to its entry in the bibliography: PDF a link, Word a hyperlink to the entry's bookmark"
+          "id": "PUB-112",
+          "howItIsMet": "A citation in running text links to its entry in the bibliography: PDF a link, Word a hyperlink to the entry's bookmark; one in a heading or a caption is set without one"
         },
         {
           "id": "STR-069",
@@ -17399,8 +17507,8 @@
           "howItIsMet": "Structure, marks, references, bindings and terms are nodes and members rather than text, so a round-trip has nothing to lose and nothing translatable to mistake them for"
         },
         {
-          "id": "LOC-045",
-          "howItIsMet": "A message form is a node, its arms the plural categories of CLDR 48.2.0 compiled into the domain and held to the interface's FormatJS by a parity test; the publish and the editor select by one function (`armFor`), and a translator fills the target language's arms. Gender and refusing assembled text are named gaps below"
+          "id": "LOC-046",
+          "howItIsMet": "A message form is a node, its arms the plural categories of CLDR 48.2.0 compiled into the domain and held to the interface's FormatJS by a parity test; the publish and the editor select by one function (`armFor`), and a translator fills the target language's arms. Gender is a named gap below"
         },
         {
           "id": "AST-012",
@@ -18284,7 +18392,7 @@
           "howItIsMet": "A failed import leaves nothing and says what happened"
         },
         {
-          "id": "IMP-013",
+          "id": "IMP-049",
           "howItIsMet": "Markdown and HTML through the same proposal and report"
         },
         {
@@ -20263,12 +20371,12 @@
           "howItIsMet": "Broader, narrower and related terms, stated"
         },
         {
-          "id": "LIB-026",
+          "id": "LIB-059",
           "howItIsMet": "Search reaches content through a term's labels and narrower terms"
         },
         {
-          "id": "LIB-028",
-          "howItIsMet": "Exported as SKOS JSON-LD in a documented form; imported from it and from Turtle"
+          "id": "LIB-060",
+          "howItIsMet": "Terms exported as SKOS JSON-LD in a documented form; imported from it and from Turtle"
         },
         {
           "id": "LIB-029",
@@ -20283,8 +20391,8 @@
           "howItIsMet": "A language with no label falls back to the term's base language, and the fallback is reported at publish"
         },
         {
-          "id": "LIB-057",
-          "howItIsMet": "A deprecated term is flagged as it is chosen"
+          "id": "LIB-062",
+          "howItIsMet": "A deprecated term is flagged as it is chosen, as well as where used (LIB-018)"
         },
         {
           "id": "CNT-165",
@@ -20295,16 +20403,16 @@
           "howItIsMet": "A glossary and a list of abbreviations generated from the terms used"
         },
         {
-          "id": "SCH-015",
-          "howItIsMet": "As LIB-026"
+          "id": "SCH-074",
+          "howItIsMet": "As LIB-059"
         },
         {
           "id": "SCH-056",
           "howItIsMet": "Terms are searchable"
         },
         {
-          "id": "IMP-015",
-          "howItIsMet": "As LIB-028"
+          "id": "IMP-050",
+          "howItIsMet": "As LIB-060"
         }
       ]
     },
@@ -21282,7 +21390,7 @@
     {
       "id": "ADM-051",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 594,
+      "line": 324,
       "kind": "title"
     },
     {
@@ -21301,6 +21409,12 @@
       "id": "LOC-005",
       "file": "apps/desktop/src/shell.test.ts",
       "line": 272,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-052",
+      "file": "apps/desktop/src/version.test.ts",
+      "line": 30,
       "kind": "title"
     },
     {
@@ -21748,6 +21862,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-051",
+      "file": "apps/service/src/bibliography-routes.test.ts",
+      "line": 41,
+      "kind": "title"
+    },
+    {
       "id": "IMP-014",
       "file": "apps/service/src/bibliography-routes.test.ts",
       "line": 100,
@@ -21766,7 +21886,7 @@
       "kind": "title"
     },
     {
-      "id": "LIB-046",
+      "id": "LIB-064",
       "file": "apps/service/src/bibliography-routes.test.ts",
       "line": 76,
       "kind": "title"
@@ -21865,12 +21985,6 @@
       "id": "TAB-008",
       "file": "apps/service/src/bound-table-rows.test.ts",
       "line": 136,
-      "kind": "title"
-    },
-    {
-      "id": "API-071",
-      "file": "apps/service/src/bridge-settings-routes.test.ts",
-      "line": 151,
       "kind": "title"
     },
     {
@@ -22147,6 +22261,12 @@
       "id": "API-074",
       "file": "apps/service/src/ct-studio-routes.test.ts",
       "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "API-075",
+      "file": "apps/service/src/ct-studio-routes.test.ts",
+      "line": 53,
       "kind": "title"
     },
     {
@@ -22638,7 +22758,7 @@
     {
       "id": "IMP-008",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 189,
+      "line": 612,
       "kind": "title"
     },
     {
@@ -22692,7 +22812,7 @@
     {
       "id": "IMP-036",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 441,
+      "line": 643,
       "kind": "title"
     },
     {
@@ -22777,6 +22897,12 @@
       "id": "API-057",
       "file": "apps/service/src/jobs-routes.test.ts",
       "line": 55,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-003",
+      "file": "apps/service/src/listing-language.test.ts",
+      "line": 43,
       "kind": "title"
     },
     {
@@ -23512,12 +23638,6 @@
       "kind": "title"
     },
     {
-      "id": "API-065",
-      "file": "apps/service/src/secrets.test.ts",
-      "line": 11,
-      "kind": "title"
-    },
-    {
       "id": "IAM-033",
       "file": "apps/service/src/service-identity-routes.test.ts",
       "line": 47,
@@ -23866,7 +23986,7 @@
       "kind": "title"
     },
     {
-      "id": "IMP-015",
+      "id": "IMP-050",
       "file": "apps/service/src/term-routes.test.ts",
       "line": 128,
       "kind": "title"
@@ -23884,12 +24004,6 @@
       "kind": "title"
     },
     {
-      "id": "LIB-028",
-      "file": "apps/service/src/term-routes.test.ts",
-      "line": 128,
-      "kind": "title"
-    },
-    {
       "id": "LIB-029",
       "file": "apps/service/src/term-routes.test.ts",
       "line": 128,
@@ -23902,21 +24016,27 @@
       "kind": "title"
     },
     {
-      "id": "IMP-015",
-      "file": "apps/service/src/terms/skos.test.ts",
-      "line": 78,
+      "id": "LIB-060",
+      "file": "apps/service/src/term-routes.test.ts",
+      "line": 128,
       "kind": "title"
     },
     {
-      "id": "LIB-028",
+      "id": "IMP-050",
       "file": "apps/service/src/terms/skos.test.ts",
-      "line": 57,
+      "line": 78,
       "kind": "title"
     },
     {
       "id": "LIB-029",
       "file": "apps/service/src/terms/skos.test.ts",
       "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-060",
+      "file": "apps/service/src/terms/skos.test.ts",
+      "line": 57,
       "kind": "title"
     },
     {
@@ -24034,6 +24154,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-018",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 465,
+      "kind": "title"
+    },
+    {
       "id": "LOC-031",
       "file": "apps/service/src/translation-routes.test.ts",
       "line": 168,
@@ -24042,7 +24168,7 @@
     {
       "id": "LOC-033",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 560,
+      "line": 465,
       "kind": "title"
     },
     {
@@ -25162,6 +25288,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-062",
+      "file": "apps/web/src/editor/ComponentEditor.terms.test.tsx",
+      "line": 150,
+      "kind": "title"
+    },
+    {
       "id": "LIF-018",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
       "line": 349,
@@ -25294,13 +25426,7 @@
       "kind": "title"
     },
     {
-      "id": "CNT-165",
-      "file": "apps/web/src/editor/TermDialog.test.tsx",
-      "line": 68,
-      "kind": "title"
-    },
-    {
-      "id": "LIB-057",
+      "id": "LIB-062",
       "file": "apps/web/src/editor/TermDialog.test.tsx",
       "line": 90,
       "kind": "title"
@@ -25390,7 +25516,7 @@
       "kind": "title"
     },
     {
-      "id": "LOC-045",
+      "id": "LOC-046",
       "file": "apps/web/src/editor/messageForms.test.ts",
       "line": 143,
       "kind": "title"
@@ -26974,6 +27100,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-004",
+      "file": "apps/web/src/words/language.test.tsx",
+      "line": 64,
+      "kind": "title"
+    },
+    {
       "id": "LOC-005",
       "file": "apps/web/src/words/language.test.tsx",
       "line": 43,
@@ -26989,6 +27121,18 @@
       "id": "LOC-005",
       "file": "apps/web/src/words/locales.test.ts",
       "line": 18,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-029",
+      "file": "apps/web/src/words/locales.test.ts",
+      "line": 26,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-042",
+      "file": "apps/web/src/words/locales.test.ts",
+      "line": 26,
       "kind": "title"
     },
     {
@@ -27064,7 +27208,7 @@
       "kind": "title"
     },
     {
-      "id": "LOC-045",
+      "id": "LOC-046",
       "file": "apps/worker/src/bindings.test.ts",
       "line": 831,
       "kind": "title"
@@ -27162,7 +27306,7 @@
     {
       "id": "API-076",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 644,
+      "line": 627,
       "kind": "title"
     },
     {
@@ -27190,7 +27334,7 @@
       "kind": "title"
     },
     {
-      "id": "PUB-097",
+      "id": "PUB-112",
       "file": "apps/worker/src/citations.test.ts",
       "line": 153,
       "kind": "title"
@@ -27400,12 +27544,6 @@
       "kind": "title"
     },
     {
-      "id": "IMP-013",
-      "file": "apps/worker/src/import.test.ts",
-      "line": 333,
-      "kind": "title"
-    },
-    {
       "id": "IMP-017",
       "file": "apps/worker/src/import.test.ts",
       "line": 196,
@@ -27421,6 +27559,12 @@
       "id": "IMP-042",
       "file": "apps/worker/src/import.test.ts",
       "line": 430,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-049",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 333,
       "kind": "title"
     },
     {
@@ -28312,7 +28456,7 @@
       "kind": "title"
     },
     {
-      "id": "LIB-046",
+      "id": "LIB-064",
       "file": "packages/db/src/bibliography.test.ts",
       "line": 205,
       "kind": "title"
@@ -28342,15 +28486,15 @@
       "kind": "title"
     },
     {
-      "id": "API-071",
+      "id": "API-070",
       "file": "packages/db/src/bridge-documents.test.ts",
-      "line": 348,
+      "line": 553,
       "kind": "title"
     },
     {
-      "id": "API-068",
-      "file": "packages/db/src/bridge-migration.test.ts",
-      "line": 73,
+      "id": "API-071",
+      "file": "packages/db/src/bridge-documents.test.ts",
+      "line": 348,
       "kind": "title"
     },
     {
@@ -28366,15 +28510,9 @@
       "kind": "title"
     },
     {
-      "id": "API-069",
-      "file": "packages/db/src/bridge-store.test.ts",
-      "line": 235,
-      "kind": "title"
-    },
-    {
       "id": "API-071",
       "file": "packages/db/src/bridge-store.test.ts",
-      "line": 188,
+      "line": 215,
       "kind": "title"
     },
     {
@@ -29350,6 +29488,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-053",
+      "file": "packages/db/src/publication-citations.test.ts",
+      "line": 222,
+      "kind": "title"
+    },
+    {
       "id": "CNT-054",
       "file": "packages/db/src/publication-citations.test.ts",
       "line": 310,
@@ -29365,12 +29509,6 @@
       "id": "LOC-044",
       "file": "packages/db/src/publication-locale-data-migration.test.ts",
       "line": 107,
-      "kind": "title"
-    },
-    {
-      "id": "LIB-016",
-      "file": "packages/db/src/publication-terms.test.ts",
-      "line": 283,
       "kind": "title"
     },
     {
@@ -30118,18 +30256,6 @@
       "kind": "title"
     },
     {
-      "id": "LIB-026",
-      "file": "packages/db/src/terms.test.ts",
-      "line": 428,
-      "kind": "title"
-    },
-    {
-      "id": "LIB-028",
-      "file": "packages/db/src/terms.test.ts",
-      "line": 531,
-      "kind": "title"
-    },
-    {
       "id": "LIB-029",
       "file": "packages/db/src/terms.test.ts",
       "line": 531,
@@ -30142,13 +30268,25 @@
       "kind": "title"
     },
     {
-      "id": "SCH-015",
+      "id": "LIB-059",
       "file": "packages/db/src/terms.test.ts",
       "line": 428,
       "kind": "title"
     },
     {
+      "id": "LIB-060",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 531,
+      "kind": "title"
+    },
+    {
       "id": "SCH-056",
+      "file": "packages/db/src/terms.test.ts",
+      "line": 428,
+      "kind": "title"
+    },
+    {
+      "id": "SCH-074",
       "file": "packages/db/src/terms.test.ts",
       "line": 428,
       "kind": "title"
@@ -30216,7 +30354,7 @@
     {
       "id": "LOC-033",
       "file": "packages/db/src/translation-jobs.test.ts",
-      "line": 338,
+      "line": 257,
       "kind": "title"
     },
     {
@@ -30402,7 +30540,7 @@
     {
       "id": "API-071",
       "file": "packages/db/src/webhooks.test.ts",
-      "line": 249,
+      "line": 295,
       "kind": "title"
     },
     {
@@ -30712,12 +30850,6 @@
       "kind": "title"
     },
     {
-      "id": "API-066",
-      "file": "packages/domain/src/bridge/contract.test.ts",
-      "line": 5,
-      "kind": "title"
-    },
-    {
       "id": "API-070",
       "file": "packages/domain/src/bridge/document.test.ts",
       "line": 68,
@@ -30737,12 +30869,6 @@
     },
     {
       "id": "API-073",
-      "file": "packages/domain/src/bridge/markers.test.ts",
-      "line": 8,
-      "kind": "title"
-    },
-    {
-      "id": "API-073",
       "file": "packages/domain/src/bridge/properties.test.ts",
       "line": 42,
       "kind": "title"
@@ -30750,7 +30876,7 @@
     {
       "id": "API-076",
       "file": "packages/domain/src/bridge/properties.test.ts",
-      "line": 117,
+      "line": 42,
       "kind": "title"
     },
     {
@@ -30762,7 +30888,7 @@
     {
       "id": "API-072",
       "file": "packages/domain/src/bridge/tables.test.ts",
-      "line": 170,
+      "line": 176,
       "kind": "title"
     },
     {
@@ -31600,6 +31726,12 @@
       "kind": "title"
     },
     {
+      "id": "PUB-112",
+      "file": "packages/domain/src/html/write.test.ts",
+      "line": 804,
+      "kind": "title"
+    },
+    {
       "id": "STR-043",
       "file": "packages/domain/src/html/write.test.ts",
       "line": 965,
@@ -31810,7 +31942,7 @@
       "kind": "title"
     },
     {
-      "id": "LIB-046",
+      "id": "LIB-064",
       "file": "packages/domain/src/library/entry.test.ts",
       "line": 94,
       "kind": "title"
@@ -32338,7 +32470,7 @@
       "kind": "title"
     },
     {
-      "id": "PUB-097",
+      "id": "PUB-112",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
       "line": 244,
       "kind": "title"
@@ -32410,7 +32542,7 @@
       "kind": "title"
     },
     {
-      "id": "LOC-045",
+      "id": "LOC-046",
       "file": "packages/domain/src/publishing/bind.test.ts",
       "line": 1468,
       "kind": "title"
@@ -33414,7 +33546,7 @@
     {
       "id": "LOC-030",
       "file": "packages/domain/src/translation/status.test.ts",
-      "line": 76,
+      "line": 27,
       "kind": "title"
     },
     {
@@ -33436,7 +33568,7 @@
       "kind": "title"
     },
     {
-      "id": "LOC-045",
+      "id": "LOC-046",
       "file": "packages/domain/src/translation/xliff.test.ts",
       "line": 460,
       "kind": "title"
@@ -33556,15 +33688,15 @@
       "kind": "title"
     },
     {
-      "id": "PUB-097",
-      "file": "packages/domain/src/word/write.test.ts",
-      "line": 5413,
-      "kind": "title"
-    },
-    {
       "id": "PUB-100",
       "file": "packages/domain/src/word/write.test.ts",
       "line": 4565,
+      "kind": "title"
+    },
+    {
+      "id": "PUB-112",
+      "file": "packages/domain/src/word/write.test.ts",
+      "line": 5413,
       "kind": "title"
     },
     {
@@ -33916,7 +34048,7 @@
       "kind": "title"
     },
     {
-      "id": "LOC-045",
+      "id": "LOC-046",
       "file": "packages/editor/src/messageForms.test.ts",
       "line": 106,
       "kind": "title"
@@ -34072,7 +34204,7 @@
       "kind": "title"
     },
     {
-      "id": "IMP-013",
+      "id": "IMP-049",
       "file": "packages/readers/src/import.test.ts",
       "line": 40,
       "kind": "title"
@@ -34165,6 +34297,12 @@
       "id": "DAT-022",
       "file": "tests/browser/src/placing.test.ts",
       "line": 113,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-004",
+      "file": "tests/browser/src/pseudo.test.ts",
+      "line": 837,
       "kind": "title"
     },
     {

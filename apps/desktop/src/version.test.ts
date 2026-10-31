@@ -27,7 +27,7 @@ describe('the version mirrors', () => {
     expect(read('package.json').version).toBe(canonical);
   });
 
-  it('is mirrored by the desktop package.json, which electron-builder reads', () => {
+  it('ADM-052 is mirrored by the desktop package.json, which electron-builder reads', () => {
     expect(read('apps', 'desktop', 'package.json').version).toBe(canonical);
   });
 

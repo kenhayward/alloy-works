@@ -202,7 +202,7 @@ describe('a bibliography entry', () => {
     expect(answer).toMatchObject({ answer: 'entry.refused', problems: [{ path: 'csl.type' }] });
   });
 
-  it('LIB-046 keys an entry from its fields, suffixed where the space holds the key, and never changes it', async () => {
+  it('LIB-064 keys an entry from its fields, suffixed where the space holds the key, and never changes it', async () => {
     const first = await made({ ...dunnart, DOI: '10.1234/key.1' });
     const second = await made({ ...dunnart, DOI: '10.1234/key.2', title: 'Dunnarts in Spring' });
     const elsewhere = await made({ ...dunnart, DOI: '10.1234/key.3' }, quality);

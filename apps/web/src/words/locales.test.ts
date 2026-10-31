@@ -23,7 +23,7 @@ describe('the interface languages (the UI plan, UI-B, UI-D)', () => {
     expect(chosenLanguage('xx-YY', [])).toBe('en-GB');
   });
 
-  it('accents and brackets every word, half again longer, twice under twenty characters, its placeholders and plurals untouched', () => {
+  it('LOC-029 LOC-042 accents and brackets every word, half again longer, twice under twenty characters, its placeholders and plurals untouched', () => {
     const short = pseudolocalise('Save', 'en-XA');
     expect(short.startsWith('[')).toBe(true);
     expect(short.endsWith(']')).toBe(true);

@@ -254,7 +254,7 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
     await db?.drop();
   });
 
-  it('sends each component needing the language from the source version a translator is shown, and lists one it cannot send', async () => {
+  it('LOC-033 sends each component needing the language from the source version a translator is shown, and lists one it cannot send', async () => {
     const fresh = await approved('Sampling');
     const draft = await component('Equipment');
     const theirs = await approved('Safety');

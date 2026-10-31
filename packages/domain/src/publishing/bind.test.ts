@@ -1465,7 +1465,7 @@ describe('a message form (the MF plan, MF-E)', () => {
     ]);
   });
 
-  it("LOC-045 selects by the component's language, and an exact arm by the value's number before any category", () => {
+  it("LOC-046 selects by the component's language, and an exact arm by the value's number before any category", () => {
     const arabic = {
       zero: [text('zero')],
       one: [text('one')],
