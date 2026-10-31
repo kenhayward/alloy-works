@@ -547,6 +547,40 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
     }
   });
 
+  it('IMP-008 removes the file of an import abandoned while it is read, and records nothing the read then proposes', async () => {
+    let made: Awaited<ReturnType<typeof imported>> | undefined;
+    handlers = {
+      import: importJob({
+        db: worker,
+        stores,
+        // Abandoned while its file is read, the object removed as the service removes it.
+        read: async (input, budget) => {
+          await service.withTenant(
+            tenant,
+            (trx) => abandonImport(trx, made!.id, (key) => store.remove(key)),
+            { actorKind: 'person', actor: ada },
+          );
+          return readInThread(input, budget);
+        },
+      }),
+    };
+    try {
+      made = await imported(report(), 'Withdrawn.docx');
+      expect(made.objectKey).not.toBeNull();
+      expect(await work()).toBe('done');
+      expect(await gone(made.objectKey!)).toBe(true);
+      const after = await service.withTenant(tenant, async (trx) => ({
+        found: await readImport(trx, made!.id),
+        edited: await importParts(trx, made!.id),
+        read: await importParts(trx, made!.id, 'read'),
+      }));
+      expect(after.found).toMatchObject({ state: 'abandoned', objectKey: null, title: null });
+      expect([after.edited, after.read]).toEqual([[], []]);
+    } finally {
+      handlers = { import: importJob({ db: worker, stores }) };
+    }
+  });
+
   it('IMP-042 holds at most so many images for an import, leaving out the rest and saying so', async () => {
     handlers = {
       import: importJob({

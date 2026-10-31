@@ -252,6 +252,33 @@ describe('a bibliography entry', () => {
     });
   });
 
+  it('LIB-044 offers by work an entry made by hand with no identifier, matching one by title, year and first author', async () => {
+    const existing = await made({
+      type: 'article-journal',
+      title: 'Bilbies in the Pilbara',
+      author: [{ family: 'Lovelace', given: 'Ada' }],
+      issued: { 'date-parts': [[2021]] },
+    });
+    const offered = await tenant((trx) =>
+      createEntry(trx, {
+        author: ada,
+        spaceId: general,
+        entry: {
+          csl: {
+            type: 'article-journal',
+            title: 'Bilbies in the Pilbara.',
+            author: [{ family: 'LOVELACE' }, { family: 'Hopper' }],
+            issued: { 'date-parts': [[2021, 6]] },
+          },
+        },
+      }),
+    );
+    expect(offered).toMatchObject({
+      answer: 'matched',
+      matches: [{ by: 'work', entry: { id: existing.id } }],
+    });
+  });
+
   it('LIB-045 matches by canonical identifiers first, else by title, year and first author, saying which', async () => {
     const book = await made({ type: 'book', title: 'Quolls', ISBN: '978-1-56619-909-4' });
     const work = await made({

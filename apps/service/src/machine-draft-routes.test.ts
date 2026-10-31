@@ -87,20 +87,14 @@ describe('a machine draft of a translation (the XL plan, XLc)', () => {
   };
 
   /** A component of Grace's, approved by Ada, with a French translation begun. */
-  const translatable = async (title: string) => {
+  const translatable = async (title: string, blocks: unknown[] = [para('b1', title)]) => {
     const made = await h.call('grace', 'POST', `/v1/spaces/${h.general}/components`, {
       title,
       language: 'en-GB',
       direction: 'ltr',
     });
     const created = made.json<{ id: string; version: Version }>();
-    const version = await cut(
-      'grace',
-      created.id,
-      created.version.id,
-      [para('b1', title)],
-      'en-GB',
-    );
+    const version = await cut('grace', created.id, created.version.id, blocks, 'en-GB');
     await h.call('grace', 'POST', `/v1/components/${created.id}/transitions`, {
       transition: 'submit',
       from: 'draft',
@@ -252,5 +246,55 @@ describe('a machine draft of a translation (the XL plan, XLc)', () => {
       asked.push(request);
       return translator(request);
     };
+  });
+
+  it("LOC-025 gives the model the space's terms the source uses as a glossary, with the target's label", async () => {
+    const made = await h.call('grace', 'POST', `/v1/spaces/${h.general}/terms`, {
+      term: {
+        schemaVersion: 1,
+        base: 'en',
+        labels: [
+          { language: 'en', preferred: 'Breeding pond', alternatives: [] },
+          { language: 'fr', preferred: 'Mare de reproduction', alternatives: [] },
+        ],
+        definition: [],
+        broader: [],
+        narrower: [],
+        related: [],
+      },
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const term = made.json<{ id: string; version: { id: string } }>();
+    const approved = await h.call('ada', 'POST', `/v1/terms/${term.id}/approvals`, {
+      transition: 'approve',
+      version: term.version.id,
+      decision: 'approved',
+    });
+    expect(approved.statusCode, approved.body).toBe(200);
+    const component = await translatable('Ponds', [
+      {
+        type: 'paragraph',
+        id: 'b1',
+        style: 'body',
+        content: [
+          { type: 'text', value: 'Each ', marks: [] },
+          {
+            type: 'text',
+            value: 'breeding pond',
+            marks: [{ type: 'definedTerm', id: 'd1', term: term.id }],
+          },
+          { type: 'text', value: ' was netted.', marks: [] },
+        ],
+      },
+    ]);
+    await policy('inside');
+    await route('inside');
+
+    const drafted = await draft('grace', component);
+    expect(drafted.statusCode, drafted.body).toBe(200);
+    expect(fileIn(asked.at(-1)!)).toContain(
+      '<gls:glossary><gls:glossEntry><gls:term>Breeding pond</gls:term>' +
+        '<gls:translation>Mare de reproduction</gls:translation></gls:glossEntry></gls:glossary>',
+    );
   });
 });

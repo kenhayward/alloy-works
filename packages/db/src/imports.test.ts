@@ -391,6 +391,37 @@ describe('an import', () => {
     }
   });
 
+  it('IMP-029 creates no content while a proposal is worked through: its edits and its saved place make no artifact or version', async () => {
+    const made = await proposed();
+    const counted = () =>
+      tenant(async (trx) => {
+        const { rows } = await sql<{ artifacts: number; versions: number }>`
+          select (select count(*)::int from artifact) as artifacts,
+                 (select count(*)::int from artifact_version) as versions`.execute(trx);
+        return rows[0];
+      });
+    const before = await counted();
+    const [, , sampling, analysis] = await tenant((trx) => importParts(trx, made.id));
+    const edit = (revision: number, change: Parameters<typeof editImport>[2]['edit']) =>
+      tenant((trx) => editImport(trx, made.id, { revision, edit: change, by: ada }));
+    expect(
+      await edit(0, { edit: 'rename', part: sampling!.id, title: 'Where we sampled' }),
+    ).toMatchObject({
+      answer: 'edited',
+    });
+    expect(
+      await edit(1, { edit: 'move', part: sampling!.id, to: 'next', blocks: 1 }),
+    ).toMatchObject({
+      answer: 'edited',
+    });
+    for (const part of [sampling!, analysis!]) {
+      expect(await tenant((trx) => setImportPlace(trx, made.id, part.id))).toMatchObject({
+        place: part.id,
+      });
+    }
+    expect(await counted()).toEqual(before);
+  });
+
   it('IMP-031 records at acceptance how many parts were accepted unchanged, edited, merged, split and renamed', async () => {
     const made = await proposed();
     const [intro, , sampling] = await tenant((trx) => importParts(trx, made.id));

@@ -65,6 +65,16 @@ describe("the translation policy's history (the TE plan, TE-D)", () => {
     await db?.drop();
   });
 
+  it('LOC-036 states its defaults: with nothing set, the source in its place, out of date published, conflicts reviewed, no machine translation', async () => {
+    expect((await as((trx) => translationPolicyNow(trx))).policy).toEqual({
+      fallback: 'source',
+      outOfDate: 'publish',
+      note: {},
+      conflict: 'review',
+      machine: 'off',
+    });
+  });
+
   it('LOC-036 keeps each change to the policy whole, by whom and when, the newest first, and nothing where no value changed', async () => {
     const first = await history();
     // 0170's row: the policy as found, by nobody.

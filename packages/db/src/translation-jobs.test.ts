@@ -20,7 +20,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { beginTranslation, translationsOf } from './translation.js';
+import { beginTranslation, declareSourceChange, translationsOf } from './translation.js';
 import {
   applyReturn,
   closeTranslationJob,
@@ -303,6 +303,46 @@ describe('translation jobs (the XL plan, XL-D, XL-E)', () => {
       { component: fresh.artifactId, title: 'Sampling', type: 'Topic', content: fresh.content },
     ]);
     expect(await as((trx) => jobFileParts(trx, made.job, new Set()))).toEqual([]);
+  });
+
+  it('LOC-015 sends no component whose source change was declared a typo fix, and sends one whose change needs retranslation', async () => {
+    const typo = await worded('Access', 'Ponds were reached on foot.');
+    await translated(typo, 'fr-FR');
+    const fixed = await revise(typo, 'Ponds were reached on foot, spelt right.');
+    expect(
+      await as((trx) =>
+        declareSourceChange(trx, {
+          artifactId: typo.artifactId,
+          version: fixed.id,
+          retranslate: false,
+          by: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'declared' });
+    const reworded = await worded('Weather', 'It rained.');
+    await translated(reworded, 'fr-FR');
+    await approve(await revise(reworded, 'It rained for a week.'));
+    expect(await statusOf(typo.artifactId)).toEqual({ status: 'outOfDate', retranslate: false });
+
+    const made = await job([
+      { id: typo.artifactId, editable: true },
+      { id: reworded.artifactId, editable: true },
+    ]);
+    if (made.answer !== 'made') throw new Error(made.answer);
+    expect(made.job.items.map((item) => item.component)).toEqual([reworded.artifactId]);
+  });
+
+  it('LOC-033 records when a job was sent, at the moment it was made', async () => {
+    const source = await approved('Habitats');
+    const before = Date.now();
+    const made = await job([{ id: source.artifactId, editable: true }]);
+    const after = Date.now();
+    if (made.answer !== 'made') throw new Error(made.answer);
+    // A second either side for the database's clock.
+    expect(made.job.at.getTime()).toBeGreaterThanOrEqual(before - 1000);
+    expect(made.job.at.getTime()).toBeLessThanOrEqual(after + 1000);
+    const read = await as((trx) => readTranslationJob(trx, document.id, made.job.id));
+    expect(read?.at.getTime()).toBe(made.job.at.getTime());
   });
 
   it('holds a sent translation in translation until its job is closed, and sends it to no second job', async () => {

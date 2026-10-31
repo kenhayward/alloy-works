@@ -5,7 +5,7 @@ import { bootstrapCluster } from './bootstrap.js';
 import { createComponent } from './creation.js';
 import { grant } from './grants.js';
 import { claimLock, readLock, saveIteration } from './editing.js';
-import { bringLineBack, compareLines, openLinesOf } from './lines.js';
+import { bringLineBack, compareLines, lineNumbers, openLinesOf } from './lines.js';
 import { cutVersion } from './promotion.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
@@ -26,8 +26,8 @@ import {
   sourceChanges,
   translationsOf,
 } from './translation.js';
-import { latestVersion, type StoredVersion } from './versions.js';
-import { latestRevisionsOf, moveArtifact } from './workflow.js';
+import { latestVersion, readVersion, type StoredVersion } from './versions.js';
+import { latestRevision, latestRevisionsOf, moveArtifact } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
 const para = (id: string, value: string) => ({
@@ -399,6 +399,74 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
       first.artifactId,
     );
     expect(approved?.versionId).toBe(first.id);
+  });
+
+  it('LOC-012 cuts each change to a variant as a new numbered version on its line, the earlier one kept, and designates the line its own approved revision', async () => {
+    const first = await component('Background');
+    await approve(first);
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: first.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    const draft = await cut(
+      first.artifactId,
+      first.id,
+      contentOf(first, 'fr-FR', para('b1', 'Contexte.')),
+      { line: begun.line.id, translates: first.id },
+    );
+    if (draft.answer !== 'recorded') throw new Error(draft.answer);
+    const better = await cut(
+      first.artifactId,
+      draft.version.id,
+      contentOf(first, 'fr-FR', para('b1', 'Le contexte.')),
+      { line: begun.line.id, translates: first.id },
+    );
+    if (better.answer !== 'recorded') throw new Error(better.answer);
+
+    expect([draft.version.line, better.version.line]).toEqual([begun.line.id, begun.line.id]);
+    expect([draft.version.version, better.version.version]).toEqual([1, 2]);
+    // The earlier version is kept as cut: a new version, never an overwrite.
+    const kept = await as((trx) => readVersion(trx, draft.version.id));
+    expect(JSON.stringify(parseContentDocument(kept?.content).content)).toContain('Contexte.');
+    expect(kept?.versionDigest).toBe(draft.version.versionDigest);
+    const numbers = async () => {
+      const shown = await as((trx) => lineNumbers(trx, [draft.version.id, better.version.id]));
+      return [draft, better].map((each) => shown.get(each.version.id)?.number);
+    };
+    expect(await numbers()).toEqual(['fr-FR 1.1', 'fr-FR 1.2']);
+
+    await approve(better.version, begun.line.id);
+    expect(await as((trx) => latestRevision(trx, first.artifactId, begun.line.id))).toEqual(
+      expect.objectContaining({ number: 2, versionId: better.version.id }),
+    );
+    expect(await numbers()).toEqual(['fr-FR 1.1', 'fr-FR 2.2']);
+  });
+
+  it('LOC-031 takes a source cut that declares nothing as needing retranslation', async () => {
+    const first = await component('Limitations');
+    await approve(first);
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: first.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    const french = await cut(
+      first.artifactId,
+      first.id,
+      contentOf(first, 'fr-FR', para('b1', 'Limites.')),
+      { line: begun.line.id, translates: first.id },
+    );
+    if (french.answer !== 'recorded') throw new Error(french.answer);
+
+    const silent = await cut(
+      first.artifactId,
+      first.id,
+      contentOf(first, 'en-GB', para('b1', 'Limitations, restated.')),
+    );
+    if (silent.answer !== 'recorded') throw new Error(silent.answer);
+    expect((await status(first.artifactId))[0]?.status).toEqual({
+      status: 'outOfDate',
+      retranslate: true,
+    });
   });
 
   it('keeps a lock per line, so a translator and the author edit at once', async () => {

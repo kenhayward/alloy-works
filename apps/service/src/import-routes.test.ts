@@ -408,6 +408,40 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     );
   });
 
+  it('IMP-029 answers a search and a filter over a proposal of three hundred parts, and returns to a place deep in it', async () => {
+    const created = await made('grace', 'Long survey.docx');
+    const paragraphs: [number | null, string][] = [];
+    for (let at = 0; at < 300; at += 1) {
+      paragraphs.push([2, `Pond ${at}`]);
+      // Every fiftieth left empty; one alone mentions axolotls.
+      if (at % 50 !== 49)
+        paragraphs.push([null, at === 217 ? 'Ada saw axolotls.' : `Ada sampled.`]);
+    }
+    await send('grace', created.id, outline(paragraphs));
+    await readByTheWorker(created.id);
+    const view = (await h.call('grace', 'GET', `/v1/imports/${created.id}`)).json<View>();
+    expect(view.parts).toHaveLength(300);
+    const idOf = (title: string) => view.parts.find((part) => part.title === title)!.id;
+    const search = async (query: string) =>
+      (await h.call('grace', 'GET', `/v1/imports/${created.id}/parts?${query}`)).json<{
+        parts: string[];
+      }>().parts;
+
+    expect(await search('q=axolotl')).toEqual([idOf('Pond 217')]);
+    expect(await search('flag=empty')).toEqual(
+      [49, 99, 149, 199, 249, 299].map((at) => idOf(`Pond ${at}`)),
+    );
+    expect(await search('q=pond%2029&flag=empty')).toEqual([idOf('Pond 299')]);
+
+    const deep = idOf('Pond 288');
+    expect(
+      (await h.call('grace', 'PUT', `/v1/imports/${created.id}/place`, { part: deep })).statusCode,
+    ).toBe(200);
+    expect((await h.call('grace', 'GET', `/v1/imports/${created.id}`)).json()).toMatchObject({
+      place: deep,
+    });
+  });
+
   it('names the document it makes as its importer typed, else by the file’s Title paragraph, else by its name without the ending', async () => {
     const titled = (title: string) =>
       zipSync({
