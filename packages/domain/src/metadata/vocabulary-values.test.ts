@@ -7,7 +7,13 @@ import { fieldDefinitionSchema } from './field.js';
 import { resolveComponentFields } from './resolve.js';
 import { metadataSchemaDefinitionSchema } from './schema.js';
 import { validate } from './validate.js';
-import { checkVocabularyValues, vocabularyIdsIn } from './vocabulary-values.js';
+import {
+  checkVocabularyValues,
+  heldVocabularyValues,
+  valuesLabelled,
+  vocabularyIdsIn,
+  vocabularyValueWarnings,
+} from './vocabulary-values.js';
 
 const identity = (id: string) => ({ schemaVersion: DEFINITION_SCHEMA_VERSION, id, name: id });
 
@@ -17,7 +23,15 @@ const phases = vocabularyDefinitionSchema.parse({
   base: 'en',
   order: 'declared',
   values: [
-    { id: 'one', labels: [{ language: 'en', text: 'Phase I' }], descriptions: [], state: 'active' },
+    {
+      id: 'one',
+      labels: [
+        { language: 'en', text: 'Phase I' },
+        { language: 'de', text: 'Phase eins' },
+      ],
+      descriptions: [],
+      state: 'active',
+    },
     {
       id: 'early',
       labels: [{ language: 'en', text: 'Early' }],
@@ -120,5 +134,59 @@ describe('values drawn from a vocabulary', () => {
     expect(check({ 'field-phase': 7 })).toEqual([]);
     expect(check({ 'field-phase': null })).toEqual([]);
     expect(check({})).toEqual([]);
+  });
+});
+
+describe('values drawn from a vocabulary as a publish reads them', () => {
+  const fields = [phase, phases2, note];
+
+  it('lists each value held in a field drawing on a vocabulary, with its field', () => {
+    expect(
+      heldVocabularyValues(
+        { 'field-phase': 'one', 'field-phases': ['early', 'pilot'], 'field-note': 'one' },
+        fields,
+      ),
+    ).toEqual([
+      { field: 'field-phase', vocabulary: 'vocabulary-phase', value: 'one' },
+      { field: 'field-phases', vocabulary: 'vocabulary-phase', value: 'early' },
+      { field: 'field-phases', vocabulary: 'vocabulary-phase', value: 'pilot' },
+    ]);
+  });
+
+  it('LIB-024 prints a held value by its label in the language, the base language where it has none', () => {
+    const values = { 'field-phase': 'one', 'field-phases': ['one', 'gone'], 'field-note': 'one' };
+    expect(valuesLabelled(values, fields, lookup, 'de')).toEqual({
+      'field-phase': 'Phase eins',
+      // An id the vocabulary does not hold prints as held; a field drawing on none is untouched.
+      'field-phases': ['Phase eins', 'gone'],
+      'field-note': 'one',
+    });
+    expect(valuesLabelled(values, fields, lookup, 'fr')['field-phase']).toBe('Phase I');
+    // A vocabulary not read leaves its values as held.
+    expect(valuesLabelled(values, fields, () => undefined, 'de')).toEqual(values);
+  });
+
+  it('LIB-023 reports each deprecated or retired value held, with its replacement, and nothing for an active one', () => {
+    const held = heldVocabularyValues({ 'field-phases': ['one', 'early', 'pilot'] }, fields);
+    expect(vocabularyValueWarnings(held, 'node-1', lookup, 'en')).toEqual([
+      {
+        code: 'vocabulary_value',
+        node: 'node-1',
+        field: 'field-phases',
+        value: 'early',
+        label: 'Early',
+        state: 'deprecated',
+        replacedBy: 'one',
+      },
+      {
+        code: 'vocabulary_value',
+        node: 'node-1',
+        field: 'field-phases',
+        value: 'pilot',
+        label: 'Pilot',
+        state: 'retired',
+      },
+    ]);
+    expect(vocabularyValueWarnings(held, null, () => undefined, 'en')).toEqual([]);
   });
 });

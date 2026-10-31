@@ -53,8 +53,15 @@ import {
   type CslItem,
   type Requires,
   type TermWarning,
+  type VocabularyValueWarning,
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
+import {
+  requestVocabularies,
+  resolveVocabularies,
+  valuesPrinted,
+  type ReadVocabulary,
+} from './publication-vocabularies.js';
 import {
   hiddenUses,
   recordedTerms,
@@ -899,6 +906,13 @@ export interface Publishable {
   readonly terms: readonly { readonly version: string; readonly term: string }[];
   /** What its terms report, which never stops it (LIB-018, LIB-050). */
   readonly termWarnings: readonly TermWarning[];
+  /**
+   * Each vocabulary the document's values draw on, at its latest version (the VO plan, VO-H), recorded
+   * and pinned as a term is, so its labels print as they were.
+   */
+  readonly vocabularies: readonly ReadVocabulary[];
+  /** Each deprecated or retired value held, which never stops it (LIB-023; VO-D). */
+  readonly vocabularyWarnings: readonly VocabularyValueWarning[];
   /** The language asked for (the TR plan, TR-I), or undefined: the document's own, read as always. */
   readonly language?: string;
   /** What each occurrence resolved to in that language, by node. */
@@ -1218,6 +1232,7 @@ export async function resolvePublishable(
       input.principal,
       language,
     )),
+    ...(await resolveVocabularies(trx, latest.values, resolved, language)),
     ...(input.language === undefined ? {} : { language: input.language }),
     translations,
     translationWarnings,
@@ -1315,7 +1330,11 @@ export async function requestPublication(
     ...(input.language === undefined ? {} : { language: input.language }),
   });
   if (found.answer !== 'publishable') return found;
-  const warnings = [...found.termWarnings, ...found.translationWarnings];
+  const warnings = [
+    ...found.termWarnings,
+    ...found.vocabularyWarnings,
+    ...found.translationWarnings,
+  ];
   const { latest, layout, theme, resolved, failures, bindings } = found;
   // Recorded only where it says something: none is the empty profile, as on a request before 0106.
   const profile = input.profile ?? found.outline.profile;
@@ -1390,6 +1409,20 @@ export async function requestPublication(
           version_id: each.version,
           asset_id: each.term,
           asset_kind: 'term' as const,
+        })),
+      )
+      .execute();
+  }
+  // And each vocabulary version its values print labels from (VO-H), likewise.
+  if (found.vocabularies.length > 0) {
+    await trx
+      .insertInto('publication_request_asset')
+      .values(
+        found.vocabularies.map((each) => ({
+          request_id: request.id,
+          version_id: each.version,
+          asset_id: each.vocabulary,
+          asset_kind: 'vocabulary' as const,
         })),
       )
       .execute();
@@ -2052,7 +2085,13 @@ async function inputsOf(
       definitions: await variablesByKey(trx),
       context: {
         parameters: (request.parameters ?? {}) as Record<string, unknown>,
-        values: (request.metadata_values ?? {}) as Record<string, unknown>,
+        // A value drawn from a vocabulary by its label, from the version recorded (VO-H; LIB-004).
+        values: await valuesPrinted(
+          trx,
+          (request.metadata_values ?? {}) as Record<string, unknown>,
+          await requestVocabularies(trx, requestId),
+          request.language ?? read.outline.language,
+        ),
         // Which parameter feeds each variable, as the document's template says (TPL-069; R10-A).
         feeds: new Map(
           declarations.flatMap((each) =>
@@ -2669,8 +2708,11 @@ export interface StoredPublicationRequest {
   readonly kind: 'publish' | 'preview' | 'range';
   readonly state: 'queued' | 'done' | 'failed';
   readonly failures: readonly PublishFailure[];
-  /** What its terms reported as it was made (TMb), which never stopped it. */
-  readonly warnings: readonly TermWarning[];
+  /**
+   * What its terms (TMb) and its vocabulary values (VO-D) reported as it was made, which never stopped
+   * it.
+   */
+  readonly warnings: readonly (TermWarning | VocabularyValueWarning)[];
   readonly publication: string | null;
   /**
    * A done preview's PDF and when it expires; null for anything else - a publish always, and a preview
@@ -2724,7 +2766,7 @@ export async function readPublicationRequest(
       kind: row.kind,
       state: row.state,
       failures: row.failures as PublishFailure[],
-      warnings: (row.warnings ?? []) as TermWarning[],
+      warnings: (row.warnings ?? []) as (TermWarning | VocabularyValueWarning)[],
       publication: row.publication,
       // 0035 holds all four to a done preview and to nothing else; read only there regardless, so
       // nothing can make a publish request read as a preview.

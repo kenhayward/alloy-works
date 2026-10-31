@@ -1097,6 +1097,10 @@ describe('the domain package', () => {
         // VOb: values drawn from a vocabulary, checked against what is held.
         'checkVocabularyValues',
         'vocabularyIdsIn',
+        // VOb: values held, printed by label and reported where deprecated or retired (VO-D, VO-H).
+        'heldVocabularyValues',
+        'valuesLabelled',
+        'vocabularyValueWarnings',
         // VOb: an axis's values, its own or a vocabulary's (VO-E).
         'axisValues',
         'AXIS_VOCABULARY_VALUES',

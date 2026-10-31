@@ -29,6 +29,31 @@ export const VocabularyView = z.object({
 });
 export type VocabularyView = z.infer<typeof VocabularyView>;
 
+/** Where a vocabulary is used (LIB-005; the VO plan, VO-G), as the caller may see it. */
+export const VocabularyUsesView = z.object({
+  fields: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .describe('Each field drawing on it, at its latest definition, by name'),
+  axes: z
+    .array(z.object({ id: z.string(), key: z.string(), name: z.string() }))
+    .describe('Each condition axis drawing on it, at its latest definition, by name'),
+  values: z
+    .array(
+      z.object({
+        value: z.string().describe("The value's id"),
+        count: z
+          .int()
+          .positive()
+          .describe('How many components, not deleted, hold it at their latest version'),
+        components: z
+          .array(z.object({ id: z.string(), title: z.string() }))
+          .describe('Those of them the caller may read, by title; the rest are counted only'),
+      }),
+    )
+    .describe("Each value held, in the vocabulary's own order; a value nothing holds is left out"),
+});
+export type VocabularyUsesView = z.infer<typeof VocabularyUsesView>;
+
 export const VocabularyExportAnswer = z.object({
   format: z.literal('json-ld'),
   text: z
@@ -129,6 +154,24 @@ export const vocabularyRoutes = {
     params: VocabularyParams,
     responses: {
       200: { description: 'The vocabulary', schema: VocabularyView },
+      401: unauthenticated,
+      404: notFound,
+    },
+  },
+  getVocabularyUses: {
+    operationId: 'getVocabularyUses',
+    method: 'GET',
+    path: '/v1/vocabularies/{id}/uses',
+    summary:
+      'Where a vocabulary is used: the fields and axes naming it, and the components holding each value',
+    tenantScoped: true,
+    access: signedIn,
+    params: VocabularyParams,
+    responses: {
+      200: {
+        description: 'Its fields and axes, and per value the components holding it',
+        schema: VocabularyUsesView,
+      },
       401: unauthenticated,
       404: notFound,
     },

@@ -1391,3 +1391,4 @@ export {
   type DeliveredStore,
   type DeliveredWritten,
 } from './delivered.js';
+export { vocabularyUses, type VocabularyUses } from './vocabulary-uses.js';

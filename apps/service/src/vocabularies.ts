@@ -4,6 +4,7 @@ import type {
   VocabularyImportAnswer,
   VocabularyList,
   VocabularyParams,
+  VocabularyUsesView,
   VocabularyView,
 } from '@alloy-works/api-contract';
 import {
@@ -16,6 +17,7 @@ import {
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
+  vocabularyUses,
 } from '@alloy-works/db';
 import {
   DEFINITION_SCHEMA_VERSION,
@@ -91,6 +93,28 @@ export function vocabularyHandlers(
       const stored = await read(request, (trx) => readVocabulary(trx, id), undefined);
       if (!stored) throw notFound();
       return vocabularyView(stored);
+    },
+
+    // Where it is used (LIB-005; VO-G): what the caller may not read is counted, never named.
+    getVocabularyUses: async (request: FastifyRequest): Promise<VocabularyUsesView> => {
+      const { id } = request.params as VocabularyParams;
+      const uses = await read(
+        request,
+        async (trx) => {
+          const stored = await readVocabulary(trx, id);
+          return stored && vocabularyUses(trx, principalOf(request).principalId, stored);
+        },
+        undefined,
+      );
+      if (!uses) throw notFound();
+      return {
+        fields: uses.fields.map((each) => ({ ...each })),
+        axes: uses.axes.map((each) => ({ ...each })),
+        values: uses.values.map((each) => ({
+          ...each,
+          components: each.components.map((component) => ({ ...component })),
+        })),
+      };
     },
 
     exportVocabulary: async (request: FastifyRequest): Promise<VocabularyExportAnswer> => {

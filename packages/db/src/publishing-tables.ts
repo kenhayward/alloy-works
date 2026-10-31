@@ -86,11 +86,11 @@ export interface PublicationRequestAssetTable {
   asset_id: ColumnType<string, string, never>;
   /**
    * An image's version, or since 0147 a bibliography entry's a citation read (CIc), or since 0154 a
-   * term's a use read (TMb).
+   * term's a use read (TMb), or since 0177 a vocabulary's whose labels it prints (VO-H).
    */
   asset_kind: ColumnType<
-    'asset' | 'bibliographyEntry' | 'term',
-    'asset' | 'bibliographyEntry' | 'term' | undefined,
+    'asset' | 'bibliographyEntry' | 'term' | 'vocabulary',
+    'asset' | 'bibliographyEntry' | 'term' | 'vocabulary' | undefined,
     never
   >;
 }
@@ -129,11 +129,11 @@ export interface PublicationAssetTable {
   asset_id: ColumnType<string, string, never>;
   /**
    * An image's version, or since 0147 a bibliography entry's a citation read (CIc), or since 0154 a
-   * term's a use read (TMb).
+   * term's a use read (TMb), or since 0177 a vocabulary's whose labels it prints (VO-H).
    */
   asset_kind: ColumnType<
-    'asset' | 'bibliographyEntry' | 'term',
-    'asset' | 'bibliographyEntry' | 'term' | undefined,
+    'asset' | 'bibliographyEntry' | 'term' | 'vocabulary',
+    'asset' | 'bibliographyEntry' | 'term' | 'vocabulary' | undefined,
     never
   >;
 }

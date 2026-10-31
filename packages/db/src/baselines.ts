@@ -111,6 +111,7 @@ export async function makeBaseline(
     ...found.assets.map((each) => each.version),
     ...found.entries.map((each) => each.version),
     ...found.terms.map((each) => each.version),
+    ...found.vocabularies.map((each) => each.version),
     ...found.bindings.map((each) => each.datasetVersion),
   ];
   const digests = new Map(
@@ -138,6 +139,10 @@ export async function makeBaseline(
       ? {}
       : { entries: found.entries.map((each) => pinned(each.version)) }),
     ...(found.terms.length === 0 ? {} : { terms: found.terms.map((each) => pinned(each.version)) }),
+    // And each vocabulary version whose labels it prints (VO-H; LIB-004), where it prints any.
+    ...(found.vocabularies.length === 0
+      ? {}
+      : { vocabularies: found.vocabularies.map((each) => pinned(each.version)) }),
     bindings: found.bindings.map((each) => ({
       node: each.node,
       binding: each.binding,
@@ -200,6 +205,14 @@ export async function makeBaseline(
       version_id: each.version,
       artifact_id: each.term,
       kind: 'term' as const,
+    })),
+    // Each vocabulary version its values print labels from (VO-H): environment-wide, read by all.
+    ...found.vocabularies.map((each) => ({
+      baseline_id: made.id,
+      node: null,
+      version_id: each.version,
+      artifact_id: each.vocabulary,
+      kind: 'vocabulary' as const,
     })),
   ];
   if (parts.length > 0) await trx.insertInto('baseline_pin').values(parts).execute();
@@ -450,6 +463,7 @@ export async function readBaseline(
     terms.map((each) => each.artifact_id),
     'term',
   );
+  const vocabularies = pins.filter((each) => each.kind === 'vocabulary');
   return {
     ...summaryOf(row),
     pins: {
@@ -483,6 +497,15 @@ export async function readBaseline(
             terms: terms
               .filter((each) => readableTerms.has(each.artifact_id))
               .map((each) => ({ version: each.version_id, digest: each.version_digest })),
+          }),
+      // A vocabulary is read by anyone signed in (VO-A), so every one pinned is shown.
+      ...(vocabularies.length === 0
+        ? {}
+        : {
+            vocabularies: vocabularies.map((each) => ({
+              version: each.version_id,
+              digest: each.version_digest,
+            })),
           }),
       bindings: bindings
         .filter((each) => shown.has(each.node))
@@ -655,6 +678,7 @@ export async function requestBaselinePublication(
   const assets = pins.filter((each) => each.kind === 'asset');
   const entries = pins.filter((each) => each.kind === 'bibliographyEntry');
   const terms = pins.filter((each) => each.kind === 'term');
+  const vocabularies = pins.filter((each) => each.kind === 'vocabulary');
   const readable = await readableComponents(
     trx,
     input.requester,
@@ -791,7 +815,7 @@ export async function requestBaselinePublication(
       )
       .execute();
   }
-  if (assets.length > 0 || entries.length > 0 || terms.length > 0) {
+  if (assets.length > 0 || entries.length > 0 || terms.length > 0 || vocabularies.length > 0) {
     await trx
       .insertInto('publication_request_asset')
       .values([
@@ -813,6 +837,13 @@ export async function requestBaselinePublication(
           version_id: each.version_id,
           asset_id: each.artifact_id,
           asset_kind: 'term' as const,
+        })),
+        // And the vocabulary versions it pinned, never their latest (VO-H; LIB-004).
+        ...vocabularies.map((each) => ({
+          request_id: request.id,
+          version_id: each.version_id,
+          asset_id: each.artifact_id,
+          asset_kind: 'vocabulary' as const,
         })),
       ])
       .execute();

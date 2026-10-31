@@ -43,8 +43,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * What a publish is warned of, which never stops it: the cited sources their source says are
- * retracted, superseded or corrected, counted (the XR plan, XR-G); and its terms printed as written, deprecated,
- * or in their base language, counted by uses (TMb). Null where there are none.
+ * retracted, superseded or corrected, counted (the XR plan, XR-G); its terms printed as written, deprecated,
+ * or in their base language, counted by uses (TMb); and the deprecated or retired vocabulary values
+ * held, each once (VO-D). Null where there are none.
  */
 function warnedWords(warnings: unknown): string | null {
   if (!Array.isArray(warnings)) return null;
@@ -62,6 +63,25 @@ function warnedWords(warnings: unknown): string | null {
   };
   const sources = [...counted('source_')].map(([kind, n]) => `${n} ${kind}`);
   const terms = [...counted('term_')].map(([kind, n]) => `${n} ${TERM_WORDS[kind] ?? kind}`);
+  const held = [
+    ...new Set(
+      warnings.flatMap((each) =>
+        isRecord(each) &&
+        each.code === 'vocabulary_value' &&
+        typeof each.label === 'string' &&
+        (each.state === 'deprecated' || each.state === 'retired')
+          ? [
+              say(
+                each.state === 'deprecated'
+                  ? 'publishing.value-deprecated'
+                  : 'publishing.value-retired',
+                { value1: each.label },
+              ),
+            ]
+          : [],
+      ),
+    ),
+  ];
   // Publishing in a language (TRb): each by its node, counted here.
   const byNode = (code: string) =>
     warnings.filter((each) => isRecord(each) && each.code === code).length;
@@ -77,6 +97,10 @@ function warnedWords(warnings: unknown): string | null {
       ? []
       : [say('publishing.cited-sources-flagged-by-their', { value1: sources.join(', ') })]),
     ...(terms.length === 0 ? [] : [say('publishing.terms-used', { value1: terms.join(', ') })]),
+    // And each deprecated or retired vocabulary value held, once by its label (LIB-023; VO-D).
+    ...(held.length === 0
+      ? []
+      : [say('publishing.values-published-as-held', { value1: held.join(', ') })]),
     ...(translation.length === 0
       ? []
       : [say('publishing.published-with', { value1: translation.join(', ') })]),

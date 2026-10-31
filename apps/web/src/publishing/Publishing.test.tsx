@@ -209,6 +209,55 @@ describe('publishing from the document page', () => {
     ).toBeInTheDocument();
   });
 
+  it('LIB-023 publishes despite deprecated and retired vocabulary values held, naming each once by its label', async () => {
+    const field = '2d1f3c5b-4e2a-4f9b-8c3d-6e7f8a9b0c12';
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        {
+          ...queued(),
+          warnings: [
+            {
+              code: 'vocabulary_value',
+              node: null,
+              field,
+              value: 'early',
+              label: 'Early',
+              state: 'deprecated',
+              replacedBy: 'one',
+            },
+            {
+              code: 'vocabulary_value',
+              node: 'n1',
+              field,
+              value: 'pilot',
+              label: 'Pilot',
+              state: 'retired',
+            },
+            {
+              code: 'vocabulary_value',
+              node: 'n2',
+              field,
+              value: 'pilot',
+              label: 'Pilot',
+              state: 'retired',
+            },
+          ],
+        },
+      ],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        { ...queued(), state: 'done', publication: PUBLICATION },
+      ],
+    });
+    open(fake.fetch);
+    await screen.findByText('Nothing has been published from this document.');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+    expect(await screen.findByRole('link', { name: 'Open the publication' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Values published as held: Early (deprecated), Pilot (retired).'),
+    ).toBeInTheDocument();
+  });
+
   it('REU-027 publishes under a profile given in place of the document own, saying so, and under the document own once put back', async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],

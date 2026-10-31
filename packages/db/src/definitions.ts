@@ -113,7 +113,7 @@ const parsers = {
 } as const;
 
 /** Every definition of a kind at its latest version, read as stored definitions are. */
-async function latestOfKind<K extends DefinitionKind>(
+export async function latestOfKind<K extends DefinitionKind>(
   trx: TenantTransaction,
   kind: K,
 ): Promise<StoredDefinition<K>[]> {
