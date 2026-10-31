@@ -1094,6 +1094,16 @@ describe('the domain package', () => {
         // VOa: a value id's form and a label's limits, for the SKOS import.
         'isVocabularyKey',
         'holdsVocabularyText',
+        // VOb: values drawn from a vocabulary, checked against what is held.
+        'checkVocabularyValues',
+        'vocabularyIdsIn',
+        // VOb: values held, printed by label and reported where deprecated or retired (VO-D, VO-H).
+        'heldVocabularyValues',
+        'valuesLabelled',
+        'vocabularyValueWarnings',
+        // VOb: an axis's values, its own or a vocabulary's (VO-E).
+        'axisValues',
+        'AXIS_VOCABULARY_VALUES',
         'vocabularyDefinitionSchema',
       ].sort(),
     );

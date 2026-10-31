@@ -514,7 +514,13 @@ const operationTags = {
     'unarchiveTerm',
     'previewComponentTerms',
   ],
-  Vocabularies: ['listVocabularies', 'importVocabulary', 'getVocabulary', 'exportVocabulary'],
+  Vocabularies: [
+    'listVocabularies',
+    'importVocabulary',
+    'getVocabulary',
+    'getVocabularyUses',
+    'exportVocabulary',
+  ],
   Translations: [
     'getSpaceTranslations',
     'listComponentTranslations',
@@ -1117,6 +1123,8 @@ const descriptions: Readonly<Record<string, string>> = {
     "Lists the environment's vocabularies by name, each with its key, its latest version and how many values it holds. Anyone signed in may read them, since authors choose their values; they are made and changed through `/v1/definitions`, as kind `vocabulary`, by whoever manages definitions.",
   getVocabulary:
     "Returns a vocabulary at its latest version: its key, its base language, its order (`declared`, as listed, or `label`, by each reader's language), and each value with its id, labels and descriptions per language, and its state: `active`, `deprecated` with the value replacing it, or `retired`, kept so that what holds it still reads. Anyone signed in may read it.",
+  getVocabularyUses:
+    'Returns where a vocabulary is used, so a value is not deprecated or retired blind: the fields and condition axes whose latest definition draws on it, and for each value held the components, not deleted, whose latest version holds it in one of those fields. Each value says how many components hold it and names those the caller may read, by title; the rest are counted, never named. Anyone signed in may read it.',
   exportVocabulary:
     "Exports a vocabulary as a SKOS concept scheme in JSON-LD. The scheme, identified `urn:alloy-works:vocabulary:` and its key, has the key as its `notation` and its name as its `prefLabel` in the base language. Each value is a `skos:Concept` `inScheme` it, with its id as its `notation`, its labels as `prefLabel` and its descriptions as `definition` by language, and a deprecated or retired value `owl:deprecated`, its replacement as `dct:isReplacedBy`. What SKOS has no word for is in the namespace `urn:alloy-works:skos:` (prefix `aw`): `aw:retired` true for a retired value, `aw:order` on the scheme, and `aw:position`, a value's place in the declared order. Anyone signed in may export it.",
   importVocabulary:

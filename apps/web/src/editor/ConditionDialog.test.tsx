@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ALTERNATIVE_SAID, ConditionDialog } from './ConditionDialog.js';
+import { phaseAxisAnswer } from './test/phaseAxis.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -84,5 +85,55 @@ describe('the Condition dialog (the R6 plan, R6-H)', () => {
     expect(alternative).toHaveBeenCalledWith({ axis: 'audience', values: ['internal'] });
     await userEvent.click(screen.getByRole('button', { name: 'Remove condition' }));
     expect(removed).toHaveBeenCalledWith('audience');
+  });
+});
+
+/** The one axis, Phase, drawing on a vocabulary (VO-E). */
+function vocabularyService() {
+  const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : new Request(String(input), init);
+    return phaseAxisAnswer(new URL(request.url).pathname) ?? json(404, {});
+  }) as unknown as typeof fetch;
+  return createApiClient({ baseUrl: 'http://conditions.test', fetch: fetching });
+}
+
+describe('the Condition dialog on an axis drawing on a vocabulary (the VO plan, VO-E, VO-F)', () => {
+  it("offers the vocabulary's values by label, a deprecated one marked with its replacement and a retired one never", async () => {
+    const set = vi.fn();
+    render(
+      <ConditionDialog
+        client={vocabularyService()}
+        held={[]}
+        onSet={set}
+        onRemove={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+    await screen.findByRole('checkbox', { name: 'Phase I' });
+    expect(
+      screen.getAllByRole('checkbox').map((each) => each.closest('label')?.textContent),
+    ).toEqual(['Phase I', 'Early (deprecated: use Phase I)']);
+    await userEvent.click(
+      screen.getByRole('checkbox', { name: 'Early (deprecated: use Phase I)' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Set condition' }));
+    expect(set).toHaveBeenCalledWith({ axis: 'phase', values: ['early'] });
+  });
+
+  it('shows a retired value the text already carries, marked, and offers no alternative for it', async () => {
+    const alternative = vi.fn();
+    render(
+      <ConditionDialog
+        client={vocabularyService()}
+        held={[{ axis: 'phase', values: ['pilot'] }]}
+        onSet={() => undefined}
+        onAlternative={alternative}
+        onRemove={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+    expect(await screen.findByRole('checkbox', { name: 'Pilot (retired)' })).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: 'Add alternative' }));
+    expect(alternative).toHaveBeenCalledWith({ axis: 'phase', values: ['one', 'early'] });
   });
 });

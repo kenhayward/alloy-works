@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import { phaseAxisAnswer } from '../editor/test/phaseAxis.js';
 import { EXCLUDE_UNSET_SAID, ProfilePanel } from './ProfilePanel.js';
 
 const json = (status: number, body: unknown) =>
@@ -105,5 +106,52 @@ describe("the document's profile (the R6 plan, R6-H)", () => {
       />,
     );
     expect(screen.queryByRole('button', { name: 'Publish under this profile' })).toBeNull();
+  });
+});
+
+describe("the document's profile on an axis drawing on a vocabulary (the VO plan, VO-E, VO-F)", () => {
+  const vocabularyService = () =>
+    createApiClient({
+      baseUrl: 'http://profiles.test',
+      fetch: vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(String(input), init);
+        return phaseAxisAnswer(new URL(request.url).pathname) ?? json(404, {});
+      }) as unknown as typeof fetch,
+    });
+  const shown = () =>
+    screen
+      .getAllByRole('checkbox')
+      .map((each) => each.closest('label')?.textContent)
+      .filter((each) => each !== EXCLUDE_UNSET_SAID());
+
+  it('offers no retired value for a new profile, and marks a deprecated one with its replacement', async () => {
+    render(
+      <ProfilePanel
+        client={vocabularyService()}
+        profile={undefined}
+        readOnly={false}
+        onSave={async () => 'saved'}
+        onPreview={() => undefined}
+      />,
+    );
+    await screen.findByRole('group', { name: 'Phase' });
+    expect(shown()).toEqual(['Phase I', 'Early (deprecated: use Phase I)']);
+  });
+
+  it('shows a retired value the profile already takes, marked, and saves it still', async () => {
+    const save = vi.fn(async () => 'saved' as const);
+    render(
+      <ProfilePanel
+        client={vocabularyService()}
+        profile={{ values: { phase: ['pilot'] } }}
+        readOnly={false}
+        onSave={save}
+        onPreview={() => undefined}
+      />,
+    );
+    expect(await screen.findByRole('checkbox', { name: 'Pilot (retired)' })).toBeChecked();
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Phase I' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save profile' }));
+    expect(save).toHaveBeenCalledWith({ values: { phase: ['pilot', 'one'] } });
   });
 });

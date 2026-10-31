@@ -420,6 +420,24 @@ function Opened({
   const [why, setWhy] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState(false);
+  const [uses, setUses] = useState<Uses | null>(null);
+
+  // Where it is used (LIB-005; the VO plan, VO-G), read again with it, so a value is not deprecated
+  // or retired blind. Nothing is said where it cannot be read.
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/vocabularies/{id}/uses', { params: { path: { id } } })
+      .then(({ data }) => {
+        if (current) setUses(data ?? null);
+      })
+      .catch(() => {
+        if (current) setUses(null);
+      });
+    return () => {
+      current = false;
+    };
+  }, [client, id, reads]);
 
   useEffect(() => {
     let current = true;
@@ -559,6 +577,7 @@ function Opened({
         <p>{declared ? words('admin.ordered-as-declared') : words('admin.ordered-by-label')}</p>
       )}
       <p className={styles['muted']}>{words('admin.a-value-is-never-deleted')}</p>
+      {uses && <WhereUsed uses={uses} />}
       <ol aria-label={words('admin.values')}>
         {shown.map((value) => {
           const name = words('admin.vocabulary-value', { label: labelOf(value), id: value.id });
@@ -654,6 +673,13 @@ function Opened({
                         })}
                   </p>
                 )}
+                {uses && (
+                  <p className={styles['muted']}>
+                    {words('admin.held-by-components', {
+                      count: uses.values.find((each) => each.value === value.id)?.count ?? 0,
+                    })}
+                  </p>
+                )}
               </fieldset>
             </li>
           );
@@ -679,6 +705,35 @@ function Opened({
       )}
       <p role="status">{said}</p>
       <Why lines={why} />
+    </section>
+  );
+}
+
+/** Where a vocabulary is used, as `/v1/vocabularies/{id}/uses` answers. */
+interface Uses {
+  readonly fields: readonly { readonly name: string }[];
+  readonly axes: readonly { readonly name: string }[];
+  readonly values: readonly { readonly value: string; readonly count: number }[];
+}
+
+/** The fields and condition axes drawing on a vocabulary (LIB-005). */
+function WhereUsed({ uses }: { uses: Uses }) {
+  const names = (each: readonly { name: string }[]) => formats().list(each.map((one) => one.name));
+  return (
+    <section aria-label={words('admin.where-it-is-used')}>
+      <h3>{words('admin.where-it-is-used')}</h3>
+      {uses.fields.length === 0 && uses.axes.length === 0 ? (
+        <p>{words('admin.used-by-nothing')}</p>
+      ) : (
+        <>
+          {uses.fields.length > 0 && (
+            <p data-content>{words('admin.used-by-fields', { names: names(uses.fields) })}</p>
+          )}
+          {uses.axes.length > 0 && (
+            <p data-content>{words('admin.used-by-axes', { names: names(uses.axes) })}</p>
+          )}
+        </>
+      )}
     </section>
   );
 }

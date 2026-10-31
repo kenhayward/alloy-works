@@ -40,7 +40,25 @@ describe("a component's values, written with its iterations", () => {
   let general: string;
   let review: StoredDefinition;
   let protocol: StoredDefinition;
+  let phases: StoredDefinition;
   const fields: Record<string, string> = {};
+  /** A study's phases, its pilot in the state given. */
+  const phasesOf = (pilot: string) => ({
+    schemaVersion: DEFINITION_SCHEMA_VERSION,
+    name: 'Phase',
+    key: 'phase',
+    base: 'en',
+    order: 'declared',
+    values: [
+      {
+        id: 'one',
+        labels: [{ language: 'en', text: 'Phase I' }],
+        descriptions: [],
+        state: 'active',
+      },
+      { id: 'pilot', labels: [{ language: 'en', text: 'Pilot' }], descriptions: [], state: pilot },
+    ],
+  });
 
   const run = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
     service.withTenant(production, work);
@@ -94,6 +112,12 @@ describe("a component's values, written with its iterations", () => {
     fields.market = (await define(field('Market'))).id;
     fields.owner = (await define(field('Owner', 'user'))).id;
     fields.code = (await define(field('Code', 'text', { maxLength: 4 }))).id;
+    phases = await made(
+      run((trx) =>
+        createDefinition(trx, { kind: 'vocabulary', definition: phasesOf('active'), author: ada }),
+      ),
+    );
+    fields.phase = (await define(field('Phase', 'text', { vocabulary: phases.id }))).id;
     review = await made(
       run((trx) =>
         createDefinition(trx, {
@@ -106,6 +130,7 @@ describe("a component's values, written with its iterations", () => {
               { field: fields.market, required: false, fixed: true, default: 'uk' },
               { field: fields.owner, required: false, fixed: false },
               { field: fields.code, required: true, fixed: false },
+              { field: fields.phase, required: false, fixed: false },
             ],
           },
         }),
@@ -213,6 +238,7 @@ describe("a component's values, written with its iterations", () => {
             { field: fields.market, required: false, fixed: true, default: 'fr' },
             { field: fields.owner, required: false, fixed: false },
             { field: fields.code, required: true, fixed: false },
+            { field: fields.phase, required: false, fixed: false },
           ],
         },
       }),
@@ -238,6 +264,7 @@ describe("a component's values, written with its iterations", () => {
               { field: fields.market, required: false, fixed: true, default: 'uk' },
               { field: fields.owner, required: false, fixed: false },
               { field: fields.code, required: true, fixed: false },
+              { field: fields.phase, required: false, fixed: false },
             ],
           },
         }),
@@ -260,6 +287,35 @@ describe("a component's values, written with its iterations", () => {
     expect(
       (await save(at, 1, { [fields.market!]: 'uk', [fields.owner!]: { user: ada } })).answer,
     ).toBe('accepted');
+  });
+
+  it('MET-003 refuses a value its vocabulary does not hold, and LIB-023 keeps a retired one the version before held', async () => {
+    const at = await opened();
+    const market = { [fields.market!]: 'uk' };
+    expect(await save(at, 1, { ...market, [fields.phase!]: 'Phase I' })).toMatchObject({
+      answer: 'values.invalid',
+      failures: [{ field: fields.phase, rule: 'vocabulary' }],
+    });
+    expect((await save(at, 1, { ...market, [fields.phase!]: 'pilot' })).answer).toBe('accepted');
+    const held = await cut(at);
+    if (held.answer !== 'recorded') throw new Error(held.answer);
+    // The pilot retired: still saved where the version before held it, refused anywhere new.
+    await made(
+      run((trx) =>
+        recordDefinitionVersion(trx, {
+          id: phases.id,
+          openedFrom: phases.version.id,
+          definition: phasesOf('retired'),
+          author: ada,
+        }),
+      ),
+    );
+    const again = { version: held.version, session: at.session };
+    expect((await save(again, 2, { ...market, [fields.phase!]: 'pilot' })).answer).toBe('accepted');
+    expect(await save(await opened(), 1, { ...market, [fields.phase!]: 'pilot' })).toMatchObject({
+      answer: 'values.invalid',
+      failures: [{ field: fields.phase, rule: 'vocabulary' }],
+    });
   });
 
   it('refuses a value that is not its data type, and saves and cuts one its field would refuse otherwise', async () => {

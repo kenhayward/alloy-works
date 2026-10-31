@@ -95,6 +95,10 @@ export const BaselineView = BaselineSummaryView.extend({
         .describe(
           'The term versions its uses read, the caller may read; absent where it uses none',
         ),
+      vocabularies: z
+        .array(Pinned)
+        .optional()
+        .describe('The vocabulary versions whose labels it prints; absent where it prints none'),
       bindings: z.array(
         z.object({
           node: z.string(),

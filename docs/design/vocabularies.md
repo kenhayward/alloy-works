@@ -66,3 +66,14 @@ the file, any other property) is listed in `notRepresented`.
 
 Anybody signed in reads vocabularies but somebody from outside who reads only what was shared with
 them, who chooses no values (as the people picker, R17-I).
+
+## As built in VOb
+
+- Which vocabulary a held value draws on is read from its field's latest definition, at the request
+  and at the job, as variables are (R5-A). Only the document's own values feed variables, so only
+  their vocabularies are recorded and pinned; the report covers the document's and each component's.
+- A republish from a baseline prints by the pinned versions and reports no held values.
+- A profile or scope accepts a retired value the service is given: only the interface withholds it,
+  since a retired value stays valid where held.
+- The condition dialog marks deprecated and retired values; search, descriptions and Use replacement
+  are the field form's alone (VOc).

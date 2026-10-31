@@ -293,7 +293,18 @@ describe('definitions through the service', () => {
       missing: [missing],
       requires: [],
     });
+    // A field drawing on a vocabulary that is not there, or on a definition that is no vocabulary.
+    expect(await create('field', field('Stage', { vocabulary: missing }))).toEqual({
+      answer: 'definition.unresolved',
+      missing: [missing],
+      requires: [],
+    });
     const size = made(await create('field', field('Size', { maxLength: 2 })));
+    expect(await create('field', field('Stages', { vocabulary: size.id }))).toEqual({
+      answer: 'definition.unresolved',
+      missing: [size.id],
+      requires: [],
+    });
     expect(
       await create('metadataSchema', schema('Sizes', [entry(size.id, 'large')])),
     ).toMatchObject({

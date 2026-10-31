@@ -224,4 +224,129 @@ describe('condition axes and profiles (the R6 plan, R6-A, R6-B, R6-F)', () => {
       ),
     ).toEqual({ answer: 'profile.invalid', unknown: ['audience.public'] });
   });
+
+  describe('an axis drawing on a vocabulary (the VO plan, VO-E)', () => {
+    const value = (id: string, state = 'active') => ({
+      id,
+      labels: [{ language: 'en', text: `Phase ${id}` }],
+      descriptions: [],
+      state,
+    });
+    const vocabulary = (key: string, values: unknown[]) => ({
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name: `Phases ${key}`,
+      key,
+      base: 'en',
+      order: 'declared',
+      values,
+    });
+    const created = async (kind: 'vocabulary' | 'conditionAxis', definition: unknown) => {
+      const made = await as((trx) =>
+        createDefinition(trx, { kind, definition: definition as never, author: ada }),
+      );
+      if (made.answer !== 'created') throw new Error(made.answer);
+      return made.definition;
+    };
+    const drawing = (name: string, key: string, on: string) => ({
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name,
+      key,
+      vocabulary: on,
+    });
+
+    it('LIB-022 takes the values of the vocabulary an axis names, as a profile names them', async () => {
+      const phases = await created(
+        'vocabulary',
+        vocabulary('trial_phase', [value('one'), value('two')]),
+      );
+      await created('conditionAxis', drawing('Trial phase', 'trial_phase', phases.id));
+      const phase = (await as((trx) => axesByKey(trx))).get('trial_phase');
+      expect(phase?.values).toEqual([
+        { key: 'one', label: 'Phase one', state: 'active' },
+        { key: 'two', label: 'Phase two', state: 'active' },
+      ]);
+      const version = await document();
+      expect(await profiled(version, { values: { trial_phase: ['three'] } })).toEqual({
+        answer: 'profile.invalid',
+        unknown: ['trial_phase.three'],
+      });
+      expect(await profiled(version, { values: { trial_phase: ['two'] } })).toMatchObject({
+        answer: 'recorded',
+      });
+    });
+
+    it('refuses an axis naming what is no vocabulary, or one holding more than 200 values', async () => {
+      const region = await axis('Site region', 'site_region', ['north']);
+      if (region.answer !== 'created') throw new Error(region.answer);
+      const named = (definition: unknown) =>
+        as((trx) =>
+          createDefinition(trx, {
+            kind: 'conditionAxis',
+            definition: definition as never,
+            author: ada,
+          }),
+        );
+      expect(await named(drawing('Stage', 'stage', region.definition.id))).toEqual({
+        answer: 'definition.unresolved',
+        missing: [region.definition.id],
+        requires: [],
+      });
+      const many = Array.from({ length: 201 }, (_, n) => value(`v${n}`));
+      const large = await created('vocabulary', vocabulary('large_phase', many));
+      expect(await named(drawing('Large phase', 'large_phase', large.id))).toMatchObject({
+        answer: 'definition.invalid',
+      });
+
+      // A vocabulary an axis names refuses its 201st value; one no axis names takes it.
+      const held = await created('vocabulary', vocabulary('held_phase', many.slice(0, 200)));
+      await created('conditionAxis', drawing('Held phase', 'held_phase', held.id));
+      const grown = (id: string, at: string, key: string) =>
+        as((trx) =>
+          recordDefinitionVersion(trx, {
+            id,
+            openedFrom: at,
+            definition: vocabulary(key, many) as never,
+            author: ada,
+          }),
+        );
+      expect(await grown(held.id, held.version.id, 'held_phase')).toMatchObject({
+        answer: 'definition.invalid',
+      });
+      const free = await created('vocabulary', vocabulary('free_phase', many.slice(0, 200)));
+      expect(await grown(free.id, free.version.id, 'free_phase')).toMatchObject({
+        answer: 'recorded',
+      });
+    });
+
+    it('LIB-023 keeps a retired value valid in a profile already written, and publishes under it', async () => {
+      const phases = await created(
+        'vocabulary',
+        vocabulary('pilot_phase', [value('one'), value('pilot')]),
+      );
+      await created('conditionAxis', drawing('Pilot phase', 'pilot_phase', phases.id));
+      const version = await document();
+      const recorded = await profiled(version, { values: { pilot_phase: ['pilot'] } });
+      if (recorded.answer !== 'recorded') throw new Error(recorded.answer);
+      const retired = await as((trx) =>
+        recordDefinitionVersion(trx, {
+          id: phases.id,
+          openedFrom: phases.version.id,
+          definition: vocabulary('pilot_phase', [value('one'), value('pilot', 'retired')]) as never,
+          author: ada,
+        }),
+      );
+      expect(retired).toMatchObject({ answer: 'recorded' });
+      const pilot = (await as((trx) => axesByKey(trx))).get('pilot_phase');
+      expect(pilot?.values.find((each) => each.key === 'pilot')?.state).toBe('retired');
+      const asked = await as((trx) =>
+        requestPublication(trx, {
+          documentId: recorded.version.artifactId,
+          version: recorded.version.id,
+          formats: ['pdf'],
+          requester: ada,
+        }),
+      );
+      expect(asked).toMatchObject({ answer: 'requested' });
+    });
+  });
 });

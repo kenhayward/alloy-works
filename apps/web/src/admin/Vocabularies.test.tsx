@@ -82,6 +82,16 @@ function service(options: { manages?: boolean; saving?: Saving } = {}) {
           })),
         });
       }
+      if (path === `/v1/vocabularies/${PHASE}/uses`) {
+        return json(200, {
+          fields: [{ id: 'f1', name: 'Phases studied' }],
+          axes: [{ id: 'a1', key: 'trial_phase', name: 'Trial phase' }],
+          values: [
+            { value: 'one', count: 3, components: [{ id: 'c1', title: 'Dosing study' }] },
+            { value: 'pilot', count: 1, components: [] },
+          ],
+        });
+      }
       const exported = /^\/v1\/vocabularies\/([0-9a-f-]+)\/export$/.exec(path);
       if (exported) return json(200, { format: 'json-ld', text: '{"@graph":[]}' });
       const one = /^\/v1\/vocabularies\/([0-9a-f-]+)$/.exec(path);
@@ -166,6 +176,19 @@ const savedValues = (sent: { path: string; body: unknown }[]) =>
   (sent.at(-1)!.body as { definition: typeof phase }).definition.values;
 
 describe("Administration's Vocabularies", () => {
+  it('LIB-005 shows where a vocabulary is used, and beside each value how many components hold it, before it is deprecated or retired', async () => {
+    const { client } = service();
+    render(<Vocabularies client={client} />);
+    const region = await opened('Trial phase');
+    const used = await within(region).findByRole('region', { name: 'Where it is used' });
+    expect(used).toHaveTextContent('Fields: Phases studied.');
+    expect(used).toHaveTextContent('Condition axes: Trial phase.');
+    const value = (name: string) => within(region).getByRole('group', { name });
+    expect(value('Phase one (one)')).toHaveTextContent('Held by 3 components.');
+    expect(value('Phase two (two)')).toHaveTextContent('Held by no component.');
+    expect(value('Pilot (pilot)')).toHaveTextContent('Held by 1 component.');
+  });
+
   it('lists every vocabulary with its key, how many values it holds and its version', async () => {
     const { client } = service();
     render(<Vocabularies client={client} />);

@@ -54,7 +54,7 @@ describe('condition axes (the R6 plan, R6-A)', () => {
         { key: 'internal', label: 'Internal' },
       ],
     });
-    expect(axis.values.map((each) => each.key)).toEqual(['regulator', 'internal']);
+    expect(axis.values?.map((each) => each.key)).toEqual(['regulator', 'internal']);
     const refused = (values: unknown) =>
       conditionAxisDefinitionSchema.safeParse({
         schemaVersion: 1,

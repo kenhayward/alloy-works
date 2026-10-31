@@ -57,6 +57,21 @@ describe('a baseline’s digest input and its name', () => {
     expect(baselineDigestInput(pins)).not.toContain('terms');
   });
 
+  it('digests the vocabulary versions it pins in one order, and a baseline pinning none as it did (VO-H)', () => {
+    const labelled: BaselinePins = {
+      ...pins,
+      vocabularies: [
+        { version: v(13), digest: d('6') },
+        { version: v(12), digest: d('5') },
+      ],
+    };
+    expect(
+      baselineDigestInput({ ...labelled, vocabularies: [...labelled.vocabularies!].reverse() }),
+    ).toBe(baselineDigestInput(labelled));
+    expect(baselineDigestInput(labelled)).toContain(`"vocabularies":[{"digest":"${d('5')}"`);
+    expect(baselineDigestInput(pins)).not.toContain('vocabularies');
+  });
+
   it('VER-046 holds a name to 1 to 120 characters, its own trim and no control character', () => {
     expect(baselineNameProblem('As approved')).toBeNull();
     expect(baselineNameProblem('a'.repeat(120))).toBeNull();

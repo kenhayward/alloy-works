@@ -242,6 +242,7 @@ export {
 export {
   ImportVocabularyBody,
   VocabularyExportAnswer,
+  VocabularyUsesView,
   VocabularyImportAnswer,
   VocabularyImportRefusal,
   VocabularyList,

@@ -39,7 +39,13 @@ const field = <T extends DataType, V extends z.ZodRawShape>(dataType: T, validat
  */
 export const fieldDefinitionSchema = z
   .discriminatedUnion('dataType', [
-    field('text', { minLength: length, maxLength: length }),
+    // A text field may draw its permitted values from a vocabulary, named by its id, so MET-002's
+    // closed set stands (MET-003; the VO plan, VO-C).
+    field('text', {
+      minLength: length,
+      maxLength: length,
+      vocabulary: z.string().min(1).optional(),
+    }),
     field('number', {
       min: decimal,
       max: decimal,

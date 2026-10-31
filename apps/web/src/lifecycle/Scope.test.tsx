@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import { phaseAxisAnswer } from '../editor/test/phaseAxis.js';
 import { ScopeButton, ScopeChips, type ScopeNow } from './Scope.js';
 
 const json = (status: number, body: unknown) =>
@@ -238,5 +239,50 @@ describe('scopes in a header (the R15 plan, R15-B, R15-E)', () => {
         'Revision 1, effective everywhere then: none was effective for Market: Europe.',
       ),
     );
+  });
+});
+
+describe('a scope on an axis drawing on a vocabulary (the VO plan, VO-E, VO-F)', () => {
+  const client = createApiClient({
+    baseUrl: 'http://scope.test',
+    fetch: vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(String(input), init);
+      const { pathname } = new URL(request.url);
+      if (pathname === '/v1/people') return json(200, { items: [], next: null });
+      return phaseAxisAnswer(pathname) ?? json(404, {});
+    }) as unknown as typeof fetch,
+  });
+  const offered = async (scope: ScopeNow) => {
+    const { unmount } = render(
+      <ScopeButton
+        client={client}
+        kind="component"
+        id={PRINTER}
+        title="Install the printer"
+        scope={scope}
+        onSaved={() => undefined}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Effective for' }));
+    const phase = await screen.findByRole('group', { name: 'Phase' });
+    const shown = within(phase)
+      .getAllByRole('checkbox')
+      .map((each) => [each.closest('label')?.textContent, (each as HTMLInputElement).checked]);
+    unmount();
+    return shown;
+  };
+
+  it('offers a retired value only where the scope already names it, marked', async () => {
+    expect(await offered({ scope: [], pending: [] })).toEqual([
+      ['Phase I', false],
+      ['Early (deprecated: use Phase I)', false],
+    ]);
+    expect(
+      await offered({ scope: [{ axis: 'phase', value: 'pilot', party: null }], pending: [] }),
+    ).toEqual([
+      ['Phase I', false],
+      ['Early (deprecated: use Phase I)', false],
+      ['Pilot (retired)', true],
+    ]);
   });
 });

@@ -1022,7 +1022,8 @@ describe('the citations in the committed model', () => {
     // 2251 (2026-10-31): CLc - the bridge's, the import's and LOC-029's tests, and a translation's history.
     // 2260 (2026-10-31): CLd - LIB-035's and PUB-055's tests.
     // 2273 (2026-10-31): VOa - a vocabulary's shape, its routes, SKOS and its page.
-    expect(model.citations).toHaveLength(2273);
+    // 2292 (2026-10-31): VOb - fields and axes drawing on a vocabulary, its labels published and pinned.
+    expect(model.citations).toHaveLength(2292);
   });
 
   it('cites no identifier the corpus does not hold', () => {

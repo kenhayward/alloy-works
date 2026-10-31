@@ -21,6 +21,11 @@ export interface BaselinePins {
   readonly entries?: readonly PinnedVersion[];
   /** The term versions its uses read (TMb; TM-G); absent where it uses none, for the same reason. */
   readonly terms?: readonly PinnedVersion[];
+  /**
+   * The vocabulary versions whose labels it prints (the VO plan, VO-H; LIB-004); absent where it
+   * prints none, for the same reason.
+   */
+  readonly vocabularies?: readonly PinnedVersion[];
   readonly bindings: readonly {
     readonly node: string;
     readonly binding: string;
@@ -59,6 +64,9 @@ export function baselineDigestInput(pins: BaselinePins): string {
     ...(pins.terms === undefined
       ? {}
       : { terms: [...pins.terms].sort(byKey((each) => each.version)) }),
+    ...(pins.vocabularies === undefined
+      ? {}
+      : { vocabularies: [...pins.vocabularies].sort(byKey((each) => each.version)) }),
   });
 }
 

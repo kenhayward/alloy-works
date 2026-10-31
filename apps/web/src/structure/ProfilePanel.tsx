@@ -2,7 +2,12 @@ import type { createApiClient } from '@alloy-works/api-client';
 import type { StoredProfile } from '@alloy-works/domain';
 import { useEffect, useId, useState } from 'react';
 
-import { declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
+import {
+  declaredAxes,
+  offeredLabel,
+  offeredValues,
+  type OfferedAxis,
+} from '../editor/ConditionDialog.js';
 import styles from './ProfilePanel.module.css';
 import { words } from '../words/words.js';
 
@@ -95,7 +100,8 @@ export function ProfilePanel({
         {read.map((axis) => (
           <fieldset key={axis.key} className={styles['axis']} disabled={readOnly}>
             <legend>{axis.name}</legend>
-            {axis.values.map((value) => (
+            {/* A retired value only where the saved profile takes it (LIB-023; VO-E). */}
+            {offeredValues(axis.values, profile?.values[axis.key] ?? []).map((value) => (
               <label key={value.key} className={styles['value']}>
                 <input
                   type="checkbox"
@@ -112,7 +118,7 @@ export function ProfilePanel({
                     })
                   }
                 />
-                {value.label}
+                {offeredLabel(value, axis.values)}
               </label>
             ))}
           </fieldset>

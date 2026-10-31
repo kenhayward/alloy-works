@@ -1,10 +1,14 @@
 import {
   bootstrapCluster,
+  createComponent,
+  createSpace,
   createTenant,
   findRole,
   grant,
   migrate,
+  recordVersion,
   seedDevelopmentContent,
+  substanceOf,
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
@@ -320,5 +324,81 @@ describe('vocabularies through the service (the VO plan, VO-A, VO-I)', () => {
       message: 'This definition is refused: each failure says why.',
       failures: [{ field: 'female', rule: 'fixed' }],
     });
+  });
+
+  it('LIB-005 says where a vocabulary is used: the fields and axes naming it, and per value the components holding it, naming only those the caller may read', async () => {
+    const id = await make(
+      vocabulary('Study phase', 'study_phase', [
+        value('one', 'Phase I'),
+        value('two', 'Phase II'),
+        value('pilot', 'Pilot'),
+      ]),
+    );
+    const define = async (kind: string, definition: Json) => {
+      const made = await call('grace', 'POST', '/v1/definitions', {
+        kind,
+        definition: { schemaVersion: DEFINITION_SCHEMA_VERSION, ...definition },
+      });
+      expect(made.statusCode, made.body).toBe(200);
+      return made.json<{ id: string }>().id;
+    };
+    const field = await define('field', {
+      name: 'Study phases',
+      dataType: 'text',
+      multiplicity: 'many',
+      validation: { vocabulary: id },
+    });
+    const axis = await define('conditionAxis', {
+      name: 'Study phase',
+      key: 'study_phase',
+      vocabulary: id,
+    });
+    // A component Ada may read in General, and one in a space she holds nothing in.
+    const holding = (space: string, title: string, phases: string[]) =>
+      tenantDb.withTenant(tenant, async (trx) => {
+        const first = await createComponent(trx, {
+          spaceId: space,
+          title,
+          language: 'en-GB',
+          direction: 'ltr',
+          author: ids.ada!,
+        });
+        if (first.answer !== 'created') throw new Error(first.answer);
+        const substance = substanceOf(first.version);
+        if (substance.kind !== 'component') throw new Error('not a component');
+        const next = await recordVersion(trx, {
+          artifactId: first.version.artifactId,
+          openedFrom: first.version.id,
+          author: ids.ada!,
+          substance: { ...substance, values: { [field]: phases } },
+        });
+        if (next.answer !== 'recorded') throw new Error(next.answer);
+        return first.version.artifactId;
+      });
+    const general = await tenantDb.withTenant(tenant, async (trx) =>
+      trx
+        .selectFrom('space')
+        .select('id')
+        .where('name', '=', 'General')
+        .executeTakeFirstOrThrow()
+        .then((row) => row.id),
+    );
+    const elsewhere = await tenantDb.withTenant(tenant, (trx) => createSpace(trx, 'Trials'));
+    const read = await holding(general, 'Dosing study', ['one', 'two']);
+    await holding(elsewhere.id, 'Withheld study', ['one']);
+
+    const uses = await call('ada', 'GET', `/v1/vocabularies/${id}/uses`);
+    expect(uses.statusCode, uses.body).toBe(200);
+    expect(uses.json()).toEqual({
+      fields: [{ id: field, name: 'Study phases' }],
+      axes: [{ id: axis, key: 'study_phase', name: 'Study phase' }],
+      values: [
+        { value: 'one', count: 2, components: [{ id: read, title: 'Dosing study' }] },
+        { value: 'two', count: 1, components: [{ id: read, title: 'Dosing study' }] },
+      ],
+    });
+    // Nobody from outside who reads only what is shared with them, as the vocabulary itself.
+    expect((await call('alice', 'GET', `/v1/vocabularies/${id}/uses`)).statusCode).toBe(404);
+    expect((await call(null, 'GET', `/v1/vocabularies/${id}/uses`)).statusCode).toBe(401);
   });
 });

@@ -7043,6 +7043,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/vocabularies/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where a vocabulary is used: the fields and axes naming it, and the components holding each value
+         * @description Returns where a vocabulary is used, so a value is not deprecated or retired blind: the fields and condition axes whose latest definition draws on it, and for each value held the components, not deleted, whose latest version holds it in one of those fields. Each value says how many components hold it and names those the caller may read, by title; the rest are counted, never named. Anyone signed in may read it.
+         */
+        get: operations["getVocabularyUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/vocabularies/import": {
         parameters: {
             query?: never;
@@ -13354,6 +13374,12 @@ export interface operations {
                                 /** @description The version's digest */
                                 digest: string;
                             }[];
+                            /** @description The vocabulary versions whose labels it prints; absent where it prints none */
+                            vocabularies?: {
+                                version: string & (unknown & unknown);
+                                /** @description The version's digest */
+                                digest: string;
+                            }[];
                             bindings: {
                                 node: string;
                                 binding: string;
@@ -13969,7 +13995,7 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023) */
                         warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_superseded" | "source_corrected";
@@ -14005,6 +14031,24 @@ export interface operations {
                             /** @description For a fallback, the document's language the term has no label in */
                             language?: string;
                             /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        } | {
+                            /**
+                             * @description A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)
+                             * @constant
+                             */
+                            code: "vocabulary_value";
+                            /** @description The outline node whose component holds it, or null for the document */
+                            node: string | null;
+                            /** @description The field holding it, by its identity */
+                            field: string;
+                            /** @description The value's id */
+                            value: string;
+                            /** @description Its label in the language published in, or the base */
+                            label: string;
+                            /** @enum {string} */
+                            state: "deprecated" | "retired";
+                            /** @description For a deprecated value, the value it names as its replacement */
                             replacedBy?: string;
                         })[];
                         /** @description The publication it made, once done */
@@ -58867,7 +58911,7 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023) */
                         warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_superseded" | "source_corrected";
@@ -58903,6 +58947,24 @@ export interface operations {
                             /** @description For a fallback, the document's language the term has no label in */
                             language?: string;
                             /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        } | {
+                            /**
+                             * @description A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)
+                             * @constant
+                             */
+                            code: "vocabulary_value";
+                            /** @description The outline node whose component holds it, or null for the document */
+                            node: string | null;
+                            /** @description The field holding it, by its identity */
+                            field: string;
+                            /** @description The value's id */
+                            value: string;
+                            /** @description Its label in the language published in, or the base */
+                            label: string;
+                            /** @enum {string} */
+                            state: "deprecated" | "retired";
+                            /** @description For a deprecated value, the value it names as its replacement */
                             replacedBy?: string;
                         })[];
                         /** @description The publication it made, once done */
@@ -60920,7 +60982,7 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023) */
                         warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_superseded" | "source_corrected";
@@ -60956,6 +61018,24 @@ export interface operations {
                             /** @description For a fallback, the document's language the term has no label in */
                             language?: string;
                             /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        } | {
+                            /**
+                             * @description A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)
+                             * @constant
+                             */
+                            code: "vocabulary_value";
+                            /** @description The outline node whose component holds it, or null for the document */
+                            node: string | null;
+                            /** @description The field holding it, by its identity */
+                            field: string;
+                            /** @description The value's id */
+                            value: string;
+                            /** @description Its label in the language published in, or the base */
+                            label: string;
+                            /** @enum {string} */
+                            state: "deprecated" | "retired";
+                            /** @description For a deprecated value, the value it names as its replacement */
                             replacedBy?: string;
                         })[];
                         /** @description The publication it made, once done */
@@ -86889,7 +86969,7 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023) */
                         warnings: ({
                             /** @enum {string} */
                             code: "source_retracted" | "source_superseded" | "source_corrected";
@@ -86925,6 +87005,24 @@ export interface operations {
                             /** @description For a fallback, the document's language the term has no label in */
                             language?: string;
                             /** @description For a deprecated term, the term it names as its replacement */
+                            replacedBy?: string;
+                        } | {
+                            /**
+                             * @description A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)
+                             * @constant
+                             */
+                            code: "vocabulary_value";
+                            /** @description The outline node whose component holds it, or null for the document */
+                            node: string | null;
+                            /** @description The field holding it, by its identity */
+                            field: string;
+                            /** @description The value's id */
+                            value: string;
+                            /** @description Its label in the language published in, or the base */
+                            label: string;
+                            /** @enum {string} */
+                            state: "deprecated" | "retired";
+                            /** @description For a deprecated value, the value it names as its replacement */
                             replacedBy?: string;
                         })[];
                         /** @description The publication it made, once done */
@@ -116451,6 +116549,124 @@ export interface operations {
                         format: "json-ld";
                         /** @description The vocabulary as a SKOS concept scheme in JSON-LD, in the compact form documented */
                         text: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such vocabulary in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getVocabularyUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Its fields and axes, and per value the components holding it */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "fields": [],
+                     *       "axes": [],
+                     *       "values": []
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Each field drawing on it, at its latest definition, by name */
+                        fields: {
+                            id: string;
+                            name: string;
+                        }[];
+                        /** @description Each condition axis drawing on it, at its latest definition, by name */
+                        axes: {
+                            id: string;
+                            key: string;
+                            name: string;
+                        }[];
+                        /** @description Each value held, in the vocabulary's own order; a value nothing holds is left out */
+                        values: {
+                            /** @description The value's id */
+                            value: string;
+                            /** @description How many components, not deleted, hold it at their latest version */
+                            count: number;
+                            /** @description Those of them the caller may read, by title; the rest are counted only */
+                            components: {
+                                id: string;
+                                title: string;
+                            }[];
+                        }[];
                     };
                 };
             };

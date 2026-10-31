@@ -1,10 +1,12 @@
 import type { FieldView } from '@alloy-works/api-client';
+import type { Vocabulary } from '@alloy-works/domain';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { FieldsForm, type FieldsFormProps } from './FieldsForm.js';
+import { VocabulariesContext } from './vocabularies.js';
 
 const REVIEW = 'schema-review';
 const SCHEMAS = [{ id: REVIEW, name: 'Review' }];
@@ -220,5 +222,191 @@ describe('the fields form', () => {
   it('offers nothing to change when read-only', () => {
     render(<Held {...base} readOnly fields={[fieldOf('field-code', 'Code')]} />);
     expect(screen.getByRole('textbox', { name: /^Code/ })).toHaveAttribute('readonly');
+  });
+});
+
+const REGION = 'c3d4e5f6-0000-4000-8000-0000000000a1';
+const SITE = 'c3d4e5f6-0000-4000-8000-0000000000a2';
+
+const valueOf = (
+  id: string,
+  label: string,
+  rest: { state?: 'deprecated' | 'retired'; replacedBy?: string; description?: string } = {},
+): Vocabulary['values'][number] => ({
+  id,
+  labels: [{ language: 'en', text: label }],
+  descriptions: rest.description === undefined ? [] : [{ language: 'en', text: rest.description }],
+  state: rest.state ?? 'active',
+  ...(rest.replacedBy === undefined ? {} : { replacedBy: rest.replacedBy }),
+});
+
+const VOCABULARIES: Record<string, Vocabulary> = {
+  [REGION]: {
+    schemaVersion: 1,
+    id: REGION,
+    name: 'Region',
+    key: 'region',
+    base: 'en',
+    order: 'declared',
+    values: [
+      valueOf('north', 'North', { description: 'Above the river' }),
+      valueOf('west', 'West', { state: 'retired' }),
+      valueOf('south', 'South'),
+      valueOf('east', 'East', { state: 'deprecated', replacedBy: 'north' }),
+    ],
+  },
+  // More than twenty, so searched rather than listed.
+  [SITE]: {
+    schemaVersion: 1,
+    id: SITE,
+    name: 'Site',
+    key: 'site',
+    base: 'en',
+    order: 'declared',
+    values: Array.from({ length: 25 }, (_, n) => valueOf(`s${n + 1}`, `Site ${n + 1}`)),
+  },
+};
+
+/** The form beneath a page's vocabularies, as a document's or a component's page gives them. */
+const withVocabularies = (ui: React.ReactElement) =>
+  render(
+    <VocabulariesContext.Provider value={async (id) => VOCABULARIES[id]}>
+      {ui}
+    </VocabulariesContext.Provider>,
+  );
+
+const regionField = (over: Partial<FieldView> = {}) =>
+  fieldOf('field-region', 'Region', { validation: { vocabulary: REGION }, ...over });
+
+const regionsField = () =>
+  fieldOf('field-regions', 'Regions', { multiplicity: 'many', validation: { vocabulary: REGION } });
+
+describe('a field drawing on a vocabulary', () => {
+  it('MET-003 offers its values to choose from, by label and in its order, rather than free text', async () => {
+    const changed = vi.fn();
+    withVocabularies(<Held {...base} fields={[regionField()]} onChange={changed} />);
+    const region = await screen.findByRole('combobox', { name: 'Region' });
+    expect(
+      within(region)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['No value', 'North', 'South', 'East (deprecated)']);
+    expect(screen.queryByRole('textbox', { name: 'Region' })).toBeNull();
+    await userEvent.selectOptions(region, 'South');
+    expect(changed).toHaveBeenLastCalledWith({ 'field-region': 'south' });
+    // A clear handed on as every input hands one on.
+    await userEvent.selectOptions(region, 'No value');
+    expect(changed).toHaveBeenLastCalledWith({ 'field-region': null });
+  });
+
+  it('LIB-054 shows the description of the value chosen', async () => {
+    withVocabularies(<Held {...base} fields={[regionField()]} />);
+    const region = await screen.findByRole('combobox', { name: 'Region' });
+    await userEvent.selectOptions(region, 'North');
+    expect(region).toHaveAccessibleDescription(/Above the river/);
+  });
+
+  it('LIB-063 says at once that a value chosen is deprecated, and never offers a retired one', async () => {
+    withVocabularies(<Held {...base} fields={[regionField()]} />);
+    const region = await screen.findByRole('combobox', { name: 'Region' });
+    expect(within(region).queryByRole('option', { name: /West/ })).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    await userEvent.selectOptions(region, 'East (deprecated)');
+    // Announced, and said beside the field, not only shown.
+    expect(screen.getByRole('status')).toHaveTextContent('East is deprecated: use North instead');
+    expect(region).toHaveAccessibleDescription(/Deprecated, replaced by North/);
+  });
+
+  it('LIB-055 names the replacement of a deprecated value held, and takes it', async () => {
+    const changed = vi.fn();
+    withVocabularies(
+      <Held
+        {...base}
+        initial={{ 'field-region': 'east' }}
+        fields={[regionField()]}
+        onChange={changed}
+      />,
+    );
+    const region = await screen.findByRole('combobox', { name: 'Region' });
+    expect(region).toHaveDisplayValue('East (deprecated)');
+    expect(region).toHaveAccessibleDescription(/Deprecated, replaced by North/);
+    await userEvent.click(screen.getByRole('button', { name: 'Use replacement, North' }));
+    expect(changed).toHaveBeenLastCalledWith({ 'field-region': 'north' });
+    expect(region).toHaveDisplayValue('North');
+    expect(screen.queryByRole('button', { name: /Use replacement/ })).toBeNull();
+  });
+
+  it('LIB-063 marks a retired value held by its label, and an id the vocabulary lacks as unknown', async () => {
+    withVocabularies(
+      <Held
+        {...base}
+        initial={{ 'field-region': 'west', 'field-regions': ['central'] }}
+        fields={[regionField(), regionsField()]}
+      />,
+    );
+    const region = await screen.findByRole('combobox', { name: 'Region' });
+    expect(region).toHaveDisplayValue('West (retired)');
+    expect(region).toHaveAccessibleDescription(/Retired: no longer offered/);
+    expect(within(region).getByRole('option', { name: 'West (retired)' })).toBeDisabled();
+    const held = screen.getByRole('combobox', { name: 'Regions, value 1' });
+    expect(held).toHaveDisplayValue('central (unknown)');
+    expect(held).toHaveAccessibleDescription(/Not a value of its vocabulary/);
+  });
+
+  it('holds several values, each chosen, and names each by its label', async () => {
+    const changed = vi.fn();
+    withVocabularies(
+      <Held
+        {...base}
+        initial={{ 'field-regions': ['north'] }}
+        fields={[regionsField()]}
+        onChange={changed}
+      />,
+    );
+    await screen.findByRole('combobox', { name: 'Regions, value 1' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add to Regions' }));
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Regions, value 2' }),
+      'South',
+    );
+    expect(changed).toHaveBeenLastCalledWith({ 'field-regions': ['north', 'south'] });
+    await userEvent.click(screen.getByRole('button', { name: 'Remove North' }));
+    expect(changed).toHaveBeenLastCalledWith({ 'field-regions': ['south'] });
+  });
+
+  it('searches a vocabulary of more than twenty values as it is typed, chosen by the keyboard', async () => {
+    const changed = vi.fn();
+    withVocabularies(
+      <Held
+        {...base}
+        fields={[fieldOf('field-site', 'Site', { validation: { vocabulary: SITE } })]}
+        onChange={changed}
+      />,
+    );
+    const site = await screen.findByRole('combobox', { name: 'Site' });
+    expect(site.tagName).toBe('INPUT');
+    await userEvent.type(site, 'site 2');
+    const offered = screen.getByRole('listbox', { name: 'Site' });
+    expect(within(offered).getAllByRole('option')).toHaveLength(7);
+    await userEvent.type(site, '4');
+    expect(
+      within(offered)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['Site 24']);
+    expect(site).toHaveAttribute('aria-activedescendant', within(offered).getByRole('option').id);
+    await userEvent.keyboard('{Enter}');
+    expect(changed).toHaveBeenLastCalledWith({ 'field-site': 's24' });
+    expect(site).toHaveValue('Site 24');
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('shows the label, not the id, when read-only', async () => {
+    withVocabularies(
+      <Held {...base} readOnly initial={{ 'field-region': 'south' }} fields={[regionField()]} />,
+    );
+    const region = await screen.findByRole('combobox', { name: 'Region' });
+    expect(region).toHaveDisplayValue('South');
+    expect(region).toBeDisabled();
   });
 });

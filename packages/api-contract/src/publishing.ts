@@ -223,10 +223,29 @@ export const PublicationRequestView = z.object({
             .optional()
             .describe('For a deprecated term, the term it names as its replacement'),
         }),
+        z.object({
+          code: z
+            .literal('vocabulary_value')
+            .describe(
+              'A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)',
+            ),
+          node: z
+            .string()
+            .nullable()
+            .describe('The outline node whose component holds it, or null for the document'),
+          field: z.string().describe('The field holding it, by its identity'),
+          value: z.string().describe("The value's id"),
+          label: z.string().describe('Its label in the language published in, or the base'),
+          state: z.enum(['deprecated', 'retired']),
+          replacedBy: z
+            .string()
+            .optional()
+            .describe('For a deprecated value, the value it names as its replacement'),
+        }),
       ]),
     )
     .describe(
-      'What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)',
+      'What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)',
     ),
   publication: z.string().nullable().describe('The publication it made, once done'),
   preview: PreviewView.nullable().describe(

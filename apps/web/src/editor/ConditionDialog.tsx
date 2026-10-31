@@ -1,4 +1,10 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import {
+  axisValues,
+  type AxisValue,
+  type ConditionAxisDefinition,
+  type Vocabulary,
+} from '@alloy-works/domain';
 import type { ConditionChoice, ConditionHeld } from '@alloy-works/editor';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 
@@ -6,15 +12,41 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ConditionDialog.module.css';
-import { words } from '../words/words.js';
+import { formats, words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
-/** A declared axis, with its values, as the dialog offers it. */
+/**
+ * A declared axis, with its values, as the dialog offers it: its own, or its vocabulary's as
+ * `axisValues` resolves them, each with its state (LIB-022; the VO plan, VO-E). A retired one is
+ * read too, so where it is held it is named.
+ */
 export interface OfferedAxis {
   readonly key: string;
   readonly name: string;
-  readonly values: readonly { readonly key: string; readonly label: string }[];
+  readonly values: readonly AxisValue[];
+}
+
+/**
+ * The values offered for a new choice (LIB-023; VO-E, VO-F): every one but a retired one, which is
+ * shown only where `held` already names it.
+ */
+export const offeredValues = (
+  values: readonly AxisValue[],
+  held: readonly string[],
+): readonly AxisValue[] =>
+  values.filter((each) => each.state !== 'retired' || held.includes(each.key));
+
+/** A value as it is offered (VO-F): a deprecated one named with its replacement, a retired one marked. */
+export function offeredLabel(value: AxisValue, values: readonly AxisValue[]): string {
+  if (value.state === 'retired')
+    return words('editor.condition.value-retired', { label: value.label });
+  if (value.state !== 'deprecated' || value.replacedBy === undefined) return value.label;
+  const replacement = values.find((each) => each.key === value.replacedBy)?.label;
+  return words('editor.condition.value-deprecated', {
+    label: value.label,
+    replacement: replacement ?? value.replacedBy,
+  });
 }
 
 /** What the dialog says where the environment declares no axis. */
@@ -55,13 +87,29 @@ export async function declaredAxes(client: Client): Promise<OfferedAxis[]> {
     }
     cursor = data.next;
   } while (cursor !== null);
+  // Each vocabulary an axis names read once, from /v1/vocabularies, whoever is signed in (VO-E).
+  const vocabularies = new Map<string, Promise<Vocabulary>>();
+  const vocabulary = (id: string) => {
+    if (!vocabularies.has(id)) {
+      vocabularies.set(
+        id,
+        client.GET('/v1/vocabularies/{id}', { params: { path: { id } } }).then(({ data }) => {
+          if (!data) throw new Error('unread');
+          return data.vocabulary as Vocabulary;
+        }),
+      );
+    }
+    return vocabularies.get(id)!;
+  };
   return Promise.all(
     keyed.map(async (each) => {
       const { data } = await client.GET('/v1/definitions/{id}', {
         params: { path: { id: each.id } },
       });
       if (!data) throw new Error('unread');
-      const values = (data.definition['values'] ?? []) as OfferedAxis['values'];
+      const axis = data.definition as unknown as ConditionAxisDefinition;
+      const drawn = axis.vocabulary === undefined ? undefined : await vocabulary(axis.vocabulary);
+      const values = axisValues(axis, () => drawn, formats().language.tag);
       return { key: each.key, name: each.name, values };
     }),
   );
@@ -119,7 +167,11 @@ export function ConditionDialog({
   const read = axes !== null && axes !== 'unread' ? axes : null;
   const chosen = read !== null ? read.find((each) => each.key === axis) : undefined;
   const already = held.find((each) => each.axis === axis);
-  const others = chosen?.values.filter((each) => !already?.values.includes(each.key)) ?? [];
+  const offered = offeredValues(chosen?.values ?? [], already?.values ?? []);
+  // An alternative is new text: never for a retired value (VO-E).
+  const others = offered.filter(
+    (each) => each.state !== 'retired' && !already?.values.includes(each.key),
+  );
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -181,7 +233,7 @@ export function ConditionDialog({
               </div>
               <fieldset className={own['values']}>
                 <legend>{words('editor.kept-for')}</legend>
-                {chosen?.values.map((each) => (
+                {offered.map((each) => (
                   <label key={each.key} className={own['value']}>
                     <input
                       type="checkbox"
@@ -194,7 +246,7 @@ export function ConditionDialog({
                         )
                       }
                     />
-                    {each.label}
+                    {offeredLabel(each, chosen?.values ?? [])}
                   </label>
                 ))}
               </fieldset>

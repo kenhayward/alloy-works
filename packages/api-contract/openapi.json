@@ -23930,6 +23930,35 @@
                             ]
                           }
                         },
+                        "vocabularies": {
+                          "description": "The vocabulary versions whose labels it prints; absent where it prints none",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string",
+                                "allOf": [
+                                  {
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  {
+                                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                  }
+                                ]
+                              },
+                              "digest": {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$",
+                                "description": "The version's digest"
+                              }
+                            },
+                            "required": [
+                              "version",
+                              "digest"
+                            ]
+                          }
+                        },
                         "bindings": {
                           "type": "array",
                           "items": {
@@ -25934,10 +25963,58 @@
                               "term",
                               "count"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "const": "vocabulary_value",
+                                "description": "A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)"
+                              },
+                              "node": {
+                                "description": "The outline node whose component holds it, or null for the document",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "field": {
+                                "type": "string",
+                                "description": "The field holding it, by its identity"
+                              },
+                              "value": {
+                                "type": "string",
+                                "description": "The value's id"
+                              },
+                              "label": {
+                                "type": "string",
+                                "description": "Its label in the language published in, or the base"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "deprecated",
+                                  "retired"
+                                ]
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated value, the value it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "field",
+                              "value",
+                              "label",
+                              "state"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -176491,10 +176568,58 @@
                               "term",
                               "count"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "const": "vocabulary_value",
+                                "description": "A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)"
+                              },
+                              "node": {
+                                "description": "The outline node whose component holds it, or null for the document",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "field": {
+                                "type": "string",
+                                "description": "The field holding it, by its identity"
+                              },
+                              "value": {
+                                "type": "string",
+                                "description": "The value's id"
+                              },
+                              "label": {
+                                "type": "string",
+                                "description": "Its label in the language published in, or the base"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "deprecated",
+                                  "retired"
+                                ]
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated value, the value it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "field",
+                              "value",
+                              "label",
+                              "state"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -182636,10 +182761,58 @@
                               "term",
                               "count"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "const": "vocabulary_value",
+                                "description": "A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)"
+                              },
+                              "node": {
+                                "description": "The outline node whose component holds it, or null for the document",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "field": {
+                                "type": "string",
+                                "description": "The field holding it, by its identity"
+                              },
+                              "value": {
+                                "type": "string",
+                                "description": "The value's id"
+                              },
+                              "label": {
+                                "type": "string",
+                                "description": "Its label in the language published in, or the base"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "deprecated",
+                                  "retired"
+                                ]
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated value, the value it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "field",
+                              "value",
+                              "label",
+                              "state"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -251101,10 +251274,58 @@
                               "term",
                               "count"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "const": "vocabulary_value",
+                                "description": "A value the document or a component holds that its vocabulary holds deprecated or retired, published as held (LIB-023)"
+                              },
+                              "node": {
+                                "description": "The outline node whose component holds it, or null for the document",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "field": {
+                                "type": "string",
+                                "description": "The field holding it, by its identity"
+                              },
+                              "value": {
+                                "type": "string",
+                                "description": "The value's id"
+                              },
+                              "label": {
+                                "type": "string",
+                                "description": "Its label in the language published in, or the base"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "deprecated",
+                                  "retired"
+                                ]
+                              },
+                              "replacedBy": {
+                                "description": "For a deprecated value, the value it names as its replacement",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "field",
+                              "value",
+                              "label",
+                              "state"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -341272,6 +341493,293 @@
                 "example": {
                   "format": "json-ld",
                   "text": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such vocabulary in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vocabularies/{id}/uses": {
+      "get": {
+        "operationId": "getVocabularyUses",
+        "summary": "Where a vocabulary is used: the fields and axes naming it, and the components holding each value",
+        "description": "Returns where a vocabulary is used, so a value is not deprecated or retired blind: the fields and condition axes whose latest definition draws on it, and for each value held the components, not deleted, whose latest version holds it in one of those fields. Each value says how many components hold it and names those the caller may read, by title; the rest are counted, never named. Anyone signed in may read it.",
+        "tags": [
+          "Vocabularies"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its fields and axes, and per value the components holding it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "Each field drawing on it, at its latest definition, by name"
+                    },
+                    "axes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Each condition axis drawing on it, at its latest definition, by name"
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "string",
+                            "description": "The value's id"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "How many components, not deleted, hold it at their latest version"
+                          },
+                          "components": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "title"
+                              ]
+                            },
+                            "description": "Those of them the caller may read, by title; the rest are counted only"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "count",
+                          "components"
+                        ]
+                      },
+                      "description": "Each value held, in the vocabulary's own order; a value nothing holds is left out"
+                    }
+                  },
+                  "required": [
+                    "fields",
+                    "axes",
+                    "values"
+                  ]
+                },
+                "example": {
+                  "fields": [],
+                  "axes": [],
+                  "values": []
                 }
               }
             },
