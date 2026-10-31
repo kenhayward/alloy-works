@@ -28,6 +28,8 @@ export { checkAssignment } from './check-assignment.js';
 export { validate } from './validate.js';
 export { checkUserValues, principalIdsIn } from './users.js';
 export type { Principal, PrincipalLookup } from './users.js';
+export { checkVocabularyValues, vocabularyIdsIn } from './vocabulary-values.js';
+export type { VocabularyLookup } from './vocabulary-values.js';
 export { carryForward } from './carry.js';
 export type { CarriedForward, NotCarried } from './carry.js';
 export { definitionsFor, canonicaliseValues, canonicaliseNotCarried } from './record.js';

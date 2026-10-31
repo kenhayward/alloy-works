@@ -474,7 +474,7 @@ export async function saveIteration(
   const values = input.values ?? current.values;
   if (input.values !== undefined) {
     const { effective } = await componentFieldsNow(trx, current);
-    const failures = await unstorableValues(trx, effective, values);
+    const failures = await unstorableValues(trx, effective, values, current.values);
     if (failures.length > 0) return { answer: 'values.invalid', failures };
   }
   const digest = iterationDigest(content, values);

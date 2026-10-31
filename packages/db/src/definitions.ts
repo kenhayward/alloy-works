@@ -328,6 +328,17 @@ async function refusal(
   candidate: DefinitionOf[DefinitionKind],
   self?: string,
 ): Promise<DefinitionAnswer | undefined> {
+  if (kind === 'field') {
+    // A vocabulary it draws on is a vocabulary (MET-003; the VO plan, VO-C).
+    const field = candidate as DefinitionOf['field'];
+    const vocabulary = field.dataType === 'text' ? field.validation.vocabulary : undefined;
+    if (
+      vocabulary !== undefined &&
+      (await readDefinitionLatest(trx, vocabulary))?.kind !== 'vocabulary'
+    ) {
+      return { answer: 'definition.unresolved', missing: [vocabulary], requires: [] };
+    }
+  }
   if (kind === 'metadataSchema') {
     const schema = candidate as MetadataSchemaDefinition;
     const fields = [];

@@ -1,13 +1,17 @@
 import { sql } from 'kysely';
 import {
   checkUserValues,
+  checkVocabularyValues,
   principalIdsIn,
   resolveComponentFields,
   validate,
+  vocabularyIdsIn,
   type EffectiveField,
   type MetadataFailure,
   type MetadataValues,
+  type Vocabulary,
 } from '@alloy-works/domain';
+import { readDefinitionLatest } from './definitions.js';
 import { currentDefinitionsFor, type CurrentDefinitions } from './creation.js';
 import { erasedIn } from './erasure.js';
 import type { TenantTransaction } from './tables.js';
@@ -50,12 +54,15 @@ export async function componentFieldsNow(
  * What cannot be stored honestly with a component (definitions.md, "A component's"; component-editor.md,
  * "Metadata alongside"): a fixed field holding another value than its default (MET-033), a value that is
  * not the JSON its data type takes, and a `user` value naming no principal of this tenant (MET-038),
- * over one query of the principals named. Every other failure is saved, shown, and held at publication.
+ * over one query of the principals named; and a value its field's vocabulary does not hold, or holds
+ * retired where `previous` did not hold it (MET-003, LIB-023; the VO plan, VO-D). Every other failure
+ * is saved, shown, and held at publication.
  */
 export async function unstorableValues(
   trx: TenantTransaction,
   effective: readonly EffectiveField[],
   values: MetadataValues,
+  previous: MetadataValues,
 ): Promise<MetadataFailure[]> {
   const failures = validate(effective, values).filter(
     (each) => each.rule === 'fixed' || each.rule === 'type',
@@ -78,6 +85,14 @@ export async function unstorableValues(
     ...checkUserValues(values, effective, (id) =>
       known.has(id) ? { active: !known.get(id) } : undefined,
     ),
+  );
+  const vocabularies = new Map<string, Vocabulary>();
+  for (const id of vocabularyIdsIn(effective)) {
+    const stored = await readDefinitionLatest(trx, id);
+    if (stored?.kind === 'vocabulary') vocabularies.set(id, stored.definition as Vocabulary);
+  }
+  failures.push(
+    ...checkVocabularyValues(values, previous, effective, (id) => vocabularies.get(id)),
   );
   return failures;
 }

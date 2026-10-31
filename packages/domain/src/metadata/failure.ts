@@ -1,6 +1,6 @@
 /**
  * Every rule a metadata failure can name. The first six are validation's (metadata.md, Validation);
- * `user` is `checkUserValues`'; `default`, `requires` and `defaultConflict` are failures of a
+ * `user` is `checkUserValues`', `vocabulary` `checkVocabularyValues`'; `default`, `requires` and `defaultConflict` are failures of a
  * definition rather than of a value, found by `checkSchema` and `checkAssignment`; `unknown` is
  * `checkWrittenValues`', a value written for a field that does not apply there (templates.md).
  */
@@ -17,6 +17,7 @@ export type MetadataRule =
   | 'integer'
   | 'scale'
   | 'user'
+  | 'vocabulary'
   | 'default'
   | 'requires'
   | 'defaultConflict'
