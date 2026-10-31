@@ -24148,6 +24148,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-012",
+      "file": "apps/service/src/translation-routes.test.ts",
+      "line": 712,
+      "kind": "title"
+    },
+    {
       "id": "LOC-013",
       "file": "apps/service/src/translation-routes.test.ts",
       "line": 94,
@@ -25495,6 +25501,12 @@
       "id": "COL-026",
       "file": "apps/web/src/editor/VersionsPanel.test.tsx",
       "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-012",
+      "file": "apps/web/src/editor/VersionsPanel.test.tsx",
+      "line": 359,
       "kind": "title"
     },
     {
@@ -27330,19 +27342,31 @@
     {
       "id": "API-067",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 392,
+      "line": 393,
+      "kind": "title"
+    },
+    {
+      "id": "API-071",
+      "file": "apps/worker/src/bridge-deliver.test.ts",
+      "line": 640,
       "kind": "title"
     },
     {
       "id": "API-072",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 721,
+      "line": 753,
+      "kind": "title"
+    },
+    {
+      "id": "API-073",
+      "file": "apps/worker/src/bridge-deliver.test.ts",
+      "line": 655,
       "kind": "title"
     },
     {
       "id": "API-076",
       "file": "apps/worker/src/bridge-deliver.test.ts",
-      "line": 627,
+      "line": 628,
       "kind": "title"
     },
     {
@@ -29166,61 +29190,67 @@
     {
       "id": "IMP-005",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 362,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "IMP-006",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 338,
+      "line": 339,
       "kind": "title"
     },
     {
       "id": "IMP-008",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 298,
+      "line": 299,
       "kind": "title"
     },
     {
       "id": "IMP-009",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 351,
+      "line": 368,
       "kind": "title"
     },
     {
       "id": "IMP-010",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 362,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "IMP-011",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 362,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "IMP-032",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 362,
+      "line": 379,
       "kind": "title"
     },
     {
       "id": "IMP-033",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 493,
+      "line": 510,
       "kind": "title"
     },
     {
       "id": "IMP-034",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 493,
+      "line": 510,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-035",
+      "file": "packages/db/src/imports-structure.test.ts",
+      "line": 352,
       "kind": "title"
     },
     {
       "id": "IMP-042",
       "file": "packages/db/src/imports-structure.test.ts",
-      "line": 308,
+      "line": 309,
       "kind": "title"
     },
     {
@@ -30438,37 +30468,37 @@
     {
       "id": "LOC-007",
       "file": "packages/db/src/translation.test.ts",
-      "line": 174,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "LOC-012",
       "file": "packages/db/src/translation.test.ts",
-      "line": 379,
+      "line": 380,
       "kind": "title"
     },
     {
       "id": "LOC-013",
       "file": "packages/db/src/translation.test.ts",
-      "line": 222,
+      "line": 223,
       "kind": "title"
     },
     {
       "id": "LOC-014",
       "file": "packages/db/src/translation.test.ts",
-      "line": 263,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "LOC-031",
       "file": "packages/db/src/translation.test.ts",
-      "line": 263,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "LOC-040",
       "file": "packages/db/src/translation.test.ts",
-      "line": 320,
+      "line": 321,
       "kind": "title"
     },
     {
@@ -34384,6 +34414,12 @@
       "kind": "title"
     },
     {
+      "id": "LOC-029",
+      "file": "tests/browser/src/words.test.ts",
+      "line": 14,
+      "kind": "title"
+    },
+    {
       "id": "IAM-082",
       "file": "tests/e2e/src/asserted.test.ts",
       "line": 232,
@@ -34411,6 +34447,12 @@
       "id": "DAT-056",
       "file": "tests/e2e/src/connector-privilege.test.ts",
       "line": 178,
+      "kind": "title"
+    },
+    {
+      "id": "API-072",
+      "file": "tests/e2e/src/delivered-data.test.ts",
+      "line": 77,
       "kind": "title"
     },
     {
