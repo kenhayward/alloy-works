@@ -123,7 +123,25 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
             style.overflowX === 'hidden' ||
             style.overflowX === 'clip' ||
             style.textOverflow === 'ellipsis';
-          if (cuts && element.scrollWidth > element.clientWidth + 1) clipped.push(text.trim());
+          if (cuts && element.scrollWidth > element.clientWidth + 1) {
+            clipped.push(text.trim());
+            continue;
+          }
+          // Cut by an ancestor that hides what overflows it, not one that scrolls (LOC-029). One a
+          // pixel wide hides its words from sight on purpose, for a screen reader alone.
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const words = [...range.getClientRects()].filter((line) => line.width > 0);
+          for (let at = element.parentElement; at !== null && region.contains(at); at = at.parentElement) {
+            const hides = getComputedStyle(at);
+            if (hides.overflowX !== 'hidden' && hides.overflowX !== 'clip') continue;
+            const edge = at.getBoundingClientRect();
+            if (edge.width <= 1 || edge.height <= 1) break;
+            if (words.some((line) => line.right > edge.right + 1 || line.left < edge.left - 1)) {
+              clipped.push(text.trim());
+              break;
+            }
+          }
         }
         leaves.forEach((one, at) => {
           for (const other of leaves.slice(at + 1)) {
