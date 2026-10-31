@@ -6,6 +6,7 @@ describe("the desktop shell's own words (the UI plan, UI-I)", () => {
   it('LOC-005 words the tray and the spelling menu from the catalogue, in the language asked for', () => {
     expect(desktopWords('en-GB')).toEqual({
       'desktop.show': 'Show Alloy Works',
+      'desktop.connect': 'Connect to another environment',
       'desktop.quit': 'Quit',
       'desktop.no-suggestions': 'No suggestions',
       'desktop.add-to-dictionary': 'Add to dictionary',

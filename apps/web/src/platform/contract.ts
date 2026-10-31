@@ -10,7 +10,24 @@
 export interface PlatformInfo {
   readonly delivery: 'web' | 'desktop';
   readonly runtime: string;
+  /** The environment the desktop app is connected to, its origin, where it has one (ADM-051). */
+  readonly connectedTo?: string;
 }
+
+/** Why an address was not connected to (the DR plan, DR-C), each worded on the Connect to screen. */
+export type ConnectRefusal =
+  | 'malformed'
+  | 'scheme'
+  | 'insecure'
+  | 'credentials'
+  | 'unreachable'
+  | 'no-environment'
+  | 'not-alloy-works';
+
+/** What connecting to an address came to: the window is on its way there, or why not. */
+export type ConnectResult =
+  | { readonly kind: 'connected'; readonly origin: string }
+  | { readonly kind: 'refused'; readonly reason: ConnectRefusal };
 
 export interface PlatformBridge {
   getPlatformInfo(): Promise<PlatformInfo>;
@@ -33,4 +50,10 @@ export interface PlatformBridge {
    * nothing.
    */
   setInterfaceLanguage(language: string): Promise<void>;
+  /**
+   * Connects the desktop app to the environment at `address`, kept for its next start, and loads it
+   * (ADM-051). Only the desktop's Connect to screen has it: the browser is at an address already.
+   * Unreachable or refused, the window stays and the result says why.
+   */
+  connectTo?(address: string): Promise<ConnectResult>;
 }

@@ -5,6 +5,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BRIDGE_GLOBAL,
+  CONNECT_CHANNEL,
+  CONNECT_ROUTE,
+  connectScreen,
+  environmentAnswer,
+  addressDecision,
+  isConnectScreen,
+  startsAtConnect,
+  storedAddress,
+  storedFile,
   DEV_SERVER_URL,
   PLATFORM_INFO_CHANNEL,
   INTERFACE_LANGUAGE_CHANNEL,
@@ -233,6 +242,7 @@ describe('spellCheckerChoice', () => {
 /** The desktop's words in English, as `desktopWords('en-GB')` gives them. */
 const ENGLISH = {
   'desktop.show': 'Show Alloy Works',
+  'desktop.connect': 'Connect to another environment',
   'desktop.quit': 'Quit',
   'desktop.no-suggestions': 'No suggestions',
   'desktop.add-to-dictionary': 'Add to dictionary',
@@ -291,11 +301,12 @@ describe('spellingMenu', () => {
 });
 
 describe('trayMenu', () => {
-  it('LOC-005 shows the window and quits, in the language it is given (the UI plan, UI-I)', () => {
+  it('LOC-005 shows the window, connects elsewhere and quits, in the language it is given (the UI plan, UI-I)', () => {
     expect(
       trayMenu({ ...ENGLISH, 'desktop.show': '[Šĥöŵ ~]', 'desktop.quit': '[Ǫûîţ ~]' }),
     ).toEqual([
       { kind: 'show', label: '[Šĥöŵ ~]' },
+      { kind: 'connect', label: ENGLISH['desktop.connect'] },
       { kind: 'separator' },
       { kind: 'quit', label: '[Ǫûîţ ~]' },
     ]);
@@ -344,6 +355,7 @@ describe('the built preload', () => {
     expect(preload()).toContain(PLATFORM_INFO_CHANNEL);
     expect(preload()).toContain(SPELL_CHECK_LANGUAGES_CHANNEL);
     expect(preload()).toContain(INTERFACE_LANGUAGE_CHANNEL);
+    expect(preload()).toContain(CONNECT_CHANNEL);
   });
 });
 
@@ -548,5 +560,149 @@ describe('windowBackground', () => {
     expect(windowBackground(true)).toBe('#0d1217');
     expect(windowBackground(false)).toBe(bgOf('light'));
     expect(windowBackground(true)).toBe(bgOf('dark'));
+  });
+});
+
+describe('addressDecision (the DR plan, DR-C)', () => {
+  it('ADM-051 keeps an http or https address to its origin, the environment being its hostname', () => {
+    expect(addressDecision('https://dev.acme.example/#/documents')).toEqual({
+      kind: 'address',
+      origin: 'https://dev.acme.example',
+    });
+    expect(addressDecision('  http://dev.acme.localhost:8088/  ')).toEqual({
+      kind: 'address',
+      origin: 'http://dev.acme.localhost:8088',
+    });
+  });
+
+  it('ADM-051 refuses what is not an address, another scheme, and credentials, each by name', () => {
+    expect(addressDecision('dev.acme.example')).toEqual({ kind: 'refused', reason: 'malformed' });
+    expect(addressDecision('')).toEqual({ kind: 'refused', reason: 'malformed' });
+    expect(addressDecision(42)).toEqual({ kind: 'refused', reason: 'malformed' });
+    expect(addressDecision('x'.repeat(2049))).toEqual({ kind: 'refused', reason: 'malformed' });
+    expect(addressDecision('file:///C:/app/index.html')).toEqual({
+      kind: 'refused',
+      reason: 'scheme',
+    });
+    expect(addressDecision('javascript:alert(1)')).toEqual({ kind: 'refused', reason: 'scheme' });
+    // The session cookie is Secure, which Chromium keeps over plain http only on loopback.
+    expect(addressDecision('http://dev.acme.example')).toEqual({
+      kind: 'refused',
+      reason: 'insecure',
+    });
+    for (const loopback of [
+      'http://localhost:8088',
+      'http://127.0.0.1:8088',
+      'http://[::1]:8088',
+    ]) {
+      expect(addressDecision(loopback).kind).toBe('address');
+    }
+    expect(addressDecision('https://ada:secret@dev.acme.example')).toEqual({
+      kind: 'refused',
+      reason: 'credentials',
+    });
+  });
+});
+
+describe('storedAddress (the DR plan, DR-D)', () => {
+  it('ADM-051 reads the address kept, and nothing from a file that is not one', () => {
+    const kept = JSON.stringify({ schemaVersion: 1, address: 'https://dev.acme.example' });
+    expect(storedAddress(kept)).toBe('https://dev.acme.example');
+    expect(storedAddress(storedFile('https://dev.acme.example'))).toBe('https://dev.acme.example');
+    for (const bad of [
+      '',
+      'not json',
+      '[]',
+      JSON.stringify({ schemaVersion: 2, address: 'https://dev.acme.example' }),
+      JSON.stringify({ schemaVersion: 1, address: 'file:///C:/x' }),
+      JSON.stringify({ schemaVersion: 1 }),
+    ]) {
+      expect(storedAddress(bad)).toBeNull();
+    }
+  });
+});
+
+describe('the Connect to screen, whatever the target (the DR plan, DR-A)', () => {
+  const location = {
+    packaged: true,
+    devServerUrl: DEV_SERVER_URL,
+    rendererIndexHtml: WINDOWS_INDEX,
+  };
+
+  it('ADM-051 is the packaged renderer file, or the dev server unpackaged', () => {
+    expect(connectScreen(location)).toEqual({ kind: 'file', value: WINDOWS_INDEX });
+    expect(connectScreen({ ...location, packaged: false })).toEqual({
+      kind: 'url',
+      value: DEV_SERVER_URL,
+    });
+  });
+
+  it('ADM-051 answers the screen alone, never a served page, while the window is on one', () => {
+    const screen = connectScreen(location);
+    const served = { kind: 'url', value: 'https://dev.acme.example' } as const;
+    const connect = 'file:///C:/app/web/dist/index.html#/connect';
+    expect(isConnectScreen(connect, screen)).toBe(true);
+    expect(isConnectScreen('https://dev.acme.example/#/connect', screen)).toBe(false);
+    expect(isConnectScreen('file:///C:/elsewhere/index.html', screen)).toBe(false);
+    expect(isConnectScreen(undefined, screen)).toBe(false);
+    expect(isRenderer(connect, served)).toBe(false);
+  });
+});
+
+describe('resolveRendererTarget with a stored address (the DR plan, DR-A)', () => {
+  const location = {
+    packaged: true,
+    devServerUrl: DEV_SERVER_URL,
+    rendererIndexHtml: WINDOWS_INDEX,
+  };
+
+  it('ADM-051 loads the stored address, the variable still first', () => {
+    expect(resolveRendererTarget({ ...location, storedUrl: 'https://kept.example' })).toEqual({
+      kind: 'url',
+      value: 'https://kept.example',
+    });
+    expect(
+      resolveRendererTarget({
+        ...location,
+        storedUrl: 'https://kept.example',
+        serviceUrl: 'https://set.example',
+      }),
+    ).toEqual({ kind: 'url', value: 'https://set.example' });
+  });
+
+  it('keeps the dev server unpackaged, whatever address was kept', () => {
+    expect(
+      resolveRendererTarget({ ...location, packaged: false, storedUrl: 'https://kept.example' }),
+    ).toEqual({ kind: 'url', value: DEV_SERVER_URL });
+  });
+
+  it('ADM-051 opens the Connect to screen, packaged with no address', () => {
+    expect(startsAtConnect(location)).toBe(true);
+    expect(startsAtConnect({ ...location, storedUrl: 'https://kept.example' })).toBe(false);
+    expect(startsAtConnect({ ...location, packaged: false })).toBe(false);
+    expect(CONNECT_ROUTE).toBe('/connect');
+  });
+});
+
+describe('environmentAnswer (the DR plan, DR-C)', () => {
+  it('ADM-051 takes an environment by its answer to a request with no session, and names the rest', () => {
+    expect(environmentAnswer(401, { code: 'unauthenticated' })).toBe('environment');
+    expect(environmentAnswer(404, { code: 'tenant_not_found' })).toBe('no-environment');
+    expect(environmentAnswer(401, { code: 'something_else' })).toBe('not-alloy-works');
+    expect(environmentAnswer(200, { code: 'unauthenticated' })).toBe('not-alloy-works');
+    expect(environmentAnswer(301, null)).toBe('not-alloy-works');
+    expect(environmentAnswer(401, 'unauthenticated')).toBe('not-alloy-works');
+  });
+
+  it('namespaces the connect channel, apart from the others', () => {
+    expect(CONNECT_CHANNEL).toBe('alloy-works:connect');
+    expect(
+      new Set([
+        PLATFORM_INFO_CHANNEL,
+        SPELL_CHECK_LANGUAGES_CHANNEL,
+        INTERFACE_LANGUAGE_CHANNEL,
+        CONNECT_CHANNEL,
+      ]).size,
+    ).toBe(4);
   });
 });

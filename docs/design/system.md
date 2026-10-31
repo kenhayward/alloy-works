@@ -24,9 +24,10 @@ and the renderer, the service and the workers all import them.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                  |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| **IAM-002** | Every container reaches tenant data only through that tenant's database role, scoped object-storage credentials and tenant channel - see below |
+| ID          | How it is met                                                                                                                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IAM-002** | Every container reaches tenant data only through that tenant's database role, scoped object-storage credentials and tenant channel - see below                                                                                           |
+| **ADM-051** | The desktop app loads `ALLOY_SERVICE_URL`, else the address kept from its Connect to screen, else that screen; the tray and an address not answering ask again ([ADR-0072](../decisions/0072-the-desktop-app-asks-which-environment.md)) |
 
 ## Context
 

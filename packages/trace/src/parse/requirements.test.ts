@@ -211,7 +211,8 @@ describe('the real corpus', () => {
     // 1604 (2026-10-29): API-065 to API-073, delivery from CT Studio (CS).
     // 1607 (2026-10-30): API-074 to API-076, connecting CT Studio (CC).
     // 1608 (2026-10-30): API-077, disconnecting a space from CT Studio.
-    expect(total((document) => document.requirements)).toBe(1608);
+    // 1611 (2026-10-31): ADM-051 to ADM-053, the desktop app's releases (DR).
+    expect(total((document) => document.requirements)).toBe(1611);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

@@ -190,13 +190,40 @@
       "line": 91
     },
     {
+      "id": "ADM-051",
+      "area": "ADM",
+      "statement": "The desktop application must ask for the address of the environment it connects to when it first runs, keep it, and let the person change it later, so an installed copy signs in with no configuration",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "ADM-administration-cost-and-observability.md",
+      "line": 105
+    },
+    {
+      "id": "ADM-052",
+      "area": "ADM",
+      "statement": "Each release must publish a Windows installer of the desktop application, built in CI from the released commit and named by the release's version",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "ADM-administration-cost-and-observability.md",
+      "line": 106
+    },
+    {
+      "id": "ADM-053",
+      "area": "ADM",
+      "statement": "The desktop application should say when a newer release exists, download it only when the person agrees, and install it on a restart the person chooses",
+      "tranche": "T6",
+      "status": "Specified",
+      "document": "ADM-administration-cost-and-observability.md",
+      "line": 107
+    },
+    {
       "id": "ADM-006",
       "area": "ADM",
       "statement": "Secrets must be held in a tenant-scoped store, write-only from any client's perspective (**DAT-003**)",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 102
+      "line": 113
     },
     {
       "id": "ADM-007",
@@ -205,7 +232,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 103
+      "line": 114
     },
     {
       "id": "ADM-008",
@@ -214,7 +241,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 104
+      "line": 115
     },
     {
       "id": "ADM-009",
@@ -223,7 +250,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 105
+      "line": 116
     },
     {
       "id": "ADM-032",
@@ -232,7 +259,7 @@
       "tranche": "T7",
       "status": "Superseded by ADM-047",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 106
+      "line": 117
     },
     {
       "id": "ADM-047",
@@ -241,7 +268,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 107
+      "line": 118
     },
     {
       "id": "ADM-050",
@@ -250,7 +277,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 108
+      "line": 119
     },
     {
       "id": "ADM-010",
@@ -259,7 +286,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 119
+      "line": 130
     },
     {
       "id": "ADM-011",
@@ -268,7 +295,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 120
+      "line": 131
     },
     {
       "id": "ADM-012",
@@ -277,7 +304,7 @@
       "tranche": "T5",
       "status": "Superseded by ADM-033",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 121
+      "line": 132
     },
     {
       "id": "ADM-013",
@@ -286,7 +313,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 122
+      "line": 133
     },
     {
       "id": "ADM-014",
@@ -295,7 +322,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 123
+      "line": 134
     },
     {
       "id": "ADM-033",
@@ -304,7 +331,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 124
+      "line": 135
     },
     {
       "id": "ADM-034",
@@ -313,7 +340,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 125
+      "line": 136
     },
     {
       "id": "ADM-035",
@@ -322,7 +349,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 126
+      "line": 137
     },
     {
       "id": "ADM-015",
@@ -331,7 +358,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 147
+      "line": 158
     },
     {
       "id": "ADM-016",
@@ -340,7 +367,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 148
+      "line": 159
     },
     {
       "id": "ADM-017",
@@ -349,7 +376,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 149
+      "line": 160
     },
     {
       "id": "ADM-018",
@@ -358,7 +385,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 150
+      "line": 161
     },
     {
       "id": "ADM-019",
@@ -367,7 +394,7 @@
       "tranche": "T7",
       "status": "Superseded by ADM-037",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 151
+      "line": 162
     },
     {
       "id": "ADM-020",
@@ -376,7 +403,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 152
+      "line": 163
     },
     {
       "id": "ADM-021",
@@ -385,7 +412,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 153
+      "line": 164
     },
     {
       "id": "ADM-036",
@@ -394,7 +421,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 154
+      "line": 165
     },
     {
       "id": "ADM-037",
@@ -403,7 +430,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 155
+      "line": 166
     },
     {
       "id": "ADM-022",
@@ -412,7 +439,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 184
+      "line": 195
     },
     {
       "id": "ADM-023",
@@ -421,7 +448,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 185
+      "line": 196
     },
     {
       "id": "ADM-024",
@@ -430,7 +457,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 186
+      "line": 197
     },
     {
       "id": "ADM-025",
@@ -439,7 +466,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 187
+      "line": 198
     },
     {
       "id": "ADM-026",
@@ -448,7 +475,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 188
+      "line": 199
     },
     {
       "id": "API-001",
@@ -14478,31 +14505,31 @@
       "id": "ADM-N01",
       "statement": "**No standing support access to tenant content** (ADM-023)",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 200
+      "line": 211
     },
     {
       "id": "ADM-N02",
       "statement": "**No cross-tenant reporting** of content, or of product analytics identifying individuals or unrelated tenants, other than aggregates that identify nobody. Administrative and cost reporting across the tenants of one customer organisation is permitted to that organisation's own administrators (**IAM-068**, **IAM-069**), because they are one customer looking at themselves",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 201
+      "line": 212
     },
     {
       "id": "ADM-N03",
       "statement": "**Not a billing system.** Usage is measured and reported here; invoicing is somewhere else",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 202
+      "line": 213
     },
     {
       "id": "ADM-N04",
       "statement": "**No configuration only reachable by the vendor.** Anything a tenant is entitled to change, a tenant administrator can change",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 203
+      "line": 214
     },
     {
       "id": "ADM-N05",
       "statement": "**Not a notification system.** This area decides what is worth alerting on and who should receive it; the inbox, the email and the delivery are **COL**'s (COL-033 to COL-036)",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 204
+      "line": 215
     },
     {
       "id": "API-N01",
@@ -15189,49 +15216,49 @@
       "question": "**What data residency commitments are made?** It interacts with tenant isolation, model endpoints, malware scanning and translation vendors",
       "settledBy": "The first customer who asks, which in this market is early",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 210
+      "line": 221
     },
     {
       "id": "ADM-Q02",
       "question": "**Is usage metered for pricing, or only for visibility?** Metering for pricing makes every measurement a billing dispute waiting to happen",
       "settledBy": "The commercial model. Settling it feeds straight back into ADM-010, ADM-011 and ADM-035: metering for pricing raises the precision each measurement needs and the time each record must survive, neither of which can be applied retrospectively",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 211
+      "line": 222
     },
     {
       "id": "ADM-Q03",
       "question": "**How much can support diagnose from metadata alone (ADM-022)?** The aspiration is most things; the practice will find the exceptions",
       "settledBy": "Experience. It should be revisited after the first hundred support cases",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 212
+      "line": 223
     },
     {
       "id": "ADM-Q04",
       "question": "**Who administers a tenant before it has an administrator?** Bootstrapping needs vendor action, which ADM-N04 is uncomfortable with",
       "settledBy": "A decision on onboarding, taken deliberately rather than by whoever builds signup",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 213
+      "line": 224
     },
     {
       "id": "ADM-Q05",
       "question": "**Who may close a tenant (ADM-030)?** ADM-N04 says nothing is vendor-only, but ending a contract is a commercial act and a customer cannot be the sole author of an irreversible deletion",
       "settledBy": "The commercial model, taken with ADM-Q04 - the two are the same decision at opposite ends of a tenant's life",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 214
+      "line": 225
     },
     {
       "id": "ADM-Q06",
       "question": "**How long is the grace period in ADM-030, and what survives it?** A legal hold (**LIF-021**) prevents deletion regardless of retention policy, which a closing tenant has to reckon with",
       "settledBy": "Legal input, taken with **LIF**. The hold question is the one that decides whether closure can ever be final",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 215
+      "line": 226
     },
     {
       "id": "ADM-Q07",
       "question": "**Should notifications, background work, and security and data protection become areas of their own?** Each is now specified as cross-cutting requirements with named owners - COL-060 to COL-062 and API-055 for notification and webhook mechanics, ADM-040 for scheduled work, ADM-041 to ADM-044 and IAM-066 for boundaries, backup and derived copies - which is the smaller move. Each could instead be an area",
       "settledBy": "Whether the cross-cutting requirements hold together as the tranches are planned. An area earns its own document when its requirements stop fitting in somebody else's, and these are close to that line rather than over it",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 216
+      "line": 227
     },
     {
       "id": "API-Q01",
@@ -19819,6 +19846,10 @@
         {
           "id": "IAM-002",
           "howItIsMet": "Every container reaches tenant data only through that tenant's database role, scoped object-storage credentials and tenant channel - see below"
+        },
+        {
+          "id": "ADM-051",
+          "howItIsMet": "The desktop app loads `ALLOY_SERVICE_URL`, else the address kept from its Connect to screen, else that screen; the tray and an address not answering ask again ([ADR-0072](../decisions/0072-the-desktop-app-asks-which-environment.md))"
         }
       ]
     },
@@ -21229,15 +21260,27 @@
       "kind": "title"
     },
     {
+      "id": "ADM-051",
+      "file": "apps/desktop/src/connection.test.ts",
+      "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-051",
+      "file": "apps/desktop/src/shell.test.ts",
+      "line": 567,
+      "kind": "title"
+    },
+    {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 170,
+      "line": 179,
       "kind": "title"
     },
     {
       "id": "LOC-005",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 242,
+      "line": 252,
       "kind": "title"
     },
     {
@@ -26002,6 +26045,12 @@
       "id": "SCH-058",
       "file": "apps/web/src/search/links.test.ts",
       "line": 95,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-051",
+      "file": "apps/web/src/shell/Connect.test.tsx",
+      "line": 42,
       "kind": "title"
     },
     {

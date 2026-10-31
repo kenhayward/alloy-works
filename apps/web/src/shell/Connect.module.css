@@ -1,0 +1,36 @@
+/* The Connect to screen (the DR plan, DR-B): one card, centred on the window, nothing else. */
+.connect {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-16);
+  background: var(--bg);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-12);
+  width: min(440px, 100%);
+  padding: var(--space-24);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.card h1 {
+  margin: 0;
+  font-size: var(--size-20);
+}
+
+.card p {
+  margin: 0;
+}
+
+.card button {
+  justify-self: start;
+}
+
+.refused {
+  color: var(--danger);
+}
