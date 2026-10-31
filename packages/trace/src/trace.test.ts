@@ -108,7 +108,8 @@ describe('the committed trace.json', () => {
     // 1611, from 1608 (2026-10-31): ADM-051 to ADM-053, the desktop app's releases (DR).
     // 1623, from 1611 (2026-10-31): CLa - the T6 audit's amendments and splits, twelve rows.
     // 1624, from 1623 (2026-10-31): CNT-187, superseding CNT-168 (CLd).
-    expect(model.requirements).toHaveLength(1624);
+    // 1625, from 1624 (2026-10-31): LIB-065, superseding LIB-001 - a vocabulary is a definition (VO).
+    expect(model.requirements).toHaveLength(1625);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -1020,7 +1021,8 @@ describe('the citations in the committed model', () => {
     // 2244 (2026-10-31): CLb - a test for each clause the T6 audit found untested.
     // 2251 (2026-10-31): CLc - the bridge's, the import's and LOC-029's tests, and a translation's history.
     // 2260 (2026-10-31): CLd - LIB-035's and PUB-055's tests.
-    expect(model.citations).toHaveLength(2260);
+    // 2273 (2026-10-31): VOa - a vocabulary's shape, its routes, SKOS and its page.
+    expect(model.citations).toHaveLength(2273);
   });
 
   it('cites no identifier the corpus does not hold', () => {
