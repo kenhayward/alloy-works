@@ -46,11 +46,13 @@ describe('translating a component, in Chromium', () => {
       expect(page.url()).toContain(component.id);
 
       await page.goto(`${SERVICE}/#/translations`);
+      // The picker shows once the spaces have loaded, and only where there is more than one; the
+      // report opens on the first by name, so choose General before reading it (#841).
       const space = page.getByRole('combobox', { name: 'Space' });
+      const table = page.getByRole('table', { name: /Translated components/ });
+      await space.or(table).first().waitFor();
       if ((await space.count()) > 0) await space.selectOption({ label: 'General' });
-      const row = page
-        .getByRole('table', { name: /Translated components/ })
-        .getByRole('row', { name: new RegExp(component.title) });
+      const row = table.getByRole('row', { name: new RegExp(component.title) });
       await row.waitFor();
       expect(await row.textContent()).toMatch(/de-DE: Untranslated.*fr-FR: Untranslated/);
     });

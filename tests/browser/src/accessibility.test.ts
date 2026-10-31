@@ -640,7 +640,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         await checkAxe(page, state, task.meta, arrival);
       };
       await page.goto(`${SERVICE}/#/terms`);
+      // The picker shows once the spaces have loaded, with New term, and only for more than one (#841).
       const space = page.getByRole('combobox', { name: 'Space' });
+      await space
+        .or(page.getByRole('button', { name: 'New term' }))
+        .first()
+        .waitFor();
       if ((await space.count()) > 0) await space.selectOption({ label: 'General' });
       await check('the terms', {
         shows: [
@@ -692,7 +697,12 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       });
       await page.keyboard.press('Escape');
       await page.goto(`${SERVICE}/#/translations`);
+      // The picker shows once the spaces have loaded, and only for more than one (#841).
       const space = page.getByRole('combobox', { name: 'Space' });
+      await space
+        .or(page.getByRole('table', { name: /Translated components/ }))
+        .first()
+        .waitFor();
       if ((await space.count()) > 0) await space.selectOption({ label: 'General' });
       await check("a space's translations", {
         shows: page.getByRole('table', { name: /Translated components/ }),
