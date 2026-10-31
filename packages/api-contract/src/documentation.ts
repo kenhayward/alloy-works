@@ -817,7 +817,7 @@ const descriptions: Readonly<Record<string, string>> = {
   releaseLock:
     'Finishes an editing session, cutting a version if its content changed, then releases the lock.',
   listComponentVersions:
-    'Lists released component versions newest first using an opaque cursor. It does not include working iterations.',
+    'Lists released component versions newest first using an opaque cursor. It does not include working iterations. Named, `line` lists that line’s own versions, divergent or a language’s; absent, the main line’s.',
   listDocumentVersions:
     'Lists a document’s versions newest first using an opaque cursor, each with the version it was restored from, if any.',
   getComponentVersion:
@@ -829,9 +829,9 @@ const descriptions: Readonly<Record<string, string>> = {
   restoreDocumentVersion:
     'Restores an earlier version of a document as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Each reference whose version it changes is audited as re-pointed, from and to.',
   previewRestore:
-    'Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes.',
+    'Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes. Named, `line` previews restoring one of that line’s versions after the line’s newest.',
   restoreVersion:
-    'Restores an earlier version of a component as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Refused while anybody holds the lock, and where it would change nothing.',
+    'Restores an earlier version of a component as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Refused while anybody holds the lock, and where it would change nothing. Named in the body, `line` restores one of that line’s own versions as the line’s next, under the line’s lock, the main line untouched; a language line’s new version translates what the restored one did.',
   cutVersion:
     'Cuts a released version from the editing session’s latest saved iteration. The component lock and version precondition apply.',
   createComponent:

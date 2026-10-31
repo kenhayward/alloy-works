@@ -301,6 +301,8 @@ the way any source is read.
 - **Replace by source and recipe**: in one transaction the rows with this source hash and recipe id
   (any recipe version) are deleted and the package's rows inserted, so a later recipe version
   replaces the earlier one and other sources' rows stay. This is the `replace` capability for data.
+  No transaction spans this database and the tenant's, so the delivery is finished after the write:
+  a finish that fails leaves the job to retry, and the retry's write replaces the first's rows.
 - **The tables follow the recipe**: a new column is added; a column the package no longer has is
   kept, null in new rows; a column whose type changes is refused, `content_rejected` naming it,
   because changing a column under queries that read it is a person's decision.
@@ -312,7 +314,7 @@ the way any source is read.
 ## Provenance
 
 - **On each version**, its note, of the form
-  `Delivered by CT Studio from <source file> (<decomposer version>) for <acting user>`. The author is
+  `Delivered by CT Studio from <source file> (<decomposer version>) for <acting user>; source sha256 <hash>, delivery key <key>`. The author is
   the service identity; Alloy Works does not backdate authorship, and the person CT Studio delivered
   for is not a principal here.
 - **In `bridge_delivery`**: the source hash and file name, the source key, the batch, the decomposer

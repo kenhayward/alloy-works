@@ -19,6 +19,7 @@ import {
   readBridgeSettings,
   readDelivery,
   readUnlisted,
+  readVersion,
   recordNonce,
   revokeApiToken,
   startDelivery,
@@ -636,6 +637,37 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
     });
   });
 
+  it("API-071 a delivered version's note names the source's hash and the delivery key", async () => {
+    const delivery = await accepted(
+      documentPackage(documentOf(), [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(74) },
+      ]),
+    );
+    expect(await work()).toBe('done');
+    const receipt = (await deliveryOf(delivery.id))!.receipt as Receipt;
+    const component = receipt.document!.components.find((each) => each.kind === 'component')!;
+    const version = await service.withTenant(tenant, (trx) => readVersion(trx, component.version));
+    expect(version!.note).toBe(
+      `Delivered by CT Studio from report.docx (7) for Example Operator; source sha256 ${'b'.repeat(64)}, delivery key ${delivery.key}`,
+    );
+  });
+
+  it('API-073 what a delivery did not carry is kept with the delivery', async () => {
+    const document = documentOf();
+    const unnamed = { ...document.images[0]!, id: 'img-2' };
+    const delivery = await accepted(
+      documentPackage({ ...document, images: [...document.images, unnamed] }, [
+        { id: 'img-1', contentType: 'image/png', bytes: await png(75) },
+        { id: 'img-2', contentType: 'image/png', bytes: await png(76) },
+      ]),
+    );
+    expect(await work()).toBe('done');
+    expect((await deliveryOf(delivery.id))!.carried).toContainEqual({
+      code: 'image_unreferenced',
+      element: 'img-2',
+    });
+  });
+
   const clientDeliveries = async () =>
     (await service.withTenant(tenant, (trx) => readUnlisted(trx, general))).find(
       (each) => each.name === 'Client',
@@ -740,6 +772,61 @@ describe('the bridge_deliver job, which writes a delivery CT Studio asked for (t
       expect(rows.rows).toEqual([
         { item: 'Nets', price: '4.50', row: 1 },
         { item: 'Jars', price: '7.50', row: 2 },
+      ]);
+    } finally {
+      await admin.end();
+    }
+  });
+
+  it('API-067 a data delivery whose finish fails is tried again, its rows replaced, not doubled', async () => {
+    // The first finish after the store's write runs, then its transaction is rolled back.
+    let failures = 1;
+    let written = false;
+    const writing: DeliveredStore = {
+      ...delivered,
+      write: async (...args) => {
+        const answer = await delivered.write(...args);
+        written = true;
+        return answer;
+      },
+    };
+    const failingFinish: TenantDatabase = {
+      ...worker,
+      withTenant: (t, work, context) => {
+        if (!written || failures === 0) return worker.withTenant(t, work, context);
+        failures -= 1;
+        return worker.withTenant(
+          t,
+          async (trx) => {
+            await work(trx);
+            throw new Error('the finish did not commit');
+          },
+          context,
+        );
+      },
+    };
+    const job = {
+      bridge_deliver: bridgeDeliverJob({ db: failingFinish, stores, delivered: writing }),
+    };
+    const delivery = await accepted(dataPackage(rates), {
+      destination: { space: general, tableSet: 'retried' },
+    });
+    expect(await work(job)).toBe('retry');
+    expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'running' });
+    expect(await gone(delivery.packageKey!)).toBe(false);
+
+    await asAdmin('update platform.job set run_after = now() where subject_id = $1', [delivery.id]);
+    expect(await work(job)).toBe('done');
+    expect(await deliveryOf(delivery.id)).toMatchObject({ state: 'written' });
+    const admin = new pg.Client({ connectionString: DELIVERED });
+    await admin.connect();
+    try {
+      const rows = await admin.query(
+        `select item, ct_row::int as row from "${schema}".retried_prices order by ct_row`,
+      );
+      expect(rows.rows).toEqual([
+        { item: 'Nets', row: 1 },
+        { item: 'Jars', row: 2 },
       ]);
     } finally {
       await admin.end();

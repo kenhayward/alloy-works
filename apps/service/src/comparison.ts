@@ -43,9 +43,14 @@ import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { callerOf, notFound, type Authorised } from './access.js';
 import { liveBindingStates, pinnedBindingStates } from './data/bindings.js';
+import { shownVersionView } from './components.js';
 
 const numberOf = (version: StoredVersion) => `${version.revision}.${version.version}`;
 const sideOf = (version: StoredVersion) => ({ id: version.id, number: numberOf(version) });
+const shownSide = async (trx: TenantTransaction, version: StoredVersion) => {
+  const { number } = await shownVersionView(trx, version);
+  return { id: version.id, number };
+};
 const changesView = (changes: readonly UnitChange[]) =>
   changes.map((each) => ({ ...each })) as ComponentComparisonView['changes'];
 
@@ -92,8 +97,9 @@ export function comparisonHandlers(
       if (!older || !newer) throw notFound();
       return {
         component: id,
-        from: sideOf(older.stored),
-        to: sideOf(newer.stored),
+        // A line's versions by the numbers people see (ADR-0063), as its history lists them.
+        from: await shownSide(trx, older.stored),
+        to: await shownSide(trx, newer.stored),
         older: older.content as unknown as Record<string, unknown>,
         newer: newer.content as unknown as Record<string, unknown>,
         changes: changesView(compareContent(older.content, newer.content).changes),

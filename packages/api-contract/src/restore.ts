@@ -12,12 +12,23 @@ export const RestoreParams = z.object({
 });
 export type RestoreParams = z.infer<typeof RestoreParams>;
 
-export const RestoreBody = z.strictObject({
+export const DocumentRestoreBody = z.strictObject({
   latest: LowercaseUuid.describe(
     'The latest version the restore was previewed against, which must still be the latest',
   ),
 });
+export type DocumentRestoreBody = z.infer<typeof DocumentRestoreBody>;
+
+const restoreLine = LowercaseUuid.optional().describe(
+  "A component's line, divergent or a language's, to restore on: one of its versions, made its next (LOC-012); its main line where absent",
+);
+
+export const RestoreBody = DocumentRestoreBody.extend({ line: restoreLine });
 export type RestoreBody = z.infer<typeof RestoreBody>;
+
+/** Previewing a component's restore on one of its lines. */
+export const RestoreQuery = z.object({ line: restoreLine });
+export type RestoreQuery = z.infer<typeof RestoreQuery>;
 
 const Failure = z.object({
   code: z.string(),
@@ -204,6 +215,7 @@ export const restoreRoutes = {
     tenantScoped: true,
     access: edit,
     params: RestoreParams,
+    query: RestoreQuery,
     responses: {
       200: { description: 'What a restore would make, inserting nothing', schema: RestorationView },
       401: unauthenticated,
@@ -294,7 +306,7 @@ export const restoreRoutes = {
     tenantScoped: true,
     access: edit,
     params: RestoreParams,
-    body: RestoreBody,
+    body: DocumentRestoreBody,
     responses: {
       200: { description: 'Restored, as a new version', schema: RestoreAnswer },
       400: {

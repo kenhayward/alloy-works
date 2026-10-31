@@ -28,6 +28,7 @@ const day = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
 export function VersionList({
   client,
   id,
+  line,
   limit,
   onCompare,
   onRestore,
@@ -37,6 +38,8 @@ export function VersionList({
 }: {
   client: Client;
   id: string;
+  /** A component's line whose versions to list (LOC-012); its main line's where absent. */
+  line?: string;
   /** Whose versions: a component's, or a document's (the RS plan, RS-H). */
   of?: 'component' | 'document';
   limit?: number;
@@ -54,12 +57,12 @@ export function VersionList({
   useEffect(() => {
     let current = true;
     setVersions(undefined);
-    const params = {
-      params: { path: { id }, query: limit === undefined ? {} : { limit: String(limit) } },
-    };
+    const query = limit === undefined ? {} : { limit: String(limit) };
     (of === 'document'
-      ? client.GET('/v1/documents/{id}/versions', params)
-      : client.GET('/v1/components/{id}/versions', params)
+      ? client.GET('/v1/documents/{id}/versions', { params: { path: { id }, query } })
+      : client.GET('/v1/components/{id}/versions', {
+          params: { path: { id }, query: { ...query, ...(line === undefined ? {} : { line }) } },
+        })
     )
       .then(({ data }) => {
         if (!current) return;
@@ -80,7 +83,7 @@ export function VersionList({
     return () => {
       current = false;
     };
-  }, [client, id, limit, read, of]);
+  }, [client, id, line, limit, read, of]);
 
   if (versions === undefined) return null;
   if (versions === null)

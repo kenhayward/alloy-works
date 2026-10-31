@@ -708,4 +708,115 @@ describe('translation (the TR plan, TRa)', () => {
     const onLine = await h.call('alice', 'GET', `/v1/components/${component.id}?line=${line}`);
     expect(onLine.json()).toMatchObject({ lock: { holder: { id: h.ids.ada } } });
   });
+
+  it("LOC-012 lists a translation's history on its line and restores an earlier version of it there, by whoever may edit, the main line's history and latest untouched", async () => {
+    const component = await approvedComponent('Conclusion');
+    const begun = await h.call('grace', 'POST', `/v1/components/${component.id}/translations`, {
+      language: 'fr-FR',
+    });
+    const line = begun.json<{ line: string }>().line;
+    /** A translator's session on the line, saved and then Done: cut and the lock let go. */
+    const translate = async (openedFrom: string, words: string) => {
+      const session = randomUUID();
+      const claimed = await h.call('grace', 'POST', `/v1/components/${component.id}/lock`, {
+        session,
+        line,
+      });
+      expect(claimed.statusCode, claimed.body).toBe(200);
+      const saved = await h.call(
+        'grace',
+        'PUT',
+        `/v1/components/${component.id}/iterations/${session}/1`,
+        {
+          openedFrom,
+          content: {
+            schemaVersion: 1,
+            title: 'Conclusion',
+            language: 'fr-FR',
+            direction: 'ltr',
+            content: [para('b1', words)],
+          },
+          line,
+        },
+      );
+      expect(saved.statusCode, saved.body).toBe(200);
+      const done = await h.call(
+        'grace',
+        'DELETE',
+        `/v1/components/${component.id}/lock?session=${session}&openedFrom=${openedFrom}&line=${line}&translates=${component.version.id}`,
+      );
+      expect(done.statusCode, done.body).toBe(200);
+      return done.json<{ version: Version }>().version;
+    };
+    const draft = await translate(component.version.id, 'Brouillon.');
+    const better = await translate(draft.id, 'Mieux.');
+
+    const history = (who: string, query = `?line=${line}`) =>
+      h.call(who, 'GET', `/v1/components/${component.id}/versions${query}`);
+    const listed = await history('alice');
+    expect(listed.statusCode, listed.body).toBe(200);
+    expect(
+      listed.json<{ items: Version[] }>().items.map(({ id, number }) => ({ id, number })),
+    ).toEqual([
+      { id: better.id, number: 'fr-FR 1.2' },
+      { id: draft.id, number: 'fr-FR 1.1' },
+    ]);
+    expect((await history('ivy')).statusCode).toBe(404);
+    expect((await history('alice', `?line=${randomUUID()}`)).statusCode).toBe(404);
+    const main = (await history('alice', '')).json<{ items: Version[] }>().items;
+    expect(main[0]?.id).toBe(component.version.id);
+    expect(main.map((each) => each.id)).not.toContain(draft.id);
+
+    // Compared as the Versions panel compares them, by the numbers people see.
+    const compared = await h.call(
+      'alice',
+      'GET',
+      `/v1/components/${component.id}/comparison?from=${draft.id}&to=${better.id}`,
+    );
+    expect(compared.json()).toMatchObject({
+      from: { number: 'fr-FR 1.1' },
+      to: { number: 'fr-FR 1.2' },
+    });
+    // Opened on its own page, by its number and against its line's latest, not the main line's.
+    const opened = await h.call(
+      'alice',
+      'GET',
+      `/v1/components/${component.id}/versions/${draft.id}`,
+    );
+    expect(opened.json()).toMatchObject({
+      version: { id: draft.id, number: 'fr-FR 1.1' },
+      latest: { id: better.id, number: 'fr-FR 1.2' },
+    });
+
+    const preview = await h.call(
+      'grace',
+      'GET',
+      `/v1/components/${component.id}/versions/${draft.id}/restoration?line=${line}`,
+    );
+    expect(preview.statusCode, preview.body).toBe(200);
+    expect(preview.json()).toMatchObject({
+      from: { id: draft.id, number: 'fr-FR 1.1' },
+      latest: { id: better.id, number: 'fr-FR 1.2' },
+      refusals: [],
+    });
+    const restore = (who: string) =>
+      h.call(who, 'POST', `/v1/components/${component.id}/versions/${draft.id}/restore`, {
+        latest: better.id,
+        line,
+      });
+    expect((await restore('alice')).statusCode).toBe(403);
+    const restored = await restore('grace');
+    expect(restored.statusCode, restored.body).toBe(200);
+    expect(restored.json()).toMatchObject({ version: { number: 'fr-FR 1.3' } });
+    const id = restored.json<{ version: Version }>().version.id;
+
+    const onLine = await h.call('alice', 'GET', `/v1/components/${component.id}?line=${line}`);
+    expect(onLine.json()).toMatchObject({ version: { id }, content: { language: 'fr-FR' } });
+    expect((await h.call('alice', 'GET', `/v1/components/${component.id}`)).json()).toMatchObject({
+      version: { id: component.version.id },
+    });
+    expect(
+      (await history('alice')).json<{ items: (Version & { restoredFrom: Version })[] }>().items[0],
+    ).toMatchObject({ id, restoredFrom: { id: draft.id, number: 'fr-FR 1.1' } });
+  });
 });

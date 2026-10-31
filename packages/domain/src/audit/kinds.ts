@@ -474,10 +474,11 @@ export const auditKindSpecs = {
   // its reason is Administration's alone, never the log's (LIF-030).
   'hold.applied': kind(['LIF-073'], z.strictObject({ hold: Id }), 'packages/db/src/holds.ts'),
   'hold.removed': kind(['LIF-073'], z.strictObject({ hold: Id }), 'packages/db/src/holds.ts'),
-  // A restore (the RS plan, RS-C): about the new version, the subject; the earlier one it came from.
+  // A restore (the RS plan, RS-C): about the new version, the subject; the earlier one it came from,
+  // and the line it was restored on (LOC-012), none for the main line.
   'content.restored': kind(
     ['LIF-067', 'CNT-170'],
-    z.strictObject({ kind: AuditName, from: Id }),
+    z.strictObject({ kind: AuditName, from: Id, line: Id.optional() }),
     'packages/db/src/restore.ts',
   ),
   // A reference taking another version (the RS plan, RS-G): about the document version recording it;

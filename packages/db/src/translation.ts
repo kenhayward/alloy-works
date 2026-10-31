@@ -158,6 +158,22 @@ export async function recordTranslates(
     .execute();
 }
 
+/** The main-line version a language line's version was last recorded translating, or undefined. */
+export async function translatedBy(
+  trx: TenantTransaction,
+  version: string,
+): Promise<string | undefined> {
+  if (!(await translationStored(trx))) return undefined;
+  const state = await trx
+    .selectFrom('translation_state')
+    .select('translates')
+    .where('version_id', '=', version)
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  return state?.translates;
+}
+
 export type MarkCurrentAnswer =
   | { readonly answer: 'marked' }
   | { readonly answer: 'line.missing' | 'line.closed' | 'translation.untranslated' }

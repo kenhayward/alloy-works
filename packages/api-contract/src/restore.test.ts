@@ -39,6 +39,15 @@ describe("a component's restore in the contract (the RS plan, RS-D)", () => {
     };
     expect(ComponentVersionList.parse({ items: [listed], next: null }).items[0]).toEqual(listed);
   });
+
+  it("names a component's line to list, preview and restore on, and a document's restore none", () => {
+    const line = '00000000-0000-4000-8000-000000000002';
+    const latest = '00000000-0000-4000-8000-000000000001';
+    expect(routes.listComponentVersions.query.safeParse({ line }).success).toBe(true);
+    expect(routes.previewRestore.query.safeParse({ line }).success).toBe(true);
+    expect(routes.restoreVersion.body.safeParse({ latest, line }).success).toBe(true);
+    expect(routes.restoreDocumentVersion.body.safeParse({ latest, line }).success).toBe(false);
+  });
 });
 
 describe("a document's versions and restore in the contract (the RS plan, RS-H)", () => {

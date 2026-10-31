@@ -1152,7 +1152,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   version to whoever may edit it: what it would change, any values not carried forward to the fields
   defined now, and why it cannot, if it cannot - somebody editing it, nothing changed - then **Restore
   this version**. It makes a new version, audited, and the history says "Restored from version N".
-  A document's page has a **Versions** panel too: each version, and **Restore** on each earlier one,
+  With a translation open, the panel lists that translation's own versions, numbered as `fr-FR 1.2`,
+  and restores on it, its source and every other language untouched (`?line=` on
+  `/v1/components/{id}/versions`, its `restoration`, and `line` in the restore's body). A document's page has a **Versions** panel too: each version, and **Restore** on each earlier one,
   showing what it would change in the outline and why it cannot, if it cannot - a component you may no
   longer read, a section change its template does not allow, a value its field no longer takes. Its
   parameters stay as they are now. Changing which version a reference takes, by its mode or by a

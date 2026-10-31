@@ -1017,7 +1017,8 @@ describe('the citations in the committed model', () => {
     // 2235 (2026-10-31): CLa - the T6 audit's cites added, off-target ones dropped, superseded rows'
     // cites moved to their replacements.
     // 2244 (2026-10-31): CLb - a test for each clause the T6 audit found untested.
-    expect(model.citations).toHaveLength(2244);
+    // 2251 (2026-10-31): CLc - the bridge's, the import's and LOC-029's tests, and a translation's history.
+    expect(model.citations).toHaveLength(2251);
   });
 
   it('cites no identifier the corpus does not hold', () => {

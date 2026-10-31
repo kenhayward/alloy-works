@@ -18,7 +18,9 @@ import { componentFieldsNow } from './component-values.js';
 import { shareDeletion } from './deletion.js';
 import { recordRepoints, restoredOutline, type RestoredOutlineRefusal } from './documents.js';
 import { isComponent, readLock, serialise, type LockState } from './editing.js';
+import { headVersion } from './lines.js';
 import type { TenantTransaction } from './tables.js';
+import { recordTranslates, translatedBy } from './translation.js';
 import { versionDigests } from './version-digest.js';
 import {
   latestVersion,
@@ -102,6 +104,11 @@ export interface RestoreAsked {
     content: ContentDocument,
     latest: StoredVersion,
   ) => Promise<ContentRefusal | undefined>;
+  /**
+   * A component's line to restore on (LOC-012), by its id: an earlier version of that line's, made the
+   * line's next; the main line where absent. A closed line takes none.
+   */
+  readonly line?: string;
 }
 
 /**
@@ -118,7 +125,9 @@ async function resolve(
   await serialise(trx, asked.artifactId);
   const source = await readVersion(trx, asked.version);
   if (!source || source.artifactId !== asked.artifactId) return undefined;
-  const latest = await latestVersion(trx, asked.artifactId);
+  // On a line, one of the line's own versions, after its head (LOC-012).
+  if (source.line !== (asked.line ?? null)) return undefined;
+  const latest = await headVersion(trx, asked.artifactId, asked.line);
   if (!latest) return undefined;
   const read = readContent(source.content, { artifact: source.artifactId, version: source.id });
   if (!read.ok) {
@@ -126,7 +135,7 @@ async function resolve(
     return { source, latest, notCarried: [], changed: [], refusals, substance: undefined };
   }
   const refusals: RestoreRefusal[] = [];
-  const lock = await readLock(trx, asked.artifactId);
+  const lock = await readLock(trx, asked.artifactId, asked.line);
   if (lock) refusals.push({ answer: 'restore.locked', lock });
   const checked = await asked.check?.(read.document, latest);
   if (checked) refusals.push(checked);
@@ -159,6 +168,8 @@ async function resolveDocument(
   trx: TenantTransaction,
   asked: RestoreAsked,
 ): Promise<Restoration | undefined> {
+  // A document has no lines.
+  if (asked.line !== undefined) return undefined;
   if ((await latestVersion(trx, asked.artifactId))?.kind !== 'document') return undefined;
   // Its references are a deletion's dependants (DL-D), the deletion lock before the document's.
   await shareDeletion(trx);
@@ -230,6 +241,7 @@ export async function restoreVersion(
     author: input.by,
     substance: substance!,
     restoredFrom: source.id,
+    ...(input.line === undefined ? {} : { line: input.line }),
   });
   if (recorded.answer === 'version.unchanged') return { answer: 'restore.unchanged' };
   if (recorded.answer !== 'recorded') return recorded;
@@ -240,10 +252,24 @@ export async function restoreVersion(
       kind: 'content.restored',
       subject: { kind: source.kind, id: input.artifactId, version: recorded.version.id },
       space: place.space,
-      detail: { kind: source.kind, from: source.id },
+      detail: {
+        kind: source.kind,
+        from: source.id,
+        ...(input.line === undefined ? {} : { line: input.line }),
+      },
     },
     place.labels,
   );
+  // A language line's version translates what the one it restores did (TR-C).
+  const translated = input.line === undefined ? undefined : await translatedBy(trx, source.id);
+  if (translated !== undefined) {
+    await recordTranslates(trx, {
+      line: input.line!,
+      version: recorded.version.id,
+      translates: translated,
+      by: input.by,
+    });
+  }
   if (restoration.outlines) {
     const { latest: before, restored } = restoration.outlines;
     await recordRepoints(trx, recorded.version, before, restored);

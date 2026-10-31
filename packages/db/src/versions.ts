@@ -688,9 +688,13 @@ export async function listVersions(
   trx: TenantTransaction,
   artifactId: string,
   page: { readonly limit: number; readonly after?: VersionPosition },
+  /** A line's own versions (LOC-012; ADR-0063), by its id; the main line's where absent. */
+  line?: string,
 ): Promise<{ readonly items: readonly ListedVersion[]; readonly next: VersionPosition | null }> {
   const limit = checkedLimit(page.limit);
-  if (!UUID.test(artifactId)) return { items: [], next: null };
+  if (!UUID.test(artifactId) || (line !== undefined && !UUID.test(line))) {
+    return { items: [], next: null };
+  }
   const { after } = page;
   const rows = await trx
     .selectFrom('artifact_version as v')
@@ -710,8 +714,9 @@ export async function listVersions(
       'r.version_no as restored_version',
     ])
     .where('v.artifact_id', '=', artifactId)
-    // The main line's alone: a line's are numbered below it (ADR-0063).
-    .where('v.revision_no', '>=', 0)
+    // The main line's alone: a line's are numbered below it, and read only where named (ADR-0063).
+    .$if(line === undefined, (query) => query.where('v.revision_no', '>=', 0))
+    .$if(line !== undefined, (query) => query.where('v.line_id', '=', line!))
     .$if(after !== undefined, (query) =>
       query.where(
         sql<boolean>`(v.revision_no, v.version_no) < (${after!.revision}, ${after!.version})`,

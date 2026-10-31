@@ -5,6 +5,7 @@ import type {
   RestoreAnswer,
   RestoreBody,
   RestoreParams,
+  RestoreQuery,
 } from '@alloy-works/api-contract';
 import {
   latestVersion,
@@ -29,7 +30,7 @@ import {
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
-import { afterVersion, versionsPage, versionView } from './components.js';
+import { afterVersion, shownVersionView, versionsPage, versionView } from './components.js';
 import { citesUnreadable } from './bibliography/citing.js';
 import { usesUnreadableTerm } from './terms/editing.js';
 import { namesUnreadableColumn, storable } from './editing.js';
@@ -263,17 +264,19 @@ async function restored(
   kind: 'component' | 'document',
 ): Promise<RestoreAnswer> {
   const { id, version } = request.params as RestoreParams;
-  const { latest } = request.body as RestoreBody;
+  // A component's line to restore on (LOC-012); a document's body names none.
+  const { latest, line } = request.body as RestoreBody;
   const answer = await restoreVersion(trx, {
     artifactId: id,
     version,
     latest,
     by: principalId,
     ...(kind === 'component' ? { check: savedChecks(trx, request) } : {}),
+    ...(line === undefined ? {} : { line }),
   });
   switch (answer.answer) {
     case 'restored':
-      return { version: versionView(answer.version) };
+      return { version: await shownVersionView(trx, answer.version) };
     case 'artifact.missing':
       throw notFound();
     case 'version.precondition':
@@ -281,7 +284,7 @@ async function restored(
         409,
         'version.precondition',
         `This ${kind} has a newer version than the one this restore was previewed against.`,
-        { current: versionView(answer.current) },
+        { current: await shownVersionView(trx, answer.current) },
       );
     default:
       throw refuse(answer);
@@ -333,17 +336,19 @@ export function restoreHandlers() {
       { trx, principalId }: Authorised,
     ): Promise<RestorationView> => {
       const { id, version } = request.params as RestoreParams;
+      const { line } = request.query as RestoreQuery;
       const restoration = await previewRestore(trx, {
         artifactId: id,
         version,
         by: principalId,
         check: savedChecks(trx, request),
+        ...(line === undefined ? {} : { line }),
       });
       if (restoration?.source.kind !== 'component') throw notFound();
       return {
         component: id,
-        from: versionView(restoration.source),
-        latest: versionView(restoration.latest),
+        from: await shownVersionView(trx, restoration.source),
+        latest: await shownVersionView(trx, restoration.latest),
         notCarried: await notCarriedView(trx, restoration.notCarried),
         changed: await changedView(trx, restoration.changed),
         refusals: restoration.refusals.map(refusalView),
