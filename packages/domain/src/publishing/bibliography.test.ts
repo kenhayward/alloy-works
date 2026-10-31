@@ -241,6 +241,39 @@ describe('citations published (CIc)', () => {
     });
   });
 
+  it('PUB-040 formats the same citations by the style selected: Harvard by name and year, Vancouver by number', () => {
+    const content = component(paragraph('p1', cite(PENHALLOW), text(' and '), cite(MARLOW)));
+    const harvard = {
+      csl: SEEDED_STYLE_FILES['harvard-cite-them-right'],
+      requires: SEEDED_REQUIRES,
+    };
+    const byName = published(publish(content, { citations: { style: harvard } }));
+    const bySequence = published(publish(content));
+    const shape = (document: PublishedDocument) =>
+      (document.back.bibliography?.entries ?? []).map((each) => ({
+        anchor: each.anchor,
+        label: words(each.label),
+        text: words(each.runs),
+      }));
+    // Harvard orders by name and labels nothing; Vancouver numbers in citing order.
+    expect(shape(byName)).toEqual([
+      {
+        anchor: anchor(MARLOW),
+        label: '',
+        text: expect.stringContaining('Marlow, A. (2020)'),
+      },
+      {
+        anchor: anchor(PENHALLOW),
+        label: '',
+        text: expect.stringContaining('Penhallow, G. (2018)'),
+      },
+    ]);
+    expect(shape(bySequence)).toEqual([
+      { anchor: anchor(PENHALLOW), label: '1.', text: expect.stringContaining('Penhallow G.') },
+      { anchor: anchor(MARLOW), label: '2.', text: expect.stringContaining('Marlow A.') },
+    ]);
+  });
+
   it('PUB-112 links each citation in running text to its entry in the bibliography, and sets one in a caption as text', () => {
     const document = published(
       publish(

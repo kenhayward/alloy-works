@@ -258,6 +258,36 @@ describe('Arabic, Hebrew and Latin in one paragraph, under the default theme (th
     }
   });
 
+  it('STY-075 sets Latin, Greek, Cyrillic, Arabic and Hebrew in one paragraph, each in a face covering it', async () => {
+    /** "Greetings", in Greek, and "peace", in Russian: both inside the serif. */
+    const GREEK = String.fromCodePoint(0x03c7, 0x03b1, 0x03b9, 0x03c1, 0x03b5, 0x03c4, 0x03b5);
+    const CYRILLIC = String.fromCodePoint(0x043c, 0x0438, 0x0440);
+    const paint = await painted(
+      [paragraph('m4', text(`Ada ${GREEK} ${CYRILLIC} ${VOWELLED} ${POINTED} Grace`))],
+      defaultTheme,
+    );
+    const family: Record<string, string> = {
+      LiberationSerif: 'Liberation Serif',
+      'NotoNaskhArabic-Regular': 'Noto Naskh Arabic',
+    };
+    // Every letter of each script painted, and painted in a face whose family covers it.
+    const setIn = new Map<number, string>();
+    for (const piece of body(paint)) {
+      for (const character of piece.text) setIn.set(character.codePointAt(0)!, piece.face);
+    }
+    const scripts = { Latin: 'AdaGrace', GREEK, CYRILLIC, VOWELLED, POINTED };
+    for (const [script, letters] of Object.entries(scripts)) {
+      for (const character of letters) {
+        const codePoint = character.codePointAt(0)!;
+        const face = setIn.get(codePoint);
+        expect(face, `${script} ${codePoint.toString(16)}`).toBeDefined();
+        expect(fonts.covers(codePoint, family[face!] ?? face!), `${script} in ${face}`).toBe(true);
+      }
+    }
+    expect(setIn.get(GREEK.codePointAt(0)!)).toBe('LiberationSerif');
+    expect(setIn.get(VOWELLED.codePointAt(0)!)).toBe('NotoNaskhArabic-Regular');
+  });
+
   it('STY-075 publishes them together to Word, each piece in its face, its lines at least the line spacing', async () => {
     const made = assemble(inputOf(defaultTheme, [paragraph('m3', text(mixed))], ['docx']));
     if (!made.ok) throw new Error(JSON.stringify(made.failures));

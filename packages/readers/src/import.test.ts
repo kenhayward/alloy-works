@@ -98,4 +98,22 @@ describe('readImport', () => {
       expect.objectContaining({ action: 'discarded', subject: 'image', count: 2 }),
     );
   });
+
+  it('IMP-049 reports what a Markdown import leaves out, as a Word one does: an image it cannot read', () => {
+    const markdown = ['# Pond', 'Ada ![A far newt](https://example.com/newt.png) saw it.'].join(
+      String.fromCharCode(10, 10),
+    );
+    const read = readImport(strToU8(markdown), 'markdown');
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    expect(read.images).toEqual([]);
+    expect(read.report).toEqual([
+      expect.objectContaining({ stage: 'read', action: 'discarded', subject: 'image', count: 1 }),
+    ]);
+    // The words around it are kept.
+    expect(read.flow.map((item) => item.kind === 'block' && item.source)).toEqual([
+      false,
+      'Ada saw it.',
+    ]);
+  });
 });

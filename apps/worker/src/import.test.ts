@@ -389,6 +389,47 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
     expect(asset).toMatchObject({ spaceId: general });
   });
 
+  it('CNT-168 breaks out a pasted HTML clipboard holding headings into sections and components, each heading kept a heading', async () => {
+    // Shaped as Word puts HTML on the clipboard: a whole document, the copy between its fragment marks.
+    const clipboard =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"></head><body>' +
+      '<!--StartFragment--><h1>Methods</h1><h2>Sampling</h2><p>Ada netted the pond.</p>' +
+      '<p>Fine mesh.</p><h2>Analysis</h2><p>Grace counted.</p><!--EndFragment-->' +
+      '</body></html>';
+    const made = await imported(strToU8(clipboard), 'Pasted 2026-10-31 15.00', 'html');
+    expect(await work()).toBe('done');
+    const parts = await service.withTenant(tenant, (trx) => importParts(trx, made.id));
+    // Each heading read as a heading, by its level, not as a paragraph: the section and the
+    // components it makes are titled by it, and its paragraphs are theirs.
+    expect(
+      parts.map((part) => [
+        part.kind,
+        part.title,
+        part.reason,
+        part.blocks.map((block) => block.type),
+      ]),
+    ).toEqual([
+      [
+        'section',
+        'Methods',
+        { rule: 'heading', style: 'Heading 1', text: 'Methods', level: 1 },
+        [],
+      ],
+      [
+        'component',
+        'Sampling',
+        { rule: 'heading', style: 'Heading 2', text: 'Sampling', level: 2 },
+        ['paragraph', 'paragraph'],
+      ],
+      [
+        'component',
+        'Analysis',
+        { rule: 'heading', style: 'Heading 2', text: 'Analysis', level: 2 },
+        ['paragraph'],
+      ],
+    ]);
+  });
+
   it('IMP-036 recognises a file imported before by its hash or its name, and reads it again matched to what that import made', async () => {
     // Built once: a zip carries the time it was made, so two builds are two files.
     const file = report();
