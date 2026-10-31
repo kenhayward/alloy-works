@@ -140,7 +140,7 @@ const armsOf = (view: EditorView) =>
   ).content.find((each) => each.id === 'f1')!.arms as Record<string, unknown>;
 
 describe('a message form on the editing surface (the MF plan, MF-G)', () => {
-  it('LOC-045 shows the arm its held value selects, the value in it, and says it varies by a number', () => {
+  it('LOC-046 shows the arm its held value selects, the value in it, and says it varies by a number', () => {
     const view = mount();
     const chips = [...view.dom.querySelectorAll('.aw-message-form-chip')];
     expect(chips.map((each) => each.firstChild!.textContent)).toEqual(['3 visits']);
@@ -182,7 +182,7 @@ describe('a message form on the editing surface (the MF plan, MF-G)', () => {
     expect([...open(view).keys()]).toContain('Exactly 5');
   });
 
-  it("LOC-045 draws a form in a footnote's text by the component's language", () => {
+  it("LOC-046 draws a form in a footnote's text by the component's language", () => {
     const view = mount();
     let at = -1;
     view.state.doc.descendants((node, pos) => {

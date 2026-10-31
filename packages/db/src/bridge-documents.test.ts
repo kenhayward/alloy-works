@@ -550,7 +550,7 @@ describe('a document delivery', () => {
     });
   });
 
-  it('an unchanged section keeps its version', async () => {
+  it('API-070 an unchanged section keeps its version', async () => {
     const receipt = written(await deliver());
     const changed = documentOf();
     changed.sections[1] = section('s2', 'Results', [para('s2p', 'It worked twice.')]);

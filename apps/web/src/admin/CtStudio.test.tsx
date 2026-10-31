@@ -228,7 +228,7 @@ describe("Administration's CT Studio", () => {
     expect(connect).toBeEnabled();
   });
 
-  it('API-074 the first connection ends on the token, the entry and five steps', async () => {
+  it('API-074 API-075 the first connection ends on the token, the entry and five steps', async () => {
     const { client, sent } = service(fresh);
     render(<CtStudio client={client} />);
     await connectSpace('General', 'make');

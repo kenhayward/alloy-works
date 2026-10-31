@@ -103,7 +103,7 @@ const run = (state: EditorState, command: ReturnType<typeof blockCommand>) => {
 };
 
 describe('a message form on the surface (the MF plan, MF-G)', () => {
-  it('LOC-045 shows the arm its held value selects, by the same rule as the publish, with the value formatted', () => {
+  it('LOC-046 shows the arm its held value selects, by the same rule as the publish, with the value formatted', () => {
     const doc = docOf([form]);
     expect(shown(doc, inDocument(valued('3', { value: '3', scale: 0 })))).toEqual([
       { text: '3 visits', failed: false, arm: 'other' },
@@ -121,7 +121,7 @@ describe('a message form on the surface (the MF plan, MF-G)', () => {
     );
   });
 
-  it('LOC-045 says by name the arm a value calls for that the form lacks, in the language of its component', () => {
+  it('LOC-046 says by name the arm a value calls for that the form lacks, in the language of its component', () => {
     const doc = docOf([form], 'ar');
     expect(shown(doc, inDocument(valued('3', { value: '3', scale: 0 })))).toEqual([
       { text: 'No words - the form has no arm for few', failed: true, arm: null },

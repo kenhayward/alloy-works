@@ -91,7 +91,7 @@ describe('a bibliography entry', () => {
 });
 
 describe("an entry's key", () => {
-  it("LIB-046 is made from the first author's family name and the year, else the title's first word", () => {
+  it("LIB-064 is made from the first author's family name and the year, else the title's first word", () => {
     expect(entryKey(smith)).toBe('smith2020');
     expect(entryKey({ ...smith, author: [{ family: 'Ölçer-Núñez', given: 'Grace' }] })).toBe(
       'olcernunez2020',
@@ -103,7 +103,7 @@ describe("an entry's key", () => {
     expect(entryKey({ type: 'book', issued: { raw: 'c. 1901' } })).toBe('entry1901');
   });
 
-  it('LIB-046 is suffixed a, b and on where the space already holds it', () => {
+  it('LIB-064 is suffixed a, b and on where the space already holds it', () => {
     expect([0, 1, 2, 26, 27].map((n) => keyCandidate('smith2020', n))).toEqual([
       'smith2020',
       'smith2020a',

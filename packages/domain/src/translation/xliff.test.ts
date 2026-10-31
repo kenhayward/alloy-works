@@ -457,7 +457,7 @@ describe('a message form, translated (the MF plan, MF-F)', () => {
     (content.content[0] as { content: { type: string; arms?: unknown; binding?: unknown }[] })
       .content[1]!;
 
-  it("LOC-045 sends the form as a placeholder and an arm for each of the target language's categories, then each exact arm, each noting its examples", () => {
+  it("LOC-046 sends the form as a placeholder and an arm for each of the target language's categories, then each exact arm, each noting its examples", () => {
     const units = xliffUnits(counted, 'ar');
     expect(units.map((unit) => unit.id)).toEqual([
       'b.p1',

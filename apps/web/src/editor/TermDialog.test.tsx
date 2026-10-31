@@ -65,7 +65,7 @@ function open(props: Partial<Parameters<typeof TermDialog>[0]> = {}) {
 }
 
 describe('the Term dialog (the TM plan, TMc)', () => {
-  it("CNT-165 offers the space's approved terms, found by label, alternative or abbreviation, and applies the one chosen", async () => {
+  it("offers the space's approved terms, found by label, alternative or abbreviation, and applies the one chosen", async () => {
     const { onApply } = open();
     const dialog = screen.getByRole('dialog', { name: 'Term' });
     const offered = () =>
@@ -87,7 +87,7 @@ describe('the Term dialog (the TM plan, TMc)', () => {
     expect(onApply).toHaveBeenCalledWith({ term: WHO });
   });
 
-  it('LIB-057 flags a deprecated term as it is chosen, naming its replacement and offering it', async () => {
+  it('LIB-062 flags a deprecated term as it is chosen, naming its replacement and offering it', async () => {
     const { onApply } = open();
     await userEvent.click(screen.getByRole('radio', { name: 'Mean tide (MT), deprecated' }));
     expect(screen.getByRole('alert')).toHaveTextContent(

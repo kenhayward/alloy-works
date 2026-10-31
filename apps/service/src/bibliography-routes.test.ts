@@ -38,7 +38,7 @@ describe('the bibliography routes (the CI plan, CI-B, CI-C)', () => {
       ...(despiteMatches === undefined ? {} : { despiteMatches }),
     });
 
-  it('LIB-044 makes an entry in a space, and offers the one already there rather than refusing', async () => {
+  it('LIB-044 CNT-051 makes an entry in a space, and offers the one already there rather than refusing', async () => {
     const made = await make('grace', { csl: dunnart });
     expect(made.statusCode, made.body).toBe(200);
     const view = made.json<{ entry: View; matches: unknown[] }>();
@@ -73,7 +73,7 @@ describe('the bibliography routes (the CI plan, CI-B, CI-C)', () => {
     expect(refused.statusCode).toBe(400);
   });
 
-  it('LIB-046 cuts a version keeping the key, and lists the space by key', async () => {
+  it('LIB-064 CNT-051 cuts a version keeping the key, and lists the space by key', async () => {
     const made = (
       await make('grace', { csl: { type: 'book', title: 'Quolls', ISBN: '978-1-56619-909-4' } })
     ).json<{

@@ -30,17 +30,17 @@ Search finds terms, and finds content by a term's labels and its narrower terms,
 | **LIB-018** | A deprecated term is flagged where it is used, its replacement named                                     |
 | **LIB-019** | Typing an abbreviation or a label offers the term                                                        |
 | **LIB-025** | Broader, narrower and related terms, stated                                                              |
-| **LIB-026** | Search reaches content through a term's labels and narrower terms                                        |
-| **LIB-028** | Exported as SKOS JSON-LD in a documented form; imported from it and from Turtle                          |
+| **LIB-059** | Search reaches content through a term's labels and narrower terms                                        |
+| **LIB-060** | Terms exported as SKOS JSON-LD in a documented form; imported from it and from Turtle                    |
 | **LIB-029** | An import reports what it could not represent                                                            |
 | **LIB-049** | Standing is a declared workflow: draft, approved, deprecated                                             |
 | **LIB-050** | A language with no label falls back to the term's base language, and the fallback is reported at publish |
-| **LIB-057** | A deprecated term is flagged as it is chosen                                                             |
+| **LIB-062** | A deprecated term is flagged as it is chosen, as well as where used (LIB-018)                            |
 | **CNT-165** | A Term action on the toolbar and a shortcut apply and remove it                                          |
 | **PUB-039** | A glossary and a list of abbreviations generated from the terms used                                     |
-| **SCH-015** | As LIB-026                                                                                               |
+| **SCH-074** | As LIB-059                                                                                               |
 | **SCH-056** | Terms are searchable                                                                                     |
-| **IMP-015** | As LIB-028                                                                                               |
+| **IMP-050** | As LIB-060                                                                                               |
 
 LIB-015 and LIB-027 are the library's constraints, kept here: a term is referred to, never typed, and
 relations infer nothing.
@@ -66,7 +66,7 @@ term's writer takes the terms lock before the term's own; a component's save, af
 
 ## Interchange
 
-SKOS (LIB-028, LIB-029, IMP-015). Exported as JSON-LD with one fixed context: `@graph` holds each
+SKOS (LIB-060, LIB-029, IMP-050). Exported as JSON-LD with one fixed context: `@graph` holds each
 term as `{"@id": "urn:uuid:<id>", "@type": "skos:Concept"}` with `prefLabel`, `altLabel` and
 `definition` keyed by language, an abbreviation as `notation` `{"@value", "@language"}` in its
 label's language, `broader`, `narrower` and `related` as identities, and a replacement as
@@ -139,7 +139,7 @@ text, so a renamed or related term is found at once.
   at a caret outside a term, and opens on and removes the one a caret is in. `definedTerm` is no longer
   inclusive, as a link is not. The **Term dialog** offers the space's approved and deprecated terms,
   found by any label or abbreviation; a deprecated one chosen is flagged with its replacement offered
-  (LIB-057).
+  (LIB-062).
 - **Suggestions** (TM-L, LIB-019): a plugin ahead of every keymap, acting only on the author's own text
   input (`handleTextInput`, never while composing), matches the words before the caret, or before one
   space or mark after them, case aside, against every form of the space's approved terms, at most five

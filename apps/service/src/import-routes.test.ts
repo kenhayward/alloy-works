@@ -186,7 +186,7 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect(opened.statusCode, opened.body).toBe(200);
   });
 
-  it('IMP-008 removes the bytes it stored for a file another request filled the import with meanwhile', async () => {
+  it('removes the bytes it stored for a file another request filled the import with meanwhile', async () => {
     const created = await made('grace');
     const file = word('Sampling', 'Grace sampled the pond late.');
     const sha256 = createHash('sha256').update(file).digest('hex');
@@ -438,7 +438,7 @@ describe('the import routes (the IM plan, IM-A, IM-B, IM-F)', () => {
     expect(await named('Pond notes.v2.docx', word('Sampling', 'Ada'), {})).toBe('Pond notes.v2');
   });
 
-  it('IMP-036 never says a file was imported before by an import whose document its importer may not read', async () => {
+  it('never says a file was imported before by an import whose document its importer may not read', async () => {
     const file = word('Sampling', 'Ada sampled the secret pond.');
     const theirs = await made('ada', 'Secret pond.docx');
     await send('ada', theirs.id, file);

@@ -125,7 +125,7 @@ describe('the term routes (the TM plan, TM-A, TM-J)', () => {
     });
   });
 
-  it('LIB-028 IMP-015 LIB-029 imports Turtle, reporting what it could not hold, and exports JSON-LD', async () => {
+  it('LIB-060 IMP-050 LIB-029 imports Turtle, reporting what it could not hold, and exports JSON-LD', async () => {
     const imported = await h.call('grace', 'POST', `/v1/spaces/${h.general}/terms/import`, {
       format: 'turtle',
       text: [
