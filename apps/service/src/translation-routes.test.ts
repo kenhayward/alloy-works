@@ -777,6 +777,16 @@ describe('translation (the TR plan, TRa)', () => {
       from: { number: 'fr-FR 1.1' },
       to: { number: 'fr-FR 1.2' },
     });
+    // Opened on its own page, by its number and against its line's latest, not the main line's.
+    const opened = await h.call(
+      'alice',
+      'GET',
+      `/v1/components/${component.id}/versions/${draft.id}`,
+    );
+    expect(opened.json()).toMatchObject({
+      version: { id: draft.id, number: 'fr-FR 1.1' },
+      latest: { id: better.id, number: 'fr-FR 1.2' },
+    });
 
     const preview = await h.call(
       'grace',

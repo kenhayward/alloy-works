@@ -4,6 +4,7 @@ import type {
   RestoreParams,
 } from '@alloy-works/api-contract';
 import {
+  headVersion,
   isArchived,
   latestVersionsOf,
   readableComponents,
@@ -16,6 +17,7 @@ import {
 import { readContent, readOutline, walkOutline, withholdComponents } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { shownVersionView } from './components.js';
 
 /** The version a path names, of the artifact it names and of `kind`; not found otherwise. */
 async function versionAt(
@@ -39,12 +41,17 @@ async function headingOf(trx: TenantTransaction, version: StoredVersion) {
           .select('display_name')
           .where('id', '=', version.author)
           .executeTakeFirst();
-  const latest = (await latestVersionsOf(trx, [version.artifactId])).get(version.artifactId);
+  // A line's version by the number people see, against its line's latest (LOC-012; ADR-0063).
+  const onLine =
+    version.line === null ? undefined : await headVersion(trx, version.artifactId, version.line);
+  const latest = onLine
+    ? { id: onLine.id, number: (await shownVersionView(trx, onLine)).number }
+    : (await latestVersionsOf(trx, [version.artifactId])).get(version.artifactId);
   if (!latest) throw new Error(`The artifact ${version.artifactId} has no latest version`);
   return {
     version: {
       id: version.id,
-      number: `${version.revision}.${version.version}`,
+      number: (await shownVersionView(trx, version)).number,
       createdAt: version.createdAt.toISOString(),
       note: version.note,
       author:
