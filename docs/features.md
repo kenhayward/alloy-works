@@ -29,7 +29,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   environment can sign. The desktop app opens the same environment and signs in the same way: the
   first time it starts it asks for the environment's address, checks that an environment answers there,
   and keeps it; **Connect to another environment** in its tray asks again, as does an address that
-  stops answering. It is
+  stops answering. Each new version is published as a Windows installer, and on Windows the
+  installed app offers each later version, downloading it only when you agree and installing it when
+  you restart or quit. It is
   the whole system working end to end, on one sample document, and it is the shape the first real
   feature arrives into rather than a feature itself.
 
@@ -84,8 +86,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   version that is no longer the latest is refused naming the version that is; and the API's own
   document tells a caller to ignore any field it does not know, since fields are only ever added.
 
-- **A packaged desktop build.** `pnpm --filter @alloy-works/desktop package` produces a Windows
-  installer. Nothing is signed, notarised or published.
+- **Desktop releases.** Each new version is a GitHub release carrying an unsigned Windows installer,
+  `AlloyWorks-Setup-X.Y.Z.exe`, which the installed app updates itself from
+  ([ci-and-releases.md](ci-and-releases.md#releases)). `pnpm --filter @alloy-works/desktop package`
+  builds one locally. Nothing is signed or notarised, so Windows warns on install, and there is no
+  macOS or Linux release.
 
 - **A content model.** `packages/domain` defines the shape a component's content is stored in: seven
   kinds of block, eight kinds of inline content, and thirteen annotations that can overlap each other

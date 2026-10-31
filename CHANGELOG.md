@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.220.0 - 2026-10-31 (PR #0)
+
+The desktop app released and kept up to date (the DR plan, T6's twelfth slice).
+
+### Added
+
+- **Connect to.** The desktop app asks which environment to use when it first starts, keeps the address, and asks again from the tray or when the address does not answer.
+- **Desktop releases.** Each new version publishes a Windows installer of the desktop app as a GitHub release.
+- **Updates in the desktop app.** On Windows, the app checks for a newer release shortly after it starts and from **Check for updates** in its tray, offers it by its version, downloads it only when you agree, and installs it when you choose **Restart now** or the next time you quit.
+
 ## 0.219.0 - 2026-10-30 (PR #826)
 
 Words that vary by a number (the MF plan, T6's eleventh slice).

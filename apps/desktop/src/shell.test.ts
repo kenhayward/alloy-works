@@ -9,6 +9,10 @@ import {
   CONNECT_ROUTE,
   connectScreen,
   environmentAnswer,
+  fill,
+  updateStep,
+  updateTrayItem,
+  updates,
   addressDecision,
   isConnectScreen,
   startsAtConnect,
@@ -243,6 +247,22 @@ describe('spellCheckerChoice', () => {
 const ENGLISH = {
   'desktop.show': 'Show Alloy Works',
   'desktop.connect': 'Connect to another environment',
+  'desktop.update.check': 'Check for updates',
+  'desktop.update.checking': 'Checking for updates',
+  'desktop.update.downloading': 'Downloading the update, {percent}%',
+  'desktop.update.restart': 'Restart to update',
+  'desktop.update.title': 'Alloy Works updates',
+  'desktop.update.available': 'Alloy Works {version} is available.',
+  'desktop.update.available-detail': 'Download it now? It installs when Alloy Works restarts.',
+  'desktop.update.download': 'Download',
+  'desktop.update.not-now': 'Not now',
+  'desktop.update.ready': 'Alloy Works {version} is ready to install.',
+  'desktop.update.ready-detail': 'Restart now, or it installs the next time you quit Alloy Works.',
+  'desktop.update.restart-now': 'Restart now',
+  'desktop.update.later': 'Later',
+  'desktop.update.none': 'Alloy Works is up to date.',
+  'desktop.update.failed': 'Alloy Works could not check for updates. Try again later.',
+  'desktop.update.ok': 'OK',
   'desktop.quit': 'Quit',
   'desktop.no-suggestions': 'No suggestions',
   'desktop.add-to-dictionary': 'Add to dictionary',
@@ -369,6 +389,13 @@ describe('the built main process', () => {
     expect(main()).not.toMatch(/require\(['"]@alloy-works\//);
     expect(main()).toContain('Add to dictionary');
     expect(main()).toContain(INTERFACE_LANGUAGE_CHANNEL);
+  });
+
+  // The packaged app holds dist/ alone, no node_modules: the updater has to be inside the one file.
+  it('holds the updater it checks for releases with (the DR plan, DR-H)', () => {
+    expect(main()).not.toMatch(/require\(['"]electron-updater['"]\)/);
+    expect(main()).toContain('Alloy Works {version} is available.');
+    expect(main()).toContain('autoInstallOnAppQuit');
   });
 });
 
@@ -704,5 +731,151 @@ describe('environmentAnswer (the DR plan, DR-C)', () => {
         CONNECT_CHANNEL,
       ]).size,
     ).toBe(4);
+  });
+});
+
+describe('updateStep (the DR plan, DR-H, DR-I)', () => {
+  const idle = { kind: 'idle' } as const;
+
+  it('ADM-053 checks, offers a newer release by its version, and downloads it only when the person agrees', () => {
+    const checking = updateStep(idle, { kind: 'check', asked: false });
+    expect(checking).toEqual({ state: { kind: 'checking', asked: false }, act: { kind: 'check' } });
+    const offered = updateStep(checking.state, { kind: 'available', version: '0.221.0' });
+    expect(offered).toEqual({
+      state: { kind: 'offered', version: '0.221.0' },
+      act: { kind: 'offer', version: '0.221.0' },
+    });
+    expect(updateStep(offered.state, { kind: 'not-now' })).toEqual({ state: idle, act: null });
+    const downloading = updateStep(offered.state, { kind: 'download' });
+    expect(downloading).toEqual({
+      state: { kind: 'downloading', version: '0.221.0', percent: 0 },
+      act: { kind: 'download' },
+    });
+    expect(updateStep(downloading.state, { kind: 'progress', percent: 41.7 }).state).toEqual({
+      kind: 'downloading',
+      version: '0.221.0',
+      percent: 41,
+    });
+  });
+
+  it('ADM-053 installs on Restart now, and on Later waits for the next quit, asking again from the tray', () => {
+    const downloading = { kind: 'downloading', version: '0.221.0', percent: 99 } as const;
+    const ready = updateStep(downloading, { kind: 'downloaded', version: '0.221.0' });
+    expect(ready).toEqual({
+      state: { kind: 'ready', version: '0.221.0' },
+      act: { kind: 'offer-restart', version: '0.221.0' },
+    });
+    expect(updateStep(ready.state, { kind: 'restart' })).toEqual({
+      state: ready.state,
+      act: { kind: 'install' },
+    });
+    expect(updateStep(ready.state, { kind: 'later' })).toEqual({ state: ready.state, act: null });
+    expect(updateStep(ready.state, { kind: 'check', asked: true }).act).toEqual({
+      kind: 'offer-restart',
+      version: '0.221.0',
+    });
+  });
+
+  it('says nothing of a check at start that found nothing or failed, and tells a person who asked', () => {
+    const quiet = { kind: 'checking', asked: false } as const;
+    const asked = { kind: 'checking', asked: true } as const;
+    expect(updateStep(quiet, { kind: 'none' })).toEqual({ state: idle, act: null });
+    expect(updateStep(quiet, { kind: 'failed' })).toEqual({ state: idle, act: null });
+    expect(updateStep(asked, { kind: 'none' })).toEqual({
+      state: { kind: 'telling' },
+      act: { kind: 'tell', said: 'none' },
+    });
+    expect(updateStep(asked, { kind: 'failed' })).toEqual({
+      state: { kind: 'telling' },
+      act: { kind: 'tell', said: 'failed' },
+    });
+    const downloading = { kind: 'downloading', version: '0.221.0', percent: 3 } as const;
+    expect(updateStep(downloading, { kind: 'failed' })).toEqual({
+      state: { kind: 'telling' },
+      act: { kind: 'tell', said: 'failed' },
+    });
+  });
+
+  it('ignores what does not belong to where it is: a second check while one runs, progress unasked', () => {
+    const checking = { kind: 'checking', asked: false } as const;
+    expect(updateStep(checking, { kind: 'check', asked: true })).toEqual({
+      state: checking,
+      act: null,
+    });
+    expect(updateStep(idle, { kind: 'progress', percent: 5 })).toEqual({ state: idle, act: null });
+    expect(updateStep(idle, { kind: 'restart' })).toEqual({ state: idle, act: null });
+  });
+});
+
+describe('the tray item for updates (the DR plan, DR-H)', () => {
+  const words = {
+    ...ENGLISH,
+    'desktop.update.check': 'Check for updates',
+    'desktop.update.checking': 'Checking for updates',
+    'desktop.update.downloading': 'Downloading the update, {percent}%',
+    'desktop.update.restart': 'Restart to update',
+  };
+
+  it('ADM-053 checks from the tray, shows a download as it goes, and offers the restart', () => {
+    expect(updateTrayItem({ kind: 'idle' }, words)).toEqual({
+      kind: 'update',
+      label: 'Check for updates',
+      enabled: true,
+    });
+    expect(updateTrayItem({ kind: 'checking', asked: true }, words)).toEqual({
+      kind: 'update',
+      label: 'Checking for updates',
+      enabled: false,
+    });
+    expect(updateTrayItem({ kind: 'downloading', version: '0.221.0', percent: 41 }, words)).toEqual(
+      { kind: 'update', label: 'Downloading the update, 41%', enabled: false },
+    );
+    expect(updateTrayItem({ kind: 'ready', version: '0.221.0' }, words)).toEqual({
+      kind: 'update',
+      label: 'Restart to update',
+      enabled: true,
+    });
+  });
+
+  it('sits in the tray before Quit, where the app updates at all', () => {
+    const item = { kind: 'update', label: 'Check for updates', enabled: true } as const;
+    expect(trayMenu(ENGLISH, item).map((each) => each.kind)).toEqual([
+      'show',
+      'connect',
+      'update',
+      'separator',
+      'quit',
+    ]);
+    expect(updates('win32', true)).toBe(true);
+    expect(updates('win32', false)).toBe(false);
+    expect(updates('darwin', true)).toBe(false);
+  });
+
+  it('fills a word with its values, leaving any it is not given', () => {
+    expect(fill('Alloy Works {version} is available.', { version: '0.221.0' })).toBe(
+      'Alloy Works 0.221.0 is available.',
+    );
+    expect(fill('{a} and {b}', { a: '1' })).toBe('1 and {b}');
+  });
+});
+
+describe('updateStep, what the review found (the DR plan, DR-I)', () => {
+  it('keeps the same state for progress within the same percent, so the tray is not rebuilt for it', () => {
+    const downloading = { kind: 'downloading', version: '0.221.0', percent: 41 } as const;
+    expect(updateStep(downloading, { kind: 'progress', percent: 41.9 }).state).toBe(downloading);
+  });
+
+  it('takes no second check while it is telling the person what the last found', () => {
+    const told = updateStep({ kind: 'checking', asked: true }, { kind: 'none' });
+    expect(told).toEqual({ state: { kind: 'telling' }, act: { kind: 'tell', said: 'none' } });
+    expect(updateStep(told.state, { kind: 'check', asked: true })).toEqual({
+      state: told.state,
+      act: null,
+    });
+    expect(updateStep(told.state, { kind: 'dismissed' })).toEqual({
+      state: { kind: 'idle' },
+      act: null,
+    });
+    expect(updateTrayItem(told.state, { ...ENGLISH }).enabled).toBe(false);
   });
 });

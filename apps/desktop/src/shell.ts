@@ -434,14 +434,22 @@ export type DesktopWords = Readonly<Record<DesktopWord, string>>;
 export type TrayMenuItem =
   | { readonly kind: 'show'; readonly label: string }
   | { readonly kind: 'connect'; readonly label: string }
+  | { readonly kind: 'update'; readonly label: string; readonly enabled: boolean }
   | { readonly kind: 'separator' }
   | { readonly kind: 'quit'; readonly label: string };
 
-/** The tray's menu: show the window, connect to another environment (DR-E), and quit, in the interface's language. */
-export function trayMenu(words: DesktopWords): TrayMenuItem[] {
+/**
+ * The tray's menu in the interface's language: show the window, connect to another environment (DR-E),
+ * the update where this copy updates (DR-H), and quit.
+ */
+export function trayMenu(
+  words: DesktopWords,
+  update: Extract<TrayMenuItem, { kind: 'update' }> | null = null,
+): TrayMenuItem[] {
   return [
     { kind: 'show', label: words['desktop.show'] },
     { kind: 'connect', label: words['desktop.connect'] },
+    ...(update === null ? [] : [update]),
     { kind: 'separator' },
     { kind: 'quit', label: words['desktop.quit'] },
   ];
@@ -489,4 +497,134 @@ export function spellingMenu(
  */
 export function windowBackground(systemPrefersDark: boolean): string {
   return systemPrefersDark ? '#0d1217' : '#f4f6f8';
+}
+
+/** A desktop word with its `{name}` placeholders filled; one it is not given is left as it is. */
+export function fill(text: string, values: Readonly<Record<string, string>>): string {
+  return text.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole);
+}
+
+/** Whether this copy updates itself (the DR plan, DR-H): packaged, on Windows, the one installer released. */
+export const updates = (platform: string, packaged: boolean): boolean =>
+  platform === 'win32' && packaged;
+
+/** Where an update is (DR-I): nothing under way, a check, a release offered, its download, or ready. */
+export type UpdateState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'checking'; readonly asked: boolean }
+  | { readonly kind: 'offered'; readonly version: string }
+  | { readonly kind: 'downloading'; readonly version: string; readonly percent: number }
+  | { readonly kind: 'ready'; readonly version: string }
+  /** Telling the person what a check or download came to, until they dismiss it. */
+  | { readonly kind: 'telling' };
+
+/** What happened: the updater's own events, and the person's answers to what they were asked. */
+export type UpdateEvent =
+  | { readonly kind: 'check'; readonly asked: boolean }
+  | { readonly kind: 'available'; readonly version: string }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'failed' }
+  | { readonly kind: 'download' }
+  | { readonly kind: 'not-now' }
+  | { readonly kind: 'progress'; readonly percent: number }
+  | { readonly kind: 'downloaded'; readonly version: string }
+  | { readonly kind: 'restart' }
+  | { readonly kind: 'later' }
+  | { readonly kind: 'dismissed' };
+
+/** What main.ts does next: ask the updater, ask the person, tell them, or install. */
+export type UpdateAct =
+  | { readonly kind: 'check' }
+  | { readonly kind: 'offer'; readonly version: string }
+  | { readonly kind: 'download' }
+  | { readonly kind: 'offer-restart'; readonly version: string }
+  | { readonly kind: 'install' }
+  | { readonly kind: 'tell'; readonly said: 'none' | 'failed' };
+
+/**
+ * An update, one event at a time (the DR plan, DR-H, DR-I; ADM-053): a release is offered by its
+ * version and downloaded only when the person agrees, and installed on Restart now, or on the next
+ * quit after Later. A check the person asked for says what it found; one at start says nothing unless
+ * there is a release. What does not belong where the update is changes nothing.
+ */
+export function updateStep(
+  state: UpdateState,
+  event: UpdateEvent,
+): { state: UpdateState; act: UpdateAct | null } {
+  const idle: UpdateState = { kind: 'idle' };
+  const same = { state, act: null };
+  switch (state.kind) {
+    case 'idle':
+      return event.kind === 'check'
+        ? { state: { kind: 'checking', asked: event.asked }, act: { kind: 'check' } }
+        : same;
+    case 'checking':
+      if (event.kind === 'available') {
+        return {
+          state: { kind: 'offered', version: event.version },
+          act: { kind: 'offer', version: event.version },
+        };
+      }
+      if (event.kind === 'none' || event.kind === 'failed') {
+        return state.asked
+          ? { state: { kind: 'telling' }, act: { kind: 'tell', said: event.kind } }
+          : { state: idle, act: null };
+      }
+      return same;
+    case 'offered':
+      if (event.kind === 'download') {
+        return {
+          state: { kind: 'downloading', version: state.version, percent: 0 },
+          act: { kind: 'download' },
+        };
+      }
+      return event.kind === 'not-now' ? { state: idle, act: null } : same;
+    case 'downloading':
+      if (event.kind === 'progress') {
+        const percent = Math.floor(event.percent);
+        // The same state where the percent shown has not moved, so nothing is drawn again for it.
+        return percent === state.percent ? same : { state: { ...state, percent }, act: null };
+      }
+      if (event.kind === 'downloaded') {
+        return {
+          state: { kind: 'ready', version: event.version },
+          act: { kind: 'offer-restart', version: event.version },
+        };
+      }
+      // The person asked for the download, so its failure is theirs to hear.
+      return event.kind === 'failed'
+        ? { state: { kind: 'telling' }, act: { kind: 'tell', said: 'failed' } }
+        : same;
+    case 'ready':
+      if (event.kind === 'restart') return { state, act: { kind: 'install' } };
+      if (event.kind === 'check') {
+        return { state, act: { kind: 'offer-restart', version: state.version } };
+      }
+      return same;
+    case 'telling':
+      return event.kind === 'dismissed' ? { state: idle, act: null } : same;
+  }
+}
+
+/** The tray's update item for where the update is (DR-H): check, its progress, or the restart. */
+export function updateTrayItem(
+  state: UpdateState,
+  words: DesktopWords,
+): Extract<TrayMenuItem, { kind: 'update' }> {
+  switch (state.kind) {
+    case 'idle':
+      return { kind: 'update', label: words['desktop.update.check'], enabled: true };
+    case 'checking':
+    case 'offered':
+    case 'telling':
+      return { kind: 'update', label: words['desktop.update.checking'], enabled: false };
+    case 'downloading':
+      return {
+        kind: 'update',
+        label: fill(words['desktop.update.downloading'], { percent: String(state.percent) }),
+        enabled: false,
+      };
+    case 'ready':
+      return { kind: 'update', label: words['desktop.update.restart'], enabled: true };
+  }
 }
