@@ -2,6 +2,7 @@ import type { FieldView } from '@alloy-works/api-client';
 import {
   canonicaliseDecimal,
   validate,
+  valueLabel,
   type EffectiveField,
   type FieldDefinition,
 } from '@alloy-works/domain';
@@ -9,6 +10,8 @@ import { useId, useMemo, useRef, useState } from 'react';
 
 import { authorZone, instantFor, localIn } from './dateTime.js';
 import styles from './FieldsForm.module.css';
+import { readerLanguage, useVocabulary, vocabularyOf } from './vocabularies.js';
+import { VocabularyChoice } from './VocabularyChoice.js';
 import { formats, words } from '../words/words.js';
 
 type Values = Readonly<Record<string, unknown>>;
@@ -83,12 +86,17 @@ export function FieldsForm(props: FieldsFormProps) {
   const zone = props.zone ?? authorZone();
   const effective = useMemo(() => props.fields.map(effectiveOf), [props.fields]);
   const failures = validate(effective, props.values);
+  // What a choice says at once, before any failure: a deprecated value chosen (the VO plan, VO-F).
+  const [announced, setAnnounced] = useState<string | null>(null);
   const schemaName = (id: string) => props.schemas.find((each) => each.id === id)?.name ?? id;
-  const said = failures.map((each) => {
-    const name = props.fields.find((field) => field.id === each.field)?.name ?? each.field;
-    // The detail is the domain's sentence, in English (packages/domain's `validate`).
-    return words('metadata.failure', { name, detail: each.detail });
-  });
+  const said = [
+    ...(announced === null ? [] : [announced]),
+    ...failures.map((each) => {
+      const name = props.fields.find((field) => field.id === each.field)?.name ?? each.field;
+      // The detail is the domain's sentence, in English (packages/domain's `validate`).
+      return words('metadata.failure', { name, detail: each.detail });
+    }),
+  ];
   return (
     <div className={styles['form']}>
       {props.fields.map((field) => (
@@ -102,7 +110,10 @@ export function FieldsForm(props: FieldsFormProps) {
           people={props.people}
           readOnly={props.readOnly || field.fixed}
           zone={zone}
+          onAnnounce={setAnnounced}
           onChange={(value) => {
+            // Any change ends what was said of the last; a choice says its own after this.
+            setAnnounced(null);
             const next: Record<string, unknown> = { ...props.values };
             if (value === undefined) delete next[field.id];
             else next[field.id] = value;
@@ -126,6 +137,7 @@ interface FieldRowProps {
   readonly people: FieldsFormProps['people'];
   readonly readOnly: boolean;
   readonly zone: string;
+  readonly onAnnounce: (said: string | null) => void;
   readonly onChange: (value: unknown) => void;
 }
 
@@ -155,6 +167,7 @@ function FieldRow(props: FieldRowProps) {
     zone: props.zone,
     people: props.people,
     onProblem: setProblem,
+    onAnnounce: props.onAnnounce,
   };
 
   if (props.field.multiplicity === 'many') {
@@ -205,6 +218,7 @@ interface InputProps {
   readonly zone: string;
   readonly people: FieldsFormProps['people'];
   readonly onProblem: (problem: string | null) => void;
+  readonly onAnnounce: (said: string | null) => void;
 }
 
 /** One value's input, by its field's data type. `null` hands on a clear. */
@@ -218,6 +232,7 @@ function OneInput(
   },
 ) {
   const id = useId();
+  const vocabulary = useVocabulary(vocabularyOf(props.field));
   const aria = {
     'aria-required': props.required,
     'aria-invalid': props.invalid,
@@ -290,12 +305,28 @@ function OneInput(
       );
     }
     default:
+      // Drawing on a vocabulary, chosen from it (the VO plan, VO-F); until it arrives, or where it
+      // cannot be read, the id held as text, read-only while it is coming, the service checking it.
+      if (typeof vocabulary === 'object') {
+        return labelled(
+          <VocabularyChoice
+            id={id}
+            name={props.label}
+            vocabulary={vocabulary}
+            value={props.value}
+            readOnly={props.readOnly}
+            aria={aria}
+            onChange={props.onChange}
+            onAnnounce={props.onAnnounce}
+          />,
+        );
+      }
       return labelled(
         <input
           id={id}
           type="text"
           value={typeof props.value === 'string' ? props.value : ''}
-          readOnly={props.readOnly}
+          readOnly={props.readOnly || vocabulary === 'reading'}
           onChange={(event) =>
             props.onChange(event.target.value === '' ? null : event.target.value)
           }
@@ -448,9 +479,21 @@ function ManyInput(
       next.map((row) => row.value).filter((each) => each !== null && each !== undefined),
     );
   };
+  const vocabulary = useVocabulary(vocabularyOf(props.field));
   /** What an entry is called in its buttons' names: what it holds, else where it is. */
   const nameOf = (value: unknown, index: number) => {
-    if (typeof value === 'string' && value !== '') return { kind: 'named', name: value, n: 0 };
+    if (typeof value === 'string' && value !== '') {
+      // A vocabulary's value by its label, as it is shown (the VO plan, VO-F).
+      const drawn =
+        typeof vocabulary === 'object'
+          ? vocabulary.values.find((each) => each.id === value)
+          : undefined;
+      const name =
+        drawn === undefined || typeof vocabulary !== 'object'
+          ? value
+          : valueLabel(vocabulary, drawn, readerLanguage());
+      return { kind: 'named', name, n: 0 };
+    }
     if (typeof value === 'object' && value !== null && 'user' in value) {
       const id = String((value as { user: unknown }).user);
       const name = props.people.find((each) => each.id === id)?.name;

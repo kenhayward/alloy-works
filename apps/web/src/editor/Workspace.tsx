@@ -50,6 +50,7 @@ import { DocumentList } from '../structure/DocumentList.js';
 import { BaselineComparisonPage } from '../compare/BaselineComparisonPage.js';
 import { BaselinePage } from '../structure/BaselinePage.js';
 import { DocumentPage } from '../structure/DocumentPage.js';
+import { VocabulariesContext, vocabulariesFrom } from '../metadata/vocabularies.js';
 import { documentAddress, documentLink, templateAccessAddress } from '../structure/links.js';
 import { TemplateList } from '../structure/TemplateList.js';
 import { PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
@@ -238,7 +239,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   }
   if (me === null) return null;
   return (
-    <>
+    // Every field form beneath chooses a vocabulary's values, each read once for the window's client
+    // (the VO plan, VO-F).
+    <VocabulariesContext.Provider value={vocabulariesFrom(client)}>
       {[...kept.current]
         .filter(([at, shown]) => at === place || isWork(shown.hash))
         .map(([at, shown]) => (
@@ -246,7 +249,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             <PageShown value={at === place}>{pageFor(shown.hash, shown.arrivals, me)}</PageShown>
           </div>
         ))}
-    </>
+    </VocabulariesContext.Provider>
   );
 
   /** The page an address names, as it was chosen before pages were kept. */

@@ -37,3 +37,23 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* The values a vocabulary's search offers (VocabularyChoice). */
+.options {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1, 4px) 0;
+  border: 1px solid var(--border);
+  max-height: 16em;
+  overflow-y: auto;
+}
+
+.option {
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+  cursor: default;
+}
+
+.option[aria-selected='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
