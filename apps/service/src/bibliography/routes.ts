@@ -138,7 +138,7 @@ export function bibliographyHandlers() {
         archived: query.archived === 'true',
       });
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
-      // Each flagged where its source says it is retracted or corrected (XR-G).
+      // Each flagged where its source says it is retracted, superseded or corrected (XR-G).
       const flags = await citedFlags(
         trx,
         listed.items.map((each) => each.id),

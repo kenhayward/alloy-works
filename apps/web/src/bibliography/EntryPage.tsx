@@ -29,10 +29,10 @@ interface Shown {
 
 interface Status {
   readonly checkedAt: string;
-  readonly outcome: 'current' | 'changed' | 'gone' | 'retracted' | 'corrected';
+  readonly outcome: 'current' | 'changed' | 'gone' | 'retracted' | 'superseded' | 'corrected';
   readonly differs: readonly string[];
   readonly notice: {
-    readonly kind: 'retraction' | 'correction';
+    readonly kind: 'retraction' | 'supersession' | 'correction';
     readonly identifier?: string;
     readonly date?: string;
   } | null;
@@ -51,6 +51,9 @@ const OUTCOMES: Readonly<Record<Status['outcome'], string>> = {
   },
   get retracted() {
     return words('bibliography.retracted-by-its-source');
+  },
+  get superseded() {
+    return words('bibliography.superseded-by-its-source');
   },
   get corrected() {
     return words('bibliography.corrected-by-its-source');
@@ -93,7 +96,10 @@ function EntrySource({
       );
     }
   };
-  const flagged = status?.outcome === 'retracted' || status?.outcome === 'corrected';
+  const flagged =
+    status?.outcome === 'retracted' ||
+    status?.outcome === 'superseded' ||
+    status?.outcome === 'corrected';
   const notice = status?.notice;
   return (
     <section aria-label={words('bibliography.its-source')}>

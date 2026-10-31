@@ -8,7 +8,9 @@ import {
   type EntryCheckOutcome,
   type ReferenceExtensionTarget,
   type ReferenceNotice,
+  type EntryFlag,
   type ReferenceSourceKey,
+  ENTRY_FLAGS,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts } from './access-facts.js';
@@ -32,8 +34,8 @@ export interface EntryStatus {
   readonly notice: ReferenceNotice | null;
 }
 
-/** The outcomes flagged on each citation (XR-G). */
-export type EntryFlag = 'retracted' | 'corrected';
+/** The outcomes flagged on each citation (XR-G, LIB-035). */
+export type { EntryFlag } from '@alloy-works/domain';
 
 interface StatusRow {
   source: ReferenceSourceKey;
@@ -64,7 +66,7 @@ export async function readEntryStatus(
   return rows[0] && view(rows[0]);
 }
 
-/** Which of these entries are flagged, retracted or corrected (XR-G); whoever may read them. */
+/** Which of these entries are flagged, retracted, superseded or corrected (XR-G); whoever may read them. */
 export async function citedFlags(
   trx: TenantTransaction,
   entryIds: readonly string[],
@@ -73,7 +75,7 @@ export async function citedFlags(
   if (asked.length === 0) return new Map();
   const { rows } = await sql<{ entry_id: string; outcome: EntryFlag }>`
     select entry_id, outcome from bibliography_entry_status
-     where entry_id = any(${asked}::uuid[]) and outcome in ('retracted', 'corrected')`.execute(trx);
+     where entry_id = any(${asked}::uuid[]) and outcome = any(${ENTRY_FLAGS}::text[])`.execute(trx);
   return new Map(rows.map((row) => [row.entry_id, row.outcome]));
 }
 
@@ -215,7 +217,7 @@ async function tellableOf(
 }
 
 /**
- * Who is told of an entry retracted or corrected (XR-G), each once with the first document by id:
+ * Who is told of an entry retracted, superseded or corrected (XR-G), each once with the first document by id:
  * each document placing a component whose latest version cites it, its review owner, else its maker,
  * else its space's administrators; the erased, the disabled and those who may not read it skipped.
  */
@@ -256,7 +258,7 @@ async function whoIsTold(trx: TenantTransaction, entryId: string): Promise<Map<s
 
 /**
  * A check recorded as the entry's status (XR-F), by the system: under the entry's advisory lock, so
- * two checks racing tell nobody twice. Retracted or corrected, those not yet told of that outcome are
+ * two checks racing tell nobody twice. Flagged, those not yet told of that outcome are
  * told (XR-G), each at most once in thirty days however often it flaps: `bibliography_entry_told`
  * holds who was told what and when, `notified` who was of this outcome. Each notice is in a
  * savepoint, so a failure to tell never undoes the status. Answers who was told.
@@ -276,7 +278,7 @@ export async function recordEntryCheck(
        for update`.execute(trx);
   const notified = held[0]?.outcome === check.outcome ? held[0].notified : [];
   const told: string[] = [];
-  if (check.outcome === 'retracted' || check.outcome === 'corrected') {
+  if ((ENTRY_FLAGS as readonly string[]).includes(check.outcome)) {
     const { rows: lately } = await sql<{ recipient: string }>`
       select recipient from bibliography_entry_told
        where entry_id = ${entryId} and outcome = ${check.outcome}
@@ -325,7 +327,7 @@ export interface FlaggedCitation {
 }
 
 /**
- * The retracted and corrected entries the components a document places cite (XR-G, XR-H), each at
+ * The retracted, superseded and corrected entries the components a document places cite (XR-G, XR-H), each at
  * the version it places: a pinned one's, else the latest. Read by the system, whoever may read them;
  * by entry.
  */
@@ -351,7 +353,7 @@ export async function flaggedCited(
         'strict $.** ? (@.type == "citation" || (@.type == "crossReference" && @.target.kind == "entry"))') c
       join bibliography_entry_status s
         on s.entry_id::text = coalesce(c ->> 'entry', c -> 'target' ->> 'entry')
-       and s.outcome in ('retracted', 'corrected')
+       and s.outcome = any(${ENTRY_FLAGS}::text[])
      group by s.entry_id, s.outcome
      order by s.entry_id`.execute(trx);
   return rows;

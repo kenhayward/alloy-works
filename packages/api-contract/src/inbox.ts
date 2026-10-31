@@ -1,3 +1,4 @@
+import { ENTRY_FLAGS } from '@alloy-works/domain';
 import { z } from 'zod';
 import { nextCursor, pageQuery } from './listing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
@@ -85,11 +86,11 @@ export const NotificationView = z.object({
   reference: z
     .object({
       entry: LowercaseUuid.describe('The bibliography entry'),
-      outcome: z.enum(['retracted', 'corrected']),
+      outcome: z.enum(ENTRY_FLAGS),
     })
     .nullable()
     .describe(
-      'A source cited in the document `on` names, retracted or corrected (LIB-036); null otherwise',
+      'A source cited in the document `on` names, retracted, superseded or corrected (LIB-035, LIB-036); null otherwise',
     ),
   import: z
     .object({

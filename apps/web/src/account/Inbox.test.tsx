@@ -197,6 +197,32 @@ describe('the inbox, from the account chip', () => {
     );
   });
 
+  it('LIB-035 tells the owner a source cited in their document was superseded', async () => {
+    const { client } = service([
+      {
+        id: id(5),
+        kind: 'reference',
+        actor: null,
+        thread: null,
+        on: {
+          id: 'dddddddd-0000-4000-8000-000000000009',
+          kind: 'document',
+          title: 'Marsh report',
+          state: null,
+        },
+        counts: null,
+        reference: { entry: 'eeeeeeee-0000-4000-8000-000000000001', outcome: 'superseded' },
+        at: '2026-10-12T11:00:00.000Z',
+        read: false,
+      },
+    ]);
+    render(<Inbox client={client} onClose={() => undefined} />);
+    const list = await screen.findByRole('list', { name: 'Notifications' });
+    expect(within(list).getByRole('listitem').firstChild?.textContent).toBe(
+      'A source cited in Marsh report was superseded by its source.',
+    );
+  });
+
   it('COL-062 deletes one of your own notifications', async () => {
     const { client, asked } = service();
     render(<Inbox client={client} onClose={() => undefined} />);

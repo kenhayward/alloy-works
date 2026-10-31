@@ -12,11 +12,11 @@ export interface EntryOffered {
   readonly id: string;
   readonly key: string;
   readonly csl: Csl;
-  /** Retracted or corrected, as its source last said (the XR plan, XR-G). */
+  /** Retracted, superseded or corrected, as its source last said (the XR plan, XR-G; LIB-035). */
   readonly flag?: EntryFlag | undefined;
 }
 
-export type EntryFlag = 'retracted' | 'corrected';
+export type EntryFlag = 'retracted' | 'superseded' | 'corrected';
 
 /** A flag as a dialog says it beside an entry, at the start of a phrase or within one. */
 export const flagSaid = (flag: EntryFlag, start = false): string =>
@@ -25,7 +25,7 @@ export const flagSaid = (flag: EntryFlag, start = false): string =>
     : words('bibliography.flag-said', { flag });
 
 const flagOf = (value: unknown): EntryFlag | undefined =>
-  value === 'retracted' || value === 'corrected' ? value : undefined;
+  value === 'retracted' || value === 'superseded' || value === 'corrected' ? value : undefined;
 
 /** Every entry of a space the reader may read, from every page of the listing; null if unread. */
 export async function spaceEntries(

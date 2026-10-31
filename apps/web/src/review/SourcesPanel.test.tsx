@@ -45,10 +45,26 @@ describe('the Sources panel in Review (the XR plan, XR-G)', () => {
     expect(second).toHaveTextContent('Cited in components you may not read.');
   });
 
+  it('LIB-035 lists a source superseded at its source as superseded', async () => {
+    const client = service([
+      {
+        flag: 'superseded',
+        entry: { id: ENTRY, key: 'marlow2021', title: 'Salt Marsh Accretion' },
+        components: [],
+        unreadable: false,
+      },
+    ]);
+    render(<SourcesPanel client={client} document={DOCUMENT} active />);
+    const list = await screen.findByRole('list', { name: 'Flagged sources' });
+    expect(within(list).getByRole('listitem')).toHaveTextContent(
+      'Superseded by its source: marlow2021, Salt Marsh Accretion',
+    );
+  });
+
   it('says when no source is flagged', async () => {
     render(<SourcesPanel client={service([])} document={DOCUMENT} active />);
     expect(
-      await screen.findByText('No cited source is retracted or corrected.'),
+      await screen.findByText('No cited source is retracted, superseded or corrected.'),
     ).toBeInTheDocument();
   });
 });

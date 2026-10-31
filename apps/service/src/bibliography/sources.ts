@@ -192,7 +192,7 @@ export function referenceSourceHandlers(
       const matched = [];
       for (const each of results) {
         const matches = await findEntryMatches(trx, principalId, spaceId, each.csl);
-        // A match its source says is retracted or corrected is flagged (XR-G).
+        // A match its source says is retracted, superseded or corrected is flagged (XR-G).
         const flags = await matchFlags(trx, matches);
         matched.push({ ...each, matches: matches.map((match) => matchView(match, flags)) });
       }
@@ -287,7 +287,7 @@ export function referenceSourceHandlers(
     },
 
     /**
-     * A document's flagged sources (XR-G): each retracted or corrected entry what it places cites, the
+     * A document's flagged sources (XR-G): each retracted, superseded or corrected entry what it places cites, the
      * entry named to a reader of it and its flag alone to anybody else, and the citing components the
      * caller may read.
      */

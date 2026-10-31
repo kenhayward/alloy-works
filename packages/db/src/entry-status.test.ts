@@ -507,4 +507,36 @@ describe("an entry's status from its source (the XR plan, XR-E to XR-H)", () => 
       { condition: 'noRetracted', count: 1, names: [], unreadable: 0 },
     ]);
   });
+
+  it('LIB-035 records an entry superseded, flags it on each citation and tells the owner, and the gate counts it not', async () => {
+    const entry = await made({ ...marsh, title: 'Superseded' }, 'crossref:10.5555/s.1');
+    const component = await citing([entry], 'Superseded section');
+    const document = await placing([component], 'Superseded report', grace);
+    const notice = { kind: 'supersession' as const, identifier: '10.5555/s.1.v2' };
+    const before = (await told()).length;
+    expect((await record(entry, checked('superseded', { notice }))).told).toEqual([grace]);
+    expect((await told()).slice(before)).toEqual([
+      { recipient: grace, artifact_id: document, counts: { entry, outcome: 'superseded' } },
+    ]);
+    expect(await tenant((trx) => readEntryStatus(trx, entry))).toMatchObject({
+      outcome: 'superseded',
+      notice,
+    });
+    expect(await tenant((trx) => citedFlags(trx, [entry]))).toEqual(
+      new Map([[entry, 'superseded']]),
+    );
+    expect(await tenant(async (trx) => flaggedCited(trx, await placedBy(trx, document)))).toEqual([
+      { entry, outcome: 'superseded', components: [component] },
+    ]);
+    expect(
+      await tenant((trx) =>
+        unmetConditions(trx, {
+          artifactId: document,
+          kind: 'document',
+          requires: ['noRetracted'],
+          principal: grace,
+        }),
+      ),
+    ).toEqual([]);
+  });
 });

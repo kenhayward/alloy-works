@@ -45,10 +45,10 @@ interface Notification {
     readonly limit: string;
     readonly month: string;
   } | null;
-  /** A source cited in the document `on` names, retracted or corrected (XR-G). */
+  /** A source cited in the document `on` names, retracted, superseded or corrected (XR-G). */
   readonly reference?: {
     readonly entry: string;
-    readonly outcome: 'retracted' | 'corrected';
+    readonly outcome: 'retracted' | 'superseded' | 'corrected';
   } | null;
   /** A proposal left alone, abandoned at `sweepsAt` (IM-F). */
   readonly import?: { readonly id: string; readonly sweepsAt: string } | null;

@@ -198,8 +198,8 @@ export const referenceRequestSchema = z
   );
 export type ReferenceRequest = z.infer<typeof referenceRequestSchema>;
 
-/** What a source reports of a record (XR-F): retracted, or corrected. */
-export const REFERENCE_NOTICE_KINDS = ['retraction', 'correction'] as const;
+/** What a source reports of a record (XR-F, LIB-035): retracted, superseded, or corrected. */
+export const REFERENCE_NOTICE_KINDS = ['retraction', 'supersession', 'correction'] as const;
 
 /** A retraction or correction a source reports: the notice's own identifier and date, where given. */
 export const referenceNoticeSchema = z.strictObject({
@@ -423,12 +423,15 @@ const CROSSREF_UPDATES: Readonly<Record<string, ReferenceNotice['kind']>> = {
   erratum: 'correction',
   addendum: 'correction',
   clarification: 'correction',
+  new_version: 'supersession',
+  new_edition: 'supersession',
 };
 
 /** Crossref's relations naming a notice of the subject (XRb). */
 const CROSSREF_RELATIONS: Readonly<Record<string, ReferenceNotice['kind']>> = {
   'is-retracted-by': 'retraction',
   'is-corrected-by': 'correction',
+  'is-replaced-by': 'supersession',
 };
 
 const crossrefDay = (value: unknown): string | undefined => {
@@ -502,6 +505,7 @@ const PUBMED_REFERENCES: Readonly<Record<string, ReferenceNotice['kind']>> = {
   'Retraction in': 'retraction',
   'Erratum in': 'correction',
   'Corrected and republished in': 'correction',
+  'Update in': 'supersession',
 };
 
 /**
@@ -562,9 +566,21 @@ export const ENTRY_CHECK_OUTCOMES = [
   'changed',
   'gone',
   'retracted',
+  'superseded',
   'corrected',
 ] as const;
 export type EntryCheckOutcome = (typeof ENTRY_CHECK_OUTCOMES)[number];
+
+/** The outcomes flagged on each citation and told of (XR-G, LIB-035), as they are ranked. */
+export const ENTRY_FLAGS = ['retracted', 'superseded', 'corrected'] as const;
+export type EntryFlag = (typeof ENTRY_FLAGS)[number];
+
+/** The outcome each notice decides, in the order a check takes them. */
+const NOTICE_OUTCOMES: Readonly<Record<ReferenceNotice['kind'], EntryCheckOutcome>> = {
+  retraction: 'retracted',
+  supersession: 'superseded',
+  correction: 'corrected',
+};
 
 /** The CSL variables a check compares, in this order (XRb). */
 export const ENTRY_CHECKED_VARIABLES = [
@@ -606,7 +622,7 @@ function compared(
 
 /**
  * An entry's latest CSL held against what its source now answers (XR-F): `gone` where the source
- * holds no record; else `retracted` or `corrected` where it reports so, a retraction first; else
+ * holds no record; else `retracted`, `superseded` or `corrected` where it reports so, in that order; else
  * `changed` where a compared variable the source holds differs; else `current`.
  */
 export function entryCheck(held: CslItem, results: readonly ReferenceResult[]): EntryCheck {
@@ -619,12 +635,11 @@ export function entryCheck(held: CslItem, results: readonly ReferenceResult[]): 
   const notices = found.notices ?? [];
   const notice =
     notices.find((each) => each.kind === 'retraction') ??
+    notices.find((each) => each.kind === 'supersession') ??
     notices.find((each) => each.kind === 'correction') ??
     null;
   const outcome: EntryCheckOutcome = notice
-    ? notice.kind === 'retraction'
-      ? 'retracted'
-      : 'corrected'
+    ? NOTICE_OUTCOMES[notice.kind]
     : differs.length > 0
       ? 'changed'
       : 'current';

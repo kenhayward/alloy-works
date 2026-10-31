@@ -21,7 +21,7 @@ function listOf(elements: readonly ReactNode[]): ReactNode[] {
 type Client = ReturnType<typeof createApiClient>;
 
 interface Flagged {
-  readonly flag: 'retracted' | 'corrected';
+  readonly flag: 'retracted' | 'superseded' | 'corrected';
   readonly entry: {
     readonly id: string;
     readonly key: string;

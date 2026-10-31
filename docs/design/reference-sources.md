@@ -15,8 +15,8 @@ host through its guard, public addresses only. A result becomes a bibliography e
 admission and duplicate search as an import, `obtained { from: <source and identifier>, at }`. An
 entry obtained from a source can be **re-checked**: on demand from its page, and nightly for entries
 a live document cites. A check records whether the entry still resolves, which held fields now
-differ, and any retraction or correction the source reports, in the entry's **status** beside it,
-never a version. A retracted or corrected entry is flagged on every citation of it, in the editor and
+differ, and any retraction, supersession or correction the source reports, in the entry's **status**
+beside it, never a version. A retracted, superseded or corrected entry is flagged on every citation of it, in the editor and
 in the document's Review, and the document's owner is told. A workflow transition may require **No
 retracted sources cited**. The assistant can search a source and propose a citation as the person
 asking.
@@ -27,6 +27,7 @@ asking.
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **LIB-031** | The Cite dialog's **Search** tab queries a configured source and inserts a citation from a result, matched or made as an entry                          |
 | **LIB-032** | Sources are a declared, versioned list in domain; a further one is an extension of kind `reference`                                                     |
+| **LIB-035** | Check now and the nightly sweep re-check an entry: whether it resolves, which fields differ, and a retraction, supersession or correction; when it ran  |
 | **LIB-036** | A retraction or correction is flagged on each citation and its document's owner told; a gate condition can refuse the move                              |
 | **LIB-040** | The assistant's `search_references` and `cite_reference` tools, as the calling person; the entry made, and the citation inserted, when a person accepts |
 
@@ -45,8 +46,10 @@ as both services' polite-use etiquette asks.
 ## The status
 
 `bibliography_entry_status (entry, source, checked_at, outcome, differs, notice)`: `outcome` one of
-`current`, `changed`, `gone`, `retracted`, `corrected`; `differs` the CSL variables whose values the
-source now holds otherwise; `notice` the retraction or correction's identifier and date. It is the
+`current`, `changed`, `gone`, `retracted`, `superseded`, `corrected` (0175 adds `superseded`); `differs`
+the CSL variables whose values the source now holds otherwise; `notice` the retraction, supersession or
+correction's identifier and date. A check takes a retraction first, then a supersession, then a
+correction. It is the
 system's word about an entry, so it is written without a version; the entry's own fields change only
 when a person takes a new version.
 
@@ -60,11 +63,8 @@ an entry sees a citation's flag, never the entry.
 ## The gate
 
 **No retracted sources cited** counts the retracted entries the components a document places at the
-version moving cite, read by the system so every actor gets one answer; a correction warns.
-
-| Left unclaimed | Why                                                                                                                                                |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LIB-035        | Re-checked against its source - resolves, fields, retraction and correction - but neither built-in source reports a supersession; an extension may |
+version moving cite, read by the system so every actor gets one answer; a supersession or a correction
+warns.
 
 ## Built in XRa
 
@@ -157,3 +157,15 @@ version moving cite, read by the system so every actor gets one answer; a correc
   one call a second.
 - **Left open**: an extension's name is its own words, shown in the Search tab and never given to
   the model.
+
+## Built in CLd
+
+- **Supersession** (LIB-035) is a notice kind and the outcome `superseded`, flagged, told of and
+  warned of at publish (`source_superseded`) as a correction is. Its vocabulary, confirmed against
+  each source on 2026-10-31: Crossref's update types `new_version` and `new_edition` (its Crossmark
+  schema's list; `update-to` items carry them as `type`), and its relation `is-replaced-by` (the
+  schema's `isReplacedBy`, as the REST API names it, seen on a live work); PubMed's esummary
+  `references` `reftype` `Update in` (MEDLINE's `CommentsCorrections` `UpdateIn`, the display form
+  esummary answers, as `Retraction in` and `Erratum in` are). `Republished in` is not read as one. An extension may give
+  `supersession` in `x-alloy-notices`. The stored outcome's checks, on the status and on who was told,
+  are widened by 0175.

@@ -35,7 +35,7 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { decide, readOutline, walkOutline } from '@alloy-works/domain';
+import { decide, ENTRY_FLAGS, readOutline, walkOutline } from '@alloy-works/domain';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import { authoriseAt, callerOf, notFound, scopesOf, type Authorised } from './access.js';
@@ -90,7 +90,7 @@ async function requestView(
 }
 
 /**
- * What does not stop a publish (XR-G): the retracted and corrected sources cited by what the document
+ * What does not stop a publish (XR-G, LIB-035): the retracted, superseded and corrected sources cited by what the document
  * places, counted, whoever may read them.
  */
 async function sourceWarnings(
@@ -98,7 +98,7 @@ async function sourceWarnings(
   documentId: string,
 ): Promise<PublicationRequestView['warnings']> {
   const flagged = await flaggedCited(trx, await placedBy(trx, documentId));
-  return (['retracted', 'corrected'] as const).flatMap((flag) => {
+  return ENTRY_FLAGS.flatMap((flag) => {
     const count = flagged.filter((each) => each.outcome === flag).length;
     return count === 0 ? [] : [{ code: `source_${flag}` as const, count }];
   });

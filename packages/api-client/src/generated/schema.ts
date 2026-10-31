@@ -630,7 +630,7 @@ export interface paths {
         put?: never;
         /**
          * Check an entry against the source it was obtained from, and record its status
-         * @description Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted` or `corrected`, with the notice where the source names one. A retraction or correction tells the owner of each document citing it who may read it, at most once in thirty days. It needs edit on the entry; an entry made by hand is `entry_not_obtained`, and one checked or tried within the minute `entry_checked_recently`.
+         * @description Checks an entry against the reference source its latest version was obtained from, sending the source its DOI or PubMed identifier alone, and records the entry's status beside it, never as a version: `current`, `changed` (naming the CSL variables the source now holds otherwise), `gone`, `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`, with the notice where the source names one. A retraction, supersession or correction tells the owner of each document citing it who may read it, at most once in thirty days. It needs edit on the entry; an entry made by hand is `entry_not_obtained`, and one checked or tried within the minute `entry_checked_recently`.
          */
         post: operations["checkBibliographyEntry"];
         delete?: never;
@@ -2659,8 +2659,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The retracted and corrected sources cited by what a document places
-         * @description Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.
+         * The retracted, superseded and corrected sources cited by what a document places
+         * @description Lists the sources cited by the components a document's latest version places, at the version each is placed, that their source last said are retracted, superseded or corrected. Each names the entry to a reader of it, and only its flag to anybody else, with the components citing it the caller may read. It needs read on the document.
          */
         get: operations["getDocumentFlaggedSources"];
         put?: never;
@@ -13889,10 +13889,10 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
                         warnings: ({
                             /** @enum {string} */
-                            code: "source_retracted" | "source_corrected";
+                            code: "source_retracted" | "source_superseded" | "source_corrected";
                             count: number;
                         } | {
                             /**
@@ -15790,16 +15790,16 @@ export interface operations {
                             /** @description When it was last checked */
                             checkedAt: string;
                             /**
-                             * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                             * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                              * @enum {string}
                              */
-                            outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                            outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                             /** @description The CSL variables the source now holds otherwise */
                             differs: string[];
-                            /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                            /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                             notice: {
                                 /** @enum {string} */
-                                kind: "retraction" | "correction";
+                                kind: "retraction" | "supersession" | "correction";
                                 identifier?: string;
                                 date?: string;
                             } | null;
@@ -16070,16 +16070,16 @@ export interface operations {
                         /** @description When it was last checked */
                         checkedAt: string;
                         /**
-                         * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                         * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                          * @enum {string}
                          */
-                        outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                        outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                         /** @description The CSL variables the source now holds otherwise */
                         differs: string[];
-                        /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                        /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                         notice: {
                             /** @enum {string} */
-                            kind: "retraction" | "correction";
+                            kind: "retraction" | "supersession" | "correction";
                             identifier?: string;
                             date?: string;
                         } | null;
@@ -17464,16 +17464,16 @@ export interface operations {
                             /** @description When it was last checked */
                             checkedAt: string;
                             /**
-                             * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                             * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                              * @enum {string}
                              */
-                            outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                            outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                             /** @description The CSL variables the source now holds otherwise */
                             differs: string[];
-                            /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                            /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                             notice: {
                                 /** @enum {string} */
-                                kind: "retraction" | "correction";
+                                kind: "retraction" | "supersession" | "correction";
                                 identifier?: string;
                                 date?: string;
                             } | null;
@@ -17955,16 +17955,16 @@ export interface operations {
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
-                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                                  * @enum {string}
                                  */
-                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                                 /** @description The CSL variables the source now holds otherwise */
                                 differs: string[];
-                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                                 notice: {
                                     /** @enum {string} */
-                                    kind: "retraction" | "correction";
+                                    kind: "retraction" | "supersession" | "correction";
                                     identifier?: string;
                                     date?: string;
                                 } | null;
@@ -18507,16 +18507,16 @@ export interface operations {
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
-                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                                  * @enum {string}
                                  */
-                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                                 /** @description The CSL variables the source now holds otherwise */
                                 differs: string[];
-                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                                 notice: {
                                     /** @enum {string} */
-                                    kind: "retraction" | "correction";
+                                    kind: "retraction" | "supersession" | "correction";
                                     identifier?: string;
                                     date?: string;
                                 } | null;
@@ -21656,8 +21656,8 @@ export interface operations {
                     "application/json": {
                         /** @description Each citation's in-text form, in order; null where it names no entry of the component's space the caller may read, or the theme names no style */
                         forms: (string | null)[];
-                        /** @description Each citation's flag, in order: its entry retracted or corrected, shown whether or not the caller may read the entry; null otherwise */
-                        flags: (("retracted" | "corrected") | null)[];
+                        /** @description Each citation's flag, in order: its entry retracted, superseded or corrected, shown whether or not the caller may read the entry; null otherwise */
+                        flags: (("retracted" | "superseded" | "corrected") | null)[];
                     };
                 };
             };
@@ -53385,7 +53385,7 @@ export interface operations {
                     "application/json": {
                         items: {
                             /** @enum {string} */
-                            flag: "retracted" | "corrected";
+                            flag: "retracted" | "superseded" | "corrected";
                             /** @description The entry, to a reader of it; null to anybody else, who sees the flag alone */
                             entry: {
                                 id: string;
@@ -58787,10 +58787,10 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
                         warnings: ({
                             /** @enum {string} */
-                            code: "source_retracted" | "source_corrected";
+                            code: "source_retracted" | "source_superseded" | "source_corrected";
                             count: number;
                         } | {
                             /**
@@ -60840,10 +60840,10 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
                         warnings: ({
                             /** @enum {string} */
-                            code: "source_retracted" | "source_corrected";
+                            code: "source_retracted" | "source_superseded" | "source_corrected";
                             count: number;
                         } | {
                             /**
@@ -76945,12 +76945,12 @@ export interface operations {
                                 /** @description The subscription */
                                 id: string & (unknown & unknown);
                             } | null;
-                            /** @description A source cited in the document `on` names, retracted or corrected (LIB-036); null otherwise */
+                            /** @description A source cited in the document `on` names, retracted, superseded or corrected (LIB-035, LIB-036); null otherwise */
                             reference: {
                                 /** @description The bibliography entry */
                                 entry: string & (unknown & unknown);
                                 /** @enum {string} */
-                                outcome: "retracted" | "corrected";
+                                outcome: "retracted" | "superseded" | "corrected";
                             } | null;
                             /** @description A proposal left alone, abandoned in seven days; null otherwise */
                             import: {
@@ -86809,10 +86809,10 @@ export interface operations {
                             /** @description The kind of block or mark, the style, the language tag, or the character as U+XXXX; null where the place is one the publisher may not read */
                             detail: string | null;
                         }[];
-                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
+                        /** @description What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050) */
                         warnings: ({
                             /** @enum {string} */
-                            code: "source_retracted" | "source_corrected";
+                            code: "source_retracted" | "source_superseded" | "source_corrected";
                             count: number;
                         } | {
                             /**
@@ -92731,8 +92731,8 @@ export interface operations {
                                     };
                                     /** @description When its latest version was made */
                                     changedAt: string;
-                                    /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
-                                    flag?: ("retracted" | "corrected") | null;
+                                    /** @description Retracted, superseded or corrected, as its source last said (XR-G); null otherwise */
+                                    flag?: ("retracted" | "superseded" | "corrected") | null;
                                 };
                             }[];
                         }[];
@@ -99662,8 +99662,8 @@ export interface operations {
                             };
                             /** @description When its latest version was made */
                             changedAt: string;
-                            /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
-                            flag?: ("retracted" | "corrected") | null;
+                            /** @description Retracted, superseded or corrected, as its source last said (XR-G); null otherwise */
+                            flag?: ("retracted" | "superseded" | "corrected") | null;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -100719,16 +100719,16 @@ export interface operations {
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
-                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                                  * @enum {string}
                                  */
-                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                                 /** @description The CSL variables the source now holds otherwise */
                                 differs: string[];
-                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                                 notice: {
                                     /** @enum {string} */
-                                    kind: "retraction" | "correction";
+                                    kind: "retraction" | "supersession" | "correction";
                                     identifier?: string;
                                     date?: string;
                                 } | null;
@@ -101163,8 +101163,8 @@ export interface operations {
                                 };
                                 /** @description When its latest version was made */
                                 changedAt: string;
-                                /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
-                                flag?: ("retracted" | "corrected") | null;
+                                /** @description Retracted, superseded or corrected, as its source last said (XR-G); null otherwise */
+                                flag?: ("retracted" | "superseded" | "corrected") | null;
                             };
                         }[];
                     };
@@ -101644,16 +101644,16 @@ export interface operations {
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
-                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                                  * @enum {string}
                                  */
-                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                                 /** @description The CSL variables the source now holds otherwise */
                                 differs: string[];
-                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                                 notice: {
                                     /** @enum {string} */
-                                    kind: "retraction" | "correction";
+                                    kind: "retraction" | "supersession" | "correction";
                                     identifier?: string;
                                     date?: string;
                                 } | null;
@@ -102416,16 +102416,16 @@ export interface operations {
                                 /** @description When it was last checked */
                                 checkedAt: string;
                                 /**
-                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so
+                                 * @description `current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so
                                  * @enum {string}
                                  */
-                                outcome: "current" | "changed" | "gone" | "retracted" | "corrected";
+                                outcome: "current" | "changed" | "gone" | "retracted" | "superseded" | "corrected";
                                 /** @description The CSL variables the source now holds otherwise */
                                 differs: string[];
-                                /** @description The retraction or correction: its kind, and the notice's identifier and date where given */
+                                /** @description The retraction, supersession or correction: its kind, and the notice's identifier and date where given */
                                 notice: {
                                     /** @enum {string} */
-                                    kind: "retraction" | "correction";
+                                    kind: "retraction" | "supersession" | "correction";
                                     identifier?: string;
                                     date?: string;
                                 } | null;
@@ -102860,8 +102860,8 @@ export interface operations {
                                 };
                                 /** @description When its latest version was made */
                                 changedAt: string;
-                                /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
-                                flag?: ("retracted" | "corrected") | null;
+                                /** @description Retracted, superseded or corrected, as its source last said (XR-G); null otherwise */
+                                flag?: ("retracted" | "superseded" | "corrected") | null;
                             };
                         }[];
                         /** @description The fields the source gave that an entry cannot hold */
@@ -103522,8 +103522,8 @@ export interface operations {
                                 };
                                 /** @description When its latest version was made */
                                 changedAt: string;
-                                /** @description Retracted or corrected, as its source last said (XR-G); null otherwise */
-                                flag?: ("retracted" | "corrected") | null;
+                                /** @description Retracted, superseded or corrected, as its source last said (XR-G); null otherwise */
+                                flag?: ("retracted" | "superseded" | "corrected") | null;
                             } | null;
                             /** @description What matched it, where it was merged */
                             by: ("doi" | "pmid" | "isbn" | "issn" | "work") | null;

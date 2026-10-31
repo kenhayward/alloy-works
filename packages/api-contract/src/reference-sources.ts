@@ -79,7 +79,7 @@ export const FromSourceAnswer = CreateEntryAnswer.extend({
 });
 export type FromSourceAnswer = z.infer<typeof FromSourceAnswer>;
 
-/** A document's flagged sources (XR-G): each entry retracted or corrected that what it places cites. */
+/** A document's flagged sources (XR-G): each entry retracted, superseded or corrected that what it places cites. */
 export const FlaggedSourcesView = z.object({
   items: z.array(
     z.object({
@@ -244,7 +244,7 @@ export const referenceSourceRoutes = {
     operationId: 'getDocumentFlaggedSources',
     method: 'GET',
     path: '/v1/documents/{id}/flagged-sources',
-    summary: 'The retracted and corrected sources cited by what a document places',
+    summary: 'The retracted, superseded and corrected sources cited by what a document places',
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: DocumentParams,
