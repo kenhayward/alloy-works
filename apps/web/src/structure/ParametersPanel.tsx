@@ -277,7 +277,8 @@ export function ParametersPanel(props: ParametersPanelProps) {
       {withheld && (
         <dl>
           {Object.keys(props.values)
-            .sort()
+            // In the interface's collation, not byte order (LOC-003).
+            .sort((a, b) => formats().compare(a, b))
             .map((name) => (
               <div key={name}>
                 <dt>{name}</dt>

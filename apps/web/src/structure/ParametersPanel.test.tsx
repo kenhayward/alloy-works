@@ -169,6 +169,19 @@ describe('the Parameters panel (the TP1 plan, TP1-I)', () => {
     expect(within(shown).getByRole('button', { name: 'History' })).toBeInTheDocument();
   });
 
+  it("LOC-003 orders the withheld values' names as the interface's language collates them, not by byte", async () => {
+    const fake = service(outline([section(INTRODUCTION, 'Introduction')]), {
+      parameters: { declarations: [], values: { Zebra: 'Grace', éclair: 'Ada', apple: 'Ada' } },
+    });
+    open(fake.fetch);
+    const shown = await panel();
+    const terms = within(shown)
+      .getAllByRole('term')
+      .map((each) => each.textContent);
+    // Byte order would put 'Zebra' first and 'éclair' last.
+    expect(terms).toEqual(['apple', 'éclair', 'Zebra']);
+  });
+
   it('shows no panel for a document whose template declares no parameters', async () => {
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]), {
       parameters: { declarations: [], values: {} },

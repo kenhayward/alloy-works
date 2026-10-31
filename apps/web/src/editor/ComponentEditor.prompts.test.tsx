@@ -1,8 +1,10 @@
-import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PlatformBridge } from '../platform/bridge.js';
 import { shimRangeMeasurement } from '../test/range.js';
+import { WordsProvider } from '../words/words.js';
+import { ComponentEditor } from './ComponentEditor.js';
 import {
   open,
   content,
@@ -15,6 +17,10 @@ import {
   directionField,
   runsOf,
   selectRange,
+  service,
+  COMPONENT,
+  ADA,
+  SESSION,
 } from './test/componentEditor.js';
 
 shimRangeMeasurement();
@@ -898,5 +904,31 @@ describe("the spelling checker's languages (W14.7)", () => {
     );
     await next.surface();
     await waitFor(() => expect(asked).toEqual([['en-GB'], ['de-DE']]));
+  });
+});
+
+describe("the interface's language beside the content's", () => {
+  it('LOC-005 words the editor in the interface language while the content keeps its own', async () => {
+    const french = { ...content('Déballez l’imprimante.'), language: 'fr-FR' };
+    const { client } = service({
+      'GET /v1/components/{id}': () => json(200, opened({ content: french })),
+      'POST /v1/components/{id}/lock': () => json(200, { lock }),
+    });
+    render(
+      <WordsProvider language="en-XA">
+        <ComponentEditor
+          componentId={COMPONENT}
+          client={client}
+          principalId={ADA}
+          sessionId={SESSION}
+          timing={quick}
+        />
+      </WordsProvider>,
+    );
+    // The surface is named in the interface's words (pseudolocalised), not the content's.
+    const box = await screen.findByRole('textbox', { name: /^\[Çöñţéñţ öƒ/ });
+    expect(box).toHaveAttribute('lang', 'fr-FR');
+    expect(box).toHaveTextContent('Déballez l’imprimante.');
+    expect(screen.queryByRole('textbox', { name: 'Content of Install the printer' })).toBeNull();
   });
 });

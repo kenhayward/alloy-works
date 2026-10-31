@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { TermIndexes, TERMS_HELD_MOST, useTermIndex } from './terming.js';
+import { TermIndexes, TERMS_HELD_MOST, useTermIndex, type TermChoice } from './terming.js';
 
 /** A page of `count` approved terms, each numbered from `from`. */
 const page = (from: number, count: number, next: string | null) => ({
@@ -47,5 +47,28 @@ describe("a space's term index (the TM plan, TMc)", () => {
     const { result } = renderHook(() => useTermIndex(fake, 's1', null, new TermIndexes()));
     await waitFor(() => expect(result.current.terms).toHaveLength(TERMS_HELD_MOST));
     expect(result.current.truncated).toBe(true);
+  });
+
+  it("LIB-019 offers a term's alternative labels and abbreviation as forms it is inserted by", async () => {
+    const { client: fake } = client(() => ({
+      items: [
+        {
+          id: 'term-ada',
+          label: 'Analytical engine',
+          abbreviation: 'AE',
+          term: {
+            labels: [
+              { preferred: 'Analytical engine', alternatives: ['Ada machine'], abbreviation: 'AE' },
+            ],
+          },
+          state: { key: 'approved', approved: true },
+        },
+      ],
+      next: null,
+    }));
+    const { result } = renderHook(() => useTermIndex(fake, 's1', null, new TermIndexes()));
+    await waitFor(() => expect(result.current.terms).toHaveLength(1));
+    const [term] = result.current.terms as readonly TermChoice[];
+    expect(term?.forms).toEqual(['Analytical engine', 'Ada machine', 'AE']);
   });
 });
