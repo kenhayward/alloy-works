@@ -21821,13 +21821,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 707,
+      "line": 708,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 720,
+      "line": 721,
       "kind": "title"
     },
     {
@@ -22221,6 +22221,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-022",
+      "file": "apps/service/src/condition-routes.test.ts",
+      "line": 84,
+      "kind": "title"
+    },
+    {
       "id": "DAT-004",
       "file": "apps/service/src/connection-routes.test.ts",
       "line": 214,
@@ -22361,7 +22367,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2167,
+      "line": 2168,
       "kind": "title"
     },
     {
@@ -24353,19 +24359,25 @@
     {
       "id": "IMP-051",
       "file": "apps/service/src/vocabulary-routes.test.ts",
-      "line": 236,
+      "line": 240,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-005",
+      "file": "apps/service/src/vocabulary-routes.test.ts",
+      "line": 329,
       "kind": "title"
     },
     {
       "id": "LIB-061",
       "file": "apps/service/src/vocabulary-routes.test.ts",
-      "line": 205,
+      "line": 209,
       "kind": "title"
     },
     {
       "id": "LIB-065",
       "file": "apps/service/src/vocabulary-routes.test.ts",
-      "line": 159,
+      "line": 163,
       "kind": "title"
     },
     {
@@ -24837,21 +24849,27 @@
       "kind": "title"
     },
     {
+      "id": "LIB-005",
+      "file": "apps/web/src/admin/Vocabularies.test.tsx",
+      "line": 179,
+      "kind": "title"
+    },
+    {
       "id": "LIB-024",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 208,
+      "line": 231,
       "kind": "title"
     },
     {
       "id": "LIB-053",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 230,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "LIB-055",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 279,
+      "line": 302,
       "kind": "title"
     },
     {
@@ -25505,13 +25523,13 @@
     {
       "id": "REU-021",
       "file": "apps/web/src/editor/ConditionDialog.test.tsx",
-      "line": 49,
+      "line": 50,
       "kind": "title"
     },
     {
       "id": "REU-047",
       "file": "apps/web/src/editor/ConditionDialog.test.tsx",
-      "line": 68,
+      "line": 69,
       "kind": "title"
     },
     {
@@ -25943,19 +25961,19 @@
     {
       "id": "LIF-042",
       "file": "apps/web/src/lifecycle/Scope.test.tsx",
-      "line": 128,
+      "line": 129,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/web/src/lifecycle/Scope.test.tsx",
-      "line": 199,
+      "line": 200,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/web/src/lifecycle/Scope.test.tsx",
-      "line": 90,
+      "line": 91,
       "kind": "title"
     },
     {
@@ -25995,9 +26013,33 @@
       "kind": "title"
     },
     {
+      "id": "LIB-054",
+      "file": "apps/web/src/metadata/FieldsForm.test.tsx",
+      "line": 302,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-055",
+      "file": "apps/web/src/metadata/FieldsForm.test.tsx",
+      "line": 320,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-063",
+      "file": "apps/web/src/metadata/FieldsForm.test.tsx",
+      "line": 309,
+      "kind": "title"
+    },
+    {
+      "id": "MET-003",
+      "file": "apps/web/src/metadata/FieldsForm.test.tsx",
+      "line": 285,
+      "kind": "title"
+    },
+    {
       "id": "MET-021",
       "file": "apps/web/src/metadata/FieldsForm.test.tsx",
-      "line": 52,
+      "line": 54,
       "kind": "title"
     },
     {
@@ -26063,13 +26105,19 @@
     {
       "id": "DAT-063",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 878,
+      "line": 927,
       "kind": "title"
     },
     {
       "id": "LIB-018",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
       "line": 181,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-023",
+      "file": "apps/web/src/publishing/Publishing.test.tsx",
+      "line": 212,
       "kind": "title"
     },
     {
@@ -26087,19 +26135,19 @@
     {
       "id": "LOC-010",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1680,
+      "line": 1729,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 1733,
+      "line": 1782,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/web/src/publishing/Publishing.test.tsx",
-      "line": 212,
+      "line": 261,
       "kind": "title"
     },
     {
@@ -27113,19 +27161,19 @@
     {
       "id": "REU-022",
       "file": "apps/web/src/structure/ProfilePanel.test.tsx",
-      "line": 44,
+      "line": 45,
       "kind": "title"
     },
     {
       "id": "REU-025",
       "file": "apps/web/src/structure/ProfilePanel.test.tsx",
-      "line": 65,
+      "line": 66,
       "kind": "title"
     },
     {
       "id": "REU-027",
       "file": "apps/web/src/structure/ProfilePanel.test.tsx",
-      "line": 83,
+      "line": 84,
       "kind": "title"
     },
     {
@@ -28815,21 +28863,45 @@
       "kind": "title"
     },
     {
+      "id": "LIB-023",
+      "file": "packages/db/src/component-values.test.ts",
+      "line": 292,
+      "kind": "title"
+    },
+    {
+      "id": "MET-003",
+      "file": "packages/db/src/component-values.test.ts",
+      "line": 292,
+      "kind": "title"
+    },
+    {
       "id": "MET-023",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 283,
+      "line": 339,
       "kind": "title"
     },
     {
       "id": "MET-033",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 196,
+      "line": 221,
       "kind": "title"
     },
     {
       "id": "MET-038",
       "file": "packages/db/src/component-values.test.ts",
-      "line": 251,
+      "line": 278,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-022",
+      "file": "packages/db/src/conditions.test.ts",
+      "line": 257,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-023",
+      "file": "packages/db/src/conditions.test.ts",
+      "line": 321,
       "kind": "title"
     },
     {
@@ -28955,7 +29027,7 @@
     {
       "id": "LIB-023",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 305,
+      "line": 316,
       "kind": "title"
     },
     {
@@ -29784,6 +29856,18 @@
       "id": "LIB-050",
       "file": "packages/db/src/publication-terms.test.ts",
       "line": 345,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-004",
+      "file": "packages/db/src/publication-vocabularies.test.ts",
+      "line": 310,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-023",
+      "file": "packages/db/src/publication-vocabularies.test.ts",
+      "line": 357,
       "kind": "title"
     },
     {
@@ -32141,7 +32225,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1102,
+      "line": 1112,
       "kind": "title"
     },
     {
@@ -32514,6 +32598,36 @@
       "id": "MET-030",
       "file": "packages/domain/src/metadata/validate.test.ts",
       "line": 112,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-023",
+      "file": "packages/domain/src/metadata/vocabulary-values.test.ts",
+      "line": 119,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-024",
+      "file": "packages/domain/src/metadata/vocabulary-values.test.ts",
+      "line": 156,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-055",
+      "file": "packages/domain/src/metadata/vocabulary-values.test.ts",
+      "line": 129,
+      "kind": "title"
+    },
+    {
+      "id": "MET-003",
+      "file": "packages/domain/src/metadata/vocabulary-values.test.ts",
+      "line": 96,
+      "kind": "title"
+    },
+    {
+      "id": "MET-032",
+      "file": "packages/domain/src/metadata/vocabulary-values.test.ts",
+      "line": 114,
       "kind": "title"
     },
     {
@@ -33305,7 +33419,7 @@
     {
       "id": "VER-046",
       "file": "packages/domain/src/structure/baseline.test.ts",
-      "line": 60,
+      "line": 75,
       "kind": "title"
     },
     {
