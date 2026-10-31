@@ -1161,6 +1161,6 @@ describe('scanning the repository for test files', () => {
     // 146, from 144 (2026-10-30): admin/CtStudio.test.tsx and admin/CtStudioSettings.test.tsx,
     // citing API-074 to API-076.
     // 147, from 146 (2026-10-31): shell/Connect.test.tsx, citing ADM-051.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(147);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(148);
   });
 });

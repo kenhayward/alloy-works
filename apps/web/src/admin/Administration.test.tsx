@@ -116,6 +116,17 @@ describe('Administration', () => {
     window.location.hash = '';
   });
 
+  it('lists Vocabularies among the environment sections, opened at #/admin/vocabularies', async () => {
+    window.location.hash = '#/admin/vocabularies';
+    const { client } = service(everything);
+    render(<Administration client={client} about={null} />);
+    expect(
+      await screen.findByRole('heading', { name: 'Vocabularies', level: 1 }),
+    ).toBeInTheDocument();
+    expect(section('Vocabularies')).toHaveAttribute('aria-current', 'page');
+    window.location.hash = '';
+  });
+
   it('lists the spaces, the people and the waiting invitations, and the roles with what each holds', async () => {
     const { client, asked } = service(everything);
     render(<Administration client={client} about={null} />);
