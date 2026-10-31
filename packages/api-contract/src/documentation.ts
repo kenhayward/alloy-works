@@ -1066,7 +1066,7 @@ const descriptions: Readonly<Record<string, string>> = {
   importBibliographyEntries:
     'Imports CSL-JSON, BibTeX or RIS text as entries of the space. Each record is matched as making one by hand is: a match is given the fields it lacked, in a new version, and the answer names them; otherwise an entry is made. Fields an entry cannot hold are left out and named. At most 500 records are taken at a time. It needs edit in the space.',
   exportBibliographyEntries:
-    "Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key.",
+    "Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key. The answer names each entry the format did not carry whole, with the CSL variables it lost, found by reading the text back; CSL-JSON loses none.",
   getBibliographyEntry:
     'Returns an entry at its latest version, whether it is archived, and whether the caller may change or archive it.',
   recordBibliographyEntryVersion:

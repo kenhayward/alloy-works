@@ -1,7 +1,7 @@
 import { plugins } from '@citation-js/core';
 import { describe, expect, it } from 'vitest';
 
-import { formatEntries, readRecords } from './interchange.js';
+import { formatEntries, notCarried, readRecords } from './interchange.js';
 
 const bibtex = `@article{smith2020,
   author = {Smith, Ada and Okafor, Grace},
@@ -87,5 +87,51 @@ describe('the interchange formats', () => {
     expect(readRecords('ris', risWritten)).toEqual([
       expect.objectContaining({ title: 'The Dunnart in Winter' }),
     ]);
+  });
+});
+
+describe('what an export did not carry', () => {
+  const entries = [
+    {
+      key: 'smith2020',
+      csl: {
+        type: 'article-journal' as const,
+        title: 'The Dunnart in Winter',
+        author: [{ family: 'Smith', given: 'Ada' }],
+        issued: { 'date-parts': [[2020]] },
+        abstract: 'Dunnarts in the cold.',
+        'publisher-place': 'Hobart',
+      },
+    },
+    { key: 'jones2019', csl: { type: 'book' as const, title: 'Quolls' } },
+  ];
+
+  it('PUB-055 names, by entry, the CSL variables BibTeX and RIS did not carry, read back from the text written', () => {
+    expect(notCarried('bibtex', entries, formatEntries('bibtex', entries))).toEqual([
+      { key: 'smith2020', variables: ['abstract'] },
+    ]);
+    expect(notCarried('ris', entries, formatEntries('ris', entries))).toEqual([
+      { key: 'smith2020', variables: ['publisher-place'] },
+    ]);
+  });
+
+  it('PUB-055 names a variable whose value the format changed', () => {
+    const society = [
+      {
+        key: 'society2020',
+        csl: {
+          type: 'book' as const,
+          title: 'Bettongs',
+          author: [{ literal: 'The Bettong Society' }],
+        },
+      },
+    ];
+    expect(notCarried('bibtex', society, formatEntries('bibtex', society))).toEqual([
+      { key: 'society2020', variables: ['author'] },
+    ]);
+  });
+
+  it('PUB-055 reports nothing not carried by CSL-JSON', () => {
+    expect(notCarried('csl-json', entries, formatEntries('csl-json', entries))).toEqual([]);
   });
 });

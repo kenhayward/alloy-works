@@ -6132,7 +6132,7 @@ export interface paths {
         };
         /**
          * The space's entries the caller may read, as CSL-JSON, BibTeX or RIS
-         * @description Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key.
+         * @description Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key. The answer names each entry the format did not carry whole, with the CSL variables it lost, found by reading the text back; CSL-JSON loses none.
          */
         get: operations["exportBibliographyEntries"];
         put?: never;
@@ -101792,7 +101792,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "format": "csl-json",
-                     *       "text": "example"
+                     *       "text": "example",
+                     *       "notCarried": []
                      *     }
                      */
                     "application/json": {
@@ -101800,6 +101801,11 @@ export interface operations {
                         format: "csl-json" | "bibtex" | "ris";
                         /** @description The entries in the format, each named by its key */
                         text: string;
+                        /** @description Each entry the format did not carry whole (PUB-055), by key, with the CSL variables the text lacks or holds otherwise, found by reading it back; empty for CSL-JSON */
+                        notCarried: {
+                            key: string;
+                            variables: string[];
+                        }[];
                     };
                 };
             };

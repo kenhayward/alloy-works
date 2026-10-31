@@ -218,6 +218,8 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
   const [problem, setProblem] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [format, setFormat] = useState<(typeof FORMATS)[number]['value']>('csl-json');
+  // What the last export's format did not carry of the entry (PUB-055); null where it carried all.
+  const [notCarried, setNotCarried] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -278,6 +280,7 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
   /** The entry alone in the format chosen, saved as a file named by its key (LIB-009). */
   const exportAs = async () => {
     setProblem(null);
+    setNotCarried(null);
     const { data } = await client.GET('/v1/spaces/{space}/bibliography-entries/export', {
       params: { path: { space: shown.space.id }, query: { format, ids: id } },
     });
@@ -287,6 +290,15 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
     }
     const chosen = FORMATS.find((each) => each.value === format)!;
     saveText(`${shown.entry.key}.${chosen.extension}`, data.text, chosen.type);
+    const lost = data.notCarried.flatMap((each) => each.variables);
+    if (lost.length > 0) {
+      setNotCarried(
+        words('bibliography.did-not-carry', {
+          format: chosen.label,
+          variables: formats().list(lost),
+        }),
+      );
+    }
   };
 
   return (
@@ -363,6 +375,7 @@ export function EntryPage({ client, id }: { readonly client: Client; readonly id
           {words('bibliography.export')}
         </button>
       </p>
+      {notCarried !== null && <p role="status">{notCarried}</p>}
       {editing && (
         <EditEntry
           client={client}

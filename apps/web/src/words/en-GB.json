@@ -4454,6 +4454,7 @@
   "bibliography.edit": "Edit",
   "bibliography.export-as": "Export as",
   "bibliography.export": "Export",
+  "bibliography.did-not-carry": "{format} did not carry its {variables}.",
   "bibliography.its-reference-extension": "its reference extension",
   "bibliography.cited-in": "Cited in",
   "bibliography.nothing-cites-this-entry": "Nothing cites this entry.",

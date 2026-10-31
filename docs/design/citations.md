@@ -73,6 +73,16 @@ entry that cannot be resolved is `citation_unresolved` (LIB-007).
 the first author's family name. A match is offered, never refused; import merges into the match the
 fields it lacks and says which.
 
+## The export
+
+`GET /v1/spaces/{space}/bibliography-entries/export` answers JSON, `{ format, text, notCarried }`, and
+the page saves `text` as the file, so the report rides in the envelope beside it, as an import's
+`dropped` does (PUB-055, claimed by publishing.md). `notCarried` names each entry the format did not
+carry whole, by key, with the CSL variables the text lacks or holds otherwise: found by reading the
+BibTeX or RIS just written back through citation-js and comparing each variable with the entry's, so
+the report is what the writer did, not a table that can drift from it. CSL-JSON carries everything.
+The entry's page says it under the Export button.
+
 ## The style
 
 `citationStyle`, a tenant's managed artifact (no space), its version `{ csl: <the XML>, requires }`:

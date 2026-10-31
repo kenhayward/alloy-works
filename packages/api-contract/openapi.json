@@ -297360,7 +297360,7 @@
       "get": {
         "operationId": "exportBibliographyEntries",
         "summary": "The space's entries the caller may read, as CSL-JSON, BibTeX or RIS",
-        "description": "Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key.",
+        "description": "Exports the space's entries the caller may read, or those named, as CSL-JSON, BibTeX or RIS, each named by its key. The answer names each entry the format did not carry whole, with the CSL variables it lost, found by reading the text back; CSL-JSON loses none.",
         "tags": [
           "Bibliography"
         ],
@@ -297444,16 +297444,40 @@
                     "text": {
                       "type": "string",
                       "description": "The entries in the format, each named by its key"
+                    },
+                    "notCarried": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "variables": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "variables"
+                        ]
+                      },
+                      "description": "Each entry the format did not carry whole (PUB-055), by key, with the CSL variables the text lacks or holds otherwise, found by reading it back; empty for CSL-JSON"
                     }
                   },
                   "required": [
                     "format",
-                    "text"
+                    "text",
+                    "notCarried"
                   ]
                 },
                 "example": {
                   "format": "csl-json",
-                  "text": "example"
+                  "text": "example",
+                  "notCarried": []
                 }
               }
             },

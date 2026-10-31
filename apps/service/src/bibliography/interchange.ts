@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import { plugins } from '@citation-js/core';
 import '@citation-js/plugin-bibtex';
 import '@citation-js/plugin-ris';
@@ -68,4 +70,33 @@ export function formatEntries(
       format: 'text',
     }),
   );
+}
+
+/** What an export did not carry of one entry: its CSL variables, by name. */
+export interface NotCarried {
+  key: string;
+  variables: string[];
+}
+
+/**
+ * The entries some of whose CSL variables the text written does not carry (PUB-055), found by
+ * reading the text back: each variable the read-back record lacks or holds otherwise, in the entry's
+ * order. CSL-JSON carries everything. The text holds the entries in their order.
+ */
+export function notCarried(
+  format: InterchangeFormat,
+  entries: readonly { readonly key: string; readonly csl: CslItem }[],
+  text: string,
+): NotCarried[] {
+  if (format === 'csl-json') return [];
+  const read = readRecords(format, text) ?? [];
+  const report: NotCarried[] = [];
+  entries.forEach((each, at) => {
+    const back = (read[at] ?? {}) as Record<string, unknown>;
+    const variables = Object.entries(each.csl)
+      .filter(([name, value]) => !isDeepStrictEqual(back[name], value))
+      .map(([name]) => name);
+    if (variables.length > 0) report.push({ key: each.key, variables });
+  });
+  return report;
 }

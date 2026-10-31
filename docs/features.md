@@ -265,7 +265,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   to 500 records at a time, merges each match, saying what it gave it and what it could not keep. An entry's page lists where
   it is cited, and it is archived only when nothing cites it
   (`/v1/spaces/{space}/bibliography-entries`). An entry's page changes it as a new version, its key
-  kept, and exports it alone as CSL-JSON, BibTeX or RIS.
+  kept, and exports it alone as CSL-JSON, BibTeX or RIS, saying which of its CSL variables BibTeX or
+  RIS did not carry.
 - **Citation styles.** Administration's **Citation styles** lists the CSL styles a theme may name:
   CSE (name-year), Vancouver (NLM) and Harvard (Cite Them Right) are given, and **CSL file** uploads
   any other, refused unless it is a CSL 1.0.2 style with both forms that renders. Each upload is

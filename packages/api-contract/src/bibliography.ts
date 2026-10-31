@@ -157,6 +157,11 @@ export type ExportQuery = z.infer<typeof ExportQuery>;
 export const ExportAnswer = z.object({
   format: z.enum(INTERCHANGE_FORMATS),
   text: z.string().describe('The entries in the format, each named by its key'),
+  notCarried: z
+    .array(z.object({ key: z.string(), variables: z.array(z.string()) }))
+    .describe(
+      'Each entry the format did not carry whole (PUB-055), by key, with the CSL variables the text lacks or holds otherwise, found by reading it back; empty for CSL-JSON',
+    ),
 });
 
 /** The citations a component's editor shows, in order (the CI plan, CId). */
