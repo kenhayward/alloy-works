@@ -684,7 +684,7 @@ describe('the component editor', () => {
     expect(view.hasFocus()).toBe(true);
   });
 
-  it('CNT-168 offers a paste holding headings as one component, its headings made paragraphs, or broken out through an import', async () => {
+  it('CNT-187 offers a paste holding headings as one component, its headings made paragraphs, or broken out through an import', async () => {
     const IMPORT = '0a000000-0000-4000-8000-000000000001';
     const { asked, surface } = open({
       'GET /v1/components/{id}': () => json(200, opened()),

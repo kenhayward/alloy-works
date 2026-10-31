@@ -45,7 +45,7 @@ export interface MountOptions {
     readonly report: readonly ReportEntry[];
   }) => void;
   /**
-   * Given, a paste holding headings is handed here instead of being placed (CNT-168), its HTML and its
+   * Given, a paste holding headings is handed here instead of being placed (CNT-187), its HTML and its
    * reading, for the author to keep as one component (`pasteInto` the reading) or break out.
    */
   readonly heldForBreakout?: (held: {
