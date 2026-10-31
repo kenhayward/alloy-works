@@ -428,8 +428,10 @@ export function bridgeDeliverJob(deps: {
             author: now.principalId,
             note: deliveryNote({
               sourceFilename: provenance.sourceFilename,
+              sourceSha256: provenance.sourceSha256,
               decomposerVersion: provenance.decomposerVersion,
               actingUser: accepted.actingUser?.name ?? provenance.startedBy.name,
+              deliveryKey: delivery.key!,
             }),
             document: pkg.document!,
             title: titleOf(accepted, provenance.sourceFilename),

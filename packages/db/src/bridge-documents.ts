@@ -114,13 +114,15 @@ export type DocumentRefused = { readonly answer: 'refused'; readonly error: Brid
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const LEAD = '~lead';
 
-/** A version's note (docs/design/ct-studio-sink.md, "Provenance"). */
+/** A version's note (docs/design/ct-studio-sink.md, "Provenance"; API-071). */
 export function deliveryNote(input: {
   readonly sourceFilename: string;
+  readonly sourceSha256: string;
   readonly decomposerVersion: string | number;
   readonly actingUser: string;
+  readonly deliveryKey: string;
 }): string {
-  return `Delivered by CT Studio from ${input.sourceFilename} (${input.decomposerVersion}) for ${input.actingUser}`;
+  return `Delivered by CT Studio from ${input.sourceFilename} (${input.decomposerVersion}) for ${input.actingUser}; source sha256 ${input.sourceSha256}, delivery key ${input.deliveryKey}`;
 }
 
 const refused = (error: BridgeError): DocumentRefused => ({ answer: 'refused', error });
