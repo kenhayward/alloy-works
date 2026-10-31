@@ -95,7 +95,16 @@ and `apps/desktop/package.json` (electron-builder stamps it into the installer).
 
 ## Releases
 
-**There is no release process yet.** `pnpm --filter @alloy-works/desktop package` builds an
-installer locally ([development.md](development.md)); nothing is signed, notarised or published.
-Packaging on CI belongs on a tag. Before a real release: Windows signing, macOS notarisation and an
-auto-update decision.
+**A close publishes the desktop app** ([`release.yml`](../.github/workflows/release.yml), the
+[DR plan](plans/2026-10-31-dr-desktop-releases.md); ADM-052):
+
+- **When:** after CI passes on a push to `main` whose `version.json` has no tag yet. It tags
+  `vX.Y.Z` on the commit CI passed and creates a GitHub release. A later green push finds the tag and
+  stops, so a failed release is tried again on the next.
+- **What:** `AlloyWorks-Setup-X.Y.Z.exe`, its blockmap and `latest.yml`, built on `windows-latest`
+  with `--publish never` and attached by `gh release create`; the notes are the version's
+  `CHANGELOG.md` entry. No spaces in the name: GitHub turns them to dots and `latest.yml` would miss
+  the file.
+- **Trying it:** run the workflow by hand, or open a PR changing it or `electron-builder.yml`: it
+  builds and uploads the installer to the run, publishing nothing.
+- **Not yet:** signing (SmartScreen warns on install), macOS and Linux.

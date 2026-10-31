@@ -1,8 +1,8 @@
 # Packaging for the desktop delivery.
 #
-# There is no signing, no notarisation and no publishing here yet - this produces an installer
-# you can run locally, and nothing more. When releases are wired up they run on a tag, never on
-# a pull request. See docs/ci-and-releases.md.
+# Unsigned and not notarised. The release workflow (.github/workflows/release.yml) builds this on
+# Windows after CI passes on a close, and publishes it with `gh release create`, never from here:
+# electron-builder runs with --publish never. See docs/ci-and-releases.md.
 
 # Must match APP_USER_MODEL_ID in src/icons.ts, or the installed app and the running app are two
 # different identities to Windows and the taskbar icon is wrong.
@@ -16,7 +16,16 @@ copyright: Copyright (c) 2026 Ken Hayward
 extraMetadata:
   name: alloy-works
 
-artifactName: ${productName} Setup ${version}.${ext}
+# No spaces: GitHub turns them to dots in a release asset's name, and latest.yml names the file, so
+# an installer named with them could never be found by an update (the DR plan, DR-G).
+artifactName: AlloyWorks-Setup-${version}.${ext}
+
+# Where the updater looks (DR-H): written into the app as app-update.yml. The repository is public,
+# so the updater needs no token. Publishing itself is the workflow's.
+publish:
+  provider: github
+  owner: kenhayward
+  repo: alloy-works
 
 directories:
   buildResources: build
@@ -51,6 +60,9 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # For the person alone, never every user: an update to a per-machine install needs an
+  # administrator, which an update offered in the tray cannot ask for (DR-G).
+  perMachine: false
   # Three separate icons, all easy to leave at the electron-builder default: the installer
   # executable, the uninstaller executable (which is also the Add/Remove Programs entry), and
   # the header shown in the wizard.

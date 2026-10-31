@@ -608,8 +608,8 @@ pnpm --filter @alloy-works/desktop package       # installer for the current pla
 pnpm --filter @alloy-works/desktop package:dir   # unpacked app only, much faster
 ```
 
-Output goes to `release/`, which is git-ignored. There is no signing and no release workflow - this
-builds an installer you can run locally, and nothing more.
+Output goes to `release/`, which is git-ignored, unsigned. Releases are built by CI, not here
+([ci-and-releases.md](ci-and-releases.md#releases)).
 
 **Test a packaging change by running the packaged app, not just the build.** The dev and packaged
 layouts differ in two ways that unit tests cannot see: the renderer is copied in as `renderer/`,

@@ -1,0 +1,110 @@
+name: Release
+
+# The desktop app's release (the DR plan, DR-F; ADM-052): after CI passes on a push to main, a close
+# - a version.json not yet tagged - becomes tag vX.Y.Z and a GitHub release carrying the Windows
+# installer, its blockmap and latest.yml, which the installed app's updater reads. Any other green
+# push finds its version already released and stops; a release that failed is tried again on the next.
+# Run by hand, or on a pull request changing the release itself, it builds and uploads the installer
+# to the run, publishing nothing.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - apps/desktop/electron-builder.yml
+  workflow_dispatch:
+
+# Writes the tag and the release; reads the bridge contract from GitHub Packages.
+permissions:
+  contents: write
+  packages: read
+
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# One at a time, and never cancelled: a release half-published is worse than one late.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Windows installer
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./version.json').version")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          if [ "${{ github.event_name }}" = 'workflow_run' ] &&
+            git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "v$VERSION is released already."
+            echo 'go=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'go=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.version.outputs.go == 'true'
+        # Pinned by commit: this workflow writes releases, so a moved tag must not run in it.
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - if: steps.version.outputs.go == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        if: steps.version.outputs.go == 'true'
+        run: pnpm install --frozen-lockfile
+
+      # Turborepo builds what the desktop app depends on first, the renderer among it.
+      - name: Build
+        if: steps.version.outputs.go == 'true'
+        run: pnpm exec turbo run build --filter=@alloy-works/desktop...
+
+      - name: Package
+        if: steps.version.outputs.go == 'true'
+        run: pnpm --filter @alloy-works/desktop exec electron-builder --config electron-builder.yml --publish never
+
+      - name: Notes
+        if: steps.version.outputs.go == 'true'
+        run: pnpm --filter @alloy-works/desktop exec tsx scripts/release-notes.ts ../../CHANGELOG.md "$VERSION" > notes.md
+
+      - name: Upload the build
+        if: github.event_name != 'workflow_run'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlloyWorks-Setup-${{ env.VERSION }}
+          path: |
+            release/AlloyWorks-Setup-${{ env.VERSION }}.exe
+            release/AlloyWorks-Setup-${{ env.VERSION }}.exe.blockmap
+            release/latest.yml
+            notes.md
+
+      - name: Publish
+        if: github.event_name == 'workflow_run' && steps.version.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release create "v$VERSION" --target "$SHA" --title "Alloy Works $VERSION" --notes-file notes.md
+          "release/AlloyWorks-Setup-$VERSION.exe"
+          "release/AlloyWorks-Setup-$VERSION.exe.blockmap"
+          release/latest.yml
