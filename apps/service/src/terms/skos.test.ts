@@ -54,7 +54,7 @@ ex:dasyurid a skos:Concept ;
 `;
 
 describe('SKOS interchange (the TM plan, TM-J)', () => {
-  it('LIB-028 exports terms as JSON-LD in the documented compact form', () => {
+  it('LIB-060 exports terms as JSON-LD in the documented compact form', () => {
     const exported = exportSkos([
       { id: DUNNART, term: dunnart },
       { id: MARSUPIAL, term: marsupial },
@@ -75,7 +75,7 @@ describe('SKOS interchange (the TM plan, TM-J)', () => {
     });
   });
 
-  it('LIB-028 IMP-015 imports its own export, each concept as it was exported', async () => {
+  it('LIB-060 IMP-050 imports its own export, each concept as it was exported', async () => {
     const text = JSON.stringify(
       exportSkos([
         { id: DUNNART, term: dunnart },
@@ -103,7 +103,7 @@ describe('SKOS interchange (the TM plan, TM-J)', () => {
     ]);
   });
 
-  it('IMP-015 LIB-029 imports Turtle, reporting what a term cannot hold rather than dropping it', async () => {
+  it('IMP-050 LIB-029 imports Turtle, reporting what a term cannot hold rather than dropping it', async () => {
     const read = await readSkos('turtle', TURTLE);
     expect(read?.concepts.map((each) => each.key)).toEqual([
       'https://example.org/terms/quoll',

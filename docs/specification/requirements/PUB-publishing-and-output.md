@@ -97,7 +97,8 @@ exactly when it matters.
 | **PUB-021** | The document outline must appear as PDF bookmarks                                                                                                                                                                                                                                                  | T1         | Specified             |
 | **PUB-022** | Cross-references and citations must be internal links                                                                                                                                                                                                                                              | T1         | Superseded by PUB-096 |
 | **PUB-096** | A cross-reference in a paragraph's text - running text, a list, a quotation, a table's body cell, a footnote's text - must be an internal link to its target                                                                                                                                       | T1         | Specified             |
-| **PUB-097** | A citation must be an internal link to its entry in the bibliography (**LIB**, **PUB-040**)                                                                                                                                                                                                        | T6         | Specified             |
+| **PUB-097** | A citation must be an internal link to its entry in the bibliography (**LIB**, **PUB-040**)                                                                                                                                                                                                        | T6         | Superseded by PUB-112 |
+| **PUB-112** | A citation in running text must be an internal link to its entry in the bibliography; one in a heading or a caption, whose words the contents and running heads repeat, is set without one (**LIB**, **PUB-040**)                                                                                  | T6         | Specified             |
 | **PUB-068** | Rendered output must be faithful to the composition that was paginated: line breaking, hyphenation, justification and glyph selection must be those the layout and theme declare (**STY**). A renderer must not re-break, re-hyphenate or choose a different glyph on its own                      | Constraint | Specified             |
 | **PUB-069** | Hyphenation and line breaking must follow the language of the passage (**CNT-140**), not one language declared for the whole document                                                                                                                                                              | T1         | Specified             |
 | **PUB-070** | Where a typeface is substituted because its licence forbids embedding (**STY-052**), the document must be composed again against the substitute and the substitution reported on the publication. A substitution must never leave a page whose lines differ from the composition that was approved | Constraint | Specified             |
@@ -675,3 +676,19 @@ moving tranche whole keeps its identifier, and only its tranche changes.
 | Counts       | Before                      | After                       |
 | ------------ | --------------------------- | --------------------------- |
 | Requirements | 111, of which 16 superseded | 111, of which 16 superseded |
+
+### From the T6 audit against the code (2026-10-31)
+
+[The T6 audit](<../../reviews/T6 - Audit against the code.md>) read every T6 requirement `Covered` at
+0.220.1 against the code, and Ken accepted its decisions as recommended on 2026-10-31
+([the CL plan](../../plans/2026-10-31-cl-t6-close.md)). A row changing what the product must do is
+superseded; a row split by tranche is superseded by its T6 half, and the rest becomes a row of its
+own; a rewording for clarity is an edit.
+
+| What was found                                                                                                                              | Change                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| PUB-097 had no exception; a citation in a heading or a caption is set without a link, since the contents and running heads repeat its words | **PUB-097 superseded by PUB-112**: a citation in running text links to its entry |
+
+| Counts       | Before                      | After                       |
+| ------------ | --------------------------- | --------------------------- |
+| Requirements | 111, of which 16 superseded | 112, of which 17 superseded |

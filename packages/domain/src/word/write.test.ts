@@ -5410,7 +5410,7 @@ describe('writeDocx: citations and the bibliography (the CI plan, CIc)', () => {
     ]);
   });
 
-  it('PUB-097 writes each citation as its runs in a link to the bookmark on its entry in the bibliography', () => {
+  it('PUB-112 writes each citation as its runs in a link to the bookmark on its entry in the bibliography', () => {
     const { docx } = cited();
     const entry = (text: RegExp) => paragraphs(docx).find((each) => text.test(textOf(each)))!;
     const bookmarkOf = (paragraph: Element) => first(paragraph, 'w:bookmarkStart')!.attrs['w:name'];

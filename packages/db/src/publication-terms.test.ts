@@ -280,7 +280,7 @@ describe('the term versions a publish reads (TMb)', () => {
     await db?.drop();
   });
 
-  it("LIB-016 records each term's latest approved revision a use reads, reaches the next approval at the next publish, and never a baseline's pin", async () => {
+  it("records each term's latest approved revision a use reads, reaches the next approval at the next publish, and never a baseline's pin", async () => {
     const rpm = await approved(await made(term('revolutions per minute')));
     const { document, node } = await placing(await using(rpm.id));
     const first = await published(document);

@@ -462,7 +462,7 @@ describe('translation (the TR plan, TRa)', () => {
     expect((await h.call('alice', 'GET', '/v1/settings/translation/history')).statusCode).toBe(403);
   });
 
-  it("sends a document's components needing a language as a job, tracked item by item, downloaded as XLIFF 2.1, and closed", async () => {
+  it("LOC-018 LOC-033 sends a document's components needing a language as a job, tracked item by item, downloaded as XLIFF 2.1, and closed", async () => {
     const first = await approvedComponent('Ponds');
     const second = await approvedComponent('Streams');
     const made = await h.call('grace', 'POST', `/v1/spaces/${h.general}/documents`, {

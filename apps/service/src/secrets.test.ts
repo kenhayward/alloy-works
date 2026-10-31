@@ -8,7 +8,7 @@ describe('the environment secret store', () => {
     expect(secrets.get('sign_in_state')).toBe('a-development-state-key');
   });
 
-  it('API-065 reads the bridge keys from SINK_BRIDGE_KEYS, as every sink names them, never SECRET_BRIDGE_KEYS', () => {
+  it('reads the bridge keys from SINK_BRIDGE_KEYS, as every sink names them, never SECRET_BRIDGE_KEYS', () => {
     expect(environmentSecrets({ SINK_BRIDGE_KEYS: 'a-bridge-key' }).get('bridge_keys')).toBe(
       'a-bridge-key',
     );

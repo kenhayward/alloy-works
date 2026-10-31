@@ -24,7 +24,7 @@ const source = parseContentDocument({
 });
 
 describe('a translation status', () => {
-  it('declares the set a variant may carry, approval not among them', () => {
+  it('LOC-030 declares the set a variant may carry, approval not among them', () => {
     expect(TRANSLATION_STATUSES).toEqual([
       'untranslated',
       'machineDrafted',

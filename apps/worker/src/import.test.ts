@@ -330,7 +330,7 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
     expect(asset).toMatchObject({ spaceId: general });
   });
 
-  it('IMP-013 reads Markdown and HTML into sections and components as Word is, holding a data image for an asset and never fetching one by its address', async () => {
+  it('IMP-049 reads Markdown and HTML into sections and components as Word is, holding a data image for an asset and never fetching one by its address', async () => {
     const markdown = await imported(
       strToU8(
         ['# Methods', '## Sampling', 'Ada *netted* it.', '## Analysis', 'Grace counted.'].join(

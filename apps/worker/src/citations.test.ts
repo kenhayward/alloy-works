@@ -150,7 +150,7 @@ describe('citations in the PDF (CIc)', () => {
     expect(read.roles).toEqual(expect.arrayContaining(['L', 'LI']));
   });
 
-  it('PUB-097 links each citation to its entry in the bibliography', () => {
+  it('PUB-112 links each citation to its entry in the bibliography', () => {
     const words = read.items.find((item) => item.text.includes('Sediment moves'))!;
     const line = read.destinations[words.page - 1]!.filter(
       ({ rect: [, bottom, , top] }) => bottom <= words.y && words.y <= top,

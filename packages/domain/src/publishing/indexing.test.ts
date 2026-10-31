@@ -213,7 +213,7 @@ describe('the index assembled (IXb)', () => {
     expect(terms('sv')).toEqual(['o', 'z', 'ö']);
   });
 
-  it('places none under a layout without one: a marker prints nothing and fails nothing', () => {
+  it('PUB-041 places none under a layout without one: a marker prints nothing and fails nothing', () => {
     const document = published(
       publish(one(component(paragraph('p1', text('Seals'), marker('alloy', { see: 'nothing' })))), {
         layout: THIRTEENTH_DEFAULT_LAYOUT,

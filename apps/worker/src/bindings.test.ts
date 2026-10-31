@@ -828,7 +828,7 @@ describe('publishing a document holding a value', () => {
         return answer.request.id;
       });
 
-    it("LOC-045 selects each form's arm by its value in its component's language, the same in the PDF, Word and HTML, and records the arm in provenance.json", async () => {
+    it("LOC-046 selects each form's arm by its value in its component's language, the same in the PDF, Word and HTML, and records the arm in provenance.json", async () => {
       const version = await documentHoldingForms();
       const request = await requested(version, ['pdf', 'docx', 'html']);
       expect(await work()).toBe('done');

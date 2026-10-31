@@ -185,7 +185,7 @@ describe('the bridge store', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
-  it('API-071 names a refusal about the space, and a data delivery about the space too', async () => {
+  it('names a refusal about the space, and a data delivery about the space too', async () => {
     const no = await as((trx) => startDelivery(trx, delivery('subject-no')));
     const data = await as((trx) =>
       startDelivery(trx, delivery('subject-data', { family: 'data' })),
@@ -232,7 +232,7 @@ describe('the bridge store', () => {
     expect(await as((trx) => recordNonce(trx, randomUUID()))).toBe('new');
   });
 
-  it('API-069 keeps the elements a persistent identity made, and takes a re-recorded one over', async () => {
+  it('keeps the elements a persistent identity made, and takes a re-recorded one over', async () => {
     const persistent = randomUUID();
     const artifacts = await as(async (trx) => {
       const ids: string[] = [];

@@ -70,7 +70,7 @@ describe('migration 0172, which stores the delivery bridge', () => {
       .executeTakeFirstOrThrow()
       .then((space) => space.id);
 
-  it('API-068 runs a schema before it without the bridge, then keeps a delivery and its audit kind after', async () => {
+  it('runs a schema before it without the bridge, then keeps a delivery and its audit kind after', async () => {
     // At 0171: no bridge kind and no nonce table.
     await expect(
       as((trx) => recordEvent(trx, { kind: 'bridge.settings_changed', detail: { changed: [] } })),

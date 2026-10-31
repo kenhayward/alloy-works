@@ -241,7 +241,7 @@ describe('citations published (CIc)', () => {
     });
   });
 
-  it('PUB-097 links each citation in running text to its entry in the bibliography, and sets one in a caption as text', () => {
+  it('PUB-112 links each citation in running text to its entry in the bibliography, and sets one in a caption as text', () => {
     const document = published(
       publish(
         component(

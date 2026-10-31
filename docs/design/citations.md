@@ -21,27 +21,27 @@ fails the publish, naming both.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **CNT-053** | Formatted at publish from the theme's citation style, by citeproc-js                                                           |
-| **CNT-102** | CSE, Vancouver and Harvard seeded; any CSL style uploaded                                                                      |
-| **STY-020** | A CSL style declares both forms                                                                                                |
-| **STY-021** | As CNT-102                                                                                                                     |
-| **STY-022** | A CSL style declares its ordering and disambiguation; citeproc-js applies them across the document                             |
-| **STY-023** | A style is uploaded as a CSL file, no release                                                                                  |
-| **API-032** | As STY-023, through `/v1/citation-styles`                                                                                      |
-| **LIB-008** | An entry holds CSL-JSON, typed by CSL's source types                                                                           |
-| **LIB-009** | Imported and exported as CSL-JSON, BibTeX and RIS                                                                              |
-| **LIB-010** | Import finds an existing record and says what it merged                                                                        |
-| **LIB-011** | `obtained { from, at }` and `checkedAt` on the entry                                                                           |
-| **LIB-012** | A style declares the fields it requires by source type; an entry lacking one fails the publish, naming the entry and the field |
-| **LIB-044** | Making one by hand runs the same search and offers the existing record                                                         |
-| **LIB-045** | Canonical identifiers first, then title, year and first author, normalised                                                     |
-| **LIB-046** | The key is made from the fields at creation, unique in the space (so in any document), and never changes                       |
-| **PUB-040** | The bibliography is generated from the citations present, in the style's form                                                  |
-| **PUB-097** | Each citation links to its entry in the bibliography: PDF a link, Word a hyperlink to the entry's bookmark                     |
-| **STR-069** | A cross-reference's target gains an `entry` arm, by identity                                                                   |
-| **IMP-014** | As LIB-009                                                                                                                     |
+| ID          | How it is met                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CNT-053** | Formatted at publish from the theme's citation style, by citeproc-js                                                                                                      |
+| **CNT-102** | CSE, Vancouver and Harvard seeded; any CSL style uploaded                                                                                                                 |
+| **STY-020** | A CSL style declares both forms                                                                                                                                           |
+| **STY-021** | As CNT-102                                                                                                                                                                |
+| **STY-022** | A CSL style declares its ordering and disambiguation; citeproc-js applies them across the document                                                                        |
+| **STY-023** | A style is uploaded as a CSL file, no release                                                                                                                             |
+| **API-032** | As STY-023, through `/v1/citation-styles`                                                                                                                                 |
+| **LIB-008** | An entry holds CSL-JSON, typed by CSL's source types                                                                                                                      |
+| **LIB-009** | Imported and exported as CSL-JSON, BibTeX and RIS                                                                                                                         |
+| **LIB-010** | Import finds an existing record and says what it merged                                                                                                                   |
+| **LIB-011** | `obtained { from, at }` and `checkedAt` on the entry                                                                                                                      |
+| **LIB-012** | A style declares the fields it requires by source type; an entry lacking one fails the publish, naming the entry and the field                                            |
+| **LIB-044** | Making one by hand runs the same search and offers the existing record                                                                                                    |
+| **LIB-045** | Canonical identifiers first, then title, year and first author, normalised                                                                                                |
+| **LIB-064** | The key is made from the fields at creation, unique in the space, and never changes                                                                                       |
+| **PUB-040** | The bibliography is generated from the citations present, in the style's form                                                                                             |
+| **PUB-112** | A citation in running text links to its entry in the bibliography: PDF a link, Word a hyperlink to the entry's bookmark; one in a heading or a caption is set without one |
+| **STR-069** | A cross-reference's target gains an `entry` arm, by identity                                                                                                              |
+| **IMP-014** | As LIB-009                                                                                                                                                                |
 
 CNT-051 (content-model.md) and CNT-054 (publishing.md) are claimed where they were designed; this
 slice builds them. LIB-006, LIB-007 and LIB-047 are the library's constraints, honoured here for
@@ -54,7 +54,7 @@ obtained?: { from, at }, checkedAt? }`: `csl` a CSL-JSON item without its `id` (
 is its id), checked against CSL's types and variables; `key` fixed at the first version. Fields beyond
 CSL's are refused, never kept.
 
-**The key** (LIB-046) is the first author's family name and the issued year (`smith2020`), else the
+**The key** (LIB-064) is the first author's family name and the issued year (`smith2020`), else the
 first significant word of the title and the year, else `entry`; lower-cased ASCII, then `a`, `b` and on
 where the space already holds it, under a unique index on the space and key. It names the entry to an
 author and in an export; the printed label is the style's (`Smith 2020a`), never the key.

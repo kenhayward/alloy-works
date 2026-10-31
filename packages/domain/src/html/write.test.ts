@@ -801,7 +801,7 @@ describe('the HTML writer: every other kind (the HT plan, HTb)', () => {
     expect(maths).toHaveLength(4);
   });
 
-  it('writes citations linked to their entries in the bibliography after the last node', () => {
+  it('PUB-112 writes citations linked to their entries in the bibliography after the last node', () => {
     const MARLOW = '0b0e2c4b-3f1d-4e8a-9b2c-5d6e7f8a9c11';
     const entries = new Map<string, CslItem>([
       [

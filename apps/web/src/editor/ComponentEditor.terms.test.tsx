@@ -147,7 +147,7 @@ describe('terms in the editor (the TM plan, TMc)', () => {
     expect(await screen.findByRole('dialog', { name: 'Link' })).toBeInTheDocument();
   });
 
-  it('LIB-018 flags a deprecated term where it is used, naming its replacement', async () => {
+  it('LIB-018 LIB-062 flags a deprecated term where it is used, naming its replacement', async () => {
     const { surface } = open(
       answers(
         blocksOf({

@@ -321,7 +321,7 @@ describe('spellingMenu', () => {
 });
 
 describe('trayMenu', () => {
-  it('LOC-005 shows the window, connects elsewhere and quits, in the language it is given (the UI plan, UI-I)', () => {
+  it('LOC-005 ADM-051 shows the window, connects elsewhere and quits, in the language it is given (the UI plan, UI-I)', () => {
     expect(
       trayMenu({ ...ENGLISH, 'desktop.show': '[Šĥöŵ ~]', 'desktop.quit': '[Ǫûîţ ~]' }),
     ).toEqual([

@@ -87,7 +87,8 @@ It says so here.
 | **LOC-037** | Where a variant is missing, publishing must either fail or fall back to the source, by a policy declared for the document rather than per component. Where it falls back, every component appearing in the source language must be marked as untranslated in the output, so that mixed language is a stated outcome and never an accident (LOC-N04)                                                                                                                                                                                                            | Constraint | Specified             |
 | **LOC-036** | Every policy this area defers to - fallback (LOC-037), publish refusal (LOC-017), sending content to an external service (LOC-026), and what happens to a conflicted import (LOC-035) - must be a declared tenant setting, versioned and audited like any other configuration (**ADM-001**), and must state its default                                                                                                                                                                                                                                        | T6         | Specified             |
 | **LOC-039** | Locale-aware formatting inside content must use the same mechanism as the interface (LOC-027): where a sentence in a variant varies by a number or a gender that a bound value supplies, it must be a locale-aware message form rather than text assembled around the value (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted)                                                                                                                                                                                                 | T6         | Superseded by LOC-045 |
-| **LOC-045** | Locale-aware formatting inside content must use the same locale data and rules as the interface (LOC-027): where a sentence in a variant varies by a number that a bound value supplies, it must be a plural message form - an arm for each plural category the variant's own language declares, and optionally exact arms for the values 0 to 9 - rather than text assembled around the value. A sentence varying by gender is a named gap until a column type carries one (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted) | T6         | Specified             |
+| **LOC-045** | Locale-aware formatting inside content must use the same locale data and rules as the interface (LOC-027): where a sentence in a variant varies by a number that a bound value supplies, it must be a plural message form - an arm for each plural category the variant's own language declares, and optionally exact arms for the values 0 to 9 - rather than text assembled around the value. A sentence varying by gender is a named gap until a column type carries one (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted) | T6         | Superseded by LOC-046 |
+| **LOC-046** | Locale-aware formatting inside content must use the same locale data and rules as the interface (LOC-027): where a sentence in a variant varies by a number that a bound value supplies, a plural message form must be available for it - an arm for each plural category the variant's own language declares, and optionally exact arms for the values 0 to 9. A sentence varying by gender is a named gap until a column type carries one (**CNT** owns the node, **STY** and **TAB** own how the value itself is formatted)                                 | T6         | Specified             |
 
 **LOC-037 replaces LOC-011 because the old wording permitted two readings that contradict each
 other.** Falling back per component produces a page that is nine-tenths translated, which is the
@@ -297,3 +298,19 @@ Ken answered the questions [the MF plan](../../plans/2026-10-29-mf-message-forms
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 44, of which 6 superseded | 45, of which 7 superseded |
+
+### From the T6 audit against the code (2026-10-31)
+
+[The T6 audit](<../../reviews/T6 - Audit against the code.md>) read every T6 requirement `Covered` at
+0.220.1 against the code, and Ken accepted its decisions as recommended on 2026-10-31
+([the CL plan](../../plans/2026-10-31-cl-t6-close.md)). A row changing what the product must do is
+superseded; a row split by tranche is superseded by its T6 half, and the rest becomes a row of its
+own; a rewording for clarity is an edit.
+
+| What was found                                                                                                                          | Change                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| LOC-045 refused "text assembled around the value", which nothing can tell apart: a number before "items" and one before "kg" look alike | **LOC-045 superseded by LOC-046**: a plural message form must be available for such a sentence |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 45, of which 7 superseded | 46, of which 8 superseded |

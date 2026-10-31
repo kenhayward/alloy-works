@@ -37,7 +37,7 @@ describe('readImport', () => {
     ]);
   });
 
-  it('IMP-013 reads Markdown and HTML headings as headings by their level, broken out as Word is', () => {
+  it('IMP-049 reads Markdown and HTML headings as headings by their level, broken out as Word is', () => {
     const markdown = ['Before', '# Ada', '## Grace *wrote*', 'Text'].join(
       String.fromCharCode(10, 10),
     );
@@ -71,7 +71,7 @@ describe('readImport', () => {
     );
   });
 
-  it('IMP-013 never fetches an image by its address, saying it was left out, and holds a data image as a Word one is', () => {
+  it('IMP-049 never fetches an image by its address, saying it was left out, and holds a data image as a Word one is', () => {
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
     const data = `data:image/png;base64,${btoa(String.fromCharCode(...png))}`;
     const html =

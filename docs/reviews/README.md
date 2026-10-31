@@ -57,6 +57,11 @@ answered by a **From the T2 audit against the code** subsection in DAT, STY and 
 are. It is answered by a **From the T3 audit against the code** subsection in API, CNT, COL, DAT,
 LIF, SCH, STR and VER.
 
+**[T6 - Audit against the code](<T6 - Audit against the code.md>)** reads every T6 row `Covered` at
+0.220.1, not a sample, against the code. It is answered by a **From the T6 audit against the code**
+subsection in IMP, LIB, LOC, PUB and SCH, and by
+[the CL plan](../plans/2026-10-31-cl-t6-close.md).
+
 **They are not edited to match what happened.** A review is evidence of what was visible at the time
 it was written, and rewriting it afterwards would destroy exactly that. Where a reviewer was wrong,
 the answer is in the reply, not in a correction here.

@@ -212,7 +212,8 @@ describe('the real corpus', () => {
     // 1607 (2026-10-30): API-074 to API-076, connecting CT Studio (CC).
     // 1608 (2026-10-30): API-077, disconnecting a space from CT Studio.
     // 1611 (2026-10-31): ADM-051 to ADM-053, the desktop app's releases (DR).
-    expect(total((document) => document.requirements)).toBe(1611);
+    // 1623 (2026-10-31): CLa - the T6 audit's amendments and splits, twelve rows.
+    expect(total((document) => document.requirements)).toBe(1623);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

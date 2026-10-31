@@ -834,7 +834,7 @@ describe('the interface in pseudo-locales (the UI plan, UI-J)', () => {
     await walk('en-XA');
   }, 600_000);
 
-  it('LOC-042 LOC-029 shows every moved surface and every dialog right to left, each word made over, none cut short and none over another', async () => {
+  it('LOC-042 LOC-029 LOC-004 shows every moved surface and every dialog right to left, each word made over, none cut short and none over another', async () => {
     await walk('ar-XB');
   }, 600_000);
 });

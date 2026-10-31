@@ -106,7 +106,8 @@ describe('the committed trace.json', () => {
     // 1607, from 1604 (2026-10-30): API-074 to API-076, connecting CT Studio (CC).
     // 1608, from 1607 (2026-10-30): API-077, disconnecting a space from CT Studio.
     // 1611, from 1608 (2026-10-31): ADM-051 to ADM-053, the desktop app's releases (DR).
-    expect(model.requirements).toHaveLength(1611);
+    // 1623, from 1611 (2026-10-31): CLa - the T6 audit's amendments and splits, twelve rows.
+    expect(model.requirements).toHaveLength(1623);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -1013,7 +1014,9 @@ describe('the citations in the committed model', () => {
     // 2228 (2026-10-31): DRa cites ADM-051 in the desktop shell's and the Connect to screen's tests.
     // 2229 (2026-10-31): DRb cites ADM-052 in the release workflow's pins.
     // 2230 (2026-10-31): DRc cites ADM-053 in the shell's update tests.
-    expect(model.citations).toHaveLength(2230);
+    // 2235 (2026-10-31): CLa - the T6 audit's cites added, off-target ones dropped, superseded rows'
+    // cites moved to their replacements.
+    expect(model.citations).toHaveLength(2235);
   });
 
   it('cites no identifier the corpus does not hold', () => {
