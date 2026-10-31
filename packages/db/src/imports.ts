@@ -1650,7 +1650,7 @@ async function placeAfter(
 /**
  * The images an import held made assets of its space at acceptance (IM-C), each through an upload
  * filled and recorded with the header its job read, by the person accepting: each placeholder's
- * asset version. The rows go; the objects are the assets' now.
+ * asset version, recording the import it came from. The rows go; the objects are the assets' now.
  */
 async function assetsOf(
   trx: TenantTransaction,
@@ -1679,7 +1679,11 @@ async function assetsOf(
       { key: each.object_key, format: each.header.format, bytes: Number(each.bytes) },
       false,
     );
-    made.set(each.placeholder, (await recordAsset(trx, upload.id, each.header)).id);
+    const asset = await recordAsset(trx, upload.id, each.header);
+    // What it came from (IMP-035), as the versions and suggestions an import makes record theirs.
+    await sql`insert into import_made (version_id, artifact_id, import_id)
+      values (${asset.id}, ${asset.artifactId}, ${row.id})`.execute(trx);
+    made.set(each.placeholder, asset.id);
   }
   return made;
 }

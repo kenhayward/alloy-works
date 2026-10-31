@@ -78,7 +78,8 @@ Acceptance still maps by email as the policy says.
 
 - **0155**: `import` (state `awaiting` its file, then `reading`, `proposed`, `accepted`, `abandoned` or
   `failed`), `import_part` as two sets of rows, `read` and `edited`, a trigger keeping `read` unchanged,
-  and `import_made` naming the import each version came from (IMP-035).
+  and `import_made` naming the import each version came from (IMP-035), an image's asset version
+  among them (CLc).
 - **The read**: `packages/readers` (`readImport`, `readDocx`) in a thread of the worker's with a
   memory limit and a timer; the zip guarded by `docx/zip.ts`, the XML by `saxes` in `docx/xml.ts`,
   the breakout by domain's `proposeImport`. What it does not read yet is reported as `notYetRead`.

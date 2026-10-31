@@ -116,4 +116,35 @@ describe('readImport', () => {
       'Ada saw it.',
     ]);
   });
+
+  it('IMP-049 reports each video, sound or embedded frame a Markdown or HTML import leaves out, naming it, on the part it stood in', () => {
+    const markdown = [
+      '# Pond',
+      'Ada saw it.',
+      '<video src="newt.mp4"></video>',
+      'Grace <audio src="croak.mp3"></audio> heard it.',
+    ].join(String.fromCharCode(10, 10));
+    const html =
+      '<h1>Pond</h1><p>Ada saw it.</p><iframe src="x"></iframe><object data="y"></object>';
+    for (const [text, type, left] of [
+      [markdown, 'markdown', ['video', 'audio']],
+      [html, 'html', ['iframe', 'object']],
+    ] as const) {
+      const read = readImport(strToU8(text), type);
+      if (!read.ok) throw new Error(read.failure);
+      const { parts } = proposeImport(read.flow, DEFAULT_IMPORT_LEVELS, {
+        language: 'en',
+        direction: 'ltr',
+        newIdentifier: () => crypto.randomUUID(),
+      });
+      const pond = parts.find((part) => part.kind === 'component')!;
+      expect(
+        pond.report
+          .filter((entry) => entry.action === 'discarded')
+          .map((entry) => [entry.subject, entry.detail]),
+      ).toEqual(left.map((name) => ['embeddedObject', name]));
+      // The words around them are kept.
+      expect(JSON.stringify(pond.blocks)).toContain('Ada saw it.');
+    }
+  });
 });

@@ -22,6 +22,7 @@ import {
   holdImportImage,
   importParts,
   importPolicy,
+  provenanceOf,
   readImport,
   receiveImportFile,
   recordProposal,
@@ -346,6 +347,22 @@ describe("an import's structure (IMc)", () => {
     const asset = await tenant((trx) => readAssetVersion(trx, figure.asset));
     expect(asset).toMatchObject({ spaceId: general, content: { format: 'png' } });
     expect(await left(id)).toEqual({ held: 0, assets: before.assets + 1 });
+  });
+
+  it('IMP-035 records what each asset an import makes at acceptance came from, as its components do', async () => {
+    const { id } = await withImage();
+    await propose(id);
+    const answer = await accept(id);
+    if (answer.answer !== 'accepted') throw new Error(answer.answer);
+    const figure = (answer.components[0]!.content as { content: { asset: string }[] }).content[0]!;
+    const file = await tenant((trx) => readImport(trx, id));
+    expect(await tenant((trx) => provenanceOf(trx, figure.asset))).toEqual({
+      import: id,
+      fileName: 'Pond.docx',
+      sha256: file!.sha256,
+      at: expect.any(Date),
+      by: ada,
+    });
   });
 
   it('IMP-009 holds the identities the file carries, and its parts their changes and threads, before acceptance', async () => {
