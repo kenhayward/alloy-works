@@ -1083,6 +1083,15 @@ describe('the domain package', () => {
         // IXb: the default layout's 0.13 frozen beside 0.14, and the schema template 26 reads.
         'THIRTEENTH_DEFAULT_LAYOUT',
         'PUBLISHING_SCHEMA_26',
+        // VOa: a vocabulary's shape, its values' labels and order, and the ids a version may not drop.
+        'VOCABULARY_LIMITS',
+        'VocabularyRefused',
+        'parseVocabulary',
+        'valueDescription',
+        'valueLabel',
+        'valuesInOrder',
+        'vocabularyChangeRefusals',
+        'vocabularyDefinitionSchema',
       ].sort(),
     );
   });
