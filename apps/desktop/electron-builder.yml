@@ -20,12 +20,13 @@ extraMetadata:
 # an installer named with them could never be found by an update (the DR plan, DR-G).
 artifactName: AlloyWorks-Setup-${version}.${ext}
 
-# Where the updater looks (DR-H): written into the app as app-update.yml. The repository is public,
-# so the updater needs no token. Publishing itself is the workflow's.
+# Where the updater looks (DR-H): written into the app as app-update.yml. The releases repository is
+# public, so the updater needs no token, however the source is kept (ADR-0073). Publishing itself is
+# the workflow's.
 publish:
   provider: github
   owner: kenhayward
-  repo: alloy-works
+  repo: aw-releases
 
 directories:
   buildResources: build
