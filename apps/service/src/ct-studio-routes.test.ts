@@ -1,11 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import type {
   BridgeSettingsView,
+  ComponentView,
   CtStudioConnected,
   CtStudioStatus,
   CtStudioTokenIssued,
 } from '@alloy-works/api-contract';
-import { writeBridgeSettings, writeCtStudio, createServiceIdentity } from '@alloy-works/db';
+import {
+  createServiceIdentity,
+  elementsOf,
+  finishDelivery,
+  readDelivery,
+  recordElements,
+  startDelivery,
+  writeBridgeSettings,
+  writeCtStudio,
+} from '@alloy-works/db';
 import type { Tenant } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -419,5 +429,75 @@ describe('disconnecting a space from CT Studio', () => {
     const body = answer.json<CtStudioConnected>();
     expect(body.issued).toBeNull();
     expect(body.status.spaces.find((space) => space.id === h.quality)?.granted).toBe(true);
+  });
+
+  it('API-077 what CT Studio delivered to a space stays after the space is disconnected', async () => {
+    const before = (await h.call('ada', 'GET', '/v1/ct-studio')).json<CtStudioStatus>();
+    expect(before.spaces.map((space) => space.id)).toContain(h.quality);
+    // A component a delivery wrote there: its delivery record and the element it made.
+    const made = await h.component(h.quality, 'Delivered results');
+    const persistentId = randomUUID();
+    const delivery = await h.tenantDb.withTenant(h.tenant, async (trx) => {
+      const started = await startDelivery(trx, {
+        key: randomUUID(),
+        spaceId: h.quality,
+        family: 'document',
+        tokenId: before.token!.id,
+        principalId: before.identity!.id,
+        packageKey: null,
+        provenance: { sourceFilename: 'results.docx' },
+      });
+      if (started.answer !== 'started') throw new Error(started.answer);
+      await recordElements(trx, persistentId, [{ element: 's1', artifactId: made.id, node: null }]);
+      await finishDelivery(trx, started.id, { written: [] }, [], { persistentId });
+      return started.id;
+    });
+
+    const answer = await disconnect(h.quality);
+    expect(answer.statusCode, answer.body).toBe(200);
+    expect(answer.json<CtStudioStatus>().spaces.map((space) => space.id)).not.toContain(h.quality);
+
+    const component = await h.call('ada', 'GET', `/v1/components/${made.id}`);
+    expect(component.statusCode, component.body).toBe(200);
+    expect(component.json<ComponentView>()).toMatchObject({
+      id: made.id,
+      space: { id: h.quality },
+      version: { id: made.version },
+    });
+    const kept = await h.tenantDb.withTenant(h.tenant, async (trx) => ({
+      delivery: await readDelivery(trx, delivery),
+      elements: await elementsOf(trx, persistentId),
+    }));
+    expect(kept.delivery).toMatchObject({ state: 'written', spaceId: h.quality, persistentId });
+    expect(kept.elements).toEqual([{ element: 's1', artifactId: made.id, node: null }]);
+  });
+});
+
+describe('the answers that issue a CT Studio token', () => {
+  let h: Harness;
+
+  beforeAll(async () => {
+    h = await startHarness({ secrets: { SINK_BRIDGE_KEYS: KEY } });
+  });
+
+  afterAll(async () => {
+    await h?.close();
+  });
+
+  it('API-075 the connect and token answers show the token and never the signing key', async () => {
+    const connected = await h.call('ada', 'POST', '/v1/ct-studio/connections', {
+      space: h.general,
+      identity: { make: true },
+      settings: { componentType: null, template: null, propertyMap: {}, data: false },
+      address: 'https://acme.alloy.test',
+      sinkId: 'alloy-acme',
+    });
+    expect(connected.statusCode, connected.body).toBe(200);
+    expect(connected.json<CtStudioConnected>().issued!.secret).toMatch(/^awt_/);
+    expect(connected.body).not.toContain(KEY);
+    const issued = await h.call('ada', 'POST', '/v1/ct-studio/tokens', { replaceIdentity: false });
+    expect(issued.statusCode, issued.body).toBe(200);
+    expect(issued.json<CtStudioTokenIssued>().issued.secret).toMatch(/^awt_/);
+    expect(issued.body).not.toContain(KEY);
   });
 });
