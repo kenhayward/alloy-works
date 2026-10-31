@@ -10,6 +10,7 @@ import {
   createDefinition,
   listVocabularies,
   readDefinitionLatest,
+  readsOnlyShares,
   recordDefinitionVersion,
   type StoredDefinition,
   type Tenant,
@@ -26,6 +27,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import { refusedDefinition } from './definitions.js';
+import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
 import { SKOS_QUADS_MOST } from './terms/skos.js';
 import { exportVocabulary, readVocabularySkos } from './vocabulary-skos.js';
@@ -61,12 +63,21 @@ const PLACEHOLDER = '00000000-0000-4000-8000-000000000000';
 export function vocabularyHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
+  principalOf: (request: FastifyRequest) => SessionPrincipal,
 ) {
-  const read = <T>(request: FastifyRequest, work: (trx: TenantTransaction) => Promise<T>) =>
-    db.withTenant(tenantOf(request), work);
+  // Anybody signed in, but for somebody from outside who reads only what was shared with them, as the
+  // people picker (the R17 plan, R17-I): they choose no values, so they see no vocabulary.
+  const read = <T>(
+    request: FastifyRequest,
+    work: (trx: TenantTransaction) => Promise<T>,
+    outside: T,
+  ) =>
+    db.withTenant(tenantOf(request), async (trx) =>
+      (await readsOnlyShares(trx, principalOf(request).principalId)) ? outside : work(trx),
+    );
   return {
     listVocabularies: async (request: FastifyRequest): Promise<VocabularyList> => ({
-      items: (await read(request, listVocabularies)).map((each) => ({
+      items: (await read(request, listVocabularies, [])).map((each) => ({
         id: each.id,
         key: each.definition.key,
         name: each.definition.name,
@@ -77,14 +88,14 @@ export function vocabularyHandlers(
 
     getVocabulary: async (request: FastifyRequest): Promise<VocabularyView> => {
       const { id } = request.params as VocabularyParams;
-      const stored = await read(request, (trx) => readVocabulary(trx, id));
+      const stored = await read(request, (trx) => readVocabulary(trx, id), undefined);
       if (!stored) throw notFound();
       return vocabularyView(stored);
     },
 
     exportVocabulary: async (request: FastifyRequest): Promise<VocabularyExportAnswer> => {
       const { id } = request.params as VocabularyParams;
-      const stored = await read(request, (trx) => readVocabulary(trx, id));
+      const stored = await read(request, (trx) => readVocabulary(trx, id), undefined);
       if (!stored) throw notFound();
       return {
         format: 'json-ld',

@@ -67,7 +67,7 @@ export function refusedDefinition(answer: DefinitionAnswer): never {
       throw refused(
         400,
         'definition.invalid',
-        'A default this schema gives is not valid for its field.',
+        'This definition is refused: each failure says why.',
         {
           failures: answer.failures,
         },

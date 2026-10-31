@@ -645,7 +645,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
     ...termHandlers(),
-    ...vocabularyHandlers(db, tenantOf),
+    ...vocabularyHandlers(db, tenantOf, principalOf),
     ...importHandlers(db, tenantOf, options.objects),
     ...termEditingHandlers(),
     ...referenceSourceHandlers(db, tenantOf, options.connector),

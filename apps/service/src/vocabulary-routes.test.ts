@@ -119,7 +119,20 @@ describe('vocabularies through the service (the VO plan, VO-A, VO-I)', () => {
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
     });
-    for (const user of ['ada', 'grace']) {
+    // Alice is from outside the organisation and may read nothing but what is shared with her.
+    await tenantDb.withTenant(tenant, (trx) =>
+      trx
+        .insertInto('principal')
+        .values({
+          issuer: idp.issuer,
+          subject: 'alice',
+          email: null,
+          display_name: 'Alice',
+          kind: 'external',
+        })
+        .execute(),
+    );
+    for (const user of ['ada', 'grace', 'alice']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
       ids[user] = (await call(user, 'GET', '/v1/me')).json<{ id: string }>().id;
     }
@@ -168,6 +181,10 @@ describe('vocabularies through the service (the VO plan, VO-A, VO-I)', () => {
       version: { number: '0.1' },
       vocabulary: { key: 'dosage_form', values: [{ id: 'tablet' }, { id: 'capsule' }] },
     });
+    // Nobody from outside who reads only what is shared with them, as the people picker (R17-I).
+    expect((await call('alice', 'GET', '/v1/vocabularies')).json()).toEqual({ items: [] });
+    expect((await call('alice', 'GET', `/v1/vocabularies/${id}`)).statusCode).toBe(404);
+    expect((await call('alice', 'GET', `/v1/vocabularies/${id}/export`)).statusCode).toBe(404);
     // Nobody unsigned; and a definition of another kind is no vocabulary.
     expect((await call(null, 'GET', '/v1/vocabularies')).statusCode).toBe(401);
     const field = await call('grace', 'POST', '/v1/definitions', {
@@ -287,5 +304,21 @@ describe('vocabularies through the service (the VO plan, VO-A, VO-I)', () => {
     );
     expect(taken.statusCode).toBe(400);
     expect(taken.json()).toMatchObject({ code: 'definition_name_taken' });
+    // A version dropping a value is refused in words that say so, not a schema's default's.
+    const sex = (await call('grace', 'GET', '/v1/vocabularies'))
+      .json<{
+        items: { id: string; key: string; version: { id: string } }[];
+      }>()
+      .items.find((each) => each.key === 'sex')!;
+    const dropped = await call('grace', 'POST', `/v1/definitions/${sex.id}/versions`, {
+      openedFrom: sex.version.id,
+      definition: vocabulary('Sex', 'sex', []),
+    });
+    expect(dropped.statusCode).toBe(400);
+    expect(dropped.json()).toMatchObject({
+      code: 'definition_invalid',
+      message: 'This definition is refused: each failure says why.',
+      failures: [{ field: 'female', rule: 'fixed' }],
+    });
   });
 });
