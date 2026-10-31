@@ -83,7 +83,7 @@ describe('terms in Chromium (the TM plan, TMc)', () => {
             await page.keyboard.type(placed.abbreviation.slice(-1));
             return option.isVisible();
           },
-          { timeout: 30_000, intervals: [500] },
+          { timeout: 30_000, interval: 500 },
         )
         .toBe(true);
       expect(await option.getAttribute('aria-selected')).toBe('true');
