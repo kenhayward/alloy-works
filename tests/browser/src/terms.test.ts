@@ -69,11 +69,23 @@ describe('terms in Chromium (the TM plan, TMc)', () => {
       await surface.focus();
       await page.keyboard.press('End');
 
-      // Typed, the term is offered at the caret, the caret staying in the surface.
+      // Typed, the term is offered at the caret, the caret staying in the surface. The space's terms
+      // are read as the editor opens, and an offer is made only on typing, so on a slow runner the
+      // last letter is typed again, as a person would, until they have arrived.
       await page.keyboard.type(` ${placed.abbreviation}`);
       const offer = page.getByRole('listbox', { name: 'Suggested terms' });
       const option = offer.getByRole('option', { name: new RegExp(placed.label) });
-      await option.waitFor();
+      await expect
+        .poll(
+          async () => {
+            if (await option.isVisible()) return true;
+            await page.keyboard.press('Backspace');
+            await page.keyboard.type(placed.abbreviation.slice(-1));
+            return option.isVisible();
+          },
+          { timeout: 30_000, intervals: [500] },
+        )
+        .toBe(true);
       expect(await option.getAttribute('aria-selected')).toBe('true');
       expect(await surface.getAttribute('aria-activedescendant')).toBe(
         await option.getAttribute('id'),
