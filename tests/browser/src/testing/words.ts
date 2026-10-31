@@ -132,7 +132,11 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
           const range = document.createRange();
           range.selectNodeContents(node);
           const words = [...range.getClientRects()].filter((line) => line.width > 0);
-          for (let at = element.parentElement; at !== null && region.contains(at); at = at.parentElement) {
+          for (
+            let at = element.parentElement;
+            at !== null && region.contains(at);
+            at = at.parentElement
+          ) {
             const hides = getComputedStyle(at);
             if (hides.overflowX !== 'hidden' && hides.overflowX !== 'clip') continue;
             const edge = at.getBoundingClientRect();
