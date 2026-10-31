@@ -19850,6 +19850,10 @@
         {
           "id": "ADM-051",
           "howItIsMet": "The desktop app loads `ALLOY_SERVICE_URL`, else the address kept from its Connect to screen, else that screen; the tray and an address not answering ask again ([ADR-0072](../decisions/0072-the-desktop-app-asks-which-environment.md))"
+        },
+        {
+          "id": "ADM-052",
+          "howItIsMet": "A close publishes a Windows installer, its blockmap and `latest.yml` as GitHub release `vX.Y.Z`, built after CI passes on that commit ([ci-and-releases.md](../ci-and-releases.md#releases))"
         }
       ]
     },
@@ -21263,6 +21267,12 @@
       "id": "ADM-051",
       "file": "apps/desktop/src/connection.test.ts",
       "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-052",
+      "file": "apps/desktop/src/release.test.ts",
+      "line": 17,
       "kind": "title"
     },
     {
