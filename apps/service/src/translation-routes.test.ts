@@ -233,6 +233,43 @@ describe('translation (the TR plan, TRa)', () => {
     });
   });
 
+  it('LOC-040 opens an out-of-date translation from its earlier translation, not the changed source', async () => {
+    const component = await approvedComponent('Ponds were netted.');
+    const begun = await h.call('grace', 'POST', `/v1/components/${component.id}/translations`, {
+      language: 'fr-FR',
+    });
+    const line = begun.json<{ line: string }>().line;
+    const french = await cut(
+      'grace',
+      component.id,
+      component.version.id,
+      [para('b1', 'Les mares ont été filetées.')],
+      'fr-FR',
+      { line, translates: component.version.id },
+    );
+    expect(french.statusCode, french.body).toBe(200);
+    const changed = await cut(
+      'grace',
+      component.id,
+      component.version.id,
+      [para('b1', 'Twelve ponds were netted.')],
+      'en-GB',
+    );
+    expect(changed.statusCode, changed.body).toBe(200);
+
+    const opened = await h.call('grace', 'GET', `/v1/components/${component.id}?line=${line}`);
+    expect(opened.statusCode, opened.body).toBe(200);
+    const read = opened.json<{
+      version: Version;
+      content: { language: string; content: unknown };
+    }>();
+    expect(read.version.id).toBe(french.json<{ version: Version }>().version.id);
+    expect(read.content).toMatchObject({
+      language: 'fr-FR',
+      content: [{ id: 'b1', content: [{ value: 'Les mares ont été filetées.' }] }],
+    });
+  });
+
   it('LOC-010 publishes a document in a language through the API, a component without a translation reported, and LOC-037 refused as the document says; LOC-016 each reference says its translations', async () => {
     const translatedOne = await approvedComponent('Methods');
     const begun = await h.call('grace', 'POST', `/v1/components/${translatedOne.id}/translations`, {

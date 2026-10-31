@@ -189,6 +189,40 @@ describe("the environment's editing settings through the service", () => {
     }
   });
 
+  it('LOC-036 audits a change to the translation policy as any setting, by name, as who changed it', async () => {
+    const translation = (payload: object) =>
+      app.inject({
+        method: 'PUT',
+        url: '/v1/settings/translation',
+        headers: { host: HOST, cookie: cookies.ada! },
+        payload,
+      });
+    const before = await tenantDb.withTenant(tenant, newestEvent);
+    const defaults = { fallback: 'source', outOfDate: 'publish', note: {} };
+    try {
+      expect((await translation({ ...defaults, fallback: 'refuse' })).statusCode).toBe(200);
+      // The same again changes nothing, and records nothing.
+      expect((await translation({ ...defaults, fallback: 'refuse' })).statusCode).toBe(200);
+      expect((await translation({ ...defaults, note: { fr: 'Non traduit' } })).statusCode).toBe(
+        200,
+      );
+      const events = await tenantDb.withTenant(tenant, (trx) => auditEvents(trx, before));
+      expect(
+        events.map((event) => [event.kind, event.actorKind, event.actor, event.detail]),
+      ).toEqual([
+        ['settings.changed', 'person', ids.ada, { settings: ['translation.fallback'] }],
+        [
+          'settings.changed',
+          'person',
+          ids.ada,
+          { settings: ['translation.fallback', 'translation.note'] },
+        ],
+      ]);
+    } finally {
+      await translation(defaults);
+    }
+  });
+
   it('answers a window outside 1 to 365 whole days as a bad request, and changes nothing', async () => {
     for (const payload of [
       { iterationRetentionDays: 0 },

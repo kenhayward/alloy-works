@@ -1016,7 +1016,8 @@ describe('the citations in the committed model', () => {
     // 2230 (2026-10-31): DRc cites ADM-053 in the shell's update tests.
     // 2235 (2026-10-31): CLa - the T6 audit's cites added, off-target ones dropped, superseded rows'
     // cites moved to their replacements.
-    expect(model.citations).toHaveLength(2235);
+    // 2244 (2026-10-31): CLb - a test for each clause the T6 audit found untested.
+    expect(model.citations).toHaveLength(2244);
   });
 
   it('cites no identifier the corpus does not hold', () => {

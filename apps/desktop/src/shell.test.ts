@@ -397,6 +397,11 @@ describe('the built main process', () => {
     expect(main()).toContain('Alloy Works {version} is available.');
     expect(main()).toContain('autoInstallOnAppQuit');
   });
+
+  // The library's own default is to download at once; the built main turns that off.
+  it('ADM-053 downloads a newer release only when the person agrees: autoDownload is off', () => {
+    expect(main()).toMatch(/autoUpdater\.autoDownload = false;/);
+  });
 });
 
 describe('keeping the window on the renderer (issue #309)', () => {

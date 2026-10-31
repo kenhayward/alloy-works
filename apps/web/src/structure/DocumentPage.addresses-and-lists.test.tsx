@@ -762,6 +762,13 @@ describe('the address of every node', () => {
                   ...(node.component !== null && node.mode.kind === 'pinned'
                     ? { pastReview: true }
                     : {}),
+                  // Each reference's translations, as the service says of a node (LOC-016).
+                  ...(node.component !== null && node.mode.kind === 'pinned'
+                    ? { translations: [{ language: 'fr-FR', status: 'outOfDate' }] }
+                    : {}),
+                  ...(node.component !== null && node.mode.kind === 'approved'
+                    ? { translations: [{ language: 'de-DE', status: 'translated' }] }
+                    : {}),
                 });
               }
               walk(node.children);
@@ -812,6 +819,15 @@ describe('the address of every node', () => {
       expect(withheld).not.toHaveTextContent(/Version|latest|pinned/);
       // Shown, not offered: the reader may not restructure this document.
       expect(within(text).queryByRole('button', { name: /^Version/ })).toBeNull();
+    });
+
+    it('LOC-016 shows on the label of each reference in the text the translation status of the component it places', async () => {
+      const { text } = await openVersions({ document: false });
+      await waitFor(() =>
+        expect(labelOf(text, PINNED)).toHaveTextContent('fr-FR: Out of date, needs retranslating'),
+      );
+      expect(labelOf(text, APPROVED)).toHaveTextContent('de-DE: Translated');
+      expect(labelOf(text, FOLLOWING)).not.toHaveTextContent(/fr-FR|de-DE/);
     });
 
     it('CNT-158 lets an author choose, in Authoring, the version a component reference shows, from its label, and shows it chosen', async () => {

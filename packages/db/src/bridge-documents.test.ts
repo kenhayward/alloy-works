@@ -22,6 +22,7 @@ import {
 import {
   elementsOf,
   finishDelivery,
+  readDelivery,
   refuseDelivery,
   startDelivery,
   type BridgeSettings,
@@ -520,6 +521,38 @@ describe('a document delivery', () => {
     expect((await latest(component.id))!.id).toBe(component.version);
   });
 
+  it('API-069 a refusal for a locked component changes nothing: not the map, nor any other component', async () => {
+    const receipt = written(await deliver());
+    const locked = entry(receipt, 'component', 's2');
+    const claimed = await as((trx) =>
+      claimLock(trx, { artifactId: locked.id, principal: ada, session: randomUUID() }),
+    );
+    expect(claimed.answer).toBe('claimed');
+    const before = await countArtifacts();
+    // Every other part of the document changes, and a section is added; only s2 stays as it was.
+    const changed = documentOf({
+      blocks: [para('lead', 'A new summary.')],
+      sections: [
+        section('s1', 'Method', [para('s1p', 'We measured again.'), figure('s1f', 'img-1')]),
+        section('s2', 'Results', [para('s2p', 'It worked.')]),
+        section('s3', 'Discussion', [para('s3p', 'It was new.')]),
+      ],
+    });
+    const answer = await deliver({
+      document: changed,
+      update: updateOf(receipt),
+      images: [checked('img-1', withChunk(PNG, 'c'))],
+    });
+    expect(answer).toMatchObject({
+      answer: 'refused',
+      error: { details: { reason: 'component_locked', component: locked.id } },
+    });
+    for (const each of receipt.components) {
+      expect((await latest(each.id))!.id).toBe(each.version);
+    }
+    expect(await countArtifacts()).toBe(before);
+  });
+
   it('a document gone answers not_found with document_missing', async () => {
     const persistentId = randomUUID();
     const answer = await deliver({
@@ -1008,6 +1041,25 @@ describe('a document delivery', () => {
     expect(answer.carried).toContainEqual({ code: 'image_unreferenced', element: 'img-x' });
     const key = `${tenant.role}/sha256/${createHash('sha256').update(unnamed).digest('hex')}`;
     expect(stored.has(key)).toBe(false);
+  });
+
+  it('API-073 what a delivery could not carry is answered with its receipt and kept with the delivery', async () => {
+    const answer = await deliver({
+      images: [checked('img-1'), checked('img-y', withChunk(PNG, 'unplaced'))],
+    });
+    if (answer.answer !== 'written') throw new Error(JSON.stringify(answer.error));
+    expect(answer.carried).toContainEqual({ code: 'image_unreferenced', element: 'img-y' });
+    expect(answer.receipt.document!.readBack.ok).toBe(true);
+    const kept = await as(async (trx) => {
+      const { id } = await trx
+        .selectFrom('bridge_delivery')
+        .select('id')
+        .where('key', '=', answer.key)
+        .executeTakeFirstOrThrow();
+      return readDelivery(trx, id);
+    });
+    expect(kept).toMatchObject({ state: 'written', receipt: answer.receipt });
+    expect(kept!.carried).toEqual(answer.carried);
   });
 });
 

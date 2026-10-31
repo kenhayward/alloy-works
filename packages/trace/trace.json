@@ -21396,7 +21396,7 @@
     {
       "id": "ADM-053",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 740,
+      "line": 402,
       "kind": "title"
     },
     {
@@ -22260,19 +22260,19 @@
     {
       "id": "API-074",
       "file": "apps/service/src/ct-studio-routes.test.ts",
-      "line": 39,
+      "line": 49,
       "kind": "title"
     },
     {
       "id": "API-075",
       "file": "apps/service/src/ct-studio-routes.test.ts",
-      "line": 53,
+      "line": 63,
       "kind": "title"
     },
     {
       "id": "API-077",
       "file": "apps/service/src/ct-studio-routes.test.ts",
-      "line": 388,
+      "line": 398,
       "kind": "title"
     },
     {
@@ -22746,31 +22746,31 @@
     {
       "id": "IMP-004",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 612,
+      "line": 646,
       "kind": "title"
     },
     {
       "id": "IMP-005",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 540,
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "IMP-008",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 612,
+      "line": 646,
       "kind": "title"
     },
     {
       "id": "IMP-009",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 504,
+      "line": 538,
       "kind": "title"
     },
     {
       "id": "IMP-010",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 598,
+      "line": 632,
       "kind": "title"
     },
     {
@@ -22788,37 +22788,37 @@
     {
       "id": "IMP-031",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 470,
+      "line": 504,
       "kind": "title"
     },
     {
       "id": "IMP-032",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 540,
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "IMP-033",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 540,
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "IMP-034",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 540,
+      "line": 574,
       "kind": "title"
     },
     {
       "id": "IMP-036",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 643,
+      "line": 677,
       "kind": "title"
     },
     {
       "id": "IMP-037",
       "file": "apps/service/src/import-routes.test.ts",
-      "line": 643,
+      "line": 677,
       "kind": "title"
     },
     {
@@ -22962,25 +22962,31 @@
     {
       "id": "LOC-023",
       "file": "apps/service/src/machine-draft-routes.test.ts",
-      "line": 170,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "LOC-024",
       "file": "apps/service/src/machine-draft-routes.test.ts",
-      "line": 170,
+      "line": 164,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-025",
+      "file": "apps/service/src/machine-draft-routes.test.ts",
+      "line": 251,
       "kind": "title"
     },
     {
       "id": "LOC-026",
       "file": "apps/service/src/machine-draft-routes.test.ts",
-      "line": 204,
+      "line": 198,
       "kind": "title"
     },
     {
       "id": "LOC-041",
       "file": "apps/service/src/machine-draft-routes.test.ts",
-      "line": 170,
+      "line": 164,
       "kind": "title"
     },
     {
@@ -23664,13 +23670,19 @@
     {
       "id": "COL-008",
       "file": "apps/service/src/settings-routes.test.ts",
-      "line": 216,
+      "line": 250,
       "kind": "title"
     },
     {
       "id": "COL-046",
       "file": "apps/service/src/settings-routes.test.ts",
-      "line": 206,
+      "line": 240,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-036",
+      "file": "apps/service/src/settings-routes.test.ts",
+      "line": 192,
       "kind": "title"
     },
     {
@@ -24132,7 +24144,7 @@
     {
       "id": "LOC-010",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 236,
+      "line": 273,
       "kind": "title"
     },
     {
@@ -24150,13 +24162,13 @@
     {
       "id": "LOC-016",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 236,
+      "line": 273,
       "kind": "title"
     },
     {
       "id": "LOC-018",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 465,
+      "line": 502,
       "kind": "title"
     },
     {
@@ -24168,25 +24180,25 @@
     {
       "id": "LOC-033",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 465,
+      "line": 502,
       "kind": "title"
     },
     {
       "id": "LOC-035",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 560,
+      "line": 597,
       "kind": "title"
     },
     {
       "id": "LOC-036",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 422,
+      "line": 459,
       "kind": "title"
     },
     {
       "id": "LOC-037",
       "file": "apps/service/src/translation-routes.test.ts",
-      "line": 236,
+      "line": 273,
       "kind": "title"
     },
     {
@@ -25248,25 +25260,31 @@
     {
       "id": "CNT-098",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
-      "line": 258,
+      "line": 264,
       "kind": "title"
     },
     {
       "id": "CNT-147",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
-      "line": 268,
+      "line": 274,
       "kind": "title"
     },
     {
       "id": "CNT-152",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
-      "line": 659,
+      "line": 665,
       "kind": "title"
     },
     {
       "id": "CNT-178",
       "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
-      "line": 834,
+      "line": 840,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-005",
+      "file": "apps/web/src/editor/ComponentEditor.prompts.test.tsx",
+      "line": 911,
       "kind": "title"
     },
     {
@@ -25561,6 +25579,12 @@
       "id": "LIB-019",
       "file": "apps/web/src/editor/termSuggestions.test.tsx",
       "line": 87,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-019",
+      "file": "apps/web/src/editor/terming.test.ts",
+      "line": 52,
       "kind": "title"
     },
     {
@@ -26424,13 +26448,13 @@
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1495,
+      "line": 1511,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1652,
+      "line": 1668,
       "kind": "title"
     },
     {
@@ -26442,7 +26466,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2537,
+      "line": 2553,
       "kind": "title"
     },
     {
@@ -26460,31 +26484,31 @@
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 817,
+      "line": 833,
       "kind": "title"
     },
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 869,
+      "line": 885,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 799,
+      "line": 806,
       "kind": "title"
     },
     {
       "id": "CNT-163",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 799,
+      "line": 806,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2035,
+      "line": 2051,
       "kind": "title"
     },
     {
@@ -26496,37 +26520,43 @@
     {
       "id": "LIF-018",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 799,
+      "line": 806,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 896,
+      "line": 912,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-016",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 824,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 799,
+      "line": 806,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1028,
+      "line": 1044,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2240,
+      "line": 2256,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2075,
+      "line": 2091,
       "kind": "title"
     },
     {
@@ -26538,7 +26568,7 @@
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1077,
+      "line": 1093,
       "kind": "title"
     },
     {
@@ -26550,7 +26580,7 @@
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1786,
+      "line": 1802,
       "kind": "title"
     },
     {
@@ -26863,6 +26893,12 @@
       "id": "REU-015",
       "file": "apps/web/src/structure/OverrideDialog.test.tsx",
       "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "LOC-003",
+      "file": "apps/web/src/structure/ParametersPanel.test.tsx",
+      "line": 172,
       "kind": "title"
     },
     {
@@ -27502,6 +27538,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-168",
+      "file": "apps/worker/src/import.test.ts",
+      "line": 392,
+      "kind": "title"
+    },
+    {
       "id": "IMP-001",
       "file": "apps/worker/src/import.test.ts",
       "line": 196,
@@ -27534,7 +27576,7 @@
     {
       "id": "IMP-008",
       "file": "apps/worker/src/import.test.ts",
-      "line": 466,
+      "line": 507,
       "kind": "title"
     },
     {
@@ -27552,13 +27594,13 @@
     {
       "id": "IMP-036",
       "file": "apps/worker/src/import.test.ts",
-      "line": 392,
+      "line": 433,
       "kind": "title"
     },
     {
       "id": "IMP-042",
       "file": "apps/worker/src/import.test.ts",
-      "line": 430,
+      "line": 471,
       "kind": "title"
     },
     {
@@ -28428,13 +28470,13 @@
     {
       "id": "LIB-009",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 340,
+      "line": 367,
       "kind": "title"
     },
     {
       "id": "LIB-010",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 295,
+      "line": 322,
       "kind": "title"
     },
     {
@@ -28452,7 +28494,7 @@
     {
       "id": "LIB-045",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 255,
+      "line": 282,
       "kind": "title"
     },
     {
@@ -28464,37 +28506,43 @@
     {
       "id": "STR-069",
       "file": "packages/db/src/bibliography.test.ts",
-      "line": 463,
+      "line": 490,
       "kind": "title"
     },
     {
       "id": "API-067",
       "file": "packages/db/src/bridge-documents.test.ts",
-      "line": 292,
+      "line": 293,
       "kind": "title"
     },
     {
       "id": "API-068",
       "file": "packages/db/src/bridge-documents.test.ts",
-      "line": 584,
+      "line": 617,
       "kind": "title"
     },
     {
       "id": "API-069",
       "file": "packages/db/src/bridge-documents.test.ts",
-      "line": 357,
+      "line": 358,
       "kind": "title"
     },
     {
       "id": "API-070",
       "file": "packages/db/src/bridge-documents.test.ts",
-      "line": 553,
+      "line": 586,
       "kind": "title"
     },
     {
       "id": "API-071",
       "file": "packages/db/src/bridge-documents.test.ts",
-      "line": 348,
+      "line": 349,
+      "kind": "title"
+    },
+    {
+      "id": "API-073",
+      "file": "packages/db/src/bridge-documents.test.ts",
+      "line": 1046,
       "kind": "title"
     },
     {
@@ -29208,7 +29256,7 @@
     {
       "id": "IMP-031",
       "file": "packages/db/src/imports.test.ts",
-      "line": 394,
+      "line": 425,
       "kind": "title"
     },
     {
@@ -30346,9 +30394,15 @@
       "kind": "title"
     },
     {
+      "id": "LOC-015",
+      "file": "packages/db/src/translation-jobs.test.ts",
+      "line": 308,
+      "kind": "title"
+    },
+    {
       "id": "LOC-018",
       "file": "packages/db/src/translation-jobs.test.ts",
-      "line": 338,
+      "line": 378,
       "kind": "title"
     },
     {
@@ -30360,7 +30414,7 @@
     {
       "id": "LOC-035",
       "file": "packages/db/src/translation-jobs.test.ts",
-      "line": 377,
+      "line": 417,
       "kind": "title"
     },
     {
@@ -32454,13 +32508,13 @@
     {
       "id": "CNT-054",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
-      "line": 271,
+      "line": 304,
       "kind": "title"
     },
     {
       "id": "LIB-012",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
-      "line": 307,
+      "line": 340,
       "kind": "title"
     },
     {
@@ -32472,13 +32526,13 @@
     {
       "id": "PUB-112",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
-      "line": 244,
+      "line": 277,
       "kind": "title"
     },
     {
       "id": "STR-069",
       "file": "packages/domain/src/publishing/bibliography.test.ts",
-      "line": 390,
+      "line": 423,
       "kind": "title"
     },
     {

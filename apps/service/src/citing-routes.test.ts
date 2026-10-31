@@ -113,6 +113,23 @@ describe('citing (the CI plan, CId)', () => {
     expect(adas.statusCode, adas.body).toBe(400);
   });
 
+  it("CNT-051 saves a cross-reference to an entry of the component's space, the version holding it", async () => {
+    const component = await h.component(h.general, 'The referring section');
+    const saved = await save('grace', component, [
+      { type: 'text', value: 'See ', marks: [] },
+      refer(general),
+    ]);
+    expect(saved.statusCode, saved.body).toBe(200);
+    const held = await h.tenantDb.withTenant(h.tenant, (trx) =>
+      readVersion(trx, component.version),
+    );
+    expect(held?.content).toMatchObject({
+      content: [
+        { content: [{}, { type: 'crossReference', target: { kind: 'entry', entry: general } }] },
+      ],
+    });
+  });
+
   it('leaves a citation the version it opened from already held alone, readable or not', async () => {
     const component = await h.component(h.general, 'The marsh section');
     // Carried in from Quality, as a component moved between spaces keeps its citations (CI-B).
