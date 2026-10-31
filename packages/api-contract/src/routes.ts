@@ -19,6 +19,7 @@ import { generatedRoutes } from './generated.js';
 import { promptRoutes } from './prompts.js';
 import { bibliographyRoutes } from './bibliography.js';
 import { termRoutes } from './terms.js';
+import { vocabularyRoutes } from './vocabularies.js';
 import { preferenceRoutes } from './preferences.js';
 import { translationRoutes } from './translations.js';
 import { importRoutes } from './imports.js';
@@ -422,6 +423,7 @@ type Routes = typeof ownRoutes &
   typeof promptRoutes &
   typeof bibliographyRoutes &
   typeof termRoutes &
+  typeof vocabularyRoutes &
   typeof translationRoutes &
   typeof preferenceRoutes &
   typeof importRoutes &
@@ -500,6 +502,7 @@ export const routes: Routes = {
   ...promptRoutes,
   ...bibliographyRoutes,
   ...termRoutes,
+  ...vocabularyRoutes,
   ...translationRoutes,
   ...preferenceRoutes,
   ...importRoutes,

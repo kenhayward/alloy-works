@@ -62,7 +62,10 @@ export interface DefinitionSummary {
   readonly id: string;
   readonly kind: DefinitionKind;
   readonly name: string;
-  /** A variable's or an axis's key, which text names it by (R5b, R6-A); absent for every other kind. */
+  /**
+   * A variable's, an axis's or a vocabulary's key, which text or an import names it by (R5b, R6-A;
+   * the VO plan, VO-I); absent for every other kind.
+   */
   readonly key?: string;
   readonly version: { readonly id: string; readonly revision: number; readonly version: number };
 }
@@ -217,7 +220,8 @@ export async function listDefinitions(
       id: row.id,
       kind: row.kind,
       name: row.name,
-      ...((row.kind === 'variable' || row.kind === 'conditionAxis') && row.key !== null
+      ...((row.kind === 'variable' || row.kind === 'conditionAxis' || row.kind === 'vocabulary') &&
+      row.key !== null
         ? { key: row.key }
         : {}),
       version: { id: row.version_id, revision: row.revision_no, version: row.version_no },
@@ -226,6 +230,12 @@ export async function listDefinitions(
     snapshot,
   };
 }
+
+/**
+ * Every vocabulary at its latest version, by name (the VO plan, VO-A): read by anyone signed in, so
+ * the route, not `listDefinitions`, serves them.
+ */
+export const listVocabularies = (trx: TenantTransaction) => latestOfKind(trx, 'vocabulary');
 
 /**
  * Every place a schema may be applied at in T1 (definitions.md, "Where a schema applies"): each

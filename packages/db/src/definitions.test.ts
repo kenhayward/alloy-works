@@ -7,6 +7,7 @@ import { currentDefinitionsFor } from './creation.js';
 import {
   createDefinition,
   listDefinitions,
+  listVocabularies,
   readDefinitionLatest,
   recordDefinitionVersion,
   type DefinitionAnswer,
@@ -341,6 +342,37 @@ describe('definitions through the service', () => {
         trx.selectFrom('artifact').select('space_id').where('id', '=', made1.id).executeTakeFirst(),
       ),
     ).toEqual({ space_id: null });
+  });
+
+  it('lists every vocabulary at its latest version by name, and keys one in the definitions listing', async () => {
+    const vocabulary = (name: string, key: string, ids: string[]) => ({
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name,
+      key,
+      base: 'en',
+      order: 'declared',
+      values: ids.map((id) => ({
+        id,
+        labels: [{ language: 'en', text: id }],
+        descriptions: [],
+        state: 'active',
+      })),
+    });
+    const sites = made(await create('vocabulary', vocabulary('Trial site', 'trial_site', ['x'])));
+    made(await create('vocabulary', vocabulary('Dosage form', 'dosage_form', ['tablet'])));
+    made(
+      await version(sites.id, sites.version.id, vocabulary('Trial site', 'trial_site', ['x', 'y'])),
+    );
+    const listed = (await run((trx) => listVocabularies(trx))).filter((each) =>
+      ['Trial site', 'Dosage form'].includes(each.definition.name),
+    );
+    expect(listed.map((each) => [each.definition.name, each.definition.values.length])).toEqual([
+      ['Dosage form', 1],
+      ['Trial site', 2],
+    ]);
+    expect((await run((trx) => listDefinitions(trx))).items).toContainEqual(
+      expect.objectContaining({ id: sites.id, kind: 'vocabulary', key: 'trial_site' }),
+    );
   });
 
   it('serialises definition writes within one environment, and never across two', async () => {

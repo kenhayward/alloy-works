@@ -240,6 +240,17 @@ export {
   termRoutes,
 } from './terms.js';
 export {
+  ImportVocabularyBody,
+  VocabularyExportAnswer,
+  VocabularyImportAnswer,
+  VocabularyImportRefusal,
+  VocabularyList,
+  VocabularyParams,
+  VocabularySummary,
+  VocabularyView,
+  vocabularyRoutes,
+} from './vocabularies.js';
+export {
   MarkCurrentBody,
   SourceChangeBody,
   SourceChangeParams,

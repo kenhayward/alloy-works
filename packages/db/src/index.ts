@@ -1061,6 +1061,7 @@ export {
 export {
   createDefinition,
   listDefinitions,
+  listVocabularies,
   placesOf,
   readDefinitionLatest,
   recordDefinitionVersion,

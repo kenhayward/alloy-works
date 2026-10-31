@@ -48,6 +48,10 @@
       "description": "Keep a space's governed terms, their labels per language, definitions and relations, see where each is used, and import and export them as SKOS."
     },
     {
+      "name": "Vocabularies",
+      "description": "Read the environment's vocabularies, the values a field or an axis may take with their labels per language, and import and export them as SKOS."
+    },
+    {
       "name": "Translations",
       "description": "Translate a component into another language as a variant of its own, see each variant's status against its source, and declare which source changes need retranslating."
     },
@@ -274,6 +278,7 @@
         "Templates",
         "Bibliography",
         "Terms",
+        "Vocabularies",
         "Translations",
         "Assets",
         "Imports",
@@ -90597,9 +90602,10 @@
                               "componentType",
                               "variable",
                               "conditionAxis",
-                              "relationshipType"
+                              "relationshipType",
+                              "vocabulary"
                             ],
-                            "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                            "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                           },
                           "name": {
                             "type": "string"
@@ -90879,9 +90885,10 @@
                       "componentType",
                       "variable",
                       "conditionAxis",
-                      "relationshipType"
+                      "relationshipType",
+                      "vocabulary"
                     ],
-                    "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                    "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                   },
                   "definition": {
                     "type": "object",
@@ -90929,9 +90936,10 @@
                         "componentType",
                         "variable",
                         "conditionAxis",
-                        "relationshipType"
+                        "relationshipType",
+                        "vocabulary"
                       ],
-                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                     },
                     "version": {
                       "type": "object",
@@ -91166,9 +91174,10 @@
                             "componentType",
                             "variable",
                             "conditionAxis",
-                            "relationshipType"
+                            "relationshipType",
+                            "vocabulary"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                         },
                         "version": {
                           "type": "object",
@@ -91430,9 +91439,10 @@
                         "componentType",
                         "variable",
                         "conditionAxis",
-                        "relationshipType"
+                        "relationshipType",
+                        "vocabulary"
                       ],
-                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                     },
                     "version": {
                       "type": "object",
@@ -91788,9 +91798,10 @@
                         "componentType",
                         "variable",
                         "conditionAxis",
-                        "relationshipType"
+                        "relationshipType",
+                        "vocabulary"
                       ],
-                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                     },
                     "version": {
                       "type": "object",
@@ -92025,9 +92036,10 @@
                             "componentType",
                             "variable",
                             "conditionAxis",
-                            "relationshipType"
+                            "relationshipType",
+                            "vocabulary"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                         },
                         "version": {
                           "type": "object",
@@ -92371,9 +92383,10 @@
                             "componentType",
                             "variable",
                             "conditionAxis",
-                            "relationshipType"
+                            "relationshipType",
+                            "vocabulary"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
                         },
                         "version": {
                           "type": "object",
@@ -340575,6 +340588,1461 @@
           },
           "404": {
             "description": "No such token of the caller's in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vocabularies": {
+      "get": {
+        "operationId": "listVocabularies",
+        "summary": "The environment's vocabularies, each at its latest version",
+        "description": "Lists the environment's vocabularies by name, each with its key, its latest version and how many values it holds. Anyone signed in may read them, since authors choose their values; they are made and changed through `/v1/definitions`, as kind `vocabulary`, by whoever manages definitions.",
+        "tags": [
+          "Vocabularies"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every vocabulary, by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "key": {
+                            "type": "string",
+                            "description": "Its key, fixed, which an import names it by"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
+                          },
+                          "values": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991,
+                            "description": "How many values it holds, retired ones included"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "key",
+                          "name",
+                          "version",
+                          "values"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                },
+                "example": {
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vocabularies/{id}": {
+      "get": {
+        "operationId": "getVocabulary",
+        "summary": "A vocabulary at its latest version",
+        "description": "Returns a vocabulary at its latest version: its key, its base language, its order (`declared`, as listed, or `label`, by each reader's language), and each value with its id, labels and descriptions per language, and its state: `active`, `deprecated` with the value replacing it, or `retired`, kept so that what holds it still reads. Anyone signed in may read it.",
+        "tags": [
+          "Vocabularies"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The vocabulary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ]
+                    },
+                    "vocabulary": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                        },
+                        "base": {
+                          "type": "string",
+                          "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                        },
+                        "order": {
+                          "type": "string",
+                          "enum": [
+                            "declared",
+                            "label"
+                          ]
+                        },
+                        "values": {
+                          "maxItems": 5000,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "labels": {
+                                "minItems": 1,
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "language": {
+                                      "type": "string",
+                                      "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "language",
+                                    "text"
+                                  ]
+                                }
+                              },
+                              "descriptions": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "language": {
+                                      "type": "string",
+                                      "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "language",
+                                    "text"
+                                  ]
+                                }
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "deprecated",
+                                  "retired"
+                                ]
+                              },
+                              "replacedBy": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "labels",
+                              "descriptions",
+                              "state"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "id",
+                        "name",
+                        "key",
+                        "base",
+                        "order",
+                        "values"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "vocabulary"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example"
+                  },
+                  "vocabulary": {
+                    "schemaVersion": 1,
+                    "id": "example",
+                    "name": "example",
+                    "key": "example",
+                    "base": "en",
+                    "order": "declared",
+                    "values": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such vocabulary in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vocabularies/{id}/export": {
+      "get": {
+        "operationId": "exportVocabulary",
+        "summary": "A vocabulary as a SKOS concept scheme in JSON-LD",
+        "description": "Exports a vocabulary as a SKOS concept scheme in JSON-LD. The scheme, identified `urn:alloy-works:vocabulary:` and its key, has the key as its `notation` and its name as its `prefLabel` in the base language. Each value is a `skos:Concept` `inScheme` it, with its id as its `notation`, its labels as `prefLabel` and its descriptions as `definition` by language, and a deprecated or retired value `owl:deprecated`, its replacement as `dct:isReplacedBy`. What SKOS has no word for is in the namespace `urn:alloy-works:skos:` (prefix `aw`): `aw:retired` true for a retired value, `aw:order` on the scheme, and `aw:position`, a value's place in the declared order. Anyone signed in may export it.",
+        "tags": [
+          "Vocabularies"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The vocabulary as JSON-LD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "const": "json-ld"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "The vocabulary as a SKOS concept scheme in JSON-LD, in the compact form documented"
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "text"
+                  ]
+                },
+                "example": {
+                  "format": "json-ld",
+                  "text": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such vocabulary in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vocabularies/import": {
+      "post": {
+        "operationId": "importVocabulary",
+        "summary": "Import a SKOS concept scheme, as JSON-LD or Turtle, as a vocabulary",
+        "description": "Imports one SKOS concept scheme, from JSON-LD in the compact form `exportVocabulary` writes or from Turtle, as a vocabulary. The scheme's `notation` is its key: a vocabulary with that key gets a new version, else one is made, named by the scheme's `prefLabel`. Each concept is a value, its `notation` its id, in `aw:position` order. A value is never removed: one the vocabulary holds and the import does not is kept, and listed. What no value can hold is reported rather than dropped: a concept with no notation, or one not in an id's form, or another concept's; a label in a language tag the product does not read, or too long; a replacement outside the import; any other predicate, and any subject that is not a concept. Nothing a file names is fetched. At most 5,000 concepts and 200,000 statements are taken, in a body of at most 5 MiB. It needs manage_definitions at the tenant, and is refused as `/v1/definitions` refuses a definition.",
+        "tags": [
+          "Vocabularies"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "manage_definitions",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "json-ld",
+                      "turtle"
+                    ]
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 5000000
+                  }
+                },
+                "required": [
+                  "format",
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "format": "json-ld",
+                "text": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The vocabulary made or changed, and what the import could not represent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "answer": {
+                      "type": "string",
+                      "enum": [
+                        "created",
+                        "recorded",
+                        "unchanged"
+                      ],
+                      "description": "Made, a version recorded of the one with its key, or that one as it was"
+                    },
+                    "vocabulary": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "vocabulary": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "key": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                            },
+                            "base": {
+                              "type": "string",
+                              "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                            },
+                            "order": {
+                              "type": "string",
+                              "enum": [
+                                "declared",
+                                "label"
+                              ]
+                            },
+                            "values": {
+                              "maxItems": 5000,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "labels": {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "language": {
+                                          "type": "string",
+                                          "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                        },
+                                        "text": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "language",
+                                        "text"
+                                      ]
+                                    }
+                                  },
+                                  "descriptions": {
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "language": {
+                                          "type": "string",
+                                          "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                        },
+                                        "text": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "language",
+                                        "text"
+                                      ]
+                                    }
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "active",
+                                      "deprecated",
+                                      "retired"
+                                    ]
+                                  },
+                                  "replacedBy": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "labels",
+                                  "descriptions",
+                                  "state"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "id",
+                            "name",
+                            "key",
+                            "base",
+                            "order",
+                            "values"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "vocabulary"
+                      ]
+                    },
+                    "kept": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The ids of the values it held that the import did not: kept, as a value always is"
+                    },
+                    "notRepresented": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "What no value could hold, each said with its subject, at most 1,000 named"
+                    },
+                    "notRepresentedTotal": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "How many things no value could hold, named or not"
+                    }
+                  },
+                  "required": [
+                    "answer",
+                    "vocabulary",
+                    "kept",
+                    "notRepresented",
+                    "notRepresentedTotal"
+                  ]
+                },
+                "example": {
+                  "answer": "created",
+                  "vocabulary": {
+                    "id": "example",
+                    "version": {
+                      "id": "example",
+                      "number": "example"
+                    },
+                    "vocabulary": {
+                      "schemaVersion": 1,
+                      "id": "example",
+                      "name": "example",
+                      "key": "example",
+                      "base": "en",
+                      "order": "declared",
+                      "values": []
+                    }
+                  },
+                  "kept": [],
+                  "notRepresented": [],
+                  "notRepresentedTotal": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`import_unreadable`: the text does not read as the format, or holds no one concept scheme keyed by its notation. `import_too_many`: it holds more than 5,000 concepts or 200,000 statements. `vocabulary_invalid`: the vocabulary it would make is not valid, each problem named. `definition_name_taken` or `definition_invalid`, as `/v1/definitions` refuses them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "missing": {
+                      "description": "definition_unresolved: what it names that is not there",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "failures": {
+                      "description": "definition_unresolved, definition_invalid and assignment_conflict: each failure in MET-022's shape",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "rule": {
+                            "type": "string"
+                          },
+                          "schemas": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "field",
+                          "rule",
+                          "schemas",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "holder": {
+                      "description": "definition_name_taken: the definition of its kind holding the name",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "conflicts": {
+                      "description": "schema_conflict: each field, the schema beside it and every place the two meet",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "other": {
+                            "type": "string"
+                          },
+                          "places": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {}
+                            }
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "other",
+                          "places"
+                        ]
+                      }
+                    },
+                    "broken": {
+                      "description": "field_breaks_default: each schema whose default the field's next version refuses",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "schema": {
+                            "type": "string"
+                          },
+                          "default": {},
+                          "rule": {
+                            "type": "string"
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "schema",
+                          "default",
+                          "rule",
+                          "detail"
+                        ]
+                      }
+                    },
+                    "current": {
+                      "description": "version_precondition: the definition as it now stands",
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "field",
+                            "metadataSchema",
+                            "componentType",
+                            "variable",
+                            "conditionAxis",
+                            "relationshipType",
+                            "vocabulary"
+                          ],
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string",
+                              "description": "`revision.version`, as `0.2`"
+                            },
+                            "author": {
+                              "description": "The principal who cut it; null for a starter definition",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "note": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number",
+                            "author",
+                            "createdAt",
+                            "note"
+                          ]
+                        },
+                        "definition": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {},
+                          "description": "The latest version's payload (metadata.md, \"Definitions\"), as stored"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "kind",
+                        "version",
+                        "definition"
+                      ]
+                    },
+                    "problems": {
+                      "description": "vocabulary_invalid: each problem with the vocabulary the import would make",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rule": {
+                            "type": "string",
+                            "const": "vocabulary_invalid"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "rule",
+                          "path",
+                          "message"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not manage definitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 5 MiB",
             "content": {
               "application/json": {
                 "schema": {

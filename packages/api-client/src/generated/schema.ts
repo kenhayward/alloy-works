@@ -6983,6 +6983,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/vocabularies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's vocabularies, each at its latest version
+         * @description Lists the environment's vocabularies by name, each with its key, its latest version and how many values it holds. Anyone signed in may read them, since authors choose their values; they are made and changed through `/v1/definitions`, as kind `vocabulary`, by whoever manages definitions.
+         */
+        get: operations["listVocabularies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vocabularies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A vocabulary at its latest version
+         * @description Returns a vocabulary at its latest version: its key, its base language, its order (`declared`, as listed, or `label`, by each reader's language), and each value with its id, labels and descriptions per language, and its state: `active`, `deprecated` with the value replacing it, or `retired`, kept so that what holds it still reads. Anyone signed in may read it.
+         */
+        get: operations["getVocabulary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vocabularies/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A vocabulary as a SKOS concept scheme in JSON-LD
+         * @description Exports a vocabulary as a SKOS concept scheme in JSON-LD. The scheme, identified `urn:alloy-works:vocabulary:` and its key, has the key as its `notation` and its name as its `prefLabel` in the base language. Each value is a `skos:Concept` `inScheme` it, with its id as its `notation`, its labels as `prefLabel` and its descriptions as `definition` by language, and a deprecated or retired value `owl:deprecated`, its replacement as `dct:isReplacedBy`. What SKOS has no word for is in the namespace `urn:alloy-works:skos:` (prefix `aw`): `aw:retired` true for a retired value, `aw:order` on the scheme, and `aw:position`, a value's place in the declared order. Anyone signed in may export it.
+         */
+        get: operations["exportVocabulary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/vocabularies/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a SKOS concept scheme, as JSON-LD or Turtle, as a vocabulary
+         * @description Imports one SKOS concept scheme, from JSON-LD in the compact form `exportVocabulary` writes or from Turtle, as a vocabulary. The scheme's `notation` is its key: a vocabulary with that key gets a new version, else one is made, named by the scheme's `prefLabel`. Each concept is a value, its `notation` its id, in `aw:position` order. A value is never removed: one the vocabulary holds and the import does not is kept, and listed. What no value can hold is reported rather than dropped: a concept with no notation, or one not in an id's form, or another concept's; a label in a language tag the product does not read, or too long; a replacement outside the import; any other predicate, and any subject that is not a concept. Nothing a file names is fetched. At most 5,000 concepts and 200,000 statements are taken, in a body of at most 5 MiB. It needs manage_definitions at the tenant, and is refused as `/v1/definitions` refuses a definition.
+         */
+        post: operations["importVocabulary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks": {
         parameters: {
             query?: never;
@@ -35901,10 +35981,10 @@ export interface operations {
                         items: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                             name: string;
                             /** @description A variable's or an axis's key, which text names it by */
                             key?: string;
@@ -36028,10 +36108,10 @@ export interface operations {
                  */
                 "application/json": {
                     /**
-                     * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                     * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                      * @enum {string}
                      */
-                    kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                    kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                     definition: {
                         [key: string]: unknown;
                     };
@@ -36066,10 +36146,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -36137,10 +36217,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -36259,10 +36339,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -36419,10 +36499,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -36490,10 +36570,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -36622,10 +36702,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -116080,6 +116160,591 @@ export interface operations {
             };
             /** @description No such token of the caller's in this environment */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listVocabularies: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every vocabulary, by name */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description Its key, fixed, which an import names it by */
+                            key: string;
+                            name: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description How many values it holds, retired ones included */
+                            values: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getVocabulary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The vocabulary */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "vocabulary": {
+                     *         "schemaVersion": 1,
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "key": "example",
+                     *         "base": "en",
+                     *         "order": "declared",
+                     *         "values": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        vocabulary: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            id: string;
+                            name: string;
+                            key: string;
+                            base: string;
+                            /** @enum {string} */
+                            order: "declared" | "label";
+                            values: {
+                                id: string;
+                                labels: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                descriptions: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                /** @enum {string} */
+                                state: "active" | "deprecated" | "retired";
+                                replacedBy?: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such vocabulary in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    exportVocabulary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The vocabulary as JSON-LD */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "format": "json-ld",
+                     *       "text": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @constant */
+                        format: "json-ld";
+                        /** @description The vocabulary as a SKOS concept scheme in JSON-LD, in the compact form documented */
+                        text: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such vocabulary in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    importVocabulary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "format": "json-ld",
+                 *       "text": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    format: "json-ld" | "turtle";
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The vocabulary made or changed, and what the import could not represent */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "answer": "created",
+                     *       "vocabulary": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "vocabulary": {
+                     *           "schemaVersion": 1,
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "key": "example",
+                     *           "base": "en",
+                     *           "order": "declared",
+                     *           "values": []
+                     *         }
+                     *       },
+                     *       "kept": [],
+                     *       "notRepresented": [],
+                     *       "notRepresentedTotal": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description Made, a version recorded of the one with its key, or that one as it was
+                         * @enum {string}
+                         */
+                        answer: "created" | "recorded" | "unchanged";
+                        vocabulary: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            vocabulary: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                id: string;
+                                name: string;
+                                key: string;
+                                base: string;
+                                /** @enum {string} */
+                                order: "declared" | "label";
+                                values: {
+                                    id: string;
+                                    labels: {
+                                        language: string;
+                                        text: string;
+                                    }[];
+                                    descriptions: {
+                                        language: string;
+                                        text: string;
+                                    }[];
+                                    /** @enum {string} */
+                                    state: "active" | "deprecated" | "retired";
+                                    replacedBy?: string;
+                                }[];
+                            };
+                        };
+                        /** @description The ids of the values it held that the import did not: kept, as a value always is */
+                        kept: string[];
+                        /** @description What no value could hold, each said with its subject, at most 1,000 named */
+                        notRepresented: string[];
+                        /** @description How many things no value could hold, named or not */
+                        notRepresentedTotal: number;
+                    };
+                };
+            };
+            /** @description `import_unreadable`: the text does not read as the format, or holds no one concept scheme keyed by its notation. `import_too_many`: it holds more than 5,000 concepts or 200,000 statements. `vocabulary_invalid`: the vocabulary it would make is not valid, each problem named. `definition_name_taken` or `definition_invalid`, as `/v1/definitions` refuses them */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description definition_unresolved: what it names that is not there */
+                        missing?: string[];
+                        /** @description definition_unresolved, definition_invalid and assignment_conflict: each failure in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description definition_name_taken: the definition of its kind holding the name */
+                        holder?: {
+                            id: string;
+                            name: string;
+                        };
+                        /** @description schema_conflict: each field, the schema beside it and every place the two meet */
+                        conflicts?: {
+                            field: string;
+                            other: string;
+                            places: {
+                                [key: string]: unknown;
+                            }[];
+                        }[];
+                        /** @description field_breaks_default: each schema whose default the field's next version refuses */
+                        broken?: {
+                            schema: string;
+                            default: unknown;
+                            rule: string;
+                            detail: string;
+                        }[];
+                        /** @description version_precondition: the definition as it now stands */
+                        current?: {
+                            id: string;
+                            /**
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                             * @enum {string}
+                             */
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's payload (metadata.md, "Definitions"), as stored */
+                            definition: {
+                                [key: string]: unknown;
+                            };
+                        };
+                        /** @description vocabulary_invalid: each problem with the vocabulary the import would make */
+                        problems?: {
+                            /** @constant */
+                            rule: "vocabulary_invalid";
+                            path: string;
+                            message: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not manage definitions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The body is larger than 5 MiB */
+            413: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

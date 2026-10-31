@@ -46,6 +46,17 @@ const byLanguage = (what: string, max: number) =>
     .max(VOCABULARY_LIMITS.languages)
     .superRefine(onePerLanguage);
 
+/**
+ * What an import checks a value by before it builds one (the VO plan, VO-I): a key, as a value's id or
+ * a vocabulary's key, and a label or a description as a value holds one.
+ */
+export const isVocabularyKey = (value: string) => key.safeParse(value).success;
+export const holdsVocabularyText = (what: 'label' | 'description', value: string) =>
+  (what === 'label'
+    ? text('A label', VOCABULARY_LIMITS.label)
+    : text('A description', VOCABULARY_LIMITS.description)
+  ).safeParse(value).success;
+
 const valueSchema = z.strictObject({
   id: key,
   labels: byLanguage('A label', VOCABULARY_LIMITS.label).min(1),

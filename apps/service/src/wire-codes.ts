@@ -74,6 +74,8 @@ const WIRE_CODES = {
   'term.used': 'term_used',
   'import.unreadable': 'import_unreadable',
   'import.too_many': 'import_too_many',
+  // The vocabulary an import would make, refused by its shape (the VO plan, VO-I).
+  'vocabulary.invalid': 'vocabulary_invalid',
   'definition.name_taken': 'definition_name_taken',
   'assignment.conflict': 'assignment_conflict',
   'schema.conflict': 'schema_conflict',

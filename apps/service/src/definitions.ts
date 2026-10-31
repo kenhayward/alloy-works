@@ -54,7 +54,7 @@ function definitionView(stored: StoredDefinition): DefinitionView {
 }
 
 /** Each check a definition failed, refused by its code with what it names (definitions.md). */
-function refusedDefinition(answer: DefinitionAnswer): never {
+export function refusedDefinition(answer: DefinitionAnswer): never {
   switch (answer.answer) {
     case 'definition.unresolved':
       throw refused(
