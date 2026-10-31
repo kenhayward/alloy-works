@@ -33,7 +33,7 @@ const SAID: Readonly<Record<string, string>> = {
 
 /**
  * Makes an import of a file in a space and sends its bytes as bytes: its id, or what to say. The
- * import dialog's way in, and a paste broken out (CNT-168).
+ * import dialog's way in, and a paste broken out (CNT-187).
  */
 export async function importFile(
   client: Client,

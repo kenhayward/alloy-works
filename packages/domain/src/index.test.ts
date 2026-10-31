@@ -915,6 +915,7 @@ describe('the domain package', () => {
         // XRb: a re-check's notices, its outcome, and where an entry was obtained.
         'ENTRY_CHECKED_VARIABLES',
         'ENTRY_CHECK_OUTCOMES',
+        'ENTRY_FLAGS',
         'REFERENCE_NOTICE_KINDS',
         'entryCheck',
         'obtainedFrom',

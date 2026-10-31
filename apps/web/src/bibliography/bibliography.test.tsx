@@ -103,7 +103,13 @@ function service() {
       });
     }
     if (path === `/v1/spaces/${GENERAL}/bibliography-entries/export`) {
-      return json(200, { format: url.searchParams.get('format'), text: '@book{smith2020}' });
+      const format = url.searchParams.get('format');
+      return json(200, {
+        format,
+        text: '@book{smith2020}',
+        notCarried:
+          format === 'csl-json' ? [] : [{ key: 'smith2020', variables: ['abstract', 'medium'] }],
+      });
     }
     if (path === `/v1/bibliography-entries/${OBTAINED}`) {
       return json(200, {
@@ -342,5 +348,24 @@ describe('changing and exporting an entry (the CI plan, CId)', () => {
     );
     expect(await saved[0]!.text()).toBe('@book{smith2020}');
     expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('smith2020.bib');
+  });
+
+  it('PUB-055 says what of the entry the format exported to did not carry, and nothing for CSL-JSON', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    URL.createObjectURL = vi.fn(() => 'blob:entry');
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    render(<EntryPage client={client} id={ENTRY} />);
+    const format = await screen.findByRole('combobox', { name: 'Export as' });
+    await user.selectOptions(format, 'BibTeX');
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'BibTeX did not carry its abstract and medium.',
+    );
+    await user.selectOptions(format, 'CSL-JSON');
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import {
   cslItemSchema,
   ENTRY_CHECK_OUTCOMES,
+  ENTRY_FLAGS,
   entrySchema,
   referenceNoticeSchema,
   referenceSourceKeySchema,
@@ -43,19 +44,19 @@ export const EntryStatusView = z.object({
   outcome: z
     .enum(ENTRY_CHECK_OUTCOMES)
     .describe(
-      '`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted` or `corrected`: the source reports so',
+      '`current`: as held; `changed`: the source now holds `differs` otherwise; `gone`: the source holds no such record; `retracted`, `superseded` (a newer version or edition, or a record replacing it) or `corrected`: the source reports so',
     ),
   differs: z.array(z.string()).describe('The CSL variables the source now holds otherwise'),
   notice: referenceNoticeSchema
     .nullable()
     .describe(
-      "The retraction or correction: its kind, and the notice's identifier and date where given",
+      "The retraction, supersession or correction: its kind, and the notice's identifier and date where given",
     ),
 });
 export type EntryStatusView = z.infer<typeof EntryStatusView>;
 
-/** A citation's flag (XR-G): its entry retracted or corrected, shown to anybody who sees the citation. */
-export const EntryFlagView = z.enum(['retracted', 'corrected']);
+/** A citation's flag (XR-G, LIB-035): its entry retracted, superseded or corrected, shown to anybody who sees the citation. */
+export const EntryFlagView = z.enum(ENTRY_FLAGS);
 
 export const EntryView = z.object({
   id: z.string(),
@@ -79,7 +80,7 @@ export const EntrySummary = z.object({
   changedAt: z.string().describe('When its latest version was made'),
   flag: EntryFlagView.nullable()
     .optional()
-    .describe('Retracted or corrected, as its source last said (XR-G); null otherwise'),
+    .describe('Retracted, superseded or corrected, as its source last said (XR-G); null otherwise'),
 });
 
 const MATCH_BY = ['doi', 'pmid', 'isbn', 'issn', 'work'] as const;
@@ -157,6 +158,11 @@ export type ExportQuery = z.infer<typeof ExportQuery>;
 export const ExportAnswer = z.object({
   format: z.enum(INTERCHANGE_FORMATS),
   text: z.string().describe('The entries in the format, each named by its key'),
+  notCarried: z
+    .array(z.object({ key: z.string(), variables: z.array(z.string()) }))
+    .describe(
+      'Each entry the format did not carry whole (PUB-055), by key, with the CSL variables the text lacks or holds otherwise, found by reading it back; empty for CSL-JSON',
+    ),
 });
 
 /** The citations a component's editor shows, in order (the CI plan, CId). */
@@ -185,7 +191,7 @@ export const CitationPreview = z.object({
   flags: z
     .array(EntryFlagView.nullable())
     .describe(
-      "Each citation's flag, in order: its entry retracted or corrected, shown whether or not the caller may read the entry; null otherwise",
+      "Each citation's flag, in order: its entry retracted, superseded or corrected, shown whether or not the caller may read the entry; null otherwise",
     ),
 });
 export type CitationPreview = z.infer<typeof CitationPreview>;

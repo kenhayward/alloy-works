@@ -807,7 +807,7 @@ export function ComponentEditor({
   // until it is closed or the next paste replaces it.
   const pasteRegion = useRef<HTMLElement | null>(null);
   const [pasteReport, setPasteReport] = useState<readonly ReportEntry[] | null>(null);
-  // A paste holding headings, waiting on the author's choice (CNT-168).
+  // A paste holding headings, waiting on the author's choice (CNT-187).
   const [heldPaste, setHeldPaste] = useState<{
     readonly html: string;
     readonly reading: ReaderResult;
@@ -2503,7 +2503,7 @@ export function ComponentEditor({
     view.focus();
   };
   /**
-   * A held paste broken out (CNT-168): an import of its HTML in this component's space, opened for
+   * A held paste broken out (CNT-187): an import of its HTML in this component's space, opened for
    * review there. Nothing is placed here; what accepting it makes follows the import's rules.
    */
   const breakOutPaste = async () => {

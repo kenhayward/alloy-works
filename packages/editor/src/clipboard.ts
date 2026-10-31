@@ -87,7 +87,7 @@ export async function readMarkdownText(
 }
 
 /**
- * The HTML of a paste the author may break out into sections and components instead (CNT-168): one
+ * The HTML of a paste the author may break out into sections and components instead (CNT-187): one
  * from HTML - Word's, a page's - whose reading made a heading a paragraph. Null for any other paste,
  * which is placed as it always was.
  */

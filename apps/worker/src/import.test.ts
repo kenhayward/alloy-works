@@ -389,7 +389,7 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
     expect(asset).toMatchObject({ spaceId: general });
   });
 
-  it('CNT-168 breaks out a pasted HTML clipboard holding headings into sections and components, each heading kept a heading', async () => {
+  it('CNT-187 breaks out a pasted HTML clipboard holding headings into sections and components, each heading the title of what it begins', async () => {
     // Shaped as Word puts HTML on the clipboard: a whole document, the copy between its fragment marks.
     const clipboard =
       '<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"></head><body>' +

@@ -1,7 +1,7 @@
 import { personView } from './person-view.js';
 import { mayBeToldOfSpend, type BudgetCounts } from './generation-budget.js';
 import { internalHeld } from './internal-held.js';
-import { labelFor } from '@alloy-works/domain';
+import { labelFor, type EntryFlag } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadReadableSet } from './access-facts.js';
 import { notDeletedAs } from './deletion.js';
@@ -58,10 +58,10 @@ export interface StoredNotification {
   readonly budget: BudgetCounts | null;
   /** A webhook disabled for failing names it (WB-E); null on every other. */
   readonly webhook: { readonly id: string } | null;
-  /** A cited entry retracted or corrected names it and the outcome (XR-G); null on every other. */
+  /** A cited entry retracted, superseded or corrected names it and the outcome (XR-G); null on every other. */
   readonly reference: {
     readonly entry: string;
-    readonly outcome: 'retracted' | 'corrected';
+    readonly outcome: EntryFlag;
   } | null;
   /** A proposal about to be swept names its import and when (the IM plan, IM-F); null on every other. */
   readonly import: { readonly import: string; readonly sweepsAt: string } | null;
@@ -284,9 +284,7 @@ export async function listInbox(
           ? { id: (row.counts as { readonly webhook: string }).webhook }
           : null,
       reference:
-        row.kind === 'reference'
-          ? (row.counts as { entry: string; outcome: 'retracted' | 'corrected' })
-          : null,
+        row.kind === 'reference' ? (row.counts as { entry: string; outcome: EntryFlag }) : null,
       import: row.kind === 'import' ? (row.counts as { import: string; sweepsAt: string }) : null,
       at: row.at,
       readAt: row.read_at,

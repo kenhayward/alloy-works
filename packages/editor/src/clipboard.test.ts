@@ -499,7 +499,7 @@ describe('pasting Markdown, when asked', () => {
 });
 
 describe('a paste holding headings', () => {
-  it('CNT-168 offers an HTML paste holding a heading for breakout, as its HTML, and no other paste', () => {
+  it('CNT-187 offers an HTML paste holding a heading for breakout, as its HTML, and no other paste', () => {
     const html = '<h1>Methods</h1><p>Ada measured.</p>';
     const word = clipboard({ 'text/html': html, 'text/plain': 'Methods Ada measured.' });
     expect(breakoutOf(word, readClipboard(word, 'blocks'))).toBe(html);

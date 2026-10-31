@@ -70,9 +70,9 @@ export function useCitationForms(
     ).then((answered) => {
       if (!live || surface.isDestroyed) return;
       const formed = answered.flatMap((each) => each.forms);
-      // Each entry its source says is retracted or corrected, flagged on every citation (XR-G).
+      // Each entry its source says is retracted, superseded or corrected, flagged on every citation (XR-G).
       const flagged = answered.flatMap((each) => each.flags);
-      const flags = new Map<string, 'retracted' | 'corrected'>();
+      const flags = new Map<string, 'retracted' | 'superseded' | 'corrected'>();
       askable.forEach(({ entry }, at) => {
         const flag = flagged[at];
         if (flag) flags.set(entry, flag);

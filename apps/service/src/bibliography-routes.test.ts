@@ -153,6 +153,28 @@ describe('the bibliography routes (the CI plan, CI-B, CI-C)', () => {
     expect(exported.json<{ text: string }>().text).toMatch(/^ID {2}- okafor2021/m);
   });
 
+  it('PUB-055 answers an export with the CSL variables each entry lost in the format, none in CSL-JSON', async () => {
+    const entry = (
+      await make('grace', {
+        csl: { type: 'book', title: 'Bandicoot Burrows', abstract: 'Where bandicoots dig.' },
+      })
+    ).json<{ entry: View }>().entry;
+    const exported = (format: string) =>
+      h.call(
+        'alice',
+        'GET',
+        `/v1/spaces/${h.general}/bibliography-entries/export?format=${format}&ids=${entry.id}`,
+      );
+    const bibtex = await exported('bibtex');
+    expect(bibtex.statusCode, bibtex.body).toBe(200);
+    expect(bibtex.json()).toMatchObject({
+      format: 'bibtex',
+      notCarried: [{ key: entry.entry.key, variables: ['abstract'] }],
+    });
+    const json = await exported('csl-json');
+    expect(json.json()).toMatchObject({ format: 'csl-json', notCarried: [] });
+  });
+
   it('lists where an entry is cited, and refuses to archive it while it is', async () => {
     const entry = (await make('grace', { csl: { type: 'book', title: 'Wombat Ways' } })).json<{
       entry: View;

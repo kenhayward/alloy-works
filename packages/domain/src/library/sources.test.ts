@@ -292,6 +292,64 @@ describe('a re-check against the source (the XR plan, XR-E, XR-F)', () => {
     ).toEqual([]);
   });
 
+  it('LIB-035 reads a Crossref supersession from a new version or edition and is-replaced-by', () => {
+    const newer = {
+      DOI: '10.5555/marsh.2021.017.v2',
+      'update-to': [
+        {
+          DOI: '10.5555/MARSH.2021.017',
+          type: 'new_version',
+          updated: { 'date-parts': [[2026, 5, 1]] },
+        },
+      ],
+    };
+    expect(
+      readReferenceAnswer('crossref', 'check', crossrefWork(), crossrefUpdates([newer]))?.[0]
+        ?.notices,
+    ).toEqual([
+      { kind: 'supersession', identifier: '10.5555/marsh.2021.017.v2', date: '2026-05-01' },
+    ]);
+    const work = {
+      ...crossrefChapter,
+      'updated-by': [{ DOI: '10.5555/quolls.2e', type: 'new_edition' }],
+      relation: {
+        'is-replaced-by': [
+          { 'id-type': 'doi', id: '10.5555/quolls.ch4.v2', 'asserted-by': 'subject' },
+        ],
+      },
+    };
+    expect(
+      readReferenceAnswer('crossref', 'check', crossrefWork(work), crossrefUpdates())?.[0]?.notices,
+    ).toEqual([
+      { kind: 'supersession', identifier: '10.5555/quolls.2e' },
+      { kind: 'supersession', identifier: '10.5555/quolls.ch4.v2' },
+    ]);
+  });
+
+  it('LIB-035 reads a PubMed supersession from Update in', () => {
+    const updated = {
+      ...pubmedDunnart,
+      references: [{ refsource: 'Elsewhere 2026', reftype: 'Update in', pmid: '99000009' }],
+    };
+    expect(readReferenceAnswer('pubmed', 'check', pubmedSummary([updated]))?.[0]?.notices).toEqual([
+      { kind: 'supersession', identifier: '99000009' },
+    ]);
+  });
+
+  it('LIB-035 decides superseded after a retraction and before a correction', () => {
+    const result = (notices: object[]) =>
+      ({ identifier: '10.5555/marsh.2021.017', csl: marsh, dropped: [], notices }) as never;
+    const supersession = { kind: 'supersession', identifier: '10.5555/marsh.v2' };
+    expect(entryCheck(marsh, [result([{ kind: 'correction' }, supersession])])).toEqual({
+      outcome: 'superseded',
+      differs: [],
+      notice: supersession,
+    });
+    expect(entryCheck(marsh, [result([supersession, { kind: 'retraction' }])]).outcome).toBe(
+      'retracted',
+    );
+  });
+
   it('LIB-036 decides the outcome: gone, retracted, corrected, changed or current, and what differs', () => {
     const result = (csl: object, notices: object[] = []) =>
       ({ identifier: '10.5555/marsh.2021.017', csl, dropped: [], notices }) as never;

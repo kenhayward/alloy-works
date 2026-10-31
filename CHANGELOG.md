@@ -3,6 +3,27 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.221.0 - 2026-10-31 (PR #843)
+
+T6 closed (the CL plan): every T6 requirement read against the code, the gaps built and the rest tested.
+
+### Added
+
+- **Superseded sources.** A source Crossref or PubMed reports as replaced by a newer version or edition is flagged as superseded on each citation, in the document's Review and at publish, and the document's owner is told, as for a correction.
+- **The bibliography export says what it lost.** Exporting to BibTeX or RIS names, for each entry, the CSL fields the format did not carry. CSL-JSON carries everything.
+- **A translation's own history.** With a translation open, the Versions panel lists its versions and restores an earlier one, leaving the source and other languages as they are.
+
+### Changed
+
+- **A CT Studio delivery's note names its source.** Each version a delivery makes names the source file's hash and the delivery's key.
+- **An import's images are traced to it.** An image an import makes now says which import made it, as its text does.
+
+### Fixed
+
+- **Parameters lists names in your language's order.** The names of withheld values were sorted letter code by letter code, so "Zebra" came before "apple".
+- **CI's browser suite no longer fails once a second space exists.** Three tests read the translations and terms pages before choosing their space.
+- **CI's readers suite no longer times out on its largest document.** The test reading a million elements is given the time a busy runner needs.
+
 ## 0.220.2 - 2026-10-31 (PR #837)
 
 T6's requirements read against the code, and a steadier CI.

@@ -16,10 +16,20 @@ import { startHarness, type Harness } from './test/bindings-harness.js';
 describe('re-checking an entry against its source (the XR plan, XRb)', () => {
   let h: Harness;
   let retracted = true;
+  let superseded = false;
 
-  /** The fake source: the marsh, retracted while `retracted`, else current. */
+  /** A newer version of the marsh, as Crossref deposits one (LIB-035). */
+  const marshVersion = {
+    DOI: '10.5555/marsh.2021.017.v2',
+    'update-to': [{ DOI: '10.5555/marsh.2021.017', type: 'new_version' }],
+  };
+
+  /** The fake source: the marsh, retracted while `retracted`, superseded while `superseded`. */
   const answering = (request: ReferenceRequest) => {
-    const updates = crossrefUpdates(retracted ? [crossrefMarshRetraction] : []);
+    const updates = crossrefUpdates([
+      ...(retracted ? [crossrefMarshRetraction] : []),
+      ...(superseded ? [marshVersion] : []),
+    ]);
     const results = readReferenceAnswer('crossref', request.op, crossrefWork(), updates) ?? [];
     return {
       type: 'found' as const,
@@ -178,6 +188,44 @@ describe('re-checking an entry against its source (the XR plan, XRb)', () => {
     expect(published.statusCode, published.body).toBe(200);
     expect(published.json()).toMatchObject({
       warnings: [{ code: 'source_retracted', count: 1 }],
+    });
+  });
+
+  it('LIB-035 flags a superseded source on each citation and in the Review, tells the owner, and warns at publish', async () => {
+    retracted = false;
+    superseded = true;
+    const entry = await obtained();
+    const component = await h.component(h.general, 'The newer marsh section');
+    await h.place(component, { type: 'citation', entry });
+    const document = await h.documentReferencing([component.id], h.quality);
+    expect((await check('grace', entry)).json()).toMatchObject({
+      outcome: 'superseded',
+      notice: { kind: 'supersession', identifier: '10.5555/marsh.2021.017.v2' },
+    });
+    const preview = await h.call(
+      'grace',
+      'POST',
+      `/v1/components/${component.id}/citations/preview`,
+      { citations: [{ entry }] },
+    );
+    expect(preview.json()).toMatchObject({ flags: ['superseded'] });
+    const flagged = await h.call('ada', 'GET', `/v1/documents/${document.id}/flagged-sources`);
+    expect(flagged.json()).toMatchObject({
+      items: [{ flag: 'superseded', entry: { id: entry } }],
+    });
+    const inbox = await h.call('ada', 'GET', '/v1/inbox');
+    expect(
+      inbox
+        .json<{ notifications: { kind: string; reference: unknown }[] }>()
+        .notifications.filter((each) => each.kind === 'reference')
+        .map((each) => each.reference),
+    ).toContainEqual({ entry, outcome: 'superseded' });
+    const published = await h.call('ada', 'POST', `/v1/documents/${document.id}/previews`, {
+      version: document.version,
+    });
+    expect(published.statusCode, published.body).toBe(200);
+    expect(published.json()).toMatchObject({
+      warnings: [{ code: 'source_superseded', count: 1 }],
     });
   });
 });

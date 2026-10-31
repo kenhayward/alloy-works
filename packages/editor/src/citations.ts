@@ -45,10 +45,10 @@ export interface CitationAt extends CitationChoice {
 export type CitationForms = ReadonlyMap<string, string | null>;
 
 /**
- * Each entry its source says is retracted or corrected (the XR plan, XR-G), by its id: a flag shown
+ * Each entry its source says is retracted, superseded or corrected (the XR plan, XR-G), by its id: a flag shown
  * on every citation of it, whether or not the reader may read the entry.
  */
-export type CitationFlags = ReadonlyMap<string, 'retracted' | 'corrected'>;
+export type CitationFlags = ReadonlyMap<string, 'retracted' | 'superseded' | 'corrected'>;
 
 /** The class a flagged citation carries. */
 export const FLAGGED_CLASS = 'aw-citation-flagged';

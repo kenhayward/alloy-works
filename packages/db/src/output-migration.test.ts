@@ -325,6 +325,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0172_bridge',
       '0173_bridge_unlisted',
       '0174_ct_studio',
+      '0175_entry_superseded',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

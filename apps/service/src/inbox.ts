@@ -146,7 +146,7 @@ export function inboxHandlers(
                     month: each.budget.month,
                   },
             webhook: each.webhook,
-            // A source cited in the document, retracted or corrected (XR-G): its id and outcome alone.
+            // A source cited in the document, retracted, superseded or corrected (XR-G): its id and outcome alone.
             reference: each.reference,
             // A proposal about to be swept (IM-F): its import and when, never its file's name.
             import:

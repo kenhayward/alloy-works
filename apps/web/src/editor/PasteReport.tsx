@@ -24,7 +24,7 @@ export interface PasteReportProps {
   readonly entries: readonly ReportEntry[];
   readonly onClose: () => void;
   /**
-   * Given while a paste holding headings waits on the author (CNT-168): kept as one component, or
+   * Given while a paste holding headings waits on the author (CNT-187): kept as one component, or
    * broken out through an import. Nothing is pasted until one is chosen; Close pastes nothing.
    */
   readonly held?: {

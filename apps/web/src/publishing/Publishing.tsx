@@ -43,7 +43,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * What a publish is warned of, which never stops it: the cited sources their source says are
- * retracted or corrected, counted (the XR plan, XR-G); and its terms printed as written, deprecated,
+ * retracted, superseded or corrected, counted (the XR plan, XR-G); and its terms printed as written, deprecated,
  * or in their base language, counted by uses (TMb). Null where there are none.
  */
 function warnedWords(warnings: unknown): string | null {

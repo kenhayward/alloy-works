@@ -38,7 +38,7 @@ import { notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
 import { cursorFor, pageAsked } from '../listing.js';
 import { refused } from '../wire-codes.js';
-import { formatEntries, readRecords } from './interchange.js';
+import { formatEntries, notCarried, readRecords } from './interchange.js';
 import { languageOf } from '../listing.js';
 
 /** The bibliography routes (citations.md, "The entry"; the CI plan, CI-B, CI-C). */
@@ -138,7 +138,7 @@ export function bibliographyHandlers() {
         archived: query.archived === 'true',
       });
       if (!listed) throw new Error('A signed-in principal is not in its own tenant');
-      // Each flagged where its source says it is retracted or corrected (XR-G).
+      // Each flagged where its source says it is retracted, superseded or corrected (XR-G).
       const flags = await citedFlags(
         trx,
         listed.items.map((each) => each.id),
@@ -229,7 +229,8 @@ export function bibliographyHandlers() {
         query.ids === undefined ? undefined : query.ids.split(','),
       );
       if (!entries) throw notFound();
-      return { format: query.format, text: formatEntries(query.format, entries) };
+      const text = formatEntries(query.format, entries);
+      return { format: query.format, text, notCarried: notCarried(query.format, entries, text) };
     },
 
     // `authorise` never looks at an artifact's kind; `readEntry` answers nothing for another kind.

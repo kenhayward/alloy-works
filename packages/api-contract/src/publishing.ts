@@ -180,7 +180,7 @@ export const PublicationRequestView = z.object({
     .array(
       z.union([
         z.object({
-          code: z.enum(['source_retracted', 'source_corrected']),
+          code: z.enum(['source_retracted', 'source_superseded', 'source_corrected']),
           count: z.int().positive(),
         }),
         z.object({
@@ -226,7 +226,7 @@ export const PublicationRequestView = z.object({
       ]),
     )
     .describe(
-      'What does not stop it: the sources cited by what the document places that their source says are retracted or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)',
+      'What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); and what its terms reported as it was asked for, each term once (LIB-018, LIB-050)',
     ),
   publication: z.string().nullable().describe('The publication it made, once done'),
   preview: PreviewView.nullable().describe(

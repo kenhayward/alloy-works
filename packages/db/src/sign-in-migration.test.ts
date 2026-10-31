@@ -184,6 +184,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0172_bridge',
       '0173_bridge_unlisted',
       '0174_ct_studio',
+      '0175_entry_superseded',
     ]);
 
     const read = async () =>

@@ -22,36 +22,36 @@ and loses, is said in the product.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                         |
-| ----------- | ----------------------------------------------------------------------------------------------------- |
-| **IMP-004** | Splits from heading structure, each with its reason                                                   |
-| **IMP-005** | Tracked changes as suggestions attributed to their Word author, comments as threads                   |
-| **IMP-006** | Numbering, cross-references, footnotes and captions read as structure                                 |
-| **IMP-008** | Abandoned at any point before acceptance, nothing left                                                |
-| **IMP-009** | The identities the file carries listed before acceptance                                              |
-| **IMP-010** | The tenant's policy: map, keep as text, or discard                                                    |
-| **IMP-011** | Which policy was applied recorded on what was imported                                                |
-| **IMP-032** | Identities shown as carried in review, the policy applied once, at acceptance                         |
-| **IMP-028** | Each part reviewed alone, beside its source and reason                                                |
-| **IMP-033** | A reference whose target is outside the import listed before acceptance, with its source text         |
-| **IMP-034** | Each such reference retargeted, converted to plain text and reported, or the import refused           |
-| **IMP-037** | A re-import reviewed as a first is, its changes suggestions that become versions                      |
-| **IMP-041** | A person's moves, merges and renames validated as made                                                |
-| **IMP-042** | A failed import leaves nothing and says what happened                                                 |
-| **IMP-049** | Markdown and HTML through the same proposal and report                                                |
-| **IMP-026** | What a round trip keeps and loses stated in the product, on the import and in Help                    |
-| **IMP-029** | A proposal searched, filtered and returned to across sessions                                         |
-| **IMP-031** | How much of a proposal was accepted unchanged recorded                                                |
-| **IMP-035** | Source name, content hash, when and by whom recorded against everything made                          |
-| **IMP-036** | A source imported before said first, its changes shown, and an update offered                         |
-| **CNT-168** | Paste from Word keeps a heading a heading, and a pasted outline is offered as sections and components |
-| **IMP-001** | An outline of sections and components, never one blob                                                 |
-| **IMP-002** | Adjusted, merged and split by a person before anything is made                                        |
-| **IMP-003** | Nothing made until a person accepts what they started                                                 |
-| **IMP-007** | What is left out or not read yet reported by kind, and tested                                         |
-| **IMP-017** | Each component admitted as a paste is, so none fails validation                                       |
-| **IMP-030** | Each split with its reason; no model makes a proposal (IMP-Q02)                                       |
-| **IMP-047** | Macros, embedded objects, outside files and unallowed links never stored, and reported                |
+| ID          | How it is met                                                                                                         |
+| ----------- | --------------------------------------------------------------------------------------------------------------------- |
+| **IMP-004** | Splits from heading structure, each with its reason                                                                   |
+| **IMP-005** | Tracked changes as suggestions attributed to their Word author, comments as threads                                   |
+| **IMP-006** | Numbering, cross-references, footnotes and captions read as structure                                                 |
+| **IMP-008** | Abandoned at any point before acceptance, nothing left                                                                |
+| **IMP-009** | The identities the file carries listed before acceptance                                                              |
+| **IMP-010** | The tenant's policy: map, keep as text, or discard                                                                    |
+| **IMP-011** | Which policy was applied recorded on what was imported                                                                |
+| **IMP-032** | Identities shown as carried in review, the policy applied once, at acceptance                                         |
+| **IMP-028** | Each part reviewed alone, beside its source and reason                                                                |
+| **IMP-033** | A reference whose target is outside the import listed before acceptance, with its source text                         |
+| **IMP-034** | Each such reference retargeted, converted to plain text and reported, or the import refused                           |
+| **IMP-037** | A re-import reviewed as a first is, its changes suggestions that become versions                                      |
+| **IMP-041** | A person's moves, merges and renames validated as made                                                                |
+| **IMP-042** | A failed import leaves nothing and says what happened                                                                 |
+| **IMP-049** | Markdown and HTML through the same proposal and report                                                                |
+| **IMP-026** | What a round trip keeps and loses stated in the product, on the import and in Help                                    |
+| **IMP-029** | A proposal searched, filtered and returned to across sessions                                                         |
+| **IMP-031** | How much of a proposal was accepted unchanged recorded                                                                |
+| **IMP-035** | Source name, content hash, when and by whom recorded against everything made                                          |
+| **IMP-036** | A source imported before said first, its changes shown, and an update offered                                         |
+| **CNT-187** | A paste holding headings is offered broken out into sections and components, each heading the title of what it begins |
+| **IMP-001** | An outline of sections and components, never one blob                                                                 |
+| **IMP-002** | Adjusted, merged and split by a person before anything is made                                                        |
+| **IMP-003** | Nothing made until a person accepts what they started                                                                 |
+| **IMP-007** | What is left out or not read yet reported by kind, and tested                                                         |
+| **IMP-017** | Each component admitted as a paste is, so none fails validation                                                       |
+| **IMP-030** | Each split with its reason; no model makes a proposal (IMP-Q02)                                                       |
+| **IMP-047** | Macros, embedded objects, outside files and unallowed links never stored, and reported                                |
 
 PUB-028's import half is IMP-005's; its export half moves to T8 with Word fidelity. IMP-016 moves to
 T7. The import constraint IMP-048 is kept here unclaimed. IMP-012 moved to T7 with AST-007, the
@@ -181,7 +181,7 @@ Acceptance still maps by email as the policy says.
   quotation, list, table or note stays a paragraph, said as a paste's. A `data:` PNG or JPEG image
   there is a figure held as Word's are (`import_asset`); any other image is never fetched and is
   reported left out. The paste path (`readHtml`) is unchanged.
-- **Paste breakout** (CNT-168): `breakoutOf` names an HTML paste whose reading made a heading a
+- **Paste breakout** (CNT-187): `breakoutOf` names an HTML paste whose reading made a heading a
   paragraph. Given `heldForBreakout`, the view holds such a paste rather than placing it, and the
   component editor's paste report offers **Keep as one component** (the held reading pasted as
   before) or **Break out into sections and components**: an import of the pasted HTML in the
