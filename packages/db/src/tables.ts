@@ -558,13 +558,15 @@ export interface DefinitionNameTable {
     | 'componentType'
     | 'variable'
     | 'conditionAxis'
-    | 'relationshipType',
+    | 'relationshipType'
+    | 'vocabulary',
     | 'field'
     | 'metadataSchema'
     | 'componentType'
     | 'variable'
     | 'conditionAxis'
-    | 'relationshipType',
+    | 'relationshipType'
+    | 'vocabulary',
     never
   >;
   name_key: ColumnType<string, string, string>;

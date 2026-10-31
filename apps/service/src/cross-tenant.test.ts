@@ -596,6 +596,8 @@ const OTHER_TENANT_IDS: Readonly<
   }),
   getDefinition: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   recordDefinitionVersion: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
+  getVocabulary: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
+  exportVocabulary: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
   endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
   leavePresence: async () => ({ viewer: '55555555-5555-4555-8555-555555555555' }),
@@ -712,6 +714,7 @@ const VALID_INPUT: Readonly<
   setImportPlace: { payload: { part: SESSION } },
   acceptImport: { payload: { revision: 0 } },
   importTerms: { payload: { format: 'json-ld', text: '{"@graph": []}' } },
+  importVocabulary: { payload: { format: 'json-ld', text: '{"@graph": []}' } },
   recordTermVersion: { payload: { openedFrom: SESSION, term: aTerm } },
   transitionTerm: { payload: { transition: 'deprecate', from: 'approved', reason: 'Probe' } },
   decideTermGate: {

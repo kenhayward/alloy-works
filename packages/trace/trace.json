@@ -6791,9 +6791,18 @@
       "area": "LIB",
       "statement": "Every library record must belong to a space and be permissioned by it (**IAM**)",
       "tranche": "T7",
-      "status": "Specified",
+      "status": "Superseded by LIB-065",
       "document": "LIB-reference-libraries.md",
       "line": 40
+    },
+    {
+      "id": "LIB-065",
+      "area": "LIB",
+      "statement": "Every library record but a vocabulary must belong to a space and be permissioned by it (**IAM**). A vocabulary is an environment-wide definition, administered as the fields and condition axes drawing on it are, its values readable by anyone signed in",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "LIB-reference-libraries.md",
+      "line": 41
     },
     {
       "id": "LIB-002",
@@ -6802,7 +6811,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 41
+      "line": 42
     },
     {
       "id": "LIB-003",
@@ -6811,7 +6820,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 42
+      "line": 43
     },
     {
       "id": "LIB-004",
@@ -6820,7 +6829,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 43
+      "line": 44
     },
     {
       "id": "LIB-005",
@@ -6829,7 +6838,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 44
+      "line": 45
     },
     {
       "id": "LIB-006",
@@ -6838,7 +6847,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 45
+      "line": 46
     },
     {
       "id": "LIB-007",
@@ -6847,7 +6856,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 46
+      "line": 47
     },
     {
       "id": "LIB-041",
@@ -6856,7 +6865,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 47
+      "line": 48
     },
     {
       "id": "LIB-042",
@@ -6865,7 +6874,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 48
+      "line": 49
     },
     {
       "id": "LIB-043",
@@ -6874,7 +6883,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 49
+      "line": 50
     },
     {
       "id": "LIB-047",
@@ -6883,7 +6892,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 50
+      "line": 51
     },
     {
       "id": "LIB-048",
@@ -6892,7 +6901,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 51
+      "line": 52
     },
     {
       "id": "LIB-056",
@@ -6901,7 +6910,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 52
+      "line": 53
     },
     {
       "id": "LIB-057",
@@ -6910,7 +6919,7 @@
       "tranche": "T6",
       "status": "Superseded by LIB-062",
       "document": "LIB-reference-libraries.md",
-      "line": 53
+      "line": 54
     },
     {
       "id": "LIB-062",
@@ -6919,7 +6928,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 54
+      "line": 55
     },
     {
       "id": "LIB-063",
@@ -6928,7 +6937,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 55
+      "line": 56
     },
     {
       "id": "LIB-008",
@@ -6937,7 +6946,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 77
+      "line": 78
     },
     {
       "id": "LIB-009",
@@ -6946,7 +6955,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 78
+      "line": 79
     },
     {
       "id": "LIB-010",
@@ -6955,7 +6964,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 79
+      "line": 80
     },
     {
       "id": "LIB-011",
@@ -6964,7 +6973,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 80
+      "line": 81
     },
     {
       "id": "LIB-012",
@@ -6973,7 +6982,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 81
+      "line": 82
     },
     {
       "id": "LIB-044",
@@ -6982,7 +6991,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 82
+      "line": 83
     },
     {
       "id": "LIB-045",
@@ -6991,7 +7000,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 83
+      "line": 84
     },
     {
       "id": "LIB-046",
@@ -7000,7 +7009,7 @@
       "tranche": "T6",
       "status": "Superseded by LIB-064",
       "document": "LIB-reference-libraries.md",
-      "line": 84
+      "line": 85
     },
     {
       "id": "LIB-064",
@@ -7009,7 +7018,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 85
+      "line": 86
     },
     {
       "id": "LIB-031",
@@ -7018,7 +7027,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 112
+      "line": 113
     },
     {
       "id": "LIB-032",
@@ -7027,7 +7036,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "LIB-033",
@@ -7036,7 +7045,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "LIB-034",
@@ -7045,7 +7054,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "LIB-035",
@@ -7054,7 +7063,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "LIB-036",
@@ -7063,7 +7072,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 117
+      "line": 118
     },
     {
       "id": "LIB-037",
@@ -7072,7 +7081,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 118
+      "line": 119
     },
     {
       "id": "LIB-038",
@@ -7081,7 +7090,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 119
+      "line": 120
     },
     {
       "id": "LIB-039",
@@ -7090,7 +7099,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 120
+      "line": 121
     },
     {
       "id": "LIB-040",
@@ -7099,7 +7108,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 121
+      "line": 122
     },
     {
       "id": "LIB-013",
@@ -7108,7 +7117,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 150
+      "line": 151
     },
     {
       "id": "LIB-014",
@@ -7117,7 +7126,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 151
+      "line": 152
     },
     {
       "id": "LIB-015",
@@ -7126,7 +7135,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 152
+      "line": 153
     },
     {
       "id": "LIB-016",
@@ -7135,7 +7144,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "LIB-017",
@@ -7144,7 +7153,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "LIB-018",
@@ -7153,7 +7162,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "LIB-019",
@@ -7162,7 +7171,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "LIB-049",
@@ -7171,7 +7180,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "LIB-050",
@@ -7180,7 +7189,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "LIB-020",
@@ -7189,7 +7198,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 181
+      "line": 182
     },
     {
       "id": "LIB-058",
@@ -7198,7 +7207,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 182
+      "line": 183
     },
     {
       "id": "LIB-021",
@@ -7207,7 +7216,7 @@
       "tranche": "T7",
       "status": "Superseded by MET-003",
       "document": "LIB-reference-libraries.md",
-      "line": 183
+      "line": 184
     },
     {
       "id": "LIB-022",
@@ -7216,7 +7225,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 184
+      "line": 185
     },
     {
       "id": "LIB-023",
@@ -7225,7 +7234,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 185
+      "line": 186
     },
     {
       "id": "LIB-024",
@@ -7234,7 +7243,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 186
+      "line": 187
     },
     {
       "id": "LIB-053",
@@ -7243,7 +7252,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "LIB-054",
@@ -7252,7 +7261,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "LIB-055",
@@ -7261,7 +7270,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "LIB-025",
@@ -7270,7 +7279,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "LIB-026",
@@ -7279,7 +7288,7 @@
       "tranche": "T6",
       "status": "Superseded by LIB-059",
       "document": "LIB-reference-libraries.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "LIB-059",
@@ -7288,7 +7297,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "LIB-027",
@@ -7297,7 +7306,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "LIB-051",
@@ -7306,7 +7315,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "LIB-052",
@@ -7315,7 +7324,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "LIB-028",
@@ -7324,7 +7333,7 @@
       "tranche": "T6",
       "status": "Superseded by LIB-060",
       "document": "LIB-reference-libraries.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "LIB-060",
@@ -7333,7 +7342,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "LIB-061",
@@ -7342,7 +7351,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 234
+      "line": 235
     },
     {
       "id": "LIB-029",
@@ -7351,7 +7360,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 235
+      "line": 236
     },
     {
       "id": "LIB-030",
@@ -7360,7 +7369,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "LIB-reference-libraries.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "LIF-001",
@@ -14958,37 +14967,37 @@
       "id": "LIB-N01",
       "statement": "**No ontology with inference** (LIB-027)",
       "document": "LIB-reference-libraries.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "LIB-N02",
       "statement": "**No terminology as text macros.** A term is a reference; expansion is how one is inserted, not what one becomes (LIB-019)",
       "document": "LIB-reference-libraries.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "LIB-N03",
       "statement": "**No boilerplate here.** A standard phrase or paragraph is reuse, and belongs to **REU** as a component or a variable",
       "document": "LIB-reference-libraries.md",
-      "line": 244
+      "line": 245
     },
     {
       "id": "LIB-N04",
       "statement": "**Not a full termbase.** Concept-level modelling, term extraction and translation memory are separate products",
       "document": "LIB-reference-libraries.md",
-      "line": 245
+      "line": 246
     },
     {
       "id": "LIB-N05",
       "statement": "**One definition per term.** A term carrying two senses is two terms. Concept-level modelling is the termbase LIB-N04 rules out, and a single definition slot is the deliberate consequence",
       "document": "LIB-reference-libraries.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "LIB-N06",
       "statement": "**No mirror of an external source.** The product searches PubMed, Crossref and their like and keeps what a document cites (LIB-031, LIB-033). Ingesting a registry would be maintaining somebody else's database badly",
       "document": "LIB-reference-libraries.md",
-      "line": 247
+      "line": 248
     },
     {
       "id": "LIF-N01",
@@ -15802,56 +15811,56 @@
       "question": "**Does a term need a lifecycle of its own?** A glossary in a regulated environment is often approved, which means states and gates",
       "settledBy": "Whether customers govern terminology the way they govern content. In pharma they do",
       "document": "LIB-reference-libraries.md",
-      "line": 253
+      "line": 254
     },
     {
       "id": "LIB-Q02",
       "question": "**Where does first-use expansion reset (LIB-016)?** Per document is obvious; per chapter is what several house styles actually require",
       "settledBy": "Real house styles. It is a publishing-layout property if it varies",
       "document": "LIB-reference-libraries.md",
-      "line": 254
+      "line": 255
     },
     {
       "id": "LIB-Q03",
       "question": "**Do bibliographies need to be per space or shared (LIB-030)?** A shared one is maintained once and permissioned coarsely",
       "settledBy": "Whether early customers' sources are confidential. In clinical work they can be",
       "document": "LIB-reference-libraries.md",
-      "line": 255
+      "line": 256
     },
     {
       "id": "LIB-Q04",
       "question": "**Should the product detect terms an author typed as text?** Suggesting a reference where somebody wrote the words is valuable and intrusive",
       "settledBy": "Whether it can be offered without becoming a spell-checker that argues",
       "document": "LIB-reference-libraries.md",
-      "line": 256
+      "line": 257
     },
     {
       "id": "LIB-Q05",
       "question": "**How are record identities scoped - space, tenant or global - and does a shared library expose one identity or a view per space?**",
       "settledBy": "**Settled.** Unique within the tenant, and a share is one record seen from several spaces rather than a copy in each (LIB-041, LIB-042). Labels may collide across spaces, because a label was never the identity (LIB-043)",
       "document": "LIB-reference-libraries.md",
-      "line": 257
+      "line": 258
     },
     {
       "id": "LIB-Q06",
       "question": "**Is bibliography dedupe enforced at manual creation as well as import, and on which fields?**",
       "settledBy": "**Settled.** Both, on the same detection (LIB-044), using canonical identifiers first - DOI, PubMed identifier, ISBN, ISSN - and a declared title-author-year comparison only where none exists (LIB-045)",
       "document": "LIB-reference-libraries.md",
-      "line": 258
+      "line": 259
     },
     {
       "id": "LIB-Q07",
       "question": "**Which external sources are in the declared list (LIB-032)?** PubMed and Crossref are the obvious two for this market; registries, standards bodies and a customer's own catalogue each cost an adapter",
       "settledBy": "The first customers' citation practice. The list is declared and extensible either way, so this decides the order it grows in rather than whether it can",
       "document": "LIB-reference-libraries.md",
-      "line": 259
+      "line": 260
     },
     {
       "id": "LIB-Q08",
       "question": "**Does a retracted source block a publish or warn (LIB-036)?**",
       "settledBy": "Whether customers treat a retraction as a control or as a record - the same question **AST-Q04** asks about a licence, and it should get the same answer",
       "document": "LIB-reference-libraries.md",
-      "line": 260
+      "line": 261
     },
     {
       "id": "LIF-Q01",
@@ -17897,7 +17906,7 @@
         },
         {
           "id": "REU-020",
-          "howItIsMet": "A condition axis is a definition of the environment's, `conditionAxis`: a key a condition mark names and its permitted values, a closed list each with a key and a label, managed as fields are; its key is fixed once made and no other axis's ([the R6 plan](../plans/2026-10-16-r6-conditions-and-profiles.md), R6-A). Drawing its values from a vocabulary (LIB-022) waits for vocabularies"
+          "howItIsMet": "A condition axis is a definition of the environment's, `conditionAxis`: a key a condition mark names and its permitted values, a closed list each with a key and a label, managed as fields are; its key is fixed once made and no other axis's ([the R6 plan](../plans/2026-10-16-r6-conditions-and-profiles.md), R6-A). Drawing its values from a vocabulary (LIB-022) is [vocabularies.md](vocabularies.md)'s"
         },
         {
           "id": "MET-031",
@@ -20796,6 +20805,75 @@
       ]
     },
     {
+      "document": "vocabularies.md",
+      "owns": [
+        {
+          "id": "LIB-020",
+          "howItIsMet": "`vocabulary`, a definition: a key, a name and values, each with an id allocated once and a label"
+        },
+        {
+          "id": "LIB-065",
+          "howItIsMet": "Environment-wide, made and changed with `manage_definitions`, read by anyone signed in through `/v1/vocabularies`"
+        },
+        {
+          "id": "LIB-024",
+          "howItIsMet": "A label per language, the base language's where a language has none"
+        },
+        {
+          "id": "LIB-053",
+          "howItIsMet": "`order`: declared, or by label in the reader's collation with ties by id"
+        },
+        {
+          "id": "LIB-054",
+          "howItIsMet": "A description per language, shown beside the value where it is chosen"
+        },
+        {
+          "id": "LIB-055",
+          "howItIsMet": "`deprecated` names its replacement, another value, never a loop; `retired` is no longer offered"
+        },
+        {
+          "id": "LIB-023",
+          "howItIsMet": "A version keeps every id; a retired value stays valid where held and is flagged there"
+        },
+        {
+          "id": "LIB-063",
+          "howItIsMet": "Choosing a deprecated value says so at once, with its replacement; a retired one is never offered"
+        },
+        {
+          "id": "LIB-022",
+          "howItIsMet": "An axis declares its values or a vocabulary; its value keys are the vocabulary's ids"
+        },
+        {
+          "id": "MET-003",
+          "howItIsMet": "A `text` field's validation names a vocabulary, so MET-002's closed set of data types stands"
+        },
+        {
+          "id": "MET-032",
+          "howItIsMet": "Checked at save against the values held, never the source"
+        },
+        {
+          "id": "LIB-058",
+          "howItIsMet": "A source: a query definition run through the connector, or a SKOS address the connector fetches; each value keeps its source's identifier"
+        },
+        {
+          "id": "LIB-061",
+          "howItIsMet": "SKOS JSON-LD out, JSON-LD and Turtle in, in a documented form"
+        },
+        {
+          "id": "IMP-051",
+          "howItIsMet": "As LIB-061"
+        },
+        {
+          "id": "LIB-005",
+          "howItIsMet": "Where used: the fields and axes naming it, and per value the components holding it"
+        },
+        {
+          "id": "LIB-004",
+          "howItIsMet": "A publish records the vocabulary versions it printed labels from, and a baseline pins them"
+        }
+      ]
+    },
+    {
       "document": "webhooks.md",
       "owns": [
         {
@@ -21743,13 +21821,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 703,
+      "line": 707,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 716,
+      "line": 720,
       "kind": "title"
     },
     {
@@ -22283,7 +22361,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2164,
+      "line": 2167,
       "kind": "title"
     },
     {
@@ -24273,6 +24351,24 @@
       "kind": "title"
     },
     {
+      "id": "IMP-051",
+      "file": "apps/service/src/vocabulary-routes.test.ts",
+      "line": 236,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-061",
+      "file": "apps/service/src/vocabulary-routes.test.ts",
+      "line": 205,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-065",
+      "file": "apps/service/src/vocabulary-routes.test.ts",
+      "line": 159,
+      "kind": "title"
+    },
+    {
       "id": "API-029",
       "file": "apps/service/src/webhook-routes.test.ts",
       "line": 96,
@@ -24521,7 +24617,7 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1579,
+      "line": 1590,
       "kind": "title"
     },
     {
@@ -24533,13 +24629,13 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1721,
+      "line": 1732,
       "kind": "title"
     },
     {
       "id": "VER-038",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 573,
+      "line": 584,
       "kind": "title"
     },
     {
@@ -24738,6 +24834,24 @@
       "id": "LOC-036",
       "file": "apps/web/src/admin/TranslationPolicy.test.tsx",
       "line": 102,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-024",
+      "file": "apps/web/src/admin/Vocabularies.test.tsx",
+      "line": 208,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-053",
+      "file": "apps/web/src/admin/Vocabularies.test.tsx",
+      "line": 230,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-055",
+      "file": "apps/web/src/admin/Vocabularies.test.tsx",
+      "line": 279,
       "kind": "title"
     },
     {
@@ -28839,33 +28953,39 @@
       "kind": "title"
     },
     {
+      "id": "LIB-023",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 305,
+      "kind": "title"
+    },
+    {
       "id": "MET-008",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 195,
+      "line": 198,
       "kind": "title"
     },
     {
       "id": "MET-031",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 145,
+      "line": 148,
       "kind": "title"
     },
     {
       "id": "MET-037",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 270,
+      "line": 273,
       "kind": "title"
     },
     {
       "id": "MET-040",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 219,
+      "line": 222,
       "kind": "title"
     },
     {
       "id": "MET-041",
       "file": "packages/db/src/definitions.test.ts",
-      "line": 122,
+      "line": 125,
       "kind": "title"
     },
     {
@@ -32021,7 +32141,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1090,
+      "line": 1102,
       "kind": "title"
     },
     {
@@ -32136,6 +32256,42 @@
       "id": "LIB-025",
       "file": "packages/domain/src/library/term.test.ts",
       "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-020",
+      "file": "packages/domain/src/library/vocabulary.test.ts",
+      "line": 67,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-023",
+      "file": "packages/domain/src/library/vocabulary.test.ts",
+      "line": 162,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-024",
+      "file": "packages/domain/src/library/vocabulary.test.ts",
+      "line": 85,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-053",
+      "file": "packages/domain/src/library/vocabulary.test.ts",
+      "line": 108,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-054",
+      "file": "packages/domain/src/library/vocabulary.test.ts",
+      "line": 138,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-055",
+      "file": "packages/domain/src/library/vocabulary.test.ts",
+      "line": 144,
       "kind": "title"
     },
     {
@@ -34457,19 +34613,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 837,
+      "line": 839,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 833,
+      "line": 835,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 833,
+      "line": 835,
       "kind": "title"
     },
     {

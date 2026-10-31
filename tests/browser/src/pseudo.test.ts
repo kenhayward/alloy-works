@@ -491,6 +491,8 @@ const administration = (ada: Adas): readonly Surface[] => [
     ['Administration, its translation policy', '#/admin/translation', 'admin.translation'],
     // Connecting CT Studio (API-074).
     ['Administration, its CT Studio', '#/admin/ctstudio', 'admin.ct-studio'],
+    // Vocabularies, listed (the VO plan, VO-K).
+    ['Administration, its vocabularies', '#/admin/vocabularies', 'admin.vocabularies'],
   ]),
   byButton(
     'The Connect CT Studio dialog',

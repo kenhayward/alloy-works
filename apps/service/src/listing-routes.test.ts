@@ -696,6 +696,8 @@ describe('the listings through the service', () => {
       'listPersonalPrompts',
       // And an extension's connections: what removing it would wait on (the EX plan, EX-E).
       'listExtensionUses',
+      // And the vocabularies: the environment's handful, each a definition (the VO plan, VO-A).
+      'listVocabularies',
     ];
     const listings = allRoutes.filter(
       (route) =>

@@ -23,6 +23,7 @@ import {
   variableDefinitionSchema,
   conditionAxisDefinitionSchema,
   relationshipTypeDefinitionSchema,
+  vocabularyDefinitionSchema,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -40,6 +41,7 @@ const parsers = {
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
   relationshipType: relationshipTypeDefinitionSchema,
+  vocabulary: vocabularyDefinitionSchema,
 } as const;
 
 function definitionView(stored: StoredDefinition): DefinitionView {
@@ -52,7 +54,7 @@ function definitionView(stored: StoredDefinition): DefinitionView {
 }
 
 /** Each check a definition failed, refused by its code with what it names (definitions.md). */
-function refusedDefinition(answer: DefinitionAnswer): never {
+export function refusedDefinition(answer: DefinitionAnswer): never {
   switch (answer.answer) {
     case 'definition.unresolved':
       throw refused(
@@ -65,7 +67,7 @@ function refusedDefinition(answer: DefinitionAnswer): never {
       throw refused(
         400,
         'definition.invalid',
-        'A default this schema gives is not valid for its field.',
+        'This definition is refused: each failure says why.',
         {
           failures: answer.failures,
         },

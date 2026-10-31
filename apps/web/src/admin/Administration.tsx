@@ -29,6 +29,7 @@ import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
 import { Spaces } from './Spaces.js';
+import { Vocabularies } from './Vocabularies.js';
 import { Workflows } from './Workflows.js';
 import { words } from '../words/words.js';
 
@@ -80,6 +81,14 @@ const SECTIONS = [
     slug: 'workflows',
     get title() {
       return words('admin.workflows');
+    },
+    group: 'environment',
+  },
+  // The named lists of values fields and axes draw on (the VO plan, VO-K).
+  {
+    slug: 'vocabularies',
+    get title() {
+      return words('admin.vocabularies');
     },
     group: 'environment',
   },
@@ -294,6 +303,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
       const { data } = await client.GET('/v1/citation-styles');
       return data?.items.length;
     });
+    count('vocabularies', async () => {
+      const { data } = await client.GET('/v1/vocabularies');
+      return data?.items.length;
+    });
     count('roles', async () => {
       const read = await everyPage((cursor) =>
         client.GET('/v1/roles', {
@@ -465,6 +478,7 @@ export function Administration({
           <TranslationPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
         {shown === 'workflows' && <Workflows client={client} />}
+        {shown === 'vocabularies' && <Vocabularies client={client} />}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}

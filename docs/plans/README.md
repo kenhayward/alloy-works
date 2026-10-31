@@ -900,3 +900,23 @@ The intelligence, a slice at a time ([generation.md](../design/generation.md) sk
 | CC  | [Connect CT Studio](2026-10-30-cc-connect-ct-studio.md)                               | API-074 to API-076: Administration connects CT Studio in one flow, ending on what CT Studio needs; delivered properties mapped, ignored or unlisted                                                                               | Built                  |
 | DR  | [Desktop releases](2026-10-31-dr-desktop-releases.md)                                 | T6’s twelfth slice: an installed desktop app asks which environment to connect to, a close publishes a Windows installer, and the app offers each later release                                                                   | Built (PR #833)        |
 | CL  | [Closing T6](2026-10-31-cl-t6-close.md)                                               | The T6 audit of all 102 `Covered` rows at 0.220.1: seven amended, three split, 35 clauses tested or cited, five gaps built (API-071, API-067, IMP-035, LIB-035, PUB-055), then the T6 close                                       | Built                  |
+
+## T7
+
+The administration and the library. The order is provisional: each slice is designed when it is
+reached, and a row here gains its plan link then.
+
+| #   | Plan                                                | Builds                                                                                                                          | Status      |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| VO  | [Vocabularies](2026-10-31-vo-vocabularies.md)       | Named lists of permitted values, drawn on by fields and condition axes, from a source or by hand, deprecated and retired, moved | Planned     |
+| AL  | The assets library                                  | Licences and what they permit, derivatives on ingest, browsing and search, where-used, duplicates                               | Provisional |
+| SY  | Styles and themes without a release                 | Styles and themes added by an administrator, derived styles, admonitions, catalogues exported and imported                      | Provisional |
+| ID  | Identity                                            | SCIM, more than one identity provider, re-authentication, session settings, high-risk acts named                                | Provisional |
+| MV  | Moving content between spaces                       | Permissions recomputed on a move; locks and presence degrade                                                                    | Provisional |
+| EI  | Export and import of configuration, spaces, tenants | A tenant reproduced from its export, secrets by reference, partial exports, the round trip tested                               | Provisional |
+| TL  | The tenant's lifecycle                              | Suspension, closure, deletion on a timetable, organisation administrators                                                       | Provisional |
+| DG  | Diagnostics, usage and health                       | Per-capability health and latency, usage trends, silent failures surfaced, objectives declared                                  | Provisional |
+| SG  | Regulated sign-off and evidence                     | Signatures with re-authentication and intent, verifiable log exports, evidence on demand                                        | Provisional |
+| EM  | Email notifications                                 | Notifications by email as tenant configuration, at-least-once                                                                   | Provisional |
+| SQ  | Search quality                                      | Completion, tolerance, language analysis, saved searches, recently opened                                                       | Provisional |
+| AD  | Administration through the API                      | Administration on the interface's terms, webhooks and extensions administered, deprecation in the response                      | Provisional |

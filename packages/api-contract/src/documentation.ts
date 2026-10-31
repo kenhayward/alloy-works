@@ -34,6 +34,11 @@ export const documentationGroups = [
           "Keep a space's governed terms, their labels per language, definitions and relations, see where each is used, and import and export them as SKOS.",
       },
       {
+        name: 'Vocabularies',
+        description:
+          "Read the environment's vocabularies, the values a field or an axis may take with their labels per language, and import and export them as SKOS.",
+      },
+      {
         name: 'Translations',
         description:
           "Translate a component into another language as a variant of its own, see each variant's status against its source, and declare which source changes need retranslating.",
@@ -509,6 +514,7 @@ const operationTags = {
     'unarchiveTerm',
     'previewComponentTerms',
   ],
+  Vocabularies: ['listVocabularies', 'importVocabulary', 'getVocabulary', 'exportVocabulary'],
   Translations: [
     'getSpaceTranslations',
     'listComponentTranslations',
@@ -1107,6 +1113,14 @@ const descriptions: Readonly<Record<string, string>> = {
     "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts and 200,000 statements are taken at a time, in a body of at most 5 MiB. It needs edit in the space.",
   exportTerms:
     "Exports the space's terms the caller may read, archived or not, as SKOS in JSON-LD: each a `skos:Concept` identified `urn:uuid:` and its id, with `prefLabel`, `altLabel` and `definition` by language, an abbreviation as a `notation` in its label's language, `broader`, `narrower` and `related`, and a replacement as `dct:isReplacedBy`.",
+  listVocabularies:
+    "Lists the environment's vocabularies by name, each with its key, its latest version and how many values it holds. Anyone signed in may read them, since authors choose their values; they are made and changed through `/v1/definitions`, as kind `vocabulary`, by whoever manages definitions.",
+  getVocabulary:
+    "Returns a vocabulary at its latest version: its key, its base language, its order (`declared`, as listed, or `label`, by each reader's language), and each value with its id, labels and descriptions per language, and its state: `active`, `deprecated` with the value replacing it, or `retired`, kept so that what holds it still reads. Anyone signed in may read it.",
+  exportVocabulary:
+    "Exports a vocabulary as a SKOS concept scheme in JSON-LD. The scheme, identified `urn:alloy-works:vocabulary:` and its key, has the key as its `notation` and its name as its `prefLabel` in the base language. Each value is a `skos:Concept` `inScheme` it, with its id as its `notation`, its labels as `prefLabel` and its descriptions as `definition` by language, and a deprecated or retired value `owl:deprecated`, its replacement as `dct:isReplacedBy`. What SKOS has no word for is in the namespace `urn:alloy-works:skos:` (prefix `aw`): `aw:retired` true for a retired value, `aw:order` on the scheme, and `aw:position`, a value's place in the declared order. Anyone signed in may export it.",
+  importVocabulary:
+    "Imports one SKOS concept scheme, from JSON-LD in the compact form `exportVocabulary` writes or from Turtle, as a vocabulary. The scheme's `notation` is its key: a vocabulary with that key gets a new version, else one is made, named by the scheme's `prefLabel`. Each concept is a value, its `notation` its id, in `aw:position` order. A value is never removed: one the vocabulary holds and the import does not is kept, and listed. What no value can hold is reported rather than dropped: a concept with no notation, or one not in an id's form, or another concept's; a label in a language tag the product does not read, or too long; a replacement outside the import; any other predicate, and any subject that is not a concept. Nothing a file names is fetched. At most 5,000 concepts and 200,000 statements are taken, in a body of at most 5 MiB. It needs manage_definitions at the tenant, and is refused as `/v1/definitions` refuses a definition.",
   getTerm:
     'Returns a term at its latest version, its workflow state and the transitions and gates the caller may take, whether it is deprecated or archived, and whether the caller may change or archive it.',
   recordTermVersion:

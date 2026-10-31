@@ -115,6 +115,8 @@ describe('the rule behind a refusal', () => {
       // guards (TM-A).
       'term.invalid',
       'term.used',
+      // The vocabulary an import would make, refused by its shape: the VO plan's own guard (VO-I).
+      'vocabulary.invalid',
       // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
       // requirement names as a refusal (CI-D).
       'style.invalid',

@@ -9,10 +9,10 @@ import { Parser } from 'n3';
  * is data: no identity in it is ever fetched, and what a term cannot hold is reported, never dropped.
  */
 
-const SKOS = 'http://www.w3.org/2004/02/skos/core#';
-const DCT = 'http://purl.org/dc/terms/';
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-const CONCEPT = `${SKOS}Concept`;
+export const SKOS = 'http://www.w3.org/2004/02/skos/core#';
+export const DCT = 'http://purl.org/dc/terms/';
+export const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+export const CONCEPT = `${SKOS}Concept`;
 
 /** The most statements an import reads: past it, as past 2,000 concepts, it reads no further. */
 export const SKOS_QUADS_MOST = 200_000;
@@ -98,12 +98,12 @@ export function exportSkos(
 }
 
 /** One value a statement gives: a literal, in a language or none, or an identity. */
-type Value =
+export type Value =
   | { readonly kind: 'literal'; readonly value: string; readonly language: string | null }
   | { readonly kind: 'identity'; readonly value: string };
 
 /** A subject's statements, in the order the text gives them. */
-interface Subject {
+export interface Subject {
   readonly key: string;
   readonly statements: { readonly predicate: string; readonly value: Value }[];
 }
@@ -125,12 +125,12 @@ export interface ReadSkos {
 }
 
 /** What a read stopped at: more concepts or statements than are read. */
-const TOO_MANY = 'too many';
+export const TOO_MANY = 'too many';
 
 export type SkosFormat = 'json-ld' | 'turtle';
 
 /** A tag in BCP 47's conventional case, which Turtle need not keep: `en-gb` is `en-GB`. */
-function canonicalTag(tag: string): string {
+export function canonicalTag(tag: string): string {
   return tag
     .split('-')
     .map((part, at) =>
@@ -153,7 +153,10 @@ const typesConcept = (predicate: string, value: Value) =>
  * Turtle's statements as subjects, a statement at a time, none held once past 2,000 concepts or
  * `SKOS_QUADS_MOST` statements.
  */
-function subjectsOfTurtle(text: string): Promise<Subject[] | typeof TOO_MANY | undefined> {
+function subjectsOfTurtle(
+  text: string,
+  conceptsMost: number,
+): Promise<Subject[] | typeof TOO_MANY | undefined> {
   const subjects = new Map<string, Subject>();
   const concepts = new Set<string>();
   let quads = 0;
@@ -178,7 +181,7 @@ function subjectsOfTurtle(text: string): Promise<Subject[] | typeof TOO_MANY | u
             };
       if (typesConcept(quad.predicate.value, value)) concepts.add(key);
       quads += 1;
-      if (quads > SKOS_QUADS_MOST || concepts.size > TERM_IMPORT_CONCEPTS_MOST) {
+      if (quads > SKOS_QUADS_MOST || concepts.size > conceptsMost) {
         // Whatever the parser reads after this is dropped unheld.
         stopped = true;
         subjects.clear();
@@ -196,11 +199,36 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const listOf = (value: unknown): unknown[] => (Array.isArray(value) ? value : [value]);
 
+/** A compact form's context: a name's term, or a prefix's namespace. */
+export type CompactContext = Readonly<
+  Record<
+    string,
+    string | { readonly '@id': string; readonly '@container'?: string; readonly '@type'?: string }
+  >
+>;
+
 /**
- * The compact form's nodes as subjects; a name it does not hold is a predicate of that name. None
- * past 2,000 concepts or `SKOS_QUADS_MOST` statements.
+ * A compact name as an identity: a term of the context, or `prefix:local` for a prefix it declares;
+ * any other name stays as it is.
  */
-function subjectsOfJsonLd(text: string): Subject[] | typeof TOO_MANY | undefined {
+function expand(context: CompactContext, name: string): string {
+  const term = context[name];
+  if (isObject(term)) return expand(context, term['@id']);
+  const colon = name.indexOf(':');
+  const namespace = colon > 0 ? context[name.slice(0, colon)] : undefined;
+  return typeof namespace === 'string' ? namespace + name.slice(colon + 1) : name;
+}
+
+/**
+ * A compact form's nodes as subjects, read by its documented context, never the file's; a name the
+ * context does not hold is a predicate of that name. None past `conceptsMost` concepts or
+ * `SKOS_QUADS_MOST` statements.
+ */
+function subjectsOfJsonLd(
+  text: string,
+  context: CompactContext,
+  conceptsMost: number,
+): Subject[] | typeof TOO_MANY | undefined {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -210,9 +238,11 @@ function subjectsOfJsonLd(text: string): Subject[] | typeof TOO_MANY | undefined
   const graph = isObject(parsed) ? parsed['@graph'] : undefined;
   if (!Array.isArray(graph) || !graph.every(isObject)) return undefined;
   const concepts = graph.filter((node) =>
-    listOf(node['@type']).some((type) => type === 'skos:Concept' || type === CONCEPT),
+    listOf(node['@type']).some(
+      (type) => typeof type === 'string' && expand(context, type) === CONCEPT,
+    ),
   );
-  if (concepts.length > TERM_IMPORT_CONCEPTS_MOST) return TOO_MANY;
+  if (concepts.length > conceptsMost) return TOO_MANY;
   let quads = 0;
   const subjects: Subject[] = [];
   for (const [at, node] of graph.entries()) {
@@ -228,16 +258,13 @@ function subjectsOfJsonLd(text: string): Subject[] | typeof TOO_MANY | undefined
       if (name === '@type') {
         for (const type of listOf(held)) {
           if (typeof type === 'string') {
-            push(RDF_TYPE, {
-              kind: 'identity',
-              value: type.startsWith('skos:') ? `${SKOS}${type.slice(5)}` : type,
-            });
+            push(RDF_TYPE, { kind: 'identity', value: expand(context, type) });
           }
         }
         continue;
       }
-      const predicate = PREDICATE_OF[name] ?? name;
-      const container = SKOS_CONTEXT[name as keyof typeof SKOS_CONTEXT];
+      const predicate = expand(context, name);
+      const container = context[name];
       if (isObject(container) && '@container' in container && isObject(held)) {
         for (const [language, values] of Object.entries(held)) {
           for (const value of listOf(values)) {
@@ -246,7 +273,9 @@ function subjectsOfJsonLd(text: string): Subject[] | typeof TOO_MANY | undefined
         }
       } else if (isObject(container) && '@type' in container) {
         for (const value of listOf(held)) {
-          if (typeof value === 'string') push(predicate, { kind: 'identity', value });
+          if (typeof value === 'string') {
+            push(predicate, { kind: 'identity', value: expand(context, value) });
+          }
         }
       } else {
         for (const value of listOf(held)) {
@@ -271,6 +300,22 @@ function subjectsOfJsonLd(text: string): Subject[] | typeof TOO_MANY | undefined
 }
 
 /**
+ * The statements the text holds, by subject, as Turtle or as a compact form read by its context;
+ * undefined where the text is not the format, `TOO_MANY` past `conceptsMost` concepts or
+ * `SKOS_QUADS_MOST` statements. Terms and vocabularies (the VO plan, VO-I) read through it alike.
+ */
+export async function readSubjects(
+  format: SkosFormat,
+  text: string,
+  context: CompactContext,
+  conceptsMost: number,
+): Promise<Subject[] | typeof TOO_MANY | undefined> {
+  return format === 'turtle'
+    ? subjectsOfTurtle(text, conceptsMost)
+    : subjectsOfJsonLd(text, context, conceptsMost);
+}
+
+/**
  * The concepts the text holds, each as a term without its relations and with its relations by the
  * file's identities, and what no term could hold; undefined where the text is not the format. A
  * concept's base language is `base` where it has a preferred label in it, else its first one's.
@@ -280,7 +325,7 @@ export async function readSkos(
   text: string,
   base = 'en',
 ): Promise<ReadSkos | undefined> {
-  const subjects = format === 'turtle' ? await subjectsOfTurtle(text) : subjectsOfJsonLd(text);
+  const subjects = await readSubjects(format, text, SKOS_CONTEXT, TERM_IMPORT_CONCEPTS_MOST);
   if (subjects === undefined) return undefined;
   if (subjects === TOO_MANY) {
     return { concepts: [], unrepresented: [], unrepresentedTotal: 0, tooMany: true };
