@@ -34314,13 +34314,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1201,
+      "line": 1211,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 787,
+      "line": 797,
       "kind": "title"
     },
     {
