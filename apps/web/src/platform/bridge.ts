@@ -1,6 +1,6 @@
 import type { PlatformBridge } from './contract.js';
 
-export type { PlatformBridge, PlatformInfo } from './contract.js';
+export type { ConnectRefusal, ConnectResult, PlatformBridge, PlatformInfo } from './contract.js';
 
 /**
  * Injected by the desktop shell's preload script. Adding a method here means adding a matching IPC

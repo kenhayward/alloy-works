@@ -1,6 +1,6 @@
 # 0022 - The desktop window loads the service
 
-- **Status:** Accepted
+- **Status:** Superseded by 0072
 - **Date:** 2026-09-12
 
 ## Context

@@ -5,6 +5,7 @@ import { Workspace } from './editor/Workspace.js';
 import { Environment } from './Environment.js';
 import { resolveBridge, type PlatformBridge, type PlatformInfo } from './platform/bridge.js';
 import { CommandPalette, useCommandKey } from './shell/CommandPalette.js';
+import { Connect } from './shell/Connect.js';
 import { Header } from './shell/Header.js';
 import { AboutContext } from './shell/about.js';
 import { moduleOf } from './shell/moduleOf.js';
@@ -51,7 +52,20 @@ export function App({
     return () => {
       current = false;
     };
-  }, [bridge]);
+    // Again as the address changes: the tray's Connect to screen asks which environment is in use now.
+  }, [bridge, hash]);
+
+  // The desktop's Connect to screen (the DR plan, DR-B) stands alone: the chrome calls the service,
+  // which the renderer from disk has none of yet.
+  if (bridge.connectTo !== undefined && /^#\/connect(\?|$)/.test(hash)) {
+    return (
+      <Connect
+        connectTo={bridge.connectTo}
+        connectedTo={platform?.connectedTo}
+        unreachable={hash.endsWith('?unreachable')}
+      />
+    );
+  }
 
   return (
     // The status bar's owner: one live region for the application, at the foot of every page

@@ -5,12 +5,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import {
   BRIDGE_GLOBAL,
+  CONNECT_CHANNEL,
   INTERFACE_LANGUAGE_CHANNEL,
   PLATFORM_INFO_CHANNEL,
   SPELL_CHECK_LANGUAGES_CHANNEL,
 } from './shell.js';
 
-// Three methods, three channels, and one fact. Anything added here needs a matching main-process handler that
+// Four methods, four channels, and one fact. Anything added here needs a matching main-process handler that
 // validates its own arguments - never a general "run this for me" bridge. Typed as the renderer's own
 // contract, so a method the contract gains and the shell does not answer fails the build.
 const bridge: PlatformBridge = {
@@ -24,6 +25,8 @@ const bridge: PlatformBridge = {
   setInterfaceLanguage: async (language) => {
     await ipcRenderer.invoke(INTERFACE_LANGUAGE_CHANNEL, language);
   },
+  // Answered for the Connect to screen alone (the DR plan, DR-C); a served page is refused.
+  connectTo: (address) => ipcRenderer.invoke(CONNECT_CHANNEL, address),
 };
 
 contextBridge.exposeInMainWorld(BRIDGE_GLOBAL, bridge);

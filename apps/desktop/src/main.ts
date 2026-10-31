@@ -1,7 +1,8 @@
 import { desktopLanguage, desktopWords, isInterfaceLanguage } from '@alloy-works/web/desktop-words';
-import { BrowserWindow, Menu, Tray, app, ipcMain, nativeTheme, shell } from 'electron';
+import { BrowserWindow, Menu, Tray, app, ipcMain, nativeTheme, net, shell } from 'electron';
 import path from 'node:path';
 
+import { keepAddress, keptAddress } from './connection.js';
 import {
   APP_USER_MODEL_ID,
   rendererIndexHtml,
@@ -10,20 +11,28 @@ import {
   windowIconPath,
 } from './icons.js';
 import {
+  CONNECT_CHANNEL,
+  CONNECT_ROUTE,
   DEV_SERVER_URL,
   INTERFACE_LANGUAGE_CHANNEL,
   PLATFORM_INFO_CHANNEL,
   SPELL_CHECK_LANGUAGES_CHANNEL,
+  addressDecision,
+  connectScreen,
   describePlatform,
+  environmentAnswer,
+  isConnectScreen,
   isTrustedFrame,
   navigationDecision,
   windowOpenDecision,
   redirectDecision,
   resolveRendererTarget,
   spellCheckerChoice,
+  startsAtConnect,
   spellingMenu,
   trayMenu,
   windowBackground,
+  type RendererLocation,
   type RendererTarget,
 } from './shell.js';
 
@@ -36,8 +45,47 @@ app.setAppUserModelId(APP_USER_MODEL_ID);
 let tray: Tray | null = null;
 let mainWindow: BrowserWindow | null = null;
 // Where the renderer is, once the first window has worked it out: what the navigation guard and every
-// IPC handler hold a page to (issue #309).
+// IPC handler hold a page to (issue #309). Replaced before each load, as the Connect to screen and the
+// environment it connects to take turns in the one window (the DR plan, DR-A).
 let rendererTarget: RendererTarget | null = null;
+// The address the window's current navigation asked for, which its redirects are judged by.
+let requested = '';
+// The environment the window was last pointed at, which the Connect to screen shows (ADM-051).
+let connectedTo: string | undefined;
+
+/** Where the renderer could be: the variable, the kept address, the packaged file or the dev server. */
+function rendererLocation(): RendererLocation {
+  return {
+    packaged: app.isPackaged,
+    devServerUrl: DEV_SERVER_URL,
+    rendererIndexHtml: rendererIndexHtml(app.getAppPath(), app.isPackaged),
+    serviceUrl: process.env.ALLOY_SERVICE_URL,
+    storedUrl: keptAddress(app.getPath('userData')),
+  };
+}
+
+/** Points the window at `target`, the guards first, then the load. */
+function load(window: BrowserWindow, target: RendererTarget, route?: string): void {
+  rendererTarget = target;
+  if (target.kind === 'url') {
+    requested = target.value;
+    if (route === undefined && target.value !== DEV_SERVER_URL) {
+      connectedTo = new URL(target.value).origin;
+    }
+    void window.loadURL(route === undefined ? target.value : `${target.value}#${route}`);
+  } else {
+    void window.loadFile(target.value, route === undefined ? {} : { hash: route });
+  }
+}
+
+/** The Connect to screen in the window, saying the last address did not answer where `unreachable`. */
+function showConnect(window: BrowserWindow, unreachable = false): void {
+  load(
+    window,
+    connectScreen(rendererLocation()),
+    unreachable ? `${CONNECT_ROUTE}?unreachable` : CONNECT_ROUTE,
+  );
+}
 // The interface's language (UI-I): the system's until the renderer says, matched against the list
 // once the app is ready, since `app.getLocale()` is empty before.
 let language = 'en-GB';
@@ -90,21 +138,13 @@ function createWindow(): void {
     mainWindow = null;
   });
 
-  const target = resolveRendererTarget({
-    packaged: app.isPackaged,
-    devServerUrl: DEV_SERVER_URL,
-    rendererIndexHtml: rendererIndexHtml(app.getAppPath(), app.isPackaged),
-    serviceUrl: process.env.ALLOY_SERVICE_URL,
-  });
-
-  rendererTarget = target;
+  const location = rendererLocation();
 
   // The window stays on the renderer: a link out of it opens in the system browser, and a page never
   // opens a window of its own (issue #309). The decisions are shell.ts's.
-  // The address the window's current navigation asked for, which its redirects are judged by.
-  let requested = '';
   window.webContents.on('will-navigate', (event, url) => {
-    const decision = navigationDecision(url, window.webContents.getURL(), target);
+    if (rendererTarget === null) return event.preventDefault();
+    const decision = navigationDecision(url, window.webContents.getURL(), rendererTarget);
     if (decision.allow) {
       requested = url;
       return;
@@ -114,7 +154,11 @@ function createWindow(): void {
   });
   window.webContents.on('will-redirect', (event, url, _inPlace, isMainFrame) => {
     if (!isMainFrame) return;
-    const decision = redirectDecision(url, requested, window.webContents.getURL(), target);
+    if (rendererTarget === null) return event.preventDefault();
+    // A load the shell began (`load`) fires no will-navigate: judged from where it was sent.
+    const showing = window.webContents.getURL();
+    const from = isConnectScreen(showing, connectScreen(location)) ? requested : showing;
+    const decision = redirectDecision(url, requested, from, rendererTarget);
     if (decision.allow) return;
     event.preventDefault();
     if (decision.openExternally) void shell.openExternal(decision.openExternally);
@@ -125,11 +169,17 @@ function createWindow(): void {
     return { action: 'deny' };
   });
 
-  if (target.kind === 'url') {
-    void window.loadURL(target.value);
-  } else {
-    void window.loadFile(target.value);
-  }
+  // An environment that does not answer leaves no page: the window asks again (DR-A). Not an aborted
+  // load (-3), which is a navigation superseding it.
+  window.webContents.on('did-fail-load', (_event, code, _description, failed, isMainFrame) => {
+    if (!isMainFrame || code === -3 || rendererTarget?.kind !== 'url') return;
+    // The address that failed, never the page still showing, which may be the screen itself.
+    if (isConnectScreen(failed, connectScreen(location))) return;
+    showConnect(window, true);
+  });
+
+  if (startsAtConnect(location)) showConnect(window);
+  else load(window, resolveRendererTarget(location));
 
   mainWindow = window;
 }
@@ -172,6 +222,14 @@ function setTrayMenu(): void {
             return { type: 'separator' };
           case 'show':
             return { label: item.label, click: showWindow };
+          case 'connect':
+            return {
+              label: item.label,
+              click: () => {
+                showWindow();
+                if (mainWindow !== null) showConnect(mainWindow);
+              },
+            };
           case 'quit':
             return { label: item.label, role: 'quit' };
         }
@@ -187,7 +245,36 @@ function fromRenderer(event: Electron.IpcMainInvokeEvent): boolean {
 
 ipcMain.handle(PLATFORM_INFO_CHANNEL, (event) => {
   if (!fromRenderer(event)) throw new Error('Refused: not the renderer.');
-  return describePlatform(process.versions);
+  return { ...describePlatform(process.versions), ...(connectedTo ? { connectedTo } : {}) };
+});
+
+/** How long an address has to answer before it is unreachable (DR-C). */
+const CONNECT_TIMEOUT_MS = 10_000;
+
+// Connecting to an environment (ADM-051): asked by the Connect to screen alone, never a served page, so
+// an environment cannot point the app at another (DR-C). The address is checked here, never trusted.
+ipcMain.handle(CONNECT_CHANNEL, async (event, requested: unknown) => {
+  if (!isConnectScreen(event.senderFrame?.url, connectScreen(rendererLocation()))) {
+    throw new Error('Refused: not the Connect to screen.');
+  }
+  const decision = addressDecision(requested);
+  if (decision.kind === 'refused') return decision;
+  let answer: ReturnType<typeof environmentAnswer>;
+  try {
+    const response = await net.fetch(`${decision.origin}/v1/me`, {
+      redirect: 'manual',
+      credentials: 'omit',
+      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+    });
+    answer = environmentAnswer(response.status, await response.json().catch(() => null));
+  } catch {
+    return { kind: 'refused', reason: 'unreachable' } as const;
+  }
+  if (answer !== 'environment') return { kind: 'refused', reason: answer } as const;
+  keepAddress(app.getPath('userData'), decision.origin);
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (window !== null) load(window, { kind: 'url', value: decision.origin });
+  return { kind: 'connected', origin: decision.origin } as const;
 });
 
 // The spelling checker's languages (CNT-178): what the renderer sent is checked in shell.ts, never

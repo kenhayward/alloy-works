@@ -95,6 +95,17 @@ end of a contract is the moment a component content management system either pro
 was always the customer's or reveals that it was not. Offering the export as part of closure, rather
 than as a support request during a notice period, is the difference.
 
+### The desktop application
+
+Not a tenant's administration, but running the product all the same: the installed desktop
+application has to reach an environment and stay current without anyone configuring it by hand.
+
+| ID          | Requirement                                                                                                                                                                                             | Tranche | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| **ADM-051** | The desktop application must ask for the address of the environment it connects to when it first runs, keep it, and let the person change it later, so an installed copy signs in with no configuration | T6      | Specified |
+| **ADM-052** | Each release must publish a Windows installer of the desktop application, built in CI from the released commit and named by the release's version                                                       | T6      | Specified |
+| **ADM-053** | The desktop application should say when a newer release exists, download it only when the person agrees, and install it on a restart the person chooses                                                 | T6      | Specified |
+
 ## 4. Secrets
 
 | ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                          | Tranche    | Status                |
@@ -343,3 +354,16 @@ identifier, and only its tranche changes.
 | Counts       | Before                    | After                     |
 | ------------ | ------------------------- | ------------------------- |
 | Requirements | 50, of which 4 superseded | 50, of which 4 superseded |
+
+### The desktop application, 2026-10-31
+
+Not a review. Ken agreed the desktop release slice (issues #827, #828 and #829): an installed copy
+could not sign in without `ALLOY_SERVICE_URL` (ADR-0022), and nothing built or offered an installer.
+
+| What was found                                                                     | Change                     |
+| ---------------------------------------------------------------------------------- | -------------------------- |
+| An installed desktop application has no address to reach, no release and no update | **ADM-051 to ADM-053**, T6 |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 50, of which 4 superseded | 53, of which 4 superseded |

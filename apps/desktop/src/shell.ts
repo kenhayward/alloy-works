@@ -48,13 +48,127 @@ export interface RendererLocation {
    * window loads it (ADR-0022).
    */
   readonly serviceUrl?: string | undefined;
+  /** The address the person chose on the Connect to screen, kept (the DR plan, DR-A, DR-D). */
+  readonly storedUrl?: string | null | undefined;
 }
 
 export function resolveRendererTarget(location: RendererLocation): RendererTarget {
   if (location.serviceUrl) return { kind: 'url', value: location.serviceUrl };
+  // Kept from a packaged copy's Connect to screen; unpackaged, the dev server stays the renderer.
+  if (location.packaged && location.storedUrl) return { kind: 'url', value: location.storedUrl };
   return location.packaged
     ? { kind: 'file', value: location.rendererIndexHtml }
     : { kind: 'url', value: location.devServerUrl };
+}
+
+/** The renderer's route that asks which environment to connect to (the DR plan, DR-B). */
+export const CONNECT_ROUTE = '/connect';
+
+/** Whether the window opens on the Connect to screen: packaged, with no address set or kept (DR-A). */
+export function startsAtConnect(location: RendererLocation): boolean {
+  return location.packaged && !location.serviceUrl && !location.storedUrl;
+}
+
+/** The longest address the shell takes, well past any environment's. */
+const LONGEST_ADDRESS = 2048;
+
+export type AddressDecision =
+  | { readonly kind: 'address'; readonly origin: string }
+  | {
+      readonly kind: 'refused';
+      readonly reason: 'malformed' | 'scheme' | 'insecure' | 'credentials';
+    };
+
+/** Whether a hostname is loopback, where Chromium keeps a `Secure` cookie over plain `http`. */
+function isLoopback(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]'
+  );
+}
+
+/**
+ * An address the person typed, or the shell kept, as the environment it names (the DR plan, DR-C): an
+ * `https` URL without credentials, kept to its origin, since an environment is a hostname. Plain `http`
+ * only on loopback: the session cookie is `__Host-` and `Secure`, which Chromium keeps nowhere else.
+ */
+export function addressDecision(value: unknown): AddressDecision {
+  if (typeof value !== 'string' || value.length > LONGEST_ADDRESS) {
+    return { kind: 'refused', reason: 'malformed' };
+  }
+  let address: URL;
+  try {
+    address = new URL(value.trim());
+  } catch {
+    return { kind: 'refused', reason: 'malformed' };
+  }
+  if (address.protocol !== 'https:' && address.protocol !== 'http:') {
+    return { kind: 'refused', reason: 'scheme' };
+  }
+  if (address.protocol === 'http:' && !isLoopback(address.hostname)) {
+    return { kind: 'refused', reason: 'insecure' };
+  }
+  if (address.username !== '' || address.password !== '') {
+    return { kind: 'refused', reason: 'credentials' };
+  }
+  return { kind: 'address', origin: address.origin };
+}
+
+/** Where the Connect to screen is: the packaged renderer file, or the dev server unpackaged (DR-A). */
+export function connectScreen(location: RendererLocation): RendererTarget {
+  return location.packaged
+    ? { kind: 'file', value: location.rendererIndexHtml }
+    : { kind: 'url', value: location.devServerUrl };
+}
+
+/**
+ * Whether a frame is the Connect to screen, at any route, whatever the window's target (DR-C). Only
+ * it may say which environment to connect to; a served page never may, so an environment cannot
+ * point the app at another.
+ */
+export function isConnectScreen(url: string | undefined, screen: RendererTarget): boolean {
+  return url !== undefined && isRenderer(url, screen);
+}
+
+/** The Connect to screen's one channel, answered only from it (`isConnectScreen`). */
+export const CONNECT_CHANNEL = 'alloy-works:connect';
+
+/**
+ * What an address's answer to `GET /v1/me` with no session says it is (DR-C): an environment answers
+ * 401 `unauthenticated`; the service with no environment at that hostname, 404 `tenant_not_found`;
+ * anything else - a redirect, a page, another service - is not Alloy Works.
+ */
+export function environmentAnswer(
+  status: number,
+  body: unknown,
+): 'environment' | 'no-environment' | 'not-alloy-works' {
+  const code =
+    typeof body === 'object' && body !== null ? (body as { code?: unknown }).code : undefined;
+  if (status === 401 && code === 'unauthenticated') return 'environment';
+  if (status === 404 && code === 'tenant_not_found') return 'no-environment';
+  return 'not-alloy-works';
+}
+
+/** The address kept, as `connection.json` holds it (DR-D). */
+export function storedFile(origin: string): string {
+  return JSON.stringify({ schemaVersion: 1, address: origin });
+}
+
+/** The address `connection.json` keeps, or null where it keeps none the shell would take (DR-D). */
+export function storedAddress(text: string): string | null {
+  let kept: unknown;
+  try {
+    kept = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (typeof kept !== 'object' || kept === null || Array.isArray(kept)) return null;
+  const { schemaVersion, address } = kept as { schemaVersion?: unknown; address?: unknown };
+  if (schemaVersion !== 1) return null;
+  const decision = addressDecision(address);
+  return decision.kind === 'address' ? decision.origin : null;
 }
 
 /** A path on disk as the `file:` address a window shows for it, written without `node:url`, which the preload cannot require. */
@@ -319,13 +433,15 @@ export type DesktopWords = Readonly<Record<DesktopWord, string>>;
 /** One item of the tray's menu, as main.ts turns it into Electron's. */
 export type TrayMenuItem =
   | { readonly kind: 'show'; readonly label: string }
+  | { readonly kind: 'connect'; readonly label: string }
   | { readonly kind: 'separator' }
   | { readonly kind: 'quit'; readonly label: string };
 
-/** The tray's menu: show the window, and quit, in the interface's language. */
+/** The tray's menu: show the window, connect to another environment (DR-E), and quit, in the interface's language. */
 export function trayMenu(words: DesktopWords): TrayMenuItem[] {
   return [
     { kind: 'show', label: words['desktop.show'] },
+    { kind: 'connect', label: words['desktop.connect'] },
     { kind: 'separator' },
     { kind: 'quit', label: words['desktop.quit'] },
   ];

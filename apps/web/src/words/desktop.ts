@@ -11,6 +11,7 @@ import { pseudolocalise } from './pseudo.js';
  */
 export const DESKTOP_WORDS = [
   'desktop.show',
+  'desktop.connect',
   'desktop.quit',
   'desktop.no-suggestions',
   'desktop.add-to-dictionary',

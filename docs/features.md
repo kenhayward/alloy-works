@@ -26,7 +26,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   it is, a way to sign in with the organisation's provider or a Google account, and once you are in,
   who you are. Ask it for a sample document and a worker renders it, the page saying so the moment
   it is done without being asked again, with the document handed over by a link only that
-  environment can sign. The desktop app opens the same environment and signs in the same way. It is
+  environment can sign. The desktop app opens the same environment and signs in the same way: the
+  first time it starts it asks for the environment's address, checks that an environment answers there,
+  and keeps it; **Connect to another environment** in its tray asks again, as does an address that
+  stops answering. It is
   the whole system working end to end, on one sample document, and it is the shape the first real
   feature arrives into rather than a feature itself.
 
@@ -2097,7 +2100,6 @@ Named explicitly so nobody has to read the source to find out:
 - No way to choose, make or edit a theme, or to make a style of your own: every environment has the
   default theme, and every document publishes under it, so the styles to choose from are the
   default's.
-- No way to choose an environment in the desktop app: it is told one, and there is no screen to ask.
 - No hosting. Everything runs on your own machine, over plain HTTP, with development passwords.
 - No search by meaning, no taxonomy. No layout the product seeds declares an approval page. Conditional text
   and suggestion handling are described in the content model and neither runs.

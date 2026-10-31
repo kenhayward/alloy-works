@@ -65,6 +65,7 @@ exist.
 | [0069](0069-an-import-is-a-proposal-read-in-the-worker.md)                        | An import is a proposal, read in the worker                                   | Accepted           |
 | [0070](0070-html-is-a-third-output-served-sandboxed.md)                           | HTML is a third output, served sandboxed                                      | Accepted           |
 | [0071](0071-ct-studio-delivers-straight-in-as-a-service-identity.md)              | CT Studio delivers straight in, as a service identity                         | Accepted           |
+| [0072](0072-the-desktop-app-asks-which-environment.md)                            | The desktop app asks which environment to connect to                          | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |
@@ -91,7 +92,7 @@ exist.
 | [0025](0025-the-editor-schema-is-not-the-stored-model-one-for-one.md)             | The editor schema is not the stored model one for one                         | Superseded by 0026 |
 | [0024](0024-a-version-digest-over-the-whole-version.md)                           | A version digest over the whole version, and a content hash beside it         | Accepted           |
 | [0023](0023-prosemirror-as-the-editor-and-its-model.md)                           | ProseMirror as the editor, and one view per component                         | Accepted           |
-| [0022](0022-the-desktop-window-loads-the-service.md)                              | The desktop window loads the service                                          | Accepted           |
+| [0022](0022-the-desktop-window-loads-the-service.md)                              | The desktop window loads the service                                          | Superseded by 0072 |
 | [0021](0021-object-storage-a-credential-per-tenant.md)                            | Object storage: a credential per tenant, scoped to its own prefix             | Accepted           |
 | [0020](0020-service-foundations-tenant-roles-zod-first-apis-kysely.md)            | Service foundations: tenants by hostname and role, zod-first APIs, Kysely     | Accepted           |
 | [0019](0019-platform-typescript-service-publishing-workers-object-storage.md)     | The platform: a TypeScript service, publishing workers, object storage        | Accepted           |
