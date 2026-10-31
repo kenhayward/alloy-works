@@ -1,5 +1,7 @@
 export {
   applyConditions,
+  axisValues,
+  AXIS_VOCABULARY_VALUES,
   conditionsIn,
   conditionAxisDefinitionSchema,
   profileSchema,
@@ -7,6 +9,7 @@ export {
   selectOutline,
   unsetAxes,
   storedProfileSchema,
+  type AxisValue,
   type ConditionAxisDefinition,
   type Profile,
   type StoredProfile,

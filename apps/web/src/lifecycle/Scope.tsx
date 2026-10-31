@@ -2,7 +2,12 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useEffect, useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
-import { declaredAxes, type OfferedAxis } from '../editor/ConditionDialog.js';
+import {
+  declaredAxes,
+  offeredLabel,
+  offeredValues,
+  type OfferedAxis,
+} from '../editor/ConditionDialog.js';
 import { Modal } from '../layouts/Modal.js';
 import { Chip } from '../parts/Chip.js';
 import styles from './Hold.module.css';
@@ -306,7 +311,11 @@ function ScopeDialog({
             axes.map((axis) => (
               <fieldset key={axis.key}>
                 <legend data-content>{axis.name}</legend>
-                {axis.values.map((value) => {
+                {/* A retired value only where the scope already names it (LIB-023; VO-E). */}
+                {offeredValues(
+                  axis.values,
+                  scope.scope.filter((each) => each.axis === axis.key).map((each) => each.value),
+                ).map((value) => {
                   const key = `${axis.key}:${value.key}`;
                   return (
                     <div key={key}>
@@ -316,7 +325,7 @@ function ScopeDialog({
                           checked={chosen.has(key)}
                           onChange={() => toggle(key)}
                         />
-                        <span data-content>{value.label}</span>
+                        <span data-content>{offeredLabel(value, axis.values)}</span>
                       </label>
                       {chosen.has(key) && (
                         <label>

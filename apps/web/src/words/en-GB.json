@@ -912,6 +912,8 @@
   "editor.linked-part-gone": "The part the link names is no longer in this component. This is its latest version.",
   "editor.condition.no-axes": "No condition axes are declared yet.",
   "editor.condition.axes-unread": "The condition axes could not be read.",
+  "editor.condition.value-deprecated": "{label} (deprecated: use {replacement})",
+  "editor.condition.value-retired": "{label} (retired)",
   "editor.format.table-style": "Table style",
   "editor.format.not-set": "not set",
   "editor.term.no-terms": "This space holds no approved terms you may read.",

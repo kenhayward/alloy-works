@@ -14,6 +14,9 @@ import {
   relationshipTypeDefinitionSchema,
   unrelatableKinds,
   type ConditionAxisDefinition,
+  axisValues,
+  AXIS_VOCABULARY_VALUES,
+  type AxisValue,
   type StoredProfile,
   type RelationshipTypeDefinition,
   readDefinition,
@@ -419,6 +422,15 @@ async function refusal(
   if (kind === 'conditionAxis') {
     // As a variable's (the R6 plan, R6-A): every condition mark in text names it by its key.
     const axis = candidate as ConditionAxisDefinition;
+    if (axis.vocabulary !== undefined) {
+      // The vocabulary it draws on is one, of at most an axis's own list's 200 values (VO-E).
+      const drawn = await readDefinitionLatest(trx, axis.vocabulary);
+      if (drawn?.kind !== 'vocabulary') {
+        return { answer: 'definition.unresolved', missing: [axis.vocabulary], requires: [] };
+      }
+      const held = (drawn.definition as Vocabulary).values.length;
+      if (held > AXIS_VOCABULARY_VALUES) return axisTooLarge(axis.vocabulary, held);
+    }
     const refused = await keyRefused(trx, 'conditionAxis', axis.key, self);
     if (refused) return refused;
   }
@@ -444,6 +456,14 @@ async function refusal(
           detail: `A vocabulary keeps every value: retire ${each} rather than remove it`,
         })),
       };
+    }
+    // One an axis names holds no more values than an axis may (VO-E).
+    if (
+      self !== undefined &&
+      vocabulary.values.length > AXIS_VOCABULARY_VALUES &&
+      (await latestOfKind(trx, 'conditionAxis')).some((each) => each.definition.vocabulary === self)
+    ) {
+      return axisTooLarge(self, vocabulary.values.length);
     }
   }
   const holder = await nameHolder(trx, kind, candidate.name, self);
@@ -588,18 +608,53 @@ export async function profileUnknown(
   return Object.entries(profile.values).flatMap(([key, values]) => {
     const axis = axes.get(key);
     if (axis === undefined) return [key];
+    // A retired value is declared still, so a profile already naming it stays valid (LIB-023; VO-E).
     const declared = new Set(axis.values.map((each) => each.key));
     return values.filter((value) => !declared.has(value)).map((value) => `${key}.${value}`);
   });
 }
 
-/** The environment's condition axes by key, each at its latest version (REU-020; R6-A). */
-export async function axesByKey(
-  trx: TenantTransaction,
-): Promise<Map<string, ConditionAxisDefinition>> {
-  const stored = await latestOfKind(trx, 'conditionAxis');
-  return new Map(stored.map((each) => [each.definition.key, each.definition]));
+/** An axis and its permitted values, its own or its vocabulary's, as `axisValues` gives them. */
+export interface ResolvedAxis {
+  readonly definition: ConditionAxisDefinition;
+  readonly values: readonly AxisValue[];
 }
+
+/**
+ * The environment's condition axes by key, each at its latest version with its values resolved
+ * (REU-020; R6-A; LIB-022, the VO plan, VO-E): each vocabulary an axis names read once.
+ */
+export async function axesByKey(trx: TenantTransaction): Promise<Map<string, ResolvedAxis>> {
+  const stored = await latestOfKind(trx, 'conditionAxis');
+  const vocabularies = new Map<string, Vocabulary>();
+  for (const id of new Set(stored.flatMap((each) => each.definition.vocabulary ?? []))) {
+    const drawn = await readDefinitionLatest(trx, id);
+    if (drawn?.kind === 'vocabulary') vocabularies.set(id, drawn.definition as Vocabulary);
+  }
+  return new Map(
+    stored.map((each) => [
+      each.definition.key,
+      {
+        definition: each.definition,
+        values: axisValues(each.definition, (id) => vocabularies.get(id)),
+      },
+    ]),
+  );
+}
+
+/** An axis naming a vocabulary of more values than an axis may hold (VO-E). */
+const axisTooLarge = (vocabulary: string, held: number): DefinitionAnswer => ({
+  answer: 'definition.invalid',
+  failures: [
+    {
+      code: 'metadata.fixed',
+      field: vocabulary,
+      rule: 'fixed',
+      schemas: [],
+      detail: `An axis draws on a vocabulary of at most ${AXIS_VOCABULARY_VALUES} values; this one holds ${held}`,
+    },
+  ],
+});
 
 /**
  * The environment's variables by key, each at its latest version (REU-018; the R5 plan, R5-A): what a

@@ -1097,6 +1097,9 @@ describe('the domain package', () => {
         // VOb: values drawn from a vocabulary, checked against what is held.
         'checkVocabularyValues',
         'vocabularyIdsIn',
+        // VOb: an axis's values, its own or a vocabulary's (VO-E).
+        'axisValues',
+        'AXIS_VOCABULARY_VALUES',
         'vocabularyDefinitionSchema',
       ].sort(),
     );

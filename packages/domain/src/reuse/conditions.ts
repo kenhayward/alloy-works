@@ -4,28 +4,73 @@ import type { ContentDocument } from '../content/model/document.js';
 import type { IndexMarkerNode } from '../content/model/inline.js';
 import type { Conditions } from '../content/model/marks.js';
 import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
+import { valueLabel, valuesInOrder, type VocabularyValue } from '../library/vocabulary.js';
 import { definitionIdentity } from '../metadata/definition.js';
+import type { VocabularyLookup } from '../metadata/vocabulary-values.js';
 
 const key = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/);
 
 /**
  * **A condition axis** (REU-020; the R6 plan, R6-A): the environment's, declared once, its permitted
- * values a closed list managed as the axis is. A condition mark's `axis` names its key and `values`
- * its values' keys.
+ * values a closed list managed as the axis is, or drawn from a vocabulary named by its id, never both
+ * (LIB-022; the VO plan, VO-E). Both keys optional, so axes stored before VO-E parse as they are. A
+ * condition mark's `axis` names its key and `values` its values' keys, a vocabulary's value ids.
  */
-export const conditionAxisDefinitionSchema = z.strictObject({
-  ...definitionIdentity,
-  key,
-  values: z
-    .array(z.strictObject({ key, label: z.string().min(1).max(200) }))
-    .min(1)
-    .max(200)
-    .refine(
-      (values) => new Set(values.map((each) => each.key)).size === values.length,
-      'Each value of an axis has a key of its own',
-    ),
-});
+export const conditionAxisDefinitionSchema = z
+  .strictObject({
+    ...definitionIdentity,
+    key,
+    values: z
+      .array(z.strictObject({ key, label: z.string().min(1).max(200) }))
+      .min(1)
+      .max(200)
+      .refine(
+        (values) => new Set(values.map((each) => each.key)).size === values.length,
+        'Each value of an axis has a key of its own',
+      )
+      .optional(),
+    vocabulary: z.string().min(1).optional(),
+  })
+  .refine((axis) => (axis.values === undefined) !== (axis.vocabulary === undefined), {
+    message: 'An axis declares its values or names a vocabulary, not both',
+  });
 export type ConditionAxisDefinition = z.infer<typeof conditionAxisDefinitionSchema>;
+
+/** The most values a vocabulary an axis names may hold, as an axis's own list (VO-E). */
+export const AXIS_VOCABULARY_VALUES = 200;
+
+/** One permitted value of an axis as `axisValues` gives it: a deprecated one with its replacement. */
+export interface AxisValue {
+  readonly key: string;
+  readonly label: string;
+  readonly state: VocabularyValue['state'];
+  readonly replacedBy?: string;
+}
+
+/**
+ * **An axis's permitted values** (LIB-022; VO-E), the one resolver every reader uses: its own, each
+ * active, or its vocabulary's in the vocabulary's order, keyed by value id and labelled in `language`
+ * or the base language (LIB-024). A retired value is given too, so what is written stays valid
+ * (LIB-023); whoever offers values leaves it out. A vocabulary not there gives none.
+ */
+export function axisValues(
+  axis: ConditionAxisDefinition,
+  vocabularies: VocabularyLookup,
+  language?: string,
+): AxisValue[] {
+  if (axis.values !== undefined) {
+    return axis.values.map((each) => ({ ...each, state: 'active' as const }));
+  }
+  const vocabulary = vocabularies(axis.vocabulary!);
+  if (vocabulary === undefined) return [];
+  const reader = language ?? vocabulary.base;
+  return valuesInOrder(vocabulary, reader).map((each) => ({
+    key: each.id,
+    label: valueLabel(vocabulary, each, reader),
+    state: each.state,
+    ...(each.replacedBy === undefined ? {} : { replacedBy: each.replacedBy }),
+  }));
+}
 
 /** **A profile** (REU-022; R6-B): the values a document takes on each axis it names, by key. */
 export const profileSchema = z.record(key, z.array(key).min(1).max(200));

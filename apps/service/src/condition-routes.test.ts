@@ -1,4 +1,4 @@
-import { createDefinition } from '@alloy-works/db';
+import { createDefinition, findRole, grant } from '@alloy-works/db';
 import { DEFINITION_SCHEMA_VERSION } from '@alloy-works/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startHarness, type Harness } from './test/bindings-harness.js';
@@ -79,5 +79,58 @@ describe('profiles, through the service', () => {
     expect(refused.json()).toMatchObject({ code: 'profile_invalid', unknown: ['audience.public'] });
     const asked = await publish({ values: { audience: ['internal'] } });
     expect(asked.statusCode, asked.body).toBe(200);
+  });
+
+  it("LIB-022 declares an axis drawing on a vocabulary, and a profile takes the vocabulary's values", async () => {
+    // The environment's own manager of definitions declares both (the VO plan, VO-E).
+    await h.tenantDb.withTenant(h.tenant, async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Definitions manager'))!.id,
+        subject: { principal: h.ids.ada! },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: h.ids.ada!,
+      }),
+    );
+    const define = (kind: string, definition: unknown) =>
+      h.call('ada', 'POST', '/v1/definitions', { kind, definition });
+    const vocabulary = await define('vocabulary', {
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name: 'Market',
+      key: 'market',
+      base: 'en',
+      order: 'declared',
+      values: [
+        { id: 'uk', labels: [{ language: 'en', text: 'UK' }], descriptions: [], state: 'active' },
+      ],
+    });
+    expect(vocabulary.statusCode, vocabulary.body).toBe(200);
+    const both = await define('conditionAxis', {
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name: 'Market',
+      key: 'market',
+      values: [{ key: 'uk', label: 'UK' }],
+      vocabulary: vocabulary.json<{ id: string }>().id,
+    });
+    expect(both.statusCode, both.body).toBe(400);
+    const axis = await define('conditionAxis', {
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name: 'Market',
+      key: 'market',
+      vocabulary: vocabulary.json<{ id: string }>().id,
+    });
+    expect(axis.statusCode, axis.body).toBe(200);
+
+    const component = await h.component(h.general, 'Notice');
+    const document = await h.documentReferencing([component.id]);
+    const write = async (profile: unknown) =>
+      h.call('ada', 'PUT', `/v1/documents/${document.id}/profile`, {
+        openedFrom: (await latest(document.id)).version.id,
+        profile,
+      });
+    const unknown = await write({ values: { market: ['us'] } });
+    expect(unknown.json()).toMatchObject({ code: 'profile_invalid', unknown: ['market.us'] });
+    const written = await write({ values: { market: ['uk'] } });
+    expect(written.statusCode, written.body).toBe(200);
   });
 });
