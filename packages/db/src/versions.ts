@@ -3,6 +3,7 @@ import {
   variableDefinitionSchema,
   conditionAxisDefinitionSchema,
   relationshipTypeDefinitionSchema,
+  vocabularyDefinitionSchema,
   componentTypeOf,
   definitionKinds,
   fieldDefinitionSchema,
@@ -201,6 +202,7 @@ const definitionSchemas = {
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
   relationshipType: relationshipTypeDefinitionSchema,
+  vocabulary: vocabularyDefinitionSchema,
 } as const;
 
 /**

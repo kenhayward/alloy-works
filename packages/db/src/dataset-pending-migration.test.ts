@@ -265,6 +265,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0173_bridge_unlisted',
       '0174_ct_studio',
       '0175_entry_superseded',
+      '0176_vocabularies',
     ]);
     const kept = await queryAs(
       db.adminUrl,

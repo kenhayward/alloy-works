@@ -17,7 +17,8 @@ import { definitionKinds } from '@alloy-works/domain';
  * changing it (G4-F). A bibliography entry, added by 0145, lives in one space and is authored, `edit` in
  * its space making and changing it (the CI plan, CI-B). A citation style, added by 0146, is the tenant's,
  * as a prompt library is, administered at the environment (CI-D). A term, added by 0153, lives in one
- * space and is authored, as an entry is (the TM plan, TM-A).
+ * space and is authored, as an entry is (the TM plan, TM-A). A vocabulary, added by 0176, is a
+ * definition kind and so arrives with `definitionKinds` (the VO plan, VO-A).
  */
 export const artifactKinds = [
   'component',

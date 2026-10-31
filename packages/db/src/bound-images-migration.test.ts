@@ -286,6 +286,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0173_bridge_unlisted',
       '0174_ct_studio',
       '0175_entry_superseded',
+      '0176_vocabularies',
     ]);
     const kept = await queryAs(
       db.adminUrl,

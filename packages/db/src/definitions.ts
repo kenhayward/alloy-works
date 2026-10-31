@@ -26,6 +26,9 @@ import {
   type MetadataSchemaDefinition,
   type SchemaPlace,
   type SchemaConflict,
+  type Vocabulary,
+  vocabularyChangeRefusals,
+  vocabularyDefinitionSchema,
 } from '@alloy-works/domain';
 import { brokenByType } from './relationships.js';
 import { sql } from 'kysely';
@@ -100,6 +103,7 @@ const parsers = {
   variable: variableDefinitionSchema,
   conditionAxis: conditionAxisDefinitionSchema,
   relationshipType: relationshipTypeDefinitionSchema,
+  vocabulary: vocabularyDefinitionSchema,
 } as const;
 
 /** Every definition of a kind at its latest version, read as stored definitions are. */
@@ -397,6 +401,30 @@ async function refusal(
     const refused = await keyRefused(trx, 'conditionAxis', axis.key, self);
     if (refused) return refused;
   }
+  if (kind === 'vocabulary') {
+    // Its key fixed and its own; and a version keeps every value, retired ones too, so the latest
+    // alone is checked (LIB-023; the VO plan, VO-B).
+    const vocabulary = candidate as Vocabulary;
+    const refused = await keyRefused(trx, 'vocabulary', vocabulary.key, self);
+    if (refused) return refused;
+    const held = self === undefined ? undefined : await readDefinitionLatest(trx, self);
+    const dropped = vocabularyChangeRefusals(
+      held?.definition as Vocabulary | undefined,
+      vocabulary,
+    );
+    if (dropped.length > 0) {
+      return {
+        answer: 'definition.invalid',
+        failures: dropped.map((each) => ({
+          code: 'metadata.fixed' as const,
+          field: each,
+          rule: 'fixed' as const,
+          schemas: [],
+          detail: `A vocabulary keeps every value: retire ${each} rather than remove it`,
+        })),
+      };
+    }
+  }
   const holder = await nameHolder(trx, kind, candidate.name, self);
   if (holder) return { answer: 'definition.name_taken', holder };
   if (kind === 'metadataSchema' && self !== undefined) {
@@ -497,7 +525,7 @@ export async function recordDefinitionVersion(
  */
 async function keyRefused(
   trx: TenantTransaction,
-  kind: 'variable' | 'conditionAxis',
+  kind: 'variable' | 'conditionAxis' | 'vocabulary',
   key: string,
   self: string | undefined,
 ): Promise<DefinitionAnswer | undefined> {
@@ -513,7 +541,7 @@ async function keyRefused(
             field: self,
             rule: 'fixed',
             schemas: [],
-            detail: `${kind === 'variable' ? 'A variable' : 'An axis'} keeps its key, ${held.key}`,
+            detail: `${{ variable: 'A variable', conditionAxis: 'An axis', vocabulary: 'A vocabulary' }[kind]} keeps its key, ${held.key}`,
           },
         ],
       };
