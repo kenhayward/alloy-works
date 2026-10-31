@@ -100,6 +100,10 @@ describe('delivered data through the whole system', () => {
        insert into ${table} values ('Nets', 4.50, 1), ('Jars', 7.50, 2);`,
     );
 
+    // SQL runs only on a connection tested and found read-only (DAT-103), as a person would first.
+    const tested = await call('POST', `/v1/connections/${connection}/test`, {});
+    expect(tested.body, JSON.stringify(tested.body)).toMatchObject({ outcome: 'ok' });
+
     const sampled = await call('POST', `/v1/connections/${connection}/sample`, {
       definition: {
         schemaVersion: 1,
@@ -125,8 +129,8 @@ describe('delivered data through the whole system', () => {
     expect(sampled.body, JSON.stringify(sampled.body)).toMatchObject({
       outcome: 'ok',
       rows: [
-        ['Jars', '7.50'],
-        ['Nets', '4.50'],
+        ['Jars', '7.5'],
+        ['Nets', '4.5'],
       ],
     });
   }, 120_000);
