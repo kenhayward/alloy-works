@@ -249,6 +249,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0174_ct_studio',
       '0175_entry_superseded',
       '0176_vocabularies',
+      '0177_publication_vocabularies',
     ]);
 
     // The component and its version are as they were.
@@ -489,6 +490,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0174_ct_studio',
       '0175_entry_superseded',
       '0176_vocabularies',
+      '0177_publication_vocabularies',
     ]);
 
     const { rows } = await queryAs(
