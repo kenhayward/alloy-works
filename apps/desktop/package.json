@@ -1,6 +1,6 @@
 {
   "name": "@alloy-works/desktop",
-  "version": "0.219.0",
+  "version": "0.220.0",
   "private": true,
   "description": "Alloy Works desktop shell",
   "productName": "Alloy Works",
@@ -21,6 +21,7 @@
     "@types/node": "^24.5.2",
     "electron": "^44.3.0",
     "electron-builder": "^26.15.3",
+    "electron-updater": "6.8.10",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",

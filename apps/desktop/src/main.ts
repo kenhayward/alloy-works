@@ -1,5 +1,6 @@
 import { desktopLanguage, desktopWords, isInterfaceLanguage } from '@alloy-works/web/desktop-words';
-import { BrowserWindow, Menu, Tray, app, ipcMain, nativeTheme, net, shell } from 'electron';
+import { BrowserWindow, Menu, Tray, app, dialog, ipcMain, nativeTheme, net, shell } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'node:path';
 
 import { keepAddress, keptAddress } from './connection.js';
@@ -21,6 +22,7 @@ import {
   connectScreen,
   describePlatform,
   environmentAnswer,
+  fill,
   isConnectScreen,
   isTrustedFrame,
   navigationDecision,
@@ -31,9 +33,15 @@ import {
   startsAtConnect,
   spellingMenu,
   trayMenu,
+  updateStep,
+  updateTrayItem,
+  updates,
   windowBackground,
   type RendererLocation,
   type RendererTarget,
+  type UpdateAct,
+  type UpdateEvent,
+  type UpdateState,
 } from './shell.js';
 
 // Windows reads this to decide which icon a taskbar button, jump list or toast notification
@@ -52,6 +60,8 @@ let rendererTarget: RendererTarget | null = null;
 let requested = '';
 // The environment the window was last pointed at, which the Connect to screen shows (ADM-051).
 let connectedTo: string | undefined;
+// Where an update is (the DR plan, DR-H, DR-I): the decisions are shell.ts's, carried out here.
+let update: UpdateState = { kind: 'idle' };
 
 /** Where the renderer could be: the variable, the kept address, the packaged file or the dev server. */
 function rendererLocation(): RendererLocation {
@@ -216,7 +226,12 @@ function createTray(): void {
 function setTrayMenu(): void {
   tray?.setContextMenu(
     Menu.buildFromTemplate(
-      trayMenu(desktopWords(language)).map((item) => {
+      trayMenu(
+        desktopWords(language),
+        updates(process.platform, app.isPackaged)
+          ? updateTrayItem(update, desktopWords(language))
+          : null,
+      ).map((item) => {
         switch (item.kind) {
           case 'separator':
             return { type: 'separator' };
@@ -230,12 +245,121 @@ function setTrayMenu(): void {
                 if (mainWindow !== null) showConnect(mainWindow);
               },
             };
+          case 'update':
+            return {
+              label: item.label,
+              enabled: item.enabled,
+              click: () => stepUpdate({ kind: 'check', asked: true }),
+            };
           case 'quit':
             return { label: item.label, role: 'quit' };
         }
       }),
     ),
   );
+}
+
+/** Takes an update one event on: the tray and the taskbar follow it, then what it calls for is done. */
+function stepUpdate(event: UpdateEvent): void {
+  const next = updateStep(update, event);
+  // Drawn again only where it moved: progress arrives many times a second.
+  if (next.state !== update) {
+    update = next.state;
+    setTrayMenu();
+    mainWindow?.setProgressBar(update.kind === 'downloading' ? update.percent / 100 : -1);
+  }
+  if (next.act !== null) void carryOut(next.act);
+}
+
+/** A question to the person, in a native dialog over the window: the index of the button they chose. */
+async function ask(message: string, detail: string, buttons: string[]): Promise<number> {
+  const options = {
+    type: 'info' as const,
+    title: desktopWords(language)['desktop.update.title'],
+    message,
+    detail,
+    buttons,
+    defaultId: 0,
+    cancelId: buttons.length - 1,
+    noLink: true,
+  };
+  const { response } =
+    mainWindow === null
+      ? await dialog.showMessageBox(options)
+      : await dialog.showMessageBox(mainWindow, options);
+  return response;
+}
+
+/** Does what an update step calls for (DR-H): ask the updater, ask the person, tell them, install. */
+async function carryOut(act: UpdateAct): Promise<void> {
+  const words = desktopWords(language);
+  switch (act.kind) {
+    case 'check':
+      // A failure also arrives as the updater's `error`, which the step takes once.
+      await autoUpdater.checkForUpdates().catch(() => stepUpdate({ kind: 'failed' }));
+      return;
+    case 'download':
+      await autoUpdater.downloadUpdate().catch(() => stepUpdate({ kind: 'failed' }));
+      return;
+    case 'install':
+      // Silent, and the app comes back: the person already chose to restart.
+      autoUpdater.quitAndInstall(true, true);
+      return;
+    case 'offer': {
+      const chosen = await ask(
+        fill(words['desktop.update.available'], { version: act.version }),
+        words['desktop.update.available-detail'],
+        [words['desktop.update.download'], words['desktop.update.not-now']],
+      );
+      stepUpdate(chosen === 0 ? { kind: 'download' } : { kind: 'not-now' });
+      return;
+    }
+    case 'offer-restart': {
+      const chosen = await ask(
+        fill(words['desktop.update.ready'], { version: act.version }),
+        words['desktop.update.ready-detail'],
+        [words['desktop.update.restart-now'], words['desktop.update.later']],
+      );
+      stepUpdate(chosen === 0 ? { kind: 'restart' } : { kind: 'later' });
+      return;
+    }
+    case 'tell':
+      await ask(words[act.said === 'none' ? 'desktop.update.none' : 'desktop.update.failed'], '', [
+        words['desktop.update.ok'],
+      ]);
+      stepUpdate({ kind: 'dismissed' });
+      return;
+  }
+}
+
+/** How long after start the first check waits, so it does not compete with the window opening. */
+const FIRST_CHECK_MS = 10_000;
+
+/**
+ * The updater (the DR plan, DR-H; ADM-053): GitHub's releases, read from the app-update.yml the
+ * packaging writes, offered and never downloaded unasked, installed on a restart or the next quit.
+ * Its own log is off: it names the release's address, which a crash report has no need of.
+ */
+function startUpdates(): void {
+  if (!updates(process.platform, app.isPackaged)) return;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.logger = null;
+  autoUpdater.on('update-available', (info) =>
+    stepUpdate({ kind: 'available', version: info.version }),
+  );
+  autoUpdater.on('update-not-available', () => stepUpdate({ kind: 'none' }));
+  autoUpdater.on('download-progress', (progress) =>
+    stepUpdate({ kind: 'progress', percent: progress.percent }),
+  );
+  autoUpdater.on('update-downloaded', (info) =>
+    stepUpdate({ kind: 'downloaded', version: info.version }),
+  );
+  autoUpdater.on('error', () => {
+    console.warn('An update check or download failed.');
+    stepUpdate({ kind: 'failed' });
+  });
+  setTimeout(() => stepUpdate({ kind: 'check', asked: false }), FIRST_CHECK_MS);
 }
 
 /** Whether an IPC call comes from the renderer, and no page the window was taken to (issue #309). */
@@ -323,6 +447,7 @@ void app.whenReady().then(() => {
 
   createWindow();
   createTray();
+  startUpdates();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

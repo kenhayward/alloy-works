@@ -24,11 +24,12 @@ and the renderer, the service and the workers all import them.
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                                                                                                                            |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **IAM-002** | Every container reaches tenant data only through that tenant's database role, scoped object-storage credentials and tenant channel - see below                                                                                           |
-| **ADM-051** | The desktop app loads `ALLOY_SERVICE_URL`, else the address kept from its Connect to screen, else that screen; the tray and an address not answering ask again ([ADR-0072](../decisions/0072-the-desktop-app-asks-which-environment.md)) |
-| **ADM-052** | A close publishes a Windows installer, its blockmap and `latest.yml` as GitHub release `vX.Y.Z`, built after CI passes on that commit ([ci-and-releases.md](../ci-and-releases.md#releases))                                             |
+| ID          | How it is met                                                                                                                                                                                                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **IAM-002** | Every container reaches tenant data only through that tenant's database role, scoped object-storage credentials and tenant channel - see below                                                                                                                                                                     |
+| **ADM-051** | The desktop app loads `ALLOY_SERVICE_URL`, else the address kept from its Connect to screen, else that screen; the tray and an address not answering ask again ([ADR-0072](../decisions/0072-the-desktop-app-asks-which-environment.md))                                                                           |
+| **ADM-052** | A close publishes a Windows installer, its blockmap and `latest.yml` as GitHub release `vX.Y.Z`, built after CI passes on that commit ([ci-and-releases.md](../ci-and-releases.md#releases))                                                                                                                       |
+| **ADM-053** | On Windows, packaged, the shell checks GitHub's releases after start and from the tray, offers a newer one by its version, downloads it only when agreed and installs it on Restart now or the next quit; decided in `shell.ts` (`updateStep`) ([DR plan](../plans/2026-10-31-dr-desktop-releases.md), DR-H, DR-I) |
 
 ## Context
 
