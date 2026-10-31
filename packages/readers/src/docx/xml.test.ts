@@ -81,7 +81,9 @@ describe('readXml', () => {
       strToU8(`<w:body xmlns:w="${W}">${'<w:p/>'.repeat(count)}</w:body>`);
     expect(readXml(many(600_000), keepT)).toMatchObject({ ok: false, refusal: 'nodes' });
     expect(readXml(many(400_000), keepT).ok).toBe(true);
-  });
+    // A million elements read: a quarter of a second alone, past five on a runner busy with every
+    // other suite (#777).
+  }, 30_000);
 
   it('refuses what is not well formed', () => {
     expect(readXml(strToU8(`<w:p xmlns:w="${W}"><w:r></w:p>`), keepT)).toMatchObject({

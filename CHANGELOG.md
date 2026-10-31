@@ -22,6 +22,7 @@ T6 closed (the CL plan): every T6 requirement read against the code, the gaps bu
 
 - **Parameters lists names in your language's order.** The names of withheld values were sorted letter code by letter code, so "Zebra" came before "apple".
 - **CI's browser suite no longer fails once a second space exists.** Three tests read the translations and terms pages before choosing their space.
+- **CI's readers suite no longer times out on its largest document.** The test reading a million elements is given the time a busy runner needs.
 
 ## 0.220.2 - 2026-10-31 (PR #837)
 
