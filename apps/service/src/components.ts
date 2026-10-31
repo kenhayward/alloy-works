@@ -7,6 +7,7 @@ import type {
   SpaceParams,
   FieldView,
   PageQuery,
+  VersionsQuery,
   PeopleQuery,
 } from '@alloy-works/api-contract';
 import { datesView, pastReviewOf } from './dates.js';
@@ -41,6 +42,7 @@ import {
   openLinesOf,
   translationsOf,
   type Translation,
+  readLine,
   readLines,
 } from '@alloy-works/db';
 import {
@@ -113,32 +115,46 @@ export async function shownVersionView(trx: TenantTransaction, version: StoredVe
 
 /**
  * A page of an artifact's versions as the API lists them, a component's or a document's: each with
- * what it was restored from (VER-033). The caller has decided the artifact may be read.
+ * what it was restored from (VER-033). On a component's line, the line's own, numbered as people see
+ * them (LOC-012; ADR-0063). The caller has decided the artifact may be read, and the line is its.
  */
 export async function versionsPage(
   trx: TenantTransaction,
   id: string,
   limit: string | undefined,
   after: VersionPosition | undefined,
+  line?: string,
 ) {
-  const page = await listVersions(trx, id, {
-    limit: pageLimit(limit),
-    ...(after === undefined ? {} : { after }),
-  });
+  const page = await listVersions(
+    trx,
+    id,
+    { limit: pageLimit(limit), ...(after === undefined ? {} : { after }) },
+    line,
+  );
+  // A line's version is never shown by the number it is stored at.
+  const shown =
+    line === undefined
+      ? new Map<string, { readonly number: string }>()
+      : await lineNumbers(
+          trx,
+          page.items.flatMap((each) => [
+            each.id,
+            ...(each.restoredFrom ? [each.restoredFrom.id] : []),
+          ]),
+        );
+  const number = (version: { id: string; revision: number; version: number }) =>
+    shown.get(version.id)?.number ?? `${version.revision}.${version.version}`;
   return {
     items: page.items.map((each) => ({
       id: each.id,
-      number: `${each.revision}.${each.version}`,
+      number: number(each),
       createdAt: each.createdAt.toISOString(),
       author: each.author,
       note: each.note,
       restoredFrom:
         each.restoredFrom === null
           ? null
-          : {
-              id: each.restoredFrom.id,
-              number: `${each.restoredFrom.revision}.${each.restoredFrom.version}`,
-            },
+          : { id: each.restoredFrom.id, number: number(each.restoredFrom) },
     })),
     next: versionCursor(page.next),
   };
@@ -181,9 +197,18 @@ export function afterVersion(cursor: string | undefined): VersionPosition | unde
   } catch {
     read = undefined;
   }
-  const whole = (value: unknown): value is number =>
-    typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 2_147_483_647;
-  if (!Array.isArray(read) || read.length !== 2 || !whole(read[0]) || !whole(read[1])) {
+  const whole = (value: unknown, least = 0): value is number =>
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= least &&
+    value <= 2_147_483_647;
+  // A line's revision is stored negated (ADR-0063), so a walk along one carries it.
+  if (
+    !Array.isArray(read) ||
+    read.length !== 2 ||
+    !whole(read[0], -2_147_483_648) ||
+    !whole(read[1])
+  ) {
     throw new AppError(400, 'invalid_request', 'The cursor is not one this listing gave out.');
   }
   return { revision: read[0], version: read[1] };
@@ -487,7 +512,7 @@ export function componentHandlers(
      */
     listComponentVersions: async (request: FastifyRequest, { trx }: Authorised) => {
       const { id } = request.params as ComponentParams;
-      const query = request.query as PageQuery;
+      const query = request.query as VersionsQuery;
       const after = afterVersion(query.cursor);
       const artifact = await trx
         .selectFrom('artifact')
@@ -495,7 +520,9 @@ export function componentHandlers(
         .where('id', '=', id)
         .executeTakeFirst();
       if (artifact?.kind !== 'component') throw notFound();
-      return versionsPage(trx, id, query.limit, after);
+      // A line's own history (LOC-012), closed or not; one the component does not hold is none.
+      if (query.line !== undefined && !(await readLine(trx, id, query.line))) throw notFound();
+      return versionsPage(trx, id, query.limit, after, query.line);
     },
 
     getComponent: async (request: FastifyRequest, { trx, principalId, facts }: Authorised) => {

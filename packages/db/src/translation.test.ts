@@ -26,7 +26,8 @@ import {
   sourceChanges,
   translationsOf,
 } from './translation.js';
-import { latestVersion, readVersion, type StoredVersion } from './versions.js';
+import { previewRestore, restoreVersion } from './restore.js';
+import { latestVersion, listVersions, readVersion, type StoredVersion } from './versions.js';
 import { latestRevision, latestRevisionsOf, moveArtifact } from './workflow.js';
 import { decideGate } from './workflow-gates.js';
 
@@ -571,5 +572,116 @@ describe('translation as a line per language (the TR plan, TR-A to TR-H)', () =>
           .execute(),
       ),
     ).rejects.toThrow(/translation_state/);
+  });
+
+  /** A component approved, translated into French twice: the line's two versions, and the source. */
+  const twiceTranslated = async (title: string) => {
+    const first = await component(title);
+    await approve(first);
+    const begun = await as((trx) =>
+      beginTranslation(trx, { artifactId: first.artifactId, language: 'fr-FR', by: ada }),
+    );
+    if (begun.answer !== 'begun') throw new Error(begun.answer);
+    const line = begun.line.id;
+    const draft = await cut(
+      first.artifactId,
+      first.id,
+      contentOf(first, 'fr-FR', para('b1', 'Brouillon.')),
+      { line, translates: first.id },
+    );
+    if (draft.answer !== 'recorded') throw new Error(draft.answer);
+    const better = await cut(
+      first.artifactId,
+      draft.version.id,
+      contentOf(first, 'fr-FR', para('b1', 'Mieux.')),
+      { line, translates: first.id },
+    );
+    if (better.answer !== 'recorded') throw new Error(better.answer);
+    // Done editing: the translator's lock let go, as Done would.
+    await as((trx) =>
+      trx.deleteFrom('component_lock').where('artifact_id', '=', first.artifactId).execute(),
+    );
+    return { first, line, draft: draft.version, better: better.version };
+  };
+
+  it("LOC-012 lists a variant's history on its own line, newest first, and leaves the main line's history the main line's alone", async () => {
+    const { first, line, draft, better } = await twiceTranslated('Scope');
+
+    const onLine = await as((trx) => listVersions(trx, first.artifactId, { limit: 50 }, line));
+    expect(onLine.items.map((each) => each.id)).toEqual([better.id, draft.id]);
+    expect(onLine.next).toBeNull();
+    // A page at a time, by the same cursor the main line's takes.
+    const paged = await as((trx) => listVersions(trx, first.artifactId, { limit: 1 }, line));
+    expect(paged.items.map((each) => each.id)).toEqual([better.id]);
+    const rest = await as((trx) =>
+      listVersions(trx, first.artifactId, { limit: 1, after: paged.next! }, line),
+    );
+    expect(rest.items.map((each) => each.id)).toEqual([draft.id]);
+
+    const main = await as((trx) => listVersions(trx, first.artifactId, { limit: 50 }));
+    expect(main.items.map((each) => each.id)).toEqual([first.id]);
+  });
+
+  it('LOC-012 restores an earlier version of a variant as a new version on its line, naming it and what it translated, the main line untouched', async () => {
+    const { first, line, draft, better } = await twiceTranslated('Method');
+
+    const preview = await as((trx) =>
+      previewRestore(trx, { artifactId: first.artifactId, version: draft.id, by: ada, line }),
+    );
+    expect(preview?.latest.id).toBe(better.id);
+    expect(preview?.refusals).toEqual([]);
+    const restored = await as((trx) =>
+      restoreVersion(trx, {
+        artifactId: first.artifactId,
+        version: draft.id,
+        latest: better.id,
+        by: ada,
+        line,
+      }),
+    );
+    if (restored.answer !== 'restored') throw new Error(restored.answer);
+    expect(restored.version).toEqual(
+      expect.objectContaining({ line, version: 3, restoredFrom: draft.id }),
+    );
+    expect(JSON.stringify(parseContentDocument(restored.version.content).content)).toContain(
+      'Brouillon.',
+    );
+    expect(await status(first.artifactId)).toEqual([
+      expect.objectContaining({ head: restored.version.id, translates: first.id }),
+    ]);
+    // The main line is as it was: its latest the source, and the line's restore none of its history.
+    expect((await as((trx) => latestVersion(trx, first.artifactId)))?.id).toBe(first.id);
+    const audited = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select(['detail'])
+        .where('kind', '=', 'content.restored')
+        .where('subject', '=', first.artifactId)
+        .execute(),
+    );
+    expect(audited.map((each) => each.detail)).toEqual([
+      { kind: 'component', from: draft.id, line },
+    ]);
+  });
+
+  it("refuses a restore on a line of a version that is not the line's, while the line is locked, or against a head that has moved", async () => {
+    const { first, line, draft, better } = await twiceTranslated('Results');
+    const restore = (version: string, latest: string) =>
+      as((trx) =>
+        restoreVersion(trx, { artifactId: first.artifactId, version, latest, by: ada, line }),
+      );
+
+    // The main line's version is no version of the line's to restore.
+    expect(await restore(first.id, better.id)).toEqual({ answer: 'artifact.missing' });
+    expect(await restore(draft.id, draft.id)).toEqual(
+      expect.objectContaining({ answer: 'version.precondition' }),
+    );
+    const session = randomUUID();
+    await as((trx) =>
+      claimLock(trx, { artifactId: first.artifactId, principal: grace, session, line }),
+    );
+    expect(await restore(draft.id, better.id)).toEqual(
+      expect.objectContaining({ answer: 'restore.locked' }),
+    );
   });
 });

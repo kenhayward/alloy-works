@@ -54,6 +54,15 @@ export const SpaceList = z.object({
 });
 export const PageQuery = z.object(pageQuery);
 export type PageQuery = z.infer<typeof PageQuery>;
+
+/** A page of a component's versions, on one of its lines. */
+export const VersionsQuery = z.object({
+  ...pageQuery,
+  line: LowercaseUuid.optional().describe(
+    "A component's line, divergent or a language's, whose versions to list (LOC-012); its main line's where absent",
+  ),
+});
+export type VersionsQuery = z.infer<typeof VersionsQuery>;
 export type SpaceList = z.infer<typeof SpaceList>;
 
 export const SpaceListQuery = z.object({
@@ -554,7 +563,7 @@ export const componentRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
     params: ComponentParams,
-    query: PageQuery,
+    query: VersionsQuery,
     responses: {
       200: { description: 'A page of its versions, newest first', schema: ComponentVersionList },
       400: {
@@ -568,7 +577,8 @@ export const componentRoutes = {
         schema: ErrorBody,
       },
       404: {
-        description: 'No such component in this environment, or none the caller may read',
+        description:
+          'No such component in this environment, none the caller may read, or no such line of it',
         schema: ErrorBody,
       },
     },

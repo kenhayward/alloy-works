@@ -1576,7 +1576,7 @@ export interface paths {
         };
         /**
          * A component's versions, newest first, a page at a time
-         * @description Lists released component versions newest first using an opaque cursor. It does not include working iterations.
+         * @description Lists released component versions newest first using an opaque cursor. It does not include working iterations. Named, `line` lists that line’s own versions, divergent or a language’s; absent, the main line’s.
          */
         get: operations["listComponentVersions"];
         put?: never;
@@ -1620,7 +1620,7 @@ export interface paths {
         };
         /**
          * What restoring an earlier version would make, and anything refusing it
-         * @description Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes.
+         * @description Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes. Named, `line` previews restoring one of that line’s versions after the line’s newest.
          */
         get: operations["previewRestore"];
         put?: never;
@@ -1642,7 +1642,7 @@ export interface paths {
         put?: never;
         /**
          * Restore an earlier version as a new version naming it
-         * @description Restores an earlier version of a component as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Refused while anybody holds the lock, and where it would change nothing.
+         * @description Restores an earlier version of a component as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Refused while anybody holds the lock, and where it would change nothing. Named in the body, `line` restores one of that line’s own versions as the line’s next, under the line’s lock, the main line untouched; a language line’s new version translates what the restored one did.
          */
         post: operations["restoreVersion"];
         delete?: never;
@@ -27874,6 +27874,7 @@ export interface operations {
             query?: {
                 cursor?: string;
                 limit?: string;
+                line?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -27983,7 +27984,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such component in this environment, or none the caller may read */
+            /** @description No such component in this environment, none the caller may read, or no such line of it */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -28449,7 +28450,9 @@ export interface operations {
     };
     previewRestore: {
         parameters: {
-            query?: never;
+            query?: {
+                line?: string & (unknown & unknown);
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -28662,6 +28665,8 @@ export interface operations {
                 "application/json": {
                     /** @description The latest version the restore was previewed against, which must still be the latest */
                     latest: string & (unknown & unknown);
+                    /** @description A component's line, divergent or a language's, to restore on: one of its versions, made its next (LOC-012); its main line where absent */
+                    line?: string & (unknown & unknown);
                 };
             };
         };

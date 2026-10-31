@@ -53,6 +53,7 @@ const ids = (key: string) => ({ tab: `component-tab-${key}`, panel: `component-p
 export function ComponentDock({
   client,
   id,
+  line,
   onFieldsHost,
   table = { holds: false, entered: 0 },
   onTableHost = () => {},
@@ -63,6 +64,8 @@ export function ComponentDock({
 }: {
   client: Client;
   id: string;
+  /** The line open, whose history the Versions panel shows and restores on (LOC-012). */
+  line?: string | undefined;
   onFieldsHost: (host: HTMLElement | null) => void;
   /** Whether the component holds a table, and how many times the cursor has entered one. */
   table?: { readonly holds: boolean; readonly entered: number };
@@ -132,8 +135,11 @@ export function ComponentDock({
         >
           {shown === 'versions' && (
             <VersionsPanel
+              // Another line is another history: nothing previewed on one is shown on the next.
+              key={line ?? ''}
               client={client}
               id={id}
+              line={line}
               {...(mine ? { mine } : {})}
               mayEdit={mayEdit}
               {...(onRestored ? { onRestored } : {})}

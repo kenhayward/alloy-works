@@ -67253,7 +67253,7 @@
       "get": {
         "operationId": "listComponentVersions",
         "summary": "A component's versions, newest first, a page at a time",
-        "description": "Lists released component versions newest first using an opaque cursor. It does not include working iterations.",
+        "description": "Lists released component versions newest first using an opaque cursor. It does not include working iterations. Named, `line` lists that line’s own versions, divergent or a language’s; absent, the main line’s.",
         "tags": [
           "Components"
         ],
@@ -67296,6 +67296,23 @@
               "description": "At most this many, 50 when absent",
               "type": "string",
               "pattern": "^(?:[1-9]|[1-9][0-9]|100)$"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A component's line, divergent or a language's, whose versions to list (LOC-012); its main line's where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
             }
           },
           {
@@ -67550,7 +67567,7 @@
             }
           },
           "404": {
-            "description": "No such component in this environment, or none the caller may read",
+            "description": "No such component in this environment, none the caller may read, or no such line of it",
             "content": {
               "application/json": {
                 "schema": {
@@ -68703,7 +68720,7 @@
       "get": {
         "operationId": "previewRestore",
         "summary": "What restoring an earlier version would make, and anything refusing it",
-        "description": "Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes.",
+        "description": "Answers what restoring an earlier version of a component would make, inserting nothing: the version restored from, the latest it would follow, the earlier values its fields no longer take, and anything that would refuse it. Its content is the earlier version’s as read now; compare it with the latest to see the changes. Named, `line` previews restoring one of that line’s versions after the line’s newest.",
         "tags": [
           "Components"
         ],
@@ -68743,6 +68760,23 @@
                 }
               ],
               "description": "The earlier version to restore"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "A component's line, divergent or a language's, to restore on: one of its versions, made its next (LOC-012); its main line where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
             }
           },
           {
@@ -69184,7 +69218,7 @@
       "post": {
         "operationId": "restoreVersion",
         "summary": "Restore an earlier version as a new version naming it",
-        "description": "Restores an earlier version of a component as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Refused while anybody holds the lock, and where it would change nothing.",
+        "description": "Restores an earlier version of a component as a new version, numbered after the latest and naming the version it was restored from; the earlier version is unchanged. The request names the latest version the restore was previewed against. Refused while anybody holds the lock, and where it would change nothing. Named in the body, `line` restores one of that line’s own versions as the line’s next, under the line’s lock, the main line untouched; a language line’s new version translates what the restored one did.",
         "tags": [
           "Components"
         ],
@@ -69264,6 +69298,18 @@
                       }
                     ],
                     "description": "The latest version the restore was previewed against, which must still be the latest"
+                  },
+                  "line": {
+                    "description": "A component's line, divergent or a language's, to restore on: one of its versions, made its next (LOC-012); its main line where absent",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
                   }
                 },
                 "required": [

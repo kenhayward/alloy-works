@@ -381,6 +381,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             key={opened}
             client={client}
             id={opened}
+            line={address?.line}
             onFieldsHost={setFieldsHost}
             table={heldTable}
             onTableHost={setTableHost}

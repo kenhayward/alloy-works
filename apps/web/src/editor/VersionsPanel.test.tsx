@@ -355,4 +355,20 @@ describe('restoring an earlier version from the Versions panel', () => {
     expect(within(list).queryByRole('button', { name: 'Restore 0.2' })).toBeNull();
     expect(within(list).getByRole('button', { name: 'Compare 0.2 with 0.3' })).toBeInTheDocument();
   });
+
+  it("LOC-012 lists a translation line's history and previews and restores on that line when one is open", async () => {
+    const LINE = 'cccccccc-0000-4000-8000-000000000007';
+    const { client, asked, sent } = restoring();
+    render(<VersionsPanel client={client} id={COMPONENT} line={LINE} mine={editable} mayEdit />);
+    const list = await screen.findByRole('list', { name: 'Versions' });
+    expect(asked).toContain(`GET /v1/components/${COMPONENT}/versions?line=${LINE}`);
+    await userEvent.click(within(list).getByRole('button', { name: 'Restore 0.2' }));
+    const preview = await screen.findByRole('region', { name: 'Restore 0.2' });
+    expect(asked).toContain(
+      `GET /v1/components/${COMPONENT}/versions/${V2}/restoration?line=${LINE}`,
+    );
+    await userEvent.click(within(preview).getByRole('button', { name: 'Restore this version' }));
+    expect(await screen.findByText('Restored as version 0.4.')).toBeInTheDocument();
+    expect(sent).toEqual([{ latest: V3, line: LINE }]);
+  });
 });

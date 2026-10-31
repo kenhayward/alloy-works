@@ -16,6 +16,7 @@ export {
   FieldView,
   CreateComponentBody,
   PageQuery,
+  VersionsQuery,
   CreateSpaceBody,
   SpaceIdParams,
   SpaceList,
@@ -64,10 +65,12 @@ export {
 } from './editing.js';
 export {
   DocumentRestorationView,
+  DocumentRestoreBody,
   RestorationView,
   RestoreAnswer,
   RestoreBody,
   RestoreParams,
+  RestoreQuery,
   restoreRoutes,
 } from './restore.js';
 export { ComponentVersionView, DocumentVersionView, versionRoutes } from './versions.js';

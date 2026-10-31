@@ -72,12 +72,15 @@ const valueText = (value: unknown) =>
 export function VersionsPanel({
   client,
   id,
+  line,
   mine,
   mayEdit = false,
   onRestored,
 }: {
   client: Client;
   id: string;
+  /** The line open, a translation's or a divergent one's: its history, restored on it (LOC-012). */
+  line?: string | undefined;
   /** The version the editor opened and what it shows now, or null where nothing is open to compare. */
   mine?: () => Mine | null;
   /** Whether the caller may edit the component, and so restore an earlier version. */
@@ -125,7 +128,7 @@ export function VersionsPanel({
     setRestoring({ version, preview: 'reading', answer: null });
     const answer = await client
       .GET('/v1/components/{id}/versions/{version}/restoration', {
-        params: { path: { id, version: version.id } },
+        params: { path: { id, version: version.id }, query: line === undefined ? {} : { line } },
       })
       .catch(() => undefined);
     if (ask !== asked.current) return;
@@ -152,7 +155,7 @@ export function VersionsPanel({
     const answer = await client
       .POST('/v1/components/{id}/versions/{version}/restore', {
         params: { path: { id, version: now.version.id } },
-        body: { latest: now.preview.latest.id },
+        body: { latest: now.preview.latest.id, ...(line === undefined ? {} : { line }) },
       })
       .catch(() => undefined)
       .finally(() => (sending.current = false));
@@ -195,6 +198,7 @@ export function VersionsPanel({
       <VersionList
         client={client}
         id={id}
+        {...(line === undefined ? {} : { line })}
         read={read}
         opens
         onCompare={(version, latest) => {
