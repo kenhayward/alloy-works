@@ -3,6 +3,18 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.220.2 - 2026-10-31 (PR #837)
+
+T6's requirements read against the code, and a steadier CI.
+
+### Changed
+
+- **T6's requirements read against the code.** Every requirement T6 covers was checked against its tests. Seven are reworded to what was built, vocabularies move to T7, and tests that already showed a requirement now say so.
+
+### Fixed
+
+- **CI's worker suite no longer fails at random.** Its object store kept too few volumes on a runner short of disk.
+
 ## 0.220.1 - 2026-10-31 (PR #835)
 
 Faster CI, and desktop releases from a public releases repository.

@@ -121,14 +121,17 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # The object store the objects and worker suites run against. A service container cannot take
-      # a command, and SeaweedFS needs one, so it is started as a step.
+      # a command, and SeaweedFS needs one, so it is started as a step. Its volumes are counted, not
+      # sized from the runner's free disk at a gigabyte each: every test file's bucket grows seven, and
+      # files run at once, so a runner short of disk found no writable volume (#832).
       - name: Object store
         if: env.DOCS != 'true'
         run: |
           docker run -d --name seaweedfs -p 8333:8333 \
             -e AWS_ACCESS_KEY_ID=alloy-store-admin \
             -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret \
-            chrislusf/seaweedfs:4.46 server -dir=/data -s3 -s3.port=8333 -s3.iam.readOnly=false
+            chrislusf/seaweedfs:4.46 server -dir=/data -volume.max=200 -master.volumeSizeLimitMB=64 \
+            -s3 -s3.port=8333 -s3.iam.readOnly=false
           for attempt in $(seq 1 60); do
             curl -fs http://127.0.0.1:8333/healthz > /dev/null && exit 0
             sleep 1
@@ -170,9 +173,15 @@ jobs:
 
       # Every suite but the five, which have jobs of their own.
       - name: Test
+        id: test
         if: env.FULL == 'true'
         run: pnpm exec turbo run test --continue ${{ needs.changes.outputs.rest }} -- --retry=1
         continue-on-error: true
+
+      # Why the store refused, where a suite using it failed (#832).
+      - name: The store's log
+        if: steps.test.outcome == 'failure'
+        run: docker logs seaweedfs 2>&1 | grep -E '^[EW]' | tail -n 100
 
       - name: Flakes
         if: always()
@@ -279,7 +288,12 @@ jobs:
       - name: Object store
         if: ${{ matrix.suite == 'service' || matrix.suite == 'worker' }}
         run: |
-          docker run -d --name seaweedfs -p 8333:8333             -e AWS_ACCESS_KEY_ID=alloy-store-admin             -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret             chrislusf/seaweedfs:4.46 server -dir=/data -s3 -s3.port=8333 -s3.iam.readOnly=false
+          # Volumes counted, not sized from free disk, as in the job above (#832).
+          docker run -d --name seaweedfs -p 8333:8333 \
+            -e AWS_ACCESS_KEY_ID=alloy-store-admin \
+            -e AWS_SECRET_ACCESS_KEY=alloy-store-admin-dev-secret \
+            chrislusf/seaweedfs:4.46 server -dir=/data -volume.max=200 -master.volumeSizeLimitMB=64 \
+            -s3 -s3.port=8333 -s3.iam.readOnly=false
           for attempt in $(seq 1 60); do
             curl -fs http://127.0.0.1:8333/healthz > /dev/null && exit 0
             sleep 1
@@ -311,6 +325,11 @@ jobs:
 
       - name: Test
         run: pnpm exec turbo run test --filter=@alloy-works/${{ matrix.suite }} -- --retry=1
+
+      # Why the store refused, where a suite using it failed (#832).
+      - name: The store's log
+        if: failure() && (matrix.suite == 'service' || matrix.suite == 'worker')
+        run: docker logs seaweedfs 2>&1 | grep -E '^[EW]' | tail -n 100
 
       # The warm range preview's budget on this, its reference runner (CNT-151; the R22 plan, R22-C):
       # alone, after the suite, so it measures the runner and nothing beside it; recorded every run,
