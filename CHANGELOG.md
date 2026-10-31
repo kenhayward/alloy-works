@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.220.1 - 2026-10-31 (PR #0)
+## 0.220.1 - 2026-10-31 (PR #835)
 
 Faster CI, and desktop releases from a public releases repository.
 
