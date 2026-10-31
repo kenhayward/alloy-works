@@ -45,6 +45,12 @@ describe('the release workflow (the DR plan, DR-F)', () => {
   it('writes releases and nothing else, and never hides a failure', () => {
     expect(workflow).toMatch(/permissions:\s+contents: write\s+packages: read\n/);
     expect(workflow).not.toContain('continue-on-error');
+    // An action from outside GitHub runs pinned by commit, as a tag can be moved under it.
+    const actions = [...workflow.matchAll(/uses: ([^@\s]+)@(\S+)/g)];
+    expect(actions.length).toBeGreaterThan(0);
+    for (const [, action, ref] of actions) {
+      if (!action!.startsWith('actions/')) expect(ref).toMatch(/^[0-9a-f]{40}$/);
+    }
     expect(workflow).not.toMatch(/secrets\.(?!GITHUB_TOKEN)/);
   });
 
