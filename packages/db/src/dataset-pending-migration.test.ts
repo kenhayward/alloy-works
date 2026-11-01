@@ -269,6 +269,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0177_publication_vocabularies',
       '0178_vocabulary_query_runs',
       '0179_licences',
+      '0180_asset_rights',
     ]);
     const kept = await queryAs(
       db.adminUrl,

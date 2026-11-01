@@ -3,7 +3,12 @@ import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createAssetUpload,
+  imagesPolicy,
   objectInUse,
+  readAssetRights,
+  recordAssetRights,
+  setImagesPolicy,
+  uploadForDatasetImage,
   readAssetUpload,
   readAssetVersion,
   receiveAssetBytes,
@@ -11,6 +16,7 @@ import {
   refuseAssetUpload,
 } from './assets.js';
 import { bootstrapCluster } from './bootstrap.js';
+import { createDefinition } from './definitions.js';
 import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { archiveSpace, createSpace } from './spaces.js';
@@ -78,6 +84,27 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
   const made = (alternative: { text: string; language: string } | null = null) =>
     inTenant((trx) => createAssetUpload(trx, { spaceId: general, uploader: ada, alternative }));
 
+  /** A licence permitting internal use and publication, by its key. */
+  const aLicence = async (key: string) => {
+    const answer = await inTenant((trx) =>
+      createDefinition(trx, {
+        kind: 'licence',
+        definition: {
+          schemaVersion: 1,
+          name: key,
+          key,
+          base: 'en',
+          names: [{ language: 'en', text: key }],
+          permits: ['internal', 'publication'],
+          attribution: { required: false },
+        },
+        author: ada,
+      }),
+    );
+    if (answer.answer !== 'created') throw new Error(`No licence: ${answer.answer}`);
+    return answer.definition.id;
+  };
+
   it('makes an upload awaiting its bytes, then checking once they arrive, and queues its job', async () => {
     const upload = await made({ text: 'A red square', language: 'en-GB' });
     expect(upload).toMatchObject({ state: 'awaiting', spaceId: general, uploader: ada });
@@ -131,6 +158,108 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     });
     expect(await inTenant((trx) => objectInUse(trx, key('b'), upload.id))).toBe(true);
     expect(await inTenant((trx) => objectInUse(trx, key('c'), upload.id))).toBe(false);
+  });
+
+  it('AST-044 records what the uploader declared, or that nothing was, and the name of the file (AL-C, AL-E)', async () => {
+    const licence = await aLicence('stock_upload');
+    const declared = {
+      kind: 'declared' as const,
+      source: { text: 'A stock library' },
+      licence,
+      expires: '2027-03-31',
+      credit: 'Photograph by Ada',
+    };
+    const upload = await inTenant((trx) =>
+      createAssetUpload(trx, {
+        spaceId: general,
+        uploader: ada,
+        alternative: null,
+        name: 'harbour.png',
+        rights: declared,
+      }),
+    );
+    await inTenant((trx) =>
+      receiveAssetBytes(trx, upload.id, { key: key('1'), format: 'png', bytes: 3530 }),
+    );
+    const version = await inTenant((trx) => recordAsset(trx, upload.id, header));
+    expect(version.content).toMatchObject({ name: 'harbour.png' });
+    expect(await inTenant((trx) => readAssetRights(trx, version.artifactId))).toEqual([
+      { id: expect.any(String), rights: declared, recordedBy: ada, recordedAt: expect.any(Date) },
+    ]);
+
+    const silent = await made();
+    await inTenant((trx) =>
+      receiveAssetBytes(trx, silent.id, { key: key('2'), format: 'png', bytes: 3530 }),
+    );
+    const undeclared = await inTenant((trx) => recordAsset(trx, silent.id, header));
+    expect(undeclared.content).not.toHaveProperty('name');
+    expect(
+      (await inTenant((trx) => readAssetRights(trx, undeclared.artifactId))).map((each) => each.rights),
+    ).toEqual([{ kind: 'undeclared' }]);
+
+    // A dataset's image is the environment's own data.
+    const { upload: fromData } = await inTenant((trx) =>
+      uploadForDatasetImage(trx, {
+        spaceId: general,
+        uploader: ada,
+        key: key('3'),
+        format: 'png',
+        bytes: 3530,
+      }),
+    );
+    const bound = await inTenant((trx) => recordAsset(trx, fromData.id, header));
+    expect(
+      (await inTenant((trx) => readAssetRights(trx, bound.artifactId))).map((each) => each.rights),
+    ).toEqual([{ kind: 'dataset' }]);
+  });
+
+  it("AST-031 keeps each change to an image's rights as a row of its own, by whom and when, newest first", async () => {
+    const licence = await aLicence('stock_history');
+    const upload = await made();
+    await inTenant((trx) =>
+      receiveAssetBytes(trx, upload.id, { key: key('4'), format: 'png', bytes: 3530 }),
+    );
+    const version = await inTenant((trx) => recordAsset(trx, upload.id, header));
+    const declared = { kind: 'declared' as const, source: { text: 'Ada, the photographer' }, licence };
+    expect(
+      await inTenant((trx) =>
+        recordAssetRights(trx, { assetId: version.artifactId, rights: declared, by: ada }),
+      ),
+    ).toEqual({ answer: 'recorded', id: expect.any(String) });
+    const history = await inTenant((trx) => readAssetRights(trx, version.artifactId));
+    expect(history.map((each) => each.rights)).toEqual([declared, { kind: 'undeclared' }]);
+    // A licence that is not one, and a dataset's kind, are refused; nothing is recorded.
+    expect(
+      await inTenant((trx) =>
+        recordAssetRights(trx, {
+          assetId: version.artifactId,
+          rights: { ...declared, licence: general },
+          by: ada,
+        }),
+      ),
+    ).toEqual({ answer: 'licence.missing' });
+    expect(
+      await inTenant((trx) =>
+        recordAssetRights(trx, { assetId: version.artifactId, rights: { kind: 'dataset' }, by: ada }),
+      ),
+    ).toEqual({ answer: 'rights.invalid' });
+    expect(await inTenant((trx) => readAssetRights(trx, version.artifactId))).toHaveLength(2);
+    // And the runtime role changes none of them.
+    await expect(
+      inTenant((trx) => sql`update asset_rights set recorded_at = now()`.execute(trx)),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      inTenant((trx) => sql`delete from asset_rights`.execute(trx)),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it("AST-053 keeps the environment's policy for undeclared images, warn until an administrator says refuse", async () => {
+    expect(await inTenant(imagesPolicy)).toEqual({ undeclared: 'warn' });
+    expect(await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'refuse' }))).toEqual({
+      undeclared: 'refuse',
+    });
+    expect(await inTenant(imagesPolicy)).toEqual({ undeclared: 'refuse' });
+    await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'warn' }));
   });
 
   it('records an image uploaded to an archived space, the one thing made there: adding an image is part of editing what is already in it (SP-C)', async () => {

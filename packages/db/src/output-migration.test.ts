@@ -330,6 +330,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0177_publication_vocabularies',
       '0178_vocabulary_query_runs',
       '0179_licences',
+      '0180_asset_rights',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,
