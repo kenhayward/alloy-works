@@ -456,6 +456,22 @@ const surfaces = (grace: Graces): readonly Surface[] => [
       return page.getByRole('dialog', { name: say(language, 'translation.translation-jobs') });
     },
   },
+  {
+    // The Assistant's popups (issue #864): Add a part's finder, as Prompts' popup is drawn alike.
+    name: 'The Assistant, finding a part to add',
+    dialog: 'structure/AssistantPanel.tsx',
+    address: `#/documents/${grace.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      await documentDrawn(page, language).check();
+      await page.getByRole('tab', { name: say(language, 'document.assistant') }).click();
+      await page
+        .getByRole('button', { name: say(language, 'document.add-a-part'), exact: true })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'document.add-a-part') });
+    },
+  },
   ...listed([
     ['The prompts', '#/prompts', 'prompts.prompts'],
     ['The bibliography', '#/bibliography', 'bibliography.bibliography'],
