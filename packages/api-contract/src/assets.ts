@@ -1,6 +1,7 @@
 import {
   ASSET_MAX_BYTES,
   assetAlternativeSchema,
+  assetNameSchema,
   assetRightsSchema,
   declarableRightsSchema,
 } from '@alloy-works/domain';
@@ -20,10 +21,7 @@ export const CreateAssetUploadBody = z.strictObject({
     .describe(
       "The image's default description for somebody who cannot see it, in a language, or null for none",
     ),
-  name: z
-    .string()
-    .min(1)
-    .max(255)
+  name: assetNameSchema
     .optional()
     .describe("The name it is listed by, the file's own name where it has one"),
   rights: declarableRightsSchema

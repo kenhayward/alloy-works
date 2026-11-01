@@ -280,6 +280,14 @@ describe('uploading an image through the service (figures 1)', () => {
     });
     expect(unknown.statusCode).toBe(422);
     expect(code(unknown)).toBe('asset_licence_missing');
+    // A name the version could not hold is refused at the door, never in the job (the ALb review, 1).
+    for (const name of ['   ', `a${String.fromCharCode(9)}b`]) {
+      const refused = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
+        alternative: null,
+        name,
+      });
+      expect(refused.statusCode, name).toBe(400);
+    }
     // A dataset's kind is never a person's to declare.
     const dataset = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
       alternative: null,

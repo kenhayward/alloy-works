@@ -57,6 +57,7 @@ describe('the domain package', () => {
         'ASSET_SCHEMA_VERSION',
         'admittedFormat',
         'assetAlternativeSchema',
+        'assetNameSchema',
         'assetVersionSchema',
         'parseAssetVersion',
         'readImageHeader',

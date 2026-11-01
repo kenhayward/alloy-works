@@ -288477,7 +288477,6 @@
                   "name": {
                     "description": "The name it is listed by, the file's own name where it has one",
                     "type": "string",
-                    "minLength": 1,
                     "maxLength": 255
                   },
                   "rights": {

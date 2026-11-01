@@ -26,6 +26,14 @@ export const ALTERNATIVE_MAX_LENGTH = 2000;
  * An asset's default alternative text and the language it is written in (AST-012, AST-039): words,
  * not blank, storable, and in a language the content model would accept for a component.
  */
+/** The name an image is listed by: one schema for the version, the upload's body and its column. */
+export const assetNameSchema = z
+  .string()
+  .max(255)
+  .refine((value) => value.trim() !== '' && !CONTROL.test(value), {
+    message: 'A name is not blank and holds no control character',
+  });
+
 export const assetAlternativeSchema = z.strictObject({
   text: z
     .string()
@@ -59,13 +67,7 @@ export const assetVersionSchema = z
      * The name it is listed by, from the file's name at upload (the AL plan, AL-D): optional at schema
      * 1, so every version before it reads as it did.
      */
-    name: z
-      .string()
-      .max(255)
-      .refine((value) => value.trim() !== '' && !CONTROL.test(value), {
-        message: 'A name is not blank and holds no control character',
-      })
-      .optional(),
+    name: assetNameSchema.optional(),
   })
   .refine(
     (version) => version.width * version.height <= ASSET_MAX_PIXELS,

@@ -17,7 +17,7 @@ create index asset_rights_latest on asset_rights (asset_id, recorded_at desc);
 -- (AL-E, AL-D); null where an upload declared nothing, which records `undeclared`.
 alter table asset_upload
   add column rights jsonb check (rights is null or jsonb_typeof(rights) = 'object'),
-  add column name text check (name is null or char_length(name) between 1 and 255);
+  add column name text check (name is null or (char_length(name) <= 255 and btrim(name) <> ''));
 
 -- The environment's policy for an image whose rights were never declared, or whose grant has lapsed
 -- (AST-053, AST-052): one row, as editing_policy is (0037). `warn` by default, so nothing published

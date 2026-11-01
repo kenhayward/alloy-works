@@ -18,6 +18,7 @@ export {
   ALTERNATIVE_MAX_LENGTH,
   ASSET_SCHEMA_VERSION,
   assetAlternativeSchema,
+  assetNameSchema,
   assetVersionSchema,
   parseAssetVersion,
 } from './version.js';
