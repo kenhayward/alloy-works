@@ -66,6 +66,7 @@ import {
 } from '../publishing/RangePreview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
 import { AssistantPanel } from './AssistantPanel.js';
+import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
@@ -2024,6 +2025,8 @@ export function DocumentPage({
   useReachableDesk(textColumn);
   const [inView, setInView] = useState<string | null>(null);
   const [marked, setMarked] = useState<string | null>(null);
+  // The parts the assistant's last answer cited, stepped through above the text (the DP plan).
+  const [citedNodes, setCitedNodes] = useState<readonly string[]>([]);
   useReadingPosition(textColumn, setInView, loaded.state === 'open' ? loaded.document.id : null);
   // A link's node is gone to once its text is there: the text arrives after the outline, so the
   // arrival waits, and is taken once however often the page draws.
@@ -2945,6 +2948,15 @@ export function DocumentPage({
                               ?.querySelector(`[data-node="${node}"]`)
                               ?.scrollIntoView?.({ block: 'start' });
                           }}
+                          onCitations={(cited) => {
+                            const nodes = cited.flatMap(({ component }) => {
+                              const node = [...componentOfNode].find(
+                                ([, each]) => each === component,
+                              )?.[0];
+                              return node === undefined ? [] : [node];
+                            });
+                            setCitedNodes([...new Set(nodes)]);
+                          }}
                         />
                       </div>
                     )}
@@ -3056,6 +3068,19 @@ export function DocumentPage({
               </div>
             )}
             <div ref={textColumn} className={`${styles['text']} aw-desk`}>
+              <CitedBar
+                nodes={citedNodes}
+                onShow={(node) => {
+                  setMarked(node);
+                  textColumn.current
+                    ?.querySelector(`[data-node="${node}"]`)
+                    ?.scrollIntoView?.({ block: 'start' });
+                }}
+                onClear={() => {
+                  setCitedNodes([]);
+                  setMarked(null);
+                }}
+              />
               {conditioning !== null &&
                 (() => {
                   // A node's conditions, whole, through the outline's `set` (the R12 plan).

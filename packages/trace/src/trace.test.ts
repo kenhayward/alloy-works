@@ -1174,6 +1174,6 @@ describe('scanning the repository for test files', () => {
     // 149, from 148 (2026-11-01): admin/Licences.test.tsx, citing AST-022.
     // 151, from 149 (2026-11-01): editor/FigureDialog.test.tsx and admin/ImagesPolicy.test.tsx, citing AST-044 and AST-053.
     // 152, from 151 (2026-11-01): images/images.test.tsx, citing AST-028.
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(152);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(154);
   });
 });

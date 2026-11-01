@@ -1072,3 +1072,31 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     expect(screen.queryByRole('list', { name: 'Earlier turns' })).toBeNull();
   });
 });
+
+describe('the parts an answer cited, told to the page (the DP plan, Task 7)', () => {
+  it('tells the page each part the answer cited and kept, once, in order', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const onCitations = vi.fn();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        onCitations={onCitations}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          ['text', { text: `A [[${SITES}#p1]] B [[${SITES}#p1]] C [[${DOCUMENT}#p9]].` }],
+          ended({ citations: [{ component: SITES, block: 'p1' }], dropped: [] }),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Where?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    await waitFor(() =>
+      expect(onCitations).toHaveBeenLastCalledWith([{ component: SITES, block: 'p1' }]),
+    );
+  });
+});

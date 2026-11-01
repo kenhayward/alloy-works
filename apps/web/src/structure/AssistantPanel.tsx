@@ -197,6 +197,7 @@ export function AssistantPanel({
   node = null,
   nameOf = () => undefined,
   onCite,
+  onCitations,
   stream = streamPost,
   origin = window.location.origin,
 }: {
@@ -210,6 +211,8 @@ export function AssistantPanel({
   nameOf?: (component: string) => string | undefined;
   /** A kept citation followed: its component and block shown. */
   onCite: (component: string, block: string) => void;
+  /** The citations the last answer kept, once each in its order: none while another is asked. */
+  onCitations?: (cited: readonly Citation[]) => void;
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
@@ -557,6 +560,14 @@ export function AssistantPanel({
           (other) => other.component === each.component && other.block === each.block,
         ) === index,
     );
+  // The page steps through what the answer cited (the DP plan): told once the answer ends.
+  const citedKey = cited.map((each) => `${each.component}#${each.block}`).join(' ');
+  useEffect(() => {
+    onCitations?.(cited);
+    // Told when the set changes, not on every render that computes it anew.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [citedKey]);
+
   // The last turn measured against the chosen endpoint's context window, in Diariz's three bands.
   const window_ = endpoints.find((each) => each.id === chosen)?.contextWindow;
   const percent =

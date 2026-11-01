@@ -40,11 +40,11 @@ re-laid out; one additive contract field (`contextWindow`) feeds a context gauge
 `docs/decisions/README.md` (index row), `apps/web/src/editor/Icon.tsx` (`PATHS`).
 
 - [ ] ADR: the dock's tabs become a vertical icon rail on the panel's end edge, collapse first;
-  names stay in words as above (amends ADR-0046 decision 6; ADR-0046 gets a status line only).
-  What would change it: a panel set small enough to fit as worded tabs again.
+      names stay in words as above (amends ADR-0046 decision 6; ADR-0046 gets a status line only).
+      What would change it: a panel set small enough to fit as worded tabs again.
 - [ ] Icons, 24-unit stroke paths as drawn on the canvas, added to `PATHS`: `Part`, `Lists`,
-  `Assistant`, `Versions`, `Publishing`, `Threads`, `Suggestions`, `Rounds`, `PanelHide`,
-  `PanelShow`. Reuse `Document`, `Table`, `Source`. The existing icon path test covers them.
+      `Assistant`, `Versions`, `Publishing`, `Threads`, `Suggestions`, `Rounds`, `PanelHide`,
+      `PanelShow`. Reuse `Document`, `Table`, `Source`. The existing icon path test covers them.
 - [ ] `pnpm --filter @alloy-works/desktop test` (decisions index) and the web icon tests pass. Commit.
 
 ### Task 2: `PanelRail`
@@ -61,8 +61,8 @@ ids, pane: Pane, toggleLabel })`, reusing `PanelTab` from `PanelTabs.tsx` (`coun
   - each tab's accessible name is `name ?? label`, plus its count (`Threads, 3`);
   - a tab clicked while the pane is collapsed opens the pane and chooses it.
 - [ ] Implement: 44px rail (`--dock-rail` becomes 44px), 32px buttons, chosen bar on the end edge;
-  the name is a CSS-shown sibling on `:hover` (250 ms delay) and `:focus-visible` (none), placed on
-  the start side using `--inline-sign`; badge `--accent`, `warn` tone `--warn`.
+      the name is a CSS-shown sibling on `:hover` (250 ms delay) and `:focus-visible` (none), placed on
+      the start side using `--inline-sign`; badge `--accent`, `warn` tone `--warn`.
 - [ ] Tests pass. Commit.
 
 ### Task 3: the rail in `DocumentPage`
@@ -72,10 +72,10 @@ ids, pane: Pane, toggleLabel })`, reusing `PanelTab` from `PanelTabs.tsx` (`coun
 tests `DocumentPage.*.test.tsx` that find dock tabs; `tests/browser/src/document-panes.test.ts`.
 
 - [ ] Update the failing expectations first: the rail stands whether collapsed or not; each open
-  panel has a header `h2` naming it; Review Focus 2 (`Table` offered then withdrawn).
+      panel has a header `h2` naming it; Review Focus 2 (`Table` offered then withdrawn).
 - [ ] Implement: `aside` then `PanelRail`, rail always rendered; header per panel from its label.
 - [ ] Web tests, then the browser walks (`document-panes`, accessibility, navigation) in Light and
-  Dark (Review Focus 3, 5 via a `dir="rtl"` unit test). Commit.
+      Dark (Review Focus 3, 5 via a `dir="rtl"` unit test). Commit.
 
 ### Task 4: the context window reaches the assistant
 
@@ -85,7 +85,7 @@ tests `DocumentPage.*.test.tsx` that find dock tabs; `tests/browser/src/document
 
 - [ ] Failing service test: the listing carries each endpoint's context window, `null` when unset.
 - [ ] Implement from the endpoint row; `api-contract generate`, `api-client generate`; contract
-  tests pass. Commit.
+      tests pass. Commit.
 
 ### Task 5: the assistant as ledger turns
 
@@ -103,8 +103,8 @@ Keep every GEN/LIB test title (GEN-009, -010, -011, -021, LIB-040); change only 
   - while running: one `role="status"` line naming the latest step (`stepLine`), Ask replaced by
     Stop in the same place; the token progress bar stays for screen readers.
 - [ ] Proposals as cards: title, place, the proposed text marked as an insertion, "Show in page"
-  (`onCite`), Accept / Keep as suggestion / Discard. **Not a before/after diff:** a proposal holds
-  only its new text (`Proposal['proposed']`). A real diff is a follow-up.
+      (`onCite`), Accept / Keep as suggestion / Discard. **Not a before/after diff:** a proposal holds
+      only its new text (`Proposal['proposed']`). A real diff is a follow-up.
 - [ ] Tests pass. Commit.
 
 ### Task 6: the composer
@@ -129,10 +129,10 @@ Keep every GEN/LIB test title (GEN-009, -010, -011, -021, LIB-040); change only 
 `docs/design/generation.md`, `docs/features.md`, `README.md`, `changes/dp-document-panel.md`.
 
 - [ ] Failing test: after an answer with citations, "Cited by the assistant, k of n" with previous,
-  next and clear; next scrolls to and marks the next cited part (`setMarked`).
+      next and clear; next scrolls to and marks the next cited part (`setMarked`).
 - [ ] Implement from the citations `AssistantPanel` reports (new prop `onCitations(list)`).
 - [ ] Docs and fragment; `pnpm lint`, `format`, `typecheck`, web and browser tests, `pnpm trace check`
-  (trace pins move with test edits: regenerate). Push, open the PR.
+      (trace pins move with test edits: regenerate). Push, open the PR.
 
 ## Left out
 

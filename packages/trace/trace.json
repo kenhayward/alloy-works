@@ -22479,19 +22479,19 @@
     {
       "id": "GEN-051",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 227,
+      "line": 239,
       "kind": "title"
     },
     {
       "id": "GEN-052",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 350,
+      "line": 362,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 274,
+      "line": 286,
       "kind": "title"
     },
     {
@@ -26733,67 +26733,67 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 622,
+      "line": 635,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 389,
+      "line": 402,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 181,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 315,
+      "line": 323,
       "kind": "title"
     },
     {
       "id": "GEN-021",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 352,
+      "line": 365,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 568,
+      "line": 581,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 181,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 680,
+      "line": 693,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 680,
+      "line": 693,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 716,
+      "line": 729,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 438,
+      "line": 451,
       "kind": "title"
     },
     {
@@ -26967,7 +26967,7 @@
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2553,
+      "line": 2559,
       "kind": "title"
     },
     {
@@ -27009,7 +27009,7 @@
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2051,
+      "line": 2057,
       "kind": "title"
     },
     {
@@ -27051,13 +27051,13 @@
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2256,
+      "line": 2262,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2091,
+      "line": 2097,
       "kind": "title"
     },
     {

@@ -237,6 +237,13 @@ tool calls a run. The tools (GEN-007):
 citation only where that block was in what the run read, shows it as a link, and drops any other,
 saying so.
 
+**The panel** (the DP plan): a turn is a ledger line, what was asked over its answer, each kept
+citation a numbered button and the answer's cited parts stepped through in a bar above the text. While
+it runs, one line names the last step and **Stop** stands where **Ask** was; under the box, the
+endpoint and a gauge of the last turn's tokens in over the endpoint's `contextWindow`
+(`/v1/conversation-endpoints`), in three bands at 50% and 75%. The part asked about is held from when
+the box is entered until the ask is sent.
+
 ## Proposals
 
 A `propose_edit` appears in the panel as a redline against the version it read. The requester
