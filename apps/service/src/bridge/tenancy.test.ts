@@ -280,14 +280,17 @@ describe('tenants kept apart by the bridge (API-065, API-068)', () => {
       [dev, acme],
     ] as const) {
       const described = await signed(side.host, 'GET', '/describe');
-      expect(described.json()).toMatchObject({ instances: [{ id: side.tenant.id }] });
-      // Its own token at its own address, then at the other's: refused there, under either instance.
+      // No instance is listed, as for any shared sink: the address names the tenant.
+      expect(described.json()).toMatchObject({ instances: [] });
+      // Its own token at its own address, then at the other's: refused there, under either instance or none.
       const tested = (host: string, instanceId: string) =>
         signed(host, 'POST', '/connections:test', {
           instanceId,
           credential: { token: side.token },
         });
       expect((await tested(side.host, side.tenant.id)).statusCode).toBe(200);
+      expect((await tested(side.host, '')).statusCode).toBe(200);
+      expect((await tested(other.host, '')).json()).toMatchObject({ code: 'credential_rejected' });
       expect((await tested(other.host, other.tenant.id)).json()).toMatchObject({
         code: 'credential_rejected',
       });

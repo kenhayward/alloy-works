@@ -229,9 +229,8 @@ export function registerBridge(app: FastifyInstance, deps: BridgeDeps): void {
       // reads a body's limit from.
       const limited = { bodyLimit: BODY_LIMIT };
 
-      scope.get('/describe', limited, async (request) =>
-        describeSink(await instanceOf(db, admittedOf(request).tenant)),
-      );
+      // The tenant is admitted by its hostname before this, so an unknown address is still refused.
+      scope.get('/describe', limited, async () => describeSink());
 
       // `::` is a literal colon: the path is /connections:test.
       scope.post('/connections::test', limited, async (request): Promise<ConnectionTestResult> => {

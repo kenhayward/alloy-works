@@ -2,18 +2,15 @@ import type { SinkDescribe } from '@kenhayward/bridge-contract';
 
 /**
  * What `/bridge` says of itself (docs/design/ct-studio-sink.md, "The contract as served"): contract
- * version 2, one shared connection holding a service identity's token, and one instance, the tenant
- * the hostname resolves to, by its slug and its name.
+ * version 2 and one shared connection holding a service identity's token. No instance is listed, as
+ * for any shared sink: the hostname names the tenant, and CT Studio's targets and browsing name none.
  */
-export function describeSink(instance: {
-  readonly id: string;
-  readonly label: string;
-}): SinkDescribe {
+export function describeSink(): SinkDescribe {
   return {
     name: 'Alloy Works',
     contractVersion: 2,
     connectionKind: 'shared',
-    instances: [{ id: instance.id, label: instance.label }],
+    instances: [],
     credentialFields: [{ id: 'token', label: 'Service identity token', secret: true }],
     destinationFields: [
       {
