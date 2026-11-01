@@ -553,6 +553,15 @@ export async function documentRules(
 }
 
 /** The theme a document is published under, as `documentLayout` reads its layout (STY-025). */
+/** The theme a document is set in, by identifier alone: `documentTheme`'s choice, nothing read. */
+export async function documentThemeId(trx: TenantTransaction, documentId: string): Promise<string> {
+  const bound = await boundBy(trx, documentId);
+  if (bound) return bound.theme;
+  const declared = await trx.selectFrom('theme_default').select('theme_id').executeTakeFirst();
+  if (!declared) throw new Error('This environment declares no theme');
+  return declared.theme_id;
+}
+
 export async function documentTheme(
   trx: TenantTransaction,
   documentId: string,

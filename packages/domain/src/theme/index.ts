@@ -138,6 +138,9 @@ export {
   THIRD_DEFAULT_THEME_VERSION,
 } from './default.js';
 
+export { explainStyle } from './explain.js';
+export type { ExplainOutcome, ExplainedProperties, ExplainedProperty } from './explain.js';
+
 export { projectTypst, projectTypst12 } from './typst.js';
 export type {
   TypstImageStyle,

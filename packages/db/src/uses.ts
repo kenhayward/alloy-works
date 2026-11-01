@@ -295,6 +295,27 @@ export async function styleUses(
   style: { readonly kind: StyleKind; readonly key: string },
 ): Promise<StyleUses> {
   const readable = await loadReadableSet(trx, by);
+  const shown = await readableAmong(trx, readable, await usingStyle(trx, style));
+  return {
+    components: shown
+      .map((row) => ({ id: row.id, title: row.title }))
+      .sort((a, b) => compare(a.title, b.title) || compare(a.id, b.id)),
+    unreadable: shown.total > shown.length,
+  };
+}
+
+/** How many components, not deleted, use a style, whoever may read them: what a deletion waits on. */
+export async function styleUseCount(
+  trx: TenantTransaction,
+  style: { readonly kind: StyleKind; readonly key: string },
+): Promise<number> {
+  return (await readableAmong(trx, undefined, await usingStyle(trx, style))).total;
+}
+
+export async function usingStyle(
+  trx: TenantTransaction,
+  style: { readonly kind: StyleKind; readonly key: string },
+): Promise<{ id: string; space_id: string; title: string }[]> {
   const { rows } = await sql<{ id: string; space_id: string; title: string }>`
     select a.id, a.space_id, latest.content ->> 'title' as title
       from artifact a
@@ -307,13 +328,7 @@ export async function styleUses(
      where a.kind = 'component'
        and jsonb_path_exists(latest.content -> 'content', ${STYLE_PATHS[style.kind]}::jsonpath,
              jsonb_build_object('key', ${style.key}::text))`.execute(trx);
-  const shown = await readableAmong(trx, readable, rows);
-  return {
-    components: shown
-      .map((row) => ({ id: row.id, title: row.title }))
-      .sort((a, b) => compare(a.title, b.title) || compare(a.id, b.id)),
-    unreadable: shown.total > shown.length,
-  };
+  return rows;
 }
 
 export async function readableAmong<

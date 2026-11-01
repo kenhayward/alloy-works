@@ -21,6 +21,7 @@ import { bibliographyRoutes } from './bibliography.js';
 import { termRoutes } from './terms.js';
 import { vocabularyRoutes } from './vocabularies.js';
 import { licenceRoutes } from './licences.js';
+import { themeRoutes } from './themes.js';
 import { preferenceRoutes } from './preferences.js';
 import { translationRoutes } from './translations.js';
 import { importRoutes } from './imports.js';
@@ -426,6 +427,7 @@ type Routes = typeof ownRoutes &
   typeof termRoutes &
   typeof vocabularyRoutes &
   typeof licenceRoutes &
+  typeof themeRoutes &
   typeof translationRoutes &
   typeof preferenceRoutes &
   typeof importRoutes &
@@ -506,6 +508,7 @@ export const routes: Routes = {
   ...termRoutes,
   ...vocabularyRoutes,
   ...licenceRoutes,
+  ...themeRoutes,
   ...translationRoutes,
   ...preferenceRoutes,
   ...importRoutes,

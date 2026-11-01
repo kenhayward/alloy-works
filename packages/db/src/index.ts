@@ -40,6 +40,19 @@ export {
   type ThemeStoreRefusalCode,
 } from './themes.js';
 export {
+  duplicateTheme,
+  listThemes,
+  saveStyle,
+  styleImpact,
+  type DuplicateAnswer,
+  type EditableStyle,
+  type EditableStyleKind,
+  type StyleChange,
+  type StyleChangeAnswer,
+  type StyleImpact,
+  type ThemeSummary,
+} from './theme-styles.js';
+export {
   failPublicationRequest,
   recordPublicationEvent,
   listPublications,

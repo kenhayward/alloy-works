@@ -12632,9 +12632,18 @@
       "area": "STY",
       "statement": "A draft must resolve against the theme version its document is bound to. Publishing a new theme version must not change how a draft looks under its author; moving a document to a newer version must be a deliberate, audited act (STY-026)",
       "tranche": "Constraint",
-      "status": "Specified",
+      "status": "Superseded by STY-086",
       "document": "STY-styles-and-presentation-themes.md",
       "line": 163
+    },
+    {
+      "id": "STY-086",
+      "area": "STY",
+      "statement": "A theme version's effect on drafts must be listed before it is saved (STY-034, STY-067), and a baseline must keep the theme version it pinned (STY-028); a draft then follows its template's theme at its latest, so a style fix reaches every document without a move per document",
+      "tranche": "Constraint",
+      "status": "Specified",
+      "document": "STY-styles-and-presentation-themes.md",
+      "line": 164
     },
     {
       "id": "STY-067",
@@ -12643,7 +12652,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "STY-072",
@@ -12652,7 +12661,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "STY-029",
@@ -12661,7 +12670,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "STY-030",
@@ -12670,7 +12679,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "STY-031",
@@ -12679,7 +12688,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "STY-032",
@@ -12688,7 +12697,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "STY-033",
@@ -12697,7 +12706,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "STY-034",
@@ -12706,7 +12715,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "STY-035",
@@ -12715,7 +12724,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 202
+      "line": 203
     },
     {
       "id": "STY-036",
@@ -12724,7 +12733,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-058",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 203
+      "line": 204
     },
     {
       "id": "STY-037",
@@ -12733,7 +12742,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "STY-038",
@@ -12742,7 +12751,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "STY-053",
@@ -12751,7 +12760,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-080",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "STY-080",
@@ -12760,7 +12769,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "STY-081",
@@ -12769,7 +12778,7 @@
       "tranche": "T8",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "STY-058",
@@ -12778,7 +12787,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "STY-060",
@@ -12787,7 +12796,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 210
+      "line": 211
     },
     {
       "id": "STY-070",
@@ -12796,7 +12805,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "STY-039",
@@ -12805,7 +12814,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 235
+      "line": 236
     },
     {
       "id": "STY-040",
@@ -12814,7 +12823,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "STY-041",
@@ -12823,7 +12832,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 237
+      "line": 238
     },
     {
       "id": "STY-042",
@@ -12832,7 +12841,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 238
+      "line": 239
     },
     {
       "id": "STY-045",
@@ -12841,7 +12850,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 239
+      "line": 240
     },
     {
       "id": "STY-046",
@@ -12850,7 +12859,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 240
+      "line": 241
     },
     {
       "id": "STY-047",
@@ -12859,7 +12868,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 241
+      "line": 242
     },
     {
       "id": "STY-048",
@@ -12868,7 +12877,7 @@
       "tranche": "T1",
       "status": "Superseded by STY-074",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "STY-074",
@@ -12877,7 +12886,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "STY-075",
@@ -12886,7 +12895,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 244
+      "line": 245
     },
     {
       "id": "STY-084",
@@ -12895,7 +12904,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 245
+      "line": 246
     },
     {
       "id": "STY-085",
@@ -12904,7 +12913,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "STY-049",
@@ -12913,7 +12922,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 247
+      "line": 248
     },
     {
       "id": "STY-052",
@@ -12922,7 +12931,7 @@
       "tranche": "T1",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 248
+      "line": 249
     },
     {
       "id": "STY-062",
@@ -12931,7 +12940,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 249
+      "line": 250
     },
     {
       "id": "STY-043",
@@ -12940,7 +12949,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 285
+      "line": 286
     },
     {
       "id": "STY-044",
@@ -12949,7 +12958,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 286
+      "line": 287
     },
     {
       "id": "STY-071",
@@ -12958,7 +12967,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 287
+      "line": 288
     },
     {
       "id": "STY-073",
@@ -12967,7 +12976,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 288
+      "line": 289
     },
     {
       "id": "TAB-001",
@@ -15255,31 +15264,31 @@
       "id": "STY-N01",
       "statement": "**No per-document and no per-author overrides.** A document that needs a different look uses a different theme (CNT-N08)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 294
+      "line": 295
     },
     {
       "id": "STY-N02",
       "statement": "**No page geometry.** Size, margins, running heads and columns belong to the publishing layout",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 295
+      "line": 296
     },
     {
       "id": "STY-N03",
       "statement": "**No stylesheet or code supplied by a tenant.** Extension is declarative, from a fixed set of properties. Arbitrary style code would be an injection surface and would make every output format a rendering engine",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 296
+      "line": 297
     },
     {
       "id": "STY-N04",
       "statement": "**Not a design tool.** A theme is configured, not drawn",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 297
+      "line": 298
     },
     {
       "id": "STY-N05",
       "statement": "**No inverting content in dark mode.** The application's chrome may go dark; the document canvas stays the theme's paper and ink, because a theme's colours were chosen for paper",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 298
+      "line": 299
     },
     {
       "id": "TAB-N01",
@@ -16179,35 +16188,35 @@
       "question": "**Are catalogues tenant-wide, or per space?** A consultancy working for two clients may need two house styles that authors must not confuse",
       "settledBy": "Whether early customers serve more than one end client from one tenant. Likely yes in this market",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 304
+      "line": 305
     },
     {
       "id": "STY-Q02",
       "question": "**Does STY-N03 survive a real house style?** Declarative properties cover most of typography and none of the last five per cent somebody's brand guideline insists on",
       "settledBy": "The first house style that cannot be expressed. The answer is probably to widen the declared property set rather than open an escape hatch",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 305
+      "line": 306
     },
     {
       "id": "STY-Q03",
       "question": "**Who supplies typefaces, and who holds the licence?**",
       "settledBy": "**Settled.** Product-supplied faces are open-licence only; a customer's brand face is supplied by the customer under the customer's own licence. See [ADR-0010](../../decisions/0010-open-licence-typefaces-only.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 306
+      "line": 307
     },
     {
       "id": "STY-Q04",
       "question": "**Does a theme need variants - screen against print, light against dark?**",
       "settledBy": "**Settled for the editor.** No: the canvas stays paper when the application goes dark (STY-N05). Whether the HTML reading format needs a screen palette is left to its design. See [themes.md](../../design/themes.md)",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 307
+      "line": 308
     },
     {
       "id": "STY-Q05",
       "question": "**What contrast ratio binds a customer's own brand palette (STY-069)?** A house style whose colours fail 4.5:1 is a real thing, and refusing it outright refuses the customer",
       "settledBy": "Legal and commercial advice with the first brand that fails. The likely answer is that the product's own themes must pass while a tenant's are warned rather than refused, which is a different requirement from the one written today",
       "document": "STY-styles-and-presentation-themes.md",
-      "line": 308
+      "line": 309
     },
     {
       "id": "TAB-Q01",
@@ -20692,6 +20701,18 @@
           "howItIsMet": "The impact of a style change is the set of documents whose pinned or floating theme version would resolve differently, listed before the change is saved"
         },
         {
+          "id": "STY-057",
+          "howItIsMet": "`explainStyle` gives each property's value and the style stating it, walked by the reader's own `ancestry` ([Styles changed without a release](#styles-changed-without-a-release))"
+        },
+        {
+          "id": "STY-067",
+          "howItIsMet": "The documents a style change would reach are listable before it is saved (`styleImpact`), so a new theme version is a decision with its reach shown"
+        },
+        {
+          "id": "STY-086",
+          "howItIsMet": "A draft follows its template's theme at its latest, a style change's reach listed first; a baseline keeps the version it pinned (STY-028)"
+        },
+        {
           "id": "STY-035",
           "howItIsMet": "One resolver, in `packages/domain`, used by the editor and the publisher alike; the projections never resolve anything"
         },
@@ -22031,13 +22052,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 726,
+      "line": 731,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 739,
+      "line": 744,
       "kind": "title"
     },
     {
@@ -22577,7 +22598,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2185,
+      "line": 2223,
       "kind": "title"
     },
     {
@@ -24387,6 +24408,30 @@
       "kind": "title"
     },
     {
+      "id": "STY-029",
+      "file": "apps/service/src/theme-routes.test.ts",
+      "line": 130,
+      "kind": "title"
+    },
+    {
+      "id": "STY-030",
+      "file": "apps/service/src/theme-routes.test.ts",
+      "line": 130,
+      "kind": "title"
+    },
+    {
+      "id": "STY-031",
+      "file": "apps/service/src/theme-routes.test.ts",
+      "line": 172,
+      "kind": "title"
+    },
+    {
+      "id": "STY-034",
+      "file": "apps/service/src/theme-routes.test.ts",
+      "line": 208,
+      "kind": "title"
+    },
+    {
       "id": "COL-012",
       "file": "apps/service/src/thread-routes.test.ts",
       "line": 202,
@@ -25019,13 +25064,13 @@
     {
       "id": "GEN-028",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 332,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "GEN-029",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 290,
+      "line": 255,
       "kind": "title"
     },
     {
@@ -26807,13 +26852,13 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 787,
+      "line": 770,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 501,
+      "line": 484,
       "kind": "title"
     },
     {
@@ -26825,19 +26870,19 @@
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 422,
+      "line": 405,
       "kind": "title"
     },
     {
       "id": "GEN-021",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 464,
+      "line": 447,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 732,
+      "line": 715,
       "kind": "title"
     },
     {
@@ -26849,25 +26894,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 848,
+      "line": 831,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 848,
+      "line": 831,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 882,
+      "line": 865,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 601,
+      "line": 584,
       "kind": "title"
     },
     {
@@ -30197,19 +30242,19 @@
     {
       "id": "GEN-027",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 103,
+      "line": 102,
       "kind": "title"
     },
     {
       "id": "GEN-028",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 215,
+      "line": 187,
       "kind": "title"
     },
     {
       "id": "IAM-076",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 155,
+      "line": 127,
       "kind": "title"
     },
     {
@@ -31152,6 +31197,36 @@
       "id": "SCH-074",
       "file": "packages/db/src/terms.test.ts",
       "line": 428,
+      "kind": "title"
+    },
+    {
+      "id": "STY-029",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 176,
+      "kind": "title"
+    },
+    {
+      "id": "STY-031",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 245,
+      "kind": "title"
+    },
+    {
+      "id": "STY-032",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 198,
+      "kind": "title"
+    },
+    {
+      "id": "STY-034",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 304,
+      "kind": "title"
+    },
+    {
+      "id": "STY-067",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 347,
       "kind": "title"
     },
     {
@@ -32627,13 +32702,13 @@
     {
       "id": "GEN-031",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 45,
+      "line": 42,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 133,
+      "line": 105,
       "kind": "title"
     },
     {
@@ -32795,7 +32870,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1152,
+      "line": 1151,
       "kind": "title"
     },
     {
@@ -34410,6 +34485,18 @@
       "id": "TAB-053",
       "file": "packages/domain/src/theme/default.test.ts",
       "line": 434,
+      "kind": "title"
+    },
+    {
+      "id": "STY-056",
+      "file": "packages/domain/src/theme/explain.test.ts",
+      "line": 39,
+      "kind": "title"
+    },
+    {
+      "id": "STY-057",
+      "file": "packages/domain/src/theme/explain.test.ts",
+      "line": 15,
       "kind": "title"
     },
     {

@@ -369,6 +369,8 @@ describe('the domain package', () => {
         'DEFAULT_THEME_VERSION',
         'projectTypst12',
         'projectCss',
+        // The SY plan, SY-E: where each value of a paragraph style comes from.
+        'explainStyle',
         // W8.2: the canvas as the theme's rules name it, which the editor's stylesheet test reads.
         'CANVAS',
         // W8.1 (themes.md, "The theme in the editor"): the faces a theme names, declared for the
