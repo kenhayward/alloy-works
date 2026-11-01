@@ -734,7 +734,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('passes axe on the licences and a licence being edited (the AL plan, ALa)', async ({ task }) => {
+  it('passes axe on the licences and a licence being edited (the AL plan, ALa)', async ({
+    task,
+  }) => {
     const name = `Stock ${randomUUID().slice(0, 8)}`;
     const made = await api().POST('/v1/definitions', {
       body: {
