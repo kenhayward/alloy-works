@@ -1,6 +1,5 @@
 import {
   bootstrapCluster,
-  createSpace,
   createTenant,
   findRole,
   grant,

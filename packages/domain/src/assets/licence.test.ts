@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   licenceName,
   licencePermits,
-  LicenceRefused,
+  type LicenceRefused,
   parseLicence,
   type Licence,
 } from './licence.js';

@@ -734,6 +734,45 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on the licences and a licence being edited (the AL plan, ALa)', async ({ task }) => {
+    const name = `Stock ${randomUUID().slice(0, 8)}`;
+    const made = await api().POST('/v1/definitions', {
+      body: {
+        kind: 'licence',
+        definition: {
+          schemaVersion: 1,
+          name,
+          key: `stock_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
+          base: 'en',
+          names: [{ language: 'en', text: name }],
+          permits: ['internal', 'publication'],
+          attribution: { required: true, wording: 'Photograph by Ada' },
+        },
+      },
+    });
+    expect(made.response.status).toBe(200);
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/admin/licences`);
+      await check('the licences', {
+        shows: [
+          page.getByRole('table', { name: 'Licences' }),
+          page.getByRole('form', { name: 'A licence' }),
+        ],
+      });
+      await page.getByRole('button', { name: `Edit ${name}` }).click();
+      await check('a licence being edited, requiring attribution', {
+        shows: [
+          page.getByRole('button', { name: 'Save licence' }),
+          page.getByRole('textbox', { name: 'Attribution' }),
+        ],
+      });
+    });
+  });
+
   it('passes axe on translation: a component’s Translations, a translation’s, the space report and the policy (the TR plan, TRc)', async ({
     task,
   }) => {
