@@ -35,6 +35,15 @@ describe("an asset version's stored shape (figures 1)", () => {
     });
   });
 
+  it('holds the name it is listed by where it has one, and reads a version without one as it did (AL-D)', () => {
+    expect(parseAssetVersion(version({ name: 'harbour.jpg' }))).toMatchObject({
+      name: 'harbour.jpg',
+    });
+    expect(parseAssetVersion(version())).not.toHaveProperty('name');
+    expect(() => parseAssetVersion(version({ name: '' }))).toThrow();
+    expect(() => parseAssetVersion(version({ name: 'x'.repeat(256) }))).toThrow();
+  });
+
   it('STY-078 refuses a version without its intrinsic width or height, so an image style always has them', () => {
     for (const missing of ['width', 'height']) {
       const without: Record<string, unknown> = version();

@@ -68,6 +68,10 @@ describe('the domain package', () => {
         'licenceName',
         'licencePermits',
         'parseLicence',
+        // An image's rights, and what a publish finds of them (AL-C, AL-F).
+        'RIGHTS_LIMITS',
+        'assetRightsSchema',
+        'rightsAtPublish',
         // Metadata, promoted in the plan that built it, on the same terms.
         'DEFINITION_SCHEMA_VERSION',
         'DefinitionConflictError',

@@ -1,4 +1,6 @@
 import { z } from 'zod';
+
+import { CONTROL } from '../data/primitives.js';
 import { languageTagSchema } from '../content/model/document.js';
 import { storableText } from '../stored/storable.js';
 import { ADMITTED_FORMATS, ASSET_MAX_BYTES, ASSET_MAX_PIXELS, type AssetFormat } from './header.js';
@@ -53,6 +55,17 @@ export const assetVersionSchema = z
     /** Dots per inch as the file declares them, or null where it declares none - never a guess. */
     resolution: z.number().positive().finite().nullable(),
     alternative: assetAlternativeSchema.nullable(),
+    /**
+     * The name it is listed by, from the file's name at upload (the AL plan, AL-D): optional at schema
+     * 1, so every version before it reads as it did.
+     */
+    name: z
+      .string()
+      .max(255)
+      .refine((value) => value.trim() !== '' && !CONTROL.test(value), {
+        message: 'A name is not blank and holds no control character',
+      })
+      .optional(),
   })
   .refine(
     (version) => version.width * version.height <= ASSET_MAX_PIXELS,
