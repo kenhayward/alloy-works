@@ -72,7 +72,8 @@ export function referencesIn(kind: string, content: unknown): IndexedReference[]
         found.push({
           node: text(node['id']) ?? null,
           target: { version: asset, kind: 'asset' },
-          mode: 'pinned',
+          // Following its asset (AST-017): the index resolves the version to the asset it follows.
+          mode: node['follow'] === 'latest' ? 'latest' : 'pinned',
         });
       }
       const query = text(node['query']);

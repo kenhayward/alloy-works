@@ -55,6 +55,19 @@ describe('the references a version holds (the R2 plan, R2-A)', () => {
     ]);
   });
 
+  it('AST-017 lists an image following its asset as following it, by the version it was placed at', () => {
+    const content = {
+      blocks: [
+        { type: 'figure', id: 'f1', asset: ASSET_VERSION, follow: 'latest', caption: [] },
+        { type: 'image', asset: ASSET_VERSION, follow: 'latest' },
+      ],
+    };
+    expect(referencesIn('component', content)).toEqual([
+      { node: 'f1', target: { version: ASSET_VERSION, kind: 'asset' }, mode: 'latest' },
+      { node: null, target: { version: ASSET_VERSION, kind: 'asset' }, mode: 'latest' },
+    ]);
+  });
+
   it("lists a component's images by their asset versions and its bindings by their query definitions", () => {
     const content = {
       blocks: [

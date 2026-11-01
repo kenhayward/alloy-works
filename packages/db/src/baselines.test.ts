@@ -1017,6 +1017,58 @@ describe('baselines', () => {
     expect(cleared.licence_version_id).toBe(stock.version.id);
   });
 
+  it("AST-017 pins a following figure's image at its asset's latest when the baseline is made, and republishes that one after a replacement", async () => {
+    const first = await placingAnImage('5');
+    const cut = (from: StoredVersion, fill: string) =>
+      tenant(async (trx) => {
+        const answer = await recordVersion(trx, {
+          artifactId: from.artifactId,
+          openedFrom: from.id,
+          author: ada,
+          substance: {
+            kind: 'asset',
+            content: {
+              ...(from.content as object),
+              object: `${production.role}/sha256/${fill.repeat(32)}`,
+            },
+          } as never,
+        });
+        if (answer.answer !== 'recorded') throw new Error(answer.answer);
+        return answer.version;
+      });
+    const second = await cut(first, '5b');
+    const holder = await component(general, ada, 'Lighthouse');
+    await revise(holder, [
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: first.id,
+        follow: 'latest',
+        imageStyle: 'figure',
+        caption: [{ type: 'text', value: 'Lighthouse', marks: [] }],
+        alternative: { kind: 'inherited' },
+      },
+    ] as ContentDocument['content']);
+    const document = await documentWith([reference(holder.artifactId)]);
+    const id = made(await make(document, 'Following'));
+    // Replaced after the baseline was made: its republish still places what it pinned.
+    await cut(second, '5c');
+    const inputs = await tenant(async (trx) => {
+      const asked = await requestBaselinePublication(trx, {
+        baseline: id,
+        formats: ['pdf'],
+        requester: ada,
+      });
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return publicationInputs(trx, asked.request.id);
+    });
+    expect([...inputs!.assets.keys()]).toEqual([second.id]);
+    expect([...inputs!.occurrences.values()][0]!.content.content[0]).toMatchObject({
+      asset: second.id,
+      follow: 'latest',
+    });
+  });
+
   it('refuses a part added to a baseline’s request after the transaction that asked for it, and a preview naming a baseline', async () => {
     const image = await placingAnImage('e');
     const document = await documentWith([]);

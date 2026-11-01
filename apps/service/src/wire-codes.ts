@@ -86,6 +86,7 @@ const WIRE_CODES = {
   // An image's rights naming no licence of the environment, or a dataset's image's (the AL plan, AL-C).
   'asset.licence_missing': 'asset_licence_missing',
   'asset.rights_dataset': 'asset_rights_dataset',
+  'asset.replace_dataset': 'asset_replace_dataset',
   'definition.name_taken': 'definition_name_taken',
   'assignment.conflict': 'assignment_conflict',
   'schema.conflict': 'schema_conflict',

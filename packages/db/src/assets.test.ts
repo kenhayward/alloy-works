@@ -394,6 +394,73 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
+  it('AST-016 AST-049 replaces an image by cutting a version of its asset, never overwriting one, and asks for its own derivatives (AL-M)', async () => {
+    const first = await made({ text: 'A red square', language: 'en-GB' });
+    await inTenant((trx) =>
+      receiveAssetBytes(trx, first.id, { key: key('1'), format: 'png', bytes: 3530 }),
+    );
+    const original = await inTenant((trx) => recordAsset(trx, first.id, header));
+    const replacing = await inTenant((trx) =>
+      createAssetUpload(trx, {
+        spaceId: general,
+        uploader: ada,
+        alternative: { text: 'A blue square', language: 'en-GB' },
+        replaces: original.artifactId,
+      }),
+    );
+    expect(replacing).toMatchObject({ state: 'awaiting', replaces: original.artifactId });
+    await inTenant((trx) =>
+      receiveAssetBytes(trx, replacing.id, { key: key('2'), format: 'png', bytes: 4000 }),
+    );
+    const replaced = await inTenant((trx) =>
+      recordAsset(trx, replacing.id, { ...header, width: 640 }),
+    );
+    expect(replaced).toMatchObject({
+      artifactId: original.artifactId,
+      revision: 0,
+      version: 2,
+      author: ada,
+    });
+    expect(replaced.content).toMatchObject({ object: key('2'), width: 640 });
+    // The version replaced is kept as it was, and the asset has one row of rights, not two.
+    expect((await inTenant((trx) => readAssetVersion(trx, original.id)))?.content).toEqual(
+      original.content,
+    );
+    expect(
+      await inTenant((trx) =>
+        trx
+          .selectFrom('asset_rights')
+          .select('id')
+          .where('asset_id', '=', original.artifactId)
+          .execute(),
+      ),
+    ).toHaveLength(1);
+    expect(await inTenant((trx) => readAssetUpload(trx, replacing.id))).toMatchObject({
+      state: 'ready',
+      assetId: original.artifactId,
+      assetVersionId: replaced.id,
+    });
+    const wanted = await inTenant((trx) =>
+      trx
+        .selectFrom('asset_derivative_wanted')
+        .select('version_id')
+        .where('version_id', 'in', [original.id, replaced.id])
+        .execute(),
+    );
+    expect(wanted.map((row) => row.version_id).sort()).toEqual([original.id, replaced.id].sort());
+    // Beneath the function, a ready replacement names the asset it replaced and no other.
+    await expect(
+      inTenant((trx) =>
+        createAssetUpload(trx, {
+          spaceId: general,
+          uploader: ada,
+          alternative: null,
+          replaces: '00000000-0000-4000-8000-000000000000',
+        }),
+      ),
+    ).rejects.toThrow();
+  });
+
   it('refuses to record an asset whose recorded properties would not parse as an asset version', async () => {
     const upload = await made();
     await inTenant((trx) =>

@@ -9,6 +9,7 @@ import list from '../structure/DocumentList.module.css';
 import { baselineLink, documentLink } from '../structure/links.js';
 import { words, type WordKey } from '../words/words.js';
 import styles from './Images.module.css';
+import { uploadImage } from '../editor/upload.js';
 import { thumbnailPath, type LibraryImage } from './library.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -79,6 +80,8 @@ export function Images({ client }: { readonly client: Client }) {
   const [total, setTotal] = useState(0);
   const [failed, setFailed] = useState(false);
   const [showing, setShowing] = useState<LibraryImage | null>(null);
+  // What the last replacement came to, said where a screen reader hears it (AL-M).
+  const [replacing, setReplacing] = useState<{ text: string; failed: boolean } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -131,6 +134,24 @@ export function Images({ client }: { readonly client: Client }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** **Replace** (AST-016): the file becomes the image's next version, and the list is read again. */
+  const replace = async (image: LibraryImage, file: File) => {
+    const name = image.name ?? words('images.unnamed-image');
+    setReplacing({ text: words('images.replacing', { name }), failed: false });
+    const outcome = await uploadImage(client, {
+      space: space ?? '',
+      bytes: new Uint8Array(await file.arrayBuffer()),
+      alternative: null,
+      replaces: image.id,
+    });
+    setReplacing(
+      outcome.ok
+        ? { text: words('images.was-replaced', { name }), failed: false }
+        : { text: outcome.sentence, failed: true },
+    );
+    if (outcome.ok) await load();
+  };
 
   const choose = <K extends keyof Filters>(key: K, value: Filters[K]) =>
     setFilters((held) => ({ ...held, [key]: value }));
@@ -285,6 +306,21 @@ export function Images({ client }: { readonly client: Client }) {
                 <button type="button" onClick={() => setShowing(each)}>
                   {words('images.where-used')}
                 </button>
+                <label className={styles['replace']}>
+                  {words('images.replace')}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    aria-label={words('images.replace-named', {
+                      name: each.name ?? words('images.unnamed-image'),
+                    })}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      if (file) void replace(each, file);
+                    }}
+                  />
+                </label>
               </li>
             ))}
           </ul>
@@ -295,6 +331,13 @@ export function Images({ client }: { readonly client: Client }) {
           )}
         </>
       )}
+      <p
+        role="status"
+        className={styles['status']}
+        data-tone={replacing?.failed ? 'failed' : undefined}
+      >
+        {replacing?.text}
+      </p>
       {showing !== null && <WhereUsed client={client} image={showing} />}
     </section>
   );

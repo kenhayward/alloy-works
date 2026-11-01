@@ -28,6 +28,8 @@ export interface AssetUploadTable {
   rights: ColumnType<unknown, string | null | undefined, never>;
   /** The file's name at upload (0180; AL-D). */
   name: ColumnType<string | null, string | null | undefined, never>;
+  /** The asset it replaces, whose next version its check cuts (0184; AL-M), or null for a new one. */
+  replaces: ColumnType<string | null, string | null | undefined, never>;
 }
 
 /** An image's rights, a row per change, never changed (0180; AL-C, AST-031). */
