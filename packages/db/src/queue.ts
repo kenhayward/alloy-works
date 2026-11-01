@@ -75,7 +75,12 @@ export async function enqueueJob(
 
 export interface JobQueue {
   /** One job, held for `leaseMs`; undefined when there is nothing to do. */
-  claim(options: { readonly workerId: string; readonly leaseMs: number }): Promise<Job | undefined>;
+  claim(options: {
+    readonly workerId: string;
+    readonly leaseMs: number;
+    /** Only jobs of these kinds, those the worker runs; any kind where absent. */
+    readonly kinds?: readonly string[];
+  }): Promise<Job | undefined>;
   complete(job: Job): Promise<void>;
   /** Retries while attempts remain; says which it did. The reason is a kind, never a message. */
   fail(
@@ -132,7 +137,7 @@ export function createJobQueue(url: string): JobQueue {
   });
 
   return {
-    async claim({ workerId, leaseMs }) {
+    async claim({ workerId, leaseMs, kinds }) {
       // SKIP LOCKED so two workers take different jobs rather than taking turns, and a lease so a
       // job a worker dies holding comes back by itself.
       const { rows } = await sql<JobRow>`
@@ -146,6 +151,7 @@ export function createJobQueue(url: string): JobQueue {
               and attempts < max_attempts
               and run_after <= now()
               and (locked_until is null or locked_until < now())
+              and (${kinds === undefined} or kind = any(${[...(kinds ?? [])]}::text[]))
             order by run_after, id
             for update skip locked
             limit 1)

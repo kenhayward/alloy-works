@@ -43,7 +43,13 @@ export async function processNext(deps: WorkerDeps): Promise<'idle' | 'done' | '
     if (tenant) await deps.handlers[job.kind]?.failed(tenant, job);
   }
 
-  const job = await deps.queue.claim({ workerId: deps.workerId, leaseMs: deps.leaseMs });
+  // Only the kinds this worker runs: a kind it does not know waits for a worker that does, as one
+  // older than the job's kind would otherwise fail it.
+  const job = await deps.queue.claim({
+    workerId: deps.workerId,
+    leaseMs: deps.leaseMs,
+    kinds: Object.keys(deps.handlers),
+  });
   if (!job) return 'idle';
 
   const tenant = await deps.db.tenant(job.tenantId);
