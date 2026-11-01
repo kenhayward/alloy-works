@@ -56,6 +56,7 @@ a document places into the compile root under its hash.
 | **AST-021** | An image's rights record its source, with an optional address, and the licence of the environment it is held under, or that neither was declared; every asset gets a row when it is recorded, however it arrived (AL-C)                                                                                                                                                                                   |
 | **AST-023** | A publish fails `asset_licence_forbids` for each figure whose image's licence does not permit publication, naming the figure and, in `detail`, the licence (AL-F)                                                                                                                                                                                                                                         |
 | **AST-031** | The bytes and the default description and name version together; the source, the licence and the grant are rows of `asset_rights`, each with who recorded it and when, never changed; what a licence permits is its definition's version chain                                                                                                                                                            |
+| **AST-044** | The Figure dialog asks for the source and licence with **Not declared** a visible choice, and an upload declaring neither records `undeclared` as a row of its own, so an undeclared image is told from a declared one (AL-E)                                                                                                                                                                             |
 | **AST-053** | An undeclared image, or one past its grant's last day, is reported on the request under the environment's `warn`, the default, and fails the publish under `refuse`; never passed silently (AL-F)                                                                                                                                                                                                         |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
@@ -296,6 +297,8 @@ its decisions AL-A to AL-N are the design, and this section says what stands so 
   follow (AL-M).
 
 AST-025 and AST-043 were superseded by AST-052 and AST-053 while planning (the AST change history).
+AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
+image is used only in ALe.
 
 ## Requirements challenged
 

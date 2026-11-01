@@ -33,7 +33,7 @@ describe("an image's rights (the AL plan, AL-C)", () => {
     expect(assetRightsSchema.safeParse(declared({ source: { text: ' ' } })).success).toBe(false);
   });
 
-  it('AST-052 records an expiry on the grant an image is held under, a calendar date', () => {
+  it('records an expiry on the grant an image is held under, a calendar date (AL-C)', () => {
     expect(assetRightsSchema.parse(declared({ expires: '2027-03-31' }))).toMatchObject({
       expires: '2027-03-31',
     });
@@ -73,7 +73,7 @@ describe('rights at publish (the AL plan, AL-F)', () => {
     expect(rightsAtPublish({ kind: 'dataset' }, undefined, today, 'refuse')).toBeNull();
   });
 
-  it('AST-052 reports a grant past its expiry, and refuses it under refuse; its last day is still in it', () => {
+  it('reports a grant past its expiry, and refuses it under refuse; its last day is still in it (AL-F)', () => {
     const lapsed = declared({ expires: '2026-10-31' });
     expect(rightsAtPublish(lapsed, licence(['publication']), today, 'warn')).toEqual({
       code: 'asset_licence_expired',
