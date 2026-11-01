@@ -4,6 +4,8 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 
 import styles from './AssistantPanel.module.css';
 import { PersonalPrompts } from './PersonalPrompts.js';
+import { Icon } from '../editor/Icon.js';
+import { IconButton } from '../parts/IconButton.js';
 import { formats, words, wordsWith } from '../words/words.js';
 import { failedWords, proposedNothingWords, stepWords, type StepSaid } from './runWords.js';
 
@@ -157,6 +159,8 @@ interface TrayItem {
 interface OfferedEndpoint {
   readonly id: string;
   readonly name: string;
+  /** The most tokens its model takes in one call: what a turn is measured against. */
+  readonly contextWindow: number;
   readonly boundary: string;
   readonly isDefault: boolean;
 }
@@ -243,7 +247,11 @@ export function AssistantPanel({
   const [titles, setTitles] = useState<ReadonlyMap<string, string>>(new Map());
   // What the assistant is given with an ask on a document: the component open, or every one.
   const [scope, setScope] = useState<'component' | 'document'>('component');
-  const given = component === null ? 'document' : scope;
+  // The part asked about, held from when the box is entered until the ask is sent, so the cursor
+  // leaving the part for the box does not change what is asked about (as Diariz holds its scope).
+  const [held, setHeld] = useState<string | null>(null);
+  const asking = held ?? component;
+  const given = asking === null ? 'document' : scope;
   // The reply's tokens so far, while it streams.
   const [received, setReceived] = useState(0);
   const contextId = useId();
@@ -361,6 +369,20 @@ export function AssistantPanel({
     );
   };
 
+  /** A conversation of this document's opened, or none: a new one, begun by the next ask. */
+  const open = (id: string | null) => {
+    setConversation(id);
+    setTurns([]);
+    setCurrent(null);
+    setAsked(null);
+    setAnswer('');
+    setProposals([]);
+    setSteps([]);
+    setEnded(null);
+    setTray([]);
+    if (id !== null) void readTurns(id).catch(() => undefined);
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     await send(ask);
@@ -387,10 +409,11 @@ export function AssistantPanel({
     await run(`${origin}/v1/conversations/${id}/turns`, {
       ask: text.trim(),
       ...(chosen === '' ? {} : { endpoint: chosen }),
-      ...(component === null ? {} : { component }),
+      ...(asking === null ? {} : { component: asking }),
       ...(document === null ? {} : { context: given }),
     });
     setAsk('');
+    setHeld(null);
     await Promise.all([readTurns(id), readConversations()]).catch(() => undefined);
   };
 
@@ -534,6 +557,17 @@ export function AssistantPanel({
           (other) => other.component === each.component && other.block === each.block,
         ) === index,
     );
+  // The last turn measured against the chosen endpoint's context window, in Diariz's three bands.
+  const window_ = endpoints.find((each) => each.id === chosen)?.contextWindow;
+  const percent =
+    ended?.tokensIn == null || window_ === undefined
+      ? null
+      : Math.round((ended.tokensIn / window_) * 100);
+  const measured =
+    percent === null
+      ? null
+      : { percent, band: percent < 50 ? 'low' : percent < 75 ? 'mid' : 'high' };
+
   // The answer's text, each citation kept a button to the part it names, numbered as Sources lists it.
   const pieces: ReactNode[] = [];
   let from = 0;
@@ -566,25 +600,13 @@ export function AssistantPanel({
               boundary: endpoint.boundary,
             })}
       </p>
-      <div className={styles['actions']}>
-        <label className={styles['ask']}>
+      <div className={styles['head']}>
+        <label className={styles['conversation']}>
           {words('document.conversation')}
           <select
             value={conversation ?? ''}
             disabled={running}
-            onChange={(change) => {
-              const id = change.target.value === '' ? null : change.target.value;
-              setConversation(id);
-              setTurns([]);
-              setCurrent(null);
-              setAsked(null);
-              setAnswer('');
-              setProposals([]);
-              setSteps([]);
-              setEnded(null);
-              setTray([]);
-              if (id !== null) void readTurns(id).catch(() => undefined);
-            }}
+            onChange={(change) => open(change.target.value === '' ? null : change.target.value)}
           >
             <option value="">{words('document.a-new-conversation')}</option>
             {conversations.map((each) => (
@@ -594,24 +616,13 @@ export function AssistantPanel({
             ))}
           </select>
         </label>
-        {endpoints.length > 0 && (
-          <label className={styles['ask']}>
-            {words('document.endpoint')}
-            <select
-              value={chosen}
-              disabled={running}
-              onChange={(change) => setChosen(change.target.value)}
-            >
-              {endpoints.map((each) => (
-                <option key={each.id} value={each.id}>
-                  {each.boundary === 'outside'
-                    ? words('document.outside-your-data-boundary', { name: each.name })
-                    : each.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <IconButton
+          label={words('document.a-new-conversation')}
+          disabled={running || conversation === null}
+          onClick={() => open(null)}
+        >
+          <Icon name="Add" size={16} />
+        </IconButton>
       </div>
       {turns.filter((each) => each.run !== current).length > 0 && (
         <ol aria-label={words('document.earlier-turns')} className={styles['turns']}>
@@ -913,7 +924,7 @@ export function AssistantPanel({
               name="assistant-context"
               value="component"
               checked={given === 'component'}
-              disabled={component === null}
+              disabled={asking === null}
               onChange={() => setScope('component')}
             />{' '}
             {words('document.current-component')}
@@ -934,9 +945,55 @@ export function AssistantPanel({
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>
           {words('document.ask-the-assistant')}
-          <textarea value={ask} rows={3} onChange={(change) => setAsk(change.target.value)} />
+          <textarea
+            value={ask}
+            rows={3}
+            onChange={(change) => setAsk(change.target.value)}
+            onFocus={() => setHeld(component)}
+            onKeyDown={(event) => {
+              // Enter asks; Shift and Enter starts a new line (Diariz's composer).
+              if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              void send(ask);
+            }}
+          />
         </label>
-        <div className={styles['actions']}>
+        <div className={styles['composerFoot']}>
+          {endpoints.length > 0 && (
+            <label className={styles['endpoint']}>
+              {words('document.endpoint')}
+              <select
+                value={chosen}
+                disabled={running}
+                onChange={(change) => setChosen(change.target.value)}
+              >
+                {endpoints.map((each) => (
+                  <option key={each.id} value={each.id}>
+                    {each.boundary === 'outside'
+                      ? words('document.outside-your-data-boundary', { name: each.name })
+                      : each.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {measured !== null && (
+            <span
+              role="img"
+              className={styles['gauge']}
+              data-band={measured.band}
+              aria-label={words('document.context-used', { percent: measured.percent })}
+              title={words('document.context-used', { percent: measured.percent })}
+            >
+              <span
+                className={styles['gaugeRing']}
+                style={{ '--used': `${Math.min(measured.percent, 100)}%` } as React.CSSProperties}
+                aria-hidden="true"
+              />
+              {formats().number(measured.percent)}%
+            </span>
+          )}
+          <span className={styles['spacer']} />
           {/* Stop where Ask was, while it answers (Diariz's send that becomes stop). */}
           {running ? (
             <button type="button" className={styles['stop']} onClick={() => stop.current?.abort()}>

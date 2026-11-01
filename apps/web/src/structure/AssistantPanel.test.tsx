@@ -35,10 +35,18 @@ function service() {
             id: ENDPOINT,
             name: 'Drafting',
             model: 'stand-in-1',
+            contextWindow: 200_000,
             boundary: 'outside',
             isDefault: true,
           },
-          { id: SITES, name: 'Ours', model: 'stand-in-1', boundary: 'inside', isDefault: false },
+          {
+            id: SITES,
+            name: 'Ours',
+            model: 'stand-in-1',
+            contextWindow: 8_000,
+            boundary: 'inside',
+            isDefault: false,
+          },
         ],
       });
     }
@@ -763,12 +771,12 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       />,
     );
     const context = screen.getByRole('radiogroup', { name: 'Context' });
-    expect(within(context).getByRole('radio', { name: 'Current component' })).toBeChecked();
+    expect(within(context).getByRole('radio', { name: 'This part' })).toBeChecked();
     await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(stream.mock.calls[0]![0].body).toMatchObject({ component: SITES, context: 'component' });
 
-    await user.click(within(context).getByRole('radio', { name: 'All components' }));
+    await user.click(within(context).getByRole('radio', { name: 'The whole document' }));
     await user.type(screen.getByLabelText('Ask the assistant'), 'And the rest?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     await waitFor(() => expect(stream).toHaveBeenCalledTimes(2));
@@ -785,8 +793,8 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         origin="http://doc.test"
       />,
     );
-    expect(screen.getByRole('radio', { name: 'Current component' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'All components' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'This part' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'The whole document' })).toBeChecked();
   });
 
   it('offers no context choice for a conversation on no document', () => {
@@ -956,5 +964,111 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
     const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
     await user.click(within(proposal).getByRole('button', { name: 'Show in page' }));
     expect(onCite).toHaveBeenCalledWith(SITES, '');
+  });
+});
+
+describe('the assistant’s composer (the DP plan, Task 6)', () => {
+  const answered = (tokensIn = 100) =>
+    running([
+      ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'outside' } }],
+      ['text', { text: 'It floods.' }],
+      ended({ tokensIn }),
+    ]);
+
+  it('keeps the part it was asked about once you start typing, as Diariz does', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(answered());
+    const panel = (component: string | null) => (
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={component}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />
+    );
+    const { rerender } = render(panel(SITES));
+    await user.click(screen.getByLabelText('Ask the assistant'));
+    // The cursor leaves the part for the box: the part asked about stays the one it was.
+    rerender(panel(null));
+    expect(screen.getByRole('radio', { name: 'This part' })).toBeChecked();
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(stream.mock.calls[0]![0].body).toMatchObject({ component: SITES, context: 'component' });
+  });
+
+  it('asks on Enter, and starts a new line on Shift+Enter', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(answered());
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    const box = screen.getByLabelText('Ask the assistant');
+    await user.type(box, 'One{Shift>}{Enter}{/Shift}two');
+    expect(box).toHaveValue('One\ntwo');
+    expect(stream).not.toHaveBeenCalled();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(stream).toHaveBeenCalledTimes(1));
+    expect(stream.mock.calls[0]![0].body).toMatchObject({ ask: 'One\ntwo' });
+  });
+
+  it('measures the last turn against the endpoint’s context window, in three bands', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={vi.fn(answered(100_000))}
+        origin="http://doc.test"
+      />,
+    );
+    await screen.findByRole('combobox', { name: 'Endpoint' });
+    // Nothing measured before a turn.
+    expect(screen.queryByRole('img', { name: /of the context used/ })).toBeNull();
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const gauge = await screen.findByRole('img', { name: '50% of the context used' });
+    expect(gauge).toHaveAttribute('data-band', 'mid');
+    // The same turn against a smaller window.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Endpoint' }), SITES);
+    expect(screen.getByRole('img', { name: '1,250% of the context used' })).toHaveAttribute(
+      'data-band',
+      'high',
+    );
+  });
+
+  it('starts a new conversation from the conversation open', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={vi.fn(answered())}
+        origin="http://doc.test"
+      />,
+    );
+    const conversation = await screen.findByRole('combobox', { name: 'Conversation' });
+    await screen.findByRole('option', { name: 'About the weir' });
+    await user.selectOptions(conversation, CONVERSATION);
+    expect(await screen.findByRole('list', { name: 'Earlier turns' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'A new conversation' }));
+    expect(conversation).toHaveValue('');
+    expect(screen.queryByRole('list', { name: 'Earlier turns' })).toBeNull();
   });
 });

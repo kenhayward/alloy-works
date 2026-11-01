@@ -988,6 +988,7 @@
   "document.copy-the-answer": "Copy the answer",
   "document.ask-again": "Ask again",
   "document.show-in-page": "Show in page",
+  "document.context-used": "{percent, number}% of the context used",
   "document.the-assistant-reads-what-you": "The assistant reads what you may read of this document. Nothing it proposes changes the document until you accept it.",
   "document.using": "{boundary, select, outside {Using {name}, which is outside your data boundary.} other {Using {name}.}}",
   "document.conversation": "Conversation",
@@ -5331,8 +5332,8 @@
   "admin.the-service-could-not-be-reached": "the service could not be reached.",
   "admin.the-service-failed": "the service failed (HTTP {status}).",
   "document.context": "Context",
-  "document.current-component": "Current component",
-  "document.all-components": "All components",
+  "document.current-component": "This part",
+  "document.all-components": "The whole document",
   "document.answering": "Answering",
   "document.answering-tokens": "Answering: {count, plural, one {# token} other {# tokens}} received"
 }
