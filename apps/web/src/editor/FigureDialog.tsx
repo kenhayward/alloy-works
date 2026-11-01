@@ -1,5 +1,7 @@
 import {
   contentDocumentSchema,
+  declarableRightsSchema,
+  RIGHTS_LIMITS,
   type Alternative,
   type DeclarableRights,
 } from '@alloy-works/domain';
@@ -147,6 +149,21 @@ export function FigureDialog({
             ...(expires === '' ? {} : { expires }),
             ...(credit.trim() === '' ? {} : { credit: credit.trim() }),
           };
+    // Held to the rule the service holds it to, said here rather than refused there (the ALb review, 5).
+    const checked = declarableRightsSchema.safeParse(rights);
+    if (!checked.success) {
+      const [first] = checked.error.issues[0]?.path ?? [];
+      setSaid(
+        words(
+          first === 'credit'
+            ? 'editor.give-a-credit-it-can-hold'
+            : checked.error.issues[0]?.path[1] === 'url'
+              ? 'editor.give-an-https-address'
+              : 'editor.give-a-source-it-can-hold',
+        ),
+      );
+      return;
+    }
     const name = file.name.trim().slice(0, 255);
     setBusy(true);
     setSaid(null);
@@ -269,6 +286,7 @@ export function FigureDialog({
                 <input
                   id={`${id}-source`}
                   type="text"
+                  maxLength={RIGHTS_LIMITS.source}
                   value={source}
                   onChange={(event) => setSource(event.target.value)}
                 />
@@ -290,6 +308,7 @@ export function FigureDialog({
                 <input
                   id={`${id}-credit`}
                   type="text"
+                  maxLength={RIGHTS_LIMITS.credit}
                   value={credit}
                   onChange={(event) => setCredit(event.target.value)}
                 />

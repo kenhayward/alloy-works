@@ -95,4 +95,28 @@ describe('the Figure dialog asks where an image came from (the AL plan, AL-E)', 
     ).toBeVisible();
     expect(upload).not.toHaveBeenCalled();
   });
+
+  it('asks for an https address and a source and credit it can hold, and sends nothing until it has them', async () => {
+    const user = userEvent.setup();
+    const { upload } = dialog();
+    await user.upload(screen.getByLabelText('Image'), png());
+    await user.click(screen.getByRole('checkbox', { name: 'It is decorative' }));
+    await user.selectOptions(
+      await screen.findByRole('combobox', { name: 'Licence' }),
+      'Stock, editorial',
+    );
+    await user.type(screen.getByRole('textbox', { name: 'Source' }), 'A stock library');
+    const address = screen.getByRole('textbox', { name: 'Address of the source' });
+    await user.type(address, 'http://stock.example/harbour');
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+    expect(
+      await screen.findByText('Give the address of the source as an https address, or none.'),
+    ).toBeVisible();
+    await user.clear(address);
+    // Typed by the field's own limit; pasted, a longer one is said so.
+    const credit = screen.getByRole('textbox', { name: 'Credit' });
+    expect(credit).toHaveAttribute('maxlength', '500');
+    expect(screen.getByRole('textbox', { name: 'Source' })).toHaveAttribute('maxlength', '500');
+    expect(upload).not.toHaveBeenCalled();
+  });
 });
