@@ -77,7 +77,7 @@ and **AST-001** (the asset door).
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`              | `Alloy Works`                                                                                                                                           |
 | `connectionKind`    | `shared`: the target's connection holds the service identity's token                                                                                    |
-| `instances`         | One: the tenant the hostname resolves to, `{ id: <tenant slug>, label: <tenant name> }`                                                                 |
+| `instances`         | None, as for any shared sink: the hostname names the tenant, so CT Studio's targets, browsing and deliveries name no instance                           |
 | `credentialFields`  | `token`, secret: an `awt_` token issued to a service identity                                                                                           |
 | `destinationFields` | `space` (fixed, required, browse); `documentName` (pattern, optional, overridable); `tableSet` (pattern, optional)                                      |
 | `capabilities`      | `browse`, `replace`, `readBack` true; `withdraw` false; `accepts` files, data, document, images; `decomposedDocuments` with equations `mathml`, `image` |
@@ -454,8 +454,10 @@ system behaves now.
 
 ### The service
 
-- **The instance** `describe` answers is `{ id: <tenant slug>, label: <tenant name> }`, the
-  platform tenant's readable id and its display name.
+- **No instance** is listed by `describe` (changed after the first real connection: CT Studio names
+  no instance for a shared sink, and refused to browse one that listed any). A request naming none
+  is the hostname's tenant; one naming the tenant's slug is still accepted, and any other refused.
+  `connections:test` still names the tenant, by its display name, in the identity it answers.
 - **The body limit** is 100 MiB on the route itself, over the default; a larger body answers
   `too_large`. A store or database that is down answers `sink_unavailable` (503), not `internal`.
 - **A reused key is refused.** An idempotency key already used for another space, or by another

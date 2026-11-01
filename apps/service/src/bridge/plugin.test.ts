@@ -242,7 +242,7 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     expect((await signed('GET', '/describe', undefined, { with: retiring })).statusCode).toBe(200);
   });
 
-  it('API-065 describes contract version 2 with the tenant as its one instance', async () => {
+  it('API-065 describes contract version 2, a shared sink listing no instance', async () => {
     const answer = await signed('GET', '/describe');
     expect(answer.statusCode, answer.body).toBe(200);
     const described = SinkDescribeSchema.parse(answer.json());
@@ -250,7 +250,8 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
       name: 'Alloy Works',
       contractVersion: 2,
       connectionKind: 'shared',
-      instances: [{ id: h.tenant.id, label: 'Production' }],
+      // A shared sink lists no instance, so CT Studio's targets and browsing name none.
+      instances: [],
       credentialFields: [{ id: 'token', secret: true }],
     });
     expect(described.destinationFields.map((field) => field.id)).toEqual([
