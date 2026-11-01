@@ -162,7 +162,7 @@ export const ASSISTANT_TOOLS: readonly ModelTool[] = [
   {
     name: 'propose_edit',
     description:
-      "Proposes edits to one component's blocks, as read_component numbered them: replace a block with Markdown, insert Markdown after a block (or first, with after null), or delete a block. Nothing changes until the author accepts.",
+      "Proposes edits to one component's blocks, as read_component numbered them: replace a block with Markdown, insert Markdown after a block (or first, with after null), or delete a block. For a table: set one cell (`cell`, its row and column counting from 1 as read_component shows the table, header rows included and the --- line not), or replace its rows (`table` with `rows`, each row's cells as text, and `headerRows` and `caption` where they change). A bound table's rows come from a query and cannot be edited. Nothing changes until the author accepts.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -178,7 +178,31 @@ export const ASSISTANT_TOOLS: readonly ModelTool[] = [
                 description: 'The block to insert after, or null for first',
               },
               delete: { type: 'string', description: 'The block to delete' },
-              markdown: { type: 'string', description: 'The new text, for replace and insert' },
+              markdown: {
+                type: 'string',
+                description: "The new text, for replace and insert, or a cell's, empty to clear it",
+              },
+              cell: {
+                type: 'object',
+                description: 'One cell of a table to set to markdown',
+                properties: {
+                  table: { type: 'string', description: 'The table block' },
+                  row: { type: 'integer', minimum: 1 },
+                  column: { type: 'integer', minimum: 1 },
+                },
+                required: ['table', 'row', 'column'],
+                additionalProperties: false,
+              },
+              table: { type: 'string', description: 'The table block whose rows to replace' },
+              rows: {
+                type: 'array',
+                description:
+                  "The table's rows, header rows first, each an array of its cells' text",
+                items: { type: 'array', items: { type: 'string' }, minItems: 1 },
+                minItems: 1,
+              },
+              headerRows: { type: 'integer', minimum: 0, description: 'How many rows are headers' },
+              caption: { type: 'string', description: "The table's caption, empty for none" },
             },
           },
           minItems: 1,
@@ -207,10 +231,29 @@ export const isAssistantTool = (name: string): name is AssistantToolName =>
 const id = z.string().min(1).max(200);
 const markdown = z.string().min(1).max(20_000);
 
+/** A cell's words: Markdown's inline text, or none to empty it. */
+const cellWords = z.string().max(5_000);
+
 export const blockEditSchema = z.union([
   z.strictObject({ replace: id, markdown }),
   z.strictObject({ insertAfter: id.nullable(), markdown }),
   z.strictObject({ delete: id }),
+  // One cell of a table, by row and column as `read_component` shows it, counting from 1.
+  z.strictObject({
+    cell: z.strictObject({
+      table: id,
+      row: z.number().int().min(1).max(10_000),
+      column: z.number().int().min(1).max(1_000),
+    }),
+    markdown: cellWords,
+  }),
+  // A whole table's rows, and its header rows and caption where given.
+  z.strictObject({
+    table: id,
+    rows: z.array(z.array(cellWords).min(1).max(100)).min(1).max(1_000),
+    headerRows: z.number().int().min(0).max(1_000).optional(),
+    caption: z.string().max(2_000).optional(),
+  }),
 ]);
 export type BlockEdit = z.infer<typeof blockEditSchema>;
 
@@ -467,6 +510,15 @@ export function applyEdits(
   let blocks: BlockNode[] = [...content.content];
   const at = (id: string) => blocks.findIndex((block) => block.id === id);
   for (const edit of edits) {
+    if ('cell' in edit || 'rows' in edit) {
+      const found = tableAt(blocks, 'cell' in edit ? edit.cell.table : edit.table);
+      if (typeof found === 'string') return { ok: false, problem: found };
+      const made =
+        'cell' in edit ? withCell(found.table, edit, read) : withRows(found.table, edit, read);
+      if (typeof made === 'string') return { ok: false, problem: made };
+      blocks = [...blocks.slice(0, found.index), made, ...blocks.slice(found.index + 1)];
+      continue;
+    }
     if ('delete' in edit) {
       const index = at(edit.delete);
       if (index === -1) return { ok: false, problem: `There is no block ${edit.delete}.` };
@@ -511,6 +563,212 @@ export function applyEdits(
   }
   if (blocks.length === 0) return { ok: false, problem: 'A component keeps at least one block.' };
   return { ok: true, content: { ...content, content: blocks } };
+}
+
+type TableBlock = Extract<BlockNode, { type: 'table' }>;
+type TableCell = TableBlock['rows'][number]['cells'][number];
+type CellEdit = Extract<BlockEdit, { cell: unknown }>;
+type RowsEdit = Extract<BlockEdit, { rows: unknown }>;
+
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+/** The table a table edit names, or why there is none to write. */
+function tableAt(
+  blocks: readonly BlockNode[],
+  id: string,
+): { index: number; table: TableBlock } | string {
+  const index = blocks.findIndex((block) => block.id === id);
+  if (index === -1) return `There is no block ${id}.`;
+  const block = blocks[index]!;
+  if (block.type === 'boundTable') {
+    return `Block ${id} is a bound table: its rows are read from a query when the document is shown, and a proposal cannot write them.`;
+  }
+  if (block.type !== 'table') return `Block ${id} is a ${block.type}, not a table.`;
+  return { index, table: block };
+}
+
+/** What a cell holds that a proposal cannot write, named, or none. */
+function cellProblem(cell: TableCell): string | undefined {
+  for (const block of cell.content) {
+    if (block.type !== 'paragraph') return `a ${block.type}`;
+    const problem = inlineProblem(block.content);
+    if (problem) return problem;
+  }
+  return undefined;
+}
+
+/** A row's cells by the column each starts at, counting from 1 as a spanning cell covers them. */
+function startsOf(cells: readonly TableCell[]): number[] {
+  let column = 1;
+  return cells.map((cell) => {
+    const start = column;
+    column += cell.colspan;
+    return start;
+  });
+}
+
+/**
+ * A cell's words as its blocks: paragraphs of Markdown's inline text, each in the cell's style, the
+ * first keeping the identifier it had. Emptied, one paragraph with nothing in it stands in, as a cell
+ * holds at least one; a new one's identifier is made as the reader makes one.
+ */
+function cellBlocks(
+  words: string,
+  read: (markdown: string) => readonly BlockNode[] | string,
+  style: string,
+  kept: string | undefined,
+): BlockNode[] | string {
+  const made = words.trim() === '' ? [] : read(words);
+  if (typeof made === 'string') return made;
+  if (made.length === 0) {
+    let id = kept;
+    if (id === undefined) {
+      // No identifier to keep: one made by reading a word, as the reader makes every one.
+      const fresh = read('x');
+      if (typeof fresh === 'string') return fresh;
+      id = fresh[0]?.id;
+      if (id === undefined) return 'The Markdown could not be read.';
+    }
+    return [{ type: 'paragraph', id, style, content: [] } as BlockNode];
+  }
+  const blocks: BlockNode[] = [];
+  for (const [index, block] of made.entries()) {
+    if (block.type !== 'paragraph') {
+      return `A cell holds lines of text, not a ${block.type}.`;
+    }
+    const problem = inlineProblem(block.content);
+    if (problem) return `A cell's words hold ${problem}, which a proposal cannot write.`;
+    blocks.push({ ...block, style, ...(index === 0 && kept !== undefined ? { id: kept } : {}) });
+  }
+  return blocks;
+}
+
+/** The style a cell's paragraphs are in, from its first, or the table's own for a new one. */
+const styleOf = (cell: TableCell | undefined, fallback: string) => {
+  const first = cell?.content[0];
+  return first?.type === 'paragraph' ? first.style : fallback;
+};
+
+/** One cell set: every other cell, the caption, note and grid kept as they were. */
+function withCell(
+  table: TableBlock,
+  edit: CellEdit,
+  read: (markdown: string) => readonly BlockNode[] | string,
+): TableBlock | string {
+  const { row, column } = edit.cell;
+  if (row > table.rows.length) {
+    return `Table ${table.id} has ${plural(table.rows.length, 'row', 'rows')}; there is no row ${row}.`;
+  }
+  const cells = table.rows[row - 1]!.cells;
+  const starts = startsOf(cells);
+  const width = cells.reduce((sum, cell) => sum + cell.colspan, 0);
+  if (column > width) {
+    return `Row ${row} of table ${table.id} has ${plural(width, 'column', 'columns')}; there is no column ${column}.`;
+  }
+  const index = starts.findLastIndex((start) => start <= column);
+  if (starts[index] !== column) {
+    return `Column ${column} of row ${row} is part of the cell that starts at column ${starts[index]}: set that one.`;
+  }
+  const cell = cells[index]!;
+  const problem = cellProblem(cell);
+  if (problem) {
+    return `Row ${row}, column ${column} of table ${table.id} holds ${problem}, which a proposal cannot write.`;
+  }
+  const first = cell.content[0];
+  const content = cellBlocks(
+    edit.markdown,
+    read,
+    styleOf(cell, 'body'),
+    first?.type === 'paragraph' ? first.id : undefined,
+  );
+  if (typeof content === 'string') return content;
+  return {
+    ...table,
+    rows: table.rows.map((each, at) =>
+      at !== row - 1
+        ? each
+        : { cells: each.cells.map((one, place) => (place === index ? { ...one, content } : one)) },
+    ),
+  };
+}
+
+/**
+ * A whole table's rows replaced, each cell spanning one column: its caption where given,
+ * its header rows where given or as many as it had; its style, note and identifier kept, and each cell
+ * still standing where one stood keeping that one's identifier and style, so a merge sees it changed.
+ */
+function withRows(
+  table: TableBlock,
+  edit: RowsEdit,
+  read: (markdown: string) => readonly BlockNode[] | string,
+): TableBlock | string {
+  const width = edit.rows[0]!.length;
+  for (const [index, row] of edit.rows.entries()) {
+    if (row.length !== width) {
+      return `Each row of a table has as many cells: row ${index + 1} has ${row.length}, not ${width}.`;
+    }
+  }
+  const headerRows = edit.headerRows ?? Math.min(table.headerRows, edit.rows.length);
+  if (headerRows > edit.rows.length) {
+    return `A table of ${plural(edit.rows.length, 'row', 'rows')} cannot have ${headerRows} header rows.`;
+  }
+  // What stood where: each cell by its row and starting column.
+  const stood = new Map<string, TableCell>();
+  for (const [row, { cells }] of table.rows.entries()) {
+    const starts = startsOf(cells);
+    for (const [index, cell] of cells.entries()) {
+      const problem = cellProblem(cell);
+      if (problem) {
+        return `Row ${row + 1}, column ${starts[index]} of table ${table.id} holds ${problem}, which a proposal cannot write.`;
+      }
+      stood.set(`${row + 1},${starts[index]}`, cell);
+    }
+  }
+  const headerStyle = styleOf(table.rows[0]?.cells[0], 'body');
+  const bodyStyle = styleOf(table.rows[table.headerRows]?.cells[0], headerStyle);
+  const rows: TableBlock['rows'] = [];
+  for (const [row, words] of edit.rows.entries()) {
+    const cells: TableCell[] = [];
+    for (const [column, each] of words.entries()) {
+      const was = stood.get(`${row + 1},${column + 1}`);
+      const first = was?.content[0];
+      const content = cellBlocks(
+        each,
+        read,
+        styleOf(was, row < headerRows ? headerStyle : bodyStyle),
+        first?.type === 'paragraph' ? first.id : undefined,
+      );
+      if (typeof content === 'string') return content;
+      cells.push({ content, colspan: 1, rowspan: 1 });
+    }
+    rows.push({ cells });
+  }
+  let caption = table.caption;
+  if (edit.caption !== undefined) {
+    if (edit.caption.trim() === '') caption = [];
+    else {
+      const made = read(edit.caption);
+      if (typeof made === 'string') return made;
+      if (made.length !== 1 || made[0]!.type !== 'paragraph') {
+        return "A table's caption is one line of text.";
+      }
+      const problem = inlineProblem(made[0]!.content);
+      if (problem) return `The caption holds ${problem}, which a proposal cannot write.`;
+      caption = made[0]!.content;
+    }
+  }
+  // Its key columns where they still stand, or none.
+  const keyColumns = table.keyColumns?.filter((column) => column < width);
+  const rest: TableBlock = { ...table };
+  delete rest.keyColumns;
+  return {
+    ...rest,
+    caption,
+    headerRows,
+    headerColumns: Math.min(table.headerColumns, width),
+    ...(keyColumns !== undefined && keyColumns.length > 0 ? { keyColumns } : {}),
+    rows,
+  };
 }
 
 /** The index markers a block holds, in reading order. */

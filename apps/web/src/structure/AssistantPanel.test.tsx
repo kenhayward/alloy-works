@@ -501,6 +501,57 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(within(proposal).queryByRole('button', { name: 'Discard' })).toBeNull();
   });
 
+  it('shows a proposed table by its caption and rows, never as a bare kind (the TE change)', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const cell = (value: string) => ({
+      content: [{ type: 'paragraph', id: value, content: [{ type: 'text', value }] }],
+    });
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          [
+            'proposal',
+            {
+              id: PROPOSAL,
+              number: 1,
+              component: SITES,
+              against: 'v1',
+              proposed: {
+                content: [
+                  {
+                    type: 'table',
+                    id: 't1',
+                    caption: [{ type: 'text', value: 'Weir levels' }],
+                    rows: [
+                      { cells: [cell('Site'), cell('Level')] },
+                      { cells: [cell('North'), cell('3.4 m')] },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+          ended(),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Correct the level.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(proposal.querySelector('pre')).toHaveTextContent(
+      'Table: Weir levels | Site | Level | | North | 3.4 m |',
+      { normalizeWhitespace: true },
+    );
+  });
+
   it('LIB-040 shows a proposed citation by its source’s title, accepted or discarded but never kept', async () => {
     const user = userEvent.setup();
     const { client } = service();
