@@ -39,3 +39,8 @@ holds stops validating.
 - **The SKOS fetch is new egress**: the connector's guard, tested against private and redirected
   addresses.
 - **A refresh run as its administrator** sees only what they may: the report names rows refused.
+
+## Status
+
+Built at 0.222.0. VOc reused the extension manifest's fetch for a SKOS address, and the binding's
+checks for a source query, rather than a source kind of their own.

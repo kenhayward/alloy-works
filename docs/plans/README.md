@@ -908,7 +908,7 @@ reached, and a row here gains its plan link then.
 
 | #   | Plan                                                | Builds                                                                                                                          | Status      |
 | --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| VO  | [Vocabularies](2026-10-31-vo-vocabularies.md)       | Named lists of permitted values, drawn on by fields and condition axes, from a source or by hand, deprecated and retired, moved | Planned     |
+| VO  | [Vocabularies](2026-10-31-vo-vocabularies.md)       | Named lists of permitted values, drawn on by fields and condition axes, from a source or by hand, deprecated and retired, moved | Built       |
 | AL  | The assets library                                  | Licences and what they permit, derivatives on ingest, browsing and search, where-used, duplicates                               | Provisional |
 | SY  | Styles and themes without a release                 | Styles and themes added by an administrator, derived styles, admonitions, catalogues exported and imported                      | Provisional |
 | ID  | Identity                                            | SCIM, more than one identity provider, re-authentication, session settings, high-risk acts named                                | Provisional |

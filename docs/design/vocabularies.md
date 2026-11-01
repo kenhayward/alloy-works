@@ -64,6 +64,28 @@ version, never removing a value: one held but absent is kept, listed in `kept`. 
 (a concept with no notation or one not in key form, a label beyond the limits, a replacement outside
 the file, any other property) is listed in `notRepresented`.
 
+## From a source
+
+`source` is a query definition or a SKOS address (LIB-058), and each value keeps the identifier its
+source gives it. `POST /v1/vocabularies/{id}/refresh`, by `manage_definitions`, is decided in one
+transaction and asks the source after it commits:
+
+- **A query** runs as the administrator, as a sample does: `read` on the definition, which asks no
+  required parameter, and `use_connection` at its connection, recorded as the act `vocabulary`
+  (0178; DAT-053). Its `id`, `label` and optional `description` columns give the identifier and the
+  base language's words.
+- **A SKOS address** is fetched by the connector as the extension manifest is: one `GET`, no
+  redirect, 5 MB in 20 seconds, the private ranges denied as a webhook receiver's are. Each concept
+  gives its identity as the identifier, its notation as a suggested id, and its labels and
+  definitions by language.
+
+`refreshVocabulary` makes the next version: a value kept by its identifier takes the source's words; a
+new one is added active, its id the notation where free, else made from the identifier's last part;
+one gone is retired; one retired and back stays retired, reported as returned. A row no value can hold
+is reported, never guessed at. A hand change to a sourced vocabulary may set only states and
+replacements (`sourcedEditRefusals`); a refresh is recorded from the version it read, so a change made
+meanwhile is refused. A scheduled refresh waits for ADM-040.
+
 Anybody signed in reads vocabularies but somebody from outside who reads only what was shared with
 them, who chooses no values (as the people picker, R17-I).
 
@@ -77,3 +99,5 @@ them, who chooses no values (as the people picker, R17-I).
   since a retired value stays valid where held.
 - The condition dialog marks deprecated and retired values; search, descriptions and Use replacement
   are the field form's alone (VOc).
+
+VOc gave the condition dialog the field form's search, descriptions and Use replacement.
