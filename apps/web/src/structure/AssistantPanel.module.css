@@ -151,3 +151,93 @@
     animation: none;
   }
 }
+
+/* A turn as a ledger line (the DP plan): what was asked, then the answer, its sources and acts. */
+.turn {
+  display: grid;
+  gap: var(--space-8);
+  padding-block-end: var(--space-12);
+  border-bottom: 1px solid var(--border);
+}
+
+.asked {
+  margin: 0;
+  font-weight: 500;
+}
+
+.you {
+  margin-inline-end: var(--space-4);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.answer {
+  line-height: 1.55;
+}
+
+/* A citation in the answer: its number, a button to the part it names. */
+.cite {
+  min-width: 16px;
+  height: 16px;
+  margin-inline: 1px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font: 500 10px/16px var(--mono);
+  vertical-align: 1px;
+  cursor: pointer;
+}
+
+.cite:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* What it is doing while it answers: one line, the step it took last. */
+.doing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-style: italic;
+}
+
+.turnActions {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.quiet {
+  padding: var(--space-4) var(--space-8);
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--size-12);
+  cursor: pointer;
+}
+
+.quiet:hover {
+  background: var(--sunken);
+  color: var(--text);
+}
+
+.stop {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+.proposed ins {
+  background: var(--ok-bg);
+  color: var(--ok);
+  text-decoration: none;
+}

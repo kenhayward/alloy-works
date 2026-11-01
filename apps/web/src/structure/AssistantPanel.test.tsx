@@ -337,7 +337,12 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     );
     await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
-    expect(await screen.findByText('It floods [1] each spring .')).toBeVisible();
+    // Each citation kept is a button in the answer, numbered as the Sources list numbers it.
+    const answer = await screen.findByRole('region', { name: 'The answer' });
+    expect(answer).toHaveTextContent(/^It floods 1 each spring\s?\.$/);
+    await user.click(within(answer).getByRole('button', { name: 'Source 1' }));
+    expect(onCite).toHaveBeenLastCalledWith(SITES, 'p1');
+    onCite.mockClear();
     await user.click(
       within(screen.getByRole('list', { name: 'Sources' })).getByRole('button', {
         name: 'Sites, block p1',
@@ -834,5 +839,122 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(progress).toHaveTextContent('Answering: 3 tokens received');
     release();
     await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+  });
+});
+
+describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
+  const panel = (stream: (options: StreamPostOptions) => Promise<{ kind: 'streamed' }>) => {
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={(id) => (id === SITES ? 'Sites' : undefined)}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+  };
+  const answered = running([
+    ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+    ['text', { text: `It floods [[${SITES}#p1]] each spring.` }],
+    ended({ citations: [{ component: SITES, block: 'p1' }] }),
+  ]);
+
+  it('shows the turn as what was asked, then the answer', async () => {
+    const user = userEvent.setup();
+    panel(vi.fn(answered));
+    await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const turn = await screen.findByRole('article', { name: 'This turn' });
+    expect(within(turn).getByText('When does it flood?')).toBeVisible();
+    expect(within(turn).getByRole('region', { name: 'The answer' })).toHaveTextContent(
+      'It floods 1 each spring.',
+    );
+  });
+
+  it('copies the answer without its citation marks', async () => {
+    const user = userEvent.setup();
+    panel(vi.fn(answered));
+    await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    await user.click(await screen.findByRole('button', { name: 'Copy the answer' }));
+    expect(await navigator.clipboard.readText()).toBe('It floods each spring.');
+  });
+
+  it('asks again what the turn asked', async () => {
+    const user = userEvent.setup();
+    const stream = vi.fn(answered);
+    panel(stream);
+    await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    await user.click(await screen.findByRole('button', { name: 'Ask again' }));
+    await waitFor(() => expect(stream).toHaveBeenCalledTimes(2));
+    expect(stream.mock.calls[1]![0].body).toMatchObject({ ask: 'When does it flood?' });
+  });
+
+  it('says what it is doing while it answers, with Stop where Ask was', async () => {
+    const user = userEvent.setup();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    panel(
+      vi.fn(async (options: StreamPostOptions) => {
+        options.onEvent('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } });
+        options.onEvent('tool_call', { id: 't1', name: 'read_outline', input: {} });
+        await gate;
+        options.onEvent('ended', ended()[1] as Record<string, unknown>);
+        return { kind: 'streamed' as const };
+      }),
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(
+      await screen.findByText('Read the outline', { selector: '[data-doing] *' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Ask' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible();
+    release();
+    expect(await screen.findByRole('button', { name: 'Ask' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
+  });
+
+  it('shows a proposal’s place in the page', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const onCite = vi.fn();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={(id) => (id === SITES ? 'Sites' : undefined)}
+        onCite={onCite}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          [
+            'proposal',
+            {
+              id: PROPOSAL,
+              number: 1,
+              component: SITES,
+              proposed: {
+                content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hi.' }] }],
+              },
+            },
+          ],
+          ended(),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Say hello.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    await user.click(within(proposal).getByRole('button', { name: 'Show in page' }));
+    expect(onCite).toHaveBeenCalledWith(SITES, '');
   });
 });
