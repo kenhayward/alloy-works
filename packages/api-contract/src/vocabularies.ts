@@ -191,7 +191,8 @@ export const vocabularyRoutes = {
     path: '/v1/vocabularies/{id}/refresh',
     summary: "Refresh a vocabulary's values from its source, recording a version",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'manage_definitions', target: { tenant: true } },
+    // Decided at the vocabulary, so one that is not here is not found, as a definition's version is.
+    access: { check: 'permission', permission: 'manage_definitions', target: { artifact: 'id' } },
     params: VocabularyParams,
     // Answered after the deciding transaction commits, as a sample is; a repeat refreshes again.
     idempotencyKey: false,

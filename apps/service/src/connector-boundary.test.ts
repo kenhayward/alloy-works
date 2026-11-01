@@ -79,6 +79,8 @@ describe("the connector's one caller", () => {
       'sampleConnection',
       'setConnectionCredential',
       'testConnection',
+      // And a vocabulary's source, fetched for a refresh an administrator asks for (VO-J).
+      'vocabularySource',
     ]);
     // Of the model endpoint routes, setting a key and a test: listing, making, changing, retiring and
     // routing ask it nothing.
