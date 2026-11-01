@@ -476,6 +476,29 @@ describe("the assistant's terms", () => {
     });
   });
 
+  it('takes a block named as read_component shows it, with its #, for every edit (issue #870)', () => {
+    const content = document(paragraph('p1', 'One.'), paragraph('p2', 'Two.'));
+    const outcome = applyEdits(
+      content,
+      [
+        { replace: '#p1', markdown: 'Uno.' },
+        { insertAfter: '#p1', markdown: 'Between.' },
+        { delete: '#p2' },
+      ],
+      read,
+    );
+    if (!outcome.ok) throw new Error(outcome.problem);
+    expect(outcome.content.content.map((block) => block.id)).toEqual([
+      'p1',
+      expect.stringMatching(/^new/),
+    ]);
+    // A block that is not there is still refused, named without its #.
+    expect(applyEdits(content, [{ delete: '#p9' }], read)).toEqual({
+      ok: false,
+      problem: 'There is no block p9.',
+    });
+  });
+
   it('inserts first or after a block, and deletes one, refusing a block that is not there', () => {
     const content = document(paragraph('p1', 'One.'), paragraph('p2', 'Two.'));
     const outcome = applyEdits(

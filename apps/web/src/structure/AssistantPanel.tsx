@@ -223,6 +223,7 @@ export function AssistantPanel({
   onCitations,
   stream = streamPost,
   origin = window.location.origin,
+  now = () => performance.now(),
 }: {
   client: Client;
   /** The document it is about, or null for conversations on none (the G5 plan, G5-D). */
@@ -239,6 +240,8 @@ export function AssistantPanel({
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
+  /** Milliseconds, for how fast a reply came; given in tests. */
+  now?: () => number;
 }) {
   const [ask, setAsk] = useState('');
   // What this turn asked, shown above its answer and asked again on request (the DP plan).
@@ -255,7 +258,11 @@ export function AssistantPanel({
   const [reused, setReused] = useState<Record<string, unknown> | null>(null);
   useEffect(() => setReused(null), [node, document]);
   const [said, setSaid] = useState('');
-  const [month, setMonth] = useState<string>('');
+  // The reply's first and latest streamed token counts and when each came: how fast it came, in tokens
+  // a second, from its own text alone, never the run's other calls (issue #871).
+  const firstToken = useRef<{ at: number; tokens: number } | null>(null);
+  const lastToken = useRef<{ at: number; tokens: number } | null>(null);
+  const [rate, setRate] = useState<number | null>(null);
   const stop = useRef<AbortController | null>(null);
   const [prompts, setPrompts] = useState<readonly RunnablePrompt[]>([]);
   // This document's conversations of the person's, the one open and its turns (G5-A).
@@ -284,6 +291,7 @@ export function AssistantPanel({
   const addButton = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const askedNow = useRef<HTMLParagraphElement>(null);
   // What the assistant is given with an ask on a document: the component open, or every one.
   const [scope, setScope] = useState<'component' | 'document'>('component');
   // The part asked about, held from when the box is entered until the ask is sent, so the cursor
@@ -303,11 +311,16 @@ export function AssistantPanel({
     element.style.height = 'auto';
     element.style.height = `${element.scrollHeight}px`;
   }, [ask]);
-  // A turn asked brought into view at the conversation's foot, where it answers: the conversation
-  // scrolled alone, never the page around it (issue #864).
+  // A turn asked brought into view, its words whole at the top of the conversation with the answer
+  // coming under them, a follow-up too: the conversation scrolled alone, never the page around it
+  // (issues #864, #871). Where the bubble is not drawn, a prompt run's, its foot.
   useEffect(() => {
     const element = scroller.current;
-    if (element && (running || asked !== null)) element.scrollTo?.({ top: element.scrollHeight });
+    if (!element || !(running || asked !== null)) return;
+    const bubble = askedNow.current;
+    element.scrollTo?.({
+      top: bubble ? bubble.offsetTop - 12 : element.scrollHeight,
+    });
   }, [running, asked]);
   const asking = held ?? component;
   const given = asking === null ? 'document' : scope;
@@ -427,22 +440,6 @@ export function AssistantPanel({
     } else setSaid(refusalWords(error, words('document.that-part-could-not-be')));
   };
 
-  const usage = async () => {
-    const { data } = await client.GET('/v1/me/assistant-usage');
-    if (!data) return;
-    const costs = formats().list(
-      data.costs.map((each) =>
-        words('document.cost', { currency: each.currency, cost: each.cost }),
-      ),
-      { type: 'unit' },
-    );
-    setMonth(
-      costs === ''
-        ? words('document.this-month', { runs: data.runs })
-        : words('document.this-month-costing', { runs: data.runs, costs }),
-    );
-  };
-
   /** A conversation of this document's opened, or none: a new one, begun by the next ask. */
   const open = (id: string | null) => {
     setHeld(null);
@@ -544,6 +541,9 @@ export function AssistantPanel({
     setSaid('');
     setReused(null);
     setReceived(0);
+    firstToken.current = null;
+    lastToken.current = null;
+    setRate(null);
     const outcome = await stream({
       url,
       body,
@@ -557,6 +557,11 @@ export function AssistantPanel({
             if (typeof frame.cachedFrom === 'string') setReused(body);
             break;
           case 'text':
+            if (typeof frame.tokens === 'number') {
+              const seen = { at: now(), tokens: frame.tokens };
+              firstToken.current ??= seen;
+              lastToken.current = seen;
+            }
             setAnswer((was) => was + String(frame.text));
             if (typeof frame.tokens === 'number') setReceived(frame.tokens);
             break;
@@ -604,9 +609,16 @@ export function AssistantPanel({
               { where: String(frame.where), instruction: String(frame.instruction) },
             ]);
             break;
-          case 'ended':
+          case 'ended': {
             setEnded(frame as unknown as Ended);
+            const first = firstToken.current;
+            const last = lastToken.current;
+            // Unmeasured where the reply came in one piece.
+            if (first !== null && last !== null && last.at - first.at >= 250) {
+              setRate((last.tokens - first.tokens) / ((last.at - first.at) / 1000));
+            }
             break;
+          }
           case 'failed':
             setSaid(failedWords(frame));
             break;
@@ -623,7 +635,6 @@ export function AssistantPanel({
     }
     stop.current = null;
     setRunning(false);
-    void usage();
   };
 
   const act = async (proposal: Proposal, act: 'acceptance' | 'keeping' | 'discarding') => {
@@ -854,11 +865,11 @@ export function AssistantPanel({
         )}
       </div>
       <div ref={scroller} className={styles['scroll']}>
-        {(opened !== null || naming !== null) && (
+        {/* The name while it is written; never the title over the turns, which says the first ask
+        again (issue #871). */}
+        {naming !== null && (
           <div className={styles['named']}>
-            {naming === null ? (
-              <h3>{opened?.title}</h3>
-            ) : (
+            {
               <input
                 aria-label={words('document.the-conversation-s-name')}
                 value={naming}
@@ -878,7 +889,7 @@ export function AssistantPanel({
                   }
                 }}
               />
-            )}
+            }
           </div>
         )}
         {turns.filter((each) => each.run !== current).length > 0 && (
@@ -909,7 +920,7 @@ export function AssistantPanel({
         {(asked !== null || running || answer !== '' || ended !== null || proposals.length > 0) && (
           <article aria-label={words('document.this-turn')} className={styles['turn']}>
             {asked !== null && (
-              <p className={styles['asked']}>
+              <p ref={askedNow} className={styles['asked']}>
                 <span className={styles['hidden']}>{words('document.you')} </span> {asked}
               </p>
             )}
@@ -1075,7 +1086,8 @@ export function AssistantPanel({
               <p className={styles['muted']}>
                 {ended.tokensIn === null
                   ? words('document.no-tokens-were-reported')
-                  : ended.cost === null
+                  : // The cost where the run incurred one (GEN-037), never a free run's zero (#871).
+                    ended.cost === null || Number(ended.cost) === 0
                     ? words('document.tokens-in-out', {
                         tokensIn: ended.tokensIn,
                         tokensOut: ended.tokensOut,
@@ -1085,24 +1097,29 @@ export function AssistantPanel({
                         tokensOut: ended.tokensOut,
                         currency: ended.currency,
                         cost: ended.cost,
-                      })}{' '}
-                {month}
+                      })}
+                {rate !== null &&
+                  ` ${words('document.tokens-a-second', { rate: formats().number(Math.round(rate)) })}`}
               </p>
             )}
             {!running && asked !== null && answer !== '' && (
               <div className={styles['turnActions']}>
-                <button
-                  type="button"
+                <IconButton
+                  label={words('document.copy-the-answer')}
                   className={styles['quiet']}
                   onClick={() =>
                     void navigator.clipboard?.writeText(answer.replace(CITATION_MARK, ''))
                   }
                 >
-                  {words('document.copy-the-answer')}
-                </button>
-                <button type="button" className={styles['quiet']} onClick={() => void send(asked)}>
-                  {words('document.ask-again')}
-                </button>
+                  <Icon name="Copy" size={14} />
+                </IconButton>
+                <IconButton
+                  label={words('document.ask-again')}
+                  className={styles['quiet']}
+                  onClick={() => void send(asked)}
+                >
+                  <Icon name="Retry" size={14} />
+                </IconButton>
               </div>
             )}
           </article>

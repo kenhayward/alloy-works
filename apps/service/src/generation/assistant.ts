@@ -105,10 +105,13 @@ const sourcesOn = async (trx: TenantTransaction) =>
  * change a proposal the requester acts on (GEN-009).
  */
 
-/** The run's limits (G2-B): within the stream's five minutes. */
+/**
+ * The run's limits (G2-B): within the stream's five minutes. A hundred tool calls over as many as forty
+ * model turns, so a run editing many parts is held by its time, not its count (issue #870).
+ */
 export const ASSISTANT_LIMITS = {
-  turns: 6,
-  toolCalls: 12,
+  turns: 40,
+  toolCalls: 100,
   runMs: 240_000,
   maxTokens: 4096,
 } as const;

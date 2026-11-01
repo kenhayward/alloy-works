@@ -170,6 +170,12 @@ const ADMIN: Record<string, readonly string[]> = {
     'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',
     'M5 15H4V4h11v1',
   ],
+  // The assistant's turn (issue #871): its answer copied, and asked again.
+  Copy: [
+    'M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1z',
+    'M5 15H4V4h11v1',
+  ],
+  Retry: ['M20 12a8 8 0 1 1-2.3-5.6L20 8.5', 'M20 4v4.5h-4.5'],
   Revoke: [BIN],
   Withdraw: [BIN],
   'Invite people': [PERSON, 'M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M19 8v6M16 11h6'],

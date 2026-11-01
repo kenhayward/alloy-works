@@ -570,14 +570,17 @@
   gap: var(--space-4);
 }
 
+/* A turn's own acts as small icons, as a chat's are (issue #871): copy, ask again. */
 .quiet {
-  padding: var(--space-4) var(--space-8);
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: 0;
-  border-radius: var(--radius-8);
+  border-radius: var(--radius-4);
   background: transparent;
   color: var(--muted);
-  font: inherit;
-  font-size: var(--size-12);
   cursor: pointer;
 }
 

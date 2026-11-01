@@ -194,7 +194,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   replace its rows, its header rows and its caption; never a bound table's rows, which a query gives.
   A figure, an equation, a footnote or a reference cannot be edited by a proposal. Each turn shows what you asked
   over its answer, each citation a numbered button to the part it names, and a bar above the text
-  steps through the parts the answer cited. **Copy the answer** and **Ask again** sit under an answer;
+  steps through the parts the answer cited. Under an answer, its tokens in and out, how fast it came in tokens a second, and its cost where it had one, then **Copy the answer** and **Ask again** as small icons;
   while it answers, one line says what it is doing and **Stop** stands where **Ask** was. Enter asks,
   Shift and Enter starts a new line, and beside the endpoint a gauge shows how much of its context
   window the last turn took. The API does the same
