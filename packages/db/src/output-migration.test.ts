@@ -334,6 +334,7 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
+      '0184_asset_replacement',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

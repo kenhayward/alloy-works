@@ -5,6 +5,7 @@ import { sourceNameSchema } from '../../data/protocol.js';
 
 import {
   alternativeSchema,
+  assetFollowSchema,
   bindingNodeSchema,
   equationContentSchema,
   footnoteNodeSchema,
@@ -47,6 +48,7 @@ export type BlockNode =
       type: 'figure';
       id: string;
       asset?: string | undefined;
+      follow?: 'latest' | undefined;
       binding?: z.infer<typeof bindingNodeSchema> | undefined;
       imageStyle: string;
       caption: z.infer<typeof inlineNodeSchema>[];
@@ -319,6 +321,10 @@ export const figureNodeSchema = z.strictObject({
   // figure's image. Exactly one of the two, held by the walk (`figure_image`). Additive at schema 1
   // (B6-B): every figure stored before has `asset` and no `binding`, so it parses and digests as it did.
   asset: artifactIdentifierSchema.optional(),
+  // **Or following its asset's latest version** (the AL plan, AL-M; AST-017): `asset` stays the
+  // version it was placed at, and publishing resolves the latest. Additive at schema 1, as `binding`
+  // was; never beside a binding, which has no asset to follow (`figure_image`).
+  follow: assetFollowSchema,
   binding: bindingNodeSchema.optional(),
   imageStyle: z.string().min(1),
   /** Inline content, as a table's caption is (issue #88). */

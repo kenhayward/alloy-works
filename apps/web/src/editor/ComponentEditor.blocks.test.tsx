@@ -1240,6 +1240,20 @@ describe('a figure in the editor (figures 2)', () => {
     expect(within(settings).getByLabelText('Its own description')).toHaveValue('Red');
   });
 
+  it("AST-017 makes a figure follow its image's latest version from Figure settings, and pinned again", async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    const follow = within(settings).getByRole('switch', { name: 'Always show the latest version' });
+    expect(follow).not.toBeChecked();
+    await userEvent.click(follow);
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ asset: RED, follow: 'latest' }));
+    expect(follow).toBeChecked();
+    await userEvent.click(follow);
+    await waitFor(() => expect(figureOf(view)).not.toHaveProperty('follow'));
+  });
+
   it('opens Figure settings from its panel, the focus on the chosen alternative, and gives the focus back on Done', async () => {
     const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
     const view = await surface();

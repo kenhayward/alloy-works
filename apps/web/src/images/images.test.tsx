@@ -13,6 +13,8 @@ const TOWER_VERSION = '55555555-5555-4555-8555-555555555555';
 const STOCK = '66666666-6666-4666-8666-666666666666';
 const PUMPS = '77777777-7777-4777-8777-777777777777';
 const MANUAL = '88888888-8888-4888-8888-888888888888';
+const REPLACING = '99999999-9999-4999-8999-999999999999';
+const HARBOUR_NEXT = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -52,6 +54,7 @@ const tower = {
 
 function service() {
   const asked: string[] = [];
+  let replaced = false;
   const fetching = vi.fn(async (input: string | URL | Request) => {
     const request = input instanceof Request ? input : new Request(String(input));
     const url = new URL(request.url);
@@ -72,10 +75,30 @@ function service() {
     if (path === `/v1/spaces/${GENERAL}/assets`) {
       const q = url.searchParams.get('q');
       const unused = url.searchParams.get('unused');
-      const items = [harbour, tower].filter(
+      const shown = replaced
+        ? { ...harbour, version: { id: HARBOUR_NEXT, number: '0.2' } }
+        : harbour;
+      const items = [shown, tower].filter(
         (each) => (q === null || each.name.includes(q)) && (unused === null || !each.used),
       );
       return json(200, { items, next: null, total: items.length });
+    }
+    // Replacing the harbour (AL-M): an upload naming it, filled, and checked at once.
+    if (path === `/v1/assets/${HARBOUR}/replacements` && request.method === 'POST') {
+      return json(200, { id: REPLACING, space: GENERAL, state: 'awaiting', reason: null, assetVersion: null });
+    }
+    if (path === `/v1/asset-uploads/${REPLACING}/bytes` && request.method === 'PUT') {
+      return json(200, { id: REPLACING, space: GENERAL, state: 'checking', reason: null, assetVersion: null });
+    }
+    if (path === `/v1/asset-uploads/${REPLACING}`) {
+      replaced = true;
+      return json(200, {
+        id: REPLACING,
+        space: GENERAL,
+        state: 'ready',
+        reason: null,
+        assetVersion: HARBOUR_NEXT,
+      });
     }
     if (path === `/v1/assets/${HARBOUR}/uses`) {
       return json(200, {
@@ -150,6 +173,25 @@ describe("the Images page: a space's images (the AL plan, AL-J, AL-K)", () => {
     });
     const list = await screen.findByRole('list', { name: 'Images' });
     await waitFor(() => expect(within(list).getAllByRole('listitem')).toHaveLength(1));
+  });
+
+  it('AST-016 replaces an image with a file chosen on its card, and shows its next version', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<Images client={client} />);
+    const list = await screen.findByRole('list', { name: 'Images' });
+    await user.upload(
+      within(list).getByLabelText('Replace harbour.png'),
+      new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'harbour-2.png', { type: 'image/png' }),
+    );
+    expect(await screen.findByText('harbour.png was replaced.')).toBeInTheDocument();
+    expect(asked).toContain(`/v1/assets/${HARBOUR}/replacements`);
+    await waitFor(() =>
+      expect(within(list).getByRole('img', { name: 'A harbour at dawn' })).toHaveAttribute(
+        'src',
+        `/v1/asset-versions/${HARBOUR_NEXT}/derivatives/thumbnail`,
+      ),
+    );
   });
 
   it('AST-018 says where an image is used, naming only what the reader may read', async () => {

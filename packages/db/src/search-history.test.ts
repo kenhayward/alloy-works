@@ -928,6 +928,7 @@ describe('migration 0091, which keeps one row a place over every version', () =>
         '0181_asset_ingest',
         '0182_model_capabilities',
         '0183_conversation_kept',
+        '0184_asset_replacement',
       ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(migrated).toHaveLength(1);

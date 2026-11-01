@@ -34,10 +34,34 @@ export const CreateAssetUploadBody = z.strictObject({
 });
 export type CreateAssetUploadBody = z.infer<typeof CreateAssetUploadBody>;
 
+/**
+ * What replacing an image takes (AST-016; the AL plan, AL-M): the description and the name its next
+ * version carries, each the version it replaces' where not given. Its rights are the image's already.
+ */
+export const CreateAssetReplacementBody = z.strictObject({
+  alternative: assetAlternativeSchema
+    .nullable()
+    .optional()
+    .describe("The next version's default description, null for none, or the latest's where absent"),
+  name: assetNameSchema.optional().describe("The name it is listed by, or the latest's where absent"),
+});
+export type CreateAssetReplacementBody = z.infer<typeof CreateAssetReplacementBody>;
+
 export const AssetUploadParams = z.object({ id: LowercaseUuid });
 export type AssetUploadParams = z.infer<typeof AssetUploadParams>;
 
 export const AssetVersionParams = z.object({ id: LowercaseUuid });
+
+/** Reading a version's image, or its asset's latest's, as a figure following it shows (AL-M). */
+export const AssetContentQuery = z.object({
+  follow: z
+    .literal('latest')
+    .optional()
+    .describe(
+      "`latest`: the image of this version's asset's latest version instead, never kept, as a figure following its image shows it",
+    ),
+});
+export type AssetContentQuery = z.infer<typeof AssetContentQuery>;
 export type AssetVersionParams = z.infer<typeof AssetVersionParams>;
 
 /** An upload as its uploader follows it: its state, and its asset version once ready or why not. */
@@ -269,6 +293,29 @@ export const assetRoutes = {
       },
     },
   },
+  createAssetReplacement: {
+    operationId: 'createAssetReplacement',
+    method: 'POST',
+    path: '/v1/assets/{id}/replacements',
+    summary: "Make an upload replacing an image: its check cuts the image's next version",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: AssetParams,
+    body: CreateAssetReplacementBody,
+    responses: {
+      200: {
+        description: 'The upload, awaiting its bytes, which go to `putAssetUploadBytes`',
+        schema: AssetUploadView,
+      },
+      401: unauthenticated,
+      403: { description: 'The caller may read the image but not edit it', schema: ErrorBody },
+      404: notFound,
+      409: {
+        description: "`asset_replace_dataset`: a dataset's image, which its dataset replaces",
+        schema: ErrorBody,
+      },
+    },
+  },
   putAssetUploadBytes: {
     operationId: 'putAssetUploadBytes',
     method: 'PUT',
@@ -344,10 +391,11 @@ export const assetRoutes = {
     tenantScoped: true,
     access: { check: 'permission', permission: 'read', target: { artifactVersion: 'id' } },
     params: AssetVersionParams,
+    query: AssetContentQuery,
     responses: {
       200: {
         description:
-          'The bytes, never sniffed and never run: a version never changes, so they may be kept for a year',
+          'The bytes, never sniffed and never run: a version never changes, so they may be kept for a year; the latest, asked for, is never kept',
         binary: { contentTypes: ['image/png', 'image/jpeg'] },
       },
       401: unauthenticated,

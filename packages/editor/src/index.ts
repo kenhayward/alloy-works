@@ -61,6 +61,7 @@ export {
   insertFigure,
   replaceFigureImage,
   setFigureAlternative,
+  setFigureFollow,
   setFigureNumbered,
   type FigureAt,
 } from './figures.js';

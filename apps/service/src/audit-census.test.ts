@@ -398,6 +398,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   placeHold: writes('hold.applied'),
   releaseHold: writes('hold.removed'),
   createAssetUpload: { none: 'upload' },
+  createAssetReplacement: { none: 'upload' },
   putAssetUploadBytes: writes('asset.refused'),
   getAssetUpload: read,
   getAssetVersion: read,

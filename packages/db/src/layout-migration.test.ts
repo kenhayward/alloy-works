@@ -398,6 +398,7 @@ describe('migration 0018, which gives every environment its default layout', () 
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
+      '0184_asset_replacement',
     ]);
 
     // No trigger was held off, and every one stands enabled.

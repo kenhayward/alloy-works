@@ -141,6 +141,33 @@ describe('the mapping between the stored model and the editor', () => {
     expect(fromEditor(opened.doc)).toEqual(stored);
   });
 
+  it('AST-017 carries a figure and an image following their asset there and back, and a pinned one without it', () => {
+    const asset = '00000000-0000-4000-8000-00000000a551';
+    const stored = document([
+      {
+        type: 'figure',
+        id: 'f1',
+        asset,
+        follow: 'latest',
+        imageStyle: 'figure',
+        caption: [],
+        alternative: { kind: 'decorative' },
+      },
+      {
+        type: 'paragraph',
+        id: 'p1',
+        style: 'body',
+        content: [
+          { type: 'image', asset, follow: 'latest', imageStyle: 'inline', alternative: { kind: 'decorative' } },
+          { type: 'image', asset, imageStyle: 'inline', alternative: { kind: 'decorative' } },
+        ],
+      },
+    ] as BlockNode[]);
+    const opened = toEditor(stored);
+    if (!opened.editable) throw new Error('not editable');
+    expect(fromEditor(opened.doc)).toEqual(stored);
+  });
+
   it('keeps adjacent text runs as one run, as the editor holds them', () => {
     const stored = document([
       {

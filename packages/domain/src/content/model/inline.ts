@@ -318,10 +318,14 @@ export const messageFormNodeSchema = z.strictObject({
 /** A message form, as `messageFormNodeSchema` holds it. */
 export type MessageFormNode = z.infer<typeof messageFormNodeSchema>;
 
+/** An image following its asset's latest version rather than the one it names (AST-017), or not. */
+export const assetFollowSchema = z.literal('latest').optional();
+
 export const imageNodeSchema = z.strictObject({
   type: z.literal('image'),
-  // An asset version, pinned, as a figure's is (figures 1, R4).
+  // An asset version, pinned, as a figure's is (figures 1, R4), or followed to its latest (AL-M).
   asset: artifactIdentifierSchema,
+  follow: assetFollowSchema,
   imageStyle: z.string().min(1),
   alternative: alternativeSchema,
 });

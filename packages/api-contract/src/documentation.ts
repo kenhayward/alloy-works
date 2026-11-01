@@ -381,6 +381,7 @@ const operationTags = {
     'listSpaceAssets',
     'getAssetUses',
     'createAssetUpload',
+    'createAssetReplacement',
     'getAssetUpload',
     'putAssetUploadBytes',
     'getAssetVersion',
@@ -1201,6 +1202,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Records the next prompt version from the version the caller opened, checked as a new prompt is.',
   createAssetUpload:
     'Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.',
+  createAssetReplacement:
+    "Starts an upload replacing an image. Upload its bytes separately, as for any upload; once they pass the check, they become the image's next version, and every earlier version is kept as it was. Its description and name are the latest version's unless given; its rights stay the image's. A figure following the image's latest version shows the replacement from then on; a figure pinned to a version keeps it. Needs edit on the image.",
   getAssetUpload:
     'Reads the state of an upload the caller created and, once ingestion completes, the resulting asset version.',
   putAssetUploadBytes:

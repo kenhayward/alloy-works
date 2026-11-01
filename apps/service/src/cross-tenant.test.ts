@@ -491,6 +491,7 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetUses: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   listSpaceAssets: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   setAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
+  createAssetReplacement: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   getAssetVersionDerivative: async (tenant, db) => ({
     id: (await assetIn(tenant, db)).version,
     kind: 'thumbnail',
@@ -1008,6 +1009,7 @@ const VALID_INPUT: Readonly<
   setImportSettings: { payload: { policy: 'keep' } },
   setImagesSettings: { payload: { undeclared: 'refuse' } },
   setAssetRights: { payload: { rights: { kind: 'undeclared' } } },
+  createAssetReplacement: { payload: {} },
   setTranslationSettings: { payload: { fallback: 'refuse', outOfDate: 'publish', note: {} } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },

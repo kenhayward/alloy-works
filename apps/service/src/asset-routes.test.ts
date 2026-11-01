@@ -644,6 +644,47 @@ describe('uploading an image through the service (figures 1)', () => {
     ).toBe(400);
   });
 
+  it('AST-016 AST-017 AST-049 replaces an image by edit on it, cutting its next version, serving each version its own derivative and a follower the latest', async () => {
+    const id = await made('grace', general, { text: 'A buoy', language: 'en-GB' });
+    const before = png(6, 4);
+    await fill('grace', id, before);
+    const first = await ingested(id, before);
+    const url = `/v1/assets/${first.artifactId}/replacements`;
+    // Alice may read it and not edit it; Ivy may not read it; an id that is no asset's is none.
+    expect((await call('alice', 'POST', url, {})).statusCode).toBe(403);
+    expect((await call('ivy', 'POST', url, {})).statusCode).toBe(404);
+    expect((await call('grace', 'POST', `/v1/assets/${general}/replacements`, {})).statusCode).toBe(
+      404,
+    );
+    const asked = await call('grace', 'POST', url, {});
+    expect(asked.statusCode, asked.body).toBe(200);
+    const replacing = asked.json<{ id: string; state: string }>();
+    expect(replacing.state).toBe('awaiting');
+    const after = png(8, 4);
+    expect((await fill('grace', replacing.id, after)).statusCode).toBe(200);
+    const second = await ingested(replacing.id, after);
+    expect(second).toMatchObject({ artifactId: first.artifactId, version: 2 });
+    // Its description and name carried from the version it replaced, where none was given.
+    const read = await call('grace', 'GET', `/v1/asset-versions/${second.id}`);
+    expect(read.json()).toMatchObject({
+      asset: first.artifactId,
+      number: '0.2',
+      width: 8,
+      alternative: { text: 'A buoy', language: 'en-GB' },
+    });
+    // The version replaced is read as it was, and never served the replacement's bytes.
+    const original = await call('grace', 'GET', `/v1/asset-versions/${first.id}/content`);
+    expect(Buffer.compare(original.rawPayload, before)).toBe(0);
+    const thumbnail = (version: string) =>
+      call('grace', 'GET', `/v1/asset-versions/${version}/derivatives/thumbnail`);
+    expect(Buffer.compare((await thumbnail(first.id)).rawPayload, before)).toBe(0);
+    expect(Buffer.compare((await thumbnail(second.id)).rawPayload, after)).toBe(0);
+    // A figure following it, placed at the first, shows the latest's, never kept (AST-017).
+    const shown = await call('grace', 'GET', `/v1/asset-versions/${first.id}/content?follow=latest`);
+    expect(Buffer.compare(shown.rawPayload, after)).toBe(0);
+    expect(shown.headers['cache-control']).toBe('private, no-store');
+  });
+
   it("AST-048 discards a space's derivatives for an administrator of it, each made again when next read", async () => {
     const id = await made('grace', general);
     const image = png(7, 4);

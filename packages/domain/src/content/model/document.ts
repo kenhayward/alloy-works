@@ -614,7 +614,10 @@ function checkBlock(block: BlockNode, claimed: Claimed): BlockNode {
       // (B6-C, `figure_bound_alternative`): one fixed text cannot describe each document's row
       // (DAT-097). Its binding's identifier is claimed as an inline one's is, before the caption,
       // which is the order a reader meets the two in.
-      if ((block.asset === undefined) === (block.binding === undefined)) {
+      if (
+        (block.asset === undefined) === (block.binding === undefined) ||
+        (block.follow !== undefined && block.asset === undefined)
+      ) {
         throw new FigureRefused('figure_image', block.id);
       }
       if (block.binding !== undefined) {

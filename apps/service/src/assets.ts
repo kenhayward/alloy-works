@@ -1,4 +1,5 @@
 import type {
+  AssetContentQuery,
   AssetDerivativeParams,
   AssetDerivativesDiscarded,
   AssetParams,
@@ -8,6 +9,7 @@ import type {
   AssetUsesView,
   AssetVersionParams,
   AssetVersionView,
+  CreateAssetReplacementBody,
   CreateAssetUploadBody,
   LibraryAssetList,
   LibraryAssetQuery,
@@ -31,6 +33,7 @@ import {
   receiveAssetBytes,
   recordAssetRights,
   imagesPolicy,
+  latestVersion,
   listAssets,
   refuseAssetUpload,
   type AssetUploadReason,
@@ -258,6 +261,35 @@ export function assetHandlers(
     },
 
     /**
+     * `edit` was decided on the image (AL-M; AST-016): an upload in its space naming it, its
+     * description and name the latest version's where not given. A dataset's image is its dataset's.
+     */
+    createAssetReplacement: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<AssetUploadView> => {
+      const { id } = request.params as AssetParams;
+      await assetIn(trx, id);
+      if ((await readableAsset(trx, callerOf(request), id)).fromDataset) {
+        throw refused(409, 'asset.replace_dataset', "A dataset's image is replaced by its dataset.");
+      }
+      const latest = await latestVersion(trx, id);
+      const { spaceId, content } = (latest && (await readAssetVersion(trx, latest.id))) || {};
+      if (spaceId === undefined || content === undefined) throw notFound();
+      const body = request.body as CreateAssetReplacementBody;
+      const name = body.name ?? content.name;
+      return uploadView(
+        await createAssetUpload(trx, {
+          spaceId,
+          uploader: principalId,
+          alternative: body.alternative === undefined ? content.alternative : body.alternative,
+          ...(name === undefined ? {} : { name }),
+          replaces: id,
+        }),
+      );
+    },
+
+    /**
      * The service's half of the check (assets.md, "The upload and the check"): the format from the
      * bytes, the header walk, the pixel limit - each refused with nothing stored, the refusal recorded
      * on the upload - then the bytes kept under their hash and the `ingest` job queued. A refusal is
@@ -476,13 +508,18 @@ export function assetHandlers(
       { trx }: Authorised,
     ): Promise<BinaryBody> => {
       const { id } = request.params as AssetVersionParams;
-      const version = await readableAssetVersion(trx, callerOf(request), id);
+      const placed = await readableAssetVersion(trx, callerOf(request), id);
+      // A figure following its image shows its asset's latest (AL-M), which is never kept.
+      const following = (request.query as AssetContentQuery).follow === 'latest';
+      const latest = following ? await latestVersion(trx, placed.assetId) : undefined;
+      const version = (latest && (await readAssetVersion(trx, latest.id))) || placed;
       if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
       return {
         contentType: ADMITTED_FORMATS[version.content.format].contentType,
         bytes: await verified(store, version.content.object),
-        immutable: true,
+        immutable: !following,
+        ...(following ? { unkept: true } : {}),
       };
     },
 

@@ -477,6 +477,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
+      '0184_asset_replacement',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.

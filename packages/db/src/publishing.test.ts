@@ -2043,7 +2043,8 @@ describe('requesting and recording a publication', () => {
         kind: 'asset',
         content: {
           schemaVersion: 1,
-          object: `${production.role}/sha256/${fill.repeat(64)}`,
+          // A single digit fills the hash; longer, it is repeated to fill it.
+          object: `${production.role}/sha256/${fill.repeat(64 / fill.length)}`,
           format: 'png',
           bytes: 3530,
           width: 800,
@@ -2128,6 +2129,50 @@ describe('requesting and recording a publication', () => {
         alternative: { text: 'Two red squares', language: 'en-GB' },
       });
       expect([...inputs!.assets.keys()].sort()).toEqual([red.id, blue.id].sort());
+    });
+  });
+
+  it("AST-017 publishes a figure or an image following its asset at the asset's latest version, and a pinned one at its own", async () => {
+    await service.withTenant(production, async (trx) => {
+      // Hashes of their own, which no other test's single-digit fill names.
+      const first = await image(trx, general, ada, '7d');
+      const replaced = await recordVersion(trx, {
+        artifactId: first.artifactId,
+        openedFrom: first.id,
+        author: ada,
+        substance: {
+          kind: 'asset',
+          content: { ...(first.content as object), object: `${production.role}/sha256/${'7e'.repeat(32)}` },
+        } as never,
+      });
+      if (replaced.answer !== 'recorded') throw new Error(replaced.answer);
+      const latest = replaced.version;
+      const inline = {
+        type: 'image' as const,
+        asset: first.id,
+        follow: 'latest' as const,
+        imageStyle: 'inline',
+        alternative: { kind: 'inherited' as const },
+      };
+      const placed = await holding(trx, ada, [
+        { ...figureOf('f1', first.id), follow: 'latest' },
+        figureOf('f2', first.id),
+        { type: 'paragraph', id: 'p1', style: 'body', content: [inline] },
+      ]);
+      const placement = reference(placed.artifactId);
+      const version = await documentWith(trx, [placement]);
+      const id = await requested(trx, version, ada);
+
+      expect(await failuresIn(trx, id)).toEqual([]);
+      expect(new Set((await requestAssets(trx, id)).map((each) => each.version_id))).toEqual(
+        new Set([first.id, latest.id]),
+      );
+      // The job places each as resolved: the following ones at the latest, the pinned at its own.
+      const inputs = await publicationInputs(trx, id);
+      const blocks = inputs!.occurrences.get(placement.id)!.content.content;
+      expect(blocks[0]).toMatchObject({ id: 'f1', asset: latest.id });
+      expect(blocks[1]).toMatchObject({ id: 'f2', asset: first.id });
+      expect(blocks[2]).toMatchObject({ content: [{ asset: latest.id }] });
     });
   });
 

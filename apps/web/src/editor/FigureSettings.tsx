@@ -4,6 +4,7 @@ import {
   deleteFigure,
   deleteImage,
   setFigureAlternative,
+  setFigureFollow,
   setFigureNumbered,
   setImageAlternative,
   type EditorView,
@@ -30,6 +31,8 @@ export interface FigureShown {
   readonly alternative: Alternative;
   /** A figure's, as `figureAt` reads it; an inline image takes no number, and has none. */
   readonly numbered?: boolean;
+  /** A figure's: whether it follows its image's latest version (AL-M; AST-017). */
+  readonly follow?: boolean;
 }
 
 /** The image's own description as it is said: the text and its language, none, or unknown. */
@@ -140,6 +143,9 @@ export function useFigureSettings({
     number: (numbered: boolean) => {
       if (enabled) setFigureNumbered(numbered)(view.state, view.dispatch);
     },
+    follow: (follow: boolean) => {
+      if (enabled) setFigureFollow(follow)(view.state, view.dispatch);
+    },
     remove: () => {
       if (enabled) (kind === 'figure' ? deleteFigure : deleteImage)(view.state, view.dispatch);
     },
@@ -222,6 +228,19 @@ export function FigureSettings({
               checked={figure.numbered !== false}
               disabled={!enabled}
               onChange={(event) => settings.number(event.target.checked)}
+            />
+          </label>
+        )}
+        {kind === 'figure' && !bound && (
+          <label>
+            {words('editor.always-show-the-latest-version')}
+            <input
+              type="checkbox"
+              role="switch"
+              className={styles['switch']}
+              checked={figure.follow === true}
+              disabled={!enabled}
+              onChange={(event) => settings.follow(event.target.checked)}
             />
           </label>
         )}

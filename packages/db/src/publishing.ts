@@ -300,6 +300,61 @@ async function goneComponents(
   return new Set([...malformed, ...rows.map((row) => row.id)]);
 }
 
+/** Each image following its asset (AL-M; AST-017), by the version it was placed at, at any depth. */
+export function followingIn(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(followingIn);
+  if (typeof value !== 'object' || value === null) return [];
+  const record = value as Record<string, unknown>;
+  const own =
+    (record['type'] === 'figure' || record['type'] === 'image') &&
+    record['follow'] === 'latest' &&
+    typeof record['asset'] === 'string'
+      ? [record['asset']]
+      : [];
+  return [...own, ...Object.values(record).flatMap(followingIn)];
+}
+
+/** The value with each following image placed at the version `to` resolves it to; the rest as they are. */
+export function followTo<T>(value: T, to: ReadonlyMap<string, string>): T {
+  if (to.size === 0) return value;
+  if (Array.isArray(value)) return value.map((each) => followTo(each, to)) as T;
+  if (typeof value !== 'object' || value === null) return value;
+  const record = Object.fromEntries(
+    Object.entries(value).map(([key, member]) => [key, followTo(member, to)]),
+  );
+  const resolved =
+    record['follow'] === 'latest' && typeof record['asset'] === 'string'
+      ? to.get(record['asset'])
+      : undefined;
+  return (resolved === undefined ? record : { ...record, asset: resolved }) as T;
+}
+
+/**
+ * The version each following image resolves to (AL-M): its asset's latest, or where `within` is given
+ * - the versions a request or a baseline recorded - the newest of its asset's among those, so the job
+ * places exactly what was resolved, whatever has been cut since.
+ */
+export async function followedVersions(
+  trx: TenantTransaction,
+  placed: readonly string[],
+  within?: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  const asked = [...new Set(placed)].filter((id) => UUID.test(id));
+  if (asked.length === 0) return new Map();
+  const among =
+    within === undefined ? sql`` : sql`and l.id = any(${[...within]}::uuid[])`;
+  const { rows } = await sql<{ placed: string; resolved: string | null }>`
+    select p.id::text as placed,
+           (select l.id::text from artifact_version l
+             where l.artifact_id = p.artifact_id ${among}
+             order by l.revision_no desc, l.version_no desc limit 1) as resolved
+      from artifact_version p
+     where p.kind = 'asset' and p.id = any(${asked}::uuid[])`.execute(trx);
+  return new Map(
+    rows.flatMap((row) => (row.resolved === null ? [] : [[row.placed, row.resolved] as const])),
+  );
+}
+
 /**
  * Each image in these blocks at any depth, with the asset version it places and the block a refusal
  * names: a figure's own, and for an image in a run of text (figures 5) the block holding the run - a
@@ -1116,12 +1171,22 @@ export async function resolvePublishable(
         ],
   );
   // Nor is it read, pinned, bound or searched for a page: only what the profile keeps (R11 review).
-  const resolved = await readResolved(
+  const resolvedRead = await readResolved(
     trx,
     outcomes.flatMap((each) =>
       each.outcome === 'resolved' && !excluded.has(each.node) ? [each] : [],
     ),
   );
+  // An image following its asset is resolved to the asset's latest version here (AL-M; AST-017), so
+  // every decision below, and what the request records, is the latest's.
+  const followed = await followedVersions(
+    trx,
+    resolvedRead.flatMap((each) => followingIn(each.content)),
+  );
+  const resolved = resolvedRead.map((each) => ({
+    ...each,
+    content: followTo(each.content, followed),
+  }));
   // An override that no longer stands fails loudly, by node and block (REU-015; the R4 plan, R4-C).
   const variants = new Set(
     [...translations]
@@ -2031,6 +2096,15 @@ async function inputsOf(
     .where('q.request_id', '=', requestId)
     .where('q.asset_kind', '=', 'asset')
     .execute();
+  // Each following image placed at the version the request resolved it to (AL-M).
+  const followed = await followedVersions(
+    trx,
+    [...occurrences.values()].flatMap((each) => followingIn(each.content)),
+    images.map((row) => row.version_id),
+  );
+  for (const [node, each] of occurrences) {
+    occurrences.set(node, { ...each, content: followTo(each.content, followed) });
+  }
   const assets = new Map<string, PublishingAsset>();
   for (const row of images) {
     // An asset version that does not parse is a broken store, as a component that does not read is.
