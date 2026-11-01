@@ -52,6 +52,10 @@
       "description": "Read the environment's vocabularies, the values a field or an axis may take with their labels per language, and import and export them as SKOS."
     },
     {
+      "name": "Licences",
+      "description": "Read the environment's licences: what an image held under each may be used for, and the credit it needs."
+    },
+    {
       "name": "Translations",
       "description": "Translate a component into another language as a variant of its own, see each variant's status against its source, and declare which source changes need retranslating."
     },
@@ -279,6 +283,7 @@
         "Bibliography",
         "Terms",
         "Vocabularies",
+        "Licences",
         "Translations",
         "Assets",
         "Imports",
@@ -90680,9 +90685,10 @@
                               "variable",
                               "conditionAxis",
                               "relationshipType",
-                              "vocabulary"
+                              "vocabulary",
+                              "licence"
                             ],
-                            "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                            "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                           },
                           "name": {
                             "type": "string"
@@ -90963,9 +90969,10 @@
                       "variable",
                       "conditionAxis",
                       "relationshipType",
-                      "vocabulary"
+                      "vocabulary",
+                      "licence"
                     ],
-                    "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                    "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                   },
                   "definition": {
                     "type": "object",
@@ -91014,9 +91021,10 @@
                         "variable",
                         "conditionAxis",
                         "relationshipType",
-                        "vocabulary"
+                        "vocabulary",
+                        "licence"
                       ],
-                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                     },
                     "version": {
                       "type": "object",
@@ -91252,9 +91260,10 @@
                             "variable",
                             "conditionAxis",
                             "relationshipType",
-                            "vocabulary"
+                            "vocabulary",
+                            "licence"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                         },
                         "version": {
                           "type": "object",
@@ -91517,9 +91526,10 @@
                         "variable",
                         "conditionAxis",
                         "relationshipType",
-                        "vocabulary"
+                        "vocabulary",
+                        "licence"
                       ],
-                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                     },
                     "version": {
                       "type": "object",
@@ -91876,9 +91886,10 @@
                         "variable",
                         "conditionAxis",
                         "relationshipType",
-                        "vocabulary"
+                        "vocabulary",
+                        "licence"
                       ],
-                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                      "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                     },
                     "version": {
                       "type": "object",
@@ -92114,9 +92125,10 @@
                             "variable",
                             "conditionAxis",
                             "relationshipType",
-                            "vocabulary"
+                            "vocabulary",
+                            "licence"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                         },
                         "version": {
                           "type": "object",
@@ -92461,9 +92473,10 @@
                             "variable",
                             "conditionAxis",
                             "relationshipType",
-                            "vocabulary"
+                            "vocabulary",
+                            "licence"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                         },
                         "version": {
                           "type": "object",
@@ -230004,6 +230017,595 @@
         }
       }
     },
+    "/v1/licences": {
+      "get": {
+        "operationId": "listLicences",
+        "summary": "The environment's licences, each at its latest version",
+        "description": "Lists the environment's licences by name, each at its latest version: its key, its names per language, what it permits (`internal` use, `publication`, `redistribution`, `modification`), whether it requires attribution and what that must say, and the address of its terms. Anyone signed in may read them, since whoever uploads an image declares the licence it is held under; they are made and changed through `/v1/definitions`, as kind `licence`, by whoever manages definitions.",
+        "tags": [
+          "Licences"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every licence, by name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "number": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "number"
+                            ]
+                          },
+                          "licence": {
+                            "type": "object",
+                            "properties": {
+                              "schemaVersion": {
+                                "type": "number",
+                                "const": 1
+                              },
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "key": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "base": {
+                                "type": "string",
+                                "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                              },
+                              "names": {
+                                "minItems": 1,
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "language": {
+                                      "type": "string",
+                                      "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "language",
+                                    "text"
+                                  ]
+                                }
+                              },
+                              "permits": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "internal",
+                                    "publication",
+                                    "redistribution",
+                                    "modification"
+                                  ]
+                                }
+                              },
+                              "attribution": {
+                                "type": "object",
+                                "properties": {
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "wording": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "required"
+                                ]
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "examples": [
+                                  "https://gauges.example.test/alloy"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "schemaVersion",
+                              "id",
+                              "name",
+                              "key",
+                              "base",
+                              "names",
+                              "permits",
+                              "attribution"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "version",
+                          "licence"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                },
+                "example": {
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/licences/{id}": {
+      "get": {
+        "operationId": "getLicence",
+        "summary": "A licence at its latest version",
+        "description": "Returns a licence at its latest version, as `listLicences` lists it. Anyone signed in may read it.",
+        "tags": [
+          "Licences"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The licence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "number": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "number"
+                      ]
+                    },
+                    "licence": {
+                      "type": "object",
+                      "properties": {
+                        "schemaVersion": {
+                          "type": "number",
+                          "const": 1
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                        },
+                        "base": {
+                          "type": "string",
+                          "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                        },
+                        "names": {
+                          "minItems": 1,
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "language": {
+                                "type": "string",
+                                "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                              },
+                              "text": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "language",
+                              "text"
+                            ]
+                          }
+                        },
+                        "permits": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "internal",
+                              "publication",
+                              "redistribution",
+                              "modification"
+                            ]
+                          }
+                        },
+                        "attribution": {
+                          "type": "object",
+                          "properties": {
+                            "required": {
+                              "type": "boolean"
+                            },
+                            "wording": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "required"
+                          ]
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 2000,
+                          "examples": [
+                            "https://gauges.example.test/alloy"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "schemaVersion",
+                        "id",
+                        "name",
+                        "key",
+                        "base",
+                        "names",
+                        "permits",
+                        "attribution"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "licence"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "version": {
+                    "id": "example",
+                    "number": "example"
+                  },
+                  "licence": {
+                    "schemaVersion": 1,
+                    "id": "example",
+                    "name": "example",
+                    "key": "example",
+                    "base": "en",
+                    "names": [
+                      {
+                        "language": "en",
+                        "text": "example"
+                      }
+                    ],
+                    "permits": [],
+                    "attribution": {
+                      "required": false
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such licence in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "getMe",
@@ -343306,9 +343908,10 @@
                             "variable",
                             "conditionAxis",
                             "relationshipType",
-                            "vocabulary"
+                            "vocabulary",
+                            "licence"
                           ],
-                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)"
+                          "description": "variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)"
                         },
                         "version": {
                           "type": "object",

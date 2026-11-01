@@ -906,17 +906,17 @@ The intelligence, a slice at a time ([generation.md](../design/generation.md) sk
 The administration and the library. The order is provisional: each slice is designed when it is
 reached, and a row here gains its plan link then.
 
-| #   | Plan                                                | Builds                                                                                                                          | Status      |
-| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| VO  | [Vocabularies](2026-10-31-vo-vocabularies.md)       | Named lists of permitted values, drawn on by fields and condition axes, from a source or by hand, deprecated and retired, moved | Built       |
-| AL  | The assets library                                  | Licences and what they permit, derivatives on ingest, browsing and search, where-used, duplicates                               | Provisional |
-| SY  | Styles and themes without a release                 | Styles and themes added by an administrator, derived styles, admonitions, catalogues exported and imported                      | Provisional |
-| ID  | Identity                                            | SCIM, more than one identity provider, re-authentication, session settings, high-risk acts named                                | Provisional |
-| MV  | Moving content between spaces                       | Permissions recomputed on a move; locks and presence degrade                                                                    | Provisional |
-| EI  | Export and import of configuration, spaces, tenants | A tenant reproduced from its export, secrets by reference, partial exports, the round trip tested                               | Provisional |
-| TL  | The tenant's lifecycle                              | Suspension, closure, deletion on a timetable, organisation administrators                                                       | Provisional |
-| DG  | Diagnostics, usage and health                       | Per-capability health and latency, usage trends, silent failures surfaced, objectives declared                                  | Provisional |
-| SG  | Regulated sign-off and evidence                     | Signatures with re-authentication and intent, verifiable log exports, evidence on demand                                        | Provisional |
-| EM  | Email notifications                                 | Notifications by email as tenant configuration, at-least-once                                                                   | Provisional |
-| SQ  | Search quality                                      | Completion, tolerance, language analysis, saved searches, recently opened                                                       | Provisional |
-| AD  | Administration through the API                      | Administration on the interface's terms, webhooks and extensions administered, deprecation in the response                      | Provisional |
+| #   | Plan                                                  | Builds                                                                                                                          | Status      |
+| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| VO  | [Vocabularies](2026-10-31-vo-vocabularies.md)         | Named lists of permitted values, drawn on by fields and condition axes, from a source or by hand, deprecated and retired, moved | Built       |
+| AL  | [The assets library](2026-11-01-al-assets-library.md) | Licences and what they permit, derivatives on ingest, browsing and search, where-used, duplicates                               | Building    |
+| SY  | Styles and themes without a release                   | Styles and themes added by an administrator, derived styles, admonitions, catalogues exported and imported                      | Provisional |
+| ID  | Identity                                              | SCIM, more than one identity provider, re-authentication, session settings, high-risk acts named                                | Provisional |
+| MV  | Moving content between spaces                         | Permissions recomputed on a move; locks and presence degrade                                                                    | Provisional |
+| EI  | Export and import of configuration, spaces, tenants   | A tenant reproduced from its export, secrets by reference, partial exports, the round trip tested                               | Provisional |
+| TL  | The tenant's lifecycle                                | Suspension, closure, deletion on a timetable, organisation administrators                                                       | Provisional |
+| DG  | Diagnostics, usage and health                         | Per-capability health and latency, usage trends, silent failures surfaced, objectives declared                                  | Provisional |
+| SG  | Regulated sign-off and evidence                       | Signatures with re-authentication and intent, verifiable log exports, evidence on demand                                        | Provisional |
+| EM  | Email notifications                                   | Notifications by email as tenant configuration, at-least-once                                                                   | Provisional |
+| SQ  | Search quality                                        | Completion, tolerance, language analysis, saved searches, recently opened                                                       | Provisional |
+| AD  | Administration through the API                        | Administration on the interface's terms, webhooks and extensions administered, deprecation in the response                      | Provisional |

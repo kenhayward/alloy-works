@@ -14,12 +14,13 @@ import {
   type RelationshipTypeDefinition,
 } from '../relationships/type.js';
 import { vocabularyDefinitionSchema, type Vocabulary } from '../library/vocabulary.js';
+import { licenceDefinitionSchema, type Licence } from '../assets/licence.js';
 
 /**
  * The definition kinds, each an artifact kind versioned by the one mechanism (ADR-0024): a variable
  * the fourth (REU-018; the R5 plan, R5-A), a condition axis the fifth (REU-020; the R6 plan, R6-A), a
  * relationship type the sixth (REL-001; the R8 plan, R8-A), a vocabulary the seventh (LIB-020; the VO
- * plan, VO-A).
+ * plan, VO-A), a licence the eighth (AST-022; the AL plan, AL-B).
  */
 export const definitionKinds = [
   'field',
@@ -29,6 +30,7 @@ export const definitionKinds = [
   'conditionAxis',
   'relationshipType',
   'vocabulary',
+  'licence',
 ] as const;
 
 export type DefinitionKind = (typeof definitionKinds)[number];
@@ -41,6 +43,7 @@ export type DefinitionOf = {
   conditionAxis: ConditionAxisDefinition;
   relationshipType: RelationshipTypeDefinition;
   vocabulary: Vocabulary;
+  licence: Licence;
 };
 
 /**
@@ -71,6 +74,7 @@ const chains: Record<DefinitionKind, MigrationChain> = {
     migrations: {},
   },
   vocabulary: { subject: 'vocabulary', current: DEFINITION_SCHEMA_VERSION, migrations: {} },
+  licence: { subject: 'licence', current: DEFINITION_SCHEMA_VERSION, migrations: {} },
 };
 
 const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = {
@@ -81,6 +85,7 @@ const parsers: { [K in DefinitionKind]: (value: unknown) => DefinitionOf[K] } = 
   conditionAxis: (value) => conditionAxisDefinitionSchema.parse(value),
   relationshipType: (value) => relationshipTypeDefinitionSchema.parse(value),
   vocabulary: (value) => vocabularyDefinitionSchema.parse(value),
+  licence: (value) => licenceDefinitionSchema.parse(value),
 };
 
 /** A stored definition at the current definition schema version. A projection, never a rewrite. */

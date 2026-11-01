@@ -6,6 +6,7 @@ import {
   conditionAxisDefinitionSchema,
   relationshipTypeDefinitionSchema,
   vocabularyDefinitionSchema,
+  licenceDefinitionSchema,
 } from '@alloy-works/domain';
 import { z } from 'zod';
 import { nextCursor, pageQuery } from './listing.js';
@@ -25,12 +26,14 @@ export const DefinitionKind = z
     'conditionAxis',
     'relationshipType',
     'vocabulary',
+    'licence',
   ])
   .describe(
     'variable: a value text may name, taken from the document that places it (REU-018); ' +
       'conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); ' +
       'relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); ' +
-      'vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)',
+      'vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); ' +
+      'licence: what an image held under it may be used for, and the credit it needs (AST-022)',
   );
 
 /** An identifier a payload is checked with, and never stored: the service allocates the real one. */
@@ -44,6 +47,7 @@ const payloadSchemas = {
   conditionAxis: conditionAxisDefinitionSchema,
   relationshipType: relationshipTypeDefinitionSchema,
   vocabulary: vocabularyDefinitionSchema,
+  licence: licenceDefinitionSchema,
 } as const;
 
 /**

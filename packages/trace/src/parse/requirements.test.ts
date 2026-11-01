@@ -215,7 +215,8 @@ describe('the real corpus', () => {
     // 1623 (2026-10-31): CLa - the T6 audit's amendments and splits, twelve rows.
     // 1624 (2026-10-31): CNT-187, superseding CNT-168 (CLd).
     // 1625 (2026-10-31): LIB-065, superseding LIB-001 (VO).
-    expect(total((document) => document.requirements)).toBe(1625);
+    // 1627 (2026-11-01): AST-052 and AST-053, superseding AST-025 and AST-043 (AL).
+    expect(total((document) => document.requirements)).toBe(1627);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

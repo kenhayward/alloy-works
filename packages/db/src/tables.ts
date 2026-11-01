@@ -559,14 +559,16 @@ export interface DefinitionNameTable {
     | 'variable'
     | 'conditionAxis'
     | 'relationshipType'
-    | 'vocabulary',
+    | 'vocabulary'
+    | 'licence',
     | 'field'
     | 'metadataSchema'
     | 'componentType'
     | 'variable'
     | 'conditionAxis'
     | 'relationshipType'
-    | 'vocabulary',
+    | 'vocabulary'
+    | 'licence',
     never
   >;
   name_key: ColumnType<string, string, string>;

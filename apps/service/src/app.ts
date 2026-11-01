@@ -100,6 +100,7 @@ import { promptHandlers, promptLibraryHandlers } from './generation/prompts.js';
 import { bibliographyHandlers } from './bibliography/routes.js';
 import { termHandlers } from './terms/routes.js';
 import { vocabularyHandlers } from './vocabularies.js';
+import { licenceHandlers } from './licences.js';
 import { importHandlers } from './imports.js';
 import { termEditingHandlers } from './terms/editing.js';
 import { referenceSourceHandlers } from './bibliography/sources.js';
@@ -646,6 +647,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...bibliographyHandlers(),
     ...termHandlers(),
     ...vocabularyHandlers(db, tenantOf, principalOf, vocabularySource),
+    ...licenceHandlers(db, tenantOf, principalOf),
     ...importHandlers(db, tenantOf, options.objects),
     ...termEditingHandlers(),
     ...referenceSourceHandlers(db, tenantOf, options.connector),

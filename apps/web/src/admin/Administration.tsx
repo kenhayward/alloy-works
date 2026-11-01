@@ -30,6 +30,7 @@ import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
 import { Spaces } from './Spaces.js';
 import { Vocabularies } from './Vocabularies.js';
+import { Licences } from './Licences.js';
 import { Workflows } from './Workflows.js';
 import { words } from '../words/words.js';
 
@@ -89,6 +90,14 @@ const SECTIONS = [
     slug: 'vocabularies',
     get title() {
       return words('admin.vocabularies');
+    },
+    group: 'environment',
+  },
+  // The licences an image may be held under (the AL plan, AL-B).
+  {
+    slug: 'licences',
+    get title() {
+      return words('admin.licences');
     },
     group: 'environment',
   },
@@ -307,6 +316,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
       const { data } = await client.GET('/v1/vocabularies');
       return data?.items.length;
     });
+    count('licences', async () => {
+      const { data } = await client.GET('/v1/licences');
+      return data?.items.length;
+    });
     count('roles', async () => {
       const read = await everyPage((cursor) =>
         client.GET('/v1/roles', {
@@ -479,6 +492,7 @@ export function Administration({
         )}
         {shown === 'workflows' && <Workflows client={client} />}
         {shown === 'vocabularies' && <Vocabularies client={client} />}
+        {shown === 'licences' && <Licences client={client} />}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}

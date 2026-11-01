@@ -600,6 +600,7 @@ const OTHER_TENANT_IDS: Readonly<
   exportVocabulary: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   getVocabularyUses: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   refreshVocabulary: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
+  getLicence: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
   endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
   leavePresence: async () => ({ viewer: '55555555-5555-4555-8555-555555555555' }),
