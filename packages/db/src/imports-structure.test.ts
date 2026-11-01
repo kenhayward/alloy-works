@@ -365,6 +365,39 @@ describe("an import's structure (IMc)", () => {
     });
   });
 
+  it('AST-029 places an image the space already holds rather than making a second of it, and records no import as its source', async () => {
+    const sha256 = randomBytes(32).toString('hex');
+    const first = await withImage(sha256);
+    await propose(first.id);
+    const placedBy = async (id: string) => {
+      const answer = await accept(id);
+      if (answer.answer !== 'accepted') throw new Error(answer.answer);
+      return (answer.components[0]!.content as { content: { asset: string }[] }).content[0]!.asset;
+    };
+    const held = await placedBy(first.id);
+    // Placed only where its acceptor may read it: Ada is given the image to read.
+    await tenant(async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Author'))!.id,
+        subject: { principal: ada },
+        level: { kind: 'artifact', id: (await readAssetVersion(trx, held))!.assetId },
+        effect: 'allow',
+        grantedBy: ada,
+      }),
+    );
+    const before = await left('00000000-0000-4000-8000-000000000000');
+    const second = await withImage(sha256);
+    await propose(second.id);
+    expect(await placedBy(second.id)).toBe(held);
+    expect((await left(second.id)).assets).toBe(before.assets);
+    const { rows } = await tenant((trx) =>
+      sql`select 1 from import_made where import_id = ${second.id} and version_id = ${held}`.execute(
+        trx,
+      ),
+    );
+    expect(rows).toEqual([]);
+  });
+
   it('IMP-009 holds the identities the file carries, and its parts their changes and threads, before acceptance', async () => {
     const found = await proposed();
     expect(found.identities).toEqual(identities);
