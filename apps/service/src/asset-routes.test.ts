@@ -3,11 +3,13 @@ import {
   bootstrapCluster,
   createDefinition,
   createSpace,
+  derivativesMade,
   createTenant,
   findRole,
   grant,
   migrate,
   readAssetUpload,
+  recordDerivative,
   recordAsset,
   removeGrant,
   setImagesPolicy,
@@ -78,7 +80,7 @@ describe('uploading an image through the service (figures 1)', () => {
 
   const call = (
     as: string | undefined,
-    method: 'GET' | 'POST' | 'PUT',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
     payload?: Json,
   ) =>
@@ -540,6 +542,93 @@ describe('uploading an image through the service (figures 1)', () => {
     const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
     expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
   });
+  it("AST-008 serves a version's thumbnail and preview once made, and until then its original, never kept", async () => {
+    const id = await made('grace', general);
+    const image = png(6, 4);
+    expect((await fill('grace', id, image)).statusCode).toBe(200);
+    const version = await ingested(id, image);
+    const path = `/v1/asset-versions/${version.id}/derivatives/thumbnail`;
+    const waiting = await call('alice', 'GET', path);
+    expect(waiting.statusCode).toBe(200);
+    expect(waiting.headers['content-type']).toBe('image/png');
+    expect(waiting.headers['cache-control']).toBe('private, no-store');
+    expect(Buffer.compare(waiting.rawPayload, image)).toBe(0);
+    // Made, as the derive job makes one: its own bytes, kept for a year.
+    const thumbnail = Buffer.from('RIFF\u0000\u0000\u0000\u0000WEBPVP8 a thumbnail', 'latin1');
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const kept = await (await stores.forTenant(trx, tenant)).put(thumbnail, 'image/webp');
+      await recordDerivative(trx, {
+        versionId: version.id,
+        assetId: version.artifactId,
+        kind: 'thumbnail',
+        objectKey: kept.key,
+        width: 6,
+        height: 4,
+        bytes: kept.size,
+        stripped: [],
+      });
+    });
+    const served = await call('alice', 'GET', path);
+    expect(served.headers['content-type']).toBe('image/webp');
+    expect(served.headers['cache-control']).toBe('private, max-age=31536000, immutable');
+    expect(Buffer.compare(served.rawPayload, thumbnail)).toBe(0);
+    expect(
+      (await call('alice', 'GET', `/v1/asset-versions/${version.id}/derivatives/poster`))
+        .statusCode,
+    ).toBe(400);
+  });
+
+  it("AST-048 discards a space's derivatives for an administrator of it, each made again when next read", async () => {
+    const id = await made('grace', general);
+    const image = png(7, 4);
+    expect((await fill('grace', id, image)).statusCode).toBe(200);
+    const version = await ingested(id, image);
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const kept = await (
+        await stores.forTenant(trx, tenant)
+      ).put(Buffer.from('a preview to discard'), 'image/webp');
+      await recordDerivative(trx, {
+        versionId: version.id,
+        assetId: version.artifactId,
+        kind: 'preview',
+        objectKey: kept.key,
+        width: 7,
+        height: 4,
+        bytes: kept.size,
+        stripped: [],
+      });
+      await derivativesMade(trx, version.id);
+    });
+    const path = `/v1/spaces/${general}/asset-derivatives`;
+    expect((await call('grace', 'DELETE', path)).statusCode).toBe(403);
+    // An administrator of the space, which the policy's test grants of the environment.
+    const administers = await tenantDb.withTenant(tenant, async (trx) => {
+      const administrator = await findRole(trx, 'Administrator');
+      return grant(trx, {
+        roleId: administrator!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'space', id: general },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
+    });
+    try {
+      const discarded = await call('ada', 'DELETE', path);
+      expect(discarded.statusCode, discarded.body).toBe(200);
+      expect(discarded.json<{ discarded: number }>().discarded).toBeGreaterThanOrEqual(1);
+      const preview = await call(
+        'alice',
+        'GET',
+        `/v1/asset-versions/${version.id}/derivatives/preview`,
+      );
+      expect(preview.headers['content-type']).toBe('image/png');
+      expect(preview.headers['cache-control']).toBe('private, no-store');
+    } finally {
+      if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
+      await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, administers.granted.id));
+    }
+  });
+
   it("AST-053 keeps the environment's policy for undeclared images, read by anyone signed in and set by an administrator", async () => {
     const own = { png: null, jpeg: null };
     expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({

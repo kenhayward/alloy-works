@@ -517,6 +517,8 @@ export {
   GroupView,
 } from './groups.js';
 export {
+  AssetDerivativeParams,
+  AssetDerivativesDiscarded,
   AssetParams,
   AssetRightsView,
   AssetUploadParams,

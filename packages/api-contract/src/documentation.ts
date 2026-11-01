@@ -383,6 +383,8 @@ const operationTags = {
     'putAssetUploadBytes',
     'getAssetVersion',
     'getAssetVersionContent',
+    'getAssetVersionDerivative',
+    'discardAssetDerivatives',
     'getAssetRights',
     'setAssetRights',
   ],
@@ -1202,6 +1204,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.',
   getAssetVersionContent:
     'Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.',
+  getAssetVersionDerivative:
+    "Returns a readable asset version's thumbnail or preview: WebP, turned upright, never enlarged and carrying none of the original's metadata, made when the image was ingested and kept for a year. Until it is made, or after it was discarded, answers the original image, never kept, and asks for it to be made. An image a dataset holds is read only by a caller who may also read a document holding it.",
+  discardAssetDerivatives:
+    "Discards every thumbnail and preview of a space's images, recorded on the audit log. Each is made again from its original, which is never touched, when it is next read. Needs administer on the space.",
   getAssetRights:
     "Returns an image's rights now and every change to them, newest first, each with who recorded it and when: `declared`, with where it came from, the licence of this environment it is held under, the last day the grant holds and the credit it needs; `undeclared`, recorded so that undeclared images can be listed; or `dataset`, for an image a dataset holds, which is the environment's own data. Rights are the image's, not a version's, so a figure pinning an older version answers to them as they are now. Needs read on the image.",
   setAssetRights:

@@ -401,6 +401,9 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getAssetVersionContent: read,
   getAssetRights: read,
   setAssetRights: writes('asset.relicensed'),
+  // Reading one not yet made asks the derive job for it, which records nothing (AL-H).
+  getAssetVersionDerivative: read,
+  discardAssetDerivatives: writes('asset.derivatives_discarded'),
   listTemplates: read,
   createTemplate: writes('content.version_cut'),
   getTemplate: read,
@@ -601,6 +604,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     publish: writes('publication.produced', 'publication.failed'),
     preview: { none: 'preview' },
     ingest: writes('content.version_cut', 'asset.ingested', 'asset.refused'),
+    // Derivatives kept beside an original, made from it again whenever discarded (the AL plan, AL-H).
+    derive: { none: 'derived' },
     check_pdf: { none: 'derived' },
     // Asking for it was the event, and each download is (the AU2 plan, AU-N).
     audit_export: { none: 'derived' },

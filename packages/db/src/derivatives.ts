@@ -1,5 +1,6 @@
 import type { DerivativeKind } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { recordEvent } from './audit.js';
 import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -107,5 +108,20 @@ export async function discardDerivatives(
     )
     .returning('object_key')
     .execute();
+  const space = await trx
+    .selectFrom('space')
+    .select('name')
+    .where('id', '=', spaceId)
+    .executeTakeFirst();
+  await recordEvent(
+    trx,
+    {
+      kind: 'asset.derivatives_discarded',
+      subject: { kind: 'space', id: spaceId },
+      space: spaceId,
+      detail: { count: rows.length },
+    },
+    [{ role: 'subject', text: space?.name ?? spaceId, refersTo: spaceId }],
+  );
   return [...new Set(rows.map((row) => row.object_key))];
 }

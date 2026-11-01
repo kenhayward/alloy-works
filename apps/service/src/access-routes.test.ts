@@ -1969,6 +1969,14 @@ describe('routes that check a permission', () => {
       url: `/v1/asset-versions/${clinicalImage}/content`,
       status: 404,
     }),
+    getAssetVersionDerivative: () => ({
+      url: `/v1/asset-versions/${clinicalImage}/derivatives/thumbnail`,
+      status: 404,
+    }),
+    discardAssetDerivatives: () => ({
+      url: `/v1/spaces/${clinical}/asset-derivatives`,
+      status: 404,
+    }),
     getAssetRights: () => ({ url: `/v1/assets/${clinicalAsset}/rights`, status: 404 }),
     setAssetRights: () => ({
       url: `/v1/assets/${clinicalAsset}/rights`,
