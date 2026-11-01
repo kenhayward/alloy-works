@@ -21981,13 +21981,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 722,
+      "line": 725,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 735,
+      "line": 738,
       "kind": "title"
     },
     {
@@ -22455,43 +22455,43 @@
     {
       "id": "GEN-021",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 131,
+      "line": 162,
       "kind": "title"
     },
     {
       "id": "GEN-047",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 86,
+      "line": 117,
       "kind": "title"
     },
     {
       "id": "GEN-048",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 113,
+      "line": 144,
       "kind": "title"
     },
     {
       "id": "GEN-050",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 211,
+      "line": 242,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 239,
+      "line": 270,
       "kind": "title"
     },
     {
       "id": "GEN-052",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 388,
+      "line": 419,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 286,
+      "line": 317,
       "kind": "title"
     },
     {
@@ -22527,7 +22527,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2181,
+      "line": 2183,
       "kind": "title"
     },
     {
@@ -26733,67 +26733,67 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 635,
+      "line": 686,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 402,
+      "line": 451,
       "kind": "title"
     },
     {
       "id": "GEN-010",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 189,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 323,
+      "line": 372,
       "kind": "title"
     },
     {
       "id": "GEN-021",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 365,
+      "line": 414,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 581,
+      "line": 631,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 189,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 693,
+      "line": 747,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 693,
+      "line": 747,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 729,
+      "line": 781,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 451,
+      "line": 500,
       "kind": "title"
     },
     {

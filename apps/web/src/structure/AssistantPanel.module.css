@@ -18,9 +18,11 @@
 
 .model {
   display: inline-flex;
+  flex-shrink: 1;
   align-items: center;
   gap: var(--space-4);
   height: 30px;
+  min-width: 0;
   max-width: 180px;
   padding: 0 var(--space-8);
   border: 1px solid var(--border);
@@ -30,6 +32,13 @@
   font-size: var(--size-12);
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* The model's name gives way first, so the conversation's tools always fit (the final review). */
+.modelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .outside {
@@ -514,4 +523,9 @@
   background: conic-gradient(var(--band) var(--used), var(--border) 0);
   /* A mask reads only alpha: any opaque token cuts the ring. */
   mask: radial-gradient(circle, transparent 3.5px, var(--text) 4px);
+}
+
+/* The span MenuButton wraps the model in may shrink below its words (the final review). */
+.bar > :has(> .model) {
+  min-width: 0;
 }

@@ -81,7 +81,7 @@ export function MenuButton({
       <button
         ref={button}
         type="button"
-        className={className}
+        className={className ?? styles['iconButton']}
         aria-label={label}
         title={title ?? label}
         aria-haspopup="menu"
@@ -89,10 +89,24 @@ export function MenuButton({
         aria-controls={open ? menuId : undefined}
         disabled={disabled}
         onClick={() => setOpen((was) => !was)}
+        onKeyDown={(event) => {
+          // Closed from the button too, where the menu holds nothing to focus.
+          if (open && event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(false);
+          }
+        }}
       >
         {face}
       </button>
-      {open && (
+      {open && items.length === 0 && (
+        // Nothing to offer: said beside the button, never as a menu holding no item.
+        <div ref={menu} id={menuId} className={styles['menu']} data-align={align}>
+          {empty !== undefined && <p className={styles['menuEmpty']}>{empty}</p>}
+        </div>
+      )}
+      {open && items.length > 0 && (
         <div
           ref={menu}
           id={menuId}
@@ -109,17 +123,14 @@ export function MenuButton({
               Escape: close,
               Tab: () => setOpen(false),
             };
-            const act = keys[event.key];
-            if (act === undefined) return;
             // Its own keys, never a toolbar's around it as well.
             event.stopPropagation();
+            const act = keys[event.key];
+            if (act === undefined) return;
             if (event.key !== 'Tab') event.preventDefault();
             act();
           }}
         >
-          {items.length === 0 && empty !== undefined && (
-            <p className={styles['menuEmpty']}>{empty}</p>
-          )}
           {items.map((item) => (
             <button
               key={item.key}

@@ -27,6 +27,8 @@ function service() {
   const patched: { title?: string; kept?: boolean }[] = [];
   // The one conversation, as the earlier one listed until a start makes a new one of it.
   let held = { title: 'About the weir', kept: true };
+  // Set, the conversation's own read waits for it to be called.
+  const late: { hold: Promise<void> | null } = { hold: null };
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
@@ -127,6 +129,7 @@ function service() {
       });
     }
     if (path === `/v1/conversations/${CONVERSATION}`) {
+      if (late.hold !== null) await late.hold;
       return json(200, {
         conversation: {
           id: CONVERSATION,
@@ -188,6 +191,7 @@ function service() {
     asked,
     urls,
     patched,
+    late,
   };
 }
 
@@ -1220,6 +1224,61 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     await user.type(again, 'Floods{Enter}');
     expect(patched.at(-1)).toEqual({ title: 'Floods' });
     expect(await screen.findByRole('heading', { name: 'Floods' })).toBeVisible();
+    // The focus goes back to where naming began, never lost to the page.
+    expect(within(bar).getByRole('button', { name: 'Name this conversation' })).toHaveFocus();
+  });
+
+  it('drops what an earlier conversation read once another, or a new one, is open (the final review)', async () => {
+    const user = userEvent.setup();
+    const { client, late } = service();
+    let answer = () => {};
+    late.hold = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={vi.fn(answered())}
+        origin="http://doc.test"
+      />,
+    );
+    await choose(user, 'Earlier conversations', 'About the weir');
+    // A new one asked for before the earlier one's turns arrive.
+    await user.click(screen.getByRole('button', { name: 'A new conversation' }));
+    answer();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.getByRole('heading', { name: 'A new conversation' })).toBeVisible();
+    expect(screen.queryByRole('list', { name: 'Earlier turns' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Keep this conversation' })).toBeDisabled();
+  });
+
+  it('says the endpoint a turn ran on where it is not the one chosen, and whether it sits outside (GEN-051)', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Fallback', boundary: 'outside' } }],
+          ['text', { text: 'It floods.' }],
+          ended(),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await screen.findByRole('button', { name: /^Model: Drafting/ });
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What floods?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const turn = await screen.findByRole('article', { name: 'This turn' });
+    expect(
+      within(turn).getByText('Using Fallback, which is outside your data boundary.'),
+    ).toBeVisible();
   });
 });
 

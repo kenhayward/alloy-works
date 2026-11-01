@@ -269,6 +269,9 @@ export function AssistantPanel({
   const [held, setHeld] = useState<string | null>(null);
   // Let go once the box is left and another part, or none, is open: that is the one asked about.
   const inBox = useRef(false);
+  // The conversation open now: a read begun for another lands nowhere (the final review).
+  const openNow = useRef<string | null>(null);
+  const nameButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!inBox.current) setHeld(null);
   }, [component]);
@@ -281,7 +284,7 @@ export function AssistantPanel({
     const { data } = await client.GET('/v1/conversations/{id}/context', {
       params: { path: { id } },
     });
-    if (data) setTray(data.items);
+    if (data && openNow.current === id) setTray(data.items);
   };
 
   const readConversations = async () => {
@@ -296,6 +299,7 @@ export function AssistantPanel({
 
   const readTurns = async (id: string) => {
     const { data } = await client.GET('/v1/conversations/{id}', { params: { path: { id } } });
+    if (openNow.current !== id) return;
     if (data) {
       setTurns(data.conversation.turns);
       setOpened({ title: data.conversation.title, kept: data.conversation.kept });
@@ -396,10 +400,15 @@ export function AssistantPanel({
   /** A conversation of this document's opened, or none: a new one, begun by the next ask. */
   const open = (id: string | null) => {
     setHeld(null);
+    openNow.current = id;
     setConversation(id);
     setOpened(null);
     setNaming(null);
     setFinding(false);
+    setFound([]);
+    setLooking('');
+    setReused(null);
+    setSaid('');
     setTurns([]);
     setCurrent(null);
     setAsked(null);
@@ -414,10 +423,12 @@ export function AssistantPanel({
   /** The open conversation named, or kept or let go, by its owner (the DQ plan). */
   const change = async (body: { title?: string; kept?: boolean }) => {
     if (conversation === null) return;
+    const id = conversation;
     const { data, error } = await client.PATCH('/v1/conversations/{id}', {
-      params: { path: { id: conversation } },
+      params: { path: { id } },
       body,
     });
+    if (openNow.current !== id) return;
     if (!data) {
       setSaid(refusalWords(error, words('document.the-conversation-could-not-be-changed')));
       return;
@@ -445,6 +456,7 @@ export function AssistantPanel({
         return;
       }
       id = data.conversation.id;
+      openNow.current = id;
       setConversation(id);
       setOpened({ title: data.conversation.title, kept: data.conversation.kept });
       setTurns([]);
@@ -654,7 +666,7 @@ export function AssistantPanel({
             disabled={running}
             face={
               <>
-                {endpointNow.name}
+                <span className={styles['modelName']}>{endpointNow.name}</span>
                 {endpointNow.boundary === 'outside' && (
                   <span className={styles['outside']}>{words('document.outside')}</span>
                 )}
@@ -692,7 +704,6 @@ export function AssistantPanel({
         <span className={styles['spacer']} />
         <MenuButton
           label={words('document.earlier-conversations')}
-          className={styles['tool']}
           align="end"
           disabled={running}
           face={<Icon name="Versions" size={16} />}
@@ -705,6 +716,7 @@ export function AssistantPanel({
           }))}
         />
         <IconButton
+          ref={nameButton}
           label={words('document.name-this-conversation')}
           pressed={naming !== null}
           disabled={running || opened === null}
@@ -743,9 +755,11 @@ export function AssistantPanel({
                 if (event.key === 'Escape') {
                   event.preventDefault();
                   setNaming(null);
+                  nameButton.current?.focus();
                 } else if (event.key === 'Enter' && naming.trim() !== '') {
                   event.preventDefault();
                   setNaming(null);
+                  nameButton.current?.focus();
                   void change({ title: naming.trim() });
                 }
               }}
@@ -787,6 +801,13 @@ export function AssistantPanel({
                 <span className={styles['you']}>{words('document.you')}</span> {asked}
               </p>
             )}
+            {endpoint !== null &&
+              (endpoint.name !== endpointNow?.name ||
+                endpoint.boundary !== endpointNow.boundary) && (
+                <p className={styles['muted']}>
+                  {words('document.using', { name: endpoint.name, boundary: endpoint.boundary })}
+                </p>
+              )}
             {running && (
               <>
                 {/* What it is doing now, as Diariz says it: the step it took last. */}
@@ -1049,6 +1070,9 @@ export function AssistantPanel({
             aria-label={words('document.what-it-reads')}
             className={styles['chips']}
           >
+            {tray.length === 0 && (
+              <span className={styles['hint']}>{words('document.nothing-yet-a-part-the')}</span>
+            )}
             {tray.map((each) => {
               const title =
                 nameOf(each.component) ?? titles.get(each.component) ?? words('document.a-part');
@@ -1057,7 +1081,9 @@ export function AssistantPanel({
                   {each.readable ? title : words('document.a-part-you-may-no')}
                   <IconButton
                     label={words('document.remove', {
-                      value1: each.readable ? title : 'the part you may no longer read',
+                      value1: each.readable
+                        ? title
+                        : words('document.the-part-you-may-no-longer-read'),
                     })}
                     className={styles['chipRemove']}
                     onClick={() => void removePart(each.component)}
