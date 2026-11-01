@@ -198,7 +198,7 @@ export type VocabularySourceFetched =
 
 /** Why a SKOS address gave no text, in an administrator's words (VO-J). */
 const SOURCE_FAILED: Record<Extract<VocabularySourceAnswer, { type: 'failed' }>['code'], string> = {
-  host_refused: 'The address is one the connector may not reach: a private or the platform's own.',
+  host_refused: "The address is one the connector may not reach: a private or the platform's own.",
   connection_failed:
     'The address could not be reached, or answered with a redirect, which is not followed.',
   timeout: 'The address did not answer in 20 seconds.',
@@ -1470,7 +1470,11 @@ export function connectionHandlers(
       const asking = connected();
       return async () => {
         const fetched = answered(
-          await asking.vocabularySource({ requestId: randomUUID(), tenant: tenant.id, url: source.url }),
+          await asking.vocabularySource({
+            requestId: randomUUID(),
+            tenant: tenant.id,
+            url: source.url,
+          }),
         );
         if (fetched.type === 'fetched') {
           return {

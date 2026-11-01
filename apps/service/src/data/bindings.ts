@@ -1121,7 +1121,11 @@ export async function prepareSourceQuery(
   }
   const definition = stored.definition;
   if (definition.retired) {
-    throw refused(409, 'definition.retired', 'The query definition is retired, so it runs nothing.');
+    throw refused(
+      409,
+      'definition.retired',
+      'The query definition is retired, so it runs nothing.',
+    );
   }
   if (definition.parameters.some((each) => each.required)) {
     throw refused(

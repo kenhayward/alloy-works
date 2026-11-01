@@ -116913,6 +116913,8 @@ export interface operations {
                         row?: number;
                         /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
                         retryAfter?: number;
+                        /** @enum {string} */
+                        failure?: "host_refused" | "connection_failed" | "timeout" | "source_refused" | "source_too_large" | "connector_error";
                     };
                 };
             };

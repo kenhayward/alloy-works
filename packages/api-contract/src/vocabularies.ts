@@ -106,7 +106,9 @@ export const VocabularyRefreshAnswer = z.object({
   vocabulary: VocabularyView,
   report: z.object({
     added: z.array(z.string()).describe('Values new to the source, added active'),
-    relabelled: z.array(z.string()).describe('Values whose labels or descriptions the source changed'),
+    relabelled: z
+      .array(z.string())
+      .describe('Values whose labels or descriptions the source changed'),
     retired: z.array(z.string()).describe('Values gone from the source, retired, never removed'),
     returned: z
       .array(z.string())
@@ -121,6 +123,20 @@ export const VocabularyRefreshAnswer = z.object({
   }),
 });
 export type VocabularyRefreshAnswer = z.infer<typeof VocabularyRefreshAnswer>;
+
+/** A source that gave nothing to refresh from: why the address failed, or the query's failure. */
+const VocabularySourceRefusal = DataRefusal.extend({
+  failure: z
+    .enum([
+      'host_refused',
+      'connection_failed',
+      'timeout',
+      'source_refused',
+      'source_too_large',
+      'connector_error',
+    ])
+    .optional(),
+});
 
 const notFound = {
   description: 'No such vocabulary in this environment',
@@ -208,7 +224,7 @@ export const vocabularyRoutes = {
       502: {
         description:
           "`vocabulary_source_failed`: the address could not be fetched, `failure` saying why (`host_refused`, `connection_failed`, `timeout`, `source_refused`, `source_too_large`, `connector_error`); or the query's run failed, by its failure's code and attribution",
-        schema: DataRefusal,
+        schema: VocabularySourceRefusal,
       },
       503: {
         description:

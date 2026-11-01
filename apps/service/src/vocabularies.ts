@@ -147,7 +147,11 @@ export function vocabularyHandlers(
       if (!stored) throw notFound();
       const vocabulary = stored.definition;
       if (vocabulary.source === undefined) {
-        throw refused(409, 'vocabulary.unsourced', 'This vocabulary has no source to refresh from.');
+        throw refused(
+          409,
+          'vocabulary.unsourced',
+          'This vocabulary has no source to refresh from.',
+        );
       }
       const fetch = await sourceOf(request, trx, vocabulary.source);
       return new AfterCommit(async (): Promise<VocabularyRefreshAnswer> => {

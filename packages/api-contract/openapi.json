@@ -342366,6 +342366,17 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "failure": {
+                      "type": "string",
+                      "enum": [
+                        "host_refused",
+                        "connection_failed",
+                        "timeout",
+                        "source_refused",
+                        "source_too_large",
+                        "connector_error"
+                      ]
                     }
                   },
                   "required": [

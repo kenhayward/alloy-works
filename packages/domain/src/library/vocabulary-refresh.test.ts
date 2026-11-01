@@ -160,8 +160,9 @@ describe('a sourced vocabulary changed by hand', () => {
       'west: a value comes from the source',
     ]);
     // Its source changed, or taken away, is the administrator's to do.
-    const { source: _, ...unsourced } = previous;
-    expect(sourcedEditRefusals(previous, { ...unsourced, values: [] })).toEqual([]);
+    const unsourced: Vocabulary = { ...previous, values: [] };
+    delete unsourced.source;
+    expect(sourcedEditRefusals(previous, unsourced)).toEqual([]);
     expect(sourcedEditRefusals(undefined, previous)).toEqual([]);
   });
 

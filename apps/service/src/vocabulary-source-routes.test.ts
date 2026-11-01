@@ -46,7 +46,7 @@ const settings: PostgresSettings = {
   name: 'Sites',
   description: '',
   type: 'postgres',
-  target: {
+  source: {
     host: 'source-postgres',
     port: 5432,
     database: 'readings',
@@ -211,6 +211,7 @@ describe('a vocabulary refreshed from its source (the VO plan, VO-J)', () => {
     // Ada administers and uses the connections of General; Grace manages definitions and reads the
     // query, but uses no connection.
     await allow(ids.ada!, roles.administrator!, { kind: 'tenant' });
+    await allow(ids.ada!, roles.manager!, { kind: 'tenant' });
     for (const role of [roles.author!, roles.user!, roles.writer!]) {
       await allow(ids.ada!, role, { kind: 'space', id: general });
     }
@@ -295,7 +296,9 @@ describe('a vocabulary refreshed from its source (the VO plan, VO-J)', () => {
       ['iv_1', 'https://terms.example/route/IV-1'],
     ]);
     expect(body.report).toMatchObject({
-      refused: [{ source: 'https://terms.example/route/none', reason: 'no label in the base language, en' }],
+      refused: [
+        { source: 'https://terms.example/route/none', reason: 'no label in the base language, en' },
+      ],
     });
     expect(connector.asked.at(-1)).toMatchObject({ path: '/v1/vocabulary-source', body: { url } });
 

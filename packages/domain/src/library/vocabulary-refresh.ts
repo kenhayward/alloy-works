@@ -131,8 +131,9 @@ export function refreshVocabulary(
     if (kept) return kept;
     if (each.source === undefined || each.state === 'retired') return each;
     retired.push(each.id);
-    const { replacedBy: _, ...rest } = each;
-    return { ...rest, state: 'retired' as const };
+    const next: VocabularyValue = { ...each, state: 'retired' };
+    delete next.replacedBy;
+    return next;
   });
   return {
     next: parseVocabulary({ ...previous, values: [...values, ...added] }),
