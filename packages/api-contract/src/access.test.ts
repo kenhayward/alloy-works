@@ -101,6 +101,7 @@ describe('what each route checks', () => {
         'startConversation',
         'listConversations',
         'getConversation',
+        'updateConversation',
         'getConversationContext',
         'listPersonalPrompts',
         'savePersonalPrompt',

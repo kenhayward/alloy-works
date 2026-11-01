@@ -83,6 +83,37 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
   const turn = (as: string, conversation: string, body: Json) =>
     h.call(as, 'POST', `/v1/conversations/${conversation}/turns`, body);
 
+  it('lists a conversation only once its owner keeps it, and lets only them name it (the DQ plan)', async () => {
+    const id = await start('grace');
+    const listed = async () =>
+      (await h.call('grace', 'GET', '/v1/conversations')).json<{ items: { id: string }[] }>().items;
+    const change = (as: string, body: Json) => h.call(as, 'PATCH', `/v1/conversations/${id}`, body);
+    // Started, and not kept: held, but listed nowhere.
+    const opened = (await h.call('grace', 'GET', `/v1/conversations/${id}`)).json<{
+      conversation: { kept: boolean };
+    }>();
+    expect(opened.conversation.kept).toBe(false);
+    expect((await listed()).map((each) => each.id)).not.toContain(id);
+    const kept = await change('grace', { kept: true });
+    expect(kept.statusCode, kept.body).toBe(200);
+    expect(kept.json()).toMatchObject({ id, title: 'About the weir', kept: true });
+    expect((await listed()).find((each) => each.id === id)).toMatchObject({ kept: true });
+    // Named, its words trimmed.
+    expect((await change('grace', { title: '  Floods  ' })).json()).toMatchObject({
+      title: 'Floods',
+      kept: true,
+    });
+    // Let go: listed nowhere again.
+    expect((await change('grace', { kept: false })).json()).toMatchObject({ kept: false });
+    expect((await listed()).map((each) => each.id)).not.toContain(id);
+    // Asked for nothing, an empty name, or anything else: refused.
+    for (const body of [{}, { title: '   ' }, { title: 'x', made: 'now' }]) {
+      expect((await change('grace', body)).statusCode).toBe(400);
+    }
+    // Anybody else is told there is none.
+    expect((await change('ada', { kept: true })).statusCode).toBe(404);
+  });
+
   it('GEN-047 holds a conversation: a second turn carries the first turn’s words, and each is kept', async () => {
     const id = await start('grace', { document: document.id });
     const first = await turn('grace', id, { ask: 'What floods?' });

@@ -3,8 +3,11 @@ import { useLayoutEffect, useRef, type KeyboardEvent, type ReactNode, type Ref }
 import styles from './parts.module.css';
 import { inlineKey } from './inline.js';
 
-/** What the toolbar moves between: its buttons, an `aria-disabled` one among them. */
-const ITEM = 'button:not([disabled])';
+/**
+ * What the toolbar moves between: its buttons, an `aria-disabled` one among them; never the items of
+ * a menu one of them opens, which keeps its own keys.
+ */
+const ITEM = 'button:not([disabled]):not([role^="menuitem"])';
 
 /**
  * A grouped toolbar (ADR-0046; WAI-ARIA's toolbar): one tab stop, the arrow keys, Home and End moving

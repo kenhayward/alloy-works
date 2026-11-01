@@ -18,6 +18,8 @@ const REASONS = {
   read: 'A read, which is not itself an event (audit.md, "Reading and export")',
   conversation:
     "A person's own conversation begun: each turn of it is a run, recorded as generation.run",
+  conversationKept:
+    "A person's own conversation named, or kept or let go: theirs alone to read, and none of the tenant's content",
   personal:
     "A person's own saved words, read by them alone: no artifact, and none of the tenant's content",
   tray: "A person's own conversation's tray: identities alone, read again as them each turn, no content changed",
@@ -93,6 +95,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   setModelBudget: writes('generation.budget_set'),
   setBudgetRecipients: writes('generation.budget_set'),
   startConversation: { none: 'conversation' },
+  updateConversation: { none: 'conversationKept' },
   listConversations: read,
   getConversation: read,
   getConversationContext: read,

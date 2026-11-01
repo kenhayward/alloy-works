@@ -1175,6 +1175,7 @@ describe('scanning the repository for test files', () => {
     // 151, from 149 (2026-11-01): editor/FigureDialog.test.tsx and admin/ImagesPolicy.test.tsx, citing AST-044 and AST-053.
     // 152, from 151 (2026-11-01): images/images.test.tsx, citing AST-028.
     // 155, from 154 (2026-11-01): structure/AnswerMarkdown.test.tsx, citing nothing (issue #857).
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(155);
+    // 156, from 155 (2026-11-01): parts/MenuButton.test.tsx, citing nothing (the DQ plan).
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(156);
   });
 });

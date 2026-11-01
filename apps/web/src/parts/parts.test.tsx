@@ -254,6 +254,31 @@ describe('a segmented control', () => {
     ).toEqual([style]);
   });
 
+  it('passes over a choice not available, which a click does not choose', async () => {
+    const onChange = vi.fn();
+    render(
+      <Segmented
+        label="Context"
+        value="added"
+        onChange={onChange}
+        options={[
+          { value: 'component', name: 'This part', disabled: true },
+          { value: 'document', name: 'The whole document' },
+          { value: 'added', name: 'Only the parts added' },
+        ]}
+      />,
+    );
+    const part = screen.getByRole('radio', { name: 'This part' });
+    expect(part).toBeDisabled();
+    await userEvent.click(part);
+    expect(onChange).not.toHaveBeenCalled();
+    screen.getByRole('radio', { name: 'Only the parts added' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    // Round past the one not available, to the whole document.
+    expect(onChange).toHaveBeenLastCalledWith('document');
+    expect(onChange).not.toHaveBeenCalledWith('component');
+  });
+
   it('chooses nothing while it is not available, and says so', async () => {
     render(<Alignment disabled />);
     const group = screen.getByRole('radiogroup', { name: 'Alignment of Depth' });

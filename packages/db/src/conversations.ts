@@ -18,6 +18,8 @@ export interface Conversation {
   readonly documentId: string | null;
   readonly title: string;
   readonly madeAt: Date;
+  /** Kept by its owner, and so listed (the DQ plan); one not kept stays with its runs, unlisted. */
+  readonly kept: boolean;
 }
 
 /** One turn as the conversation shows it: its words, how it ended, and what it ran on. */
@@ -37,6 +39,7 @@ interface Row {
   document_id: string | null;
   title: string;
   made_at: Date;
+  kept: boolean;
 }
 
 const conversationOf = (row: Row): Conversation => ({
@@ -45,6 +48,7 @@ const conversationOf = (row: Row): Conversation => ({
   documentId: row.document_id,
   title: row.title,
   madeAt: new Date(row.made_at),
+  kept: row.kept,
 });
 
 /** A conversation's title: its first words, trimmed to 200 characters, or a plain one. */
@@ -76,7 +80,10 @@ export async function readConversation(
   return rows[0] && conversationOf(rows[0]);
 }
 
-/** A person's conversations, the newest first: on one document, or every one where none is named. */
+/**
+ * A person's conversations they kept, the newest first: on one document, or every one where none is
+ * named. One not kept is never listed again (the DQ plan).
+ */
 export async function listConversations(
   trx: TenantTransaction,
   owner: string,
@@ -84,11 +91,29 @@ export async function listConversations(
 ): Promise<Conversation[]> {
   if (filter.documentId !== undefined && !UUID.test(filter.documentId)) return [];
   const { rows } = await sql<Row>`select * from conversation
-     where owner = ${owner}
+     where owner = ${owner} and kept
        ${filter.documentId === undefined ? sql`` : sql`and document_id = ${filter.documentId}`}
      order by made_at desc, id
      limit 200`.execute(trx);
   return rows.map(conversationOf);
+}
+
+/**
+ * A conversation named, or kept or let go, by its owner (the DQ plan): the title as given, which the
+ * caller trimmed and bounded. Undefined where none is by that id. Whose it is the caller decides.
+ */
+export async function updateConversation(
+  trx: TenantTransaction,
+  id: string,
+  change: { readonly title?: string; readonly kept?: boolean },
+): Promise<Conversation | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const { rows } = await sql<Row>`update conversation set
+      title = coalesce(${change.title ?? null}, title),
+      kept = coalesce(${change.kept ?? null}::boolean, kept)
+    where id = ${id}
+    returning *`.execute(trx);
+  return rows[0] && conversationOf(rows[0]);
 }
 
 /** A conversation's turns, oldest first. */

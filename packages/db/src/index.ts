@@ -923,6 +923,7 @@ export {
   listConversations,
   readConversation,
   startConversation,
+  updateConversation,
   titleFrom,
   turnsOf,
   addToTray,

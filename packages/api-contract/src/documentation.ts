@@ -485,6 +485,7 @@ const operationTags = {
     'startConversation',
     'listConversations',
     'getConversation',
+    'updateConversation',
     'getConversationContext',
     'addConversationContext',
     'removeConversationContext',
@@ -1077,6 +1078,8 @@ const descriptions: Readonly<Record<string, string>> = {
     'Lists your own conversations, the newest first, on one document where it is named, at most 200.',
   getConversation:
     'Returns a conversation of yours with each turn: what you said, what the model wrote, how it ended and the endpoint it ran on. Anybody else is told there is none.',
+  updateConversation:
+    'Names a conversation of yours, or keeps it or lets it go. Only one you keep is listed again; one you do not stays with its runs, which are never deleted. Naming one keeps it unless you say otherwise. Anybody else is told there is none.',
   getConversationContext:
     'Returns what a conversation of yours reads: each part in its tray, read again as you now, at the version its document places or else its latest; one you may no longer read is said so, and not sent.',
   addConversationContext:

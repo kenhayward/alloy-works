@@ -1,5 +1,6 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import { Conversations } from './Conversations.js';
@@ -30,9 +31,13 @@ const client = createApiClient({
 
 describe('the Conversations page', () => {
   it('holds conversations on no document, and links each on a document to it', async () => {
+    const user = userEvent.setup();
     render(<Conversations client={client} />);
-    expect(await screen.findByRole('option', { name: 'About cats' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'About the weir' })).toBeNull();
+    await screen.findByRole('link', { name: 'About the weir' });
+    await user.click(screen.getByRole('button', { name: 'Earlier conversations' }));
+    const earlier = screen.getByRole('menu', { name: 'Earlier conversations' });
+    expect(within(earlier).getByRole('menuitem', { name: 'About cats' })).toBeInTheDocument();
+    expect(within(earlier).queryByRole('menuitem', { name: 'About the weir' })).toBeNull();
     expect(await screen.findByRole('link', { name: 'About the weir' })).toHaveAttribute(
       'href',
       `#/documents/${DOCUMENT}`,

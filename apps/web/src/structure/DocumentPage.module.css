@@ -155,10 +155,11 @@
   grid-row: 1 / span 4;
   display: flex;
   min-width: 0;
-  max-height: calc(
+  --dock-most: calc(
     100vh - var(--header-height) - var(--band-height, 0px) - var(--space-12) -
       var(--status-height, 0px) - var(--space-12)
   );
+  max-height: var(--dock-most);
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
@@ -208,6 +209,25 @@
   padding: var(--space-12);
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+/* While the Assistant is open the dock stands its full height, however short the conversation, so its
+   composer sits at the bottom (the DQ plan's final review). */
+.dockArea:has(.assistantTab:not([hidden])) {
+  height: var(--dock-most);
+}
+
+.dockBody:has(> .assistantTab:not([hidden])) {
+  flex: 1;
+}
+
+/* The Assistant's tab filling the dock to its edges, so its own middle scrolls and its composer stays
+   at the bottom (the DQ plan). */
+.assistantTab {
+  height: calc(100% + 2 * var(--space-12));
+  min-height: 0;
+  margin: calc(var(--space-12) * -1);
+  overflow: hidden;
 }
 
 /* The Table tab nearer the pane's sides, whose band keeps its own inset (ADR-0052). */

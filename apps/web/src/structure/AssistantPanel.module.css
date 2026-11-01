@@ -1,7 +1,220 @@
 .assistant {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+/* The toolbar on top (the DQ plan): the model, the gauge, then the conversation's own tools. */
+.bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 44px;
+  padding: 0 var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.model {
+  display: inline-flex;
+  flex-shrink: 1;
+  align-items: center;
+  gap: var(--space-4);
+  height: 30px;
+  min-width: 0;
+  max-width: 180px;
+  padding: 0 var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-12);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* The model's name gives way first, so the conversation's tools always fit (the final review). */
+.modelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outside {
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-4);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--size-12);
+}
+
+/* The conversation, scrolling between the toolbar and the composer. */
+.scroll {
   display: grid;
-  gap: var(--space-12, 12px);
-  padding: var(--space-12, 12px);
+  flex: 1;
+  align-content: start;
+  gap: var(--space-12);
+  min-height: 0;
+  padding: var(--space-12);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.named h3 {
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--size-14);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.named input {
+  width: 100%;
+  font-weight: 600;
+}
+
+/* The composer, fixed at the bottom: what it reads above the box, the box last. */
+.composer {
+  display: grid;
+  flex-shrink: 0;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+  border-top: 1px solid var(--border);
+  background: var(--sunken);
+}
+
+.offered {
+  display: grid;
+  gap: var(--space-8);
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  padding-inline-start: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  font-size: var(--size-12);
+}
+
+.chipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--muted);
+}
+
+.chipRemove:hover {
+  color: var(--text);
+}
+
+.addPart {
+  height: 24px;
+  padding: 0 var(--space-8);
+  border: 1px dashed var(--strong-border);
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.finder {
+  display: grid;
+  flex-basis: 100%;
+  gap: var(--space-8);
+}
+
+.box {
+  display: grid;
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+}
+
+.box:focus-within {
+  border-color: var(--accent);
+}
+
+.box textarea {
+  padding: var(--space-8) var(--space-12) var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  resize: none;
+}
+
+.box textarea:focus {
+  outline: none;
+}
+
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.hint {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--size-12);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.send,
+.stop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+}
+
+.send {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.send:disabled {
+  opacity: 0.5;
+}
+
+.stopMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.said:empty {
+  display: none;
 }
 
 .muted {
@@ -105,21 +318,6 @@
 
 .turns p {
   margin: 0;
-}
-
-/* What the assistant is given: the component open, or every component. */
-.context {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-12, 12px);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.context legend {
-  padding: 0;
-  margin-bottom: var(--space-4, 4px);
 }
 
 /* A reply streaming: a pulsing dot, and the tokens so far. */
@@ -277,7 +475,6 @@
 }
 
 .stop {
-  border-color: var(--danger);
   background: var(--danger);
   color: var(--on-danger);
 }
@@ -288,49 +485,12 @@
   text-decoration: none;
 }
 
-/* The conversation open, and a new one (the DP plan). */
-.head {
-  display: flex;
-  align-items: end;
-  gap: var(--space-4);
-}
-
-.conversation {
-  display: grid;
-  flex: 1;
-  gap: var(--space-4);
-  min-width: 0;
-  color: var(--muted);
-  font-size: var(--size-12);
-}
-
-.conversation select {
-  min-width: 0;
-  color: var(--text);
-  font-size: var(--size-13);
-}
-
 /* Under the box: the endpoint, how much of its context the last turn took, and Ask or Stop. */
 .composerFoot {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-8);
-  margin-top: var(--space-8);
-}
-
-.endpoint {
-  display: flex;
   align-items: center;
   gap: var(--space-4);
-  min-width: 0;
-  color: var(--muted);
-  font-size: var(--size-12);
-}
-
-.endpoint select {
-  max-width: 160px;
-  font-size: var(--size-12);
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .spacer {
@@ -363,4 +523,9 @@
   background: conic-gradient(var(--band) var(--used), var(--border) 0);
   /* A mask reads only alpha: any opaque token cuts the ring. */
   mask: radial-gradient(circle, transparent 3.5px, var(--text) 4px);
+}
+
+/* The span MenuButton wraps the model in may shrink below its words (the final review). */
+.bar > :has(> .model) {
+  min-width: 0;
 }

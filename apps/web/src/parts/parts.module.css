@@ -307,6 +307,55 @@
   color: var(--danger);
 }
 
+/* MenuButton's: a menu lined up with its button's start edge, items of one choice, a quieter line. */
+.menu[data-align='start'] {
+  inset-inline: 0 auto;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.menu [role='menuitemradio'] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 32px;
+  padding: var(--space-4) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  text-align: start;
+}
+
+.menu [role='menuitem']:has(.menuDetail) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding-block: var(--space-4);
+}
+
+.menu [role='menuitemradio']:hover,
+.menu [role='menuitemradio']:focus-visible {
+  background: var(--sunken);
+}
+
+.menu [role='menuitemradio'][aria-checked='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.menuDetail {
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.menuEmpty {
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  color: var(--muted);
+}
+
 /* A detail page (ADR-0050): a header, a state strip and tabs, the chosen panel filling the window
    beneath the page's own padding, so the page does not scroll. Below 800px high it does, rather than
    squeezing the panel to a few rows. */

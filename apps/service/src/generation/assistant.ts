@@ -13,6 +13,7 @@ import {
   listConversations,
   listModelEndpoints,
   readConversation,
+  updateConversation,
   startConversation,
   turnsOf,
   type Conversation,
@@ -71,7 +72,11 @@ import {
   type ReferenceSourceKey,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
-import type { StartConversationBody, TurnBody } from '@alloy-works/api-contract';
+import type {
+  StartConversationBody,
+  TurnBody,
+  UpdateConversationBody,
+} from '@alloy-works/api-contract';
 import type { FastifyRequest } from 'fastify';
 
 import { authoriseAt, callerOf, notFound, type Authorised } from '../access.js';
@@ -997,6 +1002,20 @@ export function assistantHandlers(
         };
       }),
 
+    // Named, or kept or let go, by its owner (the DQ plan): naming one keeps it, unless the change
+    // says otherwise. Anybody else's is not found, as reading it is.
+    updateConversation: (request: FastifyRequest) =>
+      asCaller(request, async (trx, principalId) => {
+        const conversation = await own(trx, request, principalId);
+        const { title, kept } = request.body as UpdateConversationBody;
+        const changed = await updateConversation(trx, conversation.id, {
+          ...(title === undefined ? {} : { title }),
+          ...(kept === undefined ? (title === undefined ? {} : { kept: true }) : { kept }),
+        });
+        if (!changed) throw notFound();
+        return conversationView(changed);
+      }),
+
     getConversationContext: (request: FastifyRequest) =>
       asCaller(request, async (trx, principalId) => {
         const conversation = await own(trx, request, principalId);
@@ -1576,6 +1595,7 @@ function conversationView(conversation: Conversation) {
     document: conversation.documentId,
     title: conversation.title,
     madeAt: conversation.madeAt.toISOString(),
+    kept: conversation.kept,
   };
 }
 

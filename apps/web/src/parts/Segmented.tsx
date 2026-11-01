@@ -12,6 +12,8 @@ export interface Segment {
   readonly label?: string;
   /** A glyph from `Icon` drawn in place of words. */
   readonly icon?: string;
+  /** Not available now: drawn disabled, and the arrows pass over it. */
+  readonly disabled?: boolean;
 }
 
 /**
@@ -47,15 +49,23 @@ export function Segmented({
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const count = options.length;
     const key = inlineKey(event.key);
+    // The next available one from `from`, stepping by `step`, past any not available.
+    const next = (from: number, step: number) => {
+      for (let tried = 0, index = from; tried < count; tried += 1) {
+        index = (index + step + count) % count;
+        if (options[index]!.disabled !== true) return index;
+      }
+      return from;
+    };
     const to =
       key === 'ArrowRight' || key === 'ArrowDown'
-        ? (at + 1) % count
+        ? next(at, 1)
         : key === 'ArrowLeft' || key === 'ArrowUp'
-          ? (at - 1 + count) % count
+          ? next(at, -1)
           : key === 'Home'
-            ? 0
+            ? next(-1, 1)
             : key === 'End'
-              ? count - 1
+              ? next(count, -1)
               : null;
     if (to === null) return;
     event.preventDefault();
@@ -82,6 +92,7 @@ export function Segmented({
           aria-label={option.name}
           title={option.name}
           tabIndex={index === at ? 0 : -1}
+          disabled={option.disabled}
           onClick={() => {
             if (!disabled) onChange(option.value);
           }}
