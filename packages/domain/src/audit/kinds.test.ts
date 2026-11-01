@@ -120,6 +120,7 @@ describe('the audit kinds', () => {
       'asset.replaced',
       'asset.relicensed',
       'asset.refused',
+      'asset.derivatives_discarded',
       'generation.run',
       'generation.accepted',
       'generation.discarded',

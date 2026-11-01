@@ -246,8 +246,10 @@ describe('the sample job, from the queue to the store', () => {
     }
   });
 
-  it('refuses a kind it does not know rather than guessing', async () => {
+  it('leaves a kind it does not run for a worker that does, rather than failing it (the AL plan, AL-H)', async () => {
     await service.withTenant(tenant, (trx) => enqueueJob(trx, 'sample_pdf', crypto.randomUUID()));
-    expect(await work({ handlers: {} })).toBe('failed');
+    // A worker older than the kind never claims it, so the job waits rather than being given up.
+    expect(await work({ handlers: {} })).toBe('idle');
+    expect(await work()).not.toBe('idle');
   });
 });
