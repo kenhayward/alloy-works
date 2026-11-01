@@ -341180,6 +341180,48 @@
                             "label"
                           ]
                         },
+                        "source": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "query"
+                                },
+                                "query": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "query"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "skos"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "examples": [
+                                    "https://gauges.example.test/alloy"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "url"
+                              ]
+                            }
+                          ]
+                        },
                         "values": {
                           "maxItems": 5000,
                           "type": "array",
@@ -341242,6 +341284,11 @@
                               "replacedBy": {
                                 "type": "string",
                                 "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                              },
+                              "source": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
                               }
                             },
                             "required": [
@@ -341568,6 +341615,837 @@
                     "traceId": {
                       "type": "string",
                       "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vocabularies/{id}/refresh": {
+      "post": {
+        "operationId": "refreshVocabulary",
+        "summary": "Refresh a vocabulary's values from its source, recording a version",
+        "description": "Refreshes a vocabulary's values from its source and records the next version. A query definition's source is run as the caller, who needs use connection on its connection as a sample does, and recorded as the act `vocabulary`; its `id`, `label` and optional `description` columns give each value's identifier and its words in the base language. A SKOS address is fetched by the connector: one `GET`, no redirect followed, at most 5 MB in 20 seconds, never a private address; each concept gives its identity, its `notation` as the suggested id, and its `prefLabel` and `definition` by language. A value is kept by its identifier: one new to the source is added active, one gone from it retired, never removed, and one whose words changed takes the source's. What no value can hold is reported by its identifier. A sourced vocabulary's values are otherwise changed only in their state. It needs manage_definitions at the tenant.",
+        "tags": [
+          "Vocabularies"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "manage_definitions",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The vocabulary at its new version, or as it was where nothing changed, and what the refresh did",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "answer": {
+                      "type": "string",
+                      "enum": [
+                        "recorded",
+                        "unchanged"
+                      ],
+                      "description": "`recorded`: a new version; `unchanged`: the source gave nothing new"
+                    },
+                    "vocabulary": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "number"
+                          ]
+                        },
+                        "vocabulary": {
+                          "type": "object",
+                          "properties": {
+                            "schemaVersion": {
+                              "type": "number",
+                              "const": 1
+                            },
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "key": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                            },
+                            "base": {
+                              "type": "string",
+                              "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                            },
+                            "order": {
+                              "type": "string",
+                              "enum": [
+                                "declared",
+                                "label"
+                              ]
+                            },
+                            "source": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "query"
+                                    },
+                                    "query": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "query"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "skos"
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 2000,
+                                      "examples": [
+                                        "https://gauges.example.test/alloy"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "url"
+                                  ]
+                                }
+                              ]
+                            },
+                            "values": {
+                              "maxItems": 5000,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "labels": {
+                                    "minItems": 1,
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "language": {
+                                          "type": "string",
+                                          "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                        },
+                                        "text": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "language",
+                                        "text"
+                                      ]
+                                    }
+                                  },
+                                  "descriptions": {
+                                    "maxItems": 50,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "language": {
+                                          "type": "string",
+                                          "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|\\d{3}))?(-[a-z0-9]{5,8})*$"
+                                        },
+                                        "text": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "language",
+                                        "text"
+                                      ]
+                                    }
+                                  },
+                                  "state": {
+                                    "type": "string",
+                                    "enum": [
+                                      "active",
+                                      "deprecated",
+                                      "retired"
+                                    ]
+                                  },
+                                  "replacedBy": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "source": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 2000
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "labels",
+                                  "descriptions",
+                                  "state"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "schemaVersion",
+                            "id",
+                            "name",
+                            "key",
+                            "base",
+                            "order",
+                            "values"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version",
+                        "vocabulary"
+                      ]
+                    },
+                    "report": {
+                      "type": "object",
+                      "properties": {
+                        "added": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Values new to the source, added active"
+                        },
+                        "relabelled": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Values whose labels or descriptions the source changed"
+                        },
+                        "retired": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Values gone from the source, retired, never removed"
+                        },
+                        "returned": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Values retired here and in the source again, kept retired to be restored by hand"
+                        },
+                        "unchanged": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "How many values the source gave as they were"
+                        },
+                        "refused": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string"
+                              },
+                              "reason": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "reason"
+                            ]
+                          },
+                          "description": "The first 1,000 rows or concepts no value could hold, by their identifier in the source"
+                        },
+                        "refusedTotal": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "added",
+                        "relabelled",
+                        "retired",
+                        "returned",
+                        "unchanged",
+                        "refused",
+                        "refusedTotal"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "answer",
+                    "vocabulary",
+                    "report"
+                  ]
+                },
+                "example": {
+                  "answer": "recorded",
+                  "vocabulary": {
+                    "id": "example",
+                    "version": {
+                      "id": "example",
+                      "number": "example"
+                    },
+                    "vocabulary": {
+                      "schemaVersion": 1,
+                      "id": "example",
+                      "name": "example",
+                      "key": "example",
+                      "base": "en",
+                      "order": "declared",
+                      "values": []
+                    }
+                  },
+                  "report": {
+                    "added": [],
+                    "relabelled": [],
+                    "retired": [],
+                    "returned": [],
+                    "unchanged": -9007199254740991,
+                    "refused": [],
+                    "refusedTotal": -9007199254740991
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "signed_out",
+                        "token_revoked"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not manage definitions, use the query definition's connection, or read the stored result it queries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such vocabulary in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`vocabulary_unsourced`: it has no source. `vocabulary_source_missing`: its query definition is not one the caller may read here. `vocabulary_source_parameters`: the query asks a required parameter. `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`, `capability_undeclared` or `identity_unavailable`, as a sample refuses them. `version_precondition`: the vocabulary changed while the source answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "attribution": {
+                      "type": "string",
+                      "enum": [
+                        "connector",
+                        "query",
+                        "product"
+                      ]
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "sqlstate": {
+                          "type": "string",
+                          "description": "The source's five-character SQLSTATE"
+                        },
+                        "message": {
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "sqlstate"
+                      ],
+                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                    },
+                    "column": {
+                      "type": "string"
+                    },
+                    "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "untested",
+                        "not_read_only",
+                        "asserted"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`vocabulary_source_unreadable`: the address's text does not read as SKOS, holds more than 5,000 concepts, or the query has no `id` or `label` column",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "`vocabulary_source_failed`: the address could not be fetched, `failure` saying why (`host_refused`, `connection_failed`, `timeout`, `source_refused`, `source_too_large`, `connector_error`); or the query's run failed, by its failure's code and attribution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "attribution": {
+                      "type": "string",
+                      "enum": [
+                        "connector",
+                        "query",
+                        "product"
+                      ]
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "sqlstate": {
+                          "type": "string",
+                          "description": "The source's five-character SQLSTATE"
+                        },
+                        "message": {
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "sqlstate"
+                      ],
+                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                    },
+                    "column": {
+                      "type": "string"
+                    },
+                    "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`connector_unavailable`, `connector_busy` or `query_throttled`, as a sample answers them",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    },
+                    "attribution": {
+                      "type": "string",
+                      "enum": [
+                        "connector",
+                        "query",
+                        "product"
+                      ]
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "sqlstate": {
+                          "type": "string",
+                          "description": "The source's five-character SQLSTATE"
+                        },
+                        "message": {
+                          "description": "The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "sqlstate"
+                      ],
+                      "description": "What the source said, where it refused the statement: `source_refused` alone"
+                    },
+                    "column": {
+                      "type": "string"
+                    },
+                    "row": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "retryAfter": {
+                      "description": "`query_throttled` alone: the seconds to wait before trying again (DAT-071)",
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
@@ -342058,6 +342936,48 @@
                                 "label"
                               ]
                             },
+                            "source": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "query"
+                                    },
+                                    "query": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 200
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "query"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "skos"
+                                    },
+                                    "url": {
+                                      "type": "string",
+                                      "maxLength": 2000,
+                                      "examples": [
+                                        "https://gauges.example.test/alloy"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "url"
+                                  ]
+                                }
+                              ]
+                            },
                             "values": {
                               "maxItems": 5000,
                               "type": "array",
@@ -342120,6 +343040,11 @@
                                   "replacedBy": {
                                     "type": "string",
                                     "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                                  },
+                                  "source": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 2000
                                   }
                                 },
                                 "required": [

@@ -4,6 +4,7 @@ import type {
   VocabularyImportAnswer,
   VocabularyList,
   VocabularyParams,
+  VocabularyRefreshAnswer,
   VocabularyUsesView,
   VocabularyView,
 } from '@alloy-works/api-contract';
@@ -24,15 +25,32 @@ import {
   VOCABULARY_LIMITS,
   VocabularyRefused,
   parseVocabulary,
+  refreshVocabulary,
   type Vocabulary,
+  type VocabularySource,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
+import { AfterCommit } from './after-commit.js';
+import type { VocabularySourceFetched } from './data/connections.js';
 import { refusedDefinition } from './definitions.js';
 import type { SessionPrincipal } from './sessions.js';
 import { refused } from './wire-codes.js';
 import { SKOS_QUADS_MOST } from './terms/skos.js';
-import { exportVocabulary, readVocabularySkos } from './vocabulary-skos.js';
+import {
+  exportVocabulary,
+  readSkosSource,
+  readVocabularySkos,
+  sourceFormat,
+  sourceRows,
+} from './vocabulary-skos.js';
+
+/** A vocabulary's source fetched as the caller: decided in `trx`, fetched once it commits (VO-J). */
+export type VocabularySourceOf = (
+  request: FastifyRequest,
+  trx: TenantTransaction,
+  source: VocabularySource,
+) => Promise<() => Promise<VocabularySourceFetched>>;
 
 /**
  * The vocabulary routes (the VO plan, VO-A, VO-I): read by anyone signed in, so in a transaction of
@@ -66,6 +84,7 @@ export function vocabularyHandlers(
   db: TenantDatabase,
   tenantOf: (request: FastifyRequest) => Tenant,
   principalOf: (request: FastifyRequest) => SessionPrincipal,
+  sourceOf: VocabularySourceOf,
 ) {
   // Anybody signed in, but for somebody from outside who reads only what was shared with them, as the
   // people picker (the R17 plan, R17-I): they choose no values, so they see no vocabulary.
@@ -115,6 +134,58 @@ export function vocabularyHandlers(
           components: each.components.map((component) => ({ ...component })),
         })),
       };
+    },
+
+    /**
+     * A refresh from its source (LIB-058; the VO plan, VO-J): decided here, the source asked once this
+     * transaction commits, and the version the values make recorded from the one read here, so a
+     * change made meanwhile is refused rather than overwritten.
+     */
+    refreshVocabulary: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as VocabularyParams;
+      const stored = await readVocabulary(trx, id);
+      if (!stored) throw notFound();
+      const vocabulary = stored.definition;
+      if (vocabulary.source === undefined) {
+        throw refused(409, 'vocabulary.unsourced', 'This vocabulary has no source to refresh from.');
+      }
+      const fetch = await sourceOf(request, trx, vocabulary.source);
+      return new AfterCommit(async (): Promise<VocabularyRefreshAnswer> => {
+        const fetched = await fetch();
+        const values =
+          fetched.kind === 'rows'
+            ? sourceRows(fetched.result, vocabulary.base)
+            : await readSkosSource(sourceFormat(fetched.text, fetched.contentType), fetched.text);
+        if (values === 'unreadable' || values === 'too many' || 'missing' in values) {
+          throw refused(
+            422,
+            'vocabulary.source_unreadable',
+            values === 'unreadable'
+              ? 'The address does not answer with SKOS as JSON-LD or Turtle.'
+              : values === 'too many'
+                ? `The address holds more than ${VOCABULARY_LIMITS.values.toLocaleString('en')} concepts or ${SKOS_QUADS_MOST.toLocaleString('en')} statements.`
+                : `The query has no ${values.missing.join(' or ')} column.`,
+          );
+        }
+        const { next, report } = refreshVocabulary(vocabulary, values);
+        const answer = await db.withTenant(tenantOf(request), (work) =>
+          recordDefinitionVersion(work, {
+            id,
+            openedFrom: stored.version.id,
+            definition: next,
+            author: principalId,
+            refreshed: true,
+          }),
+        );
+        if (answer.answer !== 'recorded' && answer.answer !== 'version.unchanged') {
+          return refusedDefinition(answer);
+        }
+        return {
+          answer: answer.answer === 'recorded' ? 'recorded' : 'unchanged',
+          vocabulary: vocabularyView(answer.definition as StoredDefinition<'vocabulary'>),
+          report,
+        };
+      });
     },
 
     exportVocabulary: async (request: FastifyRequest): Promise<VocabularyExportAnswer> => {
