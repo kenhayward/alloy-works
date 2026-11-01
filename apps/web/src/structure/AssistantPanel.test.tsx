@@ -946,10 +946,16 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     const progress = await screen.findByRole('progressbar', { name: 'Answering' });
-    expect(progress).toHaveTextContent('Answering: 1 token received');
+    expect(progress).toHaveAttribute('aria-valuetext', 'Answering: 1 token received');
+    // Said once, the count on the same line (issue #864).
+    const doing = progress.closest('[data-doing]')!;
+    expect(doing).toHaveTextContent(/^Answering\s*1 token$/);
+    expect(
+      screen.getByRole('article', { name: 'This turn' }).textContent!.match(/Answering/g),
+    ).toHaveLength(1);
     act(() => send('text', { text: 'has ', tokens: 2 }));
     act(() => send('text', { text: 'two parts.', tokens: 3 }));
-    expect(progress).toHaveTextContent('Answering: 3 tokens received');
+    expect(progress).toHaveTextContent('3 tokens');
     release();
     await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
   });
@@ -982,10 +988,38 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
     await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     const turn = await screen.findByRole('article', { name: 'This turn' });
-    expect(within(turn).getByText('When does it flood?')).toBeVisible();
+    const asked = within(turn).getByText('When does it flood?');
+    expect(asked).toBeVisible();
+    // Your words alone, no label shown: "You" is for a screen reader (issue #864).
+    expect(within(asked).getByText('You')).toHaveClass(/hidden/);
     expect(within(turn).getByRole('region', { name: 'The answer' })).toHaveTextContent(
       'It floods 1 each spring.',
     );
+  });
+
+  it('brings the turn asked into view at the foot of the conversation (issue #864)', async () => {
+    const user = userEvent.setup();
+    // What scrolled: the conversation alone, never the page around it.
+    const shown: Element[] = [];
+    const was = HTMLElement.prototype.scrollTo;
+    HTMLElement.prototype.scrollTo = function (this: Element) {
+      shown.push(this);
+    } as typeof HTMLElement.prototype.scrollTo;
+    try {
+      panel(vi.fn(answered));
+      await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?{Enter}');
+      const turn = await screen.findByRole('article', { name: 'This turn' });
+      await waitFor(() => expect(shown.some((each) => each.contains(turn))).toBe(true));
+      expect(
+        shown.every(
+          (each) =>
+            each.contains(turn) &&
+            !each.contains(screen.getByRole('toolbar', { name: 'Conversation' })),
+        ),
+      ).toBe(true);
+    } finally {
+      HTMLElement.prototype.scrollTo = was;
+    }
   });
 
   it('copies the answer without its citation marks', async () => {

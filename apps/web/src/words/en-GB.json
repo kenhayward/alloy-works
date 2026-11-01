@@ -5352,5 +5352,6 @@
   "document.current-component": "Component",
   "document.all-components": "Document",
   "document.answering": "Answering",
-  "document.answering-tokens": "Answering: {count, plural, one {# token} other {# tokens}} received"
+  "document.answering-tokens": "Answering: {count, plural, one {# token} other {# tokens}} received",
+  "document.tokens-so-far": "{count, plural, one {# token} other {# tokens}}"
 }

@@ -368,7 +368,23 @@
   width: 100%;
 }
 
+/* One line an item: its detail first, such as when, then its label cut short to fit. */
+.menu[data-wide] [role='menuitem']:has(.menuDetail) {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-12);
+  padding-block: 0;
+}
+
+.menu[data-wide] .menuDetail {
+  flex-shrink: 0;
+  order: -1;
+  font-variant-numeric: tabular-nums;
+}
+
 .menu[data-wide] .menuLabel {
+  flex: 1;
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
