@@ -1027,8 +1027,8 @@ describe('the citations in the committed model', () => {
     // 2293 (2026-11-01): VO-J - the connector fetching a vocabulary's SKOS address, LIB-058.
     // 2299 (2026-11-01): VOc - a vocabulary refreshed from its source, the condition dialog's choice, LIB-054, LIB-058, LIB-063.
     // 2304 (2026-11-01): ALa - a licence, AST-022 and AST-045.
-    // 2319 (2026-11-01): ALb - an image's rights, at upload and at publish, AST-021, AST-023, AST-031, AST-044, AST-053.
-    expect(model.citations).toHaveLength(2319);
+    // 2320 (2026-11-01): ALb - an image's rights, at upload and at publish and a baseline's republish, AST-021, AST-023, AST-031, AST-044, AST-053.
+    expect(model.citations).toHaveLength(2320);
   });
 
   it('cites no identifier the corpus does not hold', () => {
