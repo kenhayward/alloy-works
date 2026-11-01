@@ -65,7 +65,7 @@ describe('the module rail', () => {
     );
     expect(
       within(within(rail).getByRole('list', { name: 'Author' })).getAllByRole('link'),
-    ).toHaveLength(7);
+    ).toHaveLength(8);
     expect(
       within(within(rail).getByRole('list', { name: 'Publish' })).getAllByRole('link'),
     ).toHaveLength(1);
