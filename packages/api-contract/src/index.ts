@@ -254,6 +254,20 @@ export {
 } from './vocabularies.js';
 export { LicenceList, LicenceParams, LicenceView, licenceRoutes } from './licences.js';
 export {
+  DeleteStyleQuery,
+  SaveStyleBody,
+  STYLE_KINDS,
+  StyleImpactBody,
+  StyleImpactView,
+  ThemeStyleRefusal,
+  ThemeList,
+  ThemeParams,
+  ThemeStyleParams,
+  ThemeSummary,
+  ThemeView,
+  themeRoutes,
+} from './themes.js';
+export {
   MarkCurrentBody,
   SourceChangeBody,
   SourceChangeParams,

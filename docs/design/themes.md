@@ -62,6 +62,9 @@ conformance suite.
 | **STY-032** | Catalogue edits are versions, so what changed is a comparison between two versions                                                                                                                                                                                                                                                                                                                  |
 | **STY-033** | A theme may carry an allowed list of style identifiers per kind; the editor offers only those, and the resolver refuses the rest                                                                                                                                                                                                                                                                    |
 | **STY-034** | The impact of a style change is the set of documents whose pinned or floating theme version would resolve differently, listed before the change is saved                                                                                                                                                                                                                                            |
+| **STY-057** | `explainStyle` gives each property's value and the style stating it, walked by the reader's own `ancestry` ([Styles changed without a release](#styles-changed-without-a-release))                                                                                                                                                                                                                  |
+| **STY-067** | The documents a style change would reach are listable before it is saved (`styleImpact`), so a new theme version is a decision with its reach shown                                                                                                                                                                                                                                                 |
+| **STY-086** | A draft follows its template's theme at its latest, a style change's reach listed first; a baseline keeps the version it pinned (STY-028)                                                                                                                                                                                                                                                           |
 | **STY-035** | One resolver, in `packages/domain`, used by the editor and the publisher alike; the projections never resolve anything                                                                                                                                                                                                                                                                              |
 | **STY-058** | The CSS projection is generic over the property set (STY-030), so it renders every declared paragraph and character property at the theme's values rather than a chosen few; the pagination-bound properties are the only omission, marked as such in the set and shown by preview instead of approximated (STY-037)                                                                                |
 | **STY-037** | Properties that depend on pagination are marked as such in the property set; the CSS projection omits them and preview shows them                                                                                                                                                                                                                                                                   |
@@ -1122,6 +1125,27 @@ taken from `Intl`, so the editor, the read text and later the PDF and Word print
 - **Migration 0048 seeds its 0.1 and the default theme's 0.6** naming it, under 0043's guard: only
   where the environment's theme stands at 0.5, unchanged and authored by nobody. An environment that
   recorded a theme of its own keeps it, and reads its values in the default formats.
+
+## Styles changed without a release
+
+The [SY plan](../plans/2026-11-01-sy-styles-and-themes.md). **A style saved is one act** (SY-C):
+`saveStyle` reads the theme with the changed catalogue under a name no version holds, so every refusal
+the reader makes (contrast, a broken chain, a place given a style that does not apply) comes before
+anything is written; then the catalogue's next version, the theme's next version naming it, and
+`style.changed`, naming the properties that changed. A deletion waits until no component uses the
+style (`styleUseCount`), whoever may read them. Routes: `GET /v1/themes`, `GET /v1/themes/{id}`, `PUT`
+and `DELETE /v1/themes/{id}/styles/{kind}/{style}` with the theme version opened from, and `POST
+/v1/themes/{id}/impact`; writes and the impact need `manage_definitions` at the environment.
+
+**Its reach** (`styleImpact`, STY-034, STY-067): the documents set in the theme, by their template or
+the environment's default, whose components' latest versions use the style or one based on it. A
+paragraph style a place or role defaults to, and a character style, reach every document in the theme,
+since a paragraph there names none. Named where the caller may read, counted otherwise.
+
+**Where a value comes from** (`explainStyle`, STY-057): each property and the nearest style stating it,
+or the catalogue's base, through `ancestry`, the chain walk `readTheme` itself uses.
+
+**An open editor keeps the theme it loaded**: a style saved meanwhile shows on its next open.
 
 ## Safety
 
