@@ -131,32 +131,37 @@ export const REFUSED_AT_THE_DOOR = {
 } as const satisfies Partial<Record<AssetUploadReason, object>>;
 
 /**
- * An asset version as a route reads it: `read` on it was decided by the route; an asset a dataset's
- * image made is read only by a caller who may also read a document holding it, as every value a
- * result returns is (the D8 plan, D8-I), and is otherwise not found, as an asset they may not read is.
+ * An asset as a route reads it: `read` on it was decided by the route; an asset a dataset's image
+ * made is read only by a caller who may also read a document holding it, as every value a result
+ * returns is (the D8 plan, D8-I), and is otherwise not found, as an asset they may not read is.
+ * Answers whether it is a dataset's.
  */
-async function readableAssetVersion(trx: TenantTransaction, caller: Caller, id: string) {
-  const version = await readAssetVersion(trx, id);
-  if (!version) throw notFound();
-  const holders = await documentsHoldingAsset(trx, version.assetId);
-  if (holders === undefined) return version;
+async function readableAsset(
+  trx: TenantTransaction,
+  caller: Caller,
+  assetId: string,
+): Promise<{ readonly fromDataset: boolean }> {
+  const holders = await documentsHoldingAsset(trx, assetId);
+  if (holders === undefined) return { fromDataset: false };
   let refusal: AppError | undefined;
   for (const document of holders) {
     const facts = await connectionFacts(trx, caller, document);
     if (!facts) continue;
     const reading = decide('read', facts);
-    if (reading.allowed) return version;
+    if (reading.allowed) return { fromDataset: true };
     // The image exists, and no document the caller may read holds it: a refusal, hidden (AU1-E),
     // by the first holding document's decision.
-    refusal ??= refusedBy(
-      notFound(),
-      reading,
-      facts,
-      { kind: 'artifact', id: version.assetId },
-      true,
-    );
+    refusal ??= refusedBy(notFound(), reading, facts, { kind: 'artifact', id: assetId }, true);
   }
   throw refusal ?? notFound();
+}
+
+/** An asset version as a route reads it, by its asset's rule. */
+async function readableAssetVersion(trx: TenantTransaction, caller: Caller, id: string) {
+  const version = await readAssetVersion(trx, id);
+  if (!version) throw notFound();
+  await readableAsset(trx, caller, version.assetId);
+  return version;
 }
 
 /**
@@ -321,6 +326,7 @@ export function assetHandlers(
     ): Promise<AssetRightsView> => {
       const { id } = request.params as AssetParams;
       await assetIn(trx, id);
+      await readableAsset(trx, callerOf(request), id);
       return rightsView(trx, id);
     },
 
@@ -331,8 +337,9 @@ export function assetHandlers(
     ): Promise<AssetRightsView> => {
       const { id } = request.params as AssetParams;
       await assetIn(trx, id);
-      const [current] = await readAssetRights(trx, id);
-      if (current?.rights.kind === 'dataset') {
+      // A dataset's image, by its upload rather than its rights row, which a migration may not have
+      // written (the ALb review, 3).
+      if ((await readableAsset(trx, callerOf(request), id)).fromDataset) {
         throw refused(
           409,
           'asset.rights_dataset',
