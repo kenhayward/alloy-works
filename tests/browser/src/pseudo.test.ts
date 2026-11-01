@@ -517,6 +517,24 @@ const administration = (ada: Adas): readonly Surface[] => [
     // The policy for undeclared images (the AL plan, AL-F).
     ['Administration, its images', '#/admin/images', 'admin.images'],
   ]),
+  {
+    // A paragraph style's reach, asked and never saved: the theme stays as every other walk expects it.
+    name: 'The Save style dialog',
+    dialog: 'admin/Themes.tsx',
+    address: '#/admin/themes',
+    regions: ['[role="dialog"]'],
+    ready: heading('admin.document-themes'),
+    open: async (page, language) => {
+      const click = (key: WordKey, values?: Record<string, string>) =>
+        page.getByRole('button', { name: say(language, key, values), exact: true }).click();
+      await click('admin.open-theme', { name: 'Default' });
+      await click('admin.edit', { name: 'Heading 4' });
+      await click('admin.save-style');
+      return page.getByRole('dialog', {
+        name: say(language, 'admin.save-style-question', { name: 'Heading 4' }),
+      });
+    },
+  },
   byButton(
     'The Connect CT Studio dialog',
     'admin/CtStudio.tsx',
