@@ -246,6 +246,16 @@ describe('the reference index and impact (relationships.md; the R2 plan, R2-A to
     expect(await rowsFrom(report.artifactId)).toEqual([]);
   });
 
+  it('AST-017 indexes an image following its asset as following the asset, not pinned to a version of it', async () => {
+    const picture = await image(general);
+    const holder = await revise(await component(general, 'Following'), [
+      { ...figure(picture.id), follow: 'latest' } as ContentDocument['content'][number],
+    ]);
+    expect(await rowsFrom(holder.artifactId)).toEqual([
+      { node: 'f1', to_id: picture.artifactId, to_kind: 'asset', mode: 'latest', to_version: null },
+    ]);
+  });
+
   it('SCH-024 indexes a binding by its query definition and a query definition by its connection, and says what a component uses', async () => {
     const { connection, definition } = await as(async (trx) => {
       const made = await createConnection(trx, { author: grace, spaceId: general, settings });

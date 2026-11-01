@@ -84,3 +84,29 @@
   margin: var(--space-8) 0 var(--space-4);
   font-size: var(--size-13);
 }
+
+/* Replace (AL-M): a file input drawn as a button, its focus shown on the label it is in. */
+.replace {
+  position: relative;
+  align-self: start;
+  padding: var(--space-4) var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-4);
+  cursor: pointer;
+}
+
+.replace input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.replace:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.status[data-tone='failed'] {
+  color: var(--danger);
+}

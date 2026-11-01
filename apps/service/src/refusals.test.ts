@@ -127,6 +127,7 @@ describe('the rule behind a refusal', () => {
       // own guards (AL-C).
       'asset.licence_missing',
       'asset.rights_dataset',
+      'asset.replace_dataset',
       // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
       // requirement names as a refusal (CI-D).
       'style.invalid',

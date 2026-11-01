@@ -74,6 +74,11 @@ export async function uploadImage(
     /** The file's name, and what its uploader declared of its source and licence (AL-E). */
     readonly name?: string;
     readonly rights?: DeclarableRights;
+    /**
+     * The image it replaces (AL-M; AST-016): its check cuts that image's next version, carrying its
+     * description, name and rights, so the space and the rest are not sent.
+     */
+    readonly replaces?: string;
   },
   wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 ): Promise<UploadOutcome> {
@@ -91,16 +96,22 @@ async function attempt(
   input: Parameters<typeof uploadImage>[1],
   wait: (ms: number) => Promise<void>,
 ): Promise<UploadOutcome> {
-  const made = await client.POST('/v1/spaces/{space}/asset-uploads', {
-    params: { path: { space: input.space } },
-    body: {
-      alternative: input.alternative,
-      ...(input.name === undefined ? {} : { name: input.name }),
-      // The domain's shape, its optional members read as possibly undefined where the generated
-      // type's are only absent: the same value.
-      ...(input.rights === undefined ? {} : { rights: input.rights as never }),
-    },
-  });
+  const made =
+    input.replaces !== undefined
+      ? await client.POST('/v1/assets/{id}/replacements', {
+          params: { path: { id: input.replaces } },
+          body: {},
+        })
+      : await client.POST('/v1/spaces/{space}/asset-uploads', {
+          params: { path: { space: input.space } },
+          body: {
+            alternative: input.alternative,
+            ...(input.name === undefined ? {} : { name: input.name }),
+            // The domain's shape, its optional members read as possibly undefined where the
+            // generated type's are only absent: the same value.
+            ...(input.rights === undefined ? {} : { rights: input.rights as never }),
+          },
+        });
   if (!made.data) return refusal((made.error as { code?: string } | undefined)?.code);
   const id = made.data.id;
 

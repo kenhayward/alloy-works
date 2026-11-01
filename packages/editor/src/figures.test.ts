@@ -11,6 +11,7 @@ import {
   insertFigure,
   replaceFigureImage,
   setFigureAlternative,
+  setFigureFollow,
   setFigureNumbered,
 } from './figures.js';
 import { fromEditor, toEditor } from './mapping.js';
@@ -288,6 +289,21 @@ describe('a figure in the editor (figures 2)', () => {
       expect(
         run(stateOf(documentOf(paragraph('p1', 'x')), 1), setFigureNumbered(false)).handled,
       ).toBe(false);
+    });
+
+    it("AST-017 makes it follow its image's latest version and pinned again, drawn from the latest", () => {
+      const state = inCaption(documentOf(decorative));
+      expect(figureAt(state)).toMatchObject({ follow: false });
+      const on = run(state, setFigureFollow(true));
+      expect(on.handled).toBe(true);
+      expect(stored(on.next)).toEqual([{ ...decorative, follow: 'latest' }]);
+      expect(figureAt(on.next)).toMatchObject({ follow: true });
+      expect(run(on.next, setFigureFollow(true)).handled).toBe(false);
+      expect(stored(run(on.next, setFigureFollow(false)).next)).toEqual([decorative]);
+      const toDOM = editorSchema.nodes.figure!.spec.toDOM!;
+      const drawn = toDOM(on.next.doc.firstChild!) as unknown as unknown[];
+      const image = (drawn[2] as unknown[])[2] as [string, Record<string, string>];
+      expect(image[1].src).toBe(`/v1/asset-versions/${RED}/content?follow=latest`);
     });
 
     it('keeps a figure marked unnumbered so when its image is replaced', () => {

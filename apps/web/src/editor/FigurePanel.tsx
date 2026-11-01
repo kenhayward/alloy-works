@@ -5,6 +5,7 @@ import { useId, useState, type Ref } from 'react';
 import styles from './FigurePanel.module.css';
 import {
   FigureSettings,
+  rightsFlags,
   useFigureSettings,
   type FigureSettingsState,
   type FigureShown,
@@ -138,6 +139,12 @@ export function FigurePanel({
           </span>
         )}
       </span>
+      {rightsFlags(settings.rights).map((flag) => (
+        <span key={flag} className={styles['flag']}>
+          <Icon name="Needs attention" size={13} />
+          {flag}
+        </span>
+      ))}
       <span className={styles['actions']}>
         <IconButton
           label={words('editor.replace-image')}

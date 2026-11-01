@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { loadReadableSet } from './access-facts.js';
+import { readableArtifacts } from './readable-artifacts.js';
 import {
   acceptedCounts,
   againIdentifiers,
@@ -1650,7 +1652,8 @@ async function placeAfter(
 /**
  * The images an import held made assets of its space at acceptance (IM-C), each through an upload
  * filled and recorded with the header its job read, by the person accepting: each placeholder's
- * asset version, recording the import it came from. The rows go; the objects are the assets' now.
+ * asset version, recording the import it came from; or the space's own of the same bytes, placed
+ * again. The rows go; the objects are the assets' now.
  */
 async function assetsOf(
   trx: TenantTransaction,
@@ -1666,8 +1669,33 @@ async function assetsOf(
   }>`delete from import_asset where import_id = ${row.id}
      returning placeholder, object_key, sha256, bytes::text as bytes, header`.execute(trx);
   const made = new Map<string, string>();
+  const readable = rows.length === 0 ? undefined : await loadReadableSet(trx, by);
   for (const each of rows) {
     await holdObject(trx, each.sha256);
+    // The same bytes already an image of the space its acceptor may read (AST-029; AL-L): placed, not
+    // made again, and recording no import as its source (pre-flight 11). Never a dataset's image.
+    const held = readable
+      ? await trx
+          .selectFrom('artifact_version as v')
+          .innerJoin('artifact as a', 'a.id', 'v.artifact_id')
+          .select('v.id')
+          .where('v.kind', '=', 'asset')
+          .where('a.space_id', '=', row.space_id)
+          .where(sql<boolean>`v.content ->> 'object' = ${each.object_key}`)
+          .where(
+            sql<boolean>`not exists (select from asset_upload u
+                                      where u.asset_id = a.id and u.origin = 'dataset')`,
+          )
+          .where((eb) => readableArtifacts(eb, readable))
+          .orderBy('v.revision_no', 'desc')
+          .orderBy('v.version_no', 'desc')
+          .limit(1)
+          .executeTakeFirst()
+      : undefined;
+    if (held) {
+      made.set(each.placeholder, held.id);
+      continue;
+    }
     const upload = await createAssetUpload(trx, {
       spaceId: row.space_id,
       uploader: by,

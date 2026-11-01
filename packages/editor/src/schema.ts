@@ -140,8 +140,8 @@ function altOf(alternative: { kind: string; text?: string }): string {
  * Where an asset version's bytes are read from. The renderer is served on the service's own origin,
  * so one path serves the surface and a document's text alike (figures 2, ruling R1).
  */
-export const assetContentPath = (asset: string): string =>
-  `/v1/asset-versions/${encodeURIComponent(asset)}/content`;
+export const assetContentPath = (asset: string, follow?: unknown): string =>
+  `/v1/asset-versions/${encodeURIComponent(asset)}/content${follow === 'latest' ? '?follow=latest' : ''}`;
 
 /** What a bound figure's image says with nothing to tell it what the binding holds (B6.2). */
 export const BOUND_IMAGE = (): string => say('binding.bound-image');
@@ -560,6 +560,8 @@ export const editorSchema = new Schema({
         id: { default: null },
         // The asset version it shows, or null where its image is a binding's (the B6 plan, B6-A).
         asset: { default: null },
+        // `latest` where it follows its asset's latest version (AL-M), null where pinned.
+        follow: { default: null },
         // **Or the whole binding** it takes its image from, as the component stores it, its own
         // identifier inside: a figure's binding is an attribute, not a node, as the model's is a member.
         binding: { default: null },
@@ -603,7 +605,8 @@ export const editorSchema = new Schema({
           [
             'div',
             { class: 'aw-figure-image', contenteditable: 'false' },
-            ['img', { src: assetContentPath(node.attrs.asset as string), alt }],
+            // A following figure is drawn from its image's latest version (AL-M).
+            ['img', { src: assetContentPath(node.attrs.asset as string, node.attrs.follow), alt }],
           ],
           ['div', { class: 'aw-figure-body' }, 0],
         ];
@@ -640,13 +643,15 @@ export const editorSchema = new Schema({
       marks: '',
       attrs: {
         asset: {},
+        // `latest` where it follows its asset's latest version (AL-M), null where pinned.
+        follow: { default: null },
         imageStyle: { default: 'inline' },
         alternative: { default: { kind: 'decorative' } },
       },
       toDOM: (node) => [
         'img',
         {
-          src: assetContentPath(node.attrs.asset as string),
+          src: assetContentPath(node.attrs.asset as string, node.attrs.follow),
           alt: altOf(node.attrs.alternative as { kind: string; text?: string }),
           class: 'aw-inline-image',
           'data-asset': node.attrs.asset as string,

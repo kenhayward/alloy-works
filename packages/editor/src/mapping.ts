@@ -238,8 +238,10 @@ function toMark(mark: Mark): EditorMark {
  */
 function toRun(inline: InlineNode): Node[] {
   if (inline.type === 'image') {
-    const { asset, imageStyle, alternative } = inline;
-    return [editorSchema.nodes.image!.create({ asset, imageStyle, alternative })];
+    const { asset, follow, imageStyle, alternative } = inline;
+    return [
+      editorSchema.nodes.image!.create({ asset, follow: follow ?? null, imageStyle, alternative }),
+    ];
   }
   if (inline.type === 'footnote') {
     // Its paragraphs are the stored model's, spelt as the one node type a footnote holds (ruling R1).
@@ -418,6 +420,7 @@ function nodeOf(block: BlockNode): Node {
           id: block.id,
           // An asset version, or the binding its image is taken from (B6-A): whichever is stored.
           asset: block.asset ?? null,
+          follow: block.follow ?? null,
           binding: block.binding ?? null,
           imageStyle: block.imageStyle,
           alternative: block.alternative,
@@ -571,8 +574,14 @@ function runsOf(textblock: Node, id: string): unknown[] {
   const runs: unknown[] = [];
   textblock.forEach((child) => {
     if (child.type.name === 'image') {
-      const { asset, imageStyle, alternative } = child.attrs;
-      runs.push({ type: 'image', asset, imageStyle, alternative });
+      const { asset, follow, imageStyle, alternative } = child.attrs;
+      runs.push({
+        type: 'image',
+        asset,
+        ...(follow === 'latest' ? { follow } : {}),
+        imageStyle,
+        alternative,
+      });
       return;
     }
     if (child.type.name === 'footnote') {
@@ -838,7 +847,10 @@ function storedBlock(node: Node, at: string): unknown {
         id,
         // The one it holds, as stored: never both, and the walk refuses neither (B6-A).
         ...(node.attrs.binding === null
-          ? { asset: node.attrs.asset as string }
+          ? {
+              asset: node.attrs.asset as string,
+              ...(node.attrs.follow === 'latest' ? { follow: 'latest' } : {}),
+            }
           : { binding: node.attrs.binding as object }),
         imageStyle: node.attrs.imageStyle as string,
         caption: runsOf(node.child(0), id),

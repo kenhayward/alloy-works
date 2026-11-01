@@ -2061,6 +2061,28 @@ describe("a figure's image from a binding (the B6 plan, B6-A to B6-C)", () => {
     expect(() => parseContentDocument(doc([figure()]))).toThrow(/F1.*figure_image/);
   });
 
+  it("AST-017 holds a figure and an image following their asset's latest version, and refuses following beside a binding: figure_image", () => {
+    const image = {
+      type: 'image',
+      asset: ASSET_VERSION,
+      follow: 'latest',
+      imageStyle: 'inline',
+      alternative: { kind: 'decorative' },
+    };
+    const following = figure({ asset: ASSET_VERSION, follow: 'latest' });
+    const paragraph = { type: 'paragraph', id: 'p1', style: 'body', content: [image] };
+    const once = parseContentDocument(doc([following, paragraph]));
+    expect(once.content[0]).toMatchObject({ asset: ASSET_VERSION, follow: 'latest' });
+    expect(once.content[1]).toMatchObject({ content: [{ follow: 'latest' }] });
+    expect(parseContentDocument(once)).toEqual(once);
+    expect(() =>
+      parseContentDocument(doc([figure({ binding: binding(), follow: 'latest' })])),
+    ).toThrow(/F1.*figure_image/);
+    expect(() =>
+      parseContentDocument(doc([figure({ asset: ASSET_VERSION, follow: 'pinned' })])),
+    ).toThrow();
+  });
+
   it("DAT-098 claims a figure's binding's identifier with the component's others", () => {
     const inline = { type: 'paragraph', id: 'p1', style: 'body', content: [binding('k1')] };
     expect(() => parseContentDocument(doc([inline, figure({ binding: binding('k1') })]))).toThrow(

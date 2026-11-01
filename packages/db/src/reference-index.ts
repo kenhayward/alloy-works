@@ -39,7 +39,7 @@ export async function indexReferences(
   await trx.deleteFrom('reference').where('from_id', '=', version.artifactId).execute();
   const found = referencesIn(version.kind, version.content);
 
-  // An image names an asset version: the index keeps its asset, pinned to it.
+  // An image names an asset version: the index keeps its asset, pinned to it or following it.
   const assetVersions = [
     ...new Set(
       found.flatMap((each) =>
@@ -119,8 +119,9 @@ export async function indexReferences(
               node: each.node,
               to_id: asset,
               to_kind: 'asset',
-              mode: 'pinned' as const,
-              to_version: each.target.version,
+              // Following its asset (AL-M) follows it, as a latest reference to a component does.
+              mode: each.mode === 'latest' ? ('latest' as const) : ('pinned' as const),
+              to_version: each.mode === 'latest' ? null : each.target.version,
             },
           ];
     }
