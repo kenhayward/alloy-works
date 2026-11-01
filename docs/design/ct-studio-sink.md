@@ -328,7 +328,8 @@ the way any source is read.
 The contract's version 2 codes, with their classes, and none of the version 3 administration codes
 (`locked`, `forbidden`, `not_configured`), whose meanings are a sink's configuration's (the
 `not_configured` below is a `content_rejected` reason, never that code): an unknown
-hostname or tenant `instance_not_allowed`; a bad, expired or person's token, or an identity without
+hostname or tenant `instance_not_allowed` (no instance named, as CT Studio tests a shared
+connection, is the hostname's own); a bad, expired or person's token, or an identity without
 `create` and `edit` in the space, `credential_rejected` (CT Studio then points its person at the
 connection); the space gone `not_found`; a model or mapping refusal, a person's lock or a space not
 set up for delivery `content_rejected` with a `details.reason`; moved versions `changed_in_target`;
