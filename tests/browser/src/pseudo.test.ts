@@ -460,6 +460,7 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     ['The prompts', '#/prompts', 'prompts.prompts'],
     ['The bibliography', '#/bibliography', 'bibliography.bibliography'],
     ['The terms', '#/terms', 'terms.terms'],
+    ['The images', '#/images', 'images.images'],
     ['The conversations', '#/conversations', 'conversations.conversations'],
     ['The connections', '#/connections', 'data.connections'],
     ['The query definitions', '#/query-definitions', 'data.query-definitions-2'],
