@@ -11,6 +11,7 @@ import shell from '../layouts/Modal.module.css';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import type { UploadOutcome } from './upload.js';
+import { thumbnailPath, type LibraryImage } from '../images/library.js';
 import { imageChoices, StyleSelect } from '../theme/StyleChoice.js';
 import { usePresentation } from '../theme/presentation.js';
 import { words } from '../words/words.js';
@@ -38,6 +39,14 @@ export interface FigureDialogProps {
   /** The environment's licences an image may be held under, by name (AL-B). */
   readonly licences: () => Promise<readonly { readonly id: string; readonly name: string }[]>;
   /**
+   * The space's images, to choose one rather than upload (AST-028), and the one with a file's bytes,
+   * offered instead of a second copy (AST-029). None offers only an upload.
+   */
+  readonly library?: {
+    readonly search: (q: string) => Promise<readonly LibraryImage[]>;
+    readonly duplicateOf: (bytes: Uint8Array) => Promise<LibraryImage | null>;
+  };
+  /**
    * The asset version made, and how the figure's alternative text is given as a result; answers why
    * it could not be placed, which the dialog says and stays open for, or null once it has been.
    */
@@ -63,11 +72,18 @@ export function FigureDialog({
   language,
   upload,
   licences,
+  library,
   onDone,
   onCancel,
 }: FigureDialogProps) {
   const id = useId();
   const [file, setFile] = useState<File | null>(null);
+  // Uploading a file, or choosing an image the space holds (the AL plan, ALd).
+  const [choosing, setChoosing] = useState(false);
+  const [sought, setSought] = useState('');
+  const [found, setFound] = useState<readonly LibraryImage[]>([]);
+  const [chosen, setChosen] = useState<LibraryImage | null>(null);
+  const [duplicate, setDuplicate] = useState<LibraryImage | null>(null);
   const [description, setDescription] = useState('');
   const [tag, setTag] = useState(language);
   const [decorative, setDecorative] = useState(false);
@@ -109,6 +125,50 @@ export function FigureDialog({
     };
   }, [licences]);
 
+  const seek = async (q: string) => {
+    if (!library) return;
+    setFound(await library.search(q).catch(() => []));
+  };
+
+  const fileChosen = async (picked: File | null) => {
+    setFile(picked);
+    setDuplicate(null);
+    if (!library || picked === null) return;
+    const bytes = new Uint8Array(await picked.arrayBuffer());
+    setDuplicate(await library.duplicateOf(bytes).catch(() => null));
+  };
+
+  const takeDuplicate = (image: LibraryImage) => {
+    setChoosing(true);
+    setChosen(image);
+    setFound((held) => (held.some((each) => each.id === image.id) ? held : [image, ...held]));
+    setDuplicate(null);
+  };
+
+  /** An image the space holds, placed as it is: its own description, the figure's, or decorative. */
+  const place = () => {
+    if (chosen === null) {
+      setSaid(words('editor.choose-an-image-in-this'));
+      return;
+    }
+    const text = description.trim();
+    if (!decorative && text === '' && chosen.alternative === null) {
+      setSaid(words('editor.describe-the-image-or-say'));
+      return;
+    }
+    setSaid(
+      onDone({
+        assetVersion: chosen.version.id,
+        alternative: decorative
+          ? { kind: 'decorative' }
+          : text === ''
+            ? { kind: 'inherited' }
+            : { kind: 'own', text },
+        ...(placedIn === undefined ? {} : { imageStyle: placedIn }),
+      }),
+    );
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape' && !busy) {
       event.preventDefault();
@@ -118,6 +178,10 @@ export function FigureDialog({
 
   const submit = async () => {
     if (busy) return;
+    if (choosing) {
+      place();
+      return;
+    }
     if (file === null) {
       setSaid(words('editor.choose-an-image-a-png'));
       return;
@@ -220,16 +284,90 @@ export function FigureDialog({
                   : 'editor.replace-image',
             )}
           </h2>
-          <div className={styles['field']}>
-            <label htmlFor={`${id}-image`}>{words('editor.image')}</label>
-            <input
-              id={`${id}-image`}
-              ref={first}
-              type="file"
-              accept="image/png,image/jpeg"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            />
-          </div>
+          {library && (
+            <fieldset className={styles['field']}>
+              <legend>{words('editor.where-the-image-comes-from')}</legend>
+              <label>
+                <input
+                  type="radio"
+                  name={`${id}-from`}
+                  checked={!choosing}
+                  onChange={() => setChoosing(false)}
+                />
+                {words('editor.upload-a-file')}
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name={`${id}-from`}
+                  checked={choosing}
+                  onChange={() => {
+                    setChoosing(true);
+                    void seek(sought);
+                  }}
+                />
+                {words('editor.choose-one-in-this-space')}
+              </label>
+            </fieldset>
+          )}
+          {choosing ? (
+            <div key="choose" className={styles['field']}>
+              <label htmlFor={`${id}-seek`}>{words('editor.search-the-space-s-images')}</label>
+              <input
+                id={`${id}-seek`}
+                type="search"
+                value={sought}
+                onChange={(event) => setSought(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void seek(sought);
+                  }
+                }}
+              />
+              <button type="button" onClick={() => void seek(sought)}>
+                {words('editor.search')}
+              </button>
+              <fieldset className={styles['field']}>
+                <legend>{words('editor.images-in-this-space')}</legend>
+                {found.map((each) => (
+                  <label key={each.id}>
+                    <input
+                      type="radio"
+                      name={`${id}-chosen`}
+                      checked={chosen?.id === each.id}
+                      onChange={() => setChosen(each)}
+                    />
+                    <img src={thumbnailPath(each.version.id)} alt="" width={48} height={48} />
+                    <span data-content>{each.name ?? words('editor.unnamed-image')}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+          ) : (
+            <div key="upload" className={styles['field']}>
+              <label htmlFor={`${id}-image`}>{words('editor.image')}</label>
+              <input
+                id={`${id}-image`}
+                ref={first}
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={(event) => void fileChosen(event.target.files?.[0] ?? null)}
+              />
+              {duplicate !== null && (
+                <div role="status">
+                  <p>
+                    {words('editor.this-image-is-already-in', {
+                      name: duplicate.name ?? words('editor.unnamed-image'),
+                    })}
+                  </p>
+                  <button type="button" onClick={() => takeDuplicate(duplicate)}>
+                    {words('editor.use-this-image')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <div className={styles['field']}>
             <label htmlFor={`${id}-description`}>{words('editor.description')}</label>
             <textarea
@@ -240,19 +378,21 @@ export function FigureDialog({
               onChange={(event) => setDescription(event.target.value)}
             />
             <p id={`${id}-description-hint`} className={styles['hint']}>
-              {words('editor.what-the-image-shows-for')}
+              {words(choosing ? 'editor.leave-it-empty-to-use' : 'editor.what-the-image-shows-for')}
             </p>
           </div>
-          <div className={styles['field']}>
-            <label htmlFor={`${id}-language`}>{words('editor.language')}</label>
-            <input
-              id={`${id}-language`}
-              type="text"
-              value={tag}
-              disabled={decorative}
-              onChange={(event) => setTag(event.target.value)}
-            />
-          </div>
+          {!choosing && (
+            <div className={styles['field']}>
+              <label htmlFor={`${id}-language`}>{words('editor.language')}</label>
+              <input
+                id={`${id}-language`}
+                type="text"
+                value={tag}
+                disabled={decorative}
+                onChange={(event) => setTag(event.target.value)}
+              />
+            </div>
+          )}
           <label>
             <input
               type="checkbox"
@@ -261,7 +401,7 @@ export function FigureDialog({
             />
             {words('editor.it-is-decorative')}
           </label>
-          <fieldset className={styles['field']}>
+          <fieldset className={styles['field']} hidden={choosing}>
             <legend>{words('editor.source-and-licence')}</legend>
             <label htmlFor={`${id}-licence`}>{words('editor.licence')}</label>
             <select
@@ -337,7 +477,7 @@ export function FigureDialog({
               {words('editor.cancel')}
             </button>
             <button type="submit" aria-disabled={busy}>
-              {words('editor.upload')}
+              {words(choosing ? 'editor.place' : 'editor.upload')}
             </button>
           </div>
         </form>
