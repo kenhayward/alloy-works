@@ -1978,6 +1978,8 @@ describe('routes that check a permission', () => {
       status: 404,
     }),
     getAssetRights: () => ({ url: `/v1/assets/${clinicalAsset}/rights`, status: 404 }),
+    listSpaceAssets: () => ({ url: `/v1/spaces/${clinical}/assets`, status: 404 }),
+    getAssetUses: () => ({ url: `/v1/assets/${clinicalAsset}/uses`, status: 404 }),
     setAssetRights: () => ({
       url: `/v1/assets/${clinicalAsset}/rights`,
       status: 404,

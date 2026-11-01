@@ -46,16 +46,16 @@ export interface LibraryAsset {
 
 export interface LibraryFilter {
   /** Words found in its name, description, format, licence or source, case aside. */
-  readonly q?: string;
-  readonly format?: AssetFormat;
-  readonly licence?: string;
-  readonly rights?: 'undeclared' | 'expired';
-  readonly orientation?: 'landscape' | 'portrait' | 'square';
-  readonly unused?: boolean;
+  readonly q?: string | undefined;
+  readonly format?: AssetFormat | undefined;
+  readonly licence?: string | undefined;
+  readonly rights?: 'undeclared' | 'expired' | undefined;
+  readonly orientation?: 'landscape' | 'portrait' | 'square' | undefined;
+  readonly unused?: boolean | undefined;
   /** The SHA-256 of its bytes, hex: an upload's duplicate (AST-029). */
-  readonly sha256?: string;
+  readonly sha256?: string | undefined;
   /** The day an expiry is judged on, `YYYY-MM-DD`; today, in UTC, when absent. */
-  readonly today?: string;
+  readonly today?: string | undefined;
 }
 
 /** A pattern's own characters, escaped, so a search finds only what was typed. */

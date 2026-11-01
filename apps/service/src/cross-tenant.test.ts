@@ -487,6 +487,8 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetVersion: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   getAssetVersionContent: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   getAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
+  getAssetUses: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
+  listSpaceAssets: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   setAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   getAssetVersionDerivative: async (tenant, db) => ({
     id: (await assetIn(tenant, db)).version,

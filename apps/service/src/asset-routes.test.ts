@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { crc32, deflateSync } from 'node:zlib';
 import {
   bootstrapCluster,
@@ -542,6 +543,71 @@ describe('uploading an image through the service (figures 1)', () => {
     const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
     expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
   });
+  it("AST-028 AST-029 lists a space's images to a reader, searched, filtered and found by their bytes' hash", async () => {
+    const uploaded = async (name: string, image: Buffer) => {
+      const answer = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
+        alternative: { text: `${name}, from the pier`, language: 'en-GB' },
+        name,
+      });
+      expect(answer.statusCode, answer.body).toBe(200);
+      const id = answer.json<{ id: string }>().id;
+      expect((await fill('grace', id, image)).statusCode).toBe(200);
+      return ingested(id, image);
+    };
+    const wide = png(9, 4);
+    const lighthouse = await uploaded('lighthouse-wide.png', wide);
+    await uploaded('lighthouse-tall.png', png(4, 9));
+    const library = (query: string) =>
+      call('alice', 'GET', `/v1/spaces/${general}/assets?${query}`);
+    const named = async (query: string) =>
+      (await library(query)).json<{ items: { name: string }[] }>().items.map((each) => each.name);
+
+    const page = await library('q=lighthouse');
+    expect(page.statusCode, page.body).toBe(200);
+    expect(page.json()).toMatchObject({
+      items: [
+        { name: 'lighthouse-tall.png' },
+        {
+          id: lighthouse.artifactId,
+          version: { id: lighthouse.id, number: '0.1' },
+          name: 'lighthouse-wide.png',
+          alternative: { text: 'lighthouse-wide.png, from the pier', language: 'en-GB' },
+          format: 'png',
+          width: 9,
+          height: 4,
+          rights: { kind: 'undeclared' },
+          licence: null,
+          expired: false,
+          used: false,
+        },
+      ],
+      next: null,
+      total: 2,
+    });
+    expect(await named('q=lighthouse&orientation=landscape')).toEqual(['lighthouse-wide.png']);
+    expect(await named('q=lighthouse&unused=true&rights=undeclared&format=png')).toHaveLength(2);
+    expect(await named('q=lighthouse&format=jpeg')).toEqual([]);
+    // An upload's duplicate, found by the hash of its bytes (AST-029).
+    const hash = createHash('sha256').update(wide).digest('hex');
+    expect(await named(`sha256=${hash}`)).toEqual(['lighthouse-wide.png']);
+    expect((await library('sha256=not-a-hash')).statusCode).toBe(400);
+    // Nobody who may not read the space is told it is there.
+    expect((await call('ivy', 'GET', `/v1/spaces/${general}/assets`)).statusCode).toBe(404);
+
+    // AST-018: where it is used, nowhere yet.
+    const uses = await call('alice', 'GET', `/v1/assets/${lighthouse.artifactId}/uses`);
+    expect(uses.statusCode, uses.body).toBe(200);
+    expect(uses.json()).toEqual({
+      components: { named: [], unreadable: false },
+      documents: { named: [], unreadable: false },
+      baselines: { named: [], unreadable: false },
+      publications: { named: [], unreadable: false },
+    });
+    expect((await call('ivy', 'GET', `/v1/assets/${lighthouse.artifactId}/uses`)).statusCode).toBe(
+      404,
+    );
+  });
+
   it("AST-008 serves a version's thumbnail and preview once made, and until then its original, never kept", async () => {
     const id = await made('grace', general);
     const image = png(6, 4);

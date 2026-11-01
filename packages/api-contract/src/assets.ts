@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { SpaceParams } from './components.js';
 import type { RouteContract } from './contract.js';
+import { listingQuery, listingTotal, nextCursor } from './listing.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 
 /**
@@ -126,6 +127,79 @@ export const AssetRightsView = z.object({
 });
 export type AssetRightsView = z.infer<typeof AssetRightsView>;
 
+/** An image as a space's library lists it (AST-028): its latest version, and its rights now. */
+export const LibraryAssetView = z.object({
+  id: z.string(),
+  version: z.object({ id: z.string(), number: z.string() }).describe('Its latest version'),
+  name: z.string().nullable().describe('The name it is listed by, or null for none'),
+  alternative: z
+    .object({ text: z.string(), language: z.string() })
+    .nullable()
+    .describe('The default description a figure inherits, or null for none'),
+  format: z.enum(['png', 'jpeg']),
+  width: z.number().int().describe('In pixels, as the image is displayed'),
+  height: z.number().int().describe('In pixels, as the image is displayed'),
+  rights: assetRightsSchema,
+  licence: z
+    .object({ id: z.string(), name: z.string() })
+    .nullable()
+    .describe('The licence its rights declare, by its name now; null where none is declared'),
+  expired: z.boolean().describe("Whether its licence's last day has passed"),
+  used: z
+    .boolean()
+    .describe('Whether a component, a baseline or a publication holds it (AST-018, AST-050)'),
+  changedAt: z.string().describe('When its latest version was made'),
+});
+export type LibraryAssetView = z.infer<typeof LibraryAssetView>;
+
+export const LibraryAssetList = z.object({
+  items: z.array(LibraryAssetView),
+  next: nextCursor,
+  total: listingTotal,
+});
+export type LibraryAssetList = z.infer<typeof LibraryAssetList>;
+
+export const LibraryAssetQuery = z.object({
+  ...listingQuery(['name', 'changed'], 'name'),
+  q: z
+    .string()
+    .max(200)
+    .optional()
+    .describe('Words in its name, description, format, licence or source, case aside'),
+  format: z.enum(['png', 'jpeg']).optional(),
+  licence: LowercaseUuid.optional().describe('Only those its rights declare under this licence'),
+  rights: z
+    .enum(['undeclared', 'expired'])
+    .optional()
+    .describe('Only those with no rights declared, or whose licence has expired'),
+  orientation: z.enum(['landscape', 'portrait', 'square']).optional(),
+  unused: z.enum(['true']).optional().describe('Only those nothing uses (AST-050)'),
+  sha256: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/, 'Expected 64 lowercase hexadecimal digits')
+    .optional()
+    .describe("Only those whose bytes have this SHA-256: an upload's duplicate (AST-029)"),
+});
+export type LibraryAssetQuery = z.infer<typeof LibraryAssetQuery>;
+
+const NamedUses = <T extends z.ZodRawShape>(shape: T, what: string) =>
+  z.object({
+    named: z.array(z.object(shape)),
+    unreadable: z.boolean().describe(`Whether ${what} the caller may not read holds it too`),
+  });
+
+/** Where an image is used (AST-018): named where the caller may read, else only flagged. */
+export const AssetUsesView = z.object({
+  components: NamedUses({ id: z.string(), title: z.string() }, 'a component'),
+  documents: NamedUses({ id: z.string(), title: z.string() }, 'a document'),
+  baselines: NamedUses(
+    { id: z.string(), name: z.string(), document: z.string() },
+    'a baseline',
+  ),
+  publications: NamedUses({ id: z.string(), title: z.string() }, 'a publication'),
+});
+export type AssetUsesView = z.infer<typeof AssetUsesView>;
+
 export const SetAssetRightsBody = z.strictObject({
   rights: declarableRightsSchema.describe(
     '`declared`, with its source and a licence of this environment, or `undeclared`',
@@ -135,6 +209,47 @@ export type SetAssetRightsBody = z.infer<typeof SetAssetRightsBody>;
 
 /** Uploading an image into a space, following its check, and reading what it made. */
 export const assetRoutes = {
+  listSpaceAssets: {
+    operationId: 'listSpaceAssets',
+    method: 'GET',
+    path: '/v1/spaces/{space}/assets',
+    summary: "The space's images the caller may read, searched and filtered",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { space: 'space' } },
+    params: SpaceParams,
+    query: LibraryAssetQuery,
+    responses: {
+      200: { description: 'A page of images', schema: LibraryAssetList },
+      400: {
+        description: 'A cursor this listing did not give out, a limit outside 1 to 100, or a bad filter',
+        schema: ErrorBody,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: a space the caller may not read is not found',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
+  getAssetUses: {
+    operationId: 'getAssetUses',
+    method: 'GET',
+    path: '/v1/assets/{id}/uses',
+    summary: 'Where an image is used: components, documents, baselines and publications',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: AssetParams,
+    responses: {
+      200: { description: 'Where it is used', schema: AssetUsesView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: an asset the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
   createAssetUpload: {
     operationId: 'createAssetUpload',
     method: 'POST',

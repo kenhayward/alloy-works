@@ -400,6 +400,8 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getAssetVersion: read,
   getAssetVersionContent: read,
   getAssetRights: read,
+  listSpaceAssets: read,
+  getAssetUses: read,
   setAssetRights: writes('asset.relicensed'),
   // Reading one not yet made asks the derive job for it, which records nothing (AL-H).
   getAssetVersionDerivative: read,
