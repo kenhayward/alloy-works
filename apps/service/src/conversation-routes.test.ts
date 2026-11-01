@@ -503,6 +503,49 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     }
   });
 
+  it('reads a part as accepted from its proposal on the next turn, not as it was (issue #876)', async () => {
+    const part = await h.component(h.general, 'Weir works');
+    await h.place(part, { type: 'text', value: 'The weir is old.', marks: [] });
+    const block = (await h.call('grace', 'GET', `/v1/components/${part.id}`)).json<{
+      content: { content: { id: string }[] };
+    }>().content.content[0]!.id;
+    const id = await start('grace', { document: (await h.documentReferencing([part.id])).id });
+    const was = h.connector.modelFor;
+    let calls = 0;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      calls += 1;
+      const tool = (name: string, input: Json): ModelEvent[] => [
+        { type: 'tool_call', id: `t${calls}`, name, input },
+        { ...ended, stop: 'tool_use' },
+      ];
+      return calls === 1
+        ? tool('propose_edit', {
+            component: part.id,
+            edits: [{ replace: block, markdown: 'The weir was rebuilt.' }],
+          })
+        : calls === 3
+          ? tool('read_component', { component: part.id })
+          : [text('Done.'), ended];
+    };
+    try {
+      const frames = framesOf((await turn('grace', id, { ask: 'Say it was rebuilt.' })).body);
+      const proposed = frames.find((frame) => frame.event === 'proposal')!.data;
+      const accepted = await h.call(
+        'grace',
+        'POST',
+        `/v1/assistant/proposals/${String(proposed.id)}/acceptance`,
+      );
+      expect(accepted.statusCode, accepted.body).toBe(200);
+      await turn('grace', id, { ask: 'Read it again.' });
+      const read = JSON.stringify(asked.at(-1)!.call.messages.at(-1));
+      expect(read).toContain('The weir was rebuilt.');
+      expect(read).not.toContain('The weir is old.');
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
   describe("the model's settings and the context chosen", () => {
     const keyed = async (over: Json) => {
       const made = await h.call('ada', 'POST', '/v1/model-endpoints', {

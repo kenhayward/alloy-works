@@ -221,6 +221,7 @@ export function AssistantPanel({
   nameOf = () => undefined,
   onCite,
   onCitations,
+  onAccepted,
   stream = streamPost,
   origin = window.location.origin,
   now = () => performance.now(),
@@ -237,6 +238,8 @@ export function AssistantPanel({
   onCite: (component: string, block: string) => void;
   /** The citations the last answer kept, once each in its order: none while another is asked. */
   onCitations?: (cited: readonly Citation[]) => void;
+  /** An edit accepted: the component it made a new version of (issue #876). */
+  onAccepted?: (component: string) => void;
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
@@ -645,6 +648,9 @@ export function AssistantPanel({
           ? '/v1/assistant/proposals/{id}/keeping'
           : '/v1/assistant/proposals/{id}/discarding';
     const { data, error } = await client.POST(path, { params: { path: { id: proposal.id } } });
+    if (data?.proposal.state === 'accepted' && proposal.component !== null) {
+      onAccepted?.(proposal.component);
+    }
     setProposals((was) =>
       was.map((each) =>
         each.id !== proposal.id

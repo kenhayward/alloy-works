@@ -457,6 +457,7 @@ export function DocumentText({
   resolved,
   revisions,
   pastReview,
+  changed,
   lines,
   diverged,
   translated,
@@ -512,6 +513,8 @@ export function DocumentText({
   revisions?: ReadonlyMap<string, number>;
   /** The references whose component is past its review-by day, by node (LIF-018; WF5-H). */
   pastReview?: ReadonlySet<string>;
+  /** The references whose component an accepted assistant edit just changed (issue #876). */
+  changed?: ReadonlySet<string>;
   /** The divergent line each node's version is on, by node (LIF-046; R16-E): none for the main line. */
   lines?: ReadonlyMap<string, string>;
   /** Each node's component's open lines, by node (LIF-046; R16-E): none where it has not diverged. */
@@ -676,6 +679,7 @@ export function DocumentText({
           className={styles['reference']}
           data-node={node.id}
           data-marked={marked === node.id ? 'true' : undefined}
+          data-changed={changed?.has(node.id) === true ? 'true' : undefined}
         >
           <div className={styles['component']} data-component="" data-editing={editing === node.id}>
             {/* The component's label (CNT-073): what it is, which version and how it is placed
@@ -685,6 +689,9 @@ export function DocumentText({
             {!(editing === node.id && editor && node.component !== null) && (
               <div className={styles['label']} data-label="">
                 <span className={styles['labelName']}>{nodeName(node, names)}</span>
+                {changed?.has(node.id) === true && (
+                  <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
+                )}
                 {node.component === null ? (
                   <Lozenge kind="notYoursToRead">{say('document.not-yours-to-read')}</Lozenge>
                 ) : (

@@ -975,6 +975,7 @@
   "document.the-assistant-stopped-answering": "The assistant stopped answering.",
   "document.stopped": "Stopped.",
   "document.accepted-the-part-is-made": "Accepted: the part is made.",
+  "document.changed-by-the-assistant": "Changed",
   "document.accepted-it-is-a-new": "Accepted: it is a new version of the part.",
   "document.kept-as-a-suggestion-marked": "Kept as a suggestion, marked generated, for review.",
   "document.discarded": "Discarded.",
