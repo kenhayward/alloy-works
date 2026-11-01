@@ -225,8 +225,8 @@ requester asks; the service starts a run (`POST /v1/documents/{id}/assistant/run
 the request cancels the run.
 
 The loop runs in the service: each model turn goes through the connector (GN-A); each tool call runs
-in the service as the requester, through the same functions its route uses (GEN-008). At most twelve
-tool calls a run. The tools (GEN-007):
+in the service as the requester, through the same functions its route uses (GEN-008). At most a hundred
+tool calls over forty model turns a run, within its four minutes. The tools (GEN-007):
 
 | Tool                | Does                                                                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

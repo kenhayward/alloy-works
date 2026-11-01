@@ -497,6 +497,18 @@ export type EditOutcome =
   | { readonly ok: true; readonly content: ContentDocument }
   | { readonly ok: false; readonly problem: string };
 
+/** A block's identifier as read_component shows it, `[#id]`, taken with or without its `#` (#870). */
+const bare = (id: string) => (id.startsWith('#') ? id.slice(1) : id);
+
+/** An edit whose blocks are named bare, however the model wrote them. */
+function bareEdit(edit: BlockEdit): BlockEdit {
+  if ('cell' in edit) return { ...edit, cell: { ...edit.cell, table: bare(edit.cell.table) } };
+  if ('rows' in edit) return { ...edit, table: bare(edit.table) };
+  if ('delete' in edit) return { ...edit, delete: bare(edit.delete) };
+  if ('replace' in edit) return { ...edit, replace: bare(edit.replace) };
+  return edit.insertAfter === null ? edit : { ...edit, insertAfter: bare(edit.insertAfter) };
+}
+
 /**
  * A proposal's edits applied to the version read (G2-D). `read` turns Markdown into admitted blocks,
  * or a refusal. A replacement's first block keeps the replaced block's identifier, so a three-way
@@ -504,9 +516,10 @@ export type EditOutcome =
  */
 export function applyEdits(
   content: ContentDocument,
-  edits: readonly BlockEdit[],
+  named: readonly BlockEdit[],
   read: (markdown: string) => readonly BlockNode[] | string,
 ): EditOutcome {
+  const edits = named.map(bareEdit);
   let blocks: BlockNode[] = [...content.content];
   const at = (id: string) => blocks.findIndex((block) => block.id === id);
   for (const edit of edits) {
@@ -972,9 +985,9 @@ export function citeIn(
   content: ContentDocument,
   at: { readonly block: string; readonly after?: string; readonly locator?: string },
 ): EditOutcome {
-  const index = content.content.findIndex((block) => block.id === at.block);
+  const index = content.content.findIndex((block) => block.id === bare(at.block));
   const block = content.content[index];
-  if (!block) return { ok: false, problem: `There is no block ${at.block}.` };
+  if (!block) return { ok: false, problem: `There is no block ${bare(at.block)}.` };
   if (block.type !== 'paragraph') {
     return {
       ok: false,
