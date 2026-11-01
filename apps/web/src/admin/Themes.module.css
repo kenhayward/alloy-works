@@ -71,6 +71,11 @@
   gap: var(--space-8, 8px);
 }
 
+/* A theme's own acts, under its name and over its styles. */
+.acts {
+  margin-block-end: var(--space-12, 12px);
+}
+
 .reach {
   max-block-size: 16rem;
   overflow: auto;
@@ -86,5 +91,15 @@
   display: grid;
   gap: var(--space-4, 4px);
   /* Level with the name above it, whatever the page's own label rules give a later one. */
+  margin: 0;
+}
+
+/* A theme's name asked before it is duplicated or renamed (SY-G). */
+.naming {
+  display: grid;
+  gap: var(--space-12, 12px);
+}
+
+.naming h2 {
   margin: 0;
 }

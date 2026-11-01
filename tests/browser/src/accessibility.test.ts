@@ -811,7 +811,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('passes axe on the document themes, a paragraph style being edited and the reach of a change (the SY plan, SYb)', async ({
+  it('passes axe on the document themes, a paragraph style being edited, the reach of a change and a theme duplicated (the SY plan, SYb, SYc)', async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -838,6 +838,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const asked = page.getByRole('dialog', { name: 'Save Heading 4?' });
       await check('the reach of a style change, asked before it is saved', { shows: asked });
       await asked.getByRole('button', { name: 'Cancel' }).click();
+      // SYc: a theme's name asked before it is duplicated; cancelled, so no theme is made.
+      await page.getByRole('button', { name: 'Duplicate', exact: true }).click();
+      const naming = page.getByRole('dialog', { name: /^Duplicate / });
+      await check('a theme duplicated, its name asked', { shows: naming });
+      await naming.getByRole('button', { name: 'Cancel' }).click();
     });
   });
 

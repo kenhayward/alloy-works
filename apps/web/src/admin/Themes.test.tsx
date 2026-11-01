@@ -7,6 +7,7 @@ import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 import { Themes } from './Themes.js';
 
 const THEME = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
+const COPY = '0b6a1c52-8f43-4c1e-9d7a-5a2f1e3c4d01';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -33,10 +34,8 @@ function service(refuse?: { status: number; code: string; message: string }) {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     const path = url.pathname;
-    const body =
-      request.method === 'GET' || request.method === 'DELETE'
-        ? null
-        : ((await request.json()) as Record<string, unknown>);
+    const text = await request.text();
+    const body = text === '' ? null : (JSON.parse(text) as Record<string, unknown>);
     sent.push({ method: request.method, path: path + url.search, body });
     if (request.method === 'GET' && path === '/v1/themes') {
       const { id, name, version, isDefault } = view;
@@ -53,6 +52,21 @@ function service(refuse?: { status: number; code: string; message: string }) {
       });
     }
     if (refuse) return json(refuse.status, { ...refuse, traceId: 't' });
+    if (request.method === 'POST' && path === '/v1/themes') {
+      return json(200, {
+        ...view,
+        id: COPY,
+        name: body!['name'],
+        version: { id: 'cv1', number: '0.1' },
+        isDefault: false,
+      });
+    }
+    if (request.method === 'PUT' && path === `/v1/themes/${THEME}/name`) {
+      return json(200, { ...view, name: body!['name'], version: { id: 'tv2', number: '0.12' } });
+    }
+    if (request.method === 'POST' && path === `/v1/themes/${COPY}/default`) {
+      return json(200, { ...view, id: COPY, name: 'Field manual', isDefault: true });
+    }
     if (request.method === 'PUT' || request.method === 'DELETE') {
       return json(200, { ...view, version: { id: 'tv2', number: '0.12' } });
     }
@@ -186,5 +200,57 @@ describe("Administration's Document themes (the SY plan, SY-F)", () => {
       appliesTo: ['text'],
       properties: {},
     });
+  });
+
+  it("STY-072 duplicates a theme only once it is named, and declares the copy the environment's default", async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    await user.click(await screen.findByRole('button', { name: 'Duplicate' }));
+    const asked = await screen.findByRole('dialog', { name: 'Duplicate Default' });
+    const duplicate = within(asked).getByRole('button', { name: 'Duplicate' });
+    expect(duplicate).toBeDisabled();
+    await user.type(within(asked).getByRole('textbox', { name: 'Name' }), 'Field manual');
+    await user.click(duplicate);
+    expect(sent.find((each) => each.method === 'POST' && each.path === '/v1/themes')!.body).toEqual(
+      {
+        from: THEME,
+        name: 'Field manual',
+      },
+    );
+    expect(await screen.findByRole('heading', { name: 'Field manual' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Field manual made from Default.');
+
+    await user.click(screen.getByRole('button', { name: "Use as the environment's default" }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "Field manual is now the environment's default.",
+    );
+    expect(sent.some((each) => each.path === `/v1/themes/${COPY}/default`)).toBe(true);
+  });
+
+  it('STY-072 renames a theme', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    await user.click(await screen.findByRole('button', { name: 'Rename' }));
+    const asked = await screen.findByRole('dialog', { name: 'Rename Default' });
+    const name = within(asked).getByRole('textbox', { name: 'Name' });
+    await user.clear(name);
+    await user.type(name, 'House');
+    await user.click(within(asked).getByRole('button', { name: 'Rename' }));
+    expect(sent.find((each) => each.path === `/v1/themes/${THEME}/name`)!.body).toEqual({
+      openedFrom: 'tv1',
+      name: 'House',
+    });
+    expect(await screen.findByRole('heading', { name: 'House' })).toBeInTheDocument();
+
+    // The default theme offers no declaring; it already is.
+    expect(
+      screen.queryByRole('button', { name: "Use as the environment's default" }),
+    ).not.toBeInTheDocument();
   });
 });

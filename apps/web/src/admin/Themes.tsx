@@ -8,7 +8,7 @@ import {
   type ResolvedParagraphProperties,
   type ThemeRefusal,
 } from '@alloy-works/domain';
-import { useId, useMemo, useState, type FormEvent } from 'react';
+import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
@@ -112,7 +112,8 @@ export function Themes({ client }: { client: Client }) {
     const { data, response } = await client.GET('/v1/themes');
     return data ? { items: data.items as Summary[] } : { status: response.status };
   });
-  const read = useListing<Summary>(load, true, 0);
+  const [generation, setGeneration] = useState(0);
+  const read = useListing<Summary>(load, true, generation);
   const [theme, setTheme] = useState<ThemeView | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [said, setSaid] = useState('');
@@ -166,6 +167,19 @@ export function Themes({ client }: { client: Client }) {
       </Shown>
       {theme !== null && (
         <ThemeStyles
+          actions={
+            <ThemeActions
+              client={client}
+              theme={theme}
+              onDone={(next, message) => {
+                setTheme(next);
+                setDraft(null);
+                setSaid(message);
+                setGeneration((now) => now + 1);
+              }}
+              onSaid={setSaid}
+            />
+          }
           client={client}
           theme={theme}
           draft={draft}
@@ -183,7 +197,98 @@ export function Themes({ client }: { client: Client }) {
   );
 }
 
+/**
+ * A theme's own acts (the SY plan, SY-G, STY-072): **Duplicate** it under a name, **Rename** it, and
+ * **Use as the environment's default** for the documents made from no template.
+ */
+function ThemeActions({
+  client,
+  theme,
+  onDone,
+  onSaid,
+}: {
+  client: Client;
+  theme: ThemeView;
+  onDone: (theme: ThemeView, message: string) => void;
+  onSaid: (message: string) => void;
+}) {
+  const asking = useId();
+  const [naming, setNaming] = useState<{ act: 'duplicate' | 'rename'; name: string } | null>(null);
+
+  const named = async (event: FormEvent) => {
+    event.preventDefault();
+    if (naming === null) return;
+    const name = naming.name.trim();
+    setNaming(null);
+    if (naming.act === 'duplicate') {
+      const { data, error } = await client.POST('/v1/themes', { body: { from: theme.id, name } });
+      if (!data) return onSaid(refusal(error, words('admin.theme-could-not-be-duplicated')));
+      return onDone(
+        data as unknown as ThemeView,
+        words('admin.theme-duplicated', { name, from: theme.name }),
+      );
+    }
+    const { data, error } = await client.PUT('/v1/themes/{id}/name', {
+      params: { path: { id: theme.id } },
+      body: { openedFrom: theme.version.id, name },
+    });
+    if (!data) return onSaid(refusal(error, words('admin.theme-could-not-be-renamed')));
+    onDone(data as unknown as ThemeView, words('admin.theme-renamed', { name }));
+  };
+  const declare = async () => {
+    const { data, error } = await client.POST('/v1/themes/{id}/default', {
+      params: { path: { id: theme.id } },
+    });
+    if (!data) return onSaid(refusal(error, words('admin.theme-could-not-be-declared')));
+    onDone(data as unknown as ThemeView, words('admin.theme-declared', { name: theme.name }));
+  };
+
+  return (
+    <div className={`${own['actions']} ${own['acts']}`}>
+      <button type="button" onClick={() => setNaming({ act: 'duplicate', name: '' })}>
+        {words('admin.theme-duplicate')}
+      </button>
+      <button type="button" onClick={() => setNaming({ act: 'rename', name: theme.name })}>
+        {words('admin.theme-rename')}
+      </button>
+      {!theme.isDefault && (
+        <button type="button" onClick={() => void declare()}>
+          {words('admin.theme-use-as-default')}
+        </button>
+      )}
+      {naming !== null && (
+        <Modal labelledBy={asking} size="dialog" onClose={() => setNaming(null)}>
+          <form className={own['naming']} onSubmit={(event) => void named(event)} noValidate>
+            <h2 id={asking}>
+              {words(naming.act === 'duplicate' ? 'admin.duplicate-theme' : 'admin.rename-theme', {
+                name: theme.name,
+              })}
+            </h2>
+            <label className={own['field']}>
+              {words('admin.name')}
+              <input
+                value={naming.name}
+                required
+                onChange={(change) => setNaming({ ...naming, name: change.target.value })}
+              />
+            </label>
+            <div className={own['actions']}>
+              <button type="button" onClick={() => setNaming(null)}>
+                {words('admin.cancel')}
+              </button>
+              <button type="submit" className="primary" disabled={naming.name.trim() === ''}>
+                {words(naming.act === 'duplicate' ? 'admin.theme-duplicate' : 'admin.theme-rename')}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 function ThemeStyles({
+  actions,
   client,
   theme,
   draft,
@@ -191,6 +296,7 @@ function ThemeStyles({
   onSaved,
   onSaid,
 }: {
+  actions: ReactNode;
   client: Client;
   theme: ThemeView;
   draft: Draft | null;
@@ -205,6 +311,7 @@ function ThemeStyles({
   return (
     <section aria-labelledby="theme-styles">
       <h2 id="theme-styles">{theme.name}</h2>
+      {actions}
       <table aria-label={words('admin.paragraph-styles')} className={styles['table']}>
         <thead>
           <tr>
