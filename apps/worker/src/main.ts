@@ -26,6 +26,7 @@ import { connectorReferencer } from './referencer.js';
 import { connectorEmbedder } from './embedder.js';
 import { deliverWebhooks } from './webhooks.js';
 import { checkJob } from './jobs/check.js';
+import { deriveJob } from './jobs/derive.js';
 import { ingestJob } from './jobs/ingest.js';
 import { publishJob } from './jobs/publish.js';
 import { sampleJob } from './jobs/sample.js';
@@ -110,6 +111,7 @@ const handlers: Record<string, JobHandler> = {
   publish,
   preview: publish,
   ingest: ingestJob({ db, stores }),
+  derive: deriveJob({ db, stores }),
   check_pdf: checkJob({ db, stores, checker }),
   audit_export: auditExportJob({ db, stores }),
   impact_report: impactReportJob({ db, stores }),
