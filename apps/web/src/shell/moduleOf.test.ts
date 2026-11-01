@@ -32,6 +32,10 @@ describe('the module an address belongs to', () => {
     expect(moduleOf(`#/terms/${COMPONENT}`)).toBe('Terms');
   });
 
+  it('names Images for the list', () => {
+    expect(moduleOf('#/images')).toBe('Images');
+  });
+
   it('names Administration for its page and each of its sections, which no module holds', () => {
     expect(moduleOf('#/admin')).toBe('Administration');
     expect(moduleOf('#/admin/spaces')).toBe('Administration');

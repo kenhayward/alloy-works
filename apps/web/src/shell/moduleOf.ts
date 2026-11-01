@@ -7,6 +7,7 @@ export type ModuleName =
   | 'Prompts'
   | 'Bibliography'
   | 'Terms'
+  | 'Images'
   | 'Conversations'
   | 'Connections'
   | 'Query definitions'
@@ -30,6 +31,7 @@ export function moduleOf(hash: string): ModuleName | null {
   if (/^#\/prompts(?:\/|$)/.test(hash)) return 'Prompts';
   if (/^#\/bibliography(?:\/|$)/.test(hash)) return 'Bibliography';
   if (/^#\/terms(?:\/|$)/.test(hash)) return 'Terms';
+  if (/^#\/images(?:\/|$)/.test(hash)) return 'Images';
   if (/^#\/conversations(?:\/|$)/.test(hash)) return 'Conversations';
   if (/^#\/connections(?:\/|$)/.test(hash)) return 'Connections';
   if (/^#\/query-definitions(?:\/|$)/.test(hash)) return 'Query definitions';

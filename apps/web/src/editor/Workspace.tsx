@@ -25,6 +25,7 @@ import { EntryPage } from '../bibliography/EntryPage.js';
 import { BIBLIOGRAPHY, entryAddress } from '../bibliography/links.js';
 import { TermPage } from '../terms/TermPage.js';
 import { Terms } from '../terms/Terms.js';
+import { Images } from '../images/Images.js';
 import { termAddress, TERMS } from '../terms/links.js';
 import { SpaceTranslations, TRANSLATIONS } from '../translation/SpaceTranslations.js';
 import { ImportPage } from '../imports/ImportPage.js';
@@ -483,6 +484,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     const term = termAddress(hash);
     if (term !== null) return <TermPage key={term} client={client} id={term} />;
     if (hash === TERMS) return <Terms client={client} />;
+    if (hash === '#/images') return <Images client={client} />;
     if (hash === TRANSLATIONS) return <SpaceTranslations client={client} />;
     const imported = importAddress(hash);
     if (imported !== null) return <ImportPage key={imported} client={client} id={imported} />;

@@ -16,6 +16,7 @@ const PATHS: Readonly<Record<Drawn, readonly string[]>> = {
   Prompts: ['M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z', 'M5 6h6M5 8h4'],
   Bibliography: ['M3 2.5h3.5v11H3z', 'M6.5 2.5H10v11H6.5z', 'M10.6 3.2l2.6-.7 2 10.6-2.6.7z'],
   Terms: ['M2.5 3.5h7l4 4.5-4 4.5h-7z', 'M5 6.5h3M5 9.5h2'],
+  Images: ['M2.5 3h11v10h-11z', 'M2.5 11l3.5-3.5 3 3 2-2 2.5 2.5', 'M10.5 5.5h.01'],
   Conversations: ['M2.5 3.5h8v5.5h-4.5l-2.5 2v-2h-1z', 'M10.5 6h3v5.5h-1v2l-2.5-2h-2.5'],
   Publications: ['M3 3h10v10H3z', 'M3 10h10', 'M6 6.5h4'],
   Connections: ['M6 2v3.5M10 2v3.5', 'M4.5 5.5h7v2.5a3.5 3.5 0 0 1-7 0z', 'M8 11.5V14'],

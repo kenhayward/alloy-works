@@ -52,6 +52,10 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         href: '#/terms',
       },
       {
+        name: 'Images',
+        href: '#/images',
+      },
+      {
         name: 'Conversations',
         href: '#/conversations',
       },
