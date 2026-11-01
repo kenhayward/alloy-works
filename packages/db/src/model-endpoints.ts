@@ -1,5 +1,8 @@
 import {
+  callsTools,
   costMicros,
+  endpointKind,
+  readsImages,
   modelCredentialContext,
   type ModelEndpoint,
   type RoutedPurpose,
@@ -50,6 +53,11 @@ interface EndpointRow {
   price_cached_micros?: string | null;
   currency: string;
   boundary: ModelEndpoint['boundary'];
+  /** Absent from a schema before 0182, as the three after it are. */
+  kind?: NonNullable<ModelEndpoint['kind']>;
+  timeout_seconds?: number | null;
+  supports_tools?: boolean;
+  supports_images?: boolean;
   made_at: Date;
   changed_at: Date;
   retired_at: Date | null;
@@ -70,6 +78,10 @@ const endpointOf = (row: EndpointRow): StoredModelEndpoint => ({
   ...(row.price_cached_micros == null ? {} : { priceCached: fromMicros(row.price_cached_micros) }),
   currency: row.currency,
   boundary: row.boundary,
+  kind: row.kind ?? 'llm',
+  ...(row.timeout_seconds == null ? {} : { timeoutSeconds: row.timeout_seconds }),
+  supportsTools: row.supports_tools ?? true,
+  supportsImages: row.supports_images ?? false,
   madeAt: row.made_at,
   changedAt: row.changed_at,
   retiredAt: row.retired_at,
@@ -138,12 +150,22 @@ export async function makeModelEndpoint(
   const cachedColumn = endpoint.priceCached === undefined ? sql`` : sql`, price_cached_micros`;
   const cachedValue =
     endpoint.priceCached === undefined ? sql`` : sql`, ${toMicros(endpoint.priceCached)}`;
+  // Likewise each of 0182's only where it is said, so a schema before it still takes one.
+  const said = CAPABILITIES.filter(([member]) => endpoint[member] !== undefined);
+  const capabilityColumns = sql.join(
+    said.map(([, column]) => sql`, ${sql.ref(column)}`),
+    sql``,
+  );
+  const capabilityValues = sql.join(
+    said.map(([member]) => sql`, ${endpoint[member]}`),
+    sql``,
+  );
   const { rows } = await sql<EndpointRow>`insert into model_endpoint
         (name, protocol, base_url, model, context_window, price_in_micros, price_out_micros,
-         currency, boundary, made_by${cachedColumn})
+         currency, boundary, made_by${cachedColumn}${capabilityColumns})
       values (${endpoint.name}, ${endpoint.protocol}, ${endpoint.baseUrl}, ${endpoint.model},
         ${endpoint.contextWindow}, ${toMicros(endpoint.priceIn)}, ${toMicros(endpoint.priceOut)},
-        ${endpoint.currency}, ${endpoint.boundary}, ${by}${cachedValue})
+        ${endpoint.currency}, ${endpoint.boundary}, ${by}${cachedValue}${capabilityValues})
       returning *`.execute(trx);
   const made = endpointOf(rows[0]!);
   await event(trx, 'model_endpoint.made', made.id);
@@ -161,13 +183,32 @@ const SETTING_MEMBERS = [
   'priceCached',
   'currency',
   'boundary',
+  'kind',
+  'timeoutSeconds',
+  'supportsTools',
+  'supportsImages',
+] as const;
+
+/** 0182's settings and their columns. */
+const CAPABILITIES = [
+  ['kind', 'kind'],
+  ['timeoutSeconds', 'timeout_seconds'],
+  ['supportsTools', 'supports_tools'],
+  ['supportsImages', 'supports_images'],
 ] as const;
 
 export async function changeModelEndpoint(
   trx: TenantTransaction,
   id: string,
-  next: ModelEndpoint,
+  settings: ModelEndpoint,
 ): Promise<EndpointWritten> {
+  // A setting of 0182's left out is its default, as a new endpoint's is.
+  const next: ModelEndpoint = {
+    ...settings,
+    kind: endpointKind(settings),
+    supportsTools: callsTools(settings),
+    supportsImages: readsImages(settings),
+  };
   const { rows: held } = await sql<EndpointRow>`select * from model_endpoint where id = ${id}
     for update`.execute(trx);
   if (!held[0]) return { answer: 'endpoint.missing' };
@@ -188,6 +229,12 @@ export async function changeModelEndpoint(
             ? sql`, price_cached_micros = ${next.priceCached === undefined ? null : toMicros(next.priceCached)}`
             : sql``
         }
+        ${sql.join(
+          CAPABILITIES.filter(([member]) => changed.includes(member)).map(
+            ([member, column]) => sql`, ${sql.ref(column)} = ${next[member] ?? null}`,
+          ),
+          sql``,
+        )}
       where id = ${id} returning *`.execute(trx);
   await event(trx, 'model_endpoint.changed', id, { settings: [...changed] });
   return { answer: 'written', endpoint: endpointOf(rows[0]!) };

@@ -1,5 +1,5 @@
 import { createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -741,5 +741,98 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     await user.click(within(reads).getByRole('button', { name: 'Find' }));
     await user.click(await within(reads).findByRole('button', { name: 'Add Weir levels' }));
     expect(await within(reads).findByText('Weir levels')).toBeInTheDocument();
+  });
+
+  it('gives the assistant the component open, or every component, as chosen', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(running([ended()]));
+    const { rerender } = render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    const context = screen.getByRole('radiogroup', { name: 'Context' });
+    expect(within(context).getByRole('radio', { name: 'Current component' })).toBeChecked();
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(stream.mock.calls[0]![0].body).toMatchObject({ component: SITES, context: 'component' });
+
+    await user.click(within(context).getByRole('radio', { name: 'All components' }));
+    await user.type(screen.getByLabelText('Ask the assistant'), 'And the rest?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    await waitFor(() => expect(stream).toHaveBeenCalledTimes(2));
+    expect(stream.mock.calls[1]![0].body).toMatchObject({ context: 'document' });
+
+    // With no component open, there is none to give: every component is.
+    rerender(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={null}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    expect(screen.getByRole('radio', { name: 'Current component' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'All components' })).toBeChecked();
+  });
+
+  it('offers no context choice for a conversation on no document', () => {
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={null}
+        component={null}
+        onCite={() => {}}
+        stream={vi.fn(running([ended()]))}
+        origin="http://doc.test"
+      />,
+    );
+    expect(screen.queryByRole('radiogroup', { name: 'Context' })).toBeNull();
+  });
+
+  it('shows a reply streaming, and how many tokens have arrived as each arrives', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let send: StreamPostOptions['onEvent'] = () => {};
+    const stream = vi.fn(async (options: StreamPostOptions) => {
+      send = options.onEvent;
+      send('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'outside' } });
+      send('text', { text: 'It ', tokens: 1 });
+      await gate;
+      send('ended', ended()[1] as Record<string, unknown>);
+      return { kind: 'streamed' as const };
+    });
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const progress = await screen.findByRole('progressbar', { name: 'Answering' });
+    expect(progress).toHaveTextContent('Answering: 1 token received');
+    act(() => send('text', { text: 'has ', tokens: 2 }));
+    act(() => send('text', { text: 'two parts.', tokens: 3 }));
+    expect(progress).toHaveTextContent('Answering: 3 tokens received');
+    release();
+    await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
   });
 });

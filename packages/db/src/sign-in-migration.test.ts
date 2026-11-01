@@ -191,6 +191,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0179_licences',
       '0180_asset_rights',
       '0181_asset_ingest',
+      '0182_model_capabilities',
     ]);
 
     const read = async () =>

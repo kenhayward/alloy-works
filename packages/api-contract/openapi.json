@@ -83581,7 +83581,7 @@
                           "isDefault"
                         ]
                       },
-                      "description": "Every endpoint in use with its key set"
+                      "description": "Every LLM in use with its key set: never an embedding model, which answers nothing"
                     }
                   },
                   "required": [
@@ -85586,6 +85586,14 @@
                         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       }
                     ]
+                  },
+                  "context": {
+                    "description": "What the assistant is given to read with the ask: `component`, the component open; `document`, every component of the document the person may read. Neither where unsaid: it reads what its tools find",
+                    "type": "string",
+                    "enum": [
+                      "component",
+                      "document"
+                    ]
                   }
                 },
                 "required": [
@@ -85742,7 +85750,7 @@
             }
           },
           "409": {
-            "description": "`turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s",
+            "description": "`turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s; `endpoint_kind_mismatch`: the one named is an embedding model",
             "content": {
               "application/json": {
                 "schema": {
@@ -236592,6 +236600,25 @@
                               "outside"
                             ]
                           },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "llm",
+                              "embedding"
+                            ]
+                          },
+                          "timeoutSeconds": {
+                            "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 240
+                          },
+                          "supportsTools": {
+                            "type": "boolean"
+                          },
+                          "supportsImages": {
+                            "type": "boolean"
+                          },
                           "id": {
                             "type": "string"
                           },
@@ -236663,6 +236690,9 @@
                           "priceOut",
                           "currency",
                           "boundary",
+                          "kind",
+                          "supportsTools",
+                          "supportsImages",
                           "id",
                           "madeAt",
                           "changedAt",
@@ -236918,6 +236948,28 @@
                       "inside",
                       "outside"
                     ]
+                  },
+                  "kind": {
+                    "description": "`llm`, which answers, or `embedding`, which embeds: an LLM where unsaid. An embedding model is routed to embedding alone, and an LLM to every other purpose",
+                    "type": "string",
+                    "enum": [
+                      "llm",
+                      "embedding"
+                    ]
+                  },
+                  "timeoutSeconds": {
+                    "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 240
+                  },
+                  "supportsTools": {
+                    "description": "Whether the model calls tools: a model that does not is sent none. Yes where unsaid",
+                    "type": "boolean"
+                  },
+                  "supportsImages": {
+                    "description": "Whether the model reads images: a model that does not is sent none. No where unsaid",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -237018,6 +237070,25 @@
                             "outside"
                           ]
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "llm",
+                            "embedding"
+                          ]
+                        },
+                        "timeoutSeconds": {
+                          "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "supportsTools": {
+                          "type": "boolean"
+                        },
+                        "supportsImages": {
+                          "type": "boolean"
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -237089,6 +237160,9 @@
                         "priceOut",
                         "currency",
                         "boundary",
+                        "kind",
+                        "supportsTools",
+                        "supportsImages",
                         "id",
                         "madeAt",
                         "changedAt",
@@ -237112,6 +237186,9 @@
                     "priceOut": 0,
                     "currency": "USD",
                     "boundary": "inside",
+                    "kind": "llm",
+                    "supportsTools": false,
+                    "supportsImages": false,
                     "id": "example",
                     "madeAt": "example",
                     "changedAt": "example",
@@ -237465,6 +237542,25 @@
                             "outside"
                           ]
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "llm",
+                            "embedding"
+                          ]
+                        },
+                        "timeoutSeconds": {
+                          "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "supportsTools": {
+                          "type": "boolean"
+                        },
+                        "supportsImages": {
+                          "type": "boolean"
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -237536,6 +237632,9 @@
                         "priceOut",
                         "currency",
                         "boundary",
+                        "kind",
+                        "supportsTools",
+                        "supportsImages",
                         "id",
                         "madeAt",
                         "changedAt",
@@ -237559,6 +237658,9 @@
                     "priceOut": 0,
                     "currency": "USD",
                     "boundary": "inside",
+                    "kind": "llm",
+                    "supportsTools": false,
+                    "supportsImages": false,
                     "id": "example",
                     "madeAt": "example",
                     "changedAt": "example",
@@ -237864,6 +237966,28 @@
                       "inside",
                       "outside"
                     ]
+                  },
+                  "kind": {
+                    "description": "`llm`, which answers, or `embedding`, which embeds: an LLM where unsaid. An embedding model is routed to embedding alone, and an LLM to every other purpose",
+                    "type": "string",
+                    "enum": [
+                      "llm",
+                      "embedding"
+                    ]
+                  },
+                  "timeoutSeconds": {
+                    "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 240
+                  },
+                  "supportsTools": {
+                    "description": "Whether the model calls tools: a model that does not is sent none. Yes where unsaid",
+                    "type": "boolean"
+                  },
+                  "supportsImages": {
+                    "description": "Whether the model reads images: a model that does not is sent none. No where unsaid",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -237964,6 +238088,25 @@
                             "outside"
                           ]
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "llm",
+                            "embedding"
+                          ]
+                        },
+                        "timeoutSeconds": {
+                          "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "supportsTools": {
+                          "type": "boolean"
+                        },
+                        "supportsImages": {
+                          "type": "boolean"
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -238035,6 +238178,9 @@
                         "priceOut",
                         "currency",
                         "boundary",
+                        "kind",
+                        "supportsTools",
+                        "supportsImages",
                         "id",
                         "madeAt",
                         "changedAt",
@@ -238058,6 +238204,9 @@
                     "priceOut": 0,
                     "currency": "USD",
                     "boundary": "inside",
+                    "kind": "llm",
+                    "supportsTools": false,
+                    "supportsImages": false,
                     "id": "example",
                     "madeAt": "example",
                     "changedAt": "example",
@@ -238478,6 +238627,25 @@
                             "outside"
                           ]
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "llm",
+                            "embedding"
+                          ]
+                        },
+                        "timeoutSeconds": {
+                          "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "supportsTools": {
+                          "type": "boolean"
+                        },
+                        "supportsImages": {
+                          "type": "boolean"
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -238549,6 +238717,9 @@
                         "priceOut",
                         "currency",
                         "boundary",
+                        "kind",
+                        "supportsTools",
+                        "supportsImages",
                         "id",
                         "madeAt",
                         "changedAt",
@@ -238572,6 +238743,9 @@
                     "priceOut": 0,
                     "currency": "USD",
                     "boundary": "inside",
+                    "kind": "llm",
+                    "supportsTools": false,
+                    "supportsImages": false,
                     "id": "example",
                     "madeAt": "example",
                     "changedAt": "example",
@@ -239007,6 +239181,25 @@
                             "outside"
                           ]
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "llm",
+                            "embedding"
+                          ]
+                        },
+                        "timeoutSeconds": {
+                          "description": "How long one call may take, in whole seconds, 1 to 240; 120 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 240
+                        },
+                        "supportsTools": {
+                          "type": "boolean"
+                        },
+                        "supportsImages": {
+                          "type": "boolean"
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -239078,6 +239271,9 @@
                         "priceOut",
                         "currency",
                         "boundary",
+                        "kind",
+                        "supportsTools",
+                        "supportsImages",
                         "id",
                         "madeAt",
                         "changedAt",
@@ -239101,6 +239297,9 @@
                     "priceOut": 0,
                     "currency": "USD",
                     "boundary": "inside",
+                    "kind": "llm",
+                    "supportsTools": false,
+                    "supportsImages": false,
                     "id": "example",
                     "madeAt": "example",
                     "changedAt": "example",
@@ -241253,7 +241452,7 @@
             }
           },
           "409": {
-            "description": "`endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol",
+            "description": "`endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol; `endpoint_kind_mismatch`: embedding routed to an LLM, or another purpose to an embedding model",
             "content": {
               "application/json": {
                 "schema": {

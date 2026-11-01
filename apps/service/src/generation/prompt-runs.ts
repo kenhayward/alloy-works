@@ -49,6 +49,7 @@ import {
   type GenerationFailure,
   type Prompt,
   type ResolvedContext,
+  modelDeadlineMs,
 } from '@alloy-works/domain';
 import { readMarkdown } from '@alloy-works/readers/markdown';
 import type { FastifyRequest } from 'fastify';
@@ -79,9 +80,6 @@ const WORDS: Readonly<Record<GenerationFailure['code'], string>> = {
   connector_busy: 'The connector is calling as many models as it may at once. Try again shortly.',
   connector_unavailable: 'The connector could not be reached.',
 };
-
-/** A run's one call's deadline: within the stream's five minutes. */
-const RUN_MS = 120_000;
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
@@ -350,7 +348,7 @@ export function promptRunHandlers(
                 },
                 sealed,
                 call,
-                deadlineMs: RUN_MS,
+                deadlineMs: modelDeadlineMs(endpoint),
               },
               (event) => {
                 if (event.type === 'text') {

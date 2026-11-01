@@ -35,7 +35,11 @@ import {
 } from '@alloy-works/db';
 import {
   ROUTED_PURPOSES,
+  callsTools,
   canonicalCall,
+  endpointKind,
+  modelDeadlineMs,
+  readsImages,
   type GenerationFailure,
   type ModelCall,
 } from '@alloy-works/domain';
@@ -53,9 +57,6 @@ import { AppError } from '../errors.js';
  * their keys, routes and tests, each act its administrator's. With the connection routes, the only
  * callers of the connector (DAT-089; G1-L), and each only on a person's request.
  */
-
-/** A test's deadline: one short reply. */
-const TEST_DEADLINE_MS = 30_000;
 
 /** The test's one message, fixed: what is asked is never the administrator's. */
 const TEST_CALL = (model: string): ModelCall => ({
@@ -84,7 +85,8 @@ const REASON_WORDS: Readonly<Record<NonNullable<GenerationFailure['reason']>, st
   failed: 'The endpoint failed to answer.',
 };
 
-const failureView = (failure: GenerationFailure) => ({
+/** A failure as an administrator is told it: its code, its reason, and the product's words. */
+export const failureView = (failure: GenerationFailure) => ({
   code: failure.code,
   ...(failure.reason === undefined ? {} : { reason: failure.reason }),
   message:
@@ -115,6 +117,10 @@ async function endpointView(
     ...(endpoint.priceCached === undefined ? {} : { priceCached: endpoint.priceCached }),
     currency: endpoint.currency,
     boundary: endpoint.boundary,
+    kind: endpointKind(endpoint),
+    ...(endpoint.timeoutSeconds === undefined ? {} : { timeoutSeconds: endpoint.timeoutSeconds }),
+    supportsTools: callsTools(endpoint),
+    supportsImages: readsImages(endpoint),
     id: endpoint.id,
     madeAt: endpoint.madeAt.toISOString(),
     changedAt: endpoint.changedAt.toISOString(),
@@ -312,7 +318,7 @@ export function modelEndpointHandlers(
             endpoint: { id: endpoint.id, protocol: endpoint.protocol, baseUrl: endpoint.baseUrl },
             sealed,
             call,
-            deadlineMs: TEST_DEADLINE_MS,
+            deadlineMs: modelDeadlineMs(endpoint),
           },
           (event) => {
             if (event.type === 'text') reply += event.text;
@@ -399,6 +405,16 @@ export function modelEndpointHandlers(
             409,
             'embedding_unsupported',
             'Embedding needs an endpoint speaking the OpenAI protocol.',
+          );
+        }
+        // An embedding model embeds and answers nothing; an LLM does the rest.
+        if ((purpose === 'embedding') !== (endpointKind(endpoint) === 'embedding')) {
+          throw new AppError(
+            409,
+            'endpoint_kind_mismatch',
+            purpose === 'embedding'
+              ? 'Embedding needs an endpoint whose model is an embedding model.'
+              : 'An embedding model answers nothing: choose an LLM.',
           );
         }
       }

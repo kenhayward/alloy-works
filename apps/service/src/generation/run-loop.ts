@@ -14,7 +14,9 @@ import {
 } from '@alloy-works/db';
 import {
   DECLINED,
+  callsTools,
   canonicalCall,
+  modelDeadlineMs,
   declinedInputSchema,
   guardrailMatch,
   watchesReplies,
@@ -101,7 +103,6 @@ export interface ToolAnswer {
 export interface RunLimits {
   readonly turns: number;
   readonly toolCalls: number;
-  readonly turnMs: number;
   readonly runMs: number;
   readonly maxTokens: number;
 }
@@ -171,11 +172,13 @@ export function streamedRun(input: {
     const stopped = AbortSignal.any([closed, authority.signal]);
     const started = Date.now();
     const messages: ModelMessage[] = [...input.messages];
+    // A model that calls no tools is sent none: it answers from what it is given.
+    const tools = callsTools(endpoint) ? input.tools : [];
     const callOf = (): ModelCall => ({
       model: endpoint.model,
       system: input.system,
       messages: [...messages],
-      tools: [...input.tools],
+      ...(tools.length === 0 ? {} : { tools: [...tools] }),
       parameters: { maxTokens: limits.maxTokens },
     });
     let run: string;
@@ -219,7 +222,9 @@ export function streamedRun(input: {
       ...input.started,
     });
     const tool = input.tool(run);
-    const offersDeclined = input.tools.some((each) => each.name === DECLINED.name);
+    const offersDeclined = tools.some((each) => each.name === DECLINED.name);
+    // The reply's pieces as they arrive, about a token each: said with each piece sent.
+    let received = 0;
     const usage = { in: 0, out: 0, reported: false };
     const read = new Map<string, Set<string>>();
     const readContext: { component: string; version: string; blocks: readonly string[] }[] = [
@@ -263,12 +268,13 @@ export function streamedRun(input: {
             endpoint: { id: endpoint.id, protocol: endpoint.protocol, baseUrl: endpoint.baseUrl },
             sealed,
             call: last,
-            deadlineMs: Math.min(limits.turnMs, left),
+            deadlineMs: modelDeadlineMs(endpoint, left),
           },
           (event) => {
             if (event.type === 'text') {
               text += event.text;
-              if (!holding) send('text', { text: event.text });
+              received += 1;
+              if (!holding) send('text', { text: event.text, tokens: received });
             } else if (event.type === 'tool_call') {
               calledFor.push({ id: event.id, name: event.name, input: event.input });
             }
@@ -297,7 +303,7 @@ export function streamedRun(input: {
         if (holding && text !== '') {
           refusedBy = guardrailMatch(rules, 'returned', text);
           if (refusedBy) break;
-          send('text', { text });
+          send('text', { text, tokens: received });
         }
         said += text;
         const content: Extract<ModelMessage, { role: 'assistant' }>['content'] = [];

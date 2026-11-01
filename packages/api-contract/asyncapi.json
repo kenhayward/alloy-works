@@ -669,6 +669,12 @@
           "properties": {
             "text": {
               "type": "string"
+            },
+            "tokens": {
+              "description": "How many tokens of the reply have arrived so far, this piece among them: counted as the pieces the provider streamed, about a token each",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [

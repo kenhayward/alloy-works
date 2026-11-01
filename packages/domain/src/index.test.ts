@@ -816,6 +816,13 @@ describe('the domain package', () => {
         'modelEndpointSchema',
         'modelCredentialContext',
         'costMicros',
+        // An endpoint's kind, timeout and what its model supports.
+        'MODEL_KINDS',
+        'MODEL_TIMEOUT_SECONDS',
+        'modelDeadlineMs',
+        'endpointKind',
+        'callsTools',
+        'readsImages',
         'MODEL_REQUEST_MAX_BYTES',
         'MODEL_ANSWER_MAX_BYTES',
         'MODEL_DEADLINE_MS',

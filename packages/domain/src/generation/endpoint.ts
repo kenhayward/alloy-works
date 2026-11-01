@@ -34,6 +34,25 @@ export const CONTEXT_WINDOW = { least: 1024, most: 10_000_000 } as const;
 /** The most a price per million tokens may be, in the currency's units, to six places. */
 export const PRICE_MOST = 1_000_000;
 
+/** What a model does: answers in words (an LLM), or turns text into vectors (embedding). */
+export const MODEL_KINDS = ['llm', 'embedding'] as const;
+export type ModelKind = (typeof MODEL_KINDS)[number];
+
+/**
+ * How long one call to an endpoint may take, in whole seconds: its own where it names one, else the
+ * default; at most a call's deadline (`MODEL_DEADLINE_MS`).
+ */
+export const MODEL_TIMEOUT_SECONDS = { least: 1, default: 120, most: 240 } as const;
+
+/** A call's deadline on an endpoint: its timeout, or the default, never past `left` where given. */
+export function modelDeadlineMs(
+  endpoint: { readonly timeoutSeconds?: number | undefined },
+  left?: number,
+): number {
+  const own = (endpoint.timeoutSeconds ?? MODEL_TIMEOUT_SECONDS.default) * 1000;
+  return left === undefined ? own : Math.min(own, left);
+}
+
 /** A model's identifier, as its provider spells it: printable ASCII, no space, 1 to 200 characters. */
 const MODEL = /^[\x21-\x7e]{1,200}$/;
 
@@ -62,8 +81,29 @@ export const modelEndpointSchema = z.strictObject({
   priceCached: price.optional(),
   currency: z.string().regex(/^[A-Z]{3}$/, { message: 'A currency is its ISO 4217 code' }),
   boundary: z.enum(BOUNDARIES),
+  /** An LLM unless said; only an embedding model embeds, and only an LLM answers. */
+  kind: z.enum(MODEL_KINDS).optional(),
+  /** The default (`MODEL_TIMEOUT_SECONDS`) where unset. */
+  timeoutSeconds: z
+    .number()
+    .int()
+    .min(MODEL_TIMEOUT_SECONDS.least)
+    .max(MODEL_TIMEOUT_SECONDS.most)
+    .optional(),
+  /** Whether the model is sent tools: yes unless said. */
+  supportsTools: z.boolean().optional(),
+  /** Whether the model may be sent images: no unless said. */
+  supportsImages: z.boolean().optional(),
 });
 export type ModelEndpoint = z.infer<typeof modelEndpointSchema>;
+
+/** An endpoint's kind and what its model supports, each its default where unset. */
+export const endpointKind = (endpoint: Pick<ModelEndpoint, 'kind'>): ModelKind =>
+  endpoint.kind ?? 'llm';
+export const callsTools = (endpoint: Pick<ModelEndpoint, 'supportsTools'>): boolean =>
+  endpoint.supportsTools ?? true;
+export const readsImages = (endpoint: Pick<ModelEndpoint, 'supportsImages'>): boolean =>
+  endpoint.supportsImages ?? false;
 
 /** What an endpoint's key is sealed to beside the tenant (G1-B): the endpoint and where it signs in. */
 export function modelCredentialContext(

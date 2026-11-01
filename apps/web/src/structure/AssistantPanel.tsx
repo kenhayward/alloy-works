@@ -1,6 +1,6 @@
 import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
 import { PENDING_ENTRY } from '@alloy-works/domain';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
 import { PersonalPrompts } from './PersonalPrompts.js';
@@ -237,6 +237,12 @@ export function AssistantPanel({
   const [looking, setLooking] = useState('');
   const [found, setFound] = useState<readonly { id: string; title: string }[]>([]);
   const [titles, setTitles] = useState<ReadonlyMap<string, string>>(new Map());
+  // What the assistant is given with an ask on a document: the component open, or every one.
+  const [scope, setScope] = useState<'component' | 'document'>('component');
+  const given = component === null ? 'document' : scope;
+  // The reply's tokens so far, while it streams.
+  const [received, setReceived] = useState(0);
+  const contextId = useId();
 
   const readTray = async (id: string) => {
     const { data } = await client.GET('/v1/conversations/{id}/context', {
@@ -372,6 +378,7 @@ export function AssistantPanel({
       ask: ask.trim(),
       ...(chosen === '' ? {} : { endpoint: chosen }),
       ...(component === null ? {} : { component }),
+      ...(document === null ? {} : { context: given }),
     });
     setAsk('');
     await Promise.all([readTurns(id), readConversations()]).catch(() => undefined);
@@ -389,6 +396,7 @@ export function AssistantPanel({
     setEnded(null);
     setSaid('');
     setReused(null);
+    setReceived(0);
     const outcome = await stream({
       url,
       body,
@@ -403,6 +411,7 @@ export function AssistantPanel({
             break;
           case 'text':
             setAnswer((was) => was + String(frame.text));
+            if (typeof frame.tokens === 'number') setReceived(frame.tokens);
             break;
           case 'tool_call':
             setSteps((was) => [...was, { id: String(frame.id), name: String(frame.name) }]);
@@ -648,6 +657,37 @@ export function AssistantPanel({
           )}
         </section>
       )}
+      {document !== null && (
+        <fieldset
+          className={styles['context']}
+          role="radiogroup"
+          aria-labelledby={contextId}
+          disabled={running}
+        >
+          <legend id={contextId}>{words('document.context')}</legend>
+          <label>
+            <input
+              type="radio"
+              name="assistant-context"
+              value="component"
+              checked={given === 'component'}
+              disabled={component === null}
+              onChange={() => setScope('component')}
+            />{' '}
+            {words('document.current-component')}
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="assistant-context"
+              value="document"
+              checked={given === 'document'}
+              onChange={() => setScope('document')}
+            />{' '}
+            {words('document.all-components')}
+          </label>
+        </fieldset>
+      )}
       <PersonalPrompts client={client} asking={ask} onUse={setAsk} />
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>
@@ -709,6 +749,17 @@ export function AssistantPanel({
           >
             {words('document.run-afresh')}
           </button>
+        </p>
+      )}
+      {running && (
+        <p
+          role="progressbar"
+          aria-label={words('document.answering')}
+          aria-valuetext={words('document.answering-tokens', { count: received })}
+          className={styles['streaming']}
+        >
+          <span className={styles['pulse']} aria-hidden="true" />
+          {words('document.answering-tokens', { count: received })}
         </p>
       )}
       <div aria-live="polite" className={styles['answer']}>

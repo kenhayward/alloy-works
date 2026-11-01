@@ -33487,7 +33487,7 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
-                        /** @description Every endpoint in use with its key set */
+                        /** @description Every LLM in use with its key set: never an embedding model, which answers nothing */
                         items: {
                             id: string;
                             name: string;
@@ -34371,6 +34371,11 @@ export interface operations {
                     endpoint?: string & (unknown & unknown);
                     /** @description The component the author has open, if one is */
                     component?: string & (unknown & unknown);
+                    /**
+                     * @description What the assistant is given to read with the ask: `component`, the component open; `document`, every component of the document the person may read. Neither where unsaid: it reads what its tools find
+                     * @enum {string}
+                     */
+                    context?: "component" | "document";
                 };
             };
         };
@@ -34446,7 +34451,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s */
+            /** @description `turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s; `endpoint_kind_mismatch`: the one named is an embedding model */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -81531,6 +81536,12 @@ export interface operations {
                             currency: string;
                             /** @enum {string} */
                             boundary: "inside" | "outside";
+                            /** @enum {string} */
+                            kind: "llm" | "embedding";
+                            /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                            timeoutSeconds?: number;
+                            supportsTools: boolean;
+                            supportsImages: boolean;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -81656,6 +81667,17 @@ export interface operations {
                     currency: string;
                     /** @enum {string} */
                     boundary: "inside" | "outside";
+                    /**
+                     * @description `llm`, which answers, or `embedding`, which embeds: an LLM where unsaid. An embedding model is routed to embedding alone, and an LLM to every other purpose
+                     * @enum {string}
+                     */
+                    kind?: "llm" | "embedding";
+                    /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                    timeoutSeconds?: number;
+                    /** @description Whether the model calls tools: a model that does not is sent none. Yes where unsaid */
+                    supportsTools?: boolean;
+                    /** @description Whether the model reads images: a model that does not is sent none. No where unsaid */
+                    supportsImages?: boolean;
                 };
             };
         };
@@ -81682,6 +81704,9 @@ export interface operations {
                      *         "priceOut": 0,
                      *         "currency": "USD",
                      *         "boundary": "inside",
+                     *         "kind": "llm",
+                     *         "supportsTools": false,
+                     *         "supportsImages": false,
                      *         "id": "example",
                      *         "madeAt": "example",
                      *         "changedAt": "example",
@@ -81709,6 +81734,12 @@ export interface operations {
                             currency: string;
                             /** @enum {string} */
                             boundary: "inside" | "outside";
+                            /** @enum {string} */
+                            kind: "llm" | "embedding";
+                            /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                            timeoutSeconds?: number;
+                            supportsTools: boolean;
+                            supportsImages: boolean;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -81865,6 +81896,9 @@ export interface operations {
                      *         "priceOut": 0,
                      *         "currency": "USD",
                      *         "boundary": "inside",
+                     *         "kind": "llm",
+                     *         "supportsTools": false,
+                     *         "supportsImages": false,
                      *         "id": "example",
                      *         "madeAt": "example",
                      *         "changedAt": "example",
@@ -81892,6 +81926,12 @@ export interface operations {
                             currency: string;
                             /** @enum {string} */
                             boundary: "inside" | "outside";
+                            /** @enum {string} */
+                            kind: "llm" | "embedding";
+                            /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                            timeoutSeconds?: number;
+                            supportsTools: boolean;
+                            supportsImages: boolean;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -82039,6 +82079,17 @@ export interface operations {
                     currency: string;
                     /** @enum {string} */
                     boundary: "inside" | "outside";
+                    /**
+                     * @description `llm`, which answers, or `embedding`, which embeds: an LLM where unsaid. An embedding model is routed to embedding alone, and an LLM to every other purpose
+                     * @enum {string}
+                     */
+                    kind?: "llm" | "embedding";
+                    /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                    timeoutSeconds?: number;
+                    /** @description Whether the model calls tools: a model that does not is sent none. Yes where unsaid */
+                    supportsTools?: boolean;
+                    /** @description Whether the model reads images: a model that does not is sent none. No where unsaid */
+                    supportsImages?: boolean;
                 };
             };
         };
@@ -82065,6 +82116,9 @@ export interface operations {
                      *         "priceOut": 0,
                      *         "currency": "USD",
                      *         "boundary": "inside",
+                     *         "kind": "llm",
+                     *         "supportsTools": false,
+                     *         "supportsImages": false,
                      *         "id": "example",
                      *         "madeAt": "example",
                      *         "changedAt": "example",
@@ -82092,6 +82146,12 @@ export interface operations {
                             currency: string;
                             /** @enum {string} */
                             boundary: "inside" | "outside";
+                            /** @enum {string} */
+                            kind: "llm" | "embedding";
+                            /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                            timeoutSeconds?: number;
+                            supportsTools: boolean;
+                            supportsImages: boolean;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -82280,6 +82340,9 @@ export interface operations {
                      *         "priceOut": 0,
                      *         "currency": "USD",
                      *         "boundary": "inside",
+                     *         "kind": "llm",
+                     *         "supportsTools": false,
+                     *         "supportsImages": false,
                      *         "id": "example",
                      *         "madeAt": "example",
                      *         "changedAt": "example",
@@ -82307,6 +82370,12 @@ export interface operations {
                             currency: string;
                             /** @enum {string} */
                             boundary: "inside" | "outside";
+                            /** @enum {string} */
+                            kind: "llm" | "embedding";
+                            /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                            timeoutSeconds?: number;
+                            supportsTools: boolean;
+                            supportsImages: boolean;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -82507,6 +82576,9 @@ export interface operations {
                      *         "priceOut": 0,
                      *         "currency": "USD",
                      *         "boundary": "inside",
+                     *         "kind": "llm",
+                     *         "supportsTools": false,
+                     *         "supportsImages": false,
                      *         "id": "example",
                      *         "madeAt": "example",
                      *         "changedAt": "example",
@@ -82534,6 +82606,12 @@ export interface operations {
                             currency: string;
                             /** @enum {string} */
                             boundary: "inside" | "outside";
+                            /** @enum {string} */
+                            kind: "llm" | "embedding";
+                            /** @description How long one call may take, in whole seconds, 1 to 240; 120 where unsaid */
+                            timeoutSeconds?: number;
+                            supportsTools: boolean;
+                            supportsImages: boolean;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -83461,7 +83539,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol */
+            /** @description `endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol; `endpoint_kind_mismatch`: embedding routed to an LLM, or another purpose to an embedding model */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

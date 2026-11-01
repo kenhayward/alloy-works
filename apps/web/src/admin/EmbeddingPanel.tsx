@@ -72,6 +72,7 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
   const [read, setRead] = useState<View | 'failed' | null>(null);
   const [freshness, setFreshness] = useState<Freshness | null>(null);
   const [said, setSaid] = useState('');
+  const [failure, setFailed] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -100,14 +101,23 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
 
   const confirm = async (model: string) => {
     setBusy(true);
+    setFailed('');
+    setSaid('');
+    // Why it failed, always: the service's words, else how the call itself went.
+    const failed = (reason: string) =>
+      setFailed(words('admin.could-not-be-confirmed', { model, reason }));
     try {
-      const { data, error } = await client.POST('/v1/embedding/confirmation', {
+      const { data, error, response } = await client.POST('/v1/embedding/confirmation', {
         body: { model },
       });
       if (data) {
         setRead(data);
         setSaid(words('admin.is-confirmed-the-parts-are', { model }));
-      } else setSaid(refusal(error, words('admin.the-model-could-not-be')));
+      } else {
+        failed(refusal(error, words('admin.the-service-failed', { status: response.status })));
+      }
+    } catch {
+      failed(words('admin.the-service-could-not-be-reached'));
     } finally {
       setBusy(false);
     }
@@ -175,6 +185,7 @@ export function EmbeddingPanel({ client, generation }: { client: Client; generat
         </p>
       )}
       <p role="status">{said}</p>
+      {failure !== '' && <p role="alert">{failure}</p>}
     </section>
   );
 }

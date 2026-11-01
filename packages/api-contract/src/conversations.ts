@@ -17,6 +17,12 @@ export const TurnBody = z.strictObject({
     'The endpoint the turn runs on, among those in use: the chat route’s where none is named, else drafting’s',
   ),
   component: LowercaseUuid.optional().describe('The component the author has open, if one is'),
+  context: z
+    .enum(['component', 'document'])
+    .optional()
+    .describe(
+      'What the assistant is given to read with the ask: `component`, the component open; `document`, every component of the document the person may read. Neither where unsaid: it reads what its tools find',
+    ),
 });
 export type TurnBody = z.infer<typeof TurnBody>;
 
@@ -98,7 +104,7 @@ export const ConversationEndpoints = z.object({
         isDefault: z.boolean().describe('The one a turn naming none runs on'),
       }),
     )
-    .describe('Every endpoint in use with its key set'),
+    .describe('Every LLM in use with its key set: never an embedding model, which answers nothing'),
 });
 
 const SESSION = { check: 'session', credential: 'session' } as const;
@@ -253,7 +259,7 @@ export const conversationRoutes = {
       },
       409: {
         description:
-          '`turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s',
+          '`turn_running`: a turn of it has not ended; `conversation_too_long`: it has as many turns as one takes; `model_unconfigured`: no endpoint named or routed; `endpoint_unusable`: the one named is retired, has no key, or is not this environment’s; `endpoint_kind_mismatch`: the one named is an embedding model',
         schema: ErrorBody,
       },
       429: rateLimited,

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  MODEL_DEADLINE_MS,
+  MODEL_TIMEOUT_SECONDS,
   canonicalCall,
+  modelDeadlineMs,
   costMicros,
   modelCredentialContext,
   modelEndpointSchema,
@@ -54,6 +57,29 @@ describe('a model endpoint', () => {
     }
     expect(modelEndpointSchema.safeParse({ ...endpoint, priceIn: 0.0000001 }).success).toBe(false);
     expect(modelEndpointSchema.safeParse({ ...endpoint, priceIn: 0.000001 }).success).toBe(true);
+  });
+
+  it('takes a kind, a timeout of whole seconds within a call’s deadline, and what the model supports', () => {
+    const full = {
+      ...endpoint,
+      kind: 'embedding',
+      timeoutSeconds: 240,
+      supportsTools: false,
+      supportsImages: true,
+    };
+    expect(modelEndpointSchema.safeParse(full).success).toBe(true);
+    for (const timeoutSeconds of [0, 241, 2.5]) {
+      expect(modelEndpointSchema.safeParse({ ...full, timeoutSeconds }).success).toBe(false);
+    }
+    expect(modelEndpointSchema.safeParse({ ...full, kind: 'rerank' }).success).toBe(false);
+    expect(MODEL_TIMEOUT_SECONDS.most * 1000).toBe(MODEL_DEADLINE_MS.most);
+  });
+
+  it("calls within an endpoint's timeout, or the default, never past what is left", () => {
+    expect(modelDeadlineMs({})).toBe(MODEL_TIMEOUT_SECONDS.default * 1000);
+    expect(modelDeadlineMs({ timeoutSeconds: 200 })).toBe(200_000);
+    expect(modelDeadlineMs({ timeoutSeconds: 200 }, 90_500)).toBe(90_500);
+    expect(modelDeadlineMs({ timeoutSeconds: 5 }, 10_000)).toBe(5_000);
   });
 
   it('seals a key to its endpoint and the origin it signs in at, not to a path', () => {

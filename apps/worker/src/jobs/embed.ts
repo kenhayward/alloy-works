@@ -15,14 +15,11 @@ import {
   type EmbeddingModel,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { EMBED_INPUTS_MOST, EMBED_INPUT_CHARS_MOST } from '@alloy-works/domain';
+import { EMBED_INPUTS_MOST, EMBED_INPUT_CHARS_MOST, modelDeadlineMs } from '@alloy-works/domain';
 
 import type { Embedder } from '../embedder.js';
 import { JobRefused } from '../refusal.js';
 import type { JobHandler } from '../worker.js';
-
-/** How long an embedding call may take, at most. */
-const EMBED_DEADLINE_MS = 60_000;
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
@@ -88,7 +85,7 @@ export function embedJob(deps: {
             },
             sealed: endpoint.sealed,
             call: { model: model.model, inputs },
-            deadlineMs: EMBED_DEADLINE_MS,
+            deadlineMs: modelDeadlineMs(endpoint.found),
           });
           // A vector of other dimensions than the model serves is the model's mismatch, kept nowhere.
           const fits =
