@@ -46,6 +46,7 @@ T7's second slice closed (the AL plan): an image's licence and rights, its deriv
 
 ### Fixed
 
+- **A document's side panels no longer run under the status bar.** Every tab now ends above it, as the Assistant's did, so the last control in a panel is never partly covered.
 - **The assistant reads bound tables.** A bound table's rows reach the model as a reader sees them, in the table's order and only the columns it shows, so it can summarise one.
 - **The Assistant's composer stood under the status bar**, its toolbar sat lower than the rail's collapse button, and a sent ask stayed in the box until the reply ended, so Send looked as if it did nothing. The panels beside the text now end above the status bar wherever the page is scrolled, the toolbar lines up with the rail, and the box empties as it sends. (#868)
 - **The Assistant's composer still stopped short of the panel's bottom, and the mouse wheel did not scroll its conversation.** Its toolbar and composer now stand on the panel's edges, the conversation scrolling between them. (#866)
