@@ -227,6 +227,11 @@ export const assetRoutes = {
         schema: ErrorBody,
       },
       404: notFound,
+      502: {
+        description:
+          '`asset_corrupt`: the stored bytes do not match the hash the version records (AST-042), so none are sent',
+        schema: ErrorBody,
+      },
     },
   },
   getAssetRights: {

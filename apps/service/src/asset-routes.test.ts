@@ -67,6 +67,7 @@ describe('uploading an image through the service (figures 1)', () => {
   let objects: TestObjectStore;
   let stores: ObjectStores;
   let tenantDb: TenantDatabase;
+  let tampered = false;
   let app: FastifyInstance;
   let tenant: Tenant;
   let general: string;
@@ -153,7 +154,16 @@ describe('uploading an image through the service (figures 1)', () => {
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
-      objects: stores,
+      // The store, answering other bytes than a key names while `tampered` says so (AST-042).
+      objects: {
+        forTenant: async (trx, owner) => {
+          const real = await stores.forTenant(trx, owner);
+          return {
+            ...real,
+            get: async (key) => (tampered ? Buffer.from('not the image') : real.get(key)),
+          };
+        },
+      },
     });
     for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
@@ -479,6 +489,24 @@ describe('uploading an image through the service (figures 1)', () => {
     }
   });
 
+  it('AST-042 verifies an original against its hash on read, and sends nothing the store altered', async () => {
+    const id = await made('grace', general);
+    const image = png(5, 5);
+    expect((await fill('grace', id, image)).statusCode).toBe(200);
+    const version = await ingested(id, image);
+    const path = `/v1/asset-versions/${version.id}/content`;
+    expect((await call('grace', 'GET', path)).statusCode).toBe(200);
+    tampered = true;
+    try {
+      const answer = await call('grace', 'GET', path);
+      expect(answer.statusCode).toBe(502);
+      expect(code(answer)).toBe('asset_corrupt');
+      expect(answer.body).not.toContain('not the image');
+    } finally {
+      tampered = false;
+    }
+  });
+
   it('AST-026 keeps an asset in a space the reader may not read from them, as a component there is', async () => {
     const bytes = png(2, 2);
     const id = await made('grace', quality);
@@ -529,9 +557,8 @@ describe('uploading an image through the service (figures 1)', () => {
       });
     });
     expect(
-      (
-        await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse', limits: own })
-      ).statusCode,
+      (await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse', limits: own }))
+        .statusCode,
     ).toBe(403);
     // AST-004: a format's limit lowered, never raised past its own.
     const lowered = { png: 2_000_000, jpeg: null };

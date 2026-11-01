@@ -1948,7 +1948,7 @@ describe('routes that check a permission', () => {
     setImagesSettings: () => ({
       url: '/v1/settings/images',
       status: 403,
-      payload: { undeclared: 'refuse' },
+      payload: { undeclared: 'refuse', limits: { png: null, jpeg: null } },
     }),
     setTranslationSettings: () => ({
       url: '/v1/settings/translation',

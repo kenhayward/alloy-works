@@ -389,9 +389,21 @@ export function assetHandlers(
       const version = await readableAssetVersion(trx, callerOf(request), id);
       if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
+      const key = version.content.object;
+      const bytes = await store.get(key);
+      // Held to the hash its key names before a byte is sent (AST-042): a store answering anything
+      // else is broken, and what it answered is never passed on as this image.
+      if (!key.endsWith(`/sha256/${createHash('sha256').update(bytes).digest('hex')}`)) {
+        throw new AppError(
+          502,
+          'asset_corrupt',
+          'The stored image does not match its record, so it was not sent.',
+          'AST-042',
+        );
+      }
       return {
         contentType: ADMITTED_FORMATS[version.content.format].contentType,
-        bytes: await store.get(version.content.object),
+        bytes,
         immutable: true,
       };
     },
