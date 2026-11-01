@@ -1,5 +1,5 @@
 import { ancestry, type ThemeRefusal } from './read.js';
-import type { ParagraphCatalogue, ResolvedParagraphProperties } from './schema.js';
+import type { ParagraphStyle, ResolvedParagraphProperties } from './schema.js';
 
 /** A resolved property and the style that states it, or null where it is the catalogue's base. */
 export interface ExplainedProperty<T> {
@@ -14,14 +14,19 @@ export type ExplainedProperties = {
 };
 
 export type ExplainOutcome =
-  | { ok: true; properties: ExplainedProperties }
-  | { ok: false; refusals: ThemeRefusal[] };
+  { ok: true; properties: ExplainedProperties } | { ok: false; refusals: ThemeRefusal[] };
 
 /**
  * **Where a style's values come from** (STY-057, SY-E): each property from the nearest ancestor that
  * states it, walked by the reader's own `ancestry`, so what a form shows is what every output sets.
  */
-export function explainStyle(catalogue: ParagraphCatalogue, styleId: string): ExplainOutcome {
+export function explainStyle(
+  catalogue: {
+    readonly base: ResolvedParagraphProperties;
+    readonly styles: readonly ParagraphStyle[];
+  },
+  styleId: string,
+): ExplainOutcome {
   const styles = new Map(catalogue.styles.map((style) => [style.id, style]));
   const style = styles.get(styleId);
   if (style === undefined) {

@@ -349,7 +349,11 @@ describe('styles saved, deleted and weighed (the SY plan, SY-C, SY-D)', () => {
     await placed(general, 'Pump checks', [paragraph('warning')]);
     await placed(general, 'Unrelated', [paragraph('quotation')]);
     const impact = await as((trx) =>
-      styleImpact(trx, people.ada, { themeId: DEFAULT_THEME_ID, kind: 'paragraph', styleId: 'body' }),
+      styleImpact(trx, people.ada, {
+        themeId: DEFAULT_THEME_ID,
+        kind: 'paragraph',
+        styleId: 'body',
+      }),
     );
     expect(impact.documents.map((each) => each.title)).toEqual(['Pump checks', 'Unrelated']);
   });

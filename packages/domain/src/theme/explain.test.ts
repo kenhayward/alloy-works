@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_CATALOGUES } from './default.js';
 import { explainStyle } from './explain.js';
-import type { ParagraphCatalogue } from './schema.js';
 import { resolved } from './theme.fixture.js';
 
 /**
  * Where a style's values come from (SY-E): each property's resolved value and the style that states
  * it, or the catalogue's base, walked by the reader's own chain so the two cannot disagree.
  */
-const paragraphs = DEFAULT_CATALOGUES.paragraph as ParagraphCatalogue;
+const paragraphs = DEFAULT_CATALOGUES.paragraph;
+type Paragraphs = typeof paragraphs;
 
 describe('explainStyle', () => {
   it('STY-057 takes each property from the nearest ancestor that states it, and names that ancestor', () => {
@@ -37,7 +37,7 @@ describe('explainStyle', () => {
   });
 
   it('STY-056 refuses a style whose chain is a cycle, naming it, rather than walking forever', () => {
-    const looped: ParagraphCatalogue = {
+    const looped: Paragraphs = {
       ...paragraphs,
       styles: paragraphs.styles.map((style) =>
         style.id === 'body' ? { ...style, basedOn: 'heading-1' } : style,
@@ -52,7 +52,7 @@ describe('explainStyle', () => {
       ok: false,
       refusals: [{ code: 'style_missing' }],
     });
-    const orphaned: ParagraphCatalogue = {
+    const orphaned: Paragraphs = {
       ...paragraphs,
       styles: paragraphs.styles.map((style) =>
         style.id === 'heading-1' ? { ...style, basedOn: 'gone' } : style,

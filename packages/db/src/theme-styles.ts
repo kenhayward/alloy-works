@@ -167,7 +167,9 @@ export async function saveStyle(
   if (recordedCatalogue.answer === 'refused') return recordedCatalogue;
   if (recordedCatalogue.answer === 'version.unchanged') return { answer: 'version.unchanged' };
   if (recordedCatalogue.answer !== 'recorded') {
-    throw new Error(`The catalogue ${catalogueVersion.artifact_id} answered ${recordedCatalogue.answer}`);
+    throw new Error(
+      `The catalogue ${catalogueVersion.artifact_id} answered ${recordedCatalogue.answer}`,
+    );
   }
   const recordedTheme = await addThemeVersion(trx, {
     artifactId: change.themeId,
@@ -249,7 +251,7 @@ export async function styleImpact(
   const keys = new Set([target.styleId]);
   if (target.kind === 'paragraph') {
     for (const style of theme.paragraphStyles.values()) {
-      for (let at: string | undefined = style.id; at !== undefined; ) {
+      for (let at: string | undefined = style.id; at !== undefined;) {
         if (at === target.styleId) keys.add(style.id);
         at = at === target.styleId ? undefined : theme.paragraphStyles.get(at)?.basedOn;
       }
