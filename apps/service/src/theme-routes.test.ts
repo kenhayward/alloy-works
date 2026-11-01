@@ -219,4 +219,35 @@ describe('themes through the service (the SY plan, SY-C)', () => {
     // Decided at the theme: one Ada may not manage is answered as not there.
     expect(refused.statusCode).toBe(404);
   });
+
+  it('STY-072 makes, renames and declares a theme through the service, by whoever manages definitions', async () => {
+    const refused = await call('ada', 'POST', '/v1/themes', {
+      from: DEFAULT_THEME_ID,
+      name: 'Mine',
+    });
+    expect(refused.statusCode).toBe(403);
+    const made = await call('grace', 'POST', '/v1/themes', {
+      from: DEFAULT_THEME_ID,
+      name: 'Field manual',
+    });
+    expect(made.statusCode, made.body).toBe(200);
+    const theme = made.json<{ id: string; version: { id: string; number: string } }>();
+    expect(theme.version.number).toBe('0.1');
+    const renamed = await call('grace', 'PUT', `/v1/themes/${theme.id}/name`, {
+      openedFrom: theme.version.id,
+      name: 'Site manual',
+    });
+    expect(renamed.statusCode, renamed.body).toBe(200);
+    expect(renamed.json()).toMatchObject({ name: 'Site manual', version: { number: '0.2' } });
+    const declared = await call('grace', 'POST', `/v1/themes/${theme.id}/default`);
+    expect(declared.statusCode, declared.body).toBe(200);
+    expect(declared.json()).toMatchObject({ isDefault: true });
+    const listed = (await call('ada', 'GET', '/v1/themes')).json<{ items: Json[] }>().items;
+    expect(listed).toEqual([
+      expect.objectContaining({ id: DEFAULT_THEME_ID, isDefault: false }),
+      expect.objectContaining({ id: theme.id, isDefault: true }),
+    ]);
+    // Declared back, so the other tests' documents stand in the default theme.
+    await call('grace', 'POST', `/v1/themes/${DEFAULT_THEME_ID}/default`);
+  });
 });

@@ -7044,7 +7044,11 @@ export interface paths {
          */
         get: operations["listThemes"];
         put?: never;
-        post?: never;
+        /**
+         * Make a theme by copying another, with catalogues of its own
+         * @description Makes a theme by copying another under a new name: each of its catalogues is copied into one of the new theme's own, so a style changed in either theme never reaches the other. The copy starts at 0.1. Needs manage definitions at the environment.
+         */
+        post: operations["createTheme"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7071,6 +7075,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/themes/{id}/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a theme the environment's, which a document with no template is set in
+         * @description Makes a theme the environment's: every document with no template is set in it from now, at once, and a baseline keeps the theme version it pinned. Audited as `theme.declared`, naming the theme declared before. Needs manage definitions at the environment.
+         */
+        post: operations["declareTheme"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/themes/{id}/impact": {
         parameters: {
             query?: never;
@@ -7085,6 +7109,26 @@ export interface paths {
          * @description Lists the documents a change to a style would reach: those set in the theme, through their template or as the environment's default, whose components use the style or a style based on it. A paragraph style that a place or role defaults to, and a character style, reach every document set in the theme. Names the documents the caller may read and counts the rest. Nothing is recorded. Needs manage definitions at the environment.
          */
         post: operations["getStyleImpact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/themes/{id}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rename a theme, as its next version
+         * @description Renames a theme as its next version, every catalogue bound as it was. `openedFrom` must be the theme's latest version. Needs manage definitions at the environment.
+         */
+        put: operations["renameTheme"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -117241,6 +117285,190 @@ export interface operations {
             };
         };
     };
+    createTheme: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "from": "00000000-0000-4000-8000-000000000001",
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The theme to copy, its catalogues copied with it */
+                    from: string & (unknown & unknown);
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The theme made, at 0.1 */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "isDefault": false,
+                     *       "content": {},
+                     *       "catalogues": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The environment's declared theme, which a document with no template is set in */
+                        isDefault: boolean;
+                        /** @description The theme version as stored, naming its catalogues by version */
+                        content: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Each catalogue version the theme names */
+                        catalogues: {
+                            versionId: string;
+                            /** @description The catalogue version as stored */
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description `style_refused`: the copy would not read under its name */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description style_refused: each refusal, as the theme reader makes it */
+                        refusals?: {
+                            code: string;
+                            message: string;
+                        }[];
+                        /** @description style_in_use: how many components use the style, whoever may read them */
+                        components?: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not manage definitions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No theme `from` names in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getTheme: {
         parameters: {
             query?: never;
@@ -117321,6 +117549,151 @@ export interface operations {
                 };
             };
             /** @description No such theme in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    declareTheme: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The theme, now the environment’s */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "isDefault": false,
+                     *       "content": {},
+                     *       "catalogues": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The environment's declared theme, which a document with no template is set in */
+                        isDefault: boolean;
+                        /** @description The theme version as stored, naming its catalogues by version */
+                        content: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Each catalogue version the theme names */
+                        catalogues: {
+                            versionId: string;
+                            /** @description The catalogue version as stored */
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not manage definitions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -117457,6 +117830,212 @@ export interface operations {
             };
             /** @description No such theme, or the caller may not manage definitions */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    renameTheme: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The theme version the rename was made from */
+                    openedFrom: string & (unknown & unknown);
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The theme at its new version */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "isDefault": false,
+                     *       "content": {},
+                     *       "catalogues": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        /** @description The environment's declared theme, which a document with no template is set in */
+                        isDefault: boolean;
+                        /** @description The theme version as stored, naming its catalogues by version */
+                        content: {
+                            [key: string]: unknown;
+                        };
+                        /** @description Each catalogue version the theme names */
+                        catalogues: {
+                            versionId: string;
+                            /** @description The catalogue version as stored */
+                            content: {
+                                [key: string]: unknown;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description `style_refused`: the theme would not read with the change, each refusal named, or the style given is another than the path names. `style_in_use`: components use the style, so it is not deleted */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description style_refused: each refusal, as the theme reader makes it */
+                        refusals?: {
+                            code: string;
+                            message: string;
+                        }[];
+                        /** @description style_in_use: how many components use the style, whoever may read them */
+                        components?: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may not manage definitions */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such theme, or the caller may not manage definitions */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `version.precondition`: the theme has a newer version than `openedFrom` */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

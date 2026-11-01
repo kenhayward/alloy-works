@@ -541,7 +541,16 @@ const operationTags = {
     'exportVocabulary',
   ],
   Licences: ['listLicences', 'getLicence'],
-  Themes: ['listThemes', 'getTheme', 'saveThemeStyle', 'deleteThemeStyle', 'getStyleImpact'],
+  Themes: [
+    'listThemes',
+    'getTheme',
+    'createTheme',
+    'renameTheme',
+    'declareTheme',
+    'saveThemeStyle',
+    'deleteThemeStyle',
+    'getStyleImpact',
+  ],
   Translations: [
     'getSpaceTranslations',
     'listComponentTranslations',
@@ -1152,6 +1161,12 @@ const descriptions: Readonly<Record<string, string>> = {
     "Lists the environment's themes by name, each at its latest version, the one a document with no template is set in marked. Anyone signed in may read them.",
   getTheme:
     'Returns a theme at its latest version as stored, naming its catalogues by version, with each of those catalogue versions as stored: the paragraph, character, table and image styles among them. Anyone signed in may read it.',
+  createTheme:
+    "Makes a theme by copying another under a new name: each of its catalogues is copied into one of the new theme's own, so a style changed in either theme never reaches the other. The copy starts at 0.1. Needs manage definitions at the environment.",
+  renameTheme:
+    "Renames a theme as its next version, every catalogue bound as it was. `openedFrom` must be the theme's latest version. Needs manage definitions at the environment.",
+  declareTheme:
+    "Makes a theme the environment's: every document with no template is set in it from now, at once, and a baseline keeps the theme version it pinned. Audited as `theme.declared`, naming the theme declared before. Needs manage definitions at the environment.",
   saveThemeStyle:
     "Adds a style to one of a theme's catalogues, or changes one, given in its catalogue's shape with the identifier the path names. The catalogue's next version and the theme's next version naming it are recorded together, and every document set in the theme follows at once; a baseline keeps the theme version it pinned. Refused, with nothing written, wherever the theme would not read with the change: text below its contrast minimum, a style based on one that does not exist or on itself, an identifier an earlier version dropped. `openedFrom` must be the theme's latest version. Audited as `style.changed`, naming the properties that changed. Needs manage definitions at the environment.",
   deleteThemeStyle:

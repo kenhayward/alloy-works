@@ -1,5 +1,7 @@
 import type {
+  CreateThemeBody,
   DeleteStyleQuery,
+  RenameThemeBody,
   SaveStyleBody,
   StyleImpactBody,
   StyleImpactView,
@@ -9,8 +11,11 @@ import type {
   ThemeView,
 } from '@alloy-works/api-contract';
 import {
+  declareTheme,
+  duplicateTheme,
   latestVersion,
   listThemes,
+  renameTheme,
   readsOnlyShares,
   saveStyle,
   styleImpact,
@@ -136,6 +141,37 @@ export function themeHandlers(
       );
       if (!view) throw notFound();
       return view;
+    },
+
+    createTheme: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ThemeView> => {
+      const { from, name } = request.body as CreateThemeBody;
+      const made = await duplicateTheme(trx, { themeId: from, name, author: principalId });
+      if (made.answer === 'artifact.missing') throw notFound();
+      if (made.answer === 'refused') return answered(trx, from, made);
+      return themeView(trx, made.theme);
+    },
+
+    renameTheme: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ThemeView> => {
+      const { id } = request.params as ThemeParams;
+      const { openedFrom, name } = request.body as RenameThemeBody;
+      return answered(
+        trx,
+        id,
+        await renameTheme(trx, { themeId: id, openedFrom, name, author: principalId }),
+      );
+    },
+
+    declareTheme: async (request: FastifyRequest, { trx }: Authorised): Promise<ThemeView> => {
+      const { id } = request.params as ThemeParams;
+      const declared = await declareTheme(trx, { themeId: id });
+      if (declared.answer === 'artifact.missing') throw notFound();
+      return themeView(trx, await themeLatest(trx, id));
     },
 
     saveThemeStyle: (request: FastifyRequest, authorised: Authorised) => {

@@ -52,6 +52,18 @@ export const SaveStyleBody = z.strictObject({
 });
 export type SaveStyleBody = z.infer<typeof SaveStyleBody>;
 
+export const CreateThemeBody = z.strictObject({
+  from: LowercaseUuid.describe('The theme to copy, its catalogues copied with it'),
+  name: z.string().trim().min(1).max(80),
+});
+export type CreateThemeBody = z.infer<typeof CreateThemeBody>;
+
+export const RenameThemeBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe('The theme version the rename was made from'),
+  name: z.string().trim().min(1).max(80),
+});
+export type RenameThemeBody = z.infer<typeof RenameThemeBody>;
+
 export const DeleteStyleQuery = z.object({
   openedFrom: LowercaseUuid.describe('The theme version the deletion was made from'),
 });
@@ -145,6 +157,51 @@ export const themeRoutes = {
       200: { description: 'The theme', schema: ThemeView },
       401: unauthenticated,
       404: notFound,
+    },
+  },
+  createTheme: {
+    operationId: 'createTheme',
+    method: 'POST',
+    path: '/v1/themes',
+    summary: 'Make a theme by copying another, with catalogues of its own',
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'manage_definitions', target: { tenant: true } },
+    body: CreateThemeBody,
+    responses: {
+      200: { description: 'The theme made, at 0.1', schema: ThemeView },
+      400: {
+        description: '`style_refused`: the copy would not read under its name',
+        schema: ThemeStyleRefusal,
+      },
+      401: unauthenticated,
+      403: forbidden,
+      404: { description: 'No theme `from` names in this environment', schema: ErrorBody },
+    },
+  },
+  renameTheme: {
+    operationId: 'renameTheme',
+    method: 'PUT',
+    path: '/v1/themes/{id}/name',
+    summary: 'Rename a theme, as its next version',
+    tenantScoped: true,
+    access: managed,
+    params: ThemeParams,
+    body: RenameThemeBody,
+    responses: changed,
+  },
+  declareTheme: {
+    operationId: 'declareTheme',
+    method: 'POST',
+    path: '/v1/themes/{id}/default',
+    summary: "Make a theme the environment's, which a document with no template is set in",
+    tenantScoped: true,
+    access: managed,
+    params: ThemeParams,
+    responses: {
+      200: { description: 'The theme, now the environment’s', schema: ThemeView },
+      401: unauthenticated,
+      403: forbidden,
+      404: notManaged,
     },
   },
   saveThemeStyle: {
