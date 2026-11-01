@@ -518,6 +518,12 @@ describe('migration 0018, which gives every environment its default layout', () 
         tgname: 'publication_request_occurrence_with_its_baseline_request',
         tgenabled: 'O',
       },
+      // An image's rights are recorded on a request while it is queued (0180; the AL plan, AL-F).
+      {
+        relname: 'publication_request_rights',
+        tgname: 'publication_request_rights_while_queued',
+        tgenabled: 'O',
+      },
     ]);
 
     // Nothing was backfilled: every request and the publication stand as they were made.

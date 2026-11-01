@@ -307,9 +307,12 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       upgradedPrivileges.columns
         .filter((row) => row.table_name === table && row.privilege_type === privilege)
         .map((row) => row.column_name as string);
+    // And its name and declared rights, since 0180 (the AL plan, AL-E).
     expect(granted('asset_upload', 'INSERT')).toEqual([
       'alternative',
+      'name',
       'origin',
+      'rights',
       'space_id',
       'uploader',
     ]);
