@@ -13,6 +13,21 @@ create table asset_rights (
 );
 create index asset_rights_latest on asset_rights (asset_id, recorded_at desc);
 
+-- Every image made before this its first rights, as `recordAsset` now writes them: a dataset's for a
+-- dataset's image, else undeclared, by its first version's author when that was made (the ALb review).
+insert into asset_rights (asset_id, rights, recorded_by, recorded_at)
+select distinct on (v.artifact_id)
+       v.artifact_id,
+       case when exists (
+              select 1 from asset_upload u where u.asset_id = v.artifact_id and u.origin = 'dataset'
+            ) then '{"kind": "dataset"}'::jsonb
+            else '{"kind": "undeclared"}'::jsonb end,
+       v.author_id,
+       v.created_at
+  from artifact_version v
+ where v.kind = 'asset'
+ order by v.artifact_id, v.created_at, v.id;
+
 -- What the uploader declared and the name of the file, read by `recordAsset` when the check passes
 -- (AL-E, AL-D); null where an upload declared nothing, which records `undeclared`.
 alter table asset_upload
