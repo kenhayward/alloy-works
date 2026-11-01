@@ -4,6 +4,8 @@
   flex-direction: column;
   min-height: 0;
   height: 100%;
+  /* Never base.css's space after a section: the composer stands on the bottom edge (issue #864). */
+  margin: 0;
 }
 
 /* One line on top (issue #864): the panel's name, then its toolbar, the model first. The popups it
@@ -74,8 +76,10 @@
   font-size: var(--size-12);
 }
 
-/* The conversation, scrolling between the toolbar and the composer. */
+/* The conversation, scrolling between the toolbar and the composer: the box its hidden words stand
+   in, so none reaches past it and stretches the page (issue #864). */
 .scroll {
+  position: relative;
   display: grid;
   flex: 1;
   align-content: start;
@@ -428,12 +432,10 @@
 }
 
 /* A reply streaming: a pulsing dot, and the tokens so far. */
+/* The reply's tokens so far, after what it is doing, on its line. */
 .streaming {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-8, 8px);
-  margin: 0;
   color: var(--muted);
+  font-style: normal;
   font-variant-numeric: tabular-nums;
 }
 
@@ -465,18 +467,17 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Your words alone, at the end of the line in the accent, as a chat shows them (issue #864). */
 .asked {
+  justify-self: end;
+  max-width: 85%;
   margin: 0;
-  font-weight: 500;
-}
-
-.you {
-  margin-inline-end: var(--space-4);
-  color: var(--muted);
-  font-size: var(--size-12);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-8);
+  background: var(--accent);
+  color: var(--on-accent);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .answer {
@@ -552,6 +553,7 @@
 /* What it is doing while it answers: one line, the step it took last. */
 .doing {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
   margin: 0;
