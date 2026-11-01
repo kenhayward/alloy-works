@@ -64,7 +64,26 @@ begin
 end
 $$;
 
--- Recorded in the transaction that asks for the request, while it is queued, as its images are (0022).
+-- Recorded in the transaction that asks for the request, while it is queued, as its images are (0022),
+-- by a function of its own so the refusal names this record.
+create function publication_request_rights_while_queued() returns trigger
+language plpgsql as $$
+declare
+  queued boolean;
+begin
+  execute format(
+    'select exists (select 1 from %I.publication_request where id = $1 and state = %L)',
+    tg_table_schema,
+    'queued'
+  ) into queued using new.request_id;
+  if not queued then
+    raise exception
+      'publication_request_rights: an image''s rights are recorded only while its request is queued';
+  end if;
+  return new;
+end
+$$;
+
 create trigger publication_request_rights_while_queued
   before insert on publication_request_rights
-  for each row execute function publication_request_asset_while_queued();
+  for each row execute function publication_request_rights_while_queued();

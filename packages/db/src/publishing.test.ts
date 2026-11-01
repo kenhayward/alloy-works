@@ -12,7 +12,7 @@ import {
 } from '@alloy-works/domain';
 import { sql, type KyselyPlugin } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { recordAssetRights, setImagesPolicy } from './assets.js';
+import { readAssetRights, recordAssetRights, setImagesPolicy } from './assets.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { createDefinition } from './definitions.js';
 import { createComponent } from './creation.js';
@@ -2167,7 +2167,7 @@ describe('requesting and recording a publication', () => {
   });
 
   it("AST-023 AST-053 refuses an image its licence does not let be published, and reports or refuses an undeclared or lapsed one by the environment's policy", async () => {
-    await service.withTenant(production, async (trx) => {
+    const finished = await service.withTenant(production, async (trx) => {
       const licence = async (key: string, permits: string[]) => {
         const made = await createDefinition(trx, {
           kind: 'licence',
@@ -2276,7 +2276,20 @@ describe('requesting and recording a publication', () => {
       if (preview.answer !== 'requested') throw new Error(preview.answer);
       expect(await failuresIn(trx, preview.request.id)).toEqual([]);
       await setImagesPolicy(trx, { undeclared: 'warn' });
+      await sql`update publication_request set state = 'failed', finished_at = now()
+                where id = ${refused}`.execute(trx);
+      return { request: refused, asset: cleared.artifactId };
     });
+    // Recorded only while its request is queued, and the refusal says which record (the ALb review, 4).
+    await expect(
+      service.withTenant(production, async (trx) => {
+        const [rights] = await readAssetRights(trx, finished.asset);
+        await trx
+          .insertInto('publication_request_rights')
+          .values({ request_id: finished.request, asset_id: finished.asset, rights_id: rights!.id })
+          .execute();
+      }),
+    ).rejects.toThrow(/^publication_request_rights: /);
   });
 
   it('resolves an image in a run of text as the publisher too, in a paragraph and in a table cell', async () => {
