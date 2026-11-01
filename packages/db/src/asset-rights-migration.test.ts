@@ -15,7 +15,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import type { TenantTransaction } from './tenant-database.js';
+import type { TenantTransaction } from './tables.js';
 import { createArtifact } from './versions.js';
 
 /**

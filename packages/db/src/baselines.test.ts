@@ -23,11 +23,13 @@ import {
   supersedeBaseline,
   type MakeBaselineAnswer,
 } from './baselines.js';
+import { recordAssetRights } from './assets.js';
 import { bootstrapCluster } from './bootstrap.js';
 import { changesSince } from './changes.js';
 import { createConnection } from './connections.js';
 import { createComponent } from './creation.js';
 import { nameDataset, recordDatasetVersion, recordResolution } from './datasets.js';
+import { createDefinition } from './definitions.js';
 import { createDocument } from './documents.js';
 import { grant } from './grants.js';
 import { addThemeVersion, defaultTheme } from './themes.js';
@@ -940,6 +942,79 @@ describe('baselines', () => {
     expect(read!.withheld).toEqual({ nodes: [], assets: 0 });
     expect(read!.pins.assets.map((each) => each.version)).toEqual([image.id]);
     expect(sha256Hex(baselineDigestInput(read!.pins))).toBe(read!.digest);
+  });
+
+  it("AST-023 holds a baseline's republish to its images' rights today, not when it was made, and records what each was read under", async () => {
+    const image = await placingAnImage('7');
+    const holder = await component(general, ada, 'Harbour');
+    await revise(holder, [
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: image.id,
+        imageStyle: 'figure',
+        caption: [{ type: 'text', value: 'Harbour', marks: [] }],
+        alternative: { kind: 'inherited' },
+      },
+    ] as ContentDocument['content']);
+    const document = await documentWith([reference(holder.artifactId)]);
+    const id = made(await make(document, 'Before its licence'));
+    const licence = async (key: string, permits: string[]) =>
+      tenant(async (trx) => {
+        const made = await createDefinition(trx, {
+          kind: 'licence',
+          definition: {
+            schemaVersion: 1,
+            name: `Licence ${key}`,
+            key,
+            base: 'en',
+            names: [{ language: 'en', text: `Licence ${key}` }],
+            permits,
+            attribution: { required: false },
+          },
+          author: ada,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        return made.definition;
+      });
+    const declare = (licenceId: string) =>
+      tenant((trx) =>
+        recordAssetRights(trx, {
+          assetId: image.artifactId,
+          rights: { kind: 'declared', source: { text: 'A stock library' }, licence: licenceId },
+          by: ada,
+        }),
+      );
+    const republish = async () => {
+      const asked = await tenant((trx) =>
+        requestBaselinePublication(trx, { baseline: id, formats: ['pdf'], requester: ada }),
+      );
+      if (asked.answer !== 'requested') throw new Error(asked.answer);
+      return tenant((trx) =>
+        trx
+          .selectFrom('publication_request as r')
+          .leftJoin('publication_request_rights as w', 'w.request_id', 'r.id')
+          .select(['r.failures', 'w.asset_id', 'w.licence_version_id'])
+          .where('r.id', '=', asked.request.id)
+          .executeTakeFirstOrThrow(),
+      );
+    };
+
+    // Declared after the baseline was made, under a licence for internal use only: refused.
+    const internal = await licence('baseline_internal', ['internal']);
+    await declare(internal.id);
+    const refused = await republish();
+    expect(refused.failures).toMatchObject([{ code: 'asset_licence_forbids', block: 'f1' }]);
+    expect(refused).toMatchObject({
+      asset_id: image.artifactId,
+      licence_version_id: internal.version.id,
+    });
+    // Declared again, under one that permits it: the same baseline publishes.
+    const stock = await licence('baseline_stock', ['internal', 'publication']);
+    await declare(stock.id);
+    const cleared = await republish();
+    expect(cleared.failures).toEqual([]);
+    expect(cleared.licence_version_id).toBe(stock.version.id);
   });
 
   it('refuses a part added to a baseline’s request after the transaction that asked for it, and a preview naming a baseline', async () => {

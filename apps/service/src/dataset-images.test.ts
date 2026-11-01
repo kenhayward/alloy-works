@@ -616,7 +616,12 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
         expect((await h.call('ada', 'GET', path)).statusCode, path).toBe(200);
       }
       const undeclared = { rights: { kind: 'undeclared' } };
-      const hidden = await h.call('alice', 'PUT', `/v1/assets/${asset.artifactId}/rights`, undeclared);
+      const hidden = await h.call(
+        'alice',
+        'PUT',
+        `/v1/assets/${asset.artifactId}/rights`,
+        undeclared,
+      );
       // Refused by the route's own edit decision on the space before the image's rule is asked.
       expect(hidden.statusCode).toBe(403);
       const own = await h.call('ada', 'PUT', `/v1/assets/${asset.artifactId}/rights`, undeclared);
