@@ -224,6 +224,18 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     });
   });
 
+  it('says each endpoint’s context window, which the assistant measures a turn against (the DP plan)', async () => {
+    const offered = (await h.call('grace', 'GET', '/v1/conversation-endpoints')).json<{
+      items: { id: string; contextWindow: number }[];
+    }>().items;
+    expect(offered).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: drafting, contextWindow: 200_000 }),
+        expect.objectContaining({ id: inside, contextWindow: 200_000 }),
+      ]),
+    );
+  });
+
   it('GEN-051 runs a turn on the endpoint chosen among those in use, saying which and where it sits', async () => {
     const offered = (await h.call('grace', 'GET', '/v1/conversation-endpoints')).json<{
       items: { id: string; boundary: string; isDefault: boolean }[];
