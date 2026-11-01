@@ -1,9 +1,11 @@
 import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
 import { PENDING_ENTRY } from '@alloy-works/domain';
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import styles from './AssistantPanel.module.css';
 import { PersonalPrompts } from './PersonalPrompts.js';
+import { Icon } from '../editor/Icon.js';
+import { IconButton } from '../parts/IconButton.js';
 import { formats, words, wordsWith } from '../words/words.js';
 import { failedWords, proposedNothingWords, stepWords, type StepSaid } from './runWords.js';
 
@@ -48,6 +50,8 @@ interface Citation {
 interface Ended {
   readonly tokensIn: number | null;
   readonly tokensOut: number | null;
+  /** What the last model call took in, which the context window holds; `tokensIn` sums every call. */
+  readonly contextTokens?: number | null;
   readonly cost: string | null;
   readonly currency: string;
   readonly citations: readonly Citation[];
@@ -157,6 +161,8 @@ interface TrayItem {
 interface OfferedEndpoint {
   readonly id: string;
   readonly name: string;
+  /** The most tokens its model takes in one call: what a turn is measured against. */
+  readonly contextWindow: number;
   readonly boundary: string;
   readonly isDefault: boolean;
 }
@@ -176,6 +182,8 @@ interface RunnablePrompt {
 }
 
 const CITATION = /\[\[([0-9a-f-]{36})#([A-Za-z0-9_-]{1,64})\]\]/g;
+/** A citation's mark and the space before it: what a copied answer leaves out. */
+const CITATION_MARK = new RegExp(`\\s*${CITATION.source}`, 'g');
 
 /**
  * The document page's **Assistant** (generation.md, "The assistant"; the G2 plan, G2-K): ask about
@@ -191,6 +199,7 @@ export function AssistantPanel({
   node = null,
   nameOf = () => undefined,
   onCite,
+  onCitations,
   stream = streamPost,
   origin = window.location.origin,
 }: {
@@ -204,11 +213,15 @@ export function AssistantPanel({
   nameOf?: (component: string) => string | undefined;
   /** A kept citation followed: its component and block shown. */
   onCite: (component: string, block: string) => void;
+  /** The citations the last answer kept, once each in its order: none while another is asked. */
+  onCitations?: (cited: readonly Citation[]) => void;
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
 }) {
   const [ask, setAsk] = useState('');
+  // What this turn asked, shown above its answer and asked again on request (the DP plan).
+  const [asked, setAsked] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [endpoint, setEndpoint] = useState<{ name: string; boundary: string } | null>(null);
   const [answer, setAnswer] = useState('');
@@ -239,7 +252,16 @@ export function AssistantPanel({
   const [titles, setTitles] = useState<ReadonlyMap<string, string>>(new Map());
   // What the assistant is given with an ask on a document: the component open, or every one.
   const [scope, setScope] = useState<'component' | 'document'>('component');
-  const given = component === null ? 'document' : scope;
+  // The part asked about, held from when the box is entered until the ask is sent, so the cursor
+  // leaving the part for the box does not change what is asked about (as Diariz holds its scope).
+  const [held, setHeld] = useState<string | null>(null);
+  // Let go once the box is left and another part, or none, is open: that is the one asked about.
+  const inBox = useRef(false);
+  useEffect(() => {
+    if (!inBox.current) setHeld(null);
+  }, [component]);
+  const asking = held ?? component;
+  const given = asking === null ? 'document' : scope;
   // The reply's tokens so far, while it streams.
   const [received, setReceived] = useState(0);
   const contextId = useId();
@@ -357,14 +379,34 @@ export function AssistantPanel({
     );
   };
 
+  /** A conversation of this document's opened, or none: a new one, begun by the next ask. */
+  const open = (id: string | null) => {
+    setHeld(null);
+    setConversation(id);
+    setTurns([]);
+    setCurrent(null);
+    setAsked(null);
+    setAnswer('');
+    setProposals([]);
+    setSteps([]);
+    setEnded(null);
+    setTray([]);
+    if (id !== null) void readTurns(id).catch(() => undefined);
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (ask.trim() === '' || running) return;
+    await send(ask);
+  };
+
+  /** An ask sent as a turn of the conversation open, or of a new one. */
+  const send = async (text: string) => {
+    if (text.trim() === '' || running) return;
     // A first ask starts a conversation of this document's, named by its words (G5-A).
     let id = conversation;
     if (id === null) {
       const { data, error } = await client.POST('/v1/conversations', {
-        body: { ...(document === null ? {} : { document }), title: ask.trim() },
+        body: { ...(document === null ? {} : { document }), title: text.trim() },
       });
       if (!data) {
         setSaid(refusalWords(error, words('document.the-conversation-could-not-be')));
@@ -374,13 +416,16 @@ export function AssistantPanel({
       setConversation(id);
       setTurns([]);
     }
+    setAsked(text.trim());
     await run(`${origin}/v1/conversations/${id}/turns`, {
-      ask: ask.trim(),
+      ask: text.trim(),
       ...(chosen === '' ? {} : { endpoint: chosen }),
-      ...(component === null ? {} : { component }),
+      ...(asking === null ? {} : { component: asking }),
       ...(document === null ? {} : { context: given }),
     });
-    setAsk('');
+    // Only the words sent: what was typed since, asking again, stays.
+    setAsk((was) => (was.trim() === text.trim() ? '' : was));
+    setHeld(null);
     await Promise.all([readTurns(id), readConversations()]).catch(() => undefined);
   };
 
@@ -524,10 +569,47 @@ export function AssistantPanel({
           (other) => other.component === each.component && other.block === each.block,
         ) === index,
     );
-  const shownAnswer = answer.replace(CITATION, (_match, c: string, b: string) => {
-    const at = cited.findIndex((each) => each.component === c && each.block === b);
-    return at === -1 ? '' : `[${at + 1}]`;
-  });
+  // The page steps through what the answer cited (the DP plan): told once the answer ends.
+  const citedKey = cited.map((each) => `${each.component}#${each.block}`).join(' ');
+  useEffect(() => {
+    onCitations?.(cited);
+    // Told when the set changes, not on every render that computes it anew.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [citedKey]);
+
+  // The last turn measured against the context window of the endpoint that ran it, in Diariz's three
+  // bands: what its last call took in, the conversation as it then stood, not the run's sum.
+  const window_ = endpoints.find((each) => each.name === endpoint?.name)?.contextWindow;
+  const percent =
+    ended?.contextTokens == null || window_ === undefined
+      ? null
+      : Math.round((ended.contextTokens / window_) * 100);
+  const measured =
+    percent === null
+      ? null
+      : { percent, band: percent < 50 ? 'low' : percent < 75 ? 'mid' : 'high' };
+
+  // The answer's text, each citation kept a button to the part it names, numbered as Sources lists it.
+  const pieces: ReactNode[] = [];
+  let from = 0;
+  for (const match of answer.matchAll(CITATION)) {
+    pieces.push(answer.slice(from, match.index));
+    from = match.index + match[0].length;
+    const at = cited.findIndex((each) => each.component === match[1] && each.block === match[2]);
+    if (at === -1) continue;
+    pieces.push(
+      <button
+        key={match.index}
+        type="button"
+        className={styles['cite']}
+        aria-label={words('document.source-n', { number: at + 1 })}
+        onClick={() => onCite(cited[at]!.component, cited[at]!.block)}
+      >
+        {formats().number(at + 1)}
+      </button>,
+    );
+  }
+  pieces.push(answer.slice(from));
 
   return (
     <section className={styles['assistant']} aria-label={words('document.assistant')}>
@@ -539,24 +621,13 @@ export function AssistantPanel({
               boundary: endpoint.boundary,
             })}
       </p>
-      <div className={styles['actions']}>
-        <label className={styles['ask']}>
+      <div className={styles['head']}>
+        <label className={styles['conversation']}>
           {words('document.conversation')}
           <select
             value={conversation ?? ''}
             disabled={running}
-            onChange={(change) => {
-              const id = change.target.value === '' ? null : change.target.value;
-              setConversation(id);
-              setTurns([]);
-              setCurrent(null);
-              setAnswer('');
-              setProposals([]);
-              setSteps([]);
-              setEnded(null);
-              setTray([]);
-              if (id !== null) void readTurns(id).catch(() => undefined);
-            }}
+            onChange={(change) => open(change.target.value === '' ? null : change.target.value)}
           >
             <option value="">{words('document.a-new-conversation')}</option>
             {conversations.map((each) => (
@@ -566,33 +637,26 @@ export function AssistantPanel({
             ))}
           </select>
         </label>
-        {endpoints.length > 0 && (
-          <label className={styles['ask']}>
-            {words('document.endpoint')}
-            <select
-              value={chosen}
-              disabled={running}
-              onChange={(change) => setChosen(change.target.value)}
-            >
-              {endpoints.map((each) => (
-                <option key={each.id} value={each.id}>
-                  {each.boundary === 'outside'
-                    ? words('document.outside-your-data-boundary', { name: each.name })
-                    : each.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        <IconButton
+          label={words('document.a-new-conversation')}
+          disabled={running || conversation === null}
+          onClick={() => open(null)}
+        >
+          <Icon name="Add" size={16} />
+        </IconButton>
       </div>
       {turns.filter((each) => each.run !== current).length > 0 && (
         <ol aria-label={words('document.earlier-turns')} className={styles['turns']}>
           {turns
             .filter((each) => each.run !== current)
             .map((each) => (
-              <li key={each.run}>
-                <p className={styles['strong']}>{each.ask}</p>
-                <p>
+              <li key={each.run} className={styles['turn']}>
+                {each.ask !== null && (
+                  <p className={styles['asked']}>
+                    <span className={styles['you']}>{words('document.you')}</span> {each.ask}
+                  </p>
+                )}
+                <p className={styles['answer']}>
                   {each.outcome === 'finished'
                     ? (each.reply ?? '')
                     : each.outcome === 'running'
@@ -602,6 +666,216 @@ export function AssistantPanel({
               </li>
             ))}
         </ol>
+      )}
+      {(asked !== null || running || answer !== '' || ended !== null || proposals.length > 0) && (
+        <article aria-label={words('document.this-turn')} className={styles['turn']}>
+          {asked !== null && (
+            <p className={styles['asked']}>
+              <span className={styles['you']}>{words('document.you')}</span> {asked}
+            </p>
+          )}
+          {running && (
+            <>
+              {/* What it is doing now, as Diariz says it: the step it took last. */}
+              <p className={styles['doing']} data-doing="" aria-live="polite">
+                <span className={styles['pulse']} aria-hidden="true" />
+                {steps.length > 0 ? stepLine(steps.at(-1)!) : words('document.answering')}
+              </p>
+              <p
+                role="progressbar"
+                aria-label={words('document.answering')}
+                aria-valuetext={words('document.answering-tokens', { count: received })}
+                className={styles['streaming']}
+              >
+                {words('document.answering-tokens', { count: received })}
+              </p>
+            </>
+          )}
+          <div
+            role="region"
+            aria-label={words('document.the-answer')}
+            aria-live="polite"
+            className={styles['answer']}
+          >
+            {pieces}
+          </div>
+          {/* Announced as each arrives, as the answer is (GEN-021). */}
+          <div aria-live="polite">
+            {notices.length > 0 && (
+              <ul
+                aria-label={words('document.instructions-not-followed')}
+                className={styles['muted']}
+              >
+                {notices.map((each, index) => (
+                  <li key={index}>
+                    {words('document.instruction-not-done', {
+                      where:
+                        nameOf(each.where) ??
+                        titles.get(each.where) ??
+                        words('document.something-it-read'),
+                      instruction: each.instruction,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {cited.length > 0 && (
+            <ol aria-label={words('document.sources')} className={styles['sources']}>
+              {cited.map((each) => (
+                <li key={`${each.component}#${each.block}`}>
+                  <button
+                    type="button"
+                    className={styles['link']}
+                    onClick={() => onCite(each.component, each.block)}
+                  >
+                    {words('document.part-block', {
+                      part: nameOf(each.component) ?? words('document.a-part'),
+                      block: each.block,
+                    })}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+          {ended?.refused !== undefined && (
+            <p role="status">{proposedNothingWords(ended.refusal, ended.refused)}</p>
+          )}
+          {ended !== null && ended.dropped.length > 0 && (
+            <p className={styles['muted']}>
+              {words('document.citations-were', { count: ended.dropped.length })}{' '}
+              {words('document.left-out-it-named-text')}
+            </p>
+          )}
+          {steps.length > 0 && (
+            <details className={styles['steps']}>
+              <summary>{words('document.what-it-did', { count: steps.length })}</summary>
+              <ol>
+                {steps.map((step) => (
+                  <li key={step.id}>
+                    {stepLine(step)}
+                    {step.result !== undefined && (
+                      <pre className={styles['result']}>{step.result}</pre>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+          {proposals.map((proposal) => (
+            <article
+              key={proposal.id}
+              className={styles['proposal']}
+              aria-label={words('document.proposal', { number: proposal.number })}
+            >
+              <h3>
+                {words('document.proposal-of', {
+                  number: proposal.number,
+                  what:
+                    proposal.creates !== null
+                      ? words('document.a-new-part', { title: proposal.creates.title })
+                      : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
+                        words('document.a-part-2')),
+                })}
+              </h3>
+              <pre className={styles['proposed']}>
+                <ins>{proposedText(proposal.proposed, proposal.cites)}</ins>
+              </pre>
+              {proposal.component !== null && (
+                <button
+                  type="button"
+                  className={styles['link']}
+                  onClick={() => onCite(proposal.component!, '')}
+                >
+                  {words('document.show-in-page')}
+                </button>
+              )}
+              {proposal.cites !== null && (
+                <p className={styles['muted']}>
+                  {words('document.cites-work', {
+                    title: proposal.cites.title ?? words('document.a-work'),
+                    scheme: proposal.cites.source === 'pubmed' ? 'pubmed' : 'doi',
+                    identifier: proposal.cites.identifier,
+                    source: proposal.cites.source,
+                  })}
+                </p>
+              )}
+              {proposal.state === 'open' && running ? (
+                <p className={styles['muted']}>{words('document.it-can-be-acted-on')}</p>
+              ) : proposal.state === 'open' ? (
+                <div className={styles['actions']}>
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => void act(proposal, 'acceptance')}
+                  >
+                    {words('document.accept')}
+                  </button>
+                  {proposal.creates === null && proposal.cites === null && (
+                    <button type="button" onClick={() => void act(proposal, 'keeping')}>
+                      {words('document.keep-as-suggestion')}
+                    </button>
+                  )}
+                  <button type="button" onClick={() => void act(proposal, 'discarding')}>
+                    {words('document.discard')}
+                  </button>
+                </div>
+              ) : null}
+              {proposal.said !== undefined && <p role="status">{proposal.said}</p>}
+            </article>
+          ))}
+          {ended !== null && (
+            <p className={styles['muted']}>
+              {ended.tokensIn === null
+                ? words('document.no-tokens-were-reported')
+                : ended.cost === null
+                  ? words('document.tokens-in-out', {
+                      tokensIn: ended.tokensIn,
+                      tokensOut: ended.tokensOut,
+                    })
+                  : words('document.tokens-in-out-cost', {
+                      tokensIn: ended.tokensIn,
+                      tokensOut: ended.tokensOut,
+                      currency: ended.currency,
+                      cost: ended.cost,
+                    })}{' '}
+              {month}
+            </p>
+          )}
+          {!running && asked !== null && answer !== '' && (
+            <div className={styles['turnActions']}>
+              <button
+                type="button"
+                className={styles['quiet']}
+                onClick={() =>
+                  void navigator.clipboard?.writeText(answer.replace(CITATION_MARK, ''))
+                }
+              >
+                {words('document.copy-the-answer')}
+              </button>
+              <button type="button" className={styles['quiet']} onClick={() => void send(asked)}>
+                {words('document.ask-again')}
+              </button>
+            </div>
+          )}
+        </article>
+      )}
+      {reused && (
+        <p className={styles['muted']}>
+          {words('document.from-your-earlier-run-of')}{' '}
+          <button
+            type="button"
+            disabled={running}
+            onClick={() =>
+              void run(`${origin}/v1/documents/${document}/prompt-runs`, {
+                ...reused,
+                fresh: true,
+              })
+            }
+          >
+            {words('document.run-afresh')}
+          </button>
+        </p>
       )}
       {conversation !== null && (
         <section aria-label={words('document.what-it-reads')} className={styles['prompts']}>
@@ -671,7 +945,7 @@ export function AssistantPanel({
               name="assistant-context"
               value="component"
               checked={given === 'component'}
-              disabled={component === null}
+              disabled={asking === null}
               onChange={() => setScope('component')}
             />{' '}
             {words('document.current-component')}
@@ -692,15 +966,69 @@ export function AssistantPanel({
       <form onSubmit={(event) => void submit(event)}>
         <label className={styles['ask']}>
           {words('document.ask-the-assistant')}
-          <textarea value={ask} rows={3} onChange={(change) => setAsk(change.target.value)} />
+          <textarea
+            value={ask}
+            rows={3}
+            onChange={(change) => setAsk(change.target.value)}
+            onFocus={() => {
+              inBox.current = true;
+              setHeld(component);
+            }}
+            onBlur={() => {
+              inBox.current = false;
+            }}
+            onKeyDown={(event) => {
+              // Enter asks; Shift and Enter starts a new line (Diariz's composer).
+              if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              void send(ask);
+            }}
+          />
         </label>
-        <div className={styles['actions']}>
-          <button type="submit" className="primary" disabled={running || ask.trim() === ''}>
-            {words('document.ask')}
-          </button>
-          {running && (
-            <button type="button" onClick={() => stop.current?.abort()}>
+        <div className={styles['composerFoot']}>
+          {endpoints.length > 0 && (
+            <label className={styles['endpoint']}>
+              {words('document.endpoint')}
+              <select
+                value={chosen}
+                disabled={running}
+                onChange={(change) => setChosen(change.target.value)}
+              >
+                {endpoints.map((each) => (
+                  <option key={each.id} value={each.id}>
+                    {each.boundary === 'outside'
+                      ? words('document.outside-your-data-boundary', { name: each.name })
+                      : each.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {measured !== null && (
+            <span
+              role="img"
+              className={styles['gauge']}
+              data-band={measured.band}
+              aria-label={words('document.context-used', { percent: measured.percent })}
+              title={words('document.context-used', { percent: measured.percent })}
+            >
+              <span
+                className={styles['gaugeRing']}
+                style={{ '--used': `${Math.min(measured.percent, 100)}%` } as React.CSSProperties}
+                aria-hidden="true"
+              />
+              {formats().number(measured.percent)}%
+            </span>
+          )}
+          <span className={styles['spacer']} />
+          {/* Stop where Ask was, while it answers (Diariz's send that becomes stop). */}
+          {running ? (
+            <button type="button" className={styles['stop']} onClick={() => stop.current?.abort()}>
               {words('document.stop')}
+            </button>
+          ) : (
+            <button type="submit" className="primary" disabled={ask.trim() === ''}>
+              {words('document.ask')}
             </button>
           )}
         </div>
@@ -719,12 +1047,13 @@ export function AssistantPanel({
                     type="button"
                     disabled={running}
                     aria-label={words('document.run-on-this-part', { title: each.title })}
-                    onClick={() =>
+                    onClick={() => {
+                      setAsked(null);
                       void run(`${origin}/v1/documents/${document}/prompt-runs`, {
                         prompt: each.id,
                         node,
-                      })
-                    }
+                      });
+                    }}
                   >
                     {words('document.run')}
                   </button>
@@ -733,166 +1062,6 @@ export function AssistantPanel({
             </ul>
           )}
         </section>
-      )}
-      {reused && (
-        <p className={styles['muted']}>
-          {words('document.from-your-earlier-run-of')}{' '}
-          <button
-            type="button"
-            disabled={running}
-            onClick={() =>
-              void run(`${origin}/v1/documents/${document}/prompt-runs`, {
-                ...reused,
-                fresh: true,
-              })
-            }
-          >
-            {words('document.run-afresh')}
-          </button>
-        </p>
-      )}
-      {running && (
-        <p
-          role="progressbar"
-          aria-label={words('document.answering')}
-          aria-valuetext={words('document.answering-tokens', { count: received })}
-          className={styles['streaming']}
-        >
-          <span className={styles['pulse']} aria-hidden="true" />
-          {words('document.answering-tokens', { count: received })}
-        </p>
-      )}
-      <div aria-live="polite" className={styles['answer']}>
-        {shownAnswer}
-      </div>
-      {/* Announced as each arrives, as the answer is (GEN-021). */}
-      <div aria-live="polite">
-        {notices.length > 0 && (
-          <ul aria-label={words('document.instructions-not-followed')} className={styles['muted']}>
-            {notices.map((each, index) => (
-              <li key={index}>
-                {words('document.instruction-not-done', {
-                  where:
-                    nameOf(each.where) ??
-                    titles.get(each.where) ??
-                    words('document.something-it-read'),
-                  instruction: each.instruction,
-                })}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {cited.length > 0 && (
-        <ol aria-label={words('document.sources')} className={styles['sources']}>
-          {cited.map((each) => (
-            <li key={`${each.component}#${each.block}`}>
-              <button
-                type="button"
-                className={styles['link']}
-                onClick={() => onCite(each.component, each.block)}
-              >
-                {words('document.part-block', {
-                  part: nameOf(each.component) ?? words('document.a-part'),
-                  block: each.block,
-                })}
-              </button>
-            </li>
-          ))}
-        </ol>
-      )}
-      {ended?.refused !== undefined && (
-        <p role="status">{proposedNothingWords(ended.refusal, ended.refused)}</p>
-      )}
-      {ended !== null && ended.dropped.length > 0 && (
-        <p className={styles['muted']}>
-          {words('document.citations-were', { count: ended.dropped.length })}{' '}
-          {words('document.left-out-it-named-text')}
-        </p>
-      )}
-      {steps.length > 0 && (
-        <details className={styles['steps']}>
-          <summary>{words('document.what-it-did', { count: steps.length })}</summary>
-          <ol>
-            {steps.map((step) => (
-              <li key={step.id}>
-                {stepLine(step)}
-                {step.result !== undefined && <pre className={styles['result']}>{step.result}</pre>}
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
-      {proposals.map((proposal) => (
-        <article
-          key={proposal.id}
-          className={styles['proposal']}
-          aria-label={words('document.proposal', { number: proposal.number })}
-        >
-          <h3>
-            {words('document.proposal-of', {
-              number: proposal.number,
-              what:
-                proposal.creates !== null
-                  ? words('document.a-new-part', { title: proposal.creates.title })
-                  : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
-                    words('document.a-part-2')),
-            })}
-          </h3>
-          <pre className={styles['proposed']}>
-            {proposedText(proposal.proposed, proposal.cites)}
-          </pre>
-          {proposal.cites !== null && (
-            <p className={styles['muted']}>
-              {words('document.cites-work', {
-                title: proposal.cites.title ?? words('document.a-work'),
-                scheme: proposal.cites.source === 'pubmed' ? 'pubmed' : 'doi',
-                identifier: proposal.cites.identifier,
-                source: proposal.cites.source,
-              })}
-            </p>
-          )}
-          {proposal.state === 'open' && running ? (
-            <p className={styles['muted']}>{words('document.it-can-be-acted-on')}</p>
-          ) : proposal.state === 'open' ? (
-            <div className={styles['actions']}>
-              <button
-                type="button"
-                className="primary"
-                onClick={() => void act(proposal, 'acceptance')}
-              >
-                {words('document.accept')}
-              </button>
-              {proposal.creates === null && proposal.cites === null && (
-                <button type="button" onClick={() => void act(proposal, 'keeping')}>
-                  {words('document.keep-as-suggestion')}
-                </button>
-              )}
-              <button type="button" onClick={() => void act(proposal, 'discarding')}>
-                {words('document.discard')}
-              </button>
-            </div>
-          ) : null}
-          {proposal.said !== undefined && <p role="status">{proposal.said}</p>}
-        </article>
-      ))}
-      {ended !== null && (
-        <p className={styles['muted']}>
-          {ended.tokensIn === null
-            ? words('document.no-tokens-were-reported')
-            : ended.cost === null
-              ? words('document.tokens-in-out', {
-                  tokensIn: ended.tokensIn,
-                  tokensOut: ended.tokensOut,
-                })
-              : words('document.tokens-in-out-cost', {
-                  tokensIn: ended.tokensIn,
-                  tokensOut: ended.tokensOut,
-                  currency: ended.currency,
-                  cost: ended.cost,
-                })}{' '}
-          {month}
-        </p>
       )}
       <p role="status">{said}</p>
     </section>

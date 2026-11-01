@@ -37,3 +37,34 @@ describe('icons right to left (the UI plan, UI-G)', () => {
     );
   });
 });
+
+describe('the document panels’ rail icons (the DP plan, Task 1)', () => {
+  it('draws an icon for every panel the rail offers', () => {
+    const names = [
+      'Hide pane',
+      'Show pane',
+      'Table',
+      'Part',
+      'Document',
+      'Lists',
+      'Assistant',
+      'Versions',
+      'Publishing',
+      'Threads',
+      'Suggestions',
+      'Rounds',
+      'Source',
+    ];
+    const { container } = render(
+      <>
+        {names.map((name) => (
+          <Icon key={name} name={name} size={18} />
+        ))}
+      </>,
+    );
+    const drawn = [...container.querySelectorAll('svg[data-icon]')]
+      .filter((icon) => icon.querySelector('path') !== null)
+      .map((icon) => icon.getAttribute('data-icon'));
+    expect(drawn).toEqual(names);
+  });
+});

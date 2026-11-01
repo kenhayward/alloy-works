@@ -1,0 +1,125 @@
+/* The document panels' rail (ADR-0074): icons on the panel's end edge, each named on hover and focus. */
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  box-sizing: border-box;
+  width: var(--dock-rail);
+  padding: 6px 0;
+  border-inline-start: 1px solid var(--border);
+  background: var(--chrome);
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.rule {
+  width: 24px;
+  height: 1px;
+  margin: var(--space-4) 0;
+  background: var(--border);
+}
+
+.button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-button);
+  height: var(--icon-button);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--sunken);
+  color: var(--text);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.button[data-chosen='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+/* The chosen tab's bar, on the rail's end edge. */
+.button[data-chosen='true']::before {
+  position: absolute;
+  inset-block: 6px;
+  inset-inline-end: -6px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  content: '';
+}
+
+.button[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.badge {
+  position: absolute;
+  top: 1px;
+  inset-inline-end: 0;
+  box-sizing: border-box;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+}
+
+.button[data-tone='warn'] .badge,
+.dot {
+  background: var(--warn);
+}
+
+.dot {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+}
+
+/* Towards the text: the start side, whichever way the line runs. */
+.name {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: calc(100% + 8px);
+  z-index: var(--z-dropdown);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-4);
+  background: var(--text);
+  box-shadow: var(--shadow-menu);
+  color: var(--bg);
+  font-size: var(--size-12);
+  font-weight: 500;
+  white-space: nowrap;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+.name[hidden] {
+  display: none;
+}

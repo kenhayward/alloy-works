@@ -33693,6 +33693,8 @@ export interface operations {
                             id: string;
                             name: string;
                             model: string;
+                            /** @description The most tokens its model takes in one call: what a turn is measured against */
+                            contextWindow: number;
                             /** @description `outside` where it sits outside the data boundary */
                             boundary: string;
                             /** @description The one a turn naming none runs on */

@@ -1009,6 +1009,19 @@
                 }
               ]
             },
+            "contextTokens": {
+              "description": "What the run's last model call took in: the conversation as it then stood, which the endpoint's context window holds. `tokensIn` sums every call's",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "cost": {
               "type": [
                 "string",

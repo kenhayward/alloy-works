@@ -51,11 +51,13 @@ describe("the panes beside a document's text, in Chromium", () => {
       /** Where each pane's box begins, measured from the window's top. */
       const tops = () =>
         page.evaluate(() => {
-          const top = (selector: string) =>
-            Math.round(document.querySelector(selector)!.getBoundingClientRect().top);
+          const top = (element: Element) => Math.round(element.getBoundingClientRect().top);
           return {
-            outline: top("[data-part='outline']"),
-            panels: top('aside[aria-label="Panels beside the text"]'),
+            outline: top(document.querySelector("[data-part='outline']")!),
+            // The pane and its rail stand in one box (ADR-0074).
+            panels: top(
+              document.querySelector('aside[aria-label="Panels beside the text"]')!.parentElement!,
+            ),
           };
         });
       const start = await tops();
@@ -89,15 +91,16 @@ describe("the panes beside a document's text, in Chromium", () => {
       expect(scrolled.outline).toBeGreaterThanOrEqual(header);
       expect(scrolled.outline - header).toBeLessThanOrEqual(16);
 
-      // Hidden, the right pane leaves its rail, which shows it again.
-      await panels.getByRole('button', { name: 'Hide the document panels' }).click();
+      // Hidden, the right pane leaves its rail, which shows it again (ADR-0074).
+      const rail = page.getByRole('navigation', { name: 'Document panels' });
+      await rail.getByRole('button', { name: 'Hide the document panels' }).click();
       const show = page.getByRole('button', { name: 'Show the document panels' });
       await show.waitFor();
       await checkAxe(page, 'a document with its panels hidden to a rail', task.meta, {
-        shows: [outline, show],
+        shows: [outline, rail],
       });
       await show.click();
-      await panels.getByRole('tablist', { name: 'Document panels' }).waitFor();
+      await panels.getByRole('heading', { level: 2 }).waitFor();
     });
   });
 });

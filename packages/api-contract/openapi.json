@@ -83950,6 +83950,12 @@
                           "model": {
                             "type": "string"
                           },
+                          "contextWindow": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "The most tokens its model takes in one call: what a turn is measured against"
+                          },
                           "boundary": {
                             "type": "string",
                             "description": "`outside` where it sits outside the data boundary"
@@ -83963,6 +83969,7 @@
                           "id",
                           "name",
                           "model",
+                          "contextWindow",
                           "boundary",
                           "isDefault"
                         ]

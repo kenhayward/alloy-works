@@ -100,6 +100,11 @@ export const ConversationEndpoints = z.object({
         id: z.string(),
         name: z.string(),
         model: z.string(),
+        contextWindow: z
+          .number()
+          .int()
+          .positive()
+          .describe('The most tokens its model takes in one call: what a turn is measured against'),
         boundary: z.string().describe('`outside` where it sits outside the data boundary'),
         isDefault: z.boolean().describe('The one a turn naming none runs on'),
       }),

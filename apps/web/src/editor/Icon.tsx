@@ -212,6 +212,20 @@ const ADMIN: Record<string, readonly string[]> = {
   Add: ['M12 5v14M5 12h14'],
   Confirmed: ['m5 12.5 4.5 4.5L19 7'],
   Edit: ['M4 20h4L19 9l-4-4L4 16z', 'm14 6 4 4'],
+  // The document panels' rail (ADR-0074).
+  Part: ['M12 3 3 7.5l9 4.5 9-4.5z', 'm3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5'],
+  Lists: ['M9 6h11M9 12h11M9 18h11', 'M4.5 6h.01M4.5 12h.01M4.5 18h.01'],
+  Assistant: ['M11 4l1.8 5.2L18 11l-5.2 1.8L11 18l-1.8-5.2L4 11l5.2-1.8z', 'M18.5 3v4M16.5 5h4'],
+  Versions: ['M3.5 12a8.5 8.5 0 1 0 2.5-6', 'M3 4v4h4M12 7.5V12l3 2'],
+  Publishing: ['m21 3-6.5 18-3.5-7.5L3.5 10z', 'M21 3 11 13.5'],
+  Threads: ['M4 5h11v8H9l-5 4z', 'M18 9h2v11l-4-3h-6v-2'],
+  Suggestions: ['M4 20h4L19 9l-4-4L4 16z', 'M14 20h6'],
+  Rounds: [
+    'm17 3 3 3-3 3',
+    'M4 11v-1a4 4 0 0 1 4-4h12',
+    'm7 21-3-3 3-3',
+    'M20 13v1a4 4 0 0 1-4 4H4',
+  ],
 };
 /** Three dots, filled. */
 const MORE = [

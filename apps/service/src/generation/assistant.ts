@@ -938,6 +938,7 @@ export function assistantHandlers(
             id: each.id,
             name: each.name,
             model: each.model,
+            contextWindow: each.contextWindow,
             boundary: each.boundary,
             isDefault: each.id === fallback,
           });

@@ -224,6 +224,18 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     });
   });
 
+  it('says each endpoint’s context window, which the assistant measures a turn against (the DP plan)', async () => {
+    const offered = (await h.call('grace', 'GET', '/v1/conversation-endpoints')).json<{
+      items: { id: string; contextWindow: number }[];
+    }>().items;
+    expect(offered).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: drafting, contextWindow: 200_000 }),
+        expect.objectContaining({ id: inside, contextWindow: 200_000 }),
+      ]),
+    );
+  });
+
   it('GEN-051 runs a turn on the endpoint chosen among those in use, saying which and where it sits', async () => {
     const offered = (await h.call('grace', 'GET', '/v1/conversation-endpoints')).json<{
       items: { id: string; boundary: string; isDefault: boolean }[];
@@ -342,6 +354,32 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
         items: { component: string }[];
       }>().items;
       expect(tray.map((each) => each.component)).toEqual([sites]);
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
+  it('says how much context the turn’s last call took, apart from the tokens it took in all (the DP plan)', async () => {
+    const id = await start('grace');
+    const was = h.connector.modelFor;
+    let calls = 0;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      calls += 1;
+      return calls === 1
+        ? [
+            { type: 'tool_call', id: 't1', name: 'read_component', input: { component: sitesId } },
+            { type: 'ended', model: 'stand-in-1', stop: 'tool_use', usage: { in: 1, out: 1 } },
+          ]
+        : [text('It floods.'), ended];
+    };
+    try {
+      const frames = framesOf((await turn('grace', id, { ask: 'Read the weir part.' })).body);
+      // Each call sends the whole conversation again: the last call's is what the window holds.
+      expect(frames.at(-1)).toMatchObject({
+        event: 'ended',
+        data: { tokensIn: 11, contextTokens: 10 },
+      });
     } finally {
       h.connector.modelFor = was;
     }

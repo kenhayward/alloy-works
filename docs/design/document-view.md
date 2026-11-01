@@ -98,6 +98,10 @@ deliberately** (CNT-105): anyone in Authoring switches to Reading, and the choic
 the browser, so the next document opens as they left the last. The first time, a reader who may author
 opens in Authoring: they came to work.
 
+**The panels beside the text are chosen from an icon rail** on the pane's end edge, the hide and show
+toggle first, each named in words on hover, on focus and in the open panel's heading; the rail stays
+when the pane is hidden ([ADR-0074](../decisions/0074-panels-are-chosen-from-an-icon-rail.md)).
+
 **Publishing is neither.** The Publishing panel is the `publish` decision's, not an editing affordance,
 and shows in both modes to whoever may publish (DV-D).
 

@@ -1,0 +1,22 @@
+/* The parts the assistant cited, above the text (the DP plan). */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  max-width: 640px;
+  margin: 0 auto var(--space-12);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-12);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-size: var(--size-12);
+}
+
+.label {
+  font-weight: 500;
+}
+
+.spacer {
+  flex: 1;
+}

@@ -251,6 +251,14 @@ export const assistantEvents = {
       model: z.string().nullable(),
       tokensIn: z.number().int().nullable(),
       tokensOut: z.number().int().nullable(),
+      contextTokens: z
+        .number()
+        .int()
+        .nullable()
+        .optional()
+        .describe(
+          "What the run's last model call took in: the conversation as it then stood, which the endpoint's context window holds. `tokensIn` sums every call's",
+        ),
       cost: z.string().nullable(),
       currency: z.string(),
       citations: z.array(Citation),
