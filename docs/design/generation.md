@@ -137,7 +137,9 @@ model alone, every other purpose and every conversation to an LLM (`endpoint_kin
 `timeout_seconds`, every call's deadline (`modelDeadlineMs`), 120 s where null, at most the connector's
 240 s, a run's own time left still bounding each turn; and `supports_tools` and `supports_images`. A
 model that calls no tools is sent none and answers from what its turn was given; nothing sends images
-yet, so `supports_images` gates nothing until something does.
+yet, so `supports_images` gates nothing until something does. Its `turns_per_run` (1 to 100) and
+`tool_calls_per_run` (1 to 500), 0184, bound an assistant run on it (`runLimitsOf`), 40 and 100 where
+null.
 
 ## The run
 
@@ -225,8 +227,8 @@ requester asks; the service starts a run (`POST /v1/documents/{id}/assistant/run
 the request cancels the run.
 
 The loop runs in the service: each model turn goes through the connector (GN-A); each tool call runs
-in the service as the requester, through the same functions its route uses (GEN-008). At most a hundred
-tool calls over forty model turns a run, within its four minutes. The tools (GEN-007):
+in the service as the requester, through the same functions its route uses (GEN-008). A run makes at most
+the turns and tool calls its model allows, within ten minutes. The tools (GEN-007):
 
 | Tool                | Does                                                                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

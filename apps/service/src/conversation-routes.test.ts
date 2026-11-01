@@ -546,6 +546,34 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       expect(asked.at(-1)!.deadlineMs).toBe(120_000);
     });
 
+    it('makes no more tool calls a run than its model allows (issue #872)', async () => {
+      const one = await keyed({ name: 'One call', toolCallsPerRun: 1 });
+      const id = await start('grace');
+      const was = h.connector.modelFor;
+      let calls = 0;
+      h.connector.modelFor = (request) => {
+        asked.push(request);
+        calls += 1;
+        return calls === 1
+          ? [
+              { type: 'tool_call', id: 't1', name: 'read_component', input: { component: sitesId } },
+              { type: 'tool_call', id: 't2', name: 'read_component', input: { component: sitesId } },
+              { ...ended, stop: 'tool_use' },
+            ]
+          : [text('It floods.'), ended];
+      };
+      try {
+        const frames = framesOf(
+          (await turn('grace', id, { ask: 'Read it twice.', endpoint: one })).body,
+        );
+        const results = frames.filter((frame) => frame.event === 'tool_result');
+        expect(results.map((frame) => frame.data.ok)).toEqual([true, false]);
+        expect(results[1]!.data).toMatchObject({ said: { code: 'too_many_calls' } });
+      } finally {
+        h.connector.modelFor = was;
+      }
+    });
+
     it('sends no tools to a model that does not call them', async () => {
       const toolless = await keyed({ name: 'No tools', supportsTools: false });
       await turn('grace', await start('grace', { document: document.id }), {
