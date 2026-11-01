@@ -455,6 +455,139 @@ export async function liveBindingStates(
   );
 }
 
+/** A revision by hand standing in a held result. */
+type StandingRevision = NonNullable<
+  Awaited<ReturnType<typeof revisionsStanding>> extends Map<string, infer R> ? R : never
+>[number];
+
+/**
+ * The columns a bound table's rows are sent with: those it shows, a grouped column's and a subtotal's,
+ * whose values head its rows and decide its totals (TG2), and a transposed table's header; to the lock
+ * holder's own session, its sort columns too, so an unsaved sort lays out at once.
+ */
+function columnsSent(table: NonNullable<Placed['table']>, own: boolean): Set<string> {
+  return new Set([
+    ...table.columns.map((each) => each.column),
+    ...(own ? (table.sort ?? []).map((each) => each.column) : []),
+    ...(table.groups ?? []).flatMap((each) =>
+      each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
+    ),
+    ...(table.transpose === undefined ? [] : [table.transpose.header]),
+  ]);
+}
+
+/**
+ * A held result with each value revised by hand set in its cell before it is sorted, as the publish's
+ * stage sets it (RV-F), found by its key over the whole result; only where a column is still
+ * revisable (M5), so one that is not shows the query's value. Which rows had which cells set, by
+ * their place in the result.
+ */
+async function withCellRevisions(
+  trx: TenantTransaction,
+  table: NonNullable<Placed['table']>,
+  provenance: Provenance,
+  result: CanonicalResult,
+  cellRevisions: readonly StandingRevision[],
+): Promise<{ stored: CanonicalResult; revisedRows: Map<number, Set<string>> }> {
+  const revisedRows = new Map<number, Set<string>>();
+  if (cellRevisions.length === 0) return { stored: result, revisedRows };
+  const keyColumns = await definitionKey(trx, provenance.queryDefinition.version);
+  const index = new Map(result.columns.map(([name], at) => [name, at]));
+  const rows = result.rows.map((row) => [...row]);
+  for (const each of cellRevisions) {
+    const row = keyedRow(each.cell!.key, result, keyColumns, provenance.columns);
+    const column = index.get(each.cell!.column);
+    if (
+      row === null ||
+      column === undefined ||
+      !cellRevisable(table, keyColumns, each.cell!.column)
+    ) {
+      continue;
+    }
+    rows[row]![column] = each.value;
+    revisedRows.set(row, new Set([...(revisedRows.get(row) ?? []), each.cell!.column]));
+  }
+  return { stored: { columns: result.columns, rows }, revisedRows };
+}
+
+/** A bound table's rows as the model reads them, or why it cannot read them. */
+export type HeldTableRows =
+  | {
+      readonly ok: true;
+      readonly headers: readonly string[];
+      readonly rows: readonly (readonly string[])[];
+    }
+  | { readonly ok: false; readonly reason: 'unresolved' | 'stale' | 'too_long' | 'unreadable' };
+
+/**
+ * Each bound table's rows as a reader of the document sees them, for the assistant (issue #859): the
+ * result held, only where its binding is unchanged since and its rows at most `TABLE_ROWS_MAX`, values
+ * revised by hand set, in the table's own order and only the columns it shows, under their headers.
+ * Looked up by node and binding; undefined where the caller may not read the document.
+ */
+export async function heldTableRows(
+  trx: TenantTransaction,
+  caller: Caller,
+  objects: ObjectStores | undefined,
+  tenant: Tenant,
+  documentId: string,
+): Promise<((node: string, binding: string) => HeldTableRows | undefined) | undefined> {
+  const placed = await bindingsPlaced(trx, documentId, caller.principalId);
+  if (!placed) return undefined;
+  const tables = placed.filter((each) => each.table !== undefined);
+  const held = await heldBy(trx, documentId, tables);
+  const found = new Map<string, HeldTableRows>();
+  for (const each of tables) {
+    const table = each.table!;
+    const at = key(each.node, each.binding.id);
+    const holding = held.get(at);
+    const refuse = (reason: 'unresolved' | 'stale' | 'too_long' | 'unreadable') =>
+      found.set(at, { ok: false, reason });
+    if (!holding) {
+      refuse('unresolved');
+      continue;
+    }
+    if (holding.digest !== each.digest) {
+      refuse('stale');
+      continue;
+    }
+    const { provenance } = holding.held;
+    if (provenance.rowCount > TABLE_ROWS_MAX) {
+      refuse('too_long');
+      continue;
+    }
+    const result =
+      objects === undefined
+        ? undefined
+        : await readResult(
+            () => objects.forTenant(trx, tenant),
+            (checksum) => `${tenantPrefix(tenant)}sha256/${checksum}`,
+            provenance,
+          );
+    if (result === undefined) {
+      refuse('unreadable');
+      continue;
+    }
+    const cellRevisions = (
+      (await revisionsStanding(trx, [holding.id])).get(holding.id) ?? []
+    ).filter((revision) => revision.cell !== null);
+    const { stored } = await withCellRevisions(trx, table, provenance, result, cellRevisions);
+    const index = new Map(stored.columns.map(([name], position) => [name, position]));
+    const shown = table.columns.map((column) => index.get(column.column));
+    found.set(at, {
+      ok: true,
+      headers: table.columns.map((column) => column.header),
+      rows: tableOrder(table, stored, provenance.columns).map((row) =>
+        shown.map((position) => {
+          const value = position === undefined ? null : stored.rows[row]![position];
+          return value === null || value === undefined ? '' : String(value);
+        }),
+      ),
+    });
+  }
+  return (node, binding) => found.get(key(node, binding));
+}
+
 /**
  * A baseline's bindings as its page shows them (the BL plan, BL-I): each binding its pinned
  * occurrences hold - those the caller may read, which the caller passes - against the resolution the
@@ -3361,16 +3494,7 @@ export function bindingHandlers(
         );
       }
       const own = found.fromSession === true;
-      // A grouped column's values head its rows and a subtotal column decides which are totals, so
-      // each is sent whoever asks, as a shown column is (TG2).
-      const named = new Set([
-        ...found.table.columns.map((each) => each.column),
-        ...(own ? (found.table.sort ?? []).map((each) => each.column) : []),
-        ...(found.table.groups ?? []).flatMap((each) =>
-          each.subtotal === undefined ? [each.column] : [each.column, each.subtotal],
-        ),
-        ...(found.table.transpose === undefined ? [] : [found.table.transpose.header]),
-      ]);
+      const named = columnsSent(found.table, own);
       const sent = provenance.columns.map((each) => each.name).filter((name) => named.has(name));
       // Its sort and its groups, which order the rows sent alike (TG1).
       const order = own
@@ -3406,31 +3530,13 @@ export function bindingHandlers(
           "The table's stored result cannot be read now. Try again later.",
         );
       }
-      // Each revised cell set in the result before it is sorted, as the publish's stage sets it
-      // (RV-F), found by its key over the whole result.
-      const revisedRows = new Map<number, Set<string>>();
-      let stored = result;
-      if (cellRevisions.length > 0) {
-        const keyColumns = await definitionKey(trx, provenance.queryDefinition.version);
-        const index = new Map(result.columns.map(([name], at) => [name, at]));
-        const rows = result.rows.map((row) => [...row]);
-        for (const each of cellRevisions) {
-          const row = keyedRow(each.cell!.key, result, keyColumns, provenance.columns);
-          const column = index.get(each.cell!.column);
-          // Only where the publish's stage sets it (M5): a column no longer revisable is said on the
-          // Data tab, and the cell shows the query's value.
-          if (
-            row === null ||
-            column === undefined ||
-            !cellRevisable(found.table, keyColumns, each.cell!.column)
-          ) {
-            continue;
-          }
-          rows[row]![column] = each.value;
-          revisedRows.set(row, new Set([...(revisedRows.get(row) ?? []), each.cell!.column]));
-        }
-        stored = { columns: result.columns, rows };
-      }
+      const { stored, revisedRows } = await withCellRevisions(
+        trx,
+        found.table,
+        provenance,
+        result,
+        cellRevisions,
+      );
       const sequence = own
         ? stored.rows.map((_, at) => at)
         : tableOrder(found.table, stored, provenance.columns);
