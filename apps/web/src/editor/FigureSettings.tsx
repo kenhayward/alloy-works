@@ -14,6 +14,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import styles from './FigureSettings.module.css';
 import { Icon } from './Icon.js';
 import { Modal } from '../layouts/Modal.js';
+import { longDate } from '../data/shapes.js';
 import { ImageStyle } from '../theme/StyleChoice.js';
 import { words } from '../words/words.js';
 
@@ -43,6 +44,20 @@ export type Described =
   | { readonly state: 'unknown' };
 
 /**
+ * The image's rights now, wherever it is used (AST-032, AST-052): the licence it is held under and
+ * whether it permits publication, whether its grant has lapsed, and when they last changed; or not
+ * known, which says nothing rather than something wrong.
+ */
+export type RightsNow =
+  | { readonly state: 'unknown' }
+  | {
+      readonly state: 'known';
+      readonly licence: { readonly name: string; readonly publishable: boolean } | null;
+      readonly expired: boolean;
+      readonly changedAt: string;
+    };
+
+/**
  * A figure's settings and the commands that change them, held once for its line and its Figure
  * settings dialog so the two cannot disagree (ADR-0055). How its alternative text is given (figures 2,
  * ruling R5): the image's own description, which is read here; the figure's own, in the component's
@@ -66,6 +81,7 @@ export function useFigureSettings({
   const [choice, setChoice] = useState<Alternative['kind']>(figure.alternative.kind);
   const [own, setOwn] = useState(figure.alternative.kind === 'own' ? figure.alternative.text : '');
   const [described, setDescribed] = useState<Described>({ state: 'reading' });
+  const [rights, setRights] = useState<RightsNow>({ state: 'unknown' });
   // What was last set here, so its own step is not echoed back: the field holds what is typed, and
   // an emptied field holds nothing while the figure keeps what it had.
   const sent = useRef<Alternative | null>(null);
@@ -95,13 +111,30 @@ export function useFigureSettings({
     if (asset === null) return undefined;
     let current = true;
     setDescribed({ state: 'reading' });
+    setRights({ state: 'unknown' });
     void client
       .GET('/v1/asset-versions/{id}', { params: { path: { id: asset } } })
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!current) return;
         if (!data) setDescribed({ state: 'unknown' });
         else if (data.alternative === null) setDescribed({ state: 'none' });
         else setDescribed({ state: 'described', ...data.alternative });
+        if (!data) return;
+        // Its rights are the image's, whichever version the figure shows (AL-C).
+        const held = await client.GET('/v1/assets/{id}/rights', {
+          params: { path: { id: data.asset } },
+        });
+        if (!current || !held.data) return;
+        const { licence, expired, changedAt } = held.data;
+        setRights({
+          state: 'known',
+          licence:
+            licence === null
+              ? null
+              : { name: licence.name, publishable: licence.permits.includes('publication') },
+          expired,
+          changedAt,
+        });
       })
       .catch(() => current && setDescribed({ state: 'unknown' }));
     return () => {
@@ -125,6 +158,7 @@ export function useFigureSettings({
     choice,
     own,
     described,
+    rights,
     choose: (chosen: Alternative['kind']) => {
       if (!enabled) return;
       setChoice(chosen);
@@ -153,6 +187,16 @@ export function useFigureSettings({
 }
 
 export type FigureSettingsState = ReturnType<typeof useFigureSettings>;
+
+/** What the figure's line flags of its image's rights now (AST-032, AST-052), worst first. */
+export function rightsFlags(rights: RightsNow): string[] {
+  if (rights.state !== 'known') return [];
+  if (rights.licence === null) return [words('editor.rights-not-declared')];
+  return [
+    ...(rights.expired ? [words('editor.licence-expired')] : []),
+    ...(rights.licence.publishable ? [] : [words('editor.not-licensed-for-publication')]),
+  ];
+}
 
 /** The note under "Use the image's description": the description, or why there is none to show. */
 function inheritedNote({ bound, described, kind }: FigureSettingsState): string {
@@ -288,6 +332,16 @@ export function FigureSettings({
           )}
         {card('decorative', words('editor.decorative'))}
       </fieldset>
+      {settings.rights.state === 'known' && (
+        <p className={styles['note']} data-tone={rightsFlags(settings.rights).length > 0 ? 'warn' : undefined}>
+          {settings.rights.licence === null
+            ? words('editor.its-rights-are-not-declared', { date: longDate(settings.rights.changedAt) })
+            : words('editor.held-under', {
+                licence: settings.rights.licence.name,
+                date: longDate(settings.rights.changedAt),
+              })}
+        </p>
+      )}
       <div className={styles['footer']}>
         {enabled ? (
           <>

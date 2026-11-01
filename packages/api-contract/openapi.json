@@ -21586,12 +21586,61 @@
                           "at"
                         ]
                       }
+                    },
+                    "licence": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "permits": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "internal",
+                                  "publication",
+                                  "redistribution",
+                                  "modification"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "permits"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared"
+                    },
+                    "expired": {
+                      "type": "boolean",
+                      "description": "Whether the grant it is held under has lapsed (AST-052)"
+                    },
+                    "changedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "description": "When its rights or its licence last changed, whichever is later (AST-032)"
                     }
                   },
                   "required": [
                     "asset",
                     "current",
-                    "history"
+                    "history",
+                    "licence",
+                    "expired",
+                    "changedAt"
                   ]
                 },
                 "example": {
@@ -21599,7 +21648,14 @@
                   "current": {
                     "kind": "undeclared"
                   },
-                  "history": []
+                  "history": [],
+                  "licence": {
+                    "id": "example",
+                    "name": "example",
+                    "permits": []
+                  },
+                  "expired": false,
+                  "changedAt": "2026-01-01T00:00:00.000Z"
                 }
               }
             },
@@ -22104,12 +22160,61 @@
                           "at"
                         ]
                       }
+                    },
+                    "licence": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "permits": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "internal",
+                                  "publication",
+                                  "redistribution",
+                                  "modification"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "permits"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared"
+                    },
+                    "expired": {
+                      "type": "boolean",
+                      "description": "Whether the grant it is held under has lapsed (AST-052)"
+                    },
+                    "changedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "description": "When its rights or its licence last changed, whichever is later (AST-032)"
                     }
                   },
                   "required": [
                     "asset",
                     "current",
-                    "history"
+                    "history",
+                    "licence",
+                    "expired",
+                    "changedAt"
                   ]
                 },
                 "example": {
@@ -22117,7 +22222,14 @@
                   "current": {
                     "kind": "undeclared"
                   },
-                  "history": []
+                  "history": [],
+                  "licence": {
+                    "id": "example",
+                    "name": "example",
+                    "permits": []
+                  },
+                  "expired": false,
+                  "changedAt": "2026-01-01T00:00:00.000Z"
                 }
               }
             },

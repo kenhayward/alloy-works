@@ -1,6 +1,7 @@
 import {
   ASSET_MAX_BYTES,
   DERIVATIVE_KINDS,
+  LICENCE_USES,
   assetAlternativeSchema,
   assetNameSchema,
   assetRightsSchema,
@@ -148,6 +149,16 @@ export const AssetRightsView = z.object({
     "`declared`, `undeclared`, or `dataset` for an image a dataset holds, the environment's own data",
   ),
   history: z.array(AssetRightsChange),
+  licence: z
+    .object({ id: z.string(), name: z.string(), permits: z.array(z.enum(LICENCE_USES)) })
+    .nullable()
+    .describe(
+      'The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared',
+    ),
+  expired: z.boolean().describe('Whether the grant it is held under has lapsed (AST-052)'),
+  changedAt: z.iso
+    .datetime()
+    .describe('When its rights or its licence last changed, whichever is later (AST-032)'),
 });
 export type AssetRightsView = z.infer<typeof AssetRightsView>;
 

@@ -12551,7 +12551,14 @@ export interface operations {
                      *       "current": {
                      *         "kind": "undeclared"
                      *       },
-                     *       "history": []
+                     *       "history": [],
+                     *       "licence": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "permits": []
+                     *       },
+                     *       "expired": false,
+                     *       "changedAt": "2026-01-01T00:00:00.000Z"
                      *     }
                      */
                     "application/json": {
@@ -12607,6 +12614,19 @@ export interface operations {
                              */
                             at: string;
                         }[];
+                        /** @description The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared */
+                        licence: {
+                            id: string;
+                            name: string;
+                            permits: ("internal" | "publication" | "redistribution" | "modification")[];
+                        } | null;
+                        /** @description Whether the grant it is held under has lapsed (AST-052) */
+                        expired: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When its rights or its licence last changed, whichever is later (AST-032)
+                         */
+                        changedAt: string;
                     };
                 };
             };
@@ -12753,7 +12773,14 @@ export interface operations {
                      *       "current": {
                      *         "kind": "undeclared"
                      *       },
-                     *       "history": []
+                     *       "history": [],
+                     *       "licence": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "permits": []
+                     *       },
+                     *       "expired": false,
+                     *       "changedAt": "2026-01-01T00:00:00.000Z"
                      *     }
                      */
                     "application/json": {
@@ -12809,6 +12836,19 @@ export interface operations {
                              */
                             at: string;
                         }[];
+                        /** @description The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared */
+                        licence: {
+                            id: string;
+                            name: string;
+                            permits: ("internal" | "publication" | "redistribution" | "modification")[];
+                        } | null;
+                        /** @description Whether the grant it is held under has lapsed (AST-052) */
+                        expired: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When its rights or its licence last changed, whichever is later (AST-032)
+                         */
+                        changedAt: string;
                     };
                 };
             };

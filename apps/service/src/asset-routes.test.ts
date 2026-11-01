@@ -281,7 +281,7 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(read.json()).toMatchObject({ name: 'harbour.png' });
     const rights = await call('alice', 'GET', `/v1/assets/${version.artifactId}/rights`);
     expect(rights.statusCode, rights.body).toBe(200);
-    expect(rights.json()).toEqual({
+    expect(rights.json()).toMatchObject({
       asset: version.artifactId,
       current: declared,
       history: [{ rights: declared, by: { id: ids.grace, name: 'Grace' }, at: expect.any(String) }],
@@ -337,6 +337,25 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(code(missing)).toBe('asset_licence_missing');
     // An id that is not an asset's is no asset's rights.
     expect((await call('grace', 'GET', `/v1/assets/${licence}/rights`)).statusCode).toBe(404);
+  });
+
+  it("AST-032 AST-052 says what an image's rights are now, wherever it is used: its licence and what it permits, a lapsed grant, and when they last changed", async () => {
+    const licence = await aLicence('stock_now');
+    const bytes = png(5, 3);
+    const id = await made('grace', general);
+    await fill('grace', id, bytes);
+    const version = await ingested(id, bytes);
+    const url = `/v1/assets/${version.artifactId}/rights`;
+    const undeclared = (await call('alice', 'GET', url)).json<Json>();
+    expect(undeclared).toMatchObject({ licence: null, expired: false });
+    const lapsed = { kind: 'declared', source: { text: 'Grace' }, licence, expires: '2020-01-31' };
+    expect((await call('grace', 'PUT', url, { rights: lapsed })).statusCode).toBe(200);
+    const now = (await call('alice', 'GET', url)).json<{ changedAt: string }>();
+    expect(now).toMatchObject({
+      licence: { id: licence, name: 'stock_now', permits: ['internal', 'publication'] },
+      expired: true,
+    });
+    expect(Date.parse(now.changedAt)).toBeGreaterThan(Date.parse(String(undeclared['changedAt'])));
   });
 
   it('AST-001 AST-002 AST-038 refuses a file that is not a PNG or a JPEG, whatever it claims, and keeps the refusal', async () => {

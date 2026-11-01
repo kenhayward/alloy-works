@@ -38,6 +38,7 @@ import {
   refuseAssetUpload,
   type AssetUploadReason,
   type StoredAssetUpload,
+  type StoredDefinition,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
@@ -82,10 +83,31 @@ async function rightsView(trx: TenantTransaction, asset: string): Promise<AssetR
           .where('id', 'in', by)
           .execute();
   const names = new Map(people.map((each) => [each.id, each.display_name]));
+  // An image recorded before 0180 has none: it was never declared.
+  const current = history[0]?.rights ?? { kind: 'undeclared' };
+  // What it is held under now, wherever it is used (AST-032, AST-052): its licence at its latest
+  // version, whether its grant has lapsed, and when either last changed.
+  const declared = current.kind === 'declared' ? current : undefined;
+  const licence = declared && (await readDefinitionLatest(trx, declared.licence));
+  const terms = licence?.kind === 'licence' ? (licence as StoredDefinition<'licence'>) : undefined;
+  const changed = [
+    history[0]?.recordedAt,
+    terms?.version.createdAt,
+  ].filter((each): each is Date => each !== undefined);
   return {
     asset,
-    // An image recorded before 0180 has none: it was never declared.
-    current: history[0]?.rights ?? { kind: 'undeclared' },
+    current,
+    licence:
+      declared && terms
+        ? {
+            id: declared.licence,
+            name: terms.definition.name,
+            permits: [...terms.definition.permits],
+          }
+        : null,
+    expired:
+      declared?.expires !== undefined && declared.expires < new Date().toISOString().slice(0, 10),
+    changedAt: new Date(Math.max(0, ...changed.map((each) => each.getTime()))).toISOString(),
     history: history.map((each) => ({
       rights: each.rights,
       by: { id: each.recordedBy, name: names.get(each.recordedBy) ?? '' },
