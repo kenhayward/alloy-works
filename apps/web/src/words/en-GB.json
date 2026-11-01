@@ -914,6 +914,7 @@
   "editor.condition.axes-unread": "The condition axes could not be read.",
   "editor.condition.value-deprecated": "{label} (deprecated: use {replacement})",
   "editor.condition.value-retired": "{label} (retired)",
+  "editor.condition.find-value": "Find a value",
   "editor.format.table-style": "Table style",
   "editor.format.not-set": "not set",
   "editor.term.no-terms": "This space holds no approved terms you may read.",

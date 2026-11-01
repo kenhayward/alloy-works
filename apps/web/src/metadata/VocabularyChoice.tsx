@@ -12,7 +12,7 @@ import { readerLanguage } from './vocabularies.js';
 import { words } from '../words/words.js';
 
 /** Past this many values offered, a box that searches them rather than a list of them all. */
-const LISTED = 20;
+export const LISTED = 20;
 
 /**
  * Where a deprecated value's replacements lead (LIB-055): followed to a value nothing replaces, which
@@ -170,12 +170,12 @@ export function VocabularyChoice(props: VocabularyChoiceProps) {
 /**
  * The values searched as they are typed: a combobox and its listbox, as the command palette's (the LG
  * plan, LG-G). The arrows move, Enter chooses, Escape puts back what is held; left empty, it holds
- * nothing. Nothing typed is ever handed on, only a value chosen.
+ * nothing. Nothing typed is ever handed on, only a value chosen. The Condition dialog's too (VO-F).
  */
-function SearchedChoice(props: {
+export function SearchedChoice(props: {
   readonly id: string;
   readonly name: string;
-  readonly aria: VocabularyChoiceProps['aria'];
+  readonly aria?: VocabularyChoiceProps['aria'];
   readonly readOnly: boolean;
   readonly offered: readonly VocabularyValue[];
   readonly shown: string;
