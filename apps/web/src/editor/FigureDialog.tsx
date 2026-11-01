@@ -1,4 +1,8 @@
-import { contentDocumentSchema, type Alternative } from '@alloy-works/domain';
+import {
+  contentDocumentSchema,
+  type Alternative,
+  type DeclarableRights,
+} from '@alloy-works/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 
 import shell from '../layouts/Modal.module.css';
@@ -20,11 +24,17 @@ export interface FigureDialogProps {
   readonly title: 'Figure' | 'Image' | 'Replace image';
   /** The language a description is in unless the author says otherwise: the component's. */
   readonly language: string;
-  /** Uploads the bytes with the description given, or none, and says what came of it. */
+  /**
+   * Uploads the bytes with the description given, or none, and the file's name and what was declared
+   * of where it came from (AST-044; the AL plan, AL-E), and says what came of it.
+   */
   readonly upload: (
     bytes: Uint8Array,
     alternative: { readonly text: string; readonly language: string } | null,
+    declared: { readonly name?: string; readonly rights: DeclarableRights },
   ) => Promise<UploadOutcome>;
+  /** The environment's licences an image may be held under, by name (AL-B). */
+  readonly licences: () => Promise<readonly { readonly id: string; readonly name: string }[]>;
   /**
    * The asset version made, and how the figure's alternative text is given as a result; answers why
    * it could not be placed, which the dialog says and stays open for, or null once it has been.
@@ -46,12 +56,28 @@ export interface FigureDialogProps {
  * with none. It says _Checking the image_ while the upload is followed, and a refusal in words, and
  * closes only once there is an image to place.
  */
-export function FigureDialog({ title, language, upload, onDone, onCancel }: FigureDialogProps) {
+export function FigureDialog({
+  title,
+  language,
+  upload,
+  licences,
+  onDone,
+  onCancel,
+}: FigureDialogProps) {
   const id = useId();
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
   const [tag, setTag] = useState(language);
   const [decorative, setDecorative] = useState(false);
+  // Where it came from (AST-044): Not declared until a licence is chosen, said so, never silent.
+  const [offeredLicences, setOfferedLicences] = useState<
+    readonly { readonly id: string; readonly name: string }[]
+  >([]);
+  const [licence, setLicence] = useState('');
+  const [source, setSource] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [expires, setExpires] = useState('');
+  const [credit, setCredit] = useState('');
   // What a figure or an image in a line is placed in, from the theme's image catalogue (CNT-121):
   // the schema's default where the theme offers it, which is what was placed before there was a choice.
   const presentation = usePresentation();
@@ -70,6 +96,16 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
   const first = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => first.current?.focus(), []);
+  useEffect(() => {
+    let live = true;
+    void licences().then(
+      (found) => live && setOfferedLicences(found),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [licences]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape' && !busy) {
@@ -94,6 +130,24 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
       setSaid(words('editor.give-the-language-as-a'));
       return;
     }
+    if (licence !== '' && source.trim() === '') {
+      setSaid(words('editor.say-where-the-image-came-from'));
+      return;
+    }
+    const rights: DeclarableRights =
+      licence === ''
+        ? { kind: 'undeclared' }
+        : {
+            kind: 'declared',
+            source: {
+              text: source.trim(),
+              ...(sourceUrl.trim() === '' ? {} : { url: sourceUrl.trim() }),
+            },
+            licence,
+            ...(expires === '' ? {} : { expires }),
+            ...(credit.trim() === '' ? {} : { credit: credit.trim() }),
+          };
+    const name = file.name.trim().slice(0, 255);
     setBusy(true);
     setSaid(null);
     let outcome: UploadOutcome;
@@ -101,6 +155,7 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
       outcome = await upload(
         new Uint8Array(await file.arrayBuffer()),
         decorative ? null : { text, language },
+        { ...(name === '' ? {} : { name }), rights },
       );
     } finally {
       setBusy(false);
@@ -188,6 +243,59 @@ export function FigureDialog({ title, language, upload, onDone, onCancel }: Figu
             />
             {words('editor.it-is-decorative')}
           </label>
+          <fieldset className={styles['field']}>
+            <legend>{words('editor.source-and-licence')}</legend>
+            <label htmlFor={`${id}-licence`}>{words('editor.licence')}</label>
+            <select
+              id={`${id}-licence`}
+              value={licence}
+              aria-describedby={licence === '' ? `${id}-licence-hint` : undefined}
+              onChange={(event) => setLicence(event.target.value)}
+            >
+              <option value="">{words('editor.not-declared')}</option>
+              {offeredLicences.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.name}
+                </option>
+              ))}
+            </select>
+            {licence === '' ? (
+              <p id={`${id}-licence-hint`} className={styles['hint']}>
+                {words('editor.an-image-with-no-licence')}
+              </p>
+            ) : (
+              <>
+                <label htmlFor={`${id}-source`}>{words('editor.source')}</label>
+                <input
+                  id={`${id}-source`}
+                  type="text"
+                  value={source}
+                  onChange={(event) => setSource(event.target.value)}
+                />
+                <label htmlFor={`${id}-source-url`}>{words('editor.source-address')}</label>
+                <input
+                  id={`${id}-source-url`}
+                  type="url"
+                  value={sourceUrl}
+                  onChange={(event) => setSourceUrl(event.target.value)}
+                />
+                <label htmlFor={`${id}-expires`}>{words('editor.grant-last-day')}</label>
+                <input
+                  id={`${id}-expires`}
+                  type="date"
+                  value={expires}
+                  onChange={(event) => setExpires(event.target.value)}
+                />
+                <label htmlFor={`${id}-credit`}>{words('editor.credit')}</label>
+                <input
+                  id={`${id}-credit`}
+                  type="text"
+                  value={credit}
+                  onChange={(event) => setCredit(event.target.value)}
+                />
+              </>
+            )}
+          </fieldset>
           {offered.length > 0 && placedIn !== undefined && (
             <StyleSelect
               className={styles['field']}

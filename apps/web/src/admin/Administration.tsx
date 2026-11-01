@@ -15,6 +15,7 @@ import { CtStudio } from './CtStudio.js';
 import { Models } from './Models.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
+import { ImagesPolicy } from './ImagesPolicy.js';
 import { ImportPolicy } from './ImportPolicy.js';
 import { TranslationPolicy } from './TranslationPolicy.js';
 import { Extensions } from './Extensions.js';
@@ -60,6 +61,14 @@ const SECTIONS = [
     slug: 'editing',
     get title() {
       return words('admin.editing');
+    },
+    group: 'environment',
+  },
+  // What a publish does with an image whose licence was never declared (AST-053; the AL plan, AL-F).
+  {
+    slug: 'images',
+    get title() {
+      return words('admin.images');
     },
     group: 'environment',
   },
@@ -483,6 +492,9 @@ export function Administration({
         )}
         {shown === 'editing' && (
           <Editing client={client} mayChange={administers.get('tenant') === true} />
+        )}
+        {shown === 'images' && (
+          <ImagesPolicy client={client} mayChange={administers.get('tenant') === true} />
         )}
         {shown === 'imports' && (
           <ImportPolicy client={client} mayChange={administers.get('tenant') === true} />
