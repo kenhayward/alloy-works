@@ -218,13 +218,25 @@
 }
 
 /* The Assistant's tab filling the dock to its edges, its own toolbar naming it, so its middle scrolls
-   and its composer stays on the bottom edge (issue #864). */
-.dockBody:has(> .assistantTab:not([hidden])) {
+   and its composer stays on the bottom edge (issue #864). It stands in `.side`, beside the empty host
+   a part's details are drawn into, so every box from the dock down is a column that fills. */
+.dockBody:has(.assistantTab:not([hidden])) {
   display: flex;
   flex: 1;
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+}
+
+.dockBody:has(.assistantTab:not([hidden])) > :empty {
+  display: none;
+}
+
+.side:has(> .assistantTab:not([hidden])) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .assistantTab {

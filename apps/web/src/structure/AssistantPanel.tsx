@@ -283,6 +283,7 @@ export function AssistantPanel({
   const promptsButton = useRef<HTMLButtonElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   // What the assistant is given with an ask on a document: the component open, or every one.
   const [scope, setScope] = useState<'component' | 'document'>('component');
   // The part asked about, held from when the box is entered until the ask is sent, so the cursor
@@ -302,6 +303,12 @@ export function AssistantPanel({
     element.style.height = 'auto';
     element.style.height = `${element.scrollHeight}px`;
   }, [ask]);
+  // A turn asked brought into view at the conversation's foot, where it answers: the conversation
+  // scrolled alone, never the page around it (issue #864).
+  useEffect(() => {
+    const element = scroller.current;
+    if (element && (running || asked !== null)) element.scrollTo?.({ top: element.scrollHeight });
+  }, [running, asked]);
   const asking = held ?? component;
   const given = asking === null ? 'document' : scope;
   // The reply's tokens so far, while it streams.
@@ -772,7 +779,10 @@ export function AssistantPanel({
             items={conversations.map((each) => ({
               key: each.id,
               label: each.title,
-              detail: formats().date(new Date(each.madeAt)),
+              detail: formats().date(new Date(each.madeAt), {
+                dateStyle: 'short',
+                timeStyle: 'short',
+              }),
               onSelect: () => open(each.id),
             }))}
           />
@@ -842,7 +852,7 @@ export function AssistantPanel({
           </Popup>
         )}
       </div>
-      <div className={styles['scroll']}>
+      <div ref={scroller} className={styles['scroll']}>
         {(opened !== null || naming !== null) && (
           <div className={styles['named']}>
             {naming === null ? (
@@ -878,7 +888,7 @@ export function AssistantPanel({
                 <li key={each.run} className={styles['turn']}>
                   {each.ask !== null && (
                     <p className={styles['asked']}>
-                      <span className={styles['you']}>{words('document.you')}</span> {each.ask}
+                      <span className={styles['hidden']}>{words('document.you')} </span> {each.ask}
                     </p>
                   )}
                   <div className={styles['answer']}>
@@ -899,7 +909,7 @@ export function AssistantPanel({
           <article aria-label={words('document.this-turn')} className={styles['turn']}>
             {asked !== null && (
               <p className={styles['asked']}>
-                <span className={styles['you']}>{words('document.you')}</span> {asked}
+                <span className={styles['hidden']}>{words('document.you')} </span> {asked}
               </p>
             )}
             {endpoint !== null &&
@@ -911,18 +921,19 @@ export function AssistantPanel({
               )}
             {running && (
               <>
-                {/* What it is doing now, as Diariz says it: the step it took last. */}
+                {/* What it is doing now, as Diariz says it: the step it took last, and the reply's
+                tokens so far on the same line (issue #864). */}
                 <p className={styles['doing']} data-doing="" aria-live="polite">
                   <span className={styles['pulse']} aria-hidden="true" />
                   {steps.length > 0 ? stepLine(steps.at(-1)!) : words('document.answering')}
-                </p>
-                <p
-                  role="progressbar"
-                  aria-label={words('document.answering')}
-                  aria-valuetext={words('document.answering-tokens', { count: received })}
-                  className={styles['streaming']}
-                >
-                  {words('document.answering-tokens', { count: received })}
+                  <span
+                    role="progressbar"
+                    aria-label={words('document.answering')}
+                    aria-valuetext={words('document.answering-tokens', { count: received })}
+                    className={styles['streaming']}
+                  >
+                    {words('document.tokens-so-far', { count: received })}
+                  </span>
                 </p>
               </>
             )}
