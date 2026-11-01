@@ -672,6 +672,68 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it("passes axe on the vocabularies, New vocabulary, Import and a vocabulary's values (the VO plan, VOc)", async ({
+    task,
+  }) => {
+    const name = `Study phase ${randomUUID().slice(0, 8)}`;
+    const label = (text: string) => [{ language: 'en', text }];
+    const made = await api().POST('/v1/definitions', {
+      body: {
+        kind: 'vocabulary',
+        definition: {
+          schemaVersion: 1,
+          name,
+          key: `phase_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
+          base: 'en',
+          order: 'declared',
+          values: [
+            {
+              id: 'one',
+              labels: label('Phase I'),
+              descriptions: label('First in people'),
+              state: 'active',
+            },
+            {
+              id: 'early',
+              labels: label('Early'),
+              descriptions: [],
+              state: 'deprecated',
+              replacedBy: 'one',
+            },
+            { id: 'pilot', labels: label('Pilot'), descriptions: [], state: 'retired' },
+          ],
+        },
+      },
+    });
+    expect(made.response.status).toBe(200);
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/admin/vocabularies`);
+      await check('the vocabularies', {
+        shows: [
+          page.getByRole('table', { name: 'Vocabularies' }),
+          page.getByRole('button', { name: 'New vocabulary' }),
+        ],
+      });
+      await page.getByRole('button', { name: 'New vocabulary' }).click();
+      await check('a new vocabulary', {
+        shows: page.getByRole('form', { name: 'New vocabulary' }),
+      });
+      await page.getByRole('button', { name: 'Import', exact: true }).click();
+      await check('importing a vocabulary', {
+        shows: page.getByRole('form', { name: 'Import a vocabulary' }),
+        hides: [page.getByRole('form', { name: 'New vocabulary' })],
+      });
+      await page.getByRole('button', { name: `Open ${name}` }).click();
+      await check("a vocabulary's values, deprecated and retired among them", {
+        shows: [page.getByRole('region', { name }), page.getByRole('list', { name: 'Values' })],
+      });
+    });
+  });
+
   it('passes axe on translation: a component’s Translations, a translation’s, the space report and the policy (the TR plan, TRc)', async ({
     task,
   }) => {

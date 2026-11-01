@@ -92,6 +92,23 @@ describe("the service's connector client", () => {
     expect(failed.asked[0]!.url).toBe('http://c/v1/describe');
   });
 
+  it("asks for a vocabulary's SKOS address by its URL, and answers what it parsed (VO-J)", async () => {
+    const fetched = { type: 'fetched', body: '@prefix skos: <x> .', contentType: 'text/turtle' };
+    const { asked, fetch } = answering(200, fetched);
+    const ask = { requestId: randomUUID(), tenant: 'acme1', url: 'https://terms.example.test/x' };
+    const client = createConnectorClient({ url: 'http://c', key: KEY, fetch });
+    expect(await client.vocabularySource(ask)).toEqual({ answer: fetched });
+    expect(asked[0]!.url).toBe('http://c/v1/vocabulary-source');
+    expect(JSON.parse(String(asked[0]!.init.body))).toEqual(ask);
+    // Out of shape is no answer.
+    const odd = answering(200, { type: 'fetched', body: 'x', status: 200 });
+    expect(
+      await createConnectorClient({ url: 'http://c', key: KEY, fetch: odd.fetch }).vocabularySource(
+        ask,
+      ),
+    ).toMatchObject({ refused: { code: 'connector_unavailable' } });
+  });
+
   it('answers a full connector as connector_busy, and anything else that is not an answer as connector_unavailable, with none of its words', async () => {
     const busy = answering(503, { code: 'connector_busy' });
     expect(

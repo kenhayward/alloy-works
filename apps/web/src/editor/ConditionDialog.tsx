@@ -1,6 +1,8 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import {
   axisValues,
+  valueDescription,
+  valueLabel,
   type AxisValue,
   type ConditionAxisDefinition,
   type Vocabulary,
@@ -9,10 +11,12 @@ import type { ConditionChoice, ConditionHeld } from '@alloy-works/editor';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 
 import shell from '../layouts/Modal.module.css';
+import { readerLanguage } from '../metadata/vocabularies.js';
+import { LISTED, replacementOf, SearchedChoice } from '../metadata/VocabularyChoice.js';
 import { Icon } from './Icon.js';
 import styles from './MarkPrompt.module.css';
 import own from './ConditionDialog.module.css';
-import { formats, words } from '../words/words.js';
+import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -25,6 +29,8 @@ export interface OfferedAxis {
   readonly key: string;
   readonly name: string;
   readonly values: readonly AxisValue[];
+  /** The vocabulary they are drawn from, where the axis names one: descriptions, replacements (VO-F). */
+  readonly vocabulary?: Vocabulary;
 }
 
 /**
@@ -109,8 +115,14 @@ export async function declaredAxes(client: Client): Promise<OfferedAxis[]> {
       if (!data) throw new Error('unread');
       const axis = data.definition as unknown as ConditionAxisDefinition;
       const drawn = axis.vocabulary === undefined ? undefined : await vocabulary(axis.vocabulary);
-      const values = axisValues(axis, () => drawn, formats().language.tag);
-      return { key: each.key, name: each.name, values };
+      // Labelled as the field form labels them, by the reader's base subtag (VO-F).
+      const values = axisValues(axis, () => drawn, readerLanguage());
+      return {
+        key: each.key,
+        name: each.name,
+        values,
+        ...(drawn === undefined ? {} : { vocabulary: drawn }),
+      };
     }),
   );
 }
@@ -173,7 +185,59 @@ export function ConditionDialog({
     (each) => each.state !== 'retired' && !already?.values.includes(each.key),
   );
 
+  // A vocabulary axis chosen as the field form chooses (the VO plan, VO-F).
+  const vocabulary = chosen?.vocabulary;
+  const language = readerLanguage();
+  const drawn = (key: string) => vocabulary?.values.find((each) => each.id === key);
+  const labelOf = (key: string) => {
+    const value = drawn(key);
+    return vocabulary === undefined || value === undefined
+      ? key
+      : valueLabel(vocabulary, value, language);
+  };
+  const replacing = (key: string) => {
+    const value = drawn(key);
+    return vocabulary === undefined || value === undefined
+      ? undefined
+      : replacementOf(vocabulary, value);
+  };
+  const descriptionOf = (key: string) => {
+    const value = drawn(key);
+    return vocabulary === undefined || value === undefined
+      ? undefined
+      : valueDescription(vocabulary, value, language);
+  };
+  const searched =
+    vocabulary !== undefined && offered.filter((each) => each.state !== 'retired').length > LISTED;
+  // Past twenty, a box searches them and only those chosen or held are listed.
+  const listed = searched
+    ? offered.filter((each) => values.includes(each.key) || already?.values.includes(each.key))
+    : offered;
+  const [announced, setAnnounced] = useState<string | null>(null);
+  const deprecatedSaid = (key: string): string | null => {
+    if (drawn(key)?.state !== 'deprecated') return null;
+    const instead = replacing(key);
+    return instead === undefined
+      ? words('metadata.is-deprecated', { label: labelOf(key) })
+      : words('metadata.is-deprecated-use-instead', {
+          label: labelOf(key),
+          replacement: labelOf(instead.id),
+        });
+  };
+  const toggle = (key: string, on: boolean) => {
+    setValues((now) =>
+      on ? (now.includes(key) ? now : [...now, key]) : now.filter((value) => value !== key),
+    );
+    setAnnounced(on ? deprecatedSaid(key) : null);
+  };
+  const replace = (key: string, by: string) => {
+    setValues((now) => [...new Set(now.map((value) => (value === key ? by : value)))]);
+    setAnnounced(null);
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // A search box's Escape shuts its list, not the dialog.
+    if (event.key === 'Escape' && event.defaultPrevented) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       onCancel();
@@ -222,6 +286,7 @@ export function ConditionDialog({
                   onChange={(event) => {
                     setAxis(event.target.value);
                     setValues(held.find((each) => each.axis === event.target.value)?.values ?? []);
+                    setAnnounced(null);
                   }}
                 >
                   {read.map((each) => (
@@ -233,23 +298,62 @@ export function ConditionDialog({
               </div>
               <fieldset className={own['values']}>
                 <legend>{words('editor.kept-for')}</legend>
-                {offered.map((each) => (
-                  <label key={each.key} className={own['value']}>
-                    <input
-                      type="checkbox"
-                      checked={values.includes(each.key)}
-                      onChange={(event) =>
-                        setValues((now) =>
-                          event.target.checked
-                            ? [...now, each.key]
-                            : now.filter((value) => value !== each.key),
+                {searched && vocabulary !== undefined && chosen !== undefined && (
+                  <div className={styles['field']}>
+                    <label htmlFor={`${id}-find`}>{words('editor.condition.find-value')}</label>
+                    <SearchedChoice
+                      id={`${id}-find`}
+                      name={chosen.name}
+                      readOnly={false}
+                      offered={offered
+                        .filter((each) => each.state !== 'retired')
+                        .flatMap((each) => drawn(each.key) ?? [])}
+                      shown=""
+                      optionText={(value) =>
+                        offeredLabel(
+                          offered.find((each) => each.key === value.id)!,
+                          chosen.values,
                         )
                       }
+                      labelOf={(value) => labelOf(value.id)}
+                      descriptionOf={(value) => descriptionOf(value.id)}
+                      language={language}
+                      onChoose={(key) => key !== null && toggle(key, true)}
                     />
-                    {offeredLabel(each, chosen?.values ?? [])}
-                  </label>
-                ))}
+                  </div>
+                )}
+                {listed.map((each) => {
+                  const description = descriptionOf(each.key);
+                  const about = `${id}-${each.key}-about`;
+                  const instead = values.includes(each.key) ? replacing(each.key) : undefined;
+                  return (
+                    <div key={each.key} className={own['value']}>
+                      <label className={own['choice']}>
+                        <input
+                          type="checkbox"
+                          checked={values.includes(each.key)}
+                          aria-describedby={description === undefined ? undefined : about}
+                          onChange={(event) => toggle(each.key, event.target.checked)}
+                        />
+                        {offeredLabel(each, chosen?.values ?? [])}
+                      </label>
+                      {description !== undefined && (
+                        <span id={about} className={own['about']}>
+                          {description}
+                        </span>
+                      )}
+                      {instead !== undefined && (
+                        <button type="button" onClick={() => replace(each.key, instead.id)}>
+                          {words('metadata.use-replacement', { replacement: labelOf(instead.id) })}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </fieldset>
+              <p role="status" className={own['announced']}>
+                {announced}
+              </p>
               {onAlternative !== undefined && already !== undefined && others.length > 0 && (
                 <p className={own['said']}>{ALTERNATIVE_SAID()}</p>
               )}

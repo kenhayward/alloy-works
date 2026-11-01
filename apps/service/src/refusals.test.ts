@@ -117,6 +117,12 @@ describe('the rule behind a refusal', () => {
       'term.used',
       // The vocabulary an import would make, refused by its shape: the VO plan's own guard (VO-I).
       'vocabulary.invalid',
+      // A refresh with no source, or one that cannot be read or run: the VO plan's own guards (VO-J).
+      'vocabulary.unsourced',
+      'vocabulary.source_missing',
+      'vocabulary.source_parameters',
+      'vocabulary.source_unreadable',
+      'vocabulary.source_failed',
       // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
       // requirement names as a refusal (CI-D).
       'style.invalid',

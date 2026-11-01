@@ -21471,6 +21471,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-058",
+      "file": "apps/connector/src/vocabulary-source.test.ts",
+      "line": 34,
+      "kind": "title"
+    },
+    {
       "id": "ADM-051",
       "file": "apps/desktop/src/connection.test.ts",
       "line": 20,
@@ -21821,13 +21827,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 708,
+      "line": 709,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 721,
+      "line": 722,
       "kind": "title"
     },
     {
@@ -22367,7 +22373,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2168,
+      "line": 2169,
       "kind": "title"
     },
     {
@@ -24381,6 +24387,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-058",
+      "file": "apps/service/src/vocabulary-source-routes.test.ts",
+      "line": 229,
+      "kind": "title"
+    },
+    {
       "id": "API-029",
       "file": "apps/service/src/webhook-routes.test.ts",
       "line": 96,
@@ -24851,25 +24863,31 @@
     {
       "id": "LIB-005",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 179,
+      "line": 263,
       "kind": "title"
     },
     {
       "id": "LIB-024",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 231,
+      "line": 315,
       "kind": "title"
     },
     {
       "id": "LIB-053",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 253,
+      "line": 337,
       "kind": "title"
     },
     {
       "id": "LIB-055",
       "file": "apps/web/src/admin/Vocabularies.test.tsx",
-      "line": 302,
+      "line": 386,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-058",
+      "file": "apps/web/src/admin/Vocabularies.test.tsx",
+      "line": 553,
       "kind": "title"
     },
     {
@@ -25518,6 +25536,18 @@
       "id": "LOC-016",
       "file": "apps/web/src/editor/ComponentList.test.tsx",
       "line": 370,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-054",
+      "file": "apps/web/src/editor/ConditionDialog.test.tsx",
+      "line": 193,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-063",
+      "file": "apps/web/src/editor/ConditionDialog.test.tsx",
+      "line": 218,
       "kind": "title"
     },
     {
@@ -29031,6 +29061,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-058",
+      "file": "packages/db/src/definitions.test.ts",
+      "line": 358,
+      "kind": "title"
+    },
+    {
       "id": "MET-008",
       "file": "packages/db/src/definitions.test.ts",
       "line": 198,
@@ -32225,7 +32261,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1112,
+      "line": 1121,
       "kind": "title"
     },
     {
@@ -32340,6 +32376,12 @@
       "id": "LIB-025",
       "file": "packages/domain/src/library/term.test.ts",
       "line": 69,
+      "kind": "title"
+    },
+    {
+      "id": "LIB-058",
+      "file": "packages/domain/src/library/vocabulary-refresh.test.ts",
+      "line": 29,
       "kind": "title"
     },
     {
@@ -34655,13 +34697,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1211,
+      "line": 1273,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 797,
+      "line": 859,
       "kind": "title"
     },
     {

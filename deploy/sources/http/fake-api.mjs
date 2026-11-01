@@ -62,6 +62,15 @@ async function bodyOf(request) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+/** A stand-in vocabulary's concept scheme, as a SKOS address serves it (the VO plan, VO-J). */
+const REGIONS_TURTLE = `@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix ex: <https://source-http/vocabulary/regions#> .
+
+ex:scheme a skos:ConceptScheme ; skos:prefLabel "Regions"@en .
+ex:north a skos:Concept ; skos:inScheme ex:scheme ; skos:prefLabel "North"@en .
+ex:south a skos:Concept ; skos:inScheme ex:scheme ; skos:prefLabel "South"@en .
+`;
+
 /**
  * The fake's routes, under `/v1`. Each request is remembered in `seen`, its secret's header left out,
  * so a suite can read what the connector sent.
@@ -150,6 +159,18 @@ export function createFakeApi(options = {}) {
       }
       if (url.pathname === '/extension/too-large.json') {
         return send(200, Buffer.from(JSON.stringify({ padding: 'x'.repeat(70_000) })));
+      }
+      // A vocabulary's SKOS address (the VO plan, VO-J): a small concept scheme in Turtle, and one
+      // past 5 MB.
+      if (url.pathname === '/vocabulary/regions.ttl') {
+        return send(200, Buffer.from(REGIONS_TURTLE), {
+          'content-type': 'text/turtle; charset=utf-8',
+        });
+      }
+      if (url.pathname === '/vocabulary/too-large.ttl') {
+        return send(200, Buffer.from(`# ${'x'.repeat(5 * 1024 * 1024)}`), {
+          'content-type': 'text/turtle',
+        });
       }
       // A webhook's receiver (the WB plan): `/hooks` answers 200, `/hooks/<status>` that status, a
       // redirect's with a Location it must never be followed to; each kept in `seen`, unkeyed.

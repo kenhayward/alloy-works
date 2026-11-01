@@ -219,6 +219,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0175_entry_superseded',
       '0176_vocabularies',
       '0177_publication_vocabularies',
+      '0178_vocabulary_query_runs',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

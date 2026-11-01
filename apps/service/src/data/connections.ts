@@ -83,10 +83,13 @@ import {
   type TestAnswer,
   dataFailure,
   runsAtOnce,
+  type CanonicalResult,
+  type VocabularySource,
+  type VocabularySourceAnswer,
 } from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
-import { administerOrAbove, notFound, type Authorised } from '../access.js';
+import { administerOrAbove, callerOf, notFound, type Authorised } from '../access.js';
 import { versionView } from '../components.js';
 import { AfterCommit } from '../after-commit.js';
 import { contextOf } from '../audit.js';
@@ -100,6 +103,7 @@ import {
   checkAct,
   creationAct,
   documentsOnConnection,
+  prepareSourceQuery,
   resolveAct,
   type RunAsked,
   type RunsThrough,
@@ -187,6 +191,22 @@ const TEST_FAILURES: readonly ConnectionTestFailure[] = [
  * caller `seesSource`, holding `write_sql` (D2-H), and a built query's refusals in the product's words
  * (D4-K).
  */
+/** What a vocabulary's source fetched answers, for its refresh to read (VO-J). */
+export type VocabularySourceFetched =
+  | { readonly kind: 'rows'; readonly result: CanonicalResult }
+  | { readonly kind: 'text'; readonly text: string; readonly contentType?: string };
+
+/** Why a SKOS address gave no text, in an administrator's words (VO-J). */
+const SOURCE_FAILED: Record<Extract<VocabularySourceAnswer, { type: 'failed' }>['code'], string> = {
+  host_refused: "The address is one the connector may not reach: a private or the platform's own.",
+  connection_failed:
+    'The address could not be reached, or answered with a redirect, which is not followed.',
+  timeout: 'The address did not answer in 20 seconds.',
+  source_refused: 'The address answered with a refusal.',
+  source_too_large: 'The address answered with more than 5 MB.',
+  connector_error: 'The connector could not fetch the address.',
+};
+
 function dataRefused(
   status: number,
   failed: FailureIn | DataFailureCode,
@@ -1423,6 +1443,50 @@ export function connectionHandlers(
       const through = runsThrough(request, 'check', (request.params as DocumentParams).id);
       connected();
       return checkAct(db, tenantOf(request), objects, request, authorised, through);
+    },
+
+    /**
+     * A vocabulary's source, fetched for a refresh (LIB-058; the VO plan, VO-J): a query definition
+     * decided here as the caller's run and asked once `trx` commits, recorded as the act `vocabulary`;
+     * or a SKOS address the connector fetches through its guard, no private address among what it may
+     * reach. What it answers is the rows or the text; a failure is thrown, as a sample's is.
+     */
+    vocabularySource: async (
+      request: FastifyRequest,
+      trx: TenantTransaction,
+      source: VocabularySource,
+    ): Promise<() => Promise<VocabularySourceFetched>> => {
+      const tenant = tenantOf(request);
+      if (source.kind === 'query') {
+        const through = runsThrough(request, 'vocabulary', null);
+        const run = await prepareSourceQuery(trx, callerOf(request), source.query, through);
+        return () =>
+          whileHeld(request, async (signal) => {
+            const ran = await run(tenant, signal);
+            if (!ran.ok) throw dataRefused(502, ran.failure, ran.seesSource);
+            return { kind: 'rows', result: ran.result };
+          });
+      }
+      const asking = connected();
+      return async () => {
+        const fetched = answered(
+          await asking.vocabularySource({
+            requestId: randomUUID(),
+            tenant: tenant.id,
+            url: source.url,
+          }),
+        );
+        if (fetched.type === 'fetched') {
+          return {
+            kind: 'text',
+            text: fetched.body,
+            ...(fetched.contentType === undefined ? {} : { contentType: fetched.contentType }),
+          };
+        }
+        throw refused(502, 'vocabulary.source_failed', SOURCE_FAILED[fetched.code], {
+          failure: fetched.code,
+        });
+      };
     },
 
     // A document whose template's required components run queries is made after they run (the R9

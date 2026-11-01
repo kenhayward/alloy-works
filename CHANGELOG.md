@@ -3,6 +3,16 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.222.0 - 2026-11-01 (PR #846)
+
+T7's first slice closed (the VO plan): vocabularies, the values fields and condition axes draw on.
+
+### Added
+
+- **Vocabularies.** Named lists of permitted values, kept in Administration: each value labelled and described per language, deprecated with its replacement or retired, never removed, and moved as SKOS JSON-LD or Turtle.
+- **Fields and condition axes draw on them.** A value is chosen by its label in your language, searchable, with its description; a deprecated one is flagged with its replacement and a Use replacement action, and a retired one is never offered. Publishing prints a value by its label, reports deprecated and retired values held, and records the vocabulary versions it read, which a baseline pins. Each vocabulary shows where it is used.
+- **Vocabularies from a source.** A vocabulary may take its values from a query definition or a SKOS address, refreshed when you ask, with a report of what was added, changed and retired.
+
 ## 0.221.0 - 2026-10-31 (PR #843)
 
 T6 closed (the CL plan): every T6 requirement read against the code, the gaps built and the rest tested.

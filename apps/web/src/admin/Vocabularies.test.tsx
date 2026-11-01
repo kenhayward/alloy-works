@@ -8,6 +8,7 @@ import { Vocabularies } from './Vocabularies.js';
 const PHASE = 'c3d4e5f6-0000-4000-8000-000000000001';
 const SITES = 'c3d4e5f6-0000-4000-8000-000000000002';
 const OPENED = 'd1d2d3d4-0000-4000-8000-000000000001';
+const QUERY = 'e1e2e3e4-0000-4000-8000-000000000001';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -15,16 +16,26 @@ const json = (status: number, body: unknown) =>
 const value = (
   id: string,
   labels: Record<string, string>,
-  rest: { state?: 'active' | 'deprecated' | 'retired'; replacedBy?: string } = {},
+  rest: { state?: 'active' | 'deprecated' | 'retired'; replacedBy?: string; source?: string } = {},
 ) => ({
   id,
   labels: Object.entries(labels).map(([language, text]) => ({ language, text })),
   descriptions: [],
   state: rest.state ?? 'active',
   ...(rest.replacedBy === undefined ? {} : { replacedBy: rest.replacedBy }),
+  ...(rest.source === undefined ? {} : { source: rest.source }),
 });
 
-const phase = {
+const phase: {
+  schemaVersion: number;
+  id: string;
+  name: string;
+  key: string;
+  base: string;
+  order: string;
+  source?: { kind: 'query'; query: string } | { kind: 'skos'; url: string };
+  values: ReturnType<typeof value>[];
+} = {
   schemaVersion: 1,
   id: PHASE,
   name: 'Trial phase',
@@ -48,12 +59,25 @@ const sites = {
   values: [value('zurich', { en: 'Zurich' }), value('aberdeen', { en: 'Aberdeen' })],
 };
 
-type Saving = 'ok' | 'conflict' | 'refused';
+/** Trial phase as its query definition gives it (the VO plan, VO-J). */
+const sourced = {
+  ...phase,
+  source: { kind: 'query' as const, query: QUERY },
+  values: [
+    value('one', { en: 'Phase one' }, { source: 'P1' }),
+    value('two', { en: 'Phase two' }, { source: 'P2' }),
+  ],
+};
 
-function service(options: { manages?: boolean; saving?: Saving } = {}) {
+type Saving = 'ok' | 'conflict' | 'refused';
+type Refreshing = 'recorded' | 'unchanged' | 'refused';
+
+function service(
+  options: { manages?: boolean; saving?: Saving; sourced?: boolean; refreshing?: Refreshing } = {},
+) {
   const sent: { path: string; body: unknown }[] = [];
   const held = new Map<string, typeof phase>([
-    [PHASE, phase],
+    [PHASE, options.sourced ? sourced : phase],
     [SITES, sites],
   ]);
   const view = (id: string, number = '0.1') => ({
@@ -92,13 +116,32 @@ function service(options: { manages?: boolean; saving?: Saving } = {}) {
           ],
         });
       }
+      if (path === '/v1/query-definitions') {
+        return json(200, {
+          items: [
+            {
+              id: QUERY,
+              title: 'Trial phases',
+              space: { id: 's1', name: 'Trials' },
+              connection: null,
+              retired: false,
+              version: { id: 'v1', number: '0.1' },
+              changedAt: '2026-10-01T00:00:00.000Z',
+            },
+          ],
+          next: null,
+          total: 1,
+          facets: { spaces: [] },
+        });
+      }
       const exported = /^\/v1\/vocabularies\/([0-9a-f-]+)\/export$/.exec(path);
       if (exported) return json(200, { format: 'json-ld', text: '{"@graph":[]}' });
       const one = /^\/v1\/vocabularies\/([0-9a-f-]+)$/.exec(path);
       if (one && held.has(one[1]!)) return json(200, view(one[1]!));
     }
     if (request.method === 'POST') {
-      const body = (await request.json()) as Record<string, unknown>;
+      const text = await request.text();
+      const body = (text === '' ? {} : JSON.parse(text)) as Record<string, unknown>;
       sent.push({ path, body });
       if (path === '/v1/definitions') {
         const made = {
@@ -143,6 +186,47 @@ function service(options: { manages?: boolean; saving?: Saving } = {}) {
           kind: 'vocabulary',
           version: { id: 'd1d2d3d4-0000-4000-8000-000000000002', number: '0.2' },
           definition: held.get(PHASE),
+        });
+      }
+      if (path === `/v1/vocabularies/${PHASE}/refresh`) {
+        if (options.refreshing === 'refused') {
+          return json(409, {
+            code: 'vocabulary_source_missing',
+            message: 'Its query definition is not one you may read here.',
+            traceId: 't',
+          });
+        }
+        const report = {
+          added: [] as string[],
+          relabelled: [] as string[],
+          retired: [] as string[],
+          returned: [] as string[],
+          unchanged: 2,
+          refused: [] as { source: string; reason: string }[],
+          refusedTotal: 0,
+        };
+        if (options.refreshing === 'unchanged') {
+          return json(200, { answer: 'unchanged', vocabulary: view(PHASE), report });
+        }
+        held.set(PHASE, {
+          ...sourced,
+          values: [
+            value('one', { en: 'Phase one' }, { source: 'P1' }),
+            value('two', { en: 'Phase 2' }, { source: 'P2' }),
+            value('three', { en: 'Phase three' }, { source: 'P3' }),
+          ],
+        });
+        return json(200, {
+          answer: 'recorded',
+          vocabulary: view(PHASE, '0.2'),
+          report: {
+            ...report,
+            added: ['three'],
+            relabelled: ['two'],
+            unchanged: 1,
+            refused: [{ source: 'P9', reason: 'It has no label' }],
+            refusedTotal: 1,
+          },
         });
       }
       if (path === '/v1/vocabularies/import') {
@@ -416,5 +500,113 @@ describe("Administration's Vocabularies", () => {
     expect(within(answer).getByText('Kept, as every value is: pilot')).toBeVisible();
     expect(within(answer).getByText('3 things could not be represented:')).toBeVisible();
     expect(within(answer).getByText('urn:x:odd: a concept with no notation')).toBeVisible();
+  });
+  it("sets a vocabulary's source to a query definition chosen by its title, or a SKOS address, saved with it", async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<Vocabularies client={client} />);
+    const shown = await opened('Trial phase');
+    expect(within(shown).getByText(/id, label and optional description columns/)).toBeVisible();
+    const source = within(shown).getByRole('combobox', { name: 'Source' });
+    expect(source).toHaveDisplayValue('None');
+
+    await user.selectOptions(source, 'A query definition');
+    await user.selectOptions(
+      await within(shown).findByRole('combobox', { name: 'Query definition' }),
+      'Trial phases',
+    );
+    await user.click(within(shown).getByRole('button', { name: 'Save' }));
+    await screen.findByText('Saved, at 0.2.');
+    const saved = () => (sent.at(-1)!.body as { definition: typeof phase }).definition;
+    expect(saved().source).toEqual({ kind: 'query', query: QUERY });
+
+    await user.selectOptions(source, 'A SKOS address');
+    await user.type(
+      within(shown).getByRole('textbox', { name: 'SKOS address' }),
+      'https://terms.example/phases.jsonld',
+    );
+    await user.click(within(shown).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(saved().source).toEqual({ kind: 'skos', url: 'https://terms.example/phases.jsonld' }),
+    );
+
+    await user.selectOptions(source, 'None');
+    await user.click(within(shown).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(saved()).not.toHaveProperty('source'));
+  });
+
+  it("keeps a sourced vocabulary's labels to its source, its states editable, each value showing its source identifier", async () => {
+    const { client } = service({ sourced: true });
+    render(<Vocabularies client={client} />);
+    const shown = await opened('Trial phase');
+    const one = within(shown).getByRole('group', { name: 'Phase one (one)' });
+    expect(within(one).queryByRole('textbox')).toBeNull();
+    expect(within(one).getByText('Phase one (en)')).toBeVisible();
+    expect(within(one).getByRole('combobox', { name: 'State' })).toBeEnabled();
+    expect(within(one).getByText('From the source as P1')).toBeVisible();
+    expect(within(shown).queryByRole('button', { name: 'Add value' })).toBeNull();
+    expect(
+      await within(shown).findByRole('option', { name: 'Trial phases', selected: true }),
+    ).toBeInTheDocument();
+  });
+
+  it('LIB-058 refreshes a sourced vocabulary from the page, saying what the refresh did', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service({ sourced: true });
+    render(<Vocabularies client={client} />);
+    const shown = await opened('Trial phase');
+    await user.click(within(shown).getByRole('button', { name: 'Refresh from source' }));
+    expect(
+      await within(shown).findByText(
+        'Refreshed, at 0.2: 1 added, 1 relabelled, 0 retired, 0 returned, 1 refused.',
+      ),
+    ).toBeVisible();
+    expect(sent.at(-1)!.path).toBe(`/v1/vocabularies/${PHASE}/refresh`);
+    expect(within(shown).getByText('P9: It has no label')).toBeVisible();
+    await waitFor(() =>
+      expect(valuesShown()).toEqual(['Phase one (one)', 'Phase 2 (two)', 'Phase three (three)']),
+    );
+  });
+
+  it('refreshes only what is saved, so an unsaved change is never lost to a refresh', async () => {
+    const user = userEvent.setup();
+    const { client } = service({ sourced: true });
+    render(<Vocabularies client={client} />);
+    const shown = await opened('Trial phase');
+    const button = within(shown).getByRole('button', { name: 'Refresh from source' });
+    expect(button).toBeEnabled();
+    await user.type(within(shown).getByRole('textbox', { name: 'Name' }), ' renamed');
+    expect(button).toBeDisabled();
+    expect(within(shown).getByText('Save your changes before refreshing.')).toBeVisible();
+  });
+
+  it('says a refresh changed nothing, and why a refresh was refused', async () => {
+    const user = userEvent.setup();
+    const quiet = service({ sourced: true, refreshing: 'unchanged' });
+    const { unmount } = render(<Vocabularies client={quiet.client} />);
+    let shown = await opened('Trial phase');
+    await user.click(within(shown).getByRole('button', { name: 'Refresh from source' }));
+    expect(
+      await within(shown).findByText('Nothing changed: the source gives the values as they are.'),
+    ).toBeVisible();
+    unmount();
+
+    const refused = service({ sourced: true, refreshing: 'refused' });
+    render(<Vocabularies client={refused.client} />);
+    shown = await opened('Trial phase');
+    await user.click(within(shown).getByRole('button', { name: 'Refresh from source' }));
+    expect(
+      await within(shown).findByText('Its query definition is not one you may read here.'),
+    ).toBeVisible();
+  });
+
+  it('shows somebody who may not manage definitions where a vocabulary is sourced, and no refresh', async () => {
+    const { client } = service({ manages: false, sourced: true });
+    render(<Vocabularies client={client} />);
+    const shown = await opened('Trial phase');
+    expect(
+      await within(shown).findByText('Its values come from the query definition Trial phases.'),
+    ).toBeVisible();
+    expect(within(shown).queryByRole('button', { name: 'Refresh from source' })).toBeNull();
   });
 });

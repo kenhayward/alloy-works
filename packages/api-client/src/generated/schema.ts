@@ -7043,6 +7043,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/vocabularies/{id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh a vocabulary's values from its source, recording a version
+         * @description Refreshes a vocabulary's values from its source and records the next version. A query definition's source is run as the caller, who needs use connection on its connection as a sample does, and recorded as the act `vocabulary`; its `id`, `label` and optional `description` columns give each value's identifier and its words in the base language. A SKOS address is fetched by the connector: one `GET`, no redirect followed, at most 5 MB in 20 seconds, never a private address; each concept gives its identity, its `notation` as the suggested id, and its `prefLabel` and `definition` by language. A value is kept by its identifier: one new to the source is added active, one gone from it retired, never removed, and one whose words changed takes the source's. What no value can hold is reported by its identifier. A sourced vocabulary's values are otherwise changed only in their state. It needs manage_definitions at the tenant.
+         */
+        post: operations["refreshVocabulary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/vocabularies/{id}/uses": {
         parameters: {
             query?: never;
@@ -116436,6 +116456,16 @@ export interface operations {
                             base: string;
                             /** @enum {string} */
                             order: "declared" | "label";
+                            source?: {
+                                /** @constant */
+                                kind: "query";
+                                query: string;
+                            } | {
+                                /** @constant */
+                                kind: "skos";
+                                /** @example https://gauges.example.test/alloy */
+                                url: string;
+                            };
                             values: {
                                 id: string;
                                 labels: {
@@ -116449,6 +116479,7 @@ export interface operations {
                                 /** @enum {string} */
                                 state: "active" | "deprecated" | "retired";
                                 replacedBy?: string;
+                                source?: string;
                             }[];
                         };
                     };
@@ -116589,6 +116620,334 @@ export interface operations {
                         rule?: string;
                         /** @description Quote this when reporting a problem */
                         traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    refreshVocabulary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The vocabulary at its new version, or as it was where nothing changed, and what the refresh did */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "answer": "recorded",
+                     *       "vocabulary": {
+                     *         "id": "example",
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example"
+                     *         },
+                     *         "vocabulary": {
+                     *           "schemaVersion": 1,
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "key": "example",
+                     *           "base": "en",
+                     *           "order": "declared",
+                     *           "values": []
+                     *         }
+                     *       },
+                     *       "report": {
+                     *         "added": [],
+                     *         "relabelled": [],
+                     *         "retired": [],
+                     *         "returned": [],
+                     *         "unchanged": -9007199254740991,
+                     *         "refused": [],
+                     *         "refusedTotal": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description `recorded`: a new version; `unchanged`: the source gave nothing new
+                         * @enum {string}
+                         */
+                        answer: "recorded" | "unchanged";
+                        vocabulary: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            vocabulary: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                id: string;
+                                name: string;
+                                key: string;
+                                base: string;
+                                /** @enum {string} */
+                                order: "declared" | "label";
+                                source?: {
+                                    /** @constant */
+                                    kind: "query";
+                                    query: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "skos";
+                                    /** @example https://gauges.example.test/alloy */
+                                    url: string;
+                                };
+                                values: {
+                                    id: string;
+                                    labels: {
+                                        language: string;
+                                        text: string;
+                                    }[];
+                                    descriptions: {
+                                        language: string;
+                                        text: string;
+                                    }[];
+                                    /** @enum {string} */
+                                    state: "active" | "deprecated" | "retired";
+                                    replacedBy?: string;
+                                    source?: string;
+                                }[];
+                            };
+                        };
+                        report: {
+                            /** @description Values new to the source, added active */
+                            added: string[];
+                            /** @description Values whose labels or descriptions the source changed */
+                            relabelled: string[];
+                            /** @description Values gone from the source, retired, never removed */
+                            retired: string[];
+                            /** @description Values retired here and in the source again, kept retired to be restored by hand */
+                            returned: string[];
+                            /** @description How many values the source gave as they were */
+                            unchanged: number;
+                            /** @description The first 1,000 rows or concepts no value could hold, by their identifier in the source */
+                            refused: {
+                                source: string;
+                                reason: string;
+                            }[];
+                            refusedTotal: number;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued; or `authority_ended`: the session was signed out, or the token revoked (`signed_out`, `token_revoked`), while the source answered, which stopped it within two seconds. Nothing is recorded */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        reason?: "signed_out" | "token_revoked";
+                    };
+                };
+            };
+            /** @description The caller may not manage definitions, use the query definition's connection, or read the stored result it queries */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such vocabulary in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `vocabulary_unsourced`: it has no source. `vocabulary_source_missing`: its query definition is not one the caller may read here. `vocabulary_source_parameters`: the query asks a required parameter. `definition_retired`, `connection_retired`, `credential_missing`, `credential_target_changed`, `sql_not_permitted`, `capability_undeclared` or `identity_unavailable`, as a sample refuses them. `version_precondition`: the vocabulary changed while the source answered */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
+                        /** @enum {string} */
+                        reason?: "untested" | "not_read_only" | "asserted";
+                    };
+                };
+            };
+            /** @description `vocabulary_source_unreadable`: the address's text does not read as SKOS, holds more than 5,000 concepts, or the query has no `id` or `label` column */
+            422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `vocabulary_source_failed`: the address could not be fetched, `failure` saying why (`host_refused`, `connection_failed`, `timeout`, `source_refused`, `source_too_large`, `connector_error`); or the query's run failed, by its failure's code and attribution */
+            502: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
+                        /** @enum {string} */
+                        failure?: "host_refused" | "connection_failed" | "timeout" | "source_refused" | "source_too_large" | "connector_error";
+                    };
+                };
+            };
+            /** @description `connector_unavailable`, `connector_busy` or `query_throttled`, as a sample answers them */
+            503: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @enum {string} */
+                        attribution?: "connector" | "query" | "product";
+                        /** @description What the source said, where it refused the statement: `source_refused` alone */
+                        source?: {
+                            /** @description The source's five-character SQLSTATE */
+                            sqlstate: string;
+                            /** @description The source's own message, cut to 1,000 characters: given only to somebody holding write SQL on the connection */
+                            message?: string;
+                        };
+                        column?: string;
+                        row?: number;
+                        /** @description `query_throttled` alone: the seconds to wait before trying again (DAT-071) */
+                        retryAfter?: number;
                     };
                 };
             };
@@ -116815,6 +117174,16 @@ export interface operations {
                                 base: string;
                                 /** @enum {string} */
                                 order: "declared" | "label";
+                                source?: {
+                                    /** @constant */
+                                    kind: "query";
+                                    query: string;
+                                } | {
+                                    /** @constant */
+                                    kind: "skos";
+                                    /** @example https://gauges.example.test/alloy */
+                                    url: string;
+                                };
                                 values: {
                                     id: string;
                                     labels: {
@@ -116828,6 +117197,7 @@ export interface operations {
                                     /** @enum {string} */
                                     state: "active" | "deprecated" | "retired";
                                     replacedBy?: string;
+                                    source?: string;
                                 }[];
                             };
                         };

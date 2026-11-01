@@ -516,6 +516,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   exportVocabulary: read,
   getVocabularyUses: read,
   importVocabulary: writes('content.version_cut'),
+  refreshVocabulary: writes('content.version_cut'),
   listPeople: read,
   search: read,
   getPresentation: read,

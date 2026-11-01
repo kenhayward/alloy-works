@@ -187,6 +187,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0175_entry_superseded',
       '0176_vocabularies',
       '0177_publication_vocabularies',
+      '0178_vocabulary_query_runs',
     ]);
 
     const read = async () =>

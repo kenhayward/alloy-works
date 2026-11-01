@@ -13,6 +13,7 @@ import {
   webhookSealRequestSchema,
   deliverRequestSchema,
   manifestRequestSchema,
+  vocabularySourceRequestSchema,
   referenceCredentialContext,
   referenceRequestSchema,
   referenceSealRequestSchema,
@@ -59,6 +60,8 @@ const bodyLimits: Readonly<Record<string, number>> = {
   '/v1/deliver': 2 * DELIVERY_BODY_MOST,
   // An extension's manifest, by its URL (the EX plan, EX-B).
   '/v1/manifest': 8 * 1024,
+  // A vocabulary's SKOS address, by its URL (the VO plan, VO-J).
+  '/v1/vocabulary-source': 8 * 1024,
   // A reference source asked, by its id and an operation (the XR plan, XR-B); an extension's with its
   // target and sealed secret (XR-J).
   '/v1/reference': 16 * 1024,
@@ -262,6 +265,14 @@ export function createConnectorServer(options: {
       const parsed = manifestRequestSchema.safeParse(body);
       if (!parsed.success) return send(400, { code: 'request_invalid' });
       const call = supervisor.manifest(parsed.data, gone.signal);
+      if (call === 'busy') return send(503, { code: 'connector_busy' });
+      send(200, await call);
+      return { status: 200, stderrBytes: stderrBytes - before };
+    }
+    if (path === '/v1/vocabulary-source') {
+      const parsed = vocabularySourceRequestSchema.safeParse(body);
+      if (!parsed.success) return send(400, { code: 'request_invalid' });
+      const call = supervisor.vocabularySource(parsed.data, gone.signal);
       if (call === 'busy') return send(503, { code: 'connector_busy' });
       send(200, await call);
       return { status: 200, stderrBytes: stderrBytes - before };

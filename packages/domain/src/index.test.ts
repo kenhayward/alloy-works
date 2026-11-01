@@ -1105,6 +1105,15 @@ describe('the domain package', () => {
         'axisValues',
         'AXIS_VOCABULARY_VALUES',
         'vocabularyDefinitionSchema',
+        // VOc: a vocabulary's source, a refresh from it, and what a hand change to a sourced one may do.
+        'vocabularySourceSchema',
+        'refreshVocabulary',
+        'sourcedEditRefusals',
+        // VOc: a vocabulary's SKOS address, fetched through the connector (VO-J).
+        'VOCABULARY_SOURCE_MOST_BYTES',
+        'vocabularySourceRequestSchema',
+        'vocabularySourceAnswerSchema',
+        'childVocabularySourceRequestSchema',
       ].sort(),
     );
   });

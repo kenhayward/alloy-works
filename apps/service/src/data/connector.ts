@@ -36,6 +36,9 @@ import {
   type ReferenceAnswer,
   type ReferenceRequest,
   type ReferenceSealRequest,
+  vocabularySourceAnswerSchema,
+  type VocabularySourceAnswer,
+  type VocabularySourceRequest,
 } from '@alloy-works/domain';
 import type { z } from 'zod';
 
@@ -85,6 +88,8 @@ export interface ConnectorClient {
   sealWebhook(request: WebhookSealRequest): Promise<Answered<SealAnswer>>;
   /** Fetches an extension's manifest by its URL (the EX plan, EX-B). */
   manifest(request: ManifestRequest): Promise<Answered<ManifestAnswer>>;
+  /** Fetches a vocabulary's SKOS address by its URL (the VO plan, VO-J). */
+  vocabularySource(request: VocabularySourceRequest): Promise<Answered<VocabularySourceAnswer>>;
   /** Asks a reference source by its id and an operation, never a URL (the XR plan, XR-B). */
   reference(request: ReferenceRequest): Promise<Answered<ReferenceAnswer>>;
   /** Seals a reference extension's secret to it and its endpoint (the XR plan, XR-J). */
@@ -109,6 +114,8 @@ export interface ConnectorClient {
  */
 /** How long a manifest's fetch may take: its ten seconds, a child's start, and the way there. */
 const MANIFEST_MS = 15_000;
+/** How long a vocabulary source's fetch may take: its twenty seconds, a start, and the way there. */
+const VOCABULARY_SOURCE_MS = 25_000;
 /** How long a reference call may take: its fifteen seconds, a child's start, and the way there. */
 const REFERENCE_MS = 20_000;
 
@@ -198,6 +205,8 @@ export function createConnectorClient(options: {
     sealModel: (request) => ask('/v1/model/seal', request, sealAnswerSchema, SEAL_MS),
     sealWebhook: (request) => ask('/v1/webhook/seal', request, sealAnswerSchema, SEAL_MS),
     manifest: (request) => ask('/v1/manifest', request, manifestAnswerSchema, MANIFEST_MS),
+    vocabularySource: (request) =>
+      ask('/v1/vocabulary-source', request, vocabularySourceAnswerSchema, VOCABULARY_SOURCE_MS),
     reference: (request) => ask('/v1/reference', request, referenceAnswerSchema, REFERENCE_MS),
     sealReference: (request) => ask('/v1/reference/seal', request, sealAnswerSchema, SEAL_MS),
     embed: (request, signal) =>

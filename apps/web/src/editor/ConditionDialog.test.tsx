@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -135,5 +135,150 @@ describe('the Condition dialog on an axis drawing on a vocabulary (the VO plan, 
     expect(await screen.findByRole('checkbox', { name: 'Pilot (retired)' })).toBeChecked();
     await userEvent.click(screen.getByRole('button', { name: 'Add alternative' }));
     expect(alternative).toHaveBeenCalledWith({ axis: 'phase', values: ['one', 'early'] });
+  });
+});
+
+const SITES = '00000000-0000-4000-8000-0000000000d2';
+const SITE = '00000000-0000-4000-8000-0000000000a3';
+
+/** One axis, Site, drawing on a vocabulary of `values`, its base language French. */
+function siteService(values: readonly unknown[]) {
+  const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+    const request = input instanceof Request ? input : new Request(String(input), init);
+    const path = new URL(request.url).pathname;
+    if (path === '/v1/definitions') {
+      return json(200, {
+        items: [{ id: SITE, kind: 'conditionAxis', name: 'Site', key: 'site', version }],
+        next: null,
+      });
+    }
+    if (path === `/v1/definitions/${SITE}`) {
+      return json(200, {
+        id: SITE,
+        kind: 'conditionAxis',
+        version,
+        definition: { name: 'Site', key: 'site', vocabulary: SITES },
+      });
+    }
+    if (path === `/v1/vocabularies/${SITES}`) {
+      return json(200, {
+        version,
+        vocabulary: {
+          schemaVersion: 1,
+          id: SITES,
+          name: 'Sites',
+          key: 'site',
+          base: 'fr',
+          order: 'declared',
+          values,
+        },
+      });
+    }
+    return json(404, {});
+  }) as unknown as typeof fetch;
+  return createApiClient({ baseUrl: 'http://conditions.test', fetch: fetching });
+}
+
+const site = (id: string, en: string, descriptions: { language: string; text: string }[] = []) => ({
+  id,
+  labels: [
+    { language: 'fr', text: `${en} (fr)` },
+    { language: 'en', text: en },
+  ],
+  descriptions,
+  state: 'active',
+});
+
+describe('the Condition dialog choosing vocabulary values as the field form does (the VO plan, VO-F)', () => {
+  it("LIB-054 shows each axis value's description where it is chosen", async () => {
+    render(
+      <ConditionDialog
+        client={siteService([
+          site('north', 'North', [
+            { language: 'fr', text: 'Au nord' },
+            { language: 'en', text: 'Above the river' },
+          ]),
+          site('south', 'South', [{ language: 'fr', text: 'Au sud' }]),
+          site('east', 'East'),
+        ])}
+        held={[]}
+        onSet={() => undefined}
+        onRemove={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+    // In the reader's language, the base language's where it has none.
+    expect(await screen.findByRole('checkbox', { name: 'North' })).toHaveAccessibleDescription(
+      'Above the river',
+    );
+    expect(screen.getByRole('checkbox', { name: 'South' })).toHaveAccessibleDescription('Au sud');
+    expect(screen.getByRole('checkbox', { name: 'East' })).toHaveAccessibleDescription('');
+  });
+
+  it('LIB-063 says at once that a chosen deprecated axis value is deprecated, naming its replacement, and offers Use replacement', async () => {
+    const set = vi.fn();
+    render(
+      <ConditionDialog
+        client={vocabularyService()}
+        held={[]}
+        onSet={set}
+        onRemove={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+    const early = await screen.findByRole('checkbox', { name: 'Early (deprecated: use Phase I)' });
+    expect(screen.queryByRole('button', { name: /^Use replacement/ })).toBeNull();
+    await userEvent.click(early);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Early is deprecated: use Phase I instead',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Use replacement, Phase I' }));
+    expect(early).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Phase I' })).toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('');
+    await userEvent.click(screen.getByRole('button', { name: 'Set condition' }));
+    expect(set).toHaveBeenCalledWith({ axis: 'phase', values: ['one'] });
+  });
+
+  it('searches an axis of more than twenty values as it is typed, each chosen kept as a checkbox', async () => {
+    const set = vi.fn();
+    const cancelled = vi.fn();
+    render(
+      <ConditionDialog
+        client={siteService(
+          Array.from({ length: 25 }, (_, n) =>
+            site(
+              `s${n + 1}`,
+              `Site ${n + 1}`,
+              n === 23 ? [{ language: 'en', text: 'By the sea' }] : [],
+            ),
+          ),
+        )}
+        held={[]}
+        onSet={set}
+        onRemove={() => undefined}
+        onCancel={cancelled}
+      />,
+    );
+    const search = await screen.findByRole('combobox', { name: 'Find a value' });
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    await userEvent.type(search, 'site 2');
+    const offered = screen.getByRole('listbox', { name: 'Site' });
+    expect(within(offered).getAllByRole('option')).toHaveLength(7);
+    await userEvent.type(search, '4');
+    expect(
+      within(offered)
+        .getAllByRole('option')
+        .map((each) => each.textContent),
+    ).toEqual(['Site 24 By the sea']);
+    // Escape shuts the list, not the dialog.
+    await userEvent.keyboard('{Escape}');
+    expect(cancelled).not.toHaveBeenCalled();
+    await userEvent.type(search, 'site 24{Enter}');
+    expect(screen.getByRole('checkbox', { name: 'Site 24' })).toBeChecked();
+    expect(search).toHaveValue('');
+    await userEvent.type(search, 'site 3{Enter}');
+    await userEvent.click(screen.getByRole('button', { name: 'Set condition' }));
+    expect(set).toHaveBeenCalledWith({ axis: 'site', values: ['s24', 's3'] });
   });
 });

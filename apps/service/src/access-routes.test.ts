@@ -1461,6 +1461,7 @@ describe('routes that check a permission', () => {
       payload: { openedFrom: MISSING, definition: aQueryDefinition(readings) },
     }),
     listDefinitions: () => ({ url: '/v1/definitions', status: 403 }),
+    refreshVocabulary: () => ({ url: `/v1/vocabularies/${MISSING}/refresh`, status: 404 }),
     importVocabulary: () => ({
       url: '/v1/vocabularies/import',
       status: 403,

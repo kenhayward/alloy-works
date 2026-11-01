@@ -1023,7 +1023,9 @@ describe('the citations in the committed model', () => {
     // 2260 (2026-10-31): CLd - LIB-035's and PUB-055's tests.
     // 2273 (2026-10-31): VOa - a vocabulary's shape, its routes, SKOS and its page.
     // 2292 (2026-10-31): VOb - fields and axes drawing on a vocabulary, its labels published and pinned.
-    expect(model.citations).toHaveLength(2292);
+    // 2293 (2026-11-01): VO-J - the connector fetching a vocabulary's SKOS address, LIB-058.
+    // 2299 (2026-11-01): VOc - a vocabulary refreshed from its source, the condition dialog's choice, LIB-054, LIB-058, LIB-063.
+    expect(model.citations).toHaveLength(2299);
   });
 
   it('cites no identifier the corpus does not hold', () => {

@@ -10,8 +10,31 @@
 
 .value {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* A vocabulary value's description beside it (the VO plan, VO-F). */
+.about {
+  color: var(--muted);
+  font-size: var(--size-13);
+}
+
+/* Said at once to a screen reader: a deprecated value chosen. */
+.announced {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .said {

@@ -3,7 +3,7 @@ import { sql } from 'kysely';
 import type { TenantTransaction } from './tables.js';
 
 /** An act that runs a query (the R18 plan, R18-D). */
-export type QueryAct = 'sample' | 'resolve' | 'check' | 'creation';
+export type QueryAct = 'sample' | 'resolve' | 'check' | 'creation' | 'vocabulary';
 
 export interface QueryRun {
   readonly act: QueryAct;

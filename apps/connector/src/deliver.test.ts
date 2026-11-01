@@ -226,6 +226,7 @@ describe("the connector's deliver key (the WB plan, WB-F)", () => {
       '/v1/webhook/seal',
       '/v1/run',
       '/v1/manifest',
+      '/v1/vocabulary-source',
     ]) {
       expect((await post(path, { tenant: TENANT }, DELIVER_KEY)).status, path).toBe(401);
     }

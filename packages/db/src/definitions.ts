@@ -29,6 +29,7 @@ import {
   type MetadataSchemaDefinition,
   type SchemaPlace,
   type SchemaConflict,
+  sourcedEditRefusals,
   type Vocabulary,
   vocabularyChangeRefusals,
   vocabularyDefinitionSchema,
@@ -330,6 +331,7 @@ async function refusal(
   kind: DefinitionKind,
   candidate: DefinitionOf[DefinitionKind],
   self?: string,
+  refreshed = false,
 ): Promise<DefinitionAnswer | undefined> {
   if (kind === 'field') {
     // A vocabulary it draws on is a vocabulary (MET-003; the VO plan, VO-C).
@@ -457,6 +459,23 @@ async function refusal(
         })),
       };
     }
+    // A sourced one's values are its source's but for their states, which a refresh alone sets
+    // (LIB-058; the VO plan, VO-J).
+    const sourced = refreshed
+      ? []
+      : sourcedEditRefusals(held?.definition as Vocabulary | undefined, vocabulary);
+    if (sourced.length > 0) {
+      return {
+        answer: 'definition.invalid',
+        failures: sourced.map((detail) => ({
+          code: 'metadata.fixed' as const,
+          field: detail.slice(0, detail.indexOf(':')),
+          rule: 'fixed' as const,
+          schemas: [],
+          detail: `A sourced vocabulary takes its values from its source: ${detail}`,
+        })),
+      };
+    }
     // One an axis names holds no more values than an axis may (VO-E).
     if (
       self !== undefined &&
@@ -530,6 +549,8 @@ export async function recordDefinitionVersion(
     readonly openedFrom: string;
     readonly definition: unknown;
     readonly author: string;
+    /** A vocabulary's version made by a refresh from its source, which may change its values (VO-J). */
+    readonly refreshed?: true;
   },
 ): Promise<DefinitionAnswer> {
   const current = await readDefinitionLatest(trx, input.id);
@@ -539,7 +560,7 @@ export async function recordDefinitionVersion(
     id: input.id,
   }) as DefinitionOf[DefinitionKind];
   await holdDefinitions(trx);
-  const refused = await refusal(trx, current.kind, definition, input.id);
+  const refused = await refusal(trx, current.kind, definition, input.id, input.refreshed === true);
   if (refused) return refused;
   const answer = await recordVersion(trx, {
     artifactId: input.id,

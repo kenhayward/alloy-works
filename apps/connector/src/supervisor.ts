@@ -20,6 +20,10 @@ import {
   type ChildManifestRequest,
   type ManifestAnswer,
   type ManifestRequest,
+  vocabularySourceAnswerSchema,
+  type ChildVocabularySourceRequest,
+  type VocabularySourceAnswer,
+  type VocabularySourceRequest,
   webhookSecretContext,
   DELIVERY_DEADLINE_MS,
   type ChildDeliverRequest,
@@ -341,6 +345,8 @@ export const MAX_DELIVERIES = 4;
 const MANIFEST_SPAWN_MS = 12_000;
 /** How long a reference call's child may take: its fifteen seconds, and a start. */
 const REFERENCE_SPAWN_MS = 17_000;
+/** How long a vocabulary source's child may take: its twenty seconds, and a start (VO-J). */
+const VOCABULARY_SOURCE_SPAWN_MS = 22_000;
 
 export interface Supervisor {
   /**
@@ -365,6 +371,11 @@ export interface Supervisor {
   embed(request: EmbedRequest, signal?: AbortSignal): 'busy' | Promise<EmbedAnswer>;
   /** An extension's manifest fetched (the EX plan, EX-B): `busy` where every child is running. */
   manifest(request: ManifestRequest, signal?: AbortSignal): 'busy' | Promise<ManifestAnswer>;
+  /** A vocabulary's SKOS address fetched (the VO plan, VO-J): `busy` where every child is running. */
+  vocabularySource(
+    request: VocabularySourceRequest,
+    signal?: AbortSignal,
+  ): 'busy' | Promise<VocabularySourceAnswer>;
   /** A reference source asked (the XR plan, XR-B): `busy` where every child is running. */
   reference(request: ReferenceRequest, signal?: AbortSignal): 'busy' | Promise<ReferenceAnswer>;
   /** A webhook delivery (the WB plan, WB-F): `busy` where its own cap is reached, else its answer. */
@@ -652,6 +663,59 @@ export function createSupervisor(options: {
   }
 
   /**
+   * A vocabulary source's child (VO-J): no secret, the connection's guard, and the private ranges
+   * besides wherever a webhook's receiver is refused them: a SKOS address is named by an administrator,
+   * as a receiver is, so it follows the deployment's same allowance.
+   */
+  async function vocabularySourceWork(
+    request: VocabularySourceRequest,
+    slot: number,
+    sweeping: (done: Promise<void>) => void,
+    signal: AbortSignal | undefined,
+  ): Promise<VocabularySourceAnswer> {
+    const input: ChildVocabularySourceRequest = {
+      kind: 'vocabularySource',
+      request,
+      deny: [...options.deny, ...(options.webhookDeny ?? [])],
+      connectTimeoutMs,
+      ...(options.ca === undefined ? {} : { ca: options.ca }),
+    };
+    const spec = specFor(slot);
+    let stderrBytes = 0;
+    let answer: VocabularySourceAnswer | undefined;
+    let outcome: StreamOutcome;
+    try {
+      outcome = await streamSpawn(
+        spec,
+        JSON.stringify(input),
+        VOCABULARY_SOURCE_SPAWN_MS,
+        (line) => {
+          try {
+            const parsed = vocabularySourceAnswerSchema.safeParse(JSON.parse(line));
+            if (parsed.success) answer = parsed.data;
+          } catch {
+            // Not an answer: the child is at fault.
+          }
+          return false;
+        },
+        (chunk) => {
+          stderrBytes += chunk.length;
+        },
+        signal,
+      );
+    } finally {
+      if (spec.uid !== undefined) sweeping(sweep(spec.uid).catch(() => {}));
+    }
+    options.onStderrBytes?.(stderrBytes);
+    return (
+      answer ?? {
+        type: 'failed',
+        code: outcome.kind === 'timeout' ? 'timeout' : 'connector_error',
+      }
+    );
+  }
+
+  /**
    * A reference call's child (XR-B): no secret; the host domain's list declares, never the request's;
    * the private ranges always among the guard's, whatever `deny` holds. A reference extension's (XR-J)
    * the host of the endpoint its installed manifest declares, and its secret opened here only for that
@@ -904,6 +968,21 @@ export function createSupervisor(options: {
       let answer: ManifestAnswer | undefined;
       return holding(slot, (sweeping) =>
         manifestWork(request, slot, sweeping, signal)
+          .then((each) => {
+            answer = each;
+          })
+          .finally(() => {
+            active -= 1;
+          }),
+      ).then(() => answer!);
+    },
+    vocabularySource(request, signal) {
+      const slot = free.shift();
+      if (slot === undefined) return 'busy';
+      active += 1;
+      let answer: VocabularySourceAnswer | undefined;
+      return holding(slot, (sweeping) =>
+        vocabularySourceWork(request, slot, sweeping, signal)
           .then((each) => {
             answer = each;
           })

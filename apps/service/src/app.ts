@@ -589,7 +589,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     else reply.setCookie(RETURN_COOKIE, to, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
   }
 
-  const { boundCreation, ...connectionRoutes } = connectionHandlers(
+  const { boundCreation, vocabularySource, ...connectionRoutes } = connectionHandlers(
     db,
     tenantOf,
     principalOf,
@@ -645,7 +645,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...promptLibraryHandlers(),
     ...bibliographyHandlers(),
     ...termHandlers(),
-    ...vocabularyHandlers(db, tenantOf, principalOf),
+    ...vocabularyHandlers(db, tenantOf, principalOf, vocabularySource),
     ...importHandlers(db, tenantOf, options.objects),
     ...termEditingHandlers(),
     ...referenceSourceHandlers(db, tenantOf, options.connector),
