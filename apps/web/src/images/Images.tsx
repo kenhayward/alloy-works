@@ -331,7 +331,11 @@ export function Images({ client }: { readonly client: Client }) {
           )}
         </>
       )}
-      <p role="status" className={styles['status']} data-tone={replacing?.failed ? 'failed' : undefined}>
+      <p
+        role="status"
+        className={styles['status']}
+        data-tone={replacing?.failed ? 'failed' : undefined}
+      >
         {replacing?.text}
       </p>
       {showing !== null && <WhereUsed client={client} image={showing} />}

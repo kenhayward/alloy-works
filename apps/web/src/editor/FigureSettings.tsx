@@ -333,9 +333,14 @@ export function FigureSettings({
         {card('decorative', words('editor.decorative'))}
       </fieldset>
       {settings.rights.state === 'known' && (
-        <p className={styles['note']} data-tone={rightsFlags(settings.rights).length > 0 ? 'warn' : undefined}>
+        <p
+          className={styles['note']}
+          data-tone={rightsFlags(settings.rights).length > 0 ? 'warn' : undefined}
+        >
           {settings.rights.licence === null
-            ? words('editor.its-rights-are-not-declared', { date: longDate(settings.rights.changedAt) })
+            ? words('editor.its-rights-are-not-declared', {
+                date: longDate(settings.rights.changedAt),
+              })
             : words('editor.held-under', {
                 licence: settings.rights.licence.name,
                 date: longDate(settings.rights.changedAt),

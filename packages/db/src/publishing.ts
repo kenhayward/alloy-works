@@ -341,8 +341,7 @@ export async function followedVersions(
 ): Promise<ReadonlyMap<string, string>> {
   const asked = [...new Set(placed)].filter((id) => UUID.test(id));
   if (asked.length === 0) return new Map();
-  const among =
-    within === undefined ? sql`` : sql`and l.id = any(${[...within]}::uuid[])`;
+  const among = within === undefined ? sql`` : sql`and l.id = any(${[...within]}::uuid[])`;
   const { rows } = await sql<{ placed: string; resolved: string | null }>`
     select p.id::text as placed,
            (select l.id::text from artifact_version l

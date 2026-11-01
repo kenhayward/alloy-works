@@ -85,10 +85,22 @@ function service() {
     }
     // Replacing the harbour (AL-M): an upload naming it, filled, and checked at once.
     if (path === `/v1/assets/${HARBOUR}/replacements` && request.method === 'POST') {
-      return json(200, { id: REPLACING, space: GENERAL, state: 'awaiting', reason: null, assetVersion: null });
+      return json(200, {
+        id: REPLACING,
+        space: GENERAL,
+        state: 'awaiting',
+        reason: null,
+        assetVersion: null,
+      });
     }
     if (path === `/v1/asset-uploads/${REPLACING}/bytes` && request.method === 'PUT') {
-      return json(200, { id: REPLACING, space: GENERAL, state: 'checking', reason: null, assetVersion: null });
+      return json(200, {
+        id: REPLACING,
+        space: GENERAL,
+        state: 'checking',
+        reason: null,
+        assetVersion: null,
+      });
     }
     if (path === `/v1/asset-uploads/${REPLACING}`) {
       replaced = true;

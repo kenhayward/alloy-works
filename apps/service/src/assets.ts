@@ -90,10 +90,9 @@ async function rightsView(trx: TenantTransaction, asset: string): Promise<AssetR
   const declared = current.kind === 'declared' ? current : undefined;
   const licence = declared && (await readDefinitionLatest(trx, declared.licence));
   const terms = licence?.kind === 'licence' ? (licence as StoredDefinition<'licence'>) : undefined;
-  const changed = [
-    history[0]?.recordedAt,
-    terms?.version.createdAt,
-  ].filter((each): each is Date => each !== undefined);
+  const changed = [history[0]?.recordedAt, terms?.version.createdAt].filter(
+    (each): each is Date => each !== undefined,
+  );
   return {
     asset,
     current,
@@ -293,7 +292,11 @@ export function assetHandlers(
       const { id } = request.params as AssetParams;
       await assetIn(trx, id);
       if ((await readableAsset(trx, callerOf(request), id)).fromDataset) {
-        throw refused(409, 'asset.replace_dataset', "A dataset's image is replaced by its dataset.");
+        throw refused(
+          409,
+          'asset.replace_dataset',
+          "A dataset's image is replaced by its dataset.",
+        );
       }
       const latest = await latestVersion(trx, id);
       const { spaceId, content } = (latest && (await readAssetVersion(trx, latest.id))) || {};

@@ -158,7 +158,13 @@ describe('the mapping between the stored model and the editor', () => {
         id: 'p1',
         style: 'body',
         content: [
-          { type: 'image', asset, follow: 'latest', imageStyle: 'inline', alternative: { kind: 'decorative' } },
+          {
+            type: 'image',
+            asset,
+            follow: 'latest',
+            imageStyle: 'inline',
+            alternative: { kind: 'decorative' },
+          },
           { type: 'image', asset, imageStyle: 'inline', alternative: { kind: 'decorative' } },
         ],
       },

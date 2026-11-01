@@ -721,7 +721,11 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(Buffer.compare((await thumbnail(first.id)).rawPayload, before)).toBe(0);
     expect(Buffer.compare((await thumbnail(second.id)).rawPayload, after)).toBe(0);
     // A figure following it, placed at the first, shows the latest's, never kept (AST-017).
-    const shown = await call('grace', 'GET', `/v1/asset-versions/${first.id}/content?follow=latest`);
+    const shown = await call(
+      'grace',
+      'GET',
+      `/v1/asset-versions/${first.id}/content?follow=latest`,
+    );
     expect(Buffer.compare(shown.rawPayload, after)).toBe(0);
     expect(shown.headers['cache-control']).toBe('private, no-store');
   });

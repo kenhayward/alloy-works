@@ -1263,7 +1263,9 @@ describe('a figure in the editor (figures 2)', () => {
     expect(within(panel).getByText('Not licensed for publication')).toBeInTheDocument();
     const settings = await settingsOf(panel);
     expect(
-      within(settings).getByText('Held under Internal only. Its rights last changed on 30 October 2026.'),
+      within(settings).getByText(
+        'Held under Internal only. Its rights last changed on 30 October 2026.',
+      ),
     ).toBeInTheDocument();
   });
 

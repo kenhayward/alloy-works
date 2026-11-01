@@ -2142,7 +2142,10 @@ describe('requesting and recording a publication', () => {
         author: ada,
         substance: {
           kind: 'asset',
-          content: { ...(first.content as object), object: `${production.role}/sha256/${'7e'.repeat(32)}` },
+          content: {
+            ...(first.content as object),
+            object: `${production.role}/sha256/${'7e'.repeat(32)}`,
+          },
         } as never,
       });
       if (replaced.answer !== 'recorded') throw new Error(replaced.answer);

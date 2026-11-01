@@ -303,18 +303,19 @@ export async function recordAsset(
   // Its first rights (AL-C): what the uploader declared, a dataset's for a dataset's image, else
   // undeclared, so every asset, however it arrived, has one (the pre-flight's sixth finding). A
   // replacement's are its asset's already: rights are the asset's, not a version's.
-  if (upload.replaces === null) await trx
-    .insertInto('asset_rights')
-    .values({
-      asset_id: version.artifactId,
-      rights: JSON.stringify(
-        upload.origin === 'dataset'
-          ? { kind: 'dataset' }
-          : (upload.rights ?? { kind: 'undeclared' }),
-      ),
-      recorded_by: upload.uploader,
-    })
-    .execute();
+  if (upload.replaces === null)
+    await trx
+      .insertInto('asset_rights')
+      .values({
+        asset_id: version.artifactId,
+        rights: JSON.stringify(
+          upload.origin === 'dataset'
+            ? { kind: 'dataset' }
+            : (upload.rights ?? { kind: 'undeclared' }),
+        ),
+        recorded_by: upload.uploader,
+      })
+      .execute();
   // Indexed as it was written, before the upload named it; a dataset's image is never found (D8-I).
   if (upload.origin === 'dataset') await indexVersion(trx, version);
   await recordAssetEvent(trx, upload.spaceId, {

@@ -3,6 +3,57 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.223.0 - 2026-11-01 (PR #873)
+
+T7's second slice closed (the AL plan): an image's licence and rights, its derivatives, the Images page and replacement; with it, the work merged since 0.222.0.
+
+### Added
+
+- **Licences.** Administration's Licences keeps the licences an image may be held under: what each permits, and whether it needs a credit and with what words.
+- **Where an image came from.** Uploading an image asks for its source and licence, or says it was not declared; each change to them is kept.
+- **Images held to their licences.** A publish is refused for an image whose licence does not permit publication. An undeclared image, or one past its grant, is reported, or refused where Administration's Images says so.
+- **Image limits.** Administration's Images lowers the largest PNG or JPEG an upload may be.
+- **Thumbnails and previews.** Each image's are made when it is uploaded, and an administrator may discard a space's to be made again.
+- **Metadata left out of outputs.** A published image carries no EXIF, GPS, XMP, IPTC or content credentials, and the publication records what was removed.
+- **Images.** A space's images as thumbnails, searched and filtered by format, rights, orientation, licence and whether anything uses them, with where each is used.
+- **Choose an image the space holds.** The Figure dialog places an existing image, and offers the one a chosen file duplicates instead of a second copy.
+- **Replace an image.** Replace on an image's card in Images uploads a new version of it; earlier versions are kept, and its description, name and rights carry over.
+- **Always show the latest version.** A figure set so in Figure settings shows, and publishes, its image's latest version; a baseline keeps the one it was made with.
+- **Rights where an image is used.** A figure's line flags an image whose licence has expired, does not permit publication or was never declared, and Figure settings says when its rights last changed.
+- **The assistant edits tables.** It can propose setting one cell of a table, or replacing a table's rows, header rows and caption, accepted, kept or discarded as any proposal is. A bound table's rows come from a query and are never edited.
+- **Cited parts above the text.** A bar above the document steps through the parts the assistant's last answer cited.
+- **How much context a turn took.** Beside the endpoint, a gauge shows the last turn's share of the model's context window; Enter asks and Shift and Enter starts a new line.
+- **A timeout for each model.** Models asks how long a call to a model may take, showing the default of 120 seconds; every call to it waits that long.
+- **A model's type and what it supports.** Each model is an LLM or an embedding model, and says whether it calls tools and reads images. Embedding goes only to an embedding model, everything else only to an LLM, and a model that calls no tools is sent none.
+- **Context for the assistant.** Ask about the current component, or give the assistant all the document's components.
+- **A reply's progress.** While the assistant answers, the panel shows it is answering and how many tokens have arrived.
+
+### Changed
+
+- **Images checked on every read.** A stored image whose bytes no longer match their hash is never sent.
+- **Imports reuse images.** An import places an image its space already holds with the same bytes rather than a second copy.
+- **The Assistant's conversation reads as a chat.** Your words stand at the end of the line in the accent, without a label; a reply's progress is one line, saying it is answering once beside its tokens so far; and a turn you ask comes into view. **Earlier conversations** lists one line each: when, then its title, cut short to fit.
+- **The Assistant on one line and docked.** Its name and toolbar share the top line, with **Prompts** there as a popup; the box and what it reads sit on the bottom edge, the box the panel's width and growing upward as you write. **Document** and **Component** are chips, and **Add a part** is always beside them, its finder a popup. **Earlier conversations** is a menu nearly the panel's width. The introduction is gone.
+- **The document's panels on an icon rail.** The panels beside a document's text are chosen from a column of icons on the panel's right-hand edge, each named when you point at it or move to it, and the rail stays when the panel is hidden.
+- **The assistant, turn by turn.** Each turn shows what you asked over its answer, with citations as numbered buttons, Copy the answer and Ask again, a line saying what it is doing while it answers, and Stop where Ask was.
+- **The Assistant tab, laid out again.** A toolbar on top holds the model, the context gauge and the conversation's tools; the conversation scrolls in the middle; the box, what it reads and Prompts stay fixed at the bottom.
+- **Conversations are kept by choice.** Keep a conversation, or name it, to find it under Earlier conversations; one you do not keep is not listed again. Conversations you had before are kept.
+- **Model lines act through icons.** Edit and Test are icon buttons, with Set key and Retire under More actions; Edit opens the model's settings beside its line.
+- **The chat offers no embedding model.** Its endpoint list holds LLMs alone.
+
+### Fixed
+
+- **The assistant reads bound tables.** A bound table's rows reach the model as a reader sees them, in the table's order and only the columns it shows, so it can summarise one.
+- **The Assistant's composer stood under the status bar**, its toolbar sat lower than the rail's collapse button, and a sent ask stayed in the box until the reply ended, so Send looked as if it did nothing. The panels beside the text now end above the status bar wherever the page is scrolled, the toolbar lines up with the rail, and the box empties as it sends. (#868)
+- **The Assistant's composer still stopped short of the panel's bottom, and the mouse wheel did not scroll its conversation.** Its toolbar and composer now stand on the panel's edges, the conversation scrolling between them. (#866)
+- **The Assistant's composer floated partway up the panel**, and **Send** almost vanished on hover. (#864)
+- **The assistant reads tables, figures and equations.** A table reaches the model as its rows, not a bare "table", so it can summarise one; figures, equations, quotations, footnotes and citations are read too.
+- **The outline names each part.** The assistant's outline gives each component's title, and a bound table's value says what it is.
+- **Answers are formatted.** The assistant's Markdown shows as headings, lists, tables and code, with its citations kept as buttons.
+- **CT Studio's shared connection tests pass.** CT Studio tests a shared connection without naming an instance, and Alloy Works refused it as "This address serves no such instance". An unnamed instance now means the environment the address serves; a different one is still refused.
+- **CT Studio can browse Alloy Works spaces.** Choosing a space for a CT Studio publishing target failed with "no instance is not an instance of" the connection. Alloy Works now lists no instances, as CT Studio expects of a shared connection, since the address already names the environment.
+- **Confirm and embed failed every time.** The sample's run was recorded without an audit context, so the service refused it; it is now recorded as the administrator, and any failure says why.
+
 ## 0.222.0 - 2026-11-01 (PR #846)
 
 T7's first slice closed (the VO plan): vocabularies, the values fields and condition axes draw on.

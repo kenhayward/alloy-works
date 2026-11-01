@@ -43,8 +43,12 @@ export const CreateAssetReplacementBody = z.strictObject({
   alternative: assetAlternativeSchema
     .nullable()
     .optional()
-    .describe("The next version's default description, null for none, or the latest's where absent"),
-  name: assetNameSchema.optional().describe("The name it is listed by, or the latest's where absent"),
+    .describe(
+      "The next version's default description, null for none, or the latest's where absent",
+    ),
+  name: assetNameSchema
+    .optional()
+    .describe("The name it is listed by, or the latest's where absent"),
 });
 export type CreateAssetReplacementBody = z.infer<typeof CreateAssetReplacementBody>;
 
