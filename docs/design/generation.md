@@ -242,14 +242,17 @@ tool calls a run. The tools (GEN-007):
 citation only where that block was in what the run read, shows it as a link, and drops any other,
 saying so.
 
-**The panel** (the DP and DQ plans): three rows. A toolbar on top holds the model, a menu that says
+**The panel** (the DP and DQ plans, issue #864): three rows. One line on top names the panel and holds
+its toolbar: the model, a menu that says
 whether each endpoint sits outside the boundary (GEN-051); a gauge of the last turn's tokens in over
 the endpoint's `contextWindow` (`/v1/conversation-endpoints`), in three bands at 50% and 75%; and the
-conversation's tools: earlier conversations, name, keep, new. The middle scrolls: a turn is a ledger
+conversation's tools: **Prompts**, a popup of the personal and library prompts; earlier
+conversations, a menu nearly the panel's width; name, keep, new. The middle scrolls: a turn is a ledger
 line, what was asked over its answer, each kept citation a numbered button and the answer's cited
-parts stepped through in a bar above the text. The composer is fixed at the bottom: **This part** or
-**The whole document**, the parts it reads as chips, the box, and **Prompts** opening the personal
-and library prompts. While it runs, one line names the last step and **Stop** stands where **Ask**
+parts stepped through in a bar above the text. The composer is fixed at the bottom edge: **Document** or
+**Component** as chips, the parts it reads, **Add a part** opening a finder over the conversation
+(parts added before the first ask are given to the conversation it begins), and the box, which grows
+upward with its lines. While it runs, one line names the last step and **Stop** stands where **Ask**
 was. The part asked about is held from when the box is entered until the ask is sent.
 
 ## Proposals

@@ -28,8 +28,11 @@ export function Segmented({
   onChange,
   disabled = false,
   describedBy,
+  className,
 }: {
   label: string;
+  /** Drawn otherwise, such as chips; its segments are still radios. */
+  className?: string | undefined;
   /** What says more of it, such as why it is disabled: the id of that text. */
   describedBy?: string | undefined;
   value: string;
@@ -75,7 +78,7 @@ export function Segmented({
     <div
       role="radiogroup"
       aria-label={label}
-      className={styles['segmented']}
+      className={className ?? styles['segmented']}
       onKeyDown={onKeyDown}
       {...(disabled ? { 'aria-disabled': true } : {})}
       {...(describedBy === undefined ? {} : { 'aria-describedby': describedBy })}

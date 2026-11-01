@@ -1,19 +1,44 @@
 .assistant {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-height: 0;
   height: 100%;
 }
 
-/* The toolbar on top (the DQ plan): the model, the gauge, then the conversation's own tools. */
+/* One line on top (issue #864): the panel's name, then its toolbar, the model first. The popups it
+   opens stand under it, lined up with it. */
 .bar {
+  position: relative;
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-8);
   min-height: 44px;
-  padding: 0 var(--space-8);
+  padding: 0 var(--space-4) 0 var(--space-12);
   border-bottom: 1px solid var(--border);
+}
+
+.title {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.tools {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.promptsPopup {
+  top: calc(100% + var(--space-4));
+  inset-inline-end: var(--space-8);
+  width: min(360px, calc(100% - 2 * var(--space-8)));
+  max-height: 60vh;
 }
 
 .model {
@@ -75,21 +100,16 @@
   font-weight: 600;
 }
 
-/* The composer, fixed at the bottom: what it reads above the box, the box last. */
+/* The composer, fixed at the bottom: what it reads above the box, the box last; the finder it opens
+   stands over the conversation above it. */
 .composer {
+  position: relative;
   display: grid;
   flex-shrink: 0;
   gap: var(--space-8);
   padding: var(--space-8) var(--space-12) var(--space-12);
   border-top: 1px solid var(--border);
   background: var(--sunken);
-}
-
-.offered {
-  display: grid;
-  gap: var(--space-8);
-  max-height: 40vh;
-  overflow: auto;
 }
 
 .chips {
@@ -128,20 +148,92 @@
   color: var(--text);
 }
 
+/* Document or Component, as chips: the one chosen in the accent (issue #864). */
+.scopes {
+  display: inline-flex;
+  gap: var(--space-4);
+}
+
+.scopes [role='radio'] {
+  height: 24px;
+  padding: 0 var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 500;
+}
+
+.scopes [role='radio'][aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.scopes [role='radio']:disabled {
+  opacity: var(--opacity-disabled);
+}
+
 .addPart {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
   height: 24px;
   padding: 0 var(--space-8);
   border: 1px dashed var(--strong-border);
-  border-radius: var(--radius-4);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--muted);
   font-size: var(--size-12);
 }
 
+.addPart[aria-expanded='true'] {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Finding a part: over the conversation, just above the composer, nearly its width. */
 .finder {
-  display: grid;
-  flex-basis: 100%;
+  bottom: calc(100% + var(--space-4));
+  inset-inline: var(--space-12);
+  max-height: min(420px, 60vh);
+}
+
+.look {
+  display: flex;
   gap: var(--space-8);
+}
+
+.look input {
+  flex: 1;
+  min-width: 0;
+}
+
+.found {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.found li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.found li > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .box {
@@ -155,7 +247,16 @@
   border-color: var(--accent);
 }
 
+/* The box the composer's width, growing with its lines to its most, then scrolling (issue #864). */
+.askLabel {
+  display: grid;
+}
+
 .box textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
   padding: var(--space-8) var(--space-12) var(--space-4);
   border: 0;
   background: transparent;
@@ -199,6 +300,12 @@
 
 .send {
   background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Darker on hover, never the page's sunken ground behind the accent's ink (issue #864). */
+.send:hover:not(:disabled) {
+  background: var(--accent-text);
   color: var(--on-accent);
 }
 
@@ -526,6 +633,6 @@
 }
 
 /* The span MenuButton wraps the model in may shrink below its words (the final review). */
-.bar > :has(> .model) {
+.tools > :has(> .model) {
   min-width: 0;
 }

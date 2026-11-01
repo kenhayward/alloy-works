@@ -271,7 +271,10 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Add component' }));
-    await userEvent.selectOptions(await screen.findByLabelText('Component'), PRINTER);
+    await userEvent.selectOptions(
+      await screen.findByRole('combobox', { name: 'Component' }),
+      PRINTER,
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(

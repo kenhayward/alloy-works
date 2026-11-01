@@ -217,17 +217,26 @@
   height: var(--dock-most);
 }
 
+/* The Assistant's tab filling the dock to its edges, its own toolbar naming it, so its middle scrolls
+   and its composer stays on the bottom edge (issue #864). */
 .dockBody:has(> .assistantTab:not([hidden])) {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
-/* The Assistant's tab filling the dock to its edges, so its own middle scrolls and its composer stays
-   at the bottom (the DQ plan). */
 .assistantTab {
-  height: calc(100% + 2 * var(--space-12));
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   min-height: 0;
-  margin: calc(var(--space-12) * -1);
   overflow: hidden;
+}
+
+.assistantTab[hidden] {
+  display: none;
 }
 
 /* The Table tab nearer the pane's sides, whose band keeps its own inset (ADR-0052). */

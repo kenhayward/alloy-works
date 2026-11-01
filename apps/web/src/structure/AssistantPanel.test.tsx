@@ -876,12 +876,12 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       />,
     );
     const context = screen.getByRole('radiogroup', { name: 'Context' });
-    expect(within(context).getByRole('radio', { name: 'This part' })).toBeChecked();
+    expect(within(context).getByRole('radio', { name: 'Component' })).toBeChecked();
     await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(stream.mock.calls[0]![0].body).toMatchObject({ component: SITES, context: 'component' });
 
-    await user.click(within(context).getByRole('radio', { name: 'The whole document' }));
+    await user.click(within(context).getByRole('radio', { name: 'Document' }));
     await user.type(screen.getByLabelText('Ask the assistant'), 'And the rest?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     await waitFor(() => expect(stream).toHaveBeenCalledTimes(2));
@@ -898,8 +898,8 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         origin="http://doc.test"
       />,
     );
-    expect(screen.getByRole('radio', { name: 'This part' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'The whole document' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Component' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Document' })).toBeChecked();
   });
 
   it('offers no context choice for a conversation on no document', () => {
@@ -1110,7 +1110,7 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     await user.click(screen.getByLabelText('Ask the assistant'));
     // The cursor leaves the part for the box: the part asked about stays the one it was.
     rerender(panel(null));
-    expect(screen.getByRole('radio', { name: 'This part' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Component' })).toBeChecked();
     await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(stream.mock.calls[0]![0].body).toMatchObject({ component: SITES, context: 'component' });
@@ -1135,7 +1135,7 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     await user.click(document.body);
     rerender(panel(null));
     // No part open, and the box left: there is no part to ask about.
-    expect(screen.getByRole('radio', { name: 'This part' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Component' })).toBeDisabled();
     rerender(panel(LIBRARY));
     await user.type(screen.getByLabelText('Ask the assistant'), 'And this one?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
@@ -1223,8 +1223,90 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     expect(await screen.findByRole('list', { name: 'Earlier turns' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'About the weir' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'A new conversation' }));
-    expect(screen.getByRole('heading', { name: 'A new conversation' })).toBeVisible();
+    // A new one has no name to show until its first ask gives it one.
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
     expect(screen.queryByRole('list', { name: 'Earlier turns' })).toBeNull();
+  });
+
+  it('names itself in its toolbar line, and says nothing of itself before a conversation (issue #864)', async () => {
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        origin="http://doc.test"
+      />,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Conversation' });
+    const heading = screen.getByRole('heading', { level: 2, name: 'Assistant' });
+    // The heading and the toolbar share one line, the bar's.
+    expect(heading.parentElement).toBe(bar.parentElement);
+    expect(screen.queryByText(/The assistant reads what you may read/)).toBeNull();
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
+  });
+
+  it('offers the prompts from the toolbar in a popup, never in the conversation, and Escape closes it (issue #864)', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        node={NODE}
+        onCite={() => {}}
+        origin="http://doc.test"
+      />,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Conversation' });
+    const prompts = within(bar).getByRole('button', { name: 'Prompts' });
+    expect(prompts).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(prompts);
+    const popup = screen.getByRole('dialog', { name: 'Prompts' });
+    expect(await within(popup).findByRole('region', { name: 'Prompts' })).toBeVisible();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog', { name: 'Prompts' })).toBeNull();
+    expect(prompts).toHaveFocus();
+  });
+
+  it('chooses Document or Component as chips, and adds a part from a popup before the first ask, which then reads it (issue #864)', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    const stream = vi.fn(answered());
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    const reads = screen.getByRole('group', { name: 'What it reads' });
+    expect(within(reads).getByRole('radio', { name: 'Component' })).toBeChecked();
+    expect(within(reads).getByRole('radio', { name: 'Document' })).not.toBeChecked();
+    const add = within(reads).getByRole('button', { name: 'Add a part' });
+    expect(add).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(add);
+    const finder = within(reads).getByRole('dialog', { name: 'Add a part' });
+    await user.type(
+      within(finder).getByRole('textbox', { name: 'Find a part to add' }),
+      'weir{Enter}',
+    );
+    await user.click(await within(finder).findByRole('button', { name: 'Add Weir levels' }));
+    expect(screen.queryByRole('dialog', { name: 'Add a part' })).toBeNull();
+    expect(within(reads).getByText('Weir levels')).toBeInTheDocument();
+    // Held until the first ask begins the conversation, then given to it before the turn runs.
+    expect(asked).not.toContain(`POST /v1/conversations/${CONVERSATION}/context`);
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What floods?{Enter}');
+    await waitFor(() => expect(stream).toHaveBeenCalled());
+    expect(asked).toContain(`POST /v1/conversations/${CONVERSATION}/context`);
+    expect(asked.indexOf(`POST /v1/conversations/${CONVERSATION}/context`)).toBeGreaterThan(
+      asked.indexOf('POST /v1/conversations'),
+    );
   });
 
   it('holds its choices in a toolbar: the model, the gauge, and the conversation kept and named by choice (the DQ plan)', async () => {
@@ -1243,6 +1325,7 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     const bar = await screen.findByRole('toolbar', { name: 'Conversation' });
     for (const name of [
       /^Model: Drafting/,
+      'Prompts',
       'Earlier conversations',
       'Name this conversation',
       'Keep this conversation',
@@ -1301,7 +1384,7 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     await user.click(screen.getByRole('button', { name: 'A new conversation' }));
     answer();
     await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(screen.getByRole('heading', { name: 'A new conversation' })).toBeVisible();
+    expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
     expect(screen.queryByRole('list', { name: 'Earlier turns' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Keep this conversation' })).toBeDisabled();
   });
