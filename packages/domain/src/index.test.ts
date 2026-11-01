@@ -71,6 +71,7 @@ describe('the domain package', () => {
         // An image's rights, and what a publish finds of them (AL-C, AL-F).
         'RIGHTS_LIMITS',
         'assetRightsSchema',
+        'declarableRightsSchema',
         'rightsAtPublish',
         // Metadata, promoted in the plan that built it, on the same terms.
         'DEFINITION_SCHEMA_VERSION',

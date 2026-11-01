@@ -383,6 +383,8 @@ const operationTags = {
     'putAssetUploadBytes',
     'getAssetVersion',
     'getAssetVersionContent',
+    'getAssetRights',
+    'setAssetRights',
   ],
   Threads: [
     'startComponentThread',
@@ -659,6 +661,8 @@ const operationTags = {
     'setDataSettings',
     'getImportSettings',
     'setImportSettings',
+    'getImagesSettings',
+    'setImagesSettings',
     'getTranslationSettings',
     'setTranslationSettings',
     'getTranslationSettingsHistory',
@@ -1198,6 +1202,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the recorded properties of an asset version that the caller may access. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.',
   getAssetVersionContent:
     'Returns the stored image bytes of a readable asset version. Use the response media type as supplied. An image a dataset holds is read only by a caller who may also read a document holding it, and is otherwise not found.',
+  getAssetRights:
+    "Returns an image's rights now and every change to them, newest first, each with who recorded it and when: `declared`, with where it came from, the licence of this environment it is held under, the last day the grant holds and the credit it needs; `undeclared`, recorded so that undeclared images can be listed; or `dataset`, for an image a dataset holds, which is the environment's own data. Rights are the image's, not a version's, so a figure pinning an older version answers to them as they are now. Needs read on the image.",
+  setAssetRights:
+    "Records an image's rights as a change of its own, the earlier ones kept: `declared` with its source and a licence of this environment, or `undeclared`. A dataset's image takes its rights from its dataset and is refused. Needs edit on the image.",
   requestPreview:
     'Queues a short-lived PDF preview of the latest document version for the caller. Follow the returned request to completion.',
   requestPublication:
@@ -1494,6 +1502,10 @@ const descriptions: Readonly<Record<string, string>> = {
     'Reads the environment’s identity policy for imports: whether the names a file carries are kept with the member each matches, kept as text, or discarded when an import is accepted.',
   setImportSettings:
     'Changes the environment’s identity policy for imports. It applies to each import accepted from then on, once, at acceptance. Needs administer at the environment.',
+  getImagesSettings:
+    "Returns the environment's policy for an image whose source and licence were never declared, or whose grant is past its last day, at publish: `warn`, the default, or `refuse`. An image whose licence does not permit publication is always refused. Anyone signed in may read it, since a publisher is told what an undeclared image does.",
+  setImagesSettings:
+    "Changes the environment's policy for undeclared and lapsed images. It applies to each publish asked for from then on, and to republishing a baseline. Needs administer at the environment.",
   getTranslationSettings:
     'Reads the environment’s policy for publishing in a language: whether a component with no translation into it is published in its own language, marked as untranslated, or fails the publish; whether a translation out of date with a change that needs retranslating publishes or fails it; and the words the mark says, by language.',
   setTranslationSettings:

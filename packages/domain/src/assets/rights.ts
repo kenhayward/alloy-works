@@ -38,6 +38,13 @@ export const assetRightsSchema = z.discriminatedUnion('kind', [
 ]);
 export type AssetRights = z.infer<typeof assetRightsSchema>;
 
+/** What a person may declare (AL-E): never a dataset's kind, which only a dataset's image has. */
+export const declarableRightsSchema = z.discriminatedUnion('kind', [
+  assetRightsSchema.options[0],
+  assetRightsSchema.options[2],
+]);
+export type DeclarableRights = z.infer<typeof declarableRightsSchema>;
+
 /** What publishing finds of an image's rights (AL-F), each in `publishFailureCodes`. */
 export type RightsFinding = {
   readonly code: 'asset_licence_forbids' | 'asset_undeclared' | 'asset_licence_expired';

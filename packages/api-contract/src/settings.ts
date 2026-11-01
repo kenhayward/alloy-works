@@ -122,6 +122,16 @@ export const ImportSettings = z.strictObject({
 });
 export type ImportSettings = z.infer<typeof ImportSettings>;
 
+/** The environment's policy for an image whose rights were never declared, or have lapsed (AL-F). */
+export const ImagesSettings = z.strictObject({
+  undeclared: z
+    .enum(['warn', 'refuse'])
+    .describe(
+      'What a publish does with an image whose source and licence were never declared, or whose grant is past its last day (AST-052, AST-053): `warn`, the default, publishes it and reports it; `refuse` refuses the publish, naming the figure. An image whose licence does not permit publication is always refused',
+    ),
+});
+export type ImagesSettings = z.infer<typeof ImagesSettings>;
+
 /** The environment's translation policy (the TR plan, TR-J; LOC-017, LOC-036, LOC-037). */
 export const TranslationSettings = translationPolicySchema.describe(
   '`fallback`: where a component has no translation into the language a document is published in, `source`, the default, publishes it in its own language, marked as untranslated, and `refuse` fails the publish; a document may say otherwise. `outOfDate`: a translation out of date with a change that needs retranslating, `publish`, the default, publishes it and reports it, and `refuse` fails the publish. `note`: the words the mark says, by language tag, else `Untranslated`. `conflict`: what a translation returned for a source or a translation that moved since it was sent is offered first - `review`, the default, leaves it held, `accept` offers accepting it as a translation of the version sent, `reject` offers rejecting it; a person always decides. `machine`: whether content is sent to the `translate` model endpoint for a machine draft - `off`, the default, never; `inside`, only to an endpoint inside the data boundary; `any`, to any',
@@ -237,6 +247,33 @@ export const settingsRoutes = {
     responses: {
       200: { description: 'The import settings, as changed', schema: ImportSettings },
       400: { description: 'invalid_request: not map, keep or discard', schema: ErrorBody },
+      401: unauthenticated,
+      403: { description: 'The caller may not administer this environment', schema: ErrorBody },
+    },
+  },
+  getImagesSettings: {
+    operationId: 'getImagesSettings',
+    method: 'GET',
+    path: '/v1/settings/images',
+    summary: "The environment's policy for images whose rights were never declared",
+    tenantScoped: true,
+    access: { check: 'session' },
+    responses: {
+      200: { description: 'The images settings', schema: ImagesSettings },
+      401: unauthenticated,
+    },
+  },
+  setImagesSettings: {
+    operationId: 'setImagesSettings',
+    method: 'PUT',
+    path: '/v1/settings/images',
+    summary: "Change the environment's policy for images whose rights were never declared",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    body: ImagesSettings,
+    responses: {
+      200: { description: 'The images settings, as changed', schema: ImagesSettings },
+      400: { description: 'invalid_request: not warn or refuse', schema: ErrorBody },
       401: unauthenticated,
       403: { description: 'The caller may not administer this environment', schema: ErrorBody },
     },

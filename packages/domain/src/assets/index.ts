@@ -32,5 +32,10 @@ export {
   parseLicence,
 } from './licence.js';
 export type { Licence, LicenceProblem, LicenceUse } from './licence.js';
-export { assetRightsSchema, RIGHTS_LIMITS, rightsAtPublish } from './rights.js';
-export type { AssetRights, RightsFinding } from './rights.js';
+export {
+  assetRightsSchema,
+  declarableRightsSchema,
+  RIGHTS_LIMITS,
+  rightsAtPublish,
+} from './rights.js';
+export type { AssetRights, DeclarableRights, RightsFinding } from './rights.js';

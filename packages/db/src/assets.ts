@@ -505,6 +505,15 @@ export async function recordAssetRights(
     .values({ asset_id: input.assetId, rights: JSON.stringify(rights), recorded_by: input.by })
     .returning('id')
     .executeTakeFirstOrThrow();
+  const asset = await trx
+    .selectFrom('artifact')
+    .select('space_id')
+    .where('id', '=', input.assetId)
+    .executeTakeFirstOrThrow();
+  await recordAssetEvent(trx, asset.space_id!, {
+    kind: 'asset.relicensed',
+    subject: { kind: 'asset', id: input.assetId },
+  });
   return { answer: 'recorded', id: row.id };
 }
 

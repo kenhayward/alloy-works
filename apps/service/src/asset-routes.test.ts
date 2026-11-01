@@ -1,6 +1,7 @@
 import { crc32, deflateSync } from 'node:zlib';
 import {
   bootstrapCluster,
+  createDefinition,
   createSpace,
   createTenant,
   findRole,
@@ -73,7 +74,12 @@ describe('uploading an image through the service (figures 1)', () => {
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};
 
-  const call = (as: string | undefined, method: 'GET' | 'POST', url: string, payload?: Json) =>
+  const call = (
+    as: string | undefined,
+    method: 'GET' | 'POST' | 'PUT',
+    url: string,
+    payload?: Json,
+  ) =>
     app.inject({
       method,
       url,
@@ -217,6 +223,100 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(blank.statusCode).toBe(400);
   });
 
+  /** A licence of the environment permitting internal use and publication, by its key. */
+  const aLicence = async (key: string) => {
+    const answer = await tenantDb.withTenant(tenant, (trx) =>
+      createDefinition(trx, {
+        kind: 'licence',
+        definition: {
+          schemaVersion: 1,
+          name: key,
+          key,
+          base: 'en',
+          names: [{ language: 'en', text: key }],
+          permits: ['internal', 'publication'],
+          attribution: { required: true, wording: 'Photograph by Ada' },
+        },
+        author: ids.ada!,
+      }),
+    );
+    if (answer.answer !== 'created') throw new Error(answer.answer);
+    return answer.definition.id;
+  };
+
+  it('AST-044 asks for an image\'s source and licence at upload, and records what was declared with its name (AL-E)', async () => {
+    const licence = await aLicence('stock_at_upload');
+    const declared = {
+      kind: 'declared',
+      source: { text: 'A stock library', url: 'https://stock.example/harbour' },
+      licence,
+      expires: '2027-03-31',
+      credit: 'Photograph by Ada',
+    };
+    const answer = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
+      alternative: null,
+      name: 'harbour.png',
+      rights: declared,
+    });
+    expect(answer.statusCode, answer.body).toBe(200);
+    const id = answer.json<{ id: string }>().id;
+    const bytes = png(5, 3);
+    await fill('grace', id, bytes);
+    const version = await ingested(id, bytes);
+    const read = await call('alice', 'GET', `/v1/asset-versions/${version.id}`);
+    expect(read.json()).toMatchObject({ name: 'harbour.png' });
+    const rights = await call('alice', 'GET', `/v1/assets/${version.artifactId}/rights`);
+    expect(rights.statusCode, rights.body).toBe(200);
+    expect(rights.json()).toEqual({
+      asset: version.artifactId,
+      current: declared,
+      history: [{ rights: declared, by: { id: ids.grace, name: 'Grace' }, at: expect.any(String) }],
+    });
+
+    // A licence that is no licence of the environment is refused before anything is made.
+    const unknown = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
+      alternative: null,
+      rights: { ...declared, licence: general },
+    });
+    expect(unknown.statusCode).toBe(422);
+    expect(code(unknown)).toBe('asset_licence_missing');
+    // A dataset's kind is never a person's to declare.
+    const dataset = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
+      alternative: null,
+      rights: { kind: 'dataset' },
+    });
+    expect(dataset.statusCode).toBe(400);
+  });
+
+  it("AST-031 records each change to an image's rights by edit on it, keeping the earlier ones", async () => {
+    const licence = await aLicence('stock_changed');
+    const bytes = png(6, 3);
+    const id = await made('grace', general);
+    await fill('grace', id, bytes);
+    const version = await ingested(id, bytes);
+    const url = `/v1/assets/${version.artifactId}/rights`;
+    expect((await call('grace', 'GET', url)).json()).toMatchObject({
+      current: { kind: 'undeclared' },
+    });
+    const declared = { kind: 'declared', source: { text: 'Grace, who took it' }, licence };
+    const changed = await call('grace', 'PUT', url, { rights: declared });
+    expect(changed.statusCode, changed.body).toBe(200);
+    expect(
+      changed.json<{ history: { rights: Json }[] }>().history.map((each) => each.rights),
+    ).toEqual([declared, { kind: 'undeclared' }]);
+    // Alice reads it and may not change it; Ivy may not read it; a licence not there is refused.
+    expect((await call('alice', 'GET', url)).statusCode).toBe(200);
+    expect((await call('alice', 'PUT', url, { rights: { kind: 'undeclared' } })).statusCode).toBe(
+      403,
+    );
+    expect((await call('ivy', 'GET', url)).statusCode).toBe(404);
+    const missing = await call('grace', 'PUT', url, { rights: { ...declared, licence: general } });
+    expect(missing.statusCode).toBe(422);
+    expect(code(missing)).toBe('asset_licence_missing');
+    // An id that is not an asset's is no asset's rights.
+    expect((await call('grace', 'GET', `/v1/assets/${licence}/rights`)).statusCode).toBe(404);
+  });
+
   it('AST-001 AST-002 AST-038 refuses a file that is not a PNG or a JPEG, whatever it claims, and keeps the refusal', async () => {
     const id = await made('grace', general);
     const gif = Buffer.concat([Buffer.from('GIF89a', 'latin1'), Buffer.alloc(20)]);
@@ -328,6 +428,7 @@ describe('uploading an image through the service (figures 1)', () => {
       width: 4,
       height: 3,
       resolution: null,
+      name: null,
       alternative: { text: 'A red square', language: 'en-GB' },
     });
     const content = await call('alice', 'GET', `/v1/asset-versions/${version.id}/content`);
@@ -379,5 +480,34 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(answer.statusCode).toBe(404);
     const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
     expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
+  });
+  it("AST-053 keeps the environment's policy for undeclared images, read by anyone signed in and set by an administrator", async () => {
+    expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({
+      undeclared: 'warn',
+    });
+    const administers = await tenantDb.withTenant(tenant, async (trx) => {
+      const administrator = await findRole(trx, 'Administrator');
+      return grant(trx, {
+        roleId: administrator!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'tenant' },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
+    });
+    expect(
+      (await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse' })).statusCode,
+    ).toBe(403);
+    const set = await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'refuse' });
+    expect(set.statusCode, set.body).toBe(200);
+    expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({
+      undeclared: 'refuse',
+    });
+    expect(
+      (await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'never' })).statusCode,
+    ).toBe(400);
+    await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'warn' });
+    if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
+    await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, administers.granted.id));
   });
 });

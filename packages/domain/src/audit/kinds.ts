@@ -352,7 +352,7 @@ export const auditKindSpecs = {
     'packages/db/src/assets.ts',
   ),
   'asset.replaced': kind(['LIF-072'], empty, LATER),
-  'asset.relicensed': kind(['LIF-072'], empty, LATER),
+  'asset.relicensed': kind(['LIF-072', 'AST-031'], empty, 'packages/db/src/assets.ts'),
   'publication.requested': kind(
     ['LIF-067'],
     // `baseline` names the baseline a publish is made from (the BL final review); absent for one

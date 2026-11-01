@@ -123,6 +123,10 @@ describe('the rule behind a refusal', () => {
       'vocabulary.source_parameters',
       'vocabulary.source_unreadable',
       'vocabulary.source_failed',
+      // An image's rights naming no licence of the environment, or a dataset's image's: the AL plan's
+      // own guards (AL-C).
+      'asset.licence_missing',
+      'asset.rights_dataset',
       // A citation style that is not CSL 1.0.2 with both forms, which STY-020 and STY-023 shape and no
       // requirement names as a refusal (CI-D).
       'style.invalid',
