@@ -225,7 +225,8 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
-      '0184_model_run_limits',
+      '0184_asset_replacement',
+      '0185_model_run_limits',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

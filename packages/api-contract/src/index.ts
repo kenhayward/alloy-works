@@ -520,6 +520,7 @@ export {
 } from './groups.js';
 export {
   AssetDerivativeParams,
+  AssetContentQuery,
   AssetDerivativesDiscarded,
   AssetParams,
   AssetRightsView,
@@ -528,6 +529,7 @@ export {
   AssetUsesView,
   AssetVersionParams,
   AssetVersionView,
+  CreateAssetReplacementBody,
   CreateAssetUploadBody,
   LibraryAssetList,
   LibraryAssetQuery,

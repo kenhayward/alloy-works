@@ -46,6 +46,7 @@ export {
   listReadablePublications,
   MAX_FAILED_RULES,
   publicationBindings,
+  followTo,
   publicationInputs,
   rangeInputs,
   publicationToCheck,

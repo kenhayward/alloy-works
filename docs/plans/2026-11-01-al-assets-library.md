@@ -36,6 +36,12 @@ unused or uploaded twice; an image is replaced by a newer version that a figure 
 | AL-M | **Replacement and following** (AST-016, AST-017, AST-032, AST-049): `PUT /v1/assets/{id}/bytes` cuts a version. A figure and an inline image gain an optional `follow: 'latest'` beside `asset`, at schema 1 with no migration (pre-flight 1, as B6-B did), through the editor's attribute and mapping both ways and the bridge's round trip; its reference row is mode `latest`. Publish resolves the latest readable version. A rights change, a licence version narrowing `permits`, or an expiry is flagged on the component and the Images page, and in publish's report (AST-052, AST-032).                                                                                                                                                                                                                                |
 | AL-N | **Claims**: AST-004, AST-007 to AST-010, AST-016 to AST-018, AST-021 to AST-024, AST-028, AST-029, AST-031, AST-032, AST-042, AST-044, AST-045, AST-048 to AST-050, AST-052, AST-053 in `assets.md`. Licences export as definitions do; an image's rights join the tenant export with AST-030 in EI, which needs a snapshot-visible `written_by` the rows lack. Not: AST-011, AST-019, AST-020, AST-027, AST-030, AST-036, AST-046, AST-047.                                                                                                                                                                                                                                                                                                                                                                                     |
 
+**As built.** AL-L's duplicate is found by a `sha256` filter on the listing, not a field of the upload
+(ALd), and the import's reuse landed in ALe. AL-M's replacement is `POST /v1/assets/{id}/replacements`,
+an upload whose bytes go through the upload's own route and check, rather than a `PUT` on the asset,
+so a replacement is checked as any upload is. AST-032 is met by flagging the image's rights now
+wherever it is used, not a change against an earlier state.
+
 ## Risks
 
 - **A reader of `asset` missing `follow`** (AL-M): every one named by the pre-flight (`references.ts`, `bridge/blocks.ts`, `readback.ts`, `assemble.ts`, `publishing.ts`, `imports.ts`) gets a test.

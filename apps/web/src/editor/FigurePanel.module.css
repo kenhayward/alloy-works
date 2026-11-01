@@ -153,3 +153,13 @@
     display: none;
   }
 }
+
+/* What the image's rights are now, where they need attention (AST-032, AST-052). */
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--warn);
+  font-size: var(--size-12);
+  white-space: nowrap;
+}

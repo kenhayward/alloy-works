@@ -251,7 +251,8 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
-      '0184_model_run_limits',
+      '0184_asset_replacement',
+      '0185_model_run_limits',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -380,7 +381,8 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
-      '0184_model_run_limits',
+      '0184_asset_replacement',
+      '0185_model_run_limits',
     ]);
 
     expect(await queryRoles(development)).toEqual([

@@ -909,7 +909,7 @@ reached, and a row here gains its plan link then.
 | #   | Plan                                                  | Builds                                                                                                                          | Status      |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | VO  | [Vocabularies](2026-10-31-vo-vocabularies.md)         | Named lists of permitted values, drawn on by fields and condition axes, from a source or by hand, deprecated and retired, moved | Built       |
-| AL  | [The assets library](2026-11-01-al-assets-library.md) | Licences and what they permit, derivatives on ingest, browsing and search, where-used, duplicates                               | Building    |
+| AL  | [The assets library](2026-11-01-al-assets-library.md) | Licences and what they permit, derivatives on ingest, browsing and search, where-used, duplicates                               | Built       |
 | RA  | [The document panel](2026-11-01-dp-document-panel.md) | The document's panels chosen from an icon rail; the assistant as ledger turns, its cited parts above the text, a context gauge  | Building    |
 | SY  | Styles and themes without a release                   | Styles and themes added by an administrator, derived styles, admonitions, catalogues exported and imported                      | Provisional |
 | ID  | Identity                                              | SCIM, more than one identity provider, re-authentication, session settings, high-risk acts named                                | Provisional |

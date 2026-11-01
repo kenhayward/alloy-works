@@ -17,7 +17,14 @@ import { wantDerivatives } from './derivatives.js';
 import { enqueueJob } from './queue.js';
 import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
-import { createArtifact, readVersion, type StoredVersion } from './versions.js';
+import {
+  createArtifact,
+  latestVersion,
+  lockArtifact,
+  readVersion,
+  recordVersion,
+  type StoredVersion,
+} from './versions.js';
 
 /** Why an upload was refused: at the door by the service, or by the `ingest` job's decode. */
 export type AssetUploadReason =
@@ -42,6 +49,8 @@ export interface StoredAssetUpload {
   readonly rights: AssetRights | null;
   /** A person's upload, or an image a dataset's result holds (D8-D). */
   readonly origin: 'upload' | 'dataset';
+  /** The asset it replaces (AL-M; AST-016), or null for a new one. */
+  readonly replaces: string | null;
   readonly state: AssetUploadState;
   readonly objectKey: string | null;
   readonly format: AssetFormat | null;
@@ -72,6 +81,8 @@ type UploadRow = {
   name?: string | null;
   rights?: unknown;
   origin: 'upload' | 'dataset';
+  /** Absent short of 0184. */
+  replaces?: string | null;
   state: AssetUploadState;
   object_key: string | null;
   format: AssetFormat | null;
@@ -90,6 +101,7 @@ const uploadOf = (row: UploadRow): StoredAssetUpload => ({
   name: row.name ?? null,
   rights: row.rights == null ? null : assetRightsSchema.parse(row.rights),
   origin: row.origin,
+  replaces: row.replaces ?? null,
   state: row.state,
   objectKey: row.object_key,
   format: row.format,
@@ -114,6 +126,8 @@ export async function createAssetUpload(
     readonly name?: string;
     /** Declared at upload (AST-044); a dataset's kind is never a person's to declare. */
     readonly rights?: Exclude<AssetRights, { kind: 'dataset' }>;
+    /** The asset it replaces (AL-M): the caller has decided `update` on it, in this space. */
+    readonly replaces?: string;
   },
 ): Promise<StoredAssetUpload> {
   const alternative =
@@ -128,6 +142,7 @@ export async function createAssetUpload(
       alternative: alternative === null ? null : JSON.stringify(alternative),
       ...(input.name === undefined ? {} : { name: input.name }),
       ...(rights === undefined ? {} : { rights: JSON.stringify(rights) }),
+      ...(input.replaces === undefined ? {} : { replaces: input.replaces }),
     })
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -262,12 +277,19 @@ export async function recordAsset(
     alternative: upload.alternative,
     ...(upload.name === null ? {} : { name: upload.name }),
   });
-  const version = await createArtifact(trx, {
-    spaceId: upload.spaceId,
+  const authorship = {
     author: upload.uploader,
     ...(options.note === undefined ? {} : { note: options.note }),
-    substance: { kind: 'asset', content },
-  });
+  };
+  // A replacement cuts its asset's next version (AL-M; AST-016): never a new asset, never overwriting.
+  const version =
+    upload.replaces === null
+      ? await createArtifact(trx, {
+          spaceId: upload.spaceId,
+          ...authorship,
+          substance: { kind: 'asset', content },
+        })
+      : await replaceAsset(trx, upload.replaces, authorship, content);
   await trx
     .updateTable('asset_upload')
     .set({
@@ -279,19 +301,21 @@ export async function recordAsset(
     .where('id', '=', id)
     .execute();
   // Its first rights (AL-C): what the uploader declared, a dataset's for a dataset's image, else
-  // undeclared, so every asset, however it arrived, has one (the pre-flight's sixth finding).
-  await trx
-    .insertInto('asset_rights')
-    .values({
-      asset_id: version.artifactId,
-      rights: JSON.stringify(
-        upload.origin === 'dataset'
-          ? { kind: 'dataset' }
-          : (upload.rights ?? { kind: 'undeclared' }),
-      ),
-      recorded_by: upload.uploader,
-    })
-    .execute();
+  // undeclared, so every asset, however it arrived, has one (the pre-flight's sixth finding). A
+  // replacement's are its asset's already: rights are the asset's, not a version's.
+  if (upload.replaces === null)
+    await trx
+      .insertInto('asset_rights')
+      .values({
+        asset_id: version.artifactId,
+        rights: JSON.stringify(
+          upload.origin === 'dataset'
+            ? { kind: 'dataset' }
+            : (upload.rights ?? { kind: 'undeclared' }),
+        ),
+        recorded_by: upload.uploader,
+      })
+      .execute();
   // Indexed as it was written, before the upload named it; a dataset's image is never found (D8-I).
   if (upload.origin === 'dataset') await indexVersion(trx, version);
   await recordAssetEvent(trx, upload.spaceId, {
@@ -301,6 +325,30 @@ export async function recordAsset(
   // Its derivatives made on ingest, not when first shown (AST-008; AL-H), however it arrived.
   await wantDerivatives(trx, version.id);
   return version;
+}
+
+/**
+ * The next version of a replaced asset, cut from its latest under the artifact's lock; the latest
+ * itself where the bytes and what describes them are what it already holds.
+ */
+async function replaceAsset(
+  trx: TenantTransaction,
+  assetId: string,
+  authorship: { readonly author: string; readonly note?: string },
+  content: AssetVersionContent,
+): Promise<StoredVersion> {
+  await lockArtifact(trx, assetId);
+  const latest = await latestVersion(trx, assetId);
+  if (!latest) throw new Error(`Asset ${assetId} has no version to replace`);
+  const answer = await recordVersion(trx, {
+    artifactId: assetId,
+    openedFrom: latest.id,
+    ...authorship,
+    substance: { kind: 'asset', content },
+  });
+  if (answer.answer === 'recorded') return answer.version;
+  if (answer.answer === 'version.unchanged') return answer.current;
+  throw new Error(`Asset ${assetId} could not be replaced: ${answer.answer}`);
 }
 
 /** An upload's end on the log (LIF-069; the AU1 plan, AU1-L), in the space it was made in. */

@@ -10,6 +10,7 @@ import { renderCitations } from '@alloy-works/domain/citations';
 import { capHeightOfFile } from '@alloy-works/fonts';
 import {
   failPublicationRequest,
+  followTo,
   recordPublicationEvent,
   setAuditContext,
   publicationInputs,
@@ -388,7 +389,9 @@ export async function assembleRequest(
     occurrences: new Map(
       [...inputs.occurrences].map(([node, each]) => [
         node,
-        options.content?.(node, each.content) ?? each.content,
+        // Content handed in place of the recorded - a range preview's - follows its images as the
+        // request resolved them (AL-M); the recorded is followed already.
+        followTo(options.content?.(node, each.content) ?? each.content, inputs.followed),
       ]),
     ),
     // The binding stage's results, by node and binding: a preview takes and fails as a publish does.

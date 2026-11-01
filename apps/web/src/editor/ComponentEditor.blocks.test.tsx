@@ -1240,6 +1240,49 @@ describe('a figure in the editor (figures 2)', () => {
     expect(within(settings).getByLabelText('Its own description')).toHaveValue('Red');
   });
 
+  it("AST-032 AST-052 says on a figure's line what its image's rights are now, and in Figure settings when they changed", async () => {
+    const rights = (licence: unknown, expired: boolean) => ({
+      'GET /v1/assets/a1/rights': () =>
+        json(200, {
+          asset: 'a1',
+          current: { kind: 'undeclared' },
+          history: [],
+          licence,
+          expired,
+          changedAt: '2026-10-30T09:00:00.000Z',
+        }),
+    });
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), {
+      ...assetVersion(RED, null),
+      ...rights({ id: 'l1', name: 'Internal only', permits: ['internal'] }, true),
+    });
+    const view = await surface();
+    caretInCaption(view);
+    const panel = await screen.findByRole('group', { name: 'Figure' });
+    expect(await within(panel).findByText('Licence expired')).toBeInTheDocument();
+    expect(within(panel).getByText('Not licensed for publication')).toBeInTheDocument();
+    const settings = await settingsOf(panel);
+    expect(
+      within(settings).getByText(
+        'Held under Internal only. Its rights last changed on 30 October 2026.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("AST-017 makes a figure follow its image's latest version from Figure settings, and pinned again", async () => {
+    const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
+    const view = await surface();
+    caretInCaption(view);
+    const settings = await settingsOf(await screen.findByRole('group', { name: 'Figure' }));
+    const follow = within(settings).getByRole('switch', { name: 'Always show the latest version' });
+    expect(follow).not.toBeChecked();
+    await userEvent.click(follow);
+    await waitFor(() => expect(figureOf(view)).toMatchObject({ asset: RED, follow: 'latest' }));
+    expect(follow).toBeChecked();
+    await userEvent.click(follow);
+    await waitFor(() => expect(figureOf(view)).not.toHaveProperty('follow'));
+  });
+
   it('opens Figure settings from its panel, the focus on the chosen alternative, and gives the focus back on Done', async () => {
     const { surface } = openWith(aFigure({ kind: 'decorative' }), assetVersion(RED, null));
     const view = await surface();

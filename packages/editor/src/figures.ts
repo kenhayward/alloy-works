@@ -25,6 +25,8 @@ export interface FigureAt {
   readonly alternative: Alternative;
   /** Whether it takes a number, which the Figure panel's Numbered box shows (STR-071). */
   readonly numbered: boolean;
+  /** Whether it follows its image's latest version (AST-017), which the Figure panel shows. */
+  readonly follow: boolean;
 }
 
 /** The innermost figure the selection stands in - its caption, or the figure selected whole - or null. */
@@ -41,6 +43,7 @@ export function figureAt(state: EditorState): FigureAt | null {
       imageStyle: node.attrs.imageStyle as string,
       alternative: node.attrs.alternative as Alternative,
       numbered: node.attrs.numbered !== false,
+      follow: node.attrs.follow === 'latest',
     };
   }
   const selected = state.doc.nodeAt(state.selection.from);
@@ -56,6 +59,7 @@ export function figureAt(state: EditorState): FigureAt | null {
       imageStyle: selected.attrs.imageStyle as string,
       alternative: selected.attrs.alternative as Alternative,
       numbered: selected.attrs.numbered !== false,
+      follow: selected.attrs.follow === 'latest',
     };
   }
   return null;
@@ -259,6 +263,28 @@ export function setFigureNumbered(numbered: boolean): Command {
     if (dispatch) {
       const node = state.doc.nodeAt(figure.pos)!;
       dispatch(state.tr.setNodeMarkup(figure.pos, undefined, { ...node.attrs, numbered }));
+    }
+    return true;
+  };
+}
+
+/**
+ * **Always show the latest version**, from the Figure panel (AL-M; AST-017): the figure follows its
+ * image's latest version, published and drawn so, or is pinned again to the version it names. Declined
+ * where it already is, where there is no figure, or where its image is a binding's.
+ */
+export function setFigureFollow(follow: boolean): Command {
+  return (state, dispatch) => {
+    const figure = figureAt(state);
+    if (figure === null || figure.asset === null || figure.follow === follow) return false;
+    if (dispatch) {
+      const node = state.doc.nodeAt(figure.pos)!;
+      dispatch(
+        state.tr.setNodeMarkup(figure.pos, undefined, {
+          ...node.attrs,
+          follow: follow ? 'latest' : null,
+        }),
+      );
     }
     return true;
   };
