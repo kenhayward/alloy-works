@@ -518,14 +518,15 @@ export function AssistantPanel({
       setPending([]);
     }
     setAsked(text.trim());
+    // The box emptied as it sends, so a sent ask never looks unsent; only the words sent, so what was
+    // typed since, asking again, stays (issue #868).
+    setAsk((was) => (was.trim() === text.trim() ? '' : was));
     await run(`${origin}/v1/conversations/${id}/turns`, {
       ask: text.trim(),
       ...(chosen === '' ? {} : { endpoint: chosen }),
       ...(asking === null ? {} : { component: asking }),
       ...(document === null ? {} : { context: given }),
     });
-    // Only the words sent: what was typed since, asking again, stays.
-    setAsk((was) => (was.trim() === text.trim() ? '' : was));
     setHeld(null);
     await Promise.all([readTurns(id), readConversations()]).catch(() => undefined);
   };
