@@ -84191,16 +84191,21 @@
                           },
                           "madeAt": {
                             "type": "string"
+                          },
+                          "kept": {
+                            "type": "boolean",
+                            "description": "Whether its owner kept it: one not kept is held with its runs, and never listed"
                           }
                         },
                         "required": [
                           "id",
                           "document",
                           "title",
-                          "madeAt"
+                          "madeAt",
+                          "kept"
                         ]
                       },
-                      "description": "The caller’s own, the newest first, at most 200"
+                      "description": "The caller’s own they kept, the newest first, at most 200"
                     }
                   },
                   "required": [
@@ -84434,6 +84439,10 @@
                         "madeAt": {
                           "type": "string"
                         },
+                        "kept": {
+                          "type": "boolean",
+                          "description": "Whether its owner kept it: one not kept is held with its runs, and never listed"
+                        },
                         "turns": {
                           "type": "array",
                           "items": {
@@ -84501,6 +84510,7 @@
                         "document",
                         "title",
                         "madeAt",
+                        "kept",
                         "turns"
                       ]
                     }
@@ -84515,6 +84525,7 @@
                     "document": "example",
                     "title": "example",
                     "madeAt": "example",
+                    "kept": false,
                     "turns": []
                   }
                 }
@@ -84764,6 +84775,10 @@
                         "madeAt": {
                           "type": "string"
                         },
+                        "kept": {
+                          "type": "boolean",
+                          "description": "Whether its owner kept it: one not kept is held with its runs, and never listed"
+                        },
                         "turns": {
                           "type": "array",
                           "items": {
@@ -84831,6 +84846,7 @@
                         "document",
                         "title",
                         "madeAt",
+                        "kept",
                         "turns"
                       ]
                     }
@@ -84845,8 +84861,338 @@
                     "document": "example",
                     "title": "example",
                     "madeAt": "example",
+                    "kept": false,
                     "turns": []
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A personal token: a conversation takes a session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No conversation of the caller’s by that id: anybody else’s is not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateConversation",
+        "summary": "Names a conversation of the caller’s, or keeps or lets it go",
+        "description": "Names a conversation of yours, or keeps it or lets it go. Only one you keep is listed again; one you do not stays with its runs, which are never deleted. Naming one keeps it unless you say otherwise. Anybody else is told there is none.",
+        "tags": [
+          "Conversations"
+        ],
+        "x-alloy-token-enabled": false,
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "description": "Its new name",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "kept": {
+                    "description": "Whether it is kept, and so listed; naming one keeps it unless this says not",
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "minProperties": 1
+              },
+              "example": {
+                "title": "example"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "As it now stands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "document": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "madeAt": {
+                      "type": "string"
+                    },
+                    "kept": {
+                      "type": "boolean",
+                      "description": "Whether its owner kept it: one not kept is held with its runs, and never listed"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "document",
+                    "title",
+                    "madeAt",
+                    "kept"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "document": "example",
+                  "title": "example",
+                  "madeAt": "example",
+                  "kept": false
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Asked for nothing, a name empty or too long, or anything else",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
                 }
               }
             },

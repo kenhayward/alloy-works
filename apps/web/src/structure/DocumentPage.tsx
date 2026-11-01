@@ -2926,6 +2926,7 @@ export function DocumentPage({
                     {authoring && (
                       <div
                         id={dockIds('assistant').panel}
+                        className={styles['assistantTab']}
                         role="tabpanel"
                         aria-labelledby={dockIds('assistant').tab}
                         hidden={shownDock !== 'assistant'}

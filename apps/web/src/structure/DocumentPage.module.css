@@ -210,6 +210,15 @@
   overscroll-behavior: contain;
 }
 
+/* The Assistant's tab filling the dock to its edges, so its own middle scrolls and its composer stays
+   at the bottom (the DQ plan). */
+.assistantTab {
+  height: calc(100% + 2 * var(--space-12));
+  min-height: 0;
+  margin: calc(var(--space-12) * -1);
+  overflow: hidden;
+}
+
 /* The Table tab nearer the pane's sides, whose band keeps its own inset (ADR-0052). */
 .tableTab {
   margin-inline: calc(var(--space-8) * -1);

@@ -208,6 +208,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   proposals. Each conversation shows **What it reads**: every part a turn read, or that you added,
   read again as you each turn, a part you may no longer read left out and said so; remove a part, or
   find one to add.
+  A conversation is kept only if you keep it: **Keep this conversation** lists it under **Earlier
+  conversations**, and naming it keeps it too; one you do not keep is not listed again, though its
+  turns stay recorded as every run is. The tab's toolbar holds the model, the context gauge and the
+  conversation's own tools; the box, what it reads and **Prompts** stay at the bottom.
   A conversation may also propose a new part: where, its title and its text. Nothing is made until you
   accept it, when it is made as yours at 0.1, and the document's **Generated content** names it.
   Where something it read asks the model to do anything, it does not, and may say so: the turn shows

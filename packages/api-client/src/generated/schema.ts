@@ -1956,7 +1956,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Names a conversation of the caller’s, or keeps or lets it go
+         * @description Names a conversation of yours, or keeps it or lets it go. Only one you keep is listed again; one you do not stays with its runs, which are never deleted. Naming one keeps it unless you say otherwise. Anybody else is told there is none.
+         */
+        patch: operations["updateConversation"];
         trace?: never;
     };
     "/v1/conversations/{id}/context": {
@@ -33793,12 +33797,14 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
-                        /** @description The caller’s own, the newest first, at most 200 */
+                        /** @description The caller’s own they kept, the newest first, at most 200 */
                         items: {
                             id: string;
                             document: string | null;
                             title: string;
                             madeAt: string;
+                            /** @description Whether its owner kept it: one not kept is held with its runs, and never listed */
+                            kept: boolean;
                         }[];
                     };
                 };
@@ -33906,6 +33912,7 @@ export interface operations {
                      *         "document": "example",
                      *         "title": "example",
                      *         "madeAt": "example",
+                     *         "kept": false,
                      *         "turns": []
                      *       }
                      *     }
@@ -33916,6 +33923,8 @@ export interface operations {
                             document: string | null;
                             title: string;
                             madeAt: string;
+                            /** @description Whether its owner kept it: one not kept is held with its runs, and never listed */
+                            kept: boolean;
                             /** @description Each turn, oldest first */
                             turns: {
                                 run: string;
@@ -34045,6 +34054,7 @@ export interface operations {
                      *         "document": "example",
                      *         "title": "example",
                      *         "madeAt": "example",
+                     *         "kept": false,
                      *         "turns": []
                      *       }
                      *     }
@@ -34055,6 +34065,8 @@ export interface operations {
                             document: string | null;
                             title: string;
                             madeAt: string;
+                            /** @description Whether its owner kept it: one not kept is held with its runs, and never listed */
+                            kept: boolean;
                             /** @description Each turn, oldest first */
                             turns: {
                                 run: string;
@@ -34070,6 +34082,163 @@ export interface operations {
                                 startedAt: string;
                             }[];
                         };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description A personal token: a conversation takes a session */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No conversation of the caller’s by that id: anybody else’s is not found */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    updateConversation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Its new name */
+                    title?: string;
+                    /** @description Whether it is kept, and so listed; naming one keeps it unless this says not */
+                    kept?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description As it now stands */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "document": "example",
+                     *       "title": "example",
+                     *       "madeAt": "example",
+                     *       "kept": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        document: string | null;
+                        title: string;
+                        madeAt: string;
+                        /** @description Whether its owner kept it: one not kept is held with its runs, and never listed */
+                        kept: boolean;
+                    };
+                };
+            };
+            /** @description Asked for nothing, a name empty or too long, or anything else */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };

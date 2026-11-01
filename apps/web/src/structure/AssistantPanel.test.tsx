@@ -23,6 +23,10 @@ function service() {
   const asked: string[] = [];
   // Each request's whole URL, its query among it.
   const urls: string[] = [];
+  // Each conversation's change asked, its body.
+  const patched: { title?: string; kept?: boolean }[] = [];
+  // The one conversation, as the earlier one listed until a start makes a new one of it.
+  let held = { title: 'About the weir', kept: true };
   const fetching = (async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
@@ -51,20 +55,39 @@ function service() {
       });
     }
     if (request.method === 'POST' && path === '/v1/conversations') {
+      held = { title: 'Asked', kept: false };
       return json(200, {
         conversation: {
           id: CONVERSATION,
           document: DOCUMENT,
           title: 'Asked',
           madeAt: NOW,
+          kept: false,
           turns: [],
         },
       });
     }
     if (path === '/v1/conversations') {
       return json(200, {
-        items: [{ id: CONVERSATION, document: DOCUMENT, title: 'About the weir', madeAt: NOW }],
+        items: [
+          {
+            id: CONVERSATION,
+            document: DOCUMENT,
+            title: 'About the weir',
+            madeAt: NOW,
+            kept: true,
+          },
+        ],
       });
+    }
+    if (request.method === 'PATCH' && path === `/v1/conversations/${CONVERSATION}`) {
+      const body = (await request.json()) as { title?: string; kept?: boolean };
+      patched.push(body);
+      held = {
+        title: body.title ?? held.title,
+        kept: body.kept ?? (body.title !== undefined || held.kept),
+      };
+      return json(200, { id: CONVERSATION, document: DOCUMENT, madeAt: NOW, ...held });
     }
     if (path === `/v1/conversations/${CONVERSATION}/context` && request.method === 'GET') {
       return json(200, {
@@ -108,8 +131,8 @@ function service() {
         conversation: {
           id: CONVERSATION,
           document: DOCUMENT,
-          title: 'About the weir',
           madeAt: NOW,
+          ...held,
           turns: [
             {
               run: 'r0',
@@ -160,7 +183,31 @@ function service() {
     }
     return json(404, { code: 'not_found', message: 'There is nothing at this address.' });
   }) as typeof fetch;
-  return { client: createApiClient({ baseUrl: 'http://doc.test', fetch: fetching }), asked, urls };
+  return {
+    client: createApiClient({ baseUrl: 'http://doc.test', fetch: fetching }),
+    asked,
+    urls,
+    patched,
+  };
+}
+
+/** A choice made from a menu button: the button opened, then the item named. */
+async function choose(
+  user: ReturnType<typeof userEvent.setup>,
+  button: string | RegExp,
+  item: string | RegExp,
+) {
+  await user.click(await screen.findByRole('button', { name: button }));
+  const menu = screen.getByRole('menu');
+  await user.click(
+    within(menu).queryByRole('menuitemradio', { name: item }) ??
+      within(menu).getByRole('menuitem', { name: item }),
+  );
+}
+
+/** The prompts shown, behind the composer's Prompts button (the DQ plan). */
+async function showPrompts() {
+  await userEvent.click(await screen.findByRole('button', { name: 'Prompts' }));
 }
 
 /** A run streamed as the service would: its frames, in order. */
@@ -225,7 +272,9 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       body: { ask: 'What is here?', component: SITES },
     });
     expect(await screen.findByText('It has two parts.')).toBeVisible();
-    expect(screen.getByText('Using Drafting, which is outside your data boundary.')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Model: Drafting, outside your data boundary' }),
+    ).toBeVisible();
     await user.click(screen.getByText('What it did (1 step)'));
     expect(screen.getByText('Read the outline')).toBeVisible();
     expect(screen.getByText('<content>Sites</content>')).toBeVisible();
@@ -558,6 +607,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         origin="http://doc.test"
       />,
     );
+    await showPrompts();
     const offered = await screen.findByRole('region', { name: 'Prompts' });
     // Only an approved prompt runs: one never approved, and one the reader may not read, are not offered.
     expect(
@@ -609,6 +659,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       />
     );
     const { rerender } = render(panel(NODE));
+    await showPrompts();
     const offered = await screen.findByRole('region', { name: 'Prompts' });
     await user.click(
       within(offered).getByRole('button', { name: 'Run Say it plainly on this part' }),
@@ -645,6 +696,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     );
     const listed = () => urls.filter((each) => each.includes(`/v1/documents/${DOCUMENT}/prompts`));
     const { rerender } = render(panel(NODE));
+    await showPrompts();
     await screen.findByRole('region', { name: 'Prompts' });
     expect(listed().at(-1)).toBe(`http://doc.test/v1/documents/${DOCUMENT}/prompts?node=${NODE}`);
     rerender(panel('n2'));
@@ -669,6 +721,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       />
     );
     const { rerender } = render(panel(NODE));
+    await showPrompts();
     await screen.findByRole('button', { name: 'Run Say it plainly on this part' });
     rerender(panel('gone'));
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Prompts' })).toBeNull());
@@ -685,6 +738,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         onCite={() => {}}
       />,
     );
+    await showPrompts();
     const offered = await screen.findByRole('region', { name: 'Prompts' });
     expect(within(offered).getByText('Open a part to run a prompt on it.')).toBeInTheDocument();
     expect(within(offered).queryByRole('button')).toBeNull();
@@ -706,18 +760,16 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         origin="http://doc.test"
       />,
     );
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Conversation' }),
-      'About the weir',
-    );
+    await choose(user, 'Earlier conversations', 'About the weir');
     const earlier = await screen.findByRole('list', { name: 'Earlier turns' });
     expect(earlier).toHaveTextContent('What floods?');
     expect(earlier).toHaveTextContent('The north weir.');
-    const endpoint = screen.getByRole('combobox', { name: 'Endpoint' });
-    expect(
-      within(endpoint).getByRole('option', { name: 'Drafting, outside your data boundary' }),
-    ).toBeInTheDocument();
-    await user.selectOptions(endpoint, 'Ours');
+    await user.click(screen.getByRole('button', { name: /^Model: Drafting/ }));
+    expect(screen.getByRole('menuitemradio', { name: /^Drafting/ })).toHaveTextContent(
+      'Outside your data boundary',
+    );
+    await user.click(screen.getByRole('menuitemradio', { name: /^Ours/ }));
+    expect(screen.getByRole('button', { name: 'Model: Ours' })).toBeVisible();
     await user.type(screen.getByLabelText('Ask the assistant'), 'And when?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(stream.mock.calls[0]![0]).toMatchObject({
@@ -739,17 +791,15 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         origin="http://doc.test"
       />,
     );
-    await user.selectOptions(
-      await screen.findByRole('combobox', { name: 'Conversation' }),
-      'About the weir',
-    );
-    const reads = await screen.findByRole('region', { name: 'What it reads' });
+    await choose(user, 'Earlier conversations', 'About the weir');
+    const reads = await screen.findByRole('group', { name: 'What it reads' });
     expect(await within(reads).findByText('Sites')).toBeInTheDocument();
     expect(
       within(reads).getByText('A part you may no longer read, which is not sent'),
     ).toBeInTheDocument();
     await user.click(within(reads).getByRole('button', { name: 'Remove Sites' }));
     expect(asked).toContain(`POST /v1/conversations/${CONVERSATION}/context/${SITES}/removal`);
+    await user.click(within(reads).getByRole('button', { name: 'Add a part' }));
     await user.type(within(reads).getByRole('textbox', { name: 'Find a part to add' }), 'weir');
     await user.click(within(reads).getByRole('button', { name: 'Find' }));
     await user.click(await within(reads).findByRole('button', { name: 'Add Weir levels' }));
@@ -1081,7 +1131,7 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
         origin="http://doc.test"
       />,
     );
-    await screen.findByRole('combobox', { name: 'Endpoint' });
+    await screen.findByRole('button', { name: /^Model: Drafting/ });
     // Nothing measured before a turn.
     expect(screen.queryByRole('img', { name: /of the context used/ })).toBeNull();
     await user.type(screen.getByLabelText('Ask the assistant'), 'What is here?');
@@ -1089,10 +1139,10 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     const gauge = await screen.findByRole('img', { name: '50% of the context used' });
     expect(gauge).toHaveAttribute('data-band', 'mid');
     // Another endpoint chosen for the next turn: the last one's measure stands.
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Endpoint' }), SITES);
+    await choose(user, /^Model:/, /^Ours/);
     expect(screen.getByRole('img', { name: '50% of the context used' })).toBeVisible();
     stream.mockImplementation(turn(160_000));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Endpoint' }), ENDPOINT);
+    await choose(user, /^Model:/, /^Drafting/);
     await user.type(screen.getByLabelText('Ask the assistant'), 'And now?');
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     expect(await screen.findByRole('img', { name: '80% of the context used' })).toHaveAttribute(
@@ -1114,13 +1164,62 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
         origin="http://doc.test"
       />,
     );
-    const conversation = await screen.findByRole('combobox', { name: 'Conversation' });
-    await screen.findByRole('option', { name: 'About the weir' });
-    await user.selectOptions(conversation, CONVERSATION);
+    await choose(user, 'Earlier conversations', 'About the weir');
     expect(await screen.findByRole('list', { name: 'Earlier turns' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'About the weir' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'A new conversation' }));
-    expect(conversation).toHaveValue('');
+    expect(screen.getByRole('heading', { name: 'A new conversation' })).toBeVisible();
     expect(screen.queryByRole('list', { name: 'Earlier turns' })).toBeNull();
+  });
+
+  it('holds its choices in a toolbar: the model, the gauge, and the conversation kept and named by choice (the DQ plan)', async () => {
+    const user = userEvent.setup();
+    const { client, patched } = service();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={vi.fn(answered())}
+        origin="http://doc.test"
+      />,
+    );
+    const bar = await screen.findByRole('toolbar', { name: 'Conversation' });
+    for (const name of [
+      /^Model: Drafting/,
+      'Earlier conversations',
+      'Name this conversation',
+      'Keep this conversation',
+      'A new conversation',
+    ]) {
+      expect(within(bar).getByRole('button', { name })).toBeVisible();
+    }
+    // Nothing to keep or name before the first ask starts a conversation.
+    expect(within(bar).getByRole('button', { name: 'Keep this conversation' })).toBeDisabled();
+    expect(within(bar).getByRole('button', { name: 'Name this conversation' })).toBeDisabled();
+    await user.type(screen.getByLabelText('Ask the assistant'), 'What floods?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    // Started, and not kept: kept only when its owner says so.
+    const keep = within(bar).getByRole('button', { name: 'Keep this conversation' });
+    await waitFor(() => expect(keep).toBeEnabled());
+    expect(keep).toHaveAttribute('aria-pressed', 'false');
+    await user.click(keep);
+    expect(patched).toEqual([{ kept: true }]);
+    await waitFor(() => expect(keep).toHaveAttribute('aria-pressed', 'true'));
+    // Named in place: Escape leaves it as it was, Enter names it.
+    await user.click(within(bar).getByRole('button', { name: 'Name this conversation' }));
+    const name = screen.getByRole('textbox', { name: "The conversation's name" });
+    expect(name).toHaveValue('Asked');
+    await user.clear(name);
+    await user.type(name, 'Floods{Escape}');
+    expect(screen.getByRole('heading', { name: 'Asked' })).toBeVisible();
+    await user.click(within(bar).getByRole('button', { name: 'Name this conversation' }));
+    const again = screen.getByRole('textbox', { name: "The conversation's name" });
+    await user.clear(again);
+    await user.type(again, 'Floods{Enter}');
+    expect(patched.at(-1)).toEqual({ title: 'Floods' });
+    expect(await screen.findByRole('heading', { name: 'Floods' })).toBeVisible();
   });
 });
 

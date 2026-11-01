@@ -211,6 +211,11 @@ they may no longer read, the whole conversation is closed to them. Erasing a per
 personal prompts and leaves their conversations and runs, which only they could read, with them.
 Two turns sent at once can both start: one turn at a time is checked, not locked.
 
+A conversation is kept by choice (the DQ plan): `kept`, false when one starts, true once its owner
+keeps or names it (`PATCH /v1/conversations/{id}`), and only those kept are listed. One not kept is
+held with its runs, never deleted (0127), and the panel holds it for as long as it is open; those
+made before 0183 are kept. Its title and `kept` are all of it that changes.
+
 ## The assistant
 
 **Drafting against the open document** (GEN-012), on the document page's **Assistant** panel. The
@@ -237,12 +242,15 @@ tool calls a run. The tools (GEN-007):
 citation only where that block was in what the run read, shows it as a link, and drops any other,
 saying so.
 
-**The panel** (the DP plan): a turn is a ledger line, what was asked over its answer, each kept
-citation a numbered button and the answer's cited parts stepped through in a bar above the text. While
-it runs, one line names the last step and **Stop** stands where **Ask** was; under the box, the
-endpoint and a gauge of the last turn's tokens in over the endpoint's `contextWindow`
-(`/v1/conversation-endpoints`), in three bands at 50% and 75%. The part asked about is held from when
-the box is entered until the ask is sent.
+**The panel** (the DP and DQ plans): three rows. A toolbar on top holds the model, a menu that says
+whether each endpoint sits outside the boundary (GEN-051); a gauge of the last turn's tokens in over
+the endpoint's `contextWindow` (`/v1/conversation-endpoints`), in three bands at 50% and 75%; and the
+conversation's tools: earlier conversations, name, keep, new. The middle scrolls: a turn is a ledger
+line, what was asked over its answer, each kept citation a numbered button and the answer's cited
+parts stepped through in a bar above the text. The composer is fixed at the bottom: **This part** or
+**The whole document**, the parts it reads as chips, the box, and **Prompts** opening the personal
+and library prompts. While it runs, one line names the last step and **Stop** stands where **Ask**
+was. The part asked about is held from when the box is entered until the ask is sent.
 
 ## Proposals
 

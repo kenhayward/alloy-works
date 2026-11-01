@@ -11,6 +11,33 @@ export const StartConversationBody = z.strictObject({
 });
 export type StartConversationBody = z.infer<typeof StartConversationBody>;
 
+export const UpdateConversationBody = z
+  .strictObject({
+    title: z.string().trim().min(1).max(200).optional().describe('Its new name'),
+    kept: z
+      .boolean()
+      .optional()
+      .describe('Whether it is kept, and so listed; naming one keeps it unless this says not'),
+  })
+  .refine((body) => body.title !== undefined || body.kept !== undefined, {
+    message: 'Name it, or say whether it is kept',
+  })
+  .meta({ minProperties: 1 });
+export type UpdateConversationBody = z.infer<typeof UpdateConversationBody>;
+
+const kept = z
+  .boolean()
+  .describe('Whether its owner kept it: one not kept is held with its runs, and never listed');
+
+/** A conversation as a list shows it, and as a change to it answers. */
+export const ConversationItem = z.object({
+  id: z.string(),
+  document: z.string().nullable(),
+  title: z.string(),
+  madeAt: z.string(),
+  kept,
+});
+
 export const TurnBody = z.strictObject({
   ask: z.string().trim().min(1).max(8000).describe('What the person says'),
   endpoint: LowercaseUuid.optional().describe(
@@ -44,6 +71,7 @@ export const ConversationView = z.object({
     document: z.string().nullable(),
     title: z.string(),
     madeAt: z.string(),
+    kept,
     turns: z.array(TurnView).describe('Each turn, oldest first'),
   }),
 });
@@ -51,15 +79,8 @@ export type ConversationView = z.infer<typeof ConversationView>;
 
 export const ConversationList = z.object({
   items: z
-    .array(
-      z.object({
-        id: z.string(),
-        document: z.string().nullable(),
-        title: z.string(),
-        madeAt: z.string(),
-      }),
-    )
-    .describe('The caller’s own, the newest first, at most 200'),
+    .array(ConversationItem)
+    .describe('The caller’s own they kept, the newest first, at most 200'),
 });
 
 export const ConversationListQuery = z.object({
@@ -183,6 +204,26 @@ export const conversationRoutes = {
     params: ConversationParams,
     responses: {
       200: { description: 'The conversation', schema: ConversationView },
+      401: unauthenticated,
+      403: token,
+      404: notFound,
+    },
+  },
+  updateConversation: {
+    operationId: 'updateConversation',
+    method: 'PATCH',
+    path: '/v1/conversations/{id}',
+    summary: 'Names a conversation of the caller’s, or keeps or lets it go',
+    tenantScoped: true,
+    access: SESSION,
+    params: ConversationParams,
+    body: UpdateConversationBody,
+    responses: {
+      200: { description: 'As it now stands', schema: ConversationItem },
+      400: {
+        description: 'Asked for nothing, a name empty or too long, or anything else',
+        schema: ErrorBody,
+      },
       401: unauthenticated,
       403: token,
       404: notFound,

@@ -220,6 +220,10 @@ const ADMIN: Record<string, readonly string[]> = {
   Publishing: ['m21 3-6.5 18-3.5-7.5L3.5 10z', 'M21 3 11 13.5'],
   Threads: ['M4 5h11v8H9l-5 4z', 'M18 9h2v11l-4-3h-6v-2'],
   Suggestions: ['M4 20h4L19 9l-4-4L4 16z', 'M14 20h6'],
+  // The assistant's composer (the DQ plan): its prompts, a book; asking, an arrow up.
+  Prompts: ['M5 19.5v-15A1.5 1.5 0 0 1 6.5 3H19v15H6.5a1.5 1.5 0 0 0 0 3H19', 'M9 7h6'],
+  Send: ['M12 19V5', 'm5 12 7-7 7 7'],
+  'Chevron down': ['m6 9 6 6 6-6'],
   Rounds: [
     'm17 3 3 3-3 3',
     'M4 11v-1a4 4 0 0 1 4-4h12',

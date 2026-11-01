@@ -359,6 +359,8 @@ export {
   ConversationParams,
   ConversationView,
   StartConversationBody,
+  UpdateConversationBody,
+  ConversationItem,
   TurnBody,
   conversationRoutes,
 } from './conversations.js';
