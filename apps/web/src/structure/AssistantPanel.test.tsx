@@ -282,13 +282,42 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     await user.click(screen.getByText('What it did (1 step)'));
     expect(screen.getByText('Read the outline')).toBeVisible();
     expect(screen.getByText('<content>Sites</content>')).toBeVisible();
-    await waitFor(() =>
-      expect(
-        screen.getByText(
-          /100 tokens in, 20 out: USD 0.000600\. This month: 3 runs, USD 0.001800\./,
-        ),
-      ).toBeVisible(),
+    // The cost incurred, where there is one; never the month's runs (issue #871).
+    expect(await screen.findByText('100 tokens in, 20 out: USD 0.000600.')).toBeVisible();
+    expect(screen.queryByText(/This month/)).toBeNull();
+  });
+
+  it('GEN-037 says no cost where a run cost nothing, and how fast the reply came, in tokens a second (issue #871)', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    // The clock: the reply's first token at 1 s, its 41st at 3 s; the run's other calls are not in it.
+    let at = 1000;
+    const stream = vi.fn(async (options: StreamPostOptions) => {
+      options.onEvent('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'outside' } });
+      options.onEvent('text', { text: 'It ', tokens: 1 });
+      at = 3000;
+      options.onEvent('text', { text: 'floods.', tokens: 41 });
+      at = 9000;
+      options.onEvent(
+        'ended',
+        ended({ cost: '0.000000', tokensOut: 400 })[1] as Record<string, unknown>,
+      );
+      return { kind: 'streamed' as const };
+    });
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+        now={() => at}
+      />,
     );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'When?{Enter}');
+    expect(await screen.findByText('100 tokens in, 400 out. 20 tk/s')).toBeVisible();
+    expect(screen.queryByText(/USD/)).toBeNull();
   });
 
   it("words each step, a prompt's refusal and a failure by its code, never the service's English", async () => {
@@ -1271,7 +1300,8 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     );
     await choose(user, 'Earlier conversations', 'About the weir');
     expect(await screen.findByRole('list', { name: 'Earlier turns' })).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'About the weir' })).toBeVisible();
+    // Never its title over its turns, which says the first ask again (issue #871).
+    expect(screen.queryByRole('heading', { name: 'About the weir' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'A new conversation' }));
     // A new one has no name to show until its first ask gives it one.
     expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
@@ -1401,13 +1431,13 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     expect(name).toHaveValue('Asked');
     await user.clear(name);
     await user.type(name, 'Floods{Escape}');
-    expect(screen.getByRole('heading', { name: 'Asked' })).toBeVisible();
+    expect(screen.queryByRole('textbox', { name: "The conversation's name" })).toBeNull();
+    expect(patched).toEqual([{ kept: true }]);
     await user.click(within(bar).getByRole('button', { name: 'Name this conversation' }));
     const again = screen.getByRole('textbox', { name: "The conversation's name" });
     await user.clear(again);
     await user.type(again, 'Floods{Enter}');
     expect(patched.at(-1)).toEqual({ title: 'Floods' });
-    expect(await screen.findByRole('heading', { name: 'Floods' })).toBeVisible();
     // The focus goes back to where naming began, never lost to the page.
     expect(within(bar).getByRole('button', { name: 'Name this conversation' })).toHaveFocus();
   });
