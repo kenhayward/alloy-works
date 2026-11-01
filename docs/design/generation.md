@@ -228,7 +228,8 @@ the request cancels the run.
 
 The loop runs in the service: each model turn goes through the connector (GN-A); each tool call runs
 in the service as the requester, through the same functions its route uses (GEN-008). A run makes at most
-the turns and tool calls its model allows, within ten minutes. The tools (GEN-007):
+the turns and tool calls its model allows, within ten minutes; one that takes
+every turn ends `turns_spent`, not `timeout`. The tools (GEN-007):
 
 | Tool                | Does                                                                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

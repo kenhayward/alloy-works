@@ -5,3 +5,4 @@
 ### Changed
 
 - **An assistant run may take ten minutes**, not four. (#872)
+- **A run that takes all its model's turns says so**, not that the model did not finish in time.

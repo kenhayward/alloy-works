@@ -74,6 +74,7 @@ const FAILURES = [
   'connector_error',
   'connector_busy',
   'connector_unavailable',
+  'turns_spent',
 ] as const;
 
 /** A run's `failed` frame: its code worded, a guardrail's reason and a limit's time as data. */

@@ -2506,6 +2506,7 @@
   "assistant.failed.connector_error": "The connector failed while it called the endpoint.",
   "assistant.failed.connector_busy": "The connector is calling as many models as it may at once. Try again shortly.",
   "assistant.failed.connector_unavailable": "The connector could not be reached.",
+  "assistant.failed.turns_spent": "The assistant took all the turns its model allows. Ask again, or raise its Turns a run on Models.",
   "editor.restore.reference_refused": "It references a component this outline cannot reference, so this version cannot be restored.",
   "editor.restore.sections_added": "This document's template does not allow sections to be added, so this version cannot be restored.",
   "editor.restore.sections_removed": "This document's template does not allow sections to be removed, so this version cannot be restored.",

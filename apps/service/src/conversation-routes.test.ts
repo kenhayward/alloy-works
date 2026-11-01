@@ -546,6 +546,33 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       expect(asked.at(-1)!.deadlineMs).toBe(120_000);
     });
 
+    it('ends a run that takes all its model’s turns as that, not as out of time (issue #872)', async () => {
+      const one = await keyed({ name: 'One turn', turnsPerRun: 1 });
+      const id = await start('grace');
+      const was = h.connector.modelFor;
+      h.connector.modelFor = (request) => {
+        asked.push(request);
+        return [
+          { type: 'tool_call', id: 't1', name: 'read_component', input: { component: sitesId } },
+          { ...ended, stop: 'tool_use' },
+        ];
+      };
+      try {
+        const frames = framesOf(
+          (await turn('grace', id, { ask: 'Keep reading.', endpoint: one })).body,
+        );
+        expect(frames.at(-1)).toMatchObject({
+          event: 'failed',
+          data: {
+            code: 'turns_spent',
+            message: 'The run took all the turns its model allows.',
+          },
+        });
+      } finally {
+        h.connector.modelFor = was;
+      }
+    });
+
     it('makes no more tool calls a run than its model allows (issue #872)', async () => {
       const one = await keyed({ name: 'One call', toolCallsPerRun: 1 });
       const id = await start('grace');
