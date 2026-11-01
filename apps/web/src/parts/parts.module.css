@@ -350,6 +350,46 @@
   font-size: var(--size-12);
 }
 
+/* A wide menu: lined up with the nearest positioned box around its button, nearly its width. */
+.moreAnchor[data-wide] {
+  position: static;
+}
+
+.menu[data-wide] {
+  inset-inline: auto var(--space-8);
+  width: calc(100% - 2 * var(--space-8));
+  max-width: none;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.menu[data-wide] [role='menuitem'] {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.menu[data-wide] .menuLabel {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A popup's frame (Popup): where it stands is its caller's. */
+.popup {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  display: grid;
+  align-content: start;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-modal);
+  overflow: auto;
+}
+
 .menuEmpty {
   margin: 0;
   padding: var(--space-8) var(--space-12);

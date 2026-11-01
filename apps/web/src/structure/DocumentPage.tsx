@@ -2710,9 +2710,12 @@ export function DocumentPage({
                 aria-label={say('document.panels-beside-the-text')}
                 hidden={dockPane.collapsed}
               >
-                <h2 className={styles['dockHeading']}>
-                  {dockTabs.find((each) => each.key === shownDock)?.label}
-                </h2>
+                {/* The Assistant names itself in its own toolbar line (issue #864). */}
+                {shownDock !== 'assistant' && (
+                  <h2 className={styles['dockHeading']}>
+                    {dockTabs.find((each) => each.key === shownDock)?.label}
+                  </h2>
+                )}
                 <div className={styles['dockBody']}>
                   {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
                   {provenanceState?.held && (

@@ -1,6 +1,6 @@
 import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
 import { PENDING_ENTRY } from '@alloy-works/domain';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
 import { AnswerMarkdown } from './AnswerMarkdown.js';
@@ -8,6 +8,7 @@ import { PersonalPrompts } from './PersonalPrompts.js';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
 import { MenuButton } from '../parts/MenuButton.js';
+import { Popup } from '../parts/Popup.js';
 import { Segmented } from '../parts/Segmented.js';
 import { Toolbar } from '../parts/Toolbar.js';
 import { formats, words, wordsWith } from '../words/words.js';
@@ -277,6 +278,11 @@ export function AssistantPanel({
   const [looking, setLooking] = useState('');
   const [found, setFound] = useState<readonly { id: string; title: string }[]>([]);
   const [titles, setTitles] = useState<ReadonlyMap<string, string>>(new Map());
+  // Parts added before the first ask: held here, and given to the conversation it begins (#864).
+  const [pending, setPending] = useState<readonly string[]>([]);
+  const promptsButton = useRef<HTMLButtonElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
   // What the assistant is given with an ask on a document: the component open, or every one.
   const [scope, setScope] = useState<'component' | 'document'>('component');
   // The part asked about, held from when the box is entered until the ask is sent, so the cursor
@@ -290,6 +296,12 @@ export function AssistantPanel({
   useEffect(() => {
     if (!inBox.current) setHeld(null);
   }, [component]);
+  useLayoutEffect(() => {
+    const element = box.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  }, [ask]);
   const asking = held ?? component;
   const given = asking === null ? 'document' : scope;
   // The reply's tokens so far, while it streams.
@@ -364,7 +376,10 @@ export function AssistantPanel({
   }, [client, document, node]);
 
   const removePart = async (component: string) => {
-    if (conversation === null) return;
+    if (conversation === null) {
+      setPending((was) => was.filter((each) => each !== component));
+      return;
+    }
     const { data } = await client.POST('/v1/conversations/{id}/context/{component}/removal', {
       params: { path: { id: conversation, component } },
     });
@@ -383,16 +398,25 @@ export function AssistantPanel({
   };
 
   const addPart = async (component: string, title: string) => {
-    if (conversation === null) return;
+    const done = () => {
+      setTitles((was) => new Map(was).set(component, title));
+      setFound([]);
+      setLooking('');
+      setFinding(false);
+      addButton.current?.focus();
+    };
+    if (conversation === null) {
+      setPending((was) => (was.includes(component) ? was : [...was, component]));
+      done();
+      return;
+    }
     const { data, error } = await client.POST('/v1/conversations/{id}/context', {
       params: { path: { id: conversation } },
       body: { component },
     });
     if (data) {
       setTray(data.items);
-      setTitles((was) => new Map(was).set(component, title));
-      setFound([]);
-      setLooking('');
+      done();
     } else setSaid(refusalWords(error, words('document.that-part-could-not-be')));
   };
 
@@ -432,6 +456,7 @@ export function AssistantPanel({
     setSteps([]);
     setEnded(null);
     setTray([]);
+    setPending([]);
     if (id !== null) void readTurns(id).catch(() => undefined);
   };
 
@@ -475,6 +500,15 @@ export function AssistantPanel({
       setConversation(id);
       setOpened({ title: data.conversation.title, kept: data.conversation.kept });
       setTurns([]);
+      // The parts added before it began, given to it before the turn reads them.
+      for (const part of pending) {
+        const given = await client.POST('/v1/conversations/{id}/context', {
+          params: { path: { id } },
+          body: { component: part },
+        });
+        if (given.data) setTray(given.data.items);
+      }
+      setPending([]);
     }
     setAsked(text.trim());
     await run(`${origin}/v1/conversations/${id}/turns`, {
@@ -673,116 +707,168 @@ export function AssistantPanel({
 
   return (
     <section className={styles['assistant']} aria-label={words('document.assistant')}>
-      <Toolbar label={words('document.conversation')} className={styles['bar']}>
-        {endpointNow !== undefined && (
-          <MenuButton
-            label={words('document.model', { name: modelName(endpointNow) })}
-            className={styles['model']}
-            disabled={running}
-            face={
-              <>
-                <span className={styles['modelName']}>{endpointNow.name}</span>
-                {endpointNow.boundary === 'outside' && (
-                  <span className={styles['outside']}>{words('document.outside')}</span>
-                )}
-                <Icon name="Chevron down" size={12} />
-              </>
-            }
-            items={endpoints.map((each) => ({
-              key: each.id,
-              label: each.name,
-              detail:
-                each.boundary === 'outside'
-                  ? words('document.outside-your-boundary')
-                  : words('document.inside-your-boundary'),
-              checked: each.id === chosen,
-              onSelect: () => setChosen(each.id),
-            }))}
-          />
-        )}
-        {measured !== null && (
-          <span
-            role="img"
-            className={styles['gauge']}
-            data-band={measured.band}
-            aria-label={words('document.context-used', { percent: measured.percent })}
-            title={words('document.context-used', { percent: measured.percent })}
-          >
-            <span
-              className={styles['gaugeRing']}
-              style={{ '--used': `${Math.min(measured.percent, 100)}%` } as React.CSSProperties}
-              aria-hidden="true"
-            />
-            {formats().number(measured.percent)}%
-          </span>
-        )}
-        <span className={styles['spacer']} />
-        <MenuButton
-          label={words('document.earlier-conversations')}
-          align="end"
-          disabled={running}
-          face={<Icon name="Versions" size={16} />}
-          empty={words('document.none-kept-yet')}
-          items={conversations.map((each) => ({
-            key: each.id,
-            label: each.title,
-            detail: formats().date(new Date(each.madeAt)),
-            onSelect: () => open(each.id),
-          }))}
-        />
-        <IconButton
-          ref={nameButton}
-          label={words('document.name-this-conversation')}
-          pressed={naming !== null}
-          disabled={running || opened === null}
-          onClick={() => setNaming(naming === null ? (opened?.title ?? '') : null)}
-        >
-          <Icon name="Rename" size={16} />
-        </IconButton>
-        <IconButton
-          label={words('document.keep-this-conversation')}
-          pressed={opened?.kept ?? false}
-          disabled={running || opened === null}
-          onClick={() => void change({ kept: !(opened?.kept ?? false) })}
-        >
-          <Icon name="Keep" size={16} />
-        </IconButton>
-        <IconButton
-          label={words('document.a-new-conversation')}
-          disabled={running || conversation === null}
-          onClick={() => open(null)}
-        >
-          <Icon name="Add" size={16} />
-        </IconButton>
-      </Toolbar>
-      <div className={styles['scroll']}>
-        <div className={styles['named']}>
-          {naming === null ? (
-            <h3>{opened?.title ?? words('document.a-new-conversation')}</h3>
-          ) : (
-            <input
-              aria-label={words('document.the-conversation-s-name')}
-              value={naming}
-              maxLength={200}
-              autoFocus
-              onChange={(typed) => setNaming(typed.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                  event.preventDefault();
-                  setNaming(null);
-                  nameButton.current?.focus();
-                } else if (event.key === 'Enter' && naming.trim() !== '') {
-                  event.preventDefault();
-                  setNaming(null);
-                  nameButton.current?.focus();
-                  void change({ title: naming.trim() });
-                }
-              }}
+      <div className={styles['bar']}>
+        <h2 className={styles['title']}>{words('document.assistant')}</h2>
+        <Toolbar label={words('document.conversation')} className={styles['tools']}>
+          {endpointNow !== undefined && (
+            <MenuButton
+              label={words('document.model', { name: modelName(endpointNow) })}
+              className={styles['model']}
+              disabled={running}
+              face={
+                <>
+                  <span className={styles['modelName']}>{endpointNow.name}</span>
+                  {endpointNow.boundary === 'outside' && (
+                    <span className={styles['outside']}>{words('document.outside')}</span>
+                  )}
+                  <Icon name="Chevron down" size={12} />
+                </>
+              }
+              items={endpoints.map((each) => ({
+                key: each.id,
+                label: each.name,
+                detail:
+                  each.boundary === 'outside'
+                    ? words('document.outside-your-boundary')
+                    : words('document.inside-your-boundary'),
+                checked: each.id === chosen,
+                onSelect: () => setChosen(each.id),
+              }))}
             />
           )}
-        </div>
-        {conversation === null && asked === null && !running && (
-          <p className={styles['muted']}>{words('document.the-assistant-reads-what-you')}</p>
+          {measured !== null && (
+            <span
+              role="img"
+              className={styles['gauge']}
+              data-band={measured.band}
+              aria-label={words('document.context-used', { percent: measured.percent })}
+              title={words('document.context-used', { percent: measured.percent })}
+            >
+              <span
+                className={styles['gaugeRing']}
+                style={{ '--used': `${Math.min(measured.percent, 100)}%` } as React.CSSProperties}
+                aria-hidden="true"
+              />
+              {formats().number(measured.percent)}%
+            </span>
+          )}
+          <span className={styles['spacer']} />
+          <IconButton
+            ref={promptsButton}
+            label={words('document.prompts')}
+            aria-haspopup="dialog"
+            aria-expanded={offering}
+            onClick={() => setOffering((was) => !was)}
+          >
+            <Icon name="Prompts" size={16} />
+          </IconButton>
+          <MenuButton
+            label={words('document.earlier-conversations')}
+            align="end"
+            wide
+            disabled={running}
+            face={<Icon name="Versions" size={16} />}
+            empty={words('document.none-kept-yet')}
+            items={conversations.map((each) => ({
+              key: each.id,
+              label: each.title,
+              detail: formats().date(new Date(each.madeAt)),
+              onSelect: () => open(each.id),
+            }))}
+          />
+          <IconButton
+            ref={nameButton}
+            label={words('document.name-this-conversation')}
+            pressed={naming !== null}
+            disabled={running || opened === null}
+            onClick={() => setNaming(naming === null ? (opened?.title ?? '') : null)}
+          >
+            <Icon name="Rename" size={16} />
+          </IconButton>
+          <IconButton
+            label={words('document.keep-this-conversation')}
+            pressed={opened?.kept ?? false}
+            disabled={running || opened === null}
+            onClick={() => void change({ kept: !(opened?.kept ?? false) })}
+          >
+            <Icon name="Keep" size={16} />
+          </IconButton>
+          <IconButton
+            label={words('document.a-new-conversation')}
+            disabled={running || conversation === null}
+            onClick={() => open(null)}
+          >
+            <Icon name="Add" size={16} />
+          </IconButton>
+        </Toolbar>
+        {offering && (
+          <Popup
+            label={words('document.prompts')}
+            opener={promptsButton}
+            onClose={() => setOffering(false)}
+            className={styles['promptsPopup']}
+          >
+            <PersonalPrompts client={client} asking={ask} onUse={setAsk} />
+            {prompts.length > 0 && (
+              <section aria-label={words('document.prompts')} className={styles['prompts']}>
+                <h3>{words('document.prompts')}</h3>
+                {node === null ? (
+                  <p className={styles['muted']}>{words('document.open-a-part-to-run')}</p>
+                ) : (
+                  <ul>
+                    {prompts.map((each) => (
+                      <li key={each.id}>
+                        <span>{each.title}</span>{' '}
+                        <button
+                          type="button"
+                          disabled={running}
+                          aria-label={words('document.run-on-this-part', { title: each.title })}
+                          onClick={() => {
+                            setAsked(null);
+                            void run(`${origin}/v1/documents/${document}/prompt-runs`, {
+                              prompt: each.id,
+                              node,
+                            });
+                          }}
+                        >
+                          {words('document.run')}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
+          </Popup>
+        )}
+      </div>
+      <div className={styles['scroll']}>
+        {(opened !== null || naming !== null) && (
+          <div className={styles['named']}>
+            {naming === null ? (
+              <h3>{opened?.title}</h3>
+            ) : (
+              <input
+                aria-label={words('document.the-conversation-s-name')}
+                value={naming}
+                maxLength={200}
+                autoFocus
+                onChange={(typed) => setNaming(typed.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setNaming(null);
+                    nameButton.current?.focus();
+                  } else if (event.key === 'Enter' && naming.trim() !== '') {
+                    event.preventDefault();
+                    setNaming(null);
+                    nameButton.current?.focus();
+                    void change({ title: naming.trim() });
+                  }
+                }}
+              />
+            )}
+          </div>
         )}
         {turns.filter((each) => each.run !== current).length > 0 && (
           <ol aria-label={words('document.earlier-turns')} className={styles['turns']}>
@@ -1028,133 +1114,106 @@ export function AssistantPanel({
         )}
       </div>
       <div className={styles['composer']}>
-        {offering && (
-          <div className={styles['offered']}>
-            <PersonalPrompts client={client} asking={ask} onUse={setAsk} />
-            {prompts.length > 0 && (
-              <section aria-label={words('document.prompts')} className={styles['prompts']}>
-                <h3>{words('document.prompts')}</h3>
-                {node === null ? (
-                  <p className={styles['muted']}>{words('document.open-a-part-to-run')}</p>
-                ) : (
-                  <ul>
-                    {prompts.map((each) => (
-                      <li key={each.id}>
-                        <span>{each.title}</span>{' '}
-                        <button
-                          type="button"
-                          disabled={running}
-                          aria-label={words('document.run-on-this-part', { title: each.title })}
-                          onClick={() => {
-                            setAsked(null);
-                            void run(`${origin}/v1/documents/${document}/prompt-runs`, {
-                              prompt: each.id,
-                              node,
-                            });
-                          }}
-                        >
-                          {words('document.run')}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
-          </div>
-        )}
-        {document !== null && (
-          <Segmented
-            label={words('document.context')}
-            value={given}
-            disabled={running}
-            onChange={(value) => setScope(value as 'component' | 'document')}
-            options={[
-              {
-                value: 'component',
-                name: words('document.current-component'),
-                disabled: asking === null,
-              },
-              { value: 'document', name: words('document.all-components') },
-            ]}
-          />
-        )}
-        {conversation !== null && (
-          <div
-            role="group"
-            aria-label={words('document.what-it-reads')}
-            className={styles['chips']}
+        <div role="group" aria-label={words('document.what-it-reads')} className={styles['chips']}>
+          {document !== null && (
+            <Segmented
+              label={words('document.context')}
+              className={styles['scopes']}
+              value={given}
+              disabled={running}
+              onChange={(value) => setScope(value as 'component' | 'document')}
+              options={[
+                { value: 'document', name: words('document.all-components') },
+                {
+                  value: 'component',
+                  name: words('document.current-component'),
+                  disabled: asking === null,
+                },
+              ]}
+            />
+          )}
+          {[
+            ...tray,
+            ...pending.map((part) => ({ component: part, version: null, readable: true })),
+          ].map((each) => {
+            const title =
+              nameOf(each.component) ?? titles.get(each.component) ?? words('document.a-part');
+            return (
+              <span key={each.component} className={styles['chip']}>
+                {each.readable ? title : words('document.a-part-you-may-no')}
+                <IconButton
+                  label={words('document.remove', {
+                    value1: each.readable
+                      ? title
+                      : words('document.the-part-you-may-no-longer-read'),
+                  })}
+                  className={styles['chipRemove']}
+                  onClick={() => void removePart(each.component)}
+                >
+                  <Icon name="Close" size={12} />
+                </IconButton>
+              </span>
+            );
+          })}
+          <button
+            ref={addButton}
+            type="button"
+            className={styles['addPart']}
+            aria-haspopup="dialog"
+            aria-expanded={finding}
+            onClick={() => setFinding((was) => !was)}
           >
-            {tray.length === 0 && (
-              <span className={styles['hint']}>{words('document.nothing-yet-a-part-the')}</span>
-            )}
-            {tray.map((each) => {
-              const title =
-                nameOf(each.component) ?? titles.get(each.component) ?? words('document.a-part');
-              return (
-                <span key={each.component} className={styles['chip']}>
-                  {each.readable ? title : words('document.a-part-you-may-no')}
-                  <IconButton
-                    label={words('document.remove', {
-                      value1: each.readable
-                        ? title
-                        : words('document.the-part-you-may-no-longer-read'),
-                    })}
-                    className={styles['chipRemove']}
-                    onClick={() => void removePart(each.component)}
-                  >
-                    <Icon name="Close" size={12} />
-                  </IconButton>
-                </span>
-              );
-            })}
-            <button
-              type="button"
-              className={styles['addPart']}
-              aria-expanded={finding}
-              onClick={() => setFinding((was) => !was)}
+            <Icon name="Add" size={12} />
+            {words('document.add-a-part')}
+          </button>
+          {finding && (
+            <Popup
+              label={words('document.add-a-part')}
+              opener={addButton}
+              onClose={() => setFinding(false)}
+              className={styles['finder']}
             >
-              {words('document.add-a-part')}
-            </button>
-            {finding && (
-              <div className={styles['finder']}>
-                <div className={styles['actions']}>
-                  <label className={styles['ask']}>
-                    {words('document.find-a-part-to-add')}
-                    <input value={looking} onChange={(change) => setLooking(change.target.value)} />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={looking.trim() === ''}
-                    onClick={() => void look()}
-                  >
-                    {words('document.find')}
-                  </button>
-                </div>
-                {found.length > 0 && (
-                  <ul aria-label={words('document.parts-found')}>
-                    {found.map((each) => (
-                      <li key={each.id}>
-                        <span>{each.title}</span>{' '}
-                        <button
-                          type="button"
-                          aria-label={words('document.add', { title: each.title })}
-                          onClick={() => void addPart(each.id, each.title)}
-                        >
-                          {words('document.add-2')}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+              <form
+                className={styles['look']}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (looking.trim() !== '') void look();
+                }}
+              >
+                <input
+                  aria-label={words('document.find-a-part-to-add')}
+                  placeholder={words('document.find-a-part-to-add')}
+                  value={looking}
+                  onChange={(change) => setLooking(change.target.value)}
+                />
+                <button type="submit" disabled={looking.trim() === ''}>
+                  {words('document.find')}
+                </button>
+              </form>
+              {found.length > 0 && (
+                <ul aria-label={words('document.parts-found')} className={styles['found']}>
+                  {found.map((each) => (
+                    <li key={each.id}>
+                      <span>{each.title}</span>
+                      <button
+                        type="button"
+                        aria-label={words('document.add', { title: each.title })}
+                        onClick={() => void addPart(each.id, each.title)}
+                      >
+                        {words('document.add-2')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Popup>
+          )}
+        </div>
         <form onSubmit={(event) => void submit(event)} className={styles['box']}>
           <label className={styles['askLabel']}>
             <span className={styles['hidden']}>{words('document.ask-the-assistant')}</span>
             <textarea
+              ref={box}
               value={ask}
               rows={2}
               placeholder={words('document.ask-about-this-document')}
@@ -1176,13 +1235,6 @@ export function AssistantPanel({
             />
           </label>
           <div className={styles['composerFoot']}>
-            <IconButton
-              label={words('document.prompts')}
-              aria-expanded={offering}
-              onClick={() => setOffering((was) => !was)}
-            >
-              <Icon name="Prompts" size={16} />
-            </IconButton>
             <span className={styles['hint']}>{words('document.enter-asks')}</span>
             <span className={styles['spacer']} />
             {/* Stop where Ask was, while it answers (Diariz's send that becomes stop). */}

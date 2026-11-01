@@ -224,7 +224,7 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: 'Method' });
     await userEvent.click(screen.getByRole('button', { name: 'Add component' }));
-    const chooser = (await screen.findByLabelText('Component')).closest('form')!;
+    const chooser = (await screen.findByRole('combobox', { name: 'Component' })).closest('form')!;
     expect(within(chooser).getByText('In review')).toHaveAttribute('data-kind', 'inReview');
   });
 });

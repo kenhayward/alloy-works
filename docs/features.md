@@ -203,16 +203,17 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   carries the earlier turns' words, runs as the assistant does, and is kept with what it said. You
   choose the endpoint a turn runs on, and it says whether that sits outside your data boundary
   (`/v1/conversations`). Nothing is refused for being off the subject. **Context** gives a turn the
-  **This part** or **The whole document** of the document, read as you, beside what its tools
+  **Component** open or the whole **Document**, read as you, beside what its tools
   find. While a reply streams, the tab says it is answering and how many tokens have arrived.
   **Conversations** holds conversations on no document, its tools your own search, reads and
   proposals. Each conversation shows **What it reads**: every part a turn read, or that you added,
   read again as you each turn, a part you may no longer read left out and said so; remove a part, or
-  find one to add.
+  find one to add with **Add a part**, before the first ask too.
   A conversation is kept only if you keep it: **Keep this conversation** lists it under **Earlier
   conversations**, and naming it keeps it too; one you do not keep is not listed again, though its
-  turns stay recorded as every run is. The tab's toolbar holds the model, the context gauge and the
-  conversation's own tools; the box, what it reads and **Prompts** stay at the bottom.
+  turns stay recorded as every run is. The tab's one top line names it and holds the model, the context gauge,
+  **Prompts** and the conversation's own tools; the box and what it reads stay at the bottom, the box
+  growing upward as you write.
   A conversation may also propose a new part: where, its title and its text. Nothing is made until you
   accept it, when it is made as yours at 0.1, and the document's **Generated content** names it.
   Where something it read asks the model to do anything, it does not, and may say so: the turn shows

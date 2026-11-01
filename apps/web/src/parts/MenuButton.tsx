@@ -25,6 +25,7 @@ export function MenuButton({
   className,
   align = 'start',
   disabled = false,
+  wide = false,
   title,
 }: {
   /** The button's and the menu's name. */
@@ -38,8 +39,11 @@ export function MenuButton({
   /** Which edge of the button the menu lines up with. */
   align?: 'start' | 'end';
   disabled?: boolean;
+  /** Nearly as wide as the nearest positioned box around it, such as a panel's bar, not the button. */
+  wide?: boolean;
   title?: string;
 }) {
+  const across = wide ? { 'data-wide': '' } : {};
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
@@ -77,7 +81,7 @@ export function MenuButton({
   };
 
   return (
-    <span className={styles['moreAnchor']}>
+    <span className={styles['moreAnchor']} {...across}>
       <button
         ref={button}
         type="button"
@@ -102,7 +106,7 @@ export function MenuButton({
       </button>
       {open && items.length === 0 && (
         // Nothing to offer: said beside the button, never as a menu holding no item.
-        <div ref={menu} id={menuId} className={styles['menu']} data-align={align}>
+        <div ref={menu} id={menuId} className={styles['menu']} data-align={align} {...across}>
           {empty !== undefined && <p className={styles['menuEmpty']}>{empty}</p>}
         </div>
       )}
@@ -114,6 +118,7 @@ export function MenuButton({
           aria-label={label}
           className={styles['menu']}
           data-align={align}
+          {...across}
           onKeyDown={(event) => {
             const keys: Record<string, () => void> = {
               ArrowDown: () => moveBy(1),

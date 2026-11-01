@@ -994,7 +994,6 @@
   "document.previous-cited-part": "Previous cited part",
   "document.next-cited-part": "Next cited part",
   "document.clear-the-cited-parts": "Clear the cited parts",
-  "document.the-assistant-reads-what-you": "The assistant reads what you may read of this document. Nothing it proposes changes the document until you accept it.",
   "document.using": "{boundary, select, outside {Using {name}, which is outside your data boundary.} other {Using {name}.}}",
   "document.conversation": "Conversation",
   "document.a-new-conversation": "A new conversation",
@@ -1018,7 +1017,6 @@
   "document.still-answering": "Still answering.",
   "document.this-turn-did-not-finish": "This turn did not finish.",
   "document.what-it-reads": "What it reads",
-  "document.nothing-yet-a-part-the": "Nothing yet. A part the assistant reads, or one you add, is read again each turn.",
   "document.a-part": "A part",
   "document.a-part-you-may-no": "A part you may no longer read, which is not sent",
   "document.remove": "Remove {value1}",
@@ -5351,8 +5349,8 @@
   "admin.the-service-could-not-be-reached": "the service could not be reached.",
   "admin.the-service-failed": "the service failed (HTTP {status}).",
   "document.context": "Context",
-  "document.current-component": "This part",
-  "document.all-components": "The whole document",
+  "document.current-component": "Component",
+  "document.all-components": "Document",
   "document.answering": "Answering",
   "document.answering-tokens": "Answering: {count, plural, one {# token} other {# tokens}} received"
 }
