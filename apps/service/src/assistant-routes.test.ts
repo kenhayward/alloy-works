@@ -325,6 +325,68 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     return { frames, proposal: proposal!.data as { id: string; component: string } };
   };
 
+  it("proposes one table cell set, and the table's rows replaced, each accepted as any proposal is (the TE change)", async () => {
+    const cell = (id: string, value: string) => ({
+      content: [{ type: 'paragraph', id, content: [{ type: 'text', value, marks: [] }] }],
+    });
+    const tabled = await h.component(h.general, 'Levels');
+    await h.placeBlocks(tabled, {
+      type: 'table',
+      id: 't1',
+      caption: [{ type: 'text', value: 'Weir levels', marks: [] }],
+      headerRows: 1,
+      headerColumns: 0,
+      rows: [
+        { cells: [cell('h1', 'Site'), cell('h2', 'Level')] },
+        { cells: [cell('a1', 'North'), cell('a2', '3.2 m')] },
+      ],
+    });
+    const levels = await h.documentReferencing([tabled.id]);
+    const run = async (edit: Json) => {
+      h.connector.modelFor = turns(
+        [tool('t1', 'propose_edit', { component: tabled.id, edits: [edit] }), ended('tool_use')],
+        [text('Proposed.'), ended()],
+      );
+      const response = await h.call('ada', 'POST', `/v1/documents/${levels.id}/assistant/runs`, {
+        ask: 'Correct the table.',
+      });
+      const proposal = framesOf(response.body).find((frame) => frame.event === 'proposal');
+      expect(proposal, response.body).toBeDefined();
+      const accepted = await h.call(
+        'ada',
+        'POST',
+        `/v1/assistant/proposals/${(proposal!.data as { id: string }).id}/acceptance`,
+      );
+      expect(accepted.statusCode, accepted.body).toBe(200);
+      const read = (await h.call('ada', 'GET', `/v1/components/${tabled.id}`)).json<{
+        content: {
+          content: { rows: { cells: { content: { content: { value: string }[] }[] }[] }[] }[];
+        };
+      }>();
+      return read.content.content[0]!.rows.map((row) =>
+        row.cells.map((each) => each.content[0]!.content.map((node) => node.value).join('')),
+      );
+    };
+    expect(await run({ cell: { table: 't1', row: 2, column: 2 }, markdown: '3.4 m' })).toEqual([
+      ['Site', 'Level'],
+      ['North', '3.4 m'],
+    ]);
+    expect(
+      await run({
+        table: 't1',
+        rows: [
+          ['Site', 'Level'],
+          ['North', '3.4 m'],
+          ['South', '2.9 m'],
+        ],
+      }),
+    ).toEqual([
+      ['Site', 'Level'],
+      ['North', '3.4 m'],
+      ['South', '2.9 m'],
+    ]);
+  });
+
   it('GEN-009 makes a proposal that changes nothing until its requester acts on it', async () => {
     const before = await latest(sites.id);
     const { proposal } = await propose('The north weir floods *every* spring.');

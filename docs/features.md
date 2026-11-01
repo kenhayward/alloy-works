@@ -190,8 +190,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   did** lists each step and what came back; what it cites links to the part. An edit it proposes changes
   nothing until you **Accept** it (a new version, as yours, refused while somebody else holds the part),
   **Keep as suggestion** (marked **Generated** in Review until it is resolved) or **Discard** it; each act
-  is recorded. Each run says its tokens and cost, and your month's. A part holding a table, a figure, an
-  equation, a footnote or a reference cannot be edited by a proposal. Each turn shows what you asked
+  is recorded. Each run says its tokens and cost, and your month's. A proposal may set one cell of a table, or
+  replace its rows, its header rows and its caption; never a bound table's rows, which a query gives.
+  A figure, an equation, a footnote or a reference cannot be edited by a proposal. Each turn shows what you asked
   over its answer, each citation a numbered button to the part it names, and a bar above the text
   steps through the parts the answer cited. **Copy the answer** and **Ask again** sit under an answer;
   while it answers, one line says what it is doing and **Stop** stands where **Ask** was. Enter asks,

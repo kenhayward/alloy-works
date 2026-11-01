@@ -287,6 +287,195 @@ describe("the assistant's terms", () => {
     });
   });
 
+  /** A table as the editor writes one: a header row, then body rows, each cell one paragraph. */
+  const cellOf = (id: string, text: string, style: string, colspan = 1) => ({
+    content: [{ ...paragraph(id, text), style }],
+    colspan,
+    rowspan: 1,
+  });
+  const levels = () =>
+    ({
+      type: 'table',
+      id: 't1',
+      style: 'table',
+      caption: [{ type: 'text', value: 'Weir levels', marks: [] }],
+      headerRows: 1,
+      headerColumns: 0,
+      note: [{ type: 'text', value: 'Measured in May.', marks: [] }],
+      rows: [
+        { cells: [cellOf('h1', 'Site', 'table-header'), cellOf('h2', 'Level', 'table-header')] },
+        { cells: [cellOf('a1', 'North', 'table-body'), cellOf('a2', '3.2 m', 'table-body')] },
+        { cells: [cellOf('b1', 'Closed for repair', 'table-body', 2)] },
+      ],
+    }) as unknown as BlockNode;
+  const tableIn = (outcome: ReturnType<typeof applyEdits>) => {
+    if (!outcome.ok) throw new Error(outcome.problem);
+    return outcome.content.content[0] as unknown as {
+      caption: { value: string }[];
+      note: unknown;
+      headerRows: number;
+      rows: {
+        cells: {
+          colspan: number;
+          content: { id: string; style: string; content: { value: string }[] }[];
+        }[];
+      }[];
+    };
+  };
+  const words = (table: ReturnType<typeof tableIn>) =>
+    table.rows.map((row) =>
+      row.cells.map((cell) =>
+        cell.content.map((block) => block.content.map((node) => node.value).join('')).join(' '),
+      ),
+    );
+
+  it('sets one cell of a table, as read_component numbers its rows and columns, keeping all else', () => {
+    const table = tableIn(
+      applyEdits(
+        document(levels()),
+        [{ cell: { table: 't1', row: 2, column: 2 }, markdown: '3.4 m' }],
+        read,
+      ),
+    );
+    expect(words(table)).toEqual([['Site', 'Level'], ['North', '3.4 m'], ['Closed for repair']]);
+    // The cell's paragraph keeps its identifier and style, so a merge sees it changed.
+    expect(table.rows[1]!.cells[1]!.content[0]).toMatchObject({ id: 'a2', style: 'table-body' });
+    expect(table.caption[0]!.value).toBe('Weir levels');
+    expect(table.note).toBeDefined();
+    // Emptied, a cell keeps one paragraph to stand in.
+    const emptied = tableIn(
+      applyEdits(
+        document(levels()),
+        [{ cell: { table: 't1', row: 2, column: 1 }, markdown: '' }],
+        read,
+      ),
+    );
+    expect(emptied.rows[1]!.cells[0]!.content).toEqual([
+      { type: 'paragraph', id: 'a1', style: 'table-body', content: [] },
+    ]);
+  });
+
+  it('refuses a cell that is not there, or a column a spanning cell covers', () => {
+    const at = (row: number, column: number) =>
+      applyEdits(document(levels()), [{ cell: { table: 't1', row, column }, markdown: 'x' }], read);
+    expect(at(4, 1)).toEqual({ ok: false, problem: 'Table t1 has 3 rows; there is no row 4.' });
+    expect(at(1, 3)).toEqual({
+      ok: false,
+      problem: 'Row 1 of table t1 has 2 columns; there is no column 3.',
+    });
+    expect(at(3, 2)).toEqual({
+      ok: false,
+      problem: 'Column 2 of row 3 is part of the cell that starts at column 1: set that one.',
+    });
+    expect(
+      applyEdits(
+        document(levels()),
+        [{ cell: { table: 'p9', row: 1, column: 1 }, markdown: 'x' }],
+        read,
+      ),
+    ).toEqual({ ok: false, problem: 'There is no block p9.' });
+  });
+
+  it('replaces a whole table: its rows, header rows and caption, the cells still in place keeping their identifiers', () => {
+    const table = tableIn(
+      applyEdits(
+        document(levels()),
+        [
+          {
+            table: 't1',
+            rows: [
+              ['Site', 'Level', 'Date'],
+              ['North', '3.2 m', 'May'],
+              ['South', '', 'June'],
+            ],
+            caption: 'Weir levels, spring',
+          },
+        ],
+        read,
+      ),
+    );
+    expect(words(table)).toEqual([
+      ['Site', 'Level', 'Date'],
+      ['North', '3.2 m', 'May'],
+      ['South', '', 'June'],
+    ]);
+    expect(table.headerRows).toBe(1);
+    expect(table.caption[0]!.value).toBe('Weir levels, spring');
+    expect(table.rows[0]!.cells.map((cell) => cell.content[0]!.id)).toEqual([
+      'h1',
+      'h2',
+      expect.stringMatching(/^new/),
+    ]);
+    // A new cell takes the style of the row it stands in, header or body.
+    expect(table.rows[0]!.cells[2]!.content[0]!.style).toBe('table-header');
+    expect(table.rows[2]!.cells[0]!.content[0]!.style).toBe('table-body');
+    expect(table.rows.flatMap((row) => row.cells.map((cell) => cell.colspan))).toEqual(
+      Array(9).fill(1),
+    );
+    expect(
+      applyEdits(document(levels()), [{ table: 't1', rows: [['a', 'b'], ['c']] }], read),
+    ).toEqual({ ok: false, problem: 'Each row of a table has as many cells: row 2 has 1, not 2.' });
+    expect(
+      applyEdits(document(levels()), [{ table: 't1', rows: [['a']], headerRows: 2 }], read),
+    ).toEqual({ ok: false, problem: 'A table of 1 row cannot have 2 header rows.' });
+  });
+
+  it('refuses a bound table, whose rows a query gives, and a cell holding what a proposal cannot write', () => {
+    const bound = {
+      type: 'boundTable',
+      id: 'b1',
+      style: 'table',
+      binding: { type: 'binding', id: 'k', query: 'q', parameters: {}, mode: 'checked' },
+      caption: [],
+      columns: [{ column: 'site', header: 'Site' }],
+      headerColumn: false,
+    } as unknown as BlockNode;
+    const refusal =
+      'Block b1 is a bound table: its rows are read from a query when the document is shown, and a proposal cannot write them.';
+    expect(
+      applyEdits(
+        document(bound),
+        [{ cell: { table: 'b1', row: 1, column: 1 }, markdown: 'x' }],
+        read,
+      ),
+    ).toEqual({ ok: false, problem: refusal });
+    expect(applyEdits(document(bound), [{ table: 'b1', rows: [['x']] }], read)).toEqual({
+      ok: false,
+      problem: refusal,
+    });
+    expect(
+      applyEdits(document(paragraph('p1', 'One.')), [{ table: 'p1', rows: [['x']] }], read),
+    ).toEqual({ ok: false, problem: 'Block p1 is a paragraph, not a table.' });
+    const noted = levels() as unknown as { rows: { cells: { content: unknown[] }[] }[] };
+    noted.rows[1]!.cells[0]!.content = [
+      {
+        type: 'paragraph',
+        id: 'a1',
+        style: 'table-body',
+        content: [
+          { type: 'text', value: 'North', marks: [] },
+          {
+            type: 'footnote',
+            id: 'n1',
+            anchor: { kind: 'span' },
+            content: [paragraph('np', 'Gauged.')],
+          },
+        ],
+      },
+    ];
+    const footnoted = document(noted as unknown as BlockNode);
+    expect(
+      applyEdits(footnoted, [{ cell: { table: 't1', row: 2, column: 1 }, markdown: 'x' }], read),
+    ).toMatchObject({
+      ok: false,
+      problem: expect.stringMatching(/^Row 2, column 1 of table t1 holds a footnote/),
+    });
+    expect(applyEdits(footnoted, [{ table: 't1', rows: [['x']] }], read)).toMatchObject({
+      ok: false,
+      problem: expect.stringMatching(/^Row 2, column 1 of table t1 holds a footnote/),
+    });
+  });
+
   it('inserts first or after a block, and deletes one, refusing a block that is not there', () => {
     const content = document(paragraph('p1', 'One.'), paragraph('p2', 'Two.'));
     const outcome = applyEdits(

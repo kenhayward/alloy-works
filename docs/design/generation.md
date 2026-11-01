@@ -228,15 +228,15 @@ The loop runs in the service: each model turn goes through the connector (GN-A);
 in the service as the requester, through the same functions its route uses (GEN-008). At most twelve
 tool calls a run. The tools (GEN-007):
 
-| Tool                | Does                                                                            |
-| ------------------- | ------------------------------------------------------------------------------- |
-| `read_outline`      | The document's outline, as the requester reads it                               |
-| `read_component`    | One component's latest version, by id                                           |
-| `search_document`   | The words search, limited to this document's components                         |
-| `read_values`       | The document's bound values, as the page shows them                             |
-| `propose_edit`      | A whole-component draft against the version it read: a proposal, never a write  |
-| `search_references` | A reference source searched with the person's terms (reference-sources.md, XRc) |
-| `cite_reference`    | A citation of a source's work proposed; its entry matched or made on acceptance |
+| Tool                | Does                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `read_outline`      | The document's outline, as the requester reads it                                                                                        |
+| `read_component`    | One component's latest version, by id                                                                                                    |
+| `search_document`   | The words search, limited to this document's components                                                                                  |
+| `read_values`       | The document's bound values, as the page shows them                                                                                      |
+| `propose_edit`      | A whole-component draft against the version it read: a proposal, never a write; a table's cell, or its rows, too (never a bound table's) |
+| `search_references` | A reference source searched with the person's terms (reference-sources.md, XRc)                                                          |
+| `cite_reference`    | A citation of a source's work proposed; its entry matched or made on acceptance                                                          |
 
 **Citations** (GEN-011): the model is asked to cite as `[component#block]`; the service keeps a
 citation only where that block was in what the run read, shows it as a link, and drops any other,

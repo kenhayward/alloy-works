@@ -135,6 +135,21 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
           )
           .join('\n');
       }
+      // A table by its caption and rows, a cell's paragraphs run together (the TE change).
+      if (each.type === 'table') {
+        const table = block as {
+          caption?: unknown;
+          rows?: { cells?: { content?: { content?: unknown }[] }[] }[];
+        };
+        const caption = inline(table.caption);
+        const rows = (table.rows ?? []).map(
+          (row) =>
+            `| ${(row.cells ?? [])
+              .map((cell) => (cell.content ?? []).map((child) => inline(child.content)).join(' '))
+              .join(' | ')} |`,
+        );
+        return [...(caption === '' ? [] : [`Table: ${caption}`]), ...rows].join('\n');
+      }
       return `[${each.type ?? 'block'}]`;
     })
     .join('\n\n');
