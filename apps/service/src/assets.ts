@@ -5,14 +5,18 @@ import type {
   AssetRightsView,
   AssetUploadParams,
   AssetUploadView,
+  AssetUsesView,
   AssetVersionParams,
   AssetVersionView,
   CreateAssetUploadBody,
+  LibraryAssetList,
+  LibraryAssetQuery,
   SetAssetRightsBody,
   SpaceParams,
 } from '@alloy-works/api-contract';
 import { createHash } from 'node:crypto';
 import {
+  assetUses,
   createAssetUpload,
   discardDerivatives,
   documentsHoldingAsset,
@@ -27,6 +31,7 @@ import {
   receiveAssetBytes,
   recordAssetRights,
   imagesPolicy,
+  listAssets,
   refuseAssetUpload,
   type AssetUploadReason,
   type StoredAssetUpload,
@@ -52,6 +57,7 @@ import {
   type Caller,
 } from './access.js';
 import { contextOf } from './audit.js';
+import { cursorFor, languageOf, pageAsked } from './listing.js';
 import { connectionFacts } from './data/sql-access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -365,6 +371,62 @@ export function assetHandlers(
         resolution: content.resolution,
         alternative: content.alternative && { ...content.alternative },
         name: content.name ?? null,
+      };
+    },
+
+    /** `read` was decided on the space; the listing reads only what the caller may (AST-028). */
+    listSpaceAssets: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<LibraryAssetList> => {
+      const { space } = request.params as SpaceParams;
+      const query = request.query as LibraryAssetQuery;
+      const asked = pageAsked('assets', query, languageOf(request));
+      const listed = await listAssets(trx, principalId, space, asked, {
+        q: query.q,
+        format: query.format,
+        licence: query.licence,
+        rights: query.rights,
+        orientation: query.orientation,
+        unused: query.unused === 'true',
+        sha256: query.sha256,
+      });
+      if (!listed) throw new Error('A signed-in principal is not in its own tenant');
+      return {
+        items: listed.items.map((asset) => ({
+          ...asset,
+          changedAt: asset.changedAt.toISOString(),
+        })),
+        next: cursorFor(
+          'assets',
+          asked.sort,
+          asked.order,
+          listed.snapshot,
+          listed.next,
+          asked.language,
+        ),
+        total: listed.total,
+      };
+    },
+
+    /** `read` was decided on the asset (AST-018), and the dataset rule applied, as for its rights. */
+    getAssetUses: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<AssetUsesView> => {
+      const { id } = request.params as AssetParams;
+      await assetIn(trx, id);
+      await readableAsset(trx, callerOf(request), id);
+      const uses = await assetUses(trx, principalId, id, languageOf(request));
+      const listed = <T>(pins: { readonly named: readonly T[]; readonly unreadable: boolean }) => ({
+        named: [...pins.named],
+        unreadable: pins.unreadable,
+      });
+      return {
+        components: listed(uses.components),
+        documents: listed(uses.documents),
+        baselines: listed(uses.baselines),
+        publications: listed(uses.publications),
       };
     },
 

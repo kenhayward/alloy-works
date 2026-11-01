@@ -21,6 +21,9 @@ import {
   recordDatasetVersion,
   requestTenantExport,
   createImport,
+  createAssetUpload,
+  receiveAssetBytes,
+  recordAsset,
   recordPublication,
   requestPublication,
   seedDevelopmentContent,
@@ -576,6 +579,34 @@ describe('the listings through the service', () => {
       for (const fileName of ['First.docx', 'Second.docx']) {
         await createImport(trx, { spaceId: general, importer: asker, fileName, fileType: 'docx' });
       }
+      // And two images, so a space's images have pages to turn (the AL plan, AL-J).
+      for (const [fill, name] of [
+        ['a', 'harbour.png'],
+        ['b', 'pump.png'],
+      ] as const) {
+        const upload = await createAssetUpload(trx, {
+          spaceId: general,
+          uploader: asker,
+          alternative: null,
+          name,
+        });
+        await receiveAssetBytes(trx, upload.id, {
+          key: `${tenant.role}/sha256/${fill.repeat(64)}`,
+          format: 'png',
+          bytes: 3530,
+        });
+        await recordAsset(trx, upload.id, {
+          format: 'png',
+          width: 8,
+          height: 6,
+          orientation: 1,
+          colour: 'rgb',
+          alpha: false,
+          depth: 8,
+          resolution: null,
+          end: 3530,
+        });
+      }
     });
     // Two components translated, so a space's translations have pages to turn (TE-C): Ada approves.
     const approver = await tenantDb.withTenant(
@@ -654,6 +685,7 @@ describe('the listings through the service', () => {
       listPrompts: '/v1/prompts',
       listBibliographyEntries: `/v1/spaces/${general}/bibliography-entries`,
       listTerms: `/v1/spaces/${general}/terms`,
+      listSpaceAssets: `/v1/spaces/${general}/assets`,
       getSpaceTranslations: `/v1/spaces/${general}/translations`,
       listImports: `/v1/spaces/${general}/imports`,
       listDefinitions: '/v1/definitions',

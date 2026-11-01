@@ -136,3 +136,114 @@ describe('the Figure dialog asks where an image came from (the AL plan, AL-E)', 
     expect(upload).not.toHaveBeenCalled();
   });
 });
+
+const HARBOUR = {
+  id: '7a1c2a4e-0b3d-4c5e-8f7a-9b0c1d2e3f41',
+  version: { id: '8b1c2a4e-0b3d-4c5e-8f7a-9b0c1d2e3f42', number: '0.1' },
+  name: 'harbour.png',
+  alternative: { text: 'A harbour at dawn', language: 'en-GB' },
+  format: 'png' as const,
+  width: 1600,
+  height: 900,
+  rights: { kind: 'undeclared' },
+  licence: null,
+  expired: false,
+  used: true,
+  changedAt: '2026-11-01T09:00:00.000Z',
+};
+
+const TOWER = {
+  ...HARBOUR,
+  id: '9c1c2a4e-0b3d-4c5e-8f7a-9b0c1d2e3f43',
+  version: { id: 'ad1c2a4e-0b3d-4c5e-8f7a-9b0c1d2e3f44', number: '0.1' },
+  name: 'tower.png',
+  alternative: null,
+};
+
+function withLibrary(duplicate: typeof HARBOUR | null = null) {
+  const upload = vi.fn(async () => ({ ok: true as const, assetVersion: 'v1' }));
+  const onDone = vi.fn(() => null);
+  const search = vi.fn(async (q: string) =>
+    [HARBOUR, TOWER].filter((each) => each.name.includes(q)),
+  );
+  const duplicateOf = vi.fn(async () => duplicate);
+  render(
+    <FigureDialog
+      title="Figure"
+      language="en-GB"
+      upload={upload}
+      licences={async () => []}
+      library={{ search, duplicateOf }}
+      onDone={onDone}
+      onCancel={() => undefined}
+    />,
+  );
+  return { upload, onDone, search, duplicateOf };
+}
+
+describe('the Figure dialog chooses an image the space holds (the AL plan, ALd)', () => {
+  it('AST-028 places an image chosen from the space, its own description inherited, uploading nothing', async () => {
+    const user = userEvent.setup();
+    const { upload, onDone, search } = withLibrary();
+    await user.click(screen.getByRole('radio', { name: 'Choose one in this space' }));
+    await user.type(
+      screen.getByRole('searchbox', { name: "Search the space's images" }),
+      'harbour',
+    );
+    await user.click(screen.getByRole('button', { name: 'Search' }));
+    expect(search).toHaveBeenLastCalledWith('harbour');
+    await user.click(await screen.findByRole('radio', { name: 'harbour.png' }));
+    await user.click(screen.getByRole('button', { name: 'Place' }));
+    expect(upload).not.toHaveBeenCalled();
+    expect(onDone).toHaveBeenCalledWith({
+      assetVersion: HARBOUR.version.id,
+      alternative: { kind: 'inherited' },
+    });
+  });
+
+  it("gives a chosen image the figure's own description when one is written, and asks for one where the image has none", async () => {
+    const user = userEvent.setup();
+    const { onDone } = withLibrary();
+    await user.click(screen.getByRole('radio', { name: 'Choose one in this space' }));
+    await user.click(await screen.findByRole('radio', { name: 'tower.png' }));
+    await user.click(screen.getByRole('button', { name: 'Place' }));
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Describe the image, or say it is decorative.',
+    );
+    expect(onDone).not.toHaveBeenCalled();
+    await user.type(screen.getByRole('textbox', { name: 'Description' }), 'The water tower');
+    await user.click(screen.getByRole('button', { name: 'Place' }));
+    expect(onDone).toHaveBeenCalledWith({
+      assetVersion: TOWER.version.id,
+      alternative: { kind: 'own', text: 'The water tower' },
+    });
+  });
+
+  it('asks for an image to be chosen before placing one', async () => {
+    const user = userEvent.setup();
+    const { onDone } = withLibrary();
+    await user.click(screen.getByRole('radio', { name: 'Choose one in this space' }));
+    await screen.findByRole('radio', { name: 'harbour.png' });
+    await user.click(screen.getByRole('button', { name: 'Place' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose an image in this space.');
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('AST-029 offers the image the space already holds with the same bytes, instead of a second copy', async () => {
+    const user = userEvent.setup();
+    const { upload, onDone, duplicateOf } = withLibrary(HARBOUR);
+    await user.upload(screen.getByLabelText('Image'), png());
+    expect(duplicateOf).toHaveBeenCalledWith(expect.any(Uint8Array));
+    expect(
+      await screen.findByText('This image is already in this space, as harbour.png.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Use this image' }));
+    expect(screen.getByRole('radio', { name: 'harbour.png' })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Place' }));
+    expect(upload).not.toHaveBeenCalled();
+    expect(onDone).toHaveBeenCalledWith({
+      assetVersion: HARBOUR.version.id,
+      alternative: { kind: 'inherited' },
+    });
+  });
+});

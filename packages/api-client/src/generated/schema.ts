@@ -323,6 +323,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assets/{id}/uses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Where an image is used: components, documents, baselines and publications
+         * @description Returns where an image is used: the components whose latest version places it, the documents placing those, and the baselines and publications pinning it. Anything the caller may not read is never named; only whether there is any is said. Needs read on the image.
+         */
+        get: operations["getAssetUses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assistant/proposals/{id}/acceptance": {
         parameters: {
             query?: never;
@@ -6221,6 +6241,26 @@ export interface paths {
          * @description Starts an image upload in a space and records its description or decorative status. Upload bytes separately to finish it.
          */
         post: operations["createAssetUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spaces/{space}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The space's images the caller may read, searched and filtered
+         * @description Lists a space's images the caller may read, each at its latest version with its rights now, whether its licence has expired and whether anything uses it, in stable cursor pages. Search their names, descriptions, formats, licences and sources with `q`; filter by format, licence, undeclared or expired rights, orientation and whether unused; and find an upload's duplicate by the SHA-256 of its bytes. Images a dataset holds, and deleted or archived ones, are left out. Needs read on the space.
+         */
+        get: operations["listSpaceAssets"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12659,6 +12699,167 @@ export interface operations {
             };
             /** @description `asset_licence_missing`: the licence named is no licence of this environment */
             422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getAssetUses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Where it is used */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "components": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       },
+                     *       "documents": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       },
+                     *       "baselines": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       },
+                     *       "publications": {
+                     *         "named": [],
+                     *         "unreadable": false
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        components: {
+                            named: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description Whether a component the caller may not read holds it too */
+                            unreadable: boolean;
+                        };
+                        documents: {
+                            named: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description Whether a document the caller may not read holds it too */
+                            unreadable: boolean;
+                        };
+                        baselines: {
+                            named: {
+                                id: string;
+                                name: string;
+                                document: string;
+                            }[];
+                            /** @description Whether a baseline the caller may not read holds it too */
+                            unreadable: boolean;
+                        };
+                        publications: {
+                            named: {
+                                id: string;
+                                title: string;
+                            }[];
+                            /** @description Whether a publication the caller may not read holds it too */
+                            unreadable: boolean;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: an asset the caller may read is one they may open */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such thing in this environment, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -100745,6 +100946,208 @@ export interface operations {
             };
             /** @description `asset_licence_missing`: the licence declared is no licence of this environment */
             422: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    listSpaceAssets: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: string;
+                sort?: "name" | "changed";
+                order?: "asc" | "desc";
+                q?: string;
+                format?: "png" | "jpeg";
+                licence?: string & (unknown & unknown);
+                rights?: "undeclared" | "expired";
+                orientation?: "landscape" | "portrait" | "square";
+                unused?: "true";
+                sha256?: string;
+            };
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                space: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of images */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [],
+                     *       "next": "example",
+                     *       "total": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @description Its latest version */
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            /** @description The name it is listed by, or null for none */
+                            name: string | null;
+                            /** @description The default description a figure inherits, or null for none */
+                            alternative: {
+                                text: string;
+                                language: string;
+                            } | null;
+                            /** @enum {string} */
+                            format: "png" | "jpeg";
+                            /** @description In pixels, as the image is displayed */
+                            width: number;
+                            /** @description In pixels, as the image is displayed */
+                            height: number;
+                            rights: {
+                                /** @constant */
+                                kind: "undeclared";
+                            } | {
+                                /** @constant */
+                                kind: "dataset";
+                            } | {
+                                /** @constant */
+                                kind: "declared";
+                                source: {
+                                    text: string;
+                                    /** @example https://gauges.example.test/alloy */
+                                    url?: string;
+                                };
+                                /** Format: uuid */
+                                licence: string;
+                                expires?: string;
+                                credit?: string;
+                            };
+                            /** @description The licence its rights declare, by its name now; null where none is declared */
+                            licence: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            /** @description Whether its licence's last day has passed */
+                            expired: boolean;
+                            /** @description Whether a component, a baseline or a publication holds it (AST-018, AST-050) */
+                            used: boolean;
+                            /** @description When its latest version was made */
+                            changedAt: string;
+                        }[];
+                        /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
+                        next: string | null;
+                        /** @description How many there are with the filters in force, as of the walk this page belongs to */
+                        total: number;
+                    };
+                };
+            };
+            /** @description A cursor this listing did not give out, a limit outside 1 to 100, or a bad filter */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description Never answered: a space the caller may not read is not found */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such thing in this environment, or none the caller may read */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

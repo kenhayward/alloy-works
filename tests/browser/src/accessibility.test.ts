@@ -630,6 +630,30 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it("passes axe on a space's images and where one is used (the AL plan, ALd)", async ({
+    task,
+  }) => {
+    await uploadImage(api(), 'A harbour at dawn');
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/images`);
+      await check('the images', {
+        shows: [
+          page.getByRole('heading', { name: 'Images', level: 1 }),
+          page.getByRole('searchbox', { name: 'Search images' }),
+          page.getByRole('list', { name: 'Images' }),
+        ],
+      });
+      await page.getByRole('button', { name: 'Where used' }).first().click();
+      await check('where an image is used', {
+        shows: page.getByRole('region', { name: /^Where .* is used$/ }),
+      });
+    });
+  });
+
   it("passes axe on the terms, a term's page and its edit form (the TM plan, TMa)", async ({
     task,
   }) => {
@@ -1118,6 +1142,15 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await last.click();
       await button('Figure').click();
       await check('the Figure dialog', dialog('Figure'));
+      await page
+        .getByRole('dialog', { name: 'Figure' })
+        .getByRole('radio', { name: 'Choose one in this space' })
+        .click();
+      await check('the Figure dialog choosing an image the space holds', {
+        shows: page
+          .getByRole('dialog', { name: 'Figure' })
+          .getByRole('group', { name: 'Images in this space' }),
+      });
       await closeDialog(page);
 
       await last.click();

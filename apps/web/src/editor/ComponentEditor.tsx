@@ -177,6 +177,7 @@ import { useTermIndex, useTermStandings, type TermIndexes } from './terming.js';
 import { spaceEntries, type EntryOffered } from '../bibliography/entries.js';
 import { ConditionDialog, declaredAxisKeys } from './ConditionDialog.js';
 import { SaveIndicator } from './SaveIndicator.js';
+import { duplicateOf, type LibraryImage } from '../images/library.js';
 import { uploadImage } from './upload.js';
 import { heldSentence } from './held.js';
 import { editingSessionFor, sessionService, storedSessionId } from './service.js';
@@ -3271,6 +3272,18 @@ export function ComponentEditor({
               uploadImage(client, { space: shown.space.id, bytes, alternative, ...declared })
             }
             licences={licences}
+            library={{
+              search: async (q) => {
+                const { data } = await client.GET('/v1/spaces/{space}/assets', {
+                  params: {
+                    path: { space: shown.space.id },
+                    query: q.trim() === '' ? {} : { q: q.trim() },
+                  },
+                });
+                return (data?.items ?? []) as readonly LibraryImage[];
+              },
+              duplicateOf: (bytes) => duplicateOf(client, shown.space.id, bytes),
+            }}
             onDone={({ assetVersion, alternative, imageStyle }) => {
               // The phase as it is now, from the session, not as this render saw it: the lock can
               // be lost while the image is checked, and a command dispatches whatever the surface's

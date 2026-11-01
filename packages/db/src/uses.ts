@@ -173,6 +173,95 @@ export async function componentUses(
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
+export interface AssetUses {
+  /** Each component whose latest version places it. */
+  readonly components: Pins<{ readonly id: string; readonly title: string }>;
+  /** Each document whose latest version places one of those components. */
+  readonly documents: Pins<{ readonly id: string; readonly title: string }>;
+  readonly baselines: Pins<{
+    readonly id: string;
+    readonly name: string;
+    readonly document: string;
+  }>;
+  readonly publications: Pins<{ readonly id: string; readonly title: string }>;
+}
+
+/**
+ * **Where an image is used** (AST-018, AST-050; the AL plan, AL-K), read from the reference index as
+ * a component's uses are: the components whose latest version places any version of it, the
+ * documents placing those, and the baselines and publications pinning it. What `by` may not read, or
+ * is deleted, is never named, and only whether there is any is said. The caller has decided `by` may
+ * read the image.
+ */
+export async function assetUses(
+  trx: TenantTransaction,
+  by: string,
+  assetId: string,
+  language?: InterfaceLanguage,
+): Promise<AssetUses> {
+  const none = { named: [], unreadable: false };
+  if (!UUID.test(assetId) || !(await referencesStored(trx))) {
+    return { components: none, documents: none, baselines: none, publications: none };
+  }
+  const readable = await loadReadableSet(trx, by);
+  const order = await collated(trx, language);
+  const { rows: components } = await sql<{ id: string; space_id: string; title: string | null }>`
+    select * from (
+      select distinct a.id, a.space_id, v.content ->> 'title' as title
+        from reference r
+        join artifact a on a.id = r.from_id and a.kind = 'component'
+        join artifact_version v on v.id = r.from_version
+       where r.to_id = ${assetId}) held
+     -- Sorted outside the distinct, where a collation may name its column.
+     order by held.title ${order}, held.id`.execute(trx);
+  const shownComponents = await readableAmong(trx, readable, components);
+  const { rows: documents } = await sql<{ id: string; space_id: string; title: string | null }>`
+    select * from (
+      select distinct a.id, a.space_id, v.content ->> 'title' as title
+        from reference r
+        join artifact a on a.id = r.from_id and a.kind = 'document'
+        join artifact_version v on v.id = r.from_version
+       where r.to_id in (select c.from_id from reference c where c.to_id = ${assetId})) held
+     -- Sorted outside the distinct, where a collation may name its column.
+     order by held.title ${order}, held.id`.execute(trx);
+  const shownDocuments = await readableAmong(trx, readable, documents);
+  const { rows: baselines } = await sql<{
+    id: string;
+    name: string;
+    document: string;
+    space_id: string;
+  }>`
+    select b.id, b.name, b.document_id as document, a.space_id
+      from baseline b join artifact a on a.id = b.document_id
+     where b.id in (select baseline_id from baseline_pin where artifact_id = ${assetId})
+     order by b.name ${order}, b.id`.execute(trx);
+  const shownBaselines = await readableAmong(
+    trx,
+    readable,
+    baselines.map((row) => ({ ...row, subject: row.document })),
+  );
+  const { rows: publications } = await sql<{ id: string; title: string; space_id: string }>`
+    select p.id, d.content ->> 'title' as title, a.space_id
+      from publication p join artifact a on a.id = p.id
+      join artifact_version d on d.id = p.document_version_id
+     where p.id in (select publication_id from publication_asset where asset_id = ${assetId})
+     order by p.published_at, p.id`.execute(trx);
+  const shownPublications = await readableAmong(trx, readable, publications);
+  const titled = (rows: { id: string; title: string | null }[] & { total: number }) => ({
+    named: rows.map(({ id, title }) => ({ id, title: title ?? '' })),
+    unreadable: rows.length < rows.total,
+  });
+  return {
+    components: titled(shownComponents),
+    documents: titled(shownDocuments),
+    baselines: {
+      named: shownBaselines.map(({ id, name, document }) => ({ id, name, document })),
+      unreadable: shownBaselines.length < shownBaselines.total,
+    },
+    publications: titled(shownPublications),
+  };
+}
+
 /**
  * Those `readable` may read, by `subject`'s identity where given, and `total`, how many are not
  * deleted: a deleted one is neither named nor counted among the unreadable (DL-B), since nothing

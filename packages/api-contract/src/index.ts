@@ -523,9 +523,13 @@ export {
   AssetRightsView,
   AssetUploadParams,
   AssetUploadView,
+  AssetUsesView,
   AssetVersionParams,
   AssetVersionView,
   CreateAssetUploadBody,
+  LibraryAssetList,
+  LibraryAssetQuery,
+  LibraryAssetView,
   SetAssetRightsBody,
 } from './assets.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
