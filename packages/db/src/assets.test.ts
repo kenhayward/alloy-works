@@ -270,12 +270,32 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
   });
 
   it("AST-053 keeps the environment's policy for undeclared images, warn until an administrator says refuse", async () => {
-    expect(await inTenant(imagesPolicy)).toEqual({ undeclared: 'warn' });
-    expect(await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'refuse' }))).toEqual({
-      undeclared: 'refuse',
-    });
-    expect(await inTenant(imagesPolicy)).toEqual({ undeclared: 'refuse' });
-    await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'warn' }));
+    const own = { png: null, jpeg: null };
+    expect(await inTenant(imagesPolicy)).toEqual({ undeclared: 'warn', limits: own });
+    expect(
+      await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'refuse', limits: own })),
+    ).toEqual({ undeclared: 'refuse', limits: own });
+    expect(await inTenant(imagesPolicy)).toEqual({ undeclared: 'refuse', limits: own });
+    await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'warn', limits: own }));
+  });
+
+  it('AST-004 keeps the limits an environment lowered each format to, and holds them to the format', async () => {
+    const lowered = { png: 2_000_000, jpeg: null };
+    expect(
+      await inTenant((trx) => setImagesPolicy(trx, { undeclared: 'warn', limits: lowered })),
+    ).toEqual({ undeclared: 'warn', limits: lowered });
+    // Never above what the format declares, whatever writes it.
+    await expect(
+      inTenant((trx) =>
+        trx
+          .updateTable('images_policy')
+          .set({ limits: JSON.stringify({ png: 25_000_001, jpeg: null }) })
+          .execute(),
+      ),
+    ).rejects.toThrow(/images_policy_limits/);
+    await inTenant((trx) =>
+      setImagesPolicy(trx, { undeclared: 'warn', limits: { png: null, jpeg: null } }),
+    );
   });
 
   it('records an image uploaded to an archived space, the one thing made there: adding an image is part of editing what is already in it (SP-C)', async () => {

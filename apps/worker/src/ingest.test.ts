@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { crc32, deflateSync } from 'node:zlib';
 import {
   prepareDatabase,
@@ -8,6 +9,7 @@ import {
   readAssetUpload,
   readAssetVersion,
   receiveAssetBytes,
+  setImagesPolicy,
   uploadForDatasetImage,
   type JobQueue,
   type Tenant,
@@ -197,6 +199,38 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
       alternative: null,
     });
     expect(version?.spaceId).toBe(general);
+  });
+
+  it("AST-004 refuses a dataset's image over the limit its environment lowered its format to, as the service refuses an upload", async () => {
+    // Noise, so it compresses to more than the lowest limit there is.
+    const image = await sharp(randomBytes(64 * 64 * 3), {
+      raw: { width: 64, height: 64, channels: 3 },
+    })
+      .png()
+      .toBuffer();
+    expect(image.length).toBeGreaterThan(1024);
+    const stored = await store.put(image, 'image/png');
+    const made = await service.withTenant(tenant, (trx) =>
+      uploadForDatasetImage(trx, {
+        spaceId: general,
+        uploader: ada,
+        key: stored.key,
+        format: 'png',
+        bytes: stored.size,
+      }),
+    );
+    await service.withTenant(tenant, (trx) =>
+      setImagesPolicy(trx, { limits: { png: 1024, jpeg: null } }),
+    );
+    try {
+      expect(await work()).toBe('failed');
+    } finally {
+      await service.withTenant(tenant, (trx) =>
+        setImagesPolicy(trx, { limits: { png: null, jpeg: null } }),
+      );
+    }
+    expect(await uploadOf(made.upload.id)).toMatchObject({ state: 'refused', reason: 'too_large' });
+    expect(await gone(stored.key)).toBe(true);
   });
 
   it('AST-037 records an asset ingested and an upload refused as the system, for its uploader, the refused never referenceable and its bytes kept nowhere', async () => {

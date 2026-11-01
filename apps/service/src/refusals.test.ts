@@ -316,13 +316,20 @@ describe('the rule behind a refusal', () => {
         dotted,
       ).not.toHaveProperty('rule');
     }
-    // The refusals at an image's door, which are the asset rules' own.
+    // The refusals at an image's door, by why, which are the asset rules' own: too many pixels and too
+    // many bytes for the format share a code and name their own rule.
     expect(
-      Object.fromEntries(Object.values(REFUSED_AT_THE_DOOR).map((door) => [door.code, door.rule])),
+      Object.fromEntries(
+        Object.entries(REFUSED_AT_THE_DOOR).map(([reason, door]) => [
+          reason,
+          [door.code, door.rule],
+        ]),
+      ),
     ).toEqual({
-      asset_format_not_permitted: 'AST-001',
-      asset_too_large: 'AST-040',
-      asset_unreadable: 'AST-051',
+      not_permitted: ['asset_format_not_permitted', 'AST-001'],
+      too_many_pixels: ['asset_too_large', 'AST-040'],
+      too_large: ['asset_too_large', 'AST-004'],
+      malformed: ['asset_unreadable', 'AST-051'],
     });
   });
 });

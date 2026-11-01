@@ -962,11 +962,12 @@ describe('publishing a document, from the request to the stored PDF', () => {
     });
   });
 
-  it('prints the images its figures place from the store, held to their hashes, and names each on the publication', async () => {
+  it('AST-007 prints the images its figures place from the store, held to their hashes and stripped of their metadata, and names each on the publication with what was stripped', async () => {
     const bytes = await sharp({
       create: { width: 80, height: 60, channels: 3, background: { r: 200, g: 30, b: 30 } },
     })
       .png()
+      .withXmp('<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF/></x:xmpmeta>')
       .toBuffer();
     /** A document placing one component, which holds a figure of an image kept in the store. */
     const figured = () =>
@@ -1021,11 +1022,13 @@ describe('publishing a document, from the request to the stored PDF', () => {
     const printed = await service.withTenant(tenant, (trx) =>
       trx
         .selectFrom('publication_asset')
-        .select('version_id')
+        .select(['version_id', 'stripped'])
         .where('publication_id', '=', row!.publication_id)
         .execute(),
     );
     expect(printed).toHaveLength(1);
+    // What the image carried and the output does not: recorded, so a publication says (AST-007).
+    expect(printed[0]!.stripped).toEqual(['xmp']);
 
     // A store answering other bytes under the key than the key names: a broken store, retried and
     // then failed at the engine's stage, never taken as the document's fault, and nothing published.

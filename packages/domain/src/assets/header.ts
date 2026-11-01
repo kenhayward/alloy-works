@@ -11,16 +11,21 @@
  * bytes that run past it, since by then they can only have been put there some other way.
  */
 
-/** The formats T1 admits (AST-038), and how each is made safe (AST-051): by proof, not by a scan. */
+/**
+ * The formats T1 admits (AST-038), how each is made safe (AST-051): by proof, not by a scan; and the
+ * most bytes each may be (AST-004, decision F-E), which an environment may lower (`limits.ts`).
+ */
 export const ADMITTED_FORMATS = {
-  png: { extension: 'png', contentType: 'image/png', madeSafeBy: 'proof' },
-  jpeg: { extension: 'jpg', contentType: 'image/jpeg', madeSafeBy: 'proof' },
+  png: { extension: 'png', contentType: 'image/png', madeSafeBy: 'proof', maxBytes: 25_000_000 },
+  jpeg: { extension: 'jpg', contentType: 'image/jpeg', madeSafeBy: 'proof', maxBytes: 25_000_000 },
 } as const;
 
 export type AssetFormat = keyof typeof ADMITTED_FORMATS;
 
-/** The largest upload, in bytes, until AST-004 lets a tenant lower it (decision F-E). */
-export const ASSET_MAX_BYTES = 25_000_000;
+/** The largest upload, in bytes, of any format: the door's, before the format is known. */
+export const ASSET_MAX_BYTES = Math.max(
+  ...Object.values(ADMITTED_FORMATS).map((each) => each.maxBytes),
+);
 
 /** The most pixels an image may decode to (AST-040, decision F-E): 200 MB as RGBA. */
 export const ASSET_MAX_PIXELS = 50_000_000;
@@ -306,7 +311,7 @@ function entropyEnd(bytes: Uint8Array, from: number): number {
  * that cannot be walked, or an orientation out of range, is none - 1 - rather than a refusal, because
  * sharp sets such a file upright and so does the engine; the two readings are compared by the worker.
  */
-function readExif(tiff: Uint8Array): { orientation: number; resolution: number | null } {
+export function readExif(tiff: Uint8Array): { orientation: number; resolution: number | null } {
   const none = { orientation: 1, resolution: null };
   const order = String.fromCharCode(tiff[0] ?? 0, tiff[1] ?? 0);
   if (order !== 'II' && order !== 'MM') return none;

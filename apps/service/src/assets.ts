@@ -1,4 +1,6 @@
 import type {
+  AssetDerivativeParams,
+  AssetDerivativesDiscarded,
   AssetParams,
   AssetRightsView,
   AssetUploadParams,
@@ -7,18 +9,24 @@ import type {
   AssetVersionView,
   CreateAssetUploadBody,
   SetAssetRightsBody,
+  SpaceParams,
 } from '@alloy-works/api-contract';
 import { createHash } from 'node:crypto';
 import {
   createAssetUpload,
+  discardDerivatives,
   documentsHoldingAsset,
   holdObject,
+  objectInUse,
+  readDerivative,
+  wantDerivatives,
   readAssetRights,
   readAssetUpload,
   readAssetVersion,
   readDefinitionLatest,
   receiveAssetBytes,
   recordAssetRights,
+  imagesPolicy,
   refuseAssetUpload,
   type AssetUploadReason,
   type StoredAssetUpload,
@@ -26,8 +34,14 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { ADMITTED_FORMATS, ASSET_MAX_BYTES, decide, readImageHeader } from '@alloy-works/domain';
-import type { ObjectStores } from '@alloy-works/objects';
+import {
+  ADMITTED_FORMATS,
+  ASSET_MAX_BYTES,
+  byteLimitOf,
+  decide,
+  readImageHeader,
+} from '@alloy-works/domain';
+import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import {
   authoriseAt,
@@ -81,6 +95,26 @@ async function assetIn(trx: TenantTransaction, id: string): Promise<void> {
   if (artifact?.kind !== 'asset') throw notFound();
 }
 
+/**
+ * The bytes under a key, held to the hash it names before a byte is sent (AST-042): a store answering
+ * anything else is broken, and what it answered is never passed on.
+ */
+async function verified(store: TenantStore, key: string): Promise<Buffer> {
+  const bytes = await store.get(key);
+  if (!key.endsWith(`/sha256/${createHash('sha256').update(bytes).digest('hex')}`)) {
+    throw new AppError(
+      502,
+      'asset_corrupt',
+      'The stored image does not match its record, so it was not sent.',
+      'AST-042',
+    );
+  }
+  return bytes;
+}
+
+/** No upload's: `objectInUse` asked for bytes no upload is excepted from. */
+const NO_UPLOAD = '00000000-0000-0000-0000-000000000000';
+
 /** Bytes a permission-checked route answers with, sent after its transaction commits (figures 1, R2). */
 export interface BinaryBody {
   readonly contentType: string;
@@ -89,6 +123,8 @@ export interface BinaryBody {
   readonly immutable: boolean;
   /** Saved under this name rather than shown, and never kept (the R17 plan, R17-E). */
   readonly attachment?: string;
+  /** Never kept: an original standing in for a derivative not yet made (the AL plan, AL-H). */
+  readonly unkept?: boolean;
   /**
    * Shown in place under this policy, which must sandbox it, and never kept: tenant HTML, to a reader
    * inside the organisation (the HT plan, HT-M).
@@ -121,6 +157,12 @@ export const REFUSED_AT_THE_DOOR = {
     code: 'asset_too_large',
     message: 'This image has more than 50 million pixels, which is more than an image may have.',
     rule: 'AST-040',
+  },
+  too_large: {
+    status: 413,
+    code: 'asset_too_large',
+    message: 'This image is larger than this environment allows an image of its format to be.',
+    rule: 'AST-004',
   },
   malformed: {
     status: 400,
@@ -266,6 +308,13 @@ export function assetHandlers(
               throw filled();
             return { refused: REFUSED_AT_THE_DOOR[read.refusal] } as const;
           }
+          // Its format's limit, as this environment has it (AST-004): refused and recorded, as the
+          // header's refusals are.
+          const { limits } = await imagesPolicy(trx);
+          if (read.header.end > byteLimitOf(read.header.format, limits)) {
+            if (!(await refuseAssetUpload(trx, upload.id, 'too_large', 'awaiting'))) throw filled();
+            return { refused: REFUSED_AT_THE_DOOR.too_large } as const;
+          }
           if (!objects) throw storageUnavailable();
           // The image alone: whatever follows its end - a phone's second picture or motion clip, or a
           // file hidden in a polyglot - is left behind here and never stored (final review, findings 1
@@ -370,9 +419,58 @@ export function assetHandlers(
       const store = await objects.forTenant(trx, tenantOf(request));
       return {
         contentType: ADMITTED_FORMATS[version.content.format].contentType,
-        bytes: await store.get(version.content.object),
+        bytes: await verified(store, version.content.object),
         immutable: true,
       };
+    },
+
+    /**
+     * A version's thumbnail or preview (AL-H), by the original's rule; until it is made, or once it
+     * was discarded, the original, never kept, and the derivatives asked for once (pre-flight 5).
+     */
+    getAssetVersionDerivative: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<BinaryBody> => {
+      const { id, kind } = request.params as AssetDerivativeParams;
+      const version = await readableAssetVersion(trx, callerOf(request), id);
+      if (!objects) throw storageUnavailable();
+      const store = await objects.forTenant(trx, tenantOf(request));
+      const made = await readDerivative(trx, version.id, kind);
+      if (made) {
+        return {
+          contentType: 'image/webp',
+          bytes: await verified(store, made.objectKey),
+          immutable: true,
+        };
+      }
+      await wantDerivatives(trx, version.id);
+      return {
+        contentType: ADMITTED_FORMATS[version.content.format].contentType,
+        bytes: await verified(store, version.content.object),
+        immutable: false,
+        unkept: true,
+      };
+    },
+
+    /**
+     * `administer` was decided on the space (AST-048): its derivatives discarded and audited, and
+     * their bytes removed where nothing else holds them. Each is made again when next read.
+     */
+    discardAssetDerivatives: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<AssetDerivativesDiscarded> => {
+      const { space } = request.params as SpaceParams;
+      const keys = await discardDerivatives(trx, space);
+      if (keys.length > 0 && objects) {
+        const store = await objects.forTenant(trx, tenantOf(request));
+        for (const key of keys) {
+          await holdObject(trx, key.slice(key.lastIndexOf('/') + 1));
+          if (!(await objectInUse(trx, key, NO_UPLOAD))) await store.remove(key);
+        }
+      }
+      return { discarded: keys.length };
     },
   };
 }

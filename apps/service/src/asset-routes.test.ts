@@ -3,13 +3,16 @@ import {
   bootstrapCluster,
   createDefinition,
   createSpace,
+  derivativesMade,
   createTenant,
   findRole,
   grant,
   migrate,
   readAssetUpload,
+  recordDerivative,
   recordAsset,
   removeGrant,
+  setImagesPolicy,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
@@ -66,6 +69,7 @@ describe('uploading an image through the service (figures 1)', () => {
   let objects: TestObjectStore;
   let stores: ObjectStores;
   let tenantDb: TenantDatabase;
+  let tampered = false;
   let app: FastifyInstance;
   let tenant: Tenant;
   let general: string;
@@ -76,7 +80,7 @@ describe('uploading an image through the service (figures 1)', () => {
 
   const call = (
     as: string | undefined,
-    method: 'GET' | 'POST' | 'PUT',
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
     payload?: Json,
   ) =>
@@ -152,7 +156,16 @@ describe('uploading an image through the service (figures 1)', () => {
       oidc: createOidcClient({ allowInsecureIssuers: true }),
       secrets: environmentSecrets({}),
       sealingKey: TEST_SEALING_KEY,
-      objects: stores,
+      // The store, answering other bytes than a key names while `tampered` says so (AST-042).
+      objects: {
+        forTenant: async (trx, owner) => {
+          const real = await stores.forTenant(trx, owner);
+          return {
+            ...real,
+            get: async (key) => (tampered ? Buffer.from('not the image') : real.get(key)),
+          };
+        },
+      },
     });
     for (const user of ['ada', 'grace', 'alice', 'ivy']) {
       cookies[user] = await signIn(app, HOST, user, idp.issuer);
@@ -388,6 +401,28 @@ describe('uploading an image through the service (figures 1)', () => {
     });
   });
 
+  it('AST-004 refuses an image over the limit its environment lowered its format to, recording why', async () => {
+    const lower = (limits: { png: number | null; jpeg: number | null }) =>
+      tenantDb.withTenant(tenant, (trx) => setImagesPolicy(trx, { limits }));
+    // A PNG of 2,000 by 2,000 compresses to more than 1 KB; one of 4 by 3 to less.
+    const large = png(2000, 2000);
+    expect(large.length).toBeGreaterThan(1024);
+    await lower({ png: 1024, jpeg: null });
+    try {
+      const id = await made('grace', general);
+      const answer = await fill('grace', id, large);
+      expect(answer.statusCode).toBe(413);
+      expect(code(answer)).toBe('asset_too_large');
+      expect(answer.json()).toMatchObject({ rule: 'AST-004' });
+      expect(await upload('grace', id)).toMatchObject({ state: 'refused', reason: 'too_large' });
+      // Another format keeps its own.
+      const small = await made('grace', general);
+      expect((await fill('grace', small, png())).statusCode).toBe(200);
+    } finally {
+      await lower({ png: null, jpeg: null });
+    }
+  });
+
   it('refuses a body over the byte limit before reading it whole, and leaves the upload awaiting', async () => {
     const id = await made('grace', general);
     const answer = await fill('grace', id, Buffer.alloc(25_000_001));
@@ -456,6 +491,24 @@ describe('uploading an image through the service (figures 1)', () => {
     }
   });
 
+  it('AST-042 verifies an original against its hash on read, and sends nothing the store altered', async () => {
+    const id = await made('grace', general);
+    const image = png(5, 5);
+    expect((await fill('grace', id, image)).statusCode).toBe(200);
+    const version = await ingested(id, image);
+    const path = `/v1/asset-versions/${version.id}/content`;
+    expect((await call('grace', 'GET', path)).statusCode).toBe(200);
+    tampered = true;
+    try {
+      const answer = await call('grace', 'GET', path);
+      expect(answer.statusCode).toBe(502);
+      expect(code(answer)).toBe('asset_corrupt');
+      expect(answer.body).not.toContain('not the image');
+    } finally {
+      tampered = false;
+    }
+  });
+
   it('AST-026 keeps an asset in a space the reader may not read from them, as a component there is', async () => {
     const bytes = png(2, 2);
     const id = await made('grace', quality);
@@ -489,9 +542,98 @@ describe('uploading an image through the service (figures 1)', () => {
     const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
     expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
   });
+  it("AST-008 serves a version's thumbnail and preview once made, and until then its original, never kept", async () => {
+    const id = await made('grace', general);
+    const image = png(6, 4);
+    expect((await fill('grace', id, image)).statusCode).toBe(200);
+    const version = await ingested(id, image);
+    const path = `/v1/asset-versions/${version.id}/derivatives/thumbnail`;
+    const waiting = await call('alice', 'GET', path);
+    expect(waiting.statusCode).toBe(200);
+    expect(waiting.headers['content-type']).toBe('image/png');
+    expect(waiting.headers['cache-control']).toBe('private, no-store');
+    expect(Buffer.compare(waiting.rawPayload, image)).toBe(0);
+    // Made, as the derive job makes one: its own bytes, kept for a year.
+    const thumbnail = Buffer.from('RIFF\u0000\u0000\u0000\u0000WEBPVP8 a thumbnail', 'latin1');
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const kept = await (await stores.forTenant(trx, tenant)).put(thumbnail, 'image/webp');
+      await recordDerivative(trx, {
+        versionId: version.id,
+        assetId: version.artifactId,
+        kind: 'thumbnail',
+        objectKey: kept.key,
+        width: 6,
+        height: 4,
+        bytes: kept.size,
+        stripped: [],
+      });
+    });
+    const served = await call('alice', 'GET', path);
+    expect(served.headers['content-type']).toBe('image/webp');
+    expect(served.headers['cache-control']).toBe('private, max-age=31536000, immutable');
+    expect(Buffer.compare(served.rawPayload, thumbnail)).toBe(0);
+    expect(
+      (await call('alice', 'GET', `/v1/asset-versions/${version.id}/derivatives/poster`))
+        .statusCode,
+    ).toBe(400);
+  });
+
+  it("AST-048 discards a space's derivatives for an administrator of it, each made again when next read", async () => {
+    const id = await made('grace', general);
+    const image = png(7, 4);
+    expect((await fill('grace', id, image)).statusCode).toBe(200);
+    const version = await ingested(id, image);
+    await tenantDb.withTenant(tenant, async (trx) => {
+      const kept = await (
+        await stores.forTenant(trx, tenant)
+      ).put(Buffer.from('a preview to discard'), 'image/webp');
+      await recordDerivative(trx, {
+        versionId: version.id,
+        assetId: version.artifactId,
+        kind: 'preview',
+        objectKey: kept.key,
+        width: 7,
+        height: 4,
+        bytes: kept.size,
+        stripped: [],
+      });
+      await derivativesMade(trx, version.id);
+    });
+    const path = `/v1/spaces/${general}/asset-derivatives`;
+    expect((await call('grace', 'DELETE', path)).statusCode).toBe(403);
+    // An administrator of the space, which the policy's test grants of the environment.
+    const administers = await tenantDb.withTenant(tenant, async (trx) => {
+      const administrator = await findRole(trx, 'Administrator');
+      return grant(trx, {
+        roleId: administrator!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'space', id: general },
+        effect: 'allow',
+        grantedBy: ids.ada!,
+      });
+    });
+    if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
+    try {
+      const discarded = await call('ada', 'DELETE', path);
+      expect(discarded.statusCode, discarded.body).toBe(200);
+      expect(discarded.json<{ discarded: number }>().discarded).toBeGreaterThanOrEqual(1);
+      const preview = await call(
+        'alice',
+        'GET',
+        `/v1/asset-versions/${version.id}/derivatives/preview`,
+      );
+      expect(preview.headers['content-type']).toBe('image/png');
+      expect(preview.headers['cache-control']).toBe('private, no-store');
+    } finally {
+      await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, administers.granted.id));
+    }
+  });
+
   it("AST-053 keeps the environment's policy for undeclared images, read by anyone signed in and set by an administrator", async () => {
+    const own = { png: null, jpeg: null };
     expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({
       undeclared: 'warn',
+      limits: own,
     });
     const administers = await tenantDb.withTenant(tenant, async (trx) => {
       const administrator = await findRole(trx, 'Administrator');
@@ -504,17 +646,28 @@ describe('uploading an image through the service (figures 1)', () => {
       });
     });
     expect(
-      (await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse' })).statusCode,
+      (await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse', limits: own }))
+        .statusCode,
     ).toBe(403);
-    const set = await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'refuse' });
+    // AST-004: a format's limit lowered, never raised past its own.
+    const lowered = { png: 2_000_000, jpeg: null };
+    const set = await call('ada', 'PUT', '/v1/settings/images', {
+      undeclared: 'refuse',
+      limits: lowered,
+    });
     expect(set.statusCode, set.body).toBe(200);
     expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({
       undeclared: 'refuse',
+      limits: lowered,
     });
-    expect(
-      (await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'never' })).statusCode,
-    ).toBe(400);
-    await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'warn' });
+    for (const body of [
+      { undeclared: 'never', limits: own },
+      { undeclared: 'warn', limits: { png: 25_000_001, jpeg: null } },
+      { undeclared: 'warn' },
+    ]) {
+      expect((await call('ada', 'PUT', '/v1/settings/images', body)).statusCode).toBe(400);
+    }
+    await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'warn', limits: own });
     if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
     await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, administers.granted.id));
   });

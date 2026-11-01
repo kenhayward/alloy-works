@@ -23,6 +23,12 @@ export {
   parseAssetVersion,
 } from './version.js';
 export type { AssetAlternative, AssetVersionContent } from './version.js';
+export { byteLimitOf, imageLimitsSchema } from './limits.js';
+export { stripImage } from './strip.js';
+export { ASSET_DERIVATIVES, DERIVATIVE_KINDS } from './derivative.js';
+export type { DerivativeKind } from './derivative.js';
+export type { MetadataFound, StrippedImage } from './strip.js';
+export type { ImageLimits } from './limits.js';
 export {
   LICENCE_LIMITS,
   LICENCE_USES,

@@ -3,7 +3,8 @@ import { createPool } from './pool.js';
 import type { PlatformTables, TenantTransaction } from './tables.js';
 
 /**
- * The kinds of work there are. A worker refuses a kind it does not know. A `preview` is a publish
+ * The kinds of work there are. A worker claims only the kinds it runs, leaving the rest for one that
+ * does. A `preview` is a publish
  * request of kind preview, run by the publish handler, and a kind of its own so a deployment can give
  * previews workers of their own (publishing.md, "Preview"). A `check_pdf` is veraPDF over a recorded
  * publication's PDF, its subject the publication, queued as the publication is recorded (W14.1, W-B).
@@ -14,13 +15,15 @@ import type { PlatformTables, TenantTransaction } from './tables.js';
  * (the G7 plan, G7-F). An `import` reads an import's file into its proposal, its subject the import (the
  * IM plan, IM-C). A `translation_return` reads a translation job's returned file, its subject the
  * return (the XL plan, XL-F). A `bridge_deliver` writes a delivery CT Studio's bridge asked for, its
- * subject the delivery (docs/design/ct-studio-sink.md, "Where it lives").
+ * subject the delivery (docs/design/ct-studio-sink.md, "Where it lives"). A `derive` makes an image
+ * version's thumbnail and preview, its subject the version (the AL plan, AL-H).
  */
 export type JobKind =
   | 'sample_pdf'
   | 'publish'
   | 'preview'
   | 'ingest'
+  | 'derive'
   | 'check_pdf'
   | 'audit_export'
   | 'impact_report'
@@ -75,7 +78,12 @@ export async function enqueueJob(
 
 export interface JobQueue {
   /** One job, held for `leaseMs`; undefined when there is nothing to do. */
-  claim(options: { readonly workerId: string; readonly leaseMs: number }): Promise<Job | undefined>;
+  claim(options: {
+    readonly workerId: string;
+    readonly leaseMs: number;
+    /** Only jobs of these kinds, those the worker runs; any kind where absent. */
+    readonly kinds?: readonly string[];
+  }): Promise<Job | undefined>;
   complete(job: Job): Promise<void>;
   /** Retries while attempts remain; says which it did. The reason is a kind, never a message. */
   fail(
@@ -132,7 +140,7 @@ export function createJobQueue(url: string): JobQueue {
   });
 
   return {
-    async claim({ workerId, leaseMs }) {
+    async claim({ workerId, leaseMs, kinds }) {
       // SKIP LOCKED so two workers take different jobs rather than taking turns, and a lease so a
       // job a worker dies holding comes back by itself.
       const { rows } = await sql<JobRow>`
@@ -146,6 +154,7 @@ export function createJobQueue(url: string): JobQueue {
               and attempts < max_attempts
               and run_after <= now()
               and (locked_until is null or locked_until < now())
+              and (${kinds === undefined} or kind = any(${[...(kinds ?? [])]}::text[]))
             order by run_after, id
             for update skip locked
             limit 1)

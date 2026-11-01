@@ -106,6 +106,14 @@ export {
   type StoredAssetUpload,
   type StoredAssetVersion,
 } from './assets.js';
+export {
+  derivativesMade,
+  discardDerivatives,
+  readDerivative,
+  recordDerivative,
+  wantDerivatives,
+  type StoredDerivative,
+} from './derivatives.js';
 export type { AssetUploadTable } from './assets-tables.js';
 export type {
   LocaleData,

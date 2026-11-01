@@ -61,6 +61,13 @@ describe('the domain package', () => {
         'assetVersionSchema',
         'parseAssetVersion',
         'readImageHeader',
+        // The size an image may be, by format, lowered by an environment (AL-I).
+        'byteLimitOf',
+        'imageLimitsSchema',
+        // An image as an output carries it, its metadata stripped (AL-G), and its derivatives (AL-H).
+        'stripImage',
+        'ASSET_DERIVATIVES',
+        'DERIVATIVE_KINDS',
         // A licence an image is held under (the AL plan, AL-B).
         'LICENCE_LIMITS',
         'LICENCE_USES',

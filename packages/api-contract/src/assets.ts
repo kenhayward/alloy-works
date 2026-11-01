@@ -1,5 +1,6 @@
 import {
   ASSET_MAX_BYTES,
+  DERIVATIVE_KINDS,
   assetAlternativeSchema,
   assetNameSchema,
   assetRightsSchema,
@@ -92,6 +93,21 @@ const notFound = {
 
 export const AssetParams = z.object({ id: LowercaseUuid });
 export type AssetParams = z.infer<typeof AssetParams>;
+
+/** A version and one of its derivatives (AL-H). */
+export const AssetDerivativeParams = z.object({
+  id: LowercaseUuid,
+  kind: z
+    .enum(DERIVATIVE_KINDS)
+    .describe('`thumbnail`, 256 px on its long side, or `preview`, 1,024'),
+});
+export type AssetDerivativeParams = z.infer<typeof AssetDerivativeParams>;
+
+/** What discarding a space's derivatives did (AST-048). */
+export const AssetDerivativesDiscarded = z.object({
+  discarded: z.number().int().nonnegative().describe('How many derivatives were discarded'),
+});
+export type AssetDerivativesDiscarded = z.infer<typeof AssetDerivativesDiscarded>;
 
 /** One change to an image's rights (AST-031): what they became, by whom and when. */
 export const AssetRightsChange = z.object({
@@ -227,6 +243,60 @@ export const assetRoutes = {
         schema: ErrorBody,
       },
       404: notFound,
+      502: {
+        description:
+          '`asset_corrupt`: the stored bytes do not match the hash the version records (AST-042), so none are sent',
+        schema: ErrorBody,
+      },
+    },
+  },
+  getAssetVersionDerivative: {
+    operationId: 'getAssetVersionDerivative',
+    method: 'GET',
+    path: '/v1/asset-versions/{id}/derivatives/{kind}',
+    summary: "An asset version's thumbnail or preview",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifactVersion: 'id' } },
+    params: AssetDerivativeParams,
+    responses: {
+      200: {
+        description:
+          'The derivative, WebP, turned upright and stripped of metadata, kept for a year; or, until it is made, the original image, never kept, while it is made',
+        binary: { contentTypes: ['image/webp', 'image/png', 'image/jpeg'] },
+      },
+      400: { description: 'No such kind of derivative', schema: ErrorBody },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: an asset the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      502: {
+        description:
+          '`asset_corrupt`: the stored bytes do not match the hash they are kept under (AST-042), so none are sent',
+        schema: ErrorBody,
+      },
+    },
+  },
+  discardAssetDerivatives: {
+    operationId: 'discardAssetDerivatives',
+    method: 'DELETE',
+    path: '/v1/spaces/{space}/asset-derivatives',
+    summary: "Discard a space's image thumbnails and previews, to be made again",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
+    params: SpaceParams,
+    responses: {
+      200: { description: 'How many were discarded', schema: AssetDerivativesDiscarded },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the space but may not administer it',
+        schema: ErrorBody,
+      },
+      404: {
+        description: 'No such space in this environment, or none the caller may read',
+        schema: ErrorBody,
+      },
     },
   },
   getAssetRights: {

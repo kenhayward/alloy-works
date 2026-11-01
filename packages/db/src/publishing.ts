@@ -2354,6 +2354,11 @@ export interface NewPublication {
   readonly outputs: readonly NewPublicationOutput[];
   /** The worker's locale data (TE-F; LOC-044), recorded where 0171 has run. */
   readonly localeData?: LocaleData;
+  /**
+   * What each image printed carried that its outputs do not, by asset version (AST-007; AL-G),
+   * recorded on its `publication_asset` where 0181 has run.
+   */
+  readonly stripped?: ReadonlyMap<string, readonly string[]>;
 }
 
 /**
@@ -2589,6 +2594,10 @@ async function insertPublication(
           asset_id: each.asset_id,
           // Named only for an entry, so a schema before 0147 is never asked for another kind.
           ...(each.asset_kind === 'asset' ? {} : { asset_kind: each.asset_kind }),
+          // And only where the worker said, so a schema before 0181 is never asked for it.
+          ...(input.stripped?.has(each.version_id)
+            ? { stripped: [...input.stripped.get(each.version_id)!] }
+            : {}),
         })),
       )
       .execute();

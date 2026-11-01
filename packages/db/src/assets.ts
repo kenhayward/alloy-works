@@ -2,15 +2,18 @@ import {
   ASSET_SCHEMA_VERSION,
   assetAlternativeSchema,
   assetRightsSchema,
+  imageLimitsSchema,
   parseAssetVersion,
   type AssetAlternative,
   type AssetRights,
   type AssetFormat,
+  type ImageLimits,
   type AssetVersionContent,
   type ImageHeader,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { labelled, labels, recordEvent, type AuditEvent } from './audit.js';
+import { wantDerivatives } from './derivatives.js';
 import { enqueueJob } from './queue.js';
 import { indexVersion } from './search.js';
 import type { TenantTransaction } from './tables.js';
@@ -295,6 +298,8 @@ export async function recordAsset(
     kind: 'asset.ingested',
     subject: { kind: 'asset', id: version.artifactId, version: version.id },
   });
+  // Its derivatives made on ingest, not when first shown (AST-008; AL-H), however it arrived.
+  await wantDerivatives(trx, version.id);
   return version;
 }
 
@@ -364,6 +369,14 @@ export async function objectInUse(
     .limit(1)
     .executeTakeFirst();
   if (version) return true;
+  // A derivative kept beside its original (0181; AL-H), where this tenant keeps them yet.
+  const { rows: derived } = await sql<{ stored: boolean }>`
+    select to_regclass(current_schema() || '.asset_derivative') is not null as stored`.execute(trx);
+  if (derived[0]?.stored === true) {
+    const { rows: kept } =
+      await sql`select 1 from asset_derivative where object_key = ${key} limit 1`.execute(trx);
+    if (kept.length > 0) return true;
+  }
   // An image an import holds until it is accepted (0157), where this tenant stores them yet.
   const { rows: stored } = await sql<{ stored: boolean }>`
     select to_regclass(current_schema() || '.import_asset') is not null as stored`.execute(trx);
@@ -527,19 +540,37 @@ export async function recordAssetRights(
 
 export interface ImagesPolicy {
   readonly undeclared: 'warn' | 'refuse';
+  /** The limit each format is lowered to, or null for its own (AST-004; AL-I). */
+  readonly limits: ImageLimits;
 }
 
-/** The environment's policy for an undeclared or lapsed image at publish (AST-053; AL-F). */
+/**
+ * The environment's policy for an undeclared or lapsed image at publish (AST-053; AL-F), and the
+ * size each format may be (AST-004; AL-I).
+ */
 export async function imagesPolicy(trx: TenantTransaction): Promise<ImagesPolicy> {
-  const row = await trx.selectFrom('images_policy').select('undeclared').executeTakeFirst();
-  return { undeclared: row?.undeclared ?? 'warn' };
+  const row = await trx
+    .selectFrom('images_policy')
+    .select(['undeclared', 'limits'])
+    .executeTakeFirst();
+  return {
+    undeclared: row?.undeclared ?? 'warn',
+    limits: imageLimitsSchema.parse(row?.limits ?? { png: null, jpeg: null }),
+  };
 }
 
 /** The policy set whole; the caller decided `administer` at the tenant. */
 export async function setImagesPolicy(
   trx: TenantTransaction,
-  policy: ImagesPolicy,
+  policy: Partial<ImagesPolicy>,
 ): Promise<ImagesPolicy> {
-  await trx.updateTable('images_policy').set({ undeclared: policy.undeclared }).execute();
+  const limits = policy.limits && JSON.stringify(imageLimitsSchema.parse(policy.limits));
+  await trx
+    .updateTable('images_policy')
+    .set({
+      ...(policy.undeclared === undefined ? {} : { undeclared: policy.undeclared }),
+      ...(limits === undefined ? {} : { limits }),
+    })
+    .execute();
   return imagesPolicy(trx);
 }

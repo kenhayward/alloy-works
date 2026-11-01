@@ -9,7 +9,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 function service() {
-  let settings = { undeclared: 'warn' };
+  let settings: unknown = { undeclared: 'warn', limits: { png: null, jpeg: null } };
   const put: unknown[] = [];
   const fetching = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -29,10 +29,26 @@ describe("Administration's Images (the AL plan, AL-F)", () => {
     expect(await screen.findByRole('radio', { name: /Publish and report them/ })).toBeChecked();
     await userEvent.click(screen.getByRole('radio', { name: /Refuse the publish/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(put).toEqual([{ undeclared: 'refuse' }]));
+    await waitFor(() =>
+      expect(put).toEqual([{ undeclared: 'refuse', limits: { png: null, jpeg: null } }]),
+    );
     expect(await screen.findByText('Saved.')).toBeInTheDocument();
     // Whatever the policy, a licence that does not permit publication refuses.
     expect(screen.getByText(/always refused/)).toBeInTheDocument();
+  });
+
+  it('AST-004 lowers the largest image of a format, in megabytes, and leaves a blank one at its own', async () => {
+    const { client, put } = service();
+    render(<ImagesPolicy client={client} mayChange />);
+    const largestPng = await screen.findByRole('spinbutton', { name: 'Largest PNG, in MB' });
+    expect(largestPng).toHaveValue(null);
+    expect(screen.getAllByText('Blank for the most the product allows, 25 MB.')).toHaveLength(2);
+    await userEvent.type(largestPng, '2.5');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(put).toEqual([{ undeclared: 'warn', limits: { png: 2_500_000, jpeg: null } }]),
+    );
+    expect(await screen.findByRole('spinbutton', { name: 'Largest PNG, in MB' })).toHaveValue(2.5);
   });
 
   it('shows the policy to somebody who may not change it, unchangeable', async () => {

@@ -85,6 +85,16 @@ describe('the job queue', () => {
     await queue.complete(job!);
   });
 
+  it('hands a worker only the kinds it says it runs, leaving the rest for one that does', async () => {
+    await enqueue(a);
+    expect(
+      await queue.claim({ workerId: 'other', leaseMs: 60_000, kinds: ['ingest'] }),
+    ).toBeUndefined();
+    const job = await queue.claim({ workerId: 'sampler', leaseMs: 60_000, kinds: ['sample_pdf'] });
+    expect(job).toMatchObject({ kind: 'sample_pdf' });
+    await queue.complete(job!);
+  });
+
   it('IAM-075 refuses a row that names another tenant', async () => {
     await expect(
       service.withTenant(a, (trx) =>

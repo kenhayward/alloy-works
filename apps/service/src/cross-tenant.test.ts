@@ -488,6 +488,11 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetVersionContent: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   getAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   setAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
+  getAssetVersionDerivative: async (tenant, db) => ({
+    id: (await assetIn(tenant, db)).version,
+    kind: 'thumbnail',
+  }),
+  discardAssetDerivatives: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
   setGroupMembers: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   deleteGroup: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
