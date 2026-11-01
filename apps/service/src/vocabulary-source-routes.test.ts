@@ -328,6 +328,18 @@ describe('a vocabulary refreshed from its source (the VO plan, VO-J)', () => {
     const unreadable = await refresh('ada', id);
     expect(unreadable.statusCode).toBe(422);
     expect(unreadable.json()).toMatchObject({ code: 'vocabulary_source_unreadable' });
+    // A source that answers no concept retires nothing.
+    connector.vocabularySourceFor = () => ({
+      type: 'fetched',
+      body: '@prefix skos: <http://www.w3.org/2004/02/skos/core#> .',
+      contentType: 'text/turtle',
+    });
+    const empty = await refresh('ada', id);
+    expect(empty.statusCode).toBe(422);
+    const held = (await call('ada', 'GET', `/v1/vocabularies/${id}`)).json<
+      RefreshBody['vocabulary']
+    >();
+    expect(held.vocabulary.values.map((each) => each.state)).toEqual(['active', 'active']);
   });
 
   it('refuses to refresh a vocabulary with no source', async () => {

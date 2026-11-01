@@ -3447,6 +3447,7 @@
   "admin.values-come-from": "{kind, select, query {Its values come from the query definition {name}.} other {Its values come from {name}.}}",
   "admin.values-kept-by-hand": "Its values are kept by hand.",
   "admin.from-the-source-as": "From the source as {source}",
+  "admin.save-before-refreshing": "Save your changes before refreshing.",
   "admin.refresh-from-source": "Refresh from source",
   "admin.refreshed-at": "Refreshed, at {number}: {added} added, {relabelled} relabelled, {retired} retired, {returned} returned, {refused} refused.",
   "admin.refresh-changed-nothing": "{refused, plural, =0 {Nothing changed: the source gives the values as they are.} one {Nothing changed; # entry in the source was refused.} other {Nothing changed; # entries in the source were refused.}}",

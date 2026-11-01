@@ -553,6 +553,8 @@ function Opened({
     }
   };
 
+  // A refresh records a version from the saved source and reads it again, so it waits on a save.
+  const unsaved = JSON.stringify(draft) !== JSON.stringify(held.vocabulary);
   // A refresh records a version from the source and says what it did (LIB-058; the VO plan, VO-J).
   const refresh = async () => {
     setSaid('');
@@ -643,9 +645,12 @@ function Opened({
       {manages && <SourceChoice source={draft.source} queries={queries} onChange={setSource} />}
       {manages && sourced && (
         <div className={styles['toolbar']}>
-          <button type="button" disabled={busy} onClick={() => void refresh()}>
+          <button type="button" disabled={busy || unsaved} onClick={() => void refresh()}>
             {words('admin.refresh-from-source')}
           </button>
+          {unsaved && (
+            <span className={styles['muted']}>{words('admin.save-before-refreshing')}</span>
+          )}
         </div>
       )}
       {!manages && (

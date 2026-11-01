@@ -110,6 +110,24 @@ describe('a vocabulary refreshed from its source', () => {
     expect(report.refusedTotal).toBe(4);
   });
 
+  it('leaves a value whose row it refused as it was, never retiring what the source still lists', () => {
+    const previous = sourced([
+      { id: 'north', source: 'N', labels: en('North'), descriptions: [], state: 'active' },
+    ]);
+    const { next, report } = refreshVocabulary(previous, [row('N', 'x'.repeat(501))]);
+    expect(next.values).toEqual(previous.values);
+    expect(report.retired).toEqual([]);
+  });
+
+  it('makes an id in the form of a value id from a long notation however often it collides', () => {
+    const long = `a${'b'.repeat(63)}`;
+    const { next } = refreshVocabulary(sourced([]), [
+      row('x', 'One', { notation: long }),
+      row('y', 'Two', { notation: long }),
+    ]);
+    expect(next.values.map((each) => each.id.length)).toEqual([60, 62]);
+  });
+
   it('allocates an id once, never one already held, however the identifiers collide', () => {
     const previous = sourced([
       { id: 'north', labels: en('North'), descriptions: [], state: 'active' },

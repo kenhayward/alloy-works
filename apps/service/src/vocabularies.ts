@@ -171,6 +171,14 @@ export function vocabularyHandlers(
                 : `The query has no ${values.missing.join(' or ')} column.`,
           );
         }
+        // A source answering nothing is more likely broken than emptied: nothing is retired on it.
+        if (values.length === 0) {
+          throw refused(
+            422,
+            'vocabulary.source_unreadable',
+            'The source gave no values, so nothing was retired. Check it, or retire the values by hand.',
+          );
+        }
         const { next, report } = refreshVocabulary(vocabulary, values);
         const answer = await db.withTenant(tenantOf(request), (work) =>
           recordDefinitionVersion(work, {

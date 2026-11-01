@@ -62,7 +62,10 @@ export function refreshVocabulary(
 ): { readonly next: Vocabulary; readonly report: VocabularyRefreshReport } {
   const refused: { source: string; reason: string }[] = [];
   let refusedTotal = 0;
+  // A row refused is still listed by its source, so its value is left as it was, never retired.
+  const listed = new Set<string>();
   const refuse = (source: string, reason: string) => {
+    listed.add(source);
     refusedTotal += 1;
     if (refused.length < REFUSED_MOST) refused.push({ source, reason });
   };
@@ -116,9 +119,10 @@ export function refreshVocabulary(
       refuse(row.source, `past ${VOCABULARY_LIMITS.values.toLocaleString('en')} values`);
       continue;
     }
+    // At most 60 characters, so a suffix keeps it within a value id's 64.
     const base =
       row.notation !== undefined && isVocabularyKey(row.notation)
-        ? row.notation
+        ? row.notation.slice(0, 60)
         : idFrom(row.source);
     let id = base;
     for (let n = 2; taken.has(id); n += 1) id = `${base}_${n}`;
@@ -129,7 +133,9 @@ export function refreshVocabulary(
   const values = previous.values.map((each) => {
     const kept = updated.get(each.id);
     if (kept) return kept;
-    if (each.source === undefined || each.state === 'retired') return each;
+    if (each.source === undefined || each.state === 'retired' || listed.has(each.source)) {
+      return each;
+    }
     retired.push(each.id);
     const next: VocabularyValue = { ...each, state: 'retired' };
     delete next.replacedBy;

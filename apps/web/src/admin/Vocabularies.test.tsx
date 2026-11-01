@@ -568,6 +568,18 @@ describe("Administration's Vocabularies", () => {
     );
   });
 
+  it('refreshes only what is saved, so an unsaved change is never lost to a refresh', async () => {
+    const user = userEvent.setup();
+    const { client } = service({ sourced: true });
+    render(<Vocabularies client={client} />);
+    const shown = await opened('Trial phase');
+    const button = within(shown).getByRole('button', { name: 'Refresh from source' });
+    expect(button).toBeEnabled();
+    await user.type(within(shown).getByRole('textbox', { name: 'Name' }), ' renamed');
+    expect(button).toBeDisabled();
+    expect(within(shown).getByText('Save your changes before refreshing.')).toBeVisible();
+  });
+
   it('says a refresh changed nothing, and why a refresh was refused', async () => {
     const user = userEvent.setup();
     const quiet = service({ sourced: true, refreshing: 'unchanged' });
