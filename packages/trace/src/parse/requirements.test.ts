@@ -216,7 +216,8 @@ describe('the real corpus', () => {
     // 1624 (2026-10-31): CNT-187, superseding CNT-168 (CLd).
     // 1625 (2026-10-31): LIB-065, superseding LIB-001 (VO).
     // 1627 (2026-11-01): AST-052 and AST-053, superseding AST-025 and AST-043 (AL).
-    expect(total((document) => document.requirements)).toBe(1627);
+    // 1628 (2026-11-01): STY-086, superseding STY-066 (SY).
+    expect(total((document) => document.requirements)).toBe(1628);
     expect(total((document) => document.nonRequirements)).toBe(118);
     expect(total((document) => document.questions)).toBe(135);
   });

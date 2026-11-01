@@ -1462,6 +1462,21 @@ describe('routes that check a permission', () => {
       payload: { openedFrom: MISSING, definition: aQueryDefinition(readings) },
     }),
     listDefinitions: () => ({ url: '/v1/definitions', status: 403 }),
+    // Decided at the theme, as a vocabulary's refresh is: one the caller may not manage is not found.
+    saveThemeStyle: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/styles/paragraph/body`,
+      status: 404,
+      payload: { openedFrom: MISSING, style: { id: 'body' } },
+    }),
+    deleteThemeStyle: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/styles/paragraph/body?openedFrom=${MISSING}`,
+      status: 404,
+    }),
+    getStyleImpact: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/impact`,
+      status: 404,
+      payload: { kind: 'paragraph', style: 'body' },
+    }),
     refreshVocabulary: () => ({ url: `/v1/vocabularies/${MISSING}/refresh`, status: 404 }),
     importVocabulary: () => ({
       url: '/v1/vocabularies/import',

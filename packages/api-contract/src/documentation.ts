@@ -44,6 +44,11 @@ export const documentationGroups = [
           "Read the environment's licences: what an image held under each may be used for, and the credit it needs.",
       },
       {
+        name: 'Themes',
+        description:
+          "Read the environment's themes and the catalogues of styles they name, add, change and delete a style, and see which documents a change would reach before it is saved.",
+      },
+      {
         name: 'Translations',
         description:
           "Translate a component into another language as a variant of its own, see each variant's status against its source, and declare which source changes need retranslating.",
@@ -536,6 +541,7 @@ const operationTags = {
     'exportVocabulary',
   ],
   Licences: ['listLicences', 'getLicence'],
+  Themes: ['listThemes', 'getTheme', 'saveThemeStyle', 'deleteThemeStyle', 'getStyleImpact'],
   Translations: [
     'getSpaceTranslations',
     'listComponentTranslations',
@@ -1142,6 +1148,16 @@ const descriptions: Readonly<Record<string, string>> = {
     "Lists the environment's licences by name, each at its latest version: its key, its names per language, what it permits (`internal` use, `publication`, `redistribution`, `modification`), whether it requires attribution and what that must say, and the address of its terms. Anyone signed in may read them, since whoever uploads an image declares the licence it is held under; they are made and changed through `/v1/definitions`, as kind `licence`, by whoever manages definitions.",
   getLicence:
     'Returns a licence at its latest version, as `listLicences` lists it. Anyone signed in may read it.',
+  listThemes:
+    "Lists the environment's themes by name, each at its latest version, the one a document with no template is set in marked. Anyone signed in may read them.",
+  getTheme:
+    'Returns a theme at its latest version as stored, naming its catalogues by version, with each of those catalogue versions as stored: the paragraph, character, table and image styles among them. Anyone signed in may read it.',
+  saveThemeStyle:
+    "Adds a style to one of a theme's catalogues, or changes one, given in its catalogue's shape with the identifier the path names. The catalogue's next version and the theme's next version naming it are recorded together, and every document set in the theme follows at once; a baseline keeps the theme version it pinned. Refused, with nothing written, wherever the theme would not read with the change: text below its contrast minimum, a style based on one that does not exist or on itself, an identifier an earlier version dropped. `openedFrom` must be the theme's latest version. Audited as `style.changed`, naming the properties that changed. Needs manage definitions at the environment.",
+  deleteThemeStyle:
+    "Deletes a style from one of a theme's catalogues, as `saveThemeStyle` changes one. Refused while any component uses the style, with how many do, and wherever the theme would not read without it: a style based on it, or a place or role given it. Its identifier is never used again. Needs manage definitions at the environment.",
+  getStyleImpact:
+    "Lists the documents a change to a style would reach: those set in the theme, through their template or as the environment's default, whose components use the style or a style based on it. A paragraph style that a place or role defaults to, and a character style, reach every document set in the theme. Names the documents the caller may read and counts the rest. Nothing is recorded. Needs manage definitions at the environment.",
   listVocabularies:
     "Lists the environment's vocabularies by name, each with its key, its latest version and how many values it holds. Anyone signed in may read them, since authors choose their values; they are made and changed through `/v1/definitions`, as kind `vocabulary`, by whoever manages definitions.",
   getVocabulary:
