@@ -1,8 +1,10 @@
 import {
   ASSET_SCHEMA_VERSION,
   assetAlternativeSchema,
+  assetRightsSchema,
   parseAssetVersion,
   type AssetAlternative,
+  type AssetRights,
   type AssetFormat,
   type AssetVersionContent,
   type ImageHeader,
@@ -32,6 +34,9 @@ export interface StoredAssetUpload {
   readonly spaceId: string;
   readonly uploader: string;
   readonly alternative: AssetAlternative | null;
+  /** The file's name, and what its uploader declared of its rights, where they gave them (AL-D, AL-E). */
+  readonly name: string | null;
+  readonly rights: AssetRights | null;
   /** A person's upload, or an image a dataset's result holds (D8-D). */
   readonly origin: 'upload' | 'dataset';
   readonly state: AssetUploadState;
@@ -60,6 +65,9 @@ type UploadRow = {
   space_id: string;
   uploader: string;
   alternative: unknown;
+  /** Absent short of 0180, as on every upload before it. */
+  name?: string | null;
+  rights?: unknown;
   origin: 'upload' | 'dataset';
   state: AssetUploadState;
   object_key: string | null;
@@ -76,6 +84,8 @@ const uploadOf = (row: UploadRow): StoredAssetUpload => ({
   spaceId: row.space_id,
   uploader: row.uploader,
   alternative: row.alternative === null ? null : assetAlternativeSchema.parse(row.alternative),
+  name: row.name ?? null,
+  rights: row.rights == null ? null : assetRightsSchema.parse(row.rights),
   origin: row.origin,
   state: row.state,
   objectKey: row.object_key,
@@ -98,16 +108,23 @@ export async function createAssetUpload(
     readonly spaceId: string;
     readonly uploader: string;
     readonly alternative: AssetAlternative | null;
+    readonly name?: string;
+    /** Declared at upload (AST-044); a dataset's kind is never a person's to declare. */
+    readonly rights?: Exclude<AssetRights, { kind: 'dataset' }>;
   },
 ): Promise<StoredAssetUpload> {
   const alternative =
     input.alternative === null ? null : assetAlternativeSchema.parse(input.alternative);
+  const rights = input.rights === undefined ? undefined : assetRightsSchema.parse(input.rights);
+  if (rights?.kind === 'dataset') throw new Error('A dataset image is never uploaded by a person');
   const row = await trx
     .insertInto('asset_upload')
     .values({
       space_id: input.spaceId,
       uploader: input.uploader,
       alternative: alternative === null ? null : JSON.stringify(alternative),
+      ...(input.name === undefined ? {} : { name: input.name }),
+      ...(rights === undefined ? {} : { rights: JSON.stringify(rights) }),
     })
     .returningAll()
     .executeTakeFirstOrThrow();
@@ -240,6 +257,7 @@ export async function recordAsset(
     depth: header.depth,
     resolution: header.resolution,
     alternative: upload.alternative,
+    ...(upload.name === null ? {} : { name: upload.name }),
   });
   const version = await createArtifact(trx, {
     spaceId: upload.spaceId,
@@ -256,6 +274,20 @@ export async function recordAsset(
       finished_at: new Date(),
     })
     .where('id', '=', id)
+    .execute();
+  // Its first rights (AL-C): what the uploader declared, a dataset's for a dataset's image, else
+  // undeclared, so every asset, however it arrived, has one (the pre-flight's sixth finding).
+  await trx
+    .insertInto('asset_rights')
+    .values({
+      asset_id: version.artifactId,
+      rights: JSON.stringify(
+        upload.origin === 'dataset'
+          ? { kind: 'dataset' }
+          : (upload.rights ?? { kind: 'undeclared' }),
+      ),
+      recorded_by: upload.uploader,
+    })
     .execute();
   // Indexed as it was written, before the upload named it; a dataset's image is never found (D8-I).
   if (upload.origin === 'dataset') await indexVersion(trx, version);
@@ -395,4 +427,119 @@ export async function readAssetVersion(
     number: `${version.revision}.${version.version}`,
     content: parseAssetVersion(version.content),
   };
+}
+
+/** One change to an image's rights (AST-031): what they became, by whom and when. */
+export interface StoredAssetRights {
+  readonly id: string;
+  readonly rights: AssetRights;
+  readonly recordedBy: string;
+  readonly recordedAt: Date;
+}
+
+/** Every change to an asset's rights, newest first; the first is current (AL-C). */
+export async function readAssetRights(
+  trx: TenantTransaction,
+  assetId: string,
+): Promise<StoredAssetRights[]> {
+  const rows = await trx
+    .selectFrom('asset_rights')
+    .select(['id', 'rights', 'recorded_by', 'recorded_at'])
+    .where('asset_id', '=', assetId)
+    .orderBy('recorded_at', 'desc')
+    .orderBy('id', 'desc')
+    .execute();
+  return rows.map((row) => ({
+    id: row.id,
+    rights: assetRightsSchema.parse(row.rights),
+    recordedBy: row.recorded_by,
+    recordedAt: row.recorded_at,
+  }));
+}
+
+/** Each asset's current rights, by asset; one with none (short of 0180) is absent. */
+export async function currentAssetRights(
+  trx: TenantTransaction,
+  assetIds: readonly string[],
+): Promise<Map<string, { readonly id: string; readonly rights: AssetRights }>> {
+  if (assetIds.length === 0) return new Map();
+  const rows = await trx
+    .selectFrom('asset_rights')
+    .distinctOn('asset_id')
+    .select(['asset_id', 'id', 'rights'])
+    .where('asset_id', 'in', [...new Set(assetIds)])
+    .orderBy('asset_id')
+    .orderBy('recorded_at', 'desc')
+    .orderBy('id', 'desc')
+    .execute();
+  return new Map(
+    rows.map((row) => [row.asset_id, { id: row.id, rights: assetRightsSchema.parse(row.rights) }]),
+  );
+}
+
+/**
+ * An image's rights changed (AL-C), as a row of its own; the caller decided `edit` on the asset. A
+ * declared licence must be a licence of this environment; a dataset's kind is never a person's to
+ * record.
+ */
+export async function recordAssetRights(
+  trx: TenantTransaction,
+  input: { readonly assetId: string; readonly rights: AssetRights; readonly by: string },
+): Promise<
+  | { readonly answer: 'recorded'; readonly id: string }
+  | { readonly answer: 'unchanged' }
+  | { readonly answer: 'licence.missing' }
+  | { readonly answer: 'rights.invalid' }
+> {
+  const parsed = assetRightsSchema.safeParse(input.rights);
+  if (!parsed.success || parsed.data.kind === 'dataset') return { answer: 'rights.invalid' };
+  const rights = parsed.data;
+  if (rights.kind === 'declared') {
+    const licence = await trx
+      .selectFrom('artifact')
+      .select('id')
+      .where('id', '=', rights.licence)
+      .where('kind', '=', 'licence')
+      .executeTakeFirst();
+    if (!licence) return { answer: 'licence.missing' };
+  }
+  // Both parsed by one schema, so one key order: the same rights again change nothing.
+  const [current] = await readAssetRights(trx, input.assetId);
+  if (current && JSON.stringify(current.rights) === JSON.stringify(rights)) {
+    return { answer: 'unchanged' };
+  }
+  const row = await trx
+    .insertInto('asset_rights')
+    .values({ asset_id: input.assetId, rights: JSON.stringify(rights), recorded_by: input.by })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const asset = await trx
+    .selectFrom('artifact')
+    .select('space_id')
+    .where('id', '=', input.assetId)
+    .executeTakeFirstOrThrow();
+  await recordAssetEvent(trx, asset.space_id!, {
+    kind: 'asset.relicensed',
+    subject: { kind: 'asset', id: input.assetId },
+  });
+  return { answer: 'recorded', id: row.id };
+}
+
+export interface ImagesPolicy {
+  readonly undeclared: 'warn' | 'refuse';
+}
+
+/** The environment's policy for an undeclared or lapsed image at publish (AST-053; AL-F). */
+export async function imagesPolicy(trx: TenantTransaction): Promise<ImagesPolicy> {
+  const row = await trx.selectFrom('images_policy').select('undeclared').executeTakeFirst();
+  return { undeclared: row?.undeclared ?? 'warn' };
+}
+
+/** The policy set whole; the caller decided `administer` at the tenant. */
+export async function setImagesPolicy(
+  trx: TenantTransaction,
+  policy: ImagesPolicy,
+): Promise<ImagesPolicy> {
+  await trx.updateTable('images_policy').set({ undeclared: policy.undeclared }).execute();
+  return imagesPolicy(trx);
 }

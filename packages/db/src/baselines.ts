@@ -23,8 +23,10 @@ import { loadReadableSet } from './access-facts.js';
 import { AUDIT_LOG_KEPT, labelled, labels, recordEvent } from './audit.js';
 import type { HeldResolution } from './datasets.js';
 import { readableComponents } from './documents.js';
+import { recordRequestRights, resolveRights } from './publication-rights.js';
 import {
   documentCitesAPage,
+  imagesIn,
   pageCitations,
   recordPublicationEvent,
   resolvePublishable,
@@ -779,6 +781,22 @@ export async function requestBaselinePublication(
     }
   }
 
+  // Its images' rights, read today rather than pinned (AL-F): a licence that has stopped permitting
+  // publication refuses a republish, and what the policy reports is reported.
+  const assetOf = new Map(assets.map((each) => [each.version_id, each.artifact_id]));
+  const rights = await resolveRights(
+    trx,
+    occurrences.flatMap((each, n) =>
+      imagesIn(contents[n]!.content).flatMap((image) => {
+        const asset = assetOf.get(image.asset);
+        return asset === undefined ? [] : [{ node: each.node!, block: image.block, asset }];
+      }),
+    ),
+    'publish',
+  );
+  unresolved.push(...rights.failures);
+  const reported = [...warnings, ...rights.warnings];
+
   const formats = PUBLISHING_FORMATS.filter((format) => input.formats.includes(format));
   // Under the profile the pinned version declares, recorded where it says something, as a publish's is
   // (VER-020; R11-F): never the empty profile in its place. In its document's own language, so no
@@ -798,10 +816,11 @@ export async function requestBaselinePublication(
       theme_version_id: baseline.theme_version_id,
       baseline_id: input.baseline,
       ...(profile === undefined ? {} : { profile: JSON.stringify(profile) }),
-      ...(warnings.length === 0 ? {} : { warnings: JSON.stringify(warnings) }),
+      ...(reported.length === 0 ? {} : { warnings: JSON.stringify(reported) }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
+  await recordRequestRights(trx, request.id, rights.read);
   if (occurrences.length > 0) {
     await trx
       .insertInto('publication_request_occurrence')

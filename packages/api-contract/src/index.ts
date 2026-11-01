@@ -489,6 +489,7 @@ export {
   DataSettingsBody,
   EditingSettings,
   EditingSettingsBody,
+  ImagesSettings,
   ImportSettings,
   TranslationSettings,
   TranslationSettingsBody,
@@ -516,11 +517,14 @@ export {
   GroupView,
 } from './groups.js';
 export {
+  AssetParams,
+  AssetRightsView,
   AssetUploadParams,
   AssetUploadView,
   AssetVersionParams,
   AssetVersionView,
   CreateAssetUploadBody,
+  SetAssetRightsBody,
 } from './assets.js';
 export { buildOpenApi, type OpenApiDocument } from './openapi.js';
 export {

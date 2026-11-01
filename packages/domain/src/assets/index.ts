@@ -18,6 +18,7 @@ export {
   ALTERNATIVE_MAX_LENGTH,
   ASSET_SCHEMA_VERSION,
   assetAlternativeSchema,
+  assetNameSchema,
   assetVersionSchema,
   parseAssetVersion,
 } from './version.js';
@@ -32,3 +33,10 @@ export {
   parseLicence,
 } from './licence.js';
 export type { Licence, LicenceProblem, LicenceUse } from './licence.js';
+export {
+  assetRightsSchema,
+  declarableRightsSchema,
+  RIGHTS_LIMITS,
+  rightsAtPublish,
+} from './rights.js';
+export type { AssetRights, DeclarableRights, RightsFinding } from './rights.js';

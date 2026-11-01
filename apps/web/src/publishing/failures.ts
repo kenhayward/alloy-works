@@ -524,6 +524,13 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // Named by where the figure is, never by the image, which the author may not read.
     case 'asset_unreadable':
       return words('publishing.a-figure-shows-an-image');
+    // An image's rights (the AL plan, AL-F): `detail` the licence's name, where it has one.
+    case 'asset_licence_forbids':
+      return words('publishing.a-figure-shows-an-image-licence', { licence: failure.detail ?? '' });
+    case 'asset_undeclared':
+      return words('publishing.a-figure-shows-an-image-undeclared');
+    case 'asset_licence_expired':
+      return words('publishing.a-figure-shows-an-image-expired');
     // A figure does not break across pages, so its image and caption must stand on one together.
     case 'caption_too_long':
       return words('publishing.a-figure-s-caption-is');
@@ -818,6 +825,15 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   },
   get asset_unreadable() {
     return words('publishing.a-figure-in-it-shows');
+  },
+  get asset_licence_forbids() {
+    return words('publishing.a-figure-in-it-shows-licence');
+  },
+  get asset_undeclared() {
+    return words('publishing.a-figure-in-it-shows-undeclared');
+  },
+  get asset_licence_expired() {
+    return words('publishing.a-figure-in-it-shows-expired');
   },
   get component_metadata_invalid() {
     return words('publishing.a-component-in-it-has-2');

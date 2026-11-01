@@ -1,4 +1,10 @@
-import { ASSET_MAX_BYTES, assetAlternativeSchema } from '@alloy-works/domain';
+import {
+  ASSET_MAX_BYTES,
+  assetAlternativeSchema,
+  assetNameSchema,
+  assetRightsSchema,
+  declarableRightsSchema,
+} from '@alloy-works/domain';
 import { z } from 'zod';
 import { SpaceParams } from './components.js';
 import type { RouteContract } from './contract.js';
@@ -14,6 +20,14 @@ export const CreateAssetUploadBody = z.strictObject({
     .nullable()
     .describe(
       "The image's default description for somebody who cannot see it, in a language, or null for none",
+    ),
+  name: assetNameSchema
+    .optional()
+    .describe("The name it is listed by, the file's own name where it has one"),
+  rights: declarableRightsSchema
+    .optional()
+    .describe(
+      'Where it came from and the licence it is held under (AST-021, AST-044): `declared`, with its source, a licence of this environment, the last day the grant holds and the credit it needs; or `undeclared`, which is also what giving none records',
     ),
 });
 export type CreateAssetUploadBody = z.infer<typeof CreateAssetUploadBody>;
@@ -62,6 +76,7 @@ export const AssetVersionView = z.object({
     .object({ text: z.string(), language: z.string() })
     .nullable()
     .describe('The default description a figure inherits, or null for none'),
+  name: z.string().nullable().describe('The name it is listed by, or null for none'),
 });
 export type AssetVersionView = z.infer<typeof AssetVersionView>;
 
@@ -74,6 +89,33 @@ const notFound = {
   description: 'No such thing in this environment, or none the caller may read',
   schema: ErrorBody,
 } as const;
+
+export const AssetParams = z.object({ id: LowercaseUuid });
+export type AssetParams = z.infer<typeof AssetParams>;
+
+/** One change to an image's rights (AST-031): what they became, by whom and when. */
+export const AssetRightsChange = z.object({
+  rights: assetRightsSchema,
+  by: z.object({ id: z.string(), name: z.string() }).describe('Who recorded it'),
+  at: z.iso.datetime().describe('When'),
+});
+
+/** An image's rights now, and every change to them, newest first (the AL plan, AL-C). */
+export const AssetRightsView = z.object({
+  asset: z.string(),
+  current: assetRightsSchema.describe(
+    "`declared`, `undeclared`, or `dataset` for an image a dataset holds, the environment's own data",
+  ),
+  history: z.array(AssetRightsChange),
+});
+export type AssetRightsView = z.infer<typeof AssetRightsView>;
+
+export const SetAssetRightsBody = z.strictObject({
+  rights: declarableRightsSchema.describe(
+    '`declared`, with its source and a licence of this environment, or `undeclared`',
+  ),
+});
+export type SetAssetRightsBody = z.infer<typeof SetAssetRightsBody>;
 
 /** Uploading an image into a space, following its check, and reading what it made. */
 export const assetRoutes = {
@@ -91,6 +133,11 @@ export const assetRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may read the space but not create in it', schema: ErrorBody },
       404: notFound,
+      422: {
+        description:
+          '`asset_licence_missing`: the licence declared is no licence of this environment',
+        schema: ErrorBody,
+      },
     },
   },
   putAssetUploadBytes: {
@@ -180,6 +227,48 @@ export const assetRoutes = {
         schema: ErrorBody,
       },
       404: notFound,
+    },
+  },
+  getAssetRights: {
+    operationId: 'getAssetRights',
+    method: 'GET',
+    path: '/v1/assets/{id}/rights',
+    summary: "An image's source and licence, and every change to them",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'read', target: { artifact: 'id' } },
+    params: AssetParams,
+    responses: {
+      200: { description: 'Its rights', schema: AssetRightsView },
+      401: unauthenticated,
+      403: {
+        description: 'Never answered: an asset the caller may read is one they may open',
+        schema: ErrorBody,
+      },
+      404: notFound,
+    },
+  },
+  setAssetRights: {
+    operationId: 'setAssetRights',
+    method: 'PUT',
+    path: '/v1/assets/{id}/rights',
+    summary: "Record an image's source and licence, as a change of its own",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: AssetParams,
+    body: SetAssetRightsBody,
+    responses: {
+      200: { description: 'Its rights, as recorded', schema: AssetRightsView },
+      401: unauthenticated,
+      403: { description: 'The caller may read the image but not edit it', schema: ErrorBody },
+      404: notFound,
+      409: {
+        description: "`asset_rights_dataset`: a dataset's image, whose rights are the dataset's",
+        schema: ErrorBody,
+      },
+      422: {
+        description: '`asset_licence_missing`: the licence named is no licence of this environment',
+        schema: ErrorBody,
+      },
     },
   },
 } as const satisfies Record<string, RouteContract>;

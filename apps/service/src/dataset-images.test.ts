@@ -606,6 +606,8 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
       for (const path of [
         `/v1/asset-versions/${asset.id}`,
         `/v1/asset-versions/${asset.id}/content`,
+        // Its rights too (the ALb review, 2).
+        `/v1/assets/${asset.artifactId}/rights`,
       ]) {
         const refused = await h.call('alice', 'GET', path);
         expect(refused.statusCode, path).toBe(404);
@@ -613,6 +615,17 @@ describe("a result's images, admitted before it is kept (the D8 plan, D8-D and D
         // Ada reads the document holding it.
         expect((await h.call('ada', 'GET', path)).statusCode, path).toBe(200);
       }
+      const undeclared = { rights: { kind: 'undeclared' } };
+      const hidden = await h.call(
+        'alice',
+        'PUT',
+        `/v1/assets/${asset.artifactId}/rights`,
+        undeclared,
+      );
+      // Refused by the route's own edit decision on the space before the image's rule is asked.
+      expect(hidden.statusCode).toBe(403);
+      const own = await h.call('ada', 'PUT', `/v1/assets/${asset.artifactId}/rights`, undeclared);
+      expect(own.statusCode).toBe(409);
       expect(await entries(asset.artifactId)).toBe(0);
       expect(await earlierEntries(asset.artifactId)).toBe(0);
     });

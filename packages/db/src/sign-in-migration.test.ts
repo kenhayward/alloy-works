@@ -189,6 +189,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0177_publication_vocabularies',
       '0178_vocabulary_query_runs',
       '0179_licences',
+      '0180_asset_rights',
     ]);
 
     const read = async () =>

@@ -247,6 +247,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0177_publication_vocabularies',
       '0178_vocabulary_query_runs',
       '0179_licences',
+      '0180_asset_rights',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -371,6 +372,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0177_publication_vocabularies',
       '0178_vocabulary_query_runs',
       '0179_licences',
+      '0180_asset_rights',
     ]);
 
     expect(await queryRoles(development)).toEqual([

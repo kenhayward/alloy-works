@@ -20105,6 +20105,13 @@
                         }
                       ],
                       "description": "The default description a figure inherits, or null for none"
+                    },
+                    "name": {
+                      "description": "The name it is listed by, or null for none",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -20116,7 +20123,8 @@
                     "width",
                     "height",
                     "resolution",
-                    "alternative"
+                    "alternative",
+                    "name"
                   ]
                 },
                 "example": {
@@ -20131,7 +20139,8 @@
                   "alternative": {
                     "text": "example",
                     "language": "en"
-                  }
+                  },
+                  "name": "example"
                 }
               }
             },
@@ -20467,6 +20476,1042 @@
           },
           "404": {
             "description": "No such thing in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assets/{id}/rights": {
+      "get": {
+        "operationId": "getAssetRights",
+        "summary": "An image's source and licence, and every change to them",
+        "description": "Returns an image's rights now and every change to them, newest first, each with who recorded it and when: `declared`, with where it came from, the licence of this environment it is held under, the last day the grant holds and the credit it needs; `undeclared`, recorded so that undeclared images can be listed; or `dataset`, for an image a dataset holds, which is the environment's own data. Rights are the image's, not a version's, so a figure pinning an older version answers to them as they are now. Needs read on the image.",
+        "tags": [
+          "Assets"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "read",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Its rights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset": {
+                      "type": "string"
+                    },
+                    "current": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "undeclared"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "dataset"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "declared"
+                            },
+                            "source": {
+                              "type": "object",
+                              "properties": {
+                                "text": {
+                                  "type": "string"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "examples": [
+                                    "https://gauges.example.test/alloy"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "text"
+                              ]
+                            },
+                            "licence": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "expires": {
+                              "type": "string"
+                            },
+                            "credit": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "source",
+                            "licence"
+                          ]
+                        }
+                      ],
+                      "description": "`declared`, `undeclared`, or `dataset` for an image a dataset holds, the environment's own data"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rights": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "undeclared"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "dataset"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "declared"
+                                  },
+                                  "source": {
+                                    "type": "object",
+                                    "properties": {
+                                      "text": {
+                                        "type": "string"
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 2000,
+                                        "examples": [
+                                          "https://gauges.example.test/alloy"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "text"
+                                    ]
+                                  },
+                                  "licence": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "expires": {
+                                    "type": "string"
+                                  },
+                                  "credit": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "source",
+                                  "licence"
+                                ]
+                              }
+                            ]
+                          },
+                          "by": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "description": "Who recorded it"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When"
+                          }
+                        },
+                        "required": [
+                          "rights",
+                          "by",
+                          "at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "asset",
+                    "current",
+                    "history"
+                  ]
+                },
+                "example": {
+                  "asset": "example",
+                  "current": {
+                    "kind": "undeclared"
+                  },
+                  "history": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Never answered: an asset the caller may read is one they may open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such thing in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setAssetRights",
+        "summary": "Record an image's source and licence, as a change of its own",
+        "description": "Records an image's rights as a change of its own, the earlier ones kept: `declared` with its source and a licence of this environment, or `undeclared`. A dataset's image takes its rights from its dataset and is refused. Needs edit on the image.",
+        "tags": [
+          "Assets"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "edit",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rights": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "undeclared"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "declared"
+                          },
+                          "source": {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "type": "string"
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "examples": [
+                                  "https://gauges.example.test/alloy"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "licence": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "expires": {
+                            "type": "string"
+                          },
+                          "credit": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "source",
+                          "licence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "`declared`, with its source and a licence of this environment, or `undeclared`"
+                  }
+                },
+                "required": [
+                  "rights"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "rights": {
+                  "kind": "undeclared"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Its rights, as recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset": {
+                      "type": "string"
+                    },
+                    "current": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "undeclared"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "dataset"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "const": "declared"
+                            },
+                            "source": {
+                              "type": "object",
+                              "properties": {
+                                "text": {
+                                  "type": "string"
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "maxLength": 2000,
+                                  "examples": [
+                                    "https://gauges.example.test/alloy"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "text"
+                              ]
+                            },
+                            "licence": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "expires": {
+                              "type": "string"
+                            },
+                            "credit": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "source",
+                            "licence"
+                          ]
+                        }
+                      ],
+                      "description": "`declared`, `undeclared`, or `dataset` for an image a dataset holds, the environment's own data"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rights": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "undeclared"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "dataset"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "declared"
+                                  },
+                                  "source": {
+                                    "type": "object",
+                                    "properties": {
+                                      "text": {
+                                        "type": "string"
+                                      },
+                                      "url": {
+                                        "type": "string",
+                                        "maxLength": 2000,
+                                        "examples": [
+                                          "https://gauges.example.test/alloy"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "text"
+                                    ]
+                                  },
+                                  "licence": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "expires": {
+                                    "type": "string"
+                                  },
+                                  "credit": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "kind",
+                                  "source",
+                                  "licence"
+                                ]
+                              }
+                            ]
+                          },
+                          "by": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "description": "Who recorded it"
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "When"
+                          }
+                        },
+                        "required": [
+                          "rights",
+                          "by",
+                          "at"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "asset",
+                    "current",
+                    "history"
+                  ]
+                },
+                "example": {
+                  "asset": "example",
+                  "current": {
+                    "kind": "undeclared"
+                  },
+                  "history": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may read the image but not edit it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such thing in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`asset_rights_dataset`: a dataset's image, whose rights are the dataset's",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`asset_licence_missing`: the licence named is no licence of this environment",
             "content": {
               "application/json": {
                 "schema": {
@@ -25825,7 +26870,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -26016,10 +27064,36 @@
                               "label",
                               "state"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "asset_undeclared",
+                                  "asset_licence_expired"
+                                ],
+                                "description": "`asset_undeclared`: an image whose source and licence were never declared; `asset_licence_expired`: one whose grant is past its last day. Each published under the environment's `warn` policy (AST-052, AST-053)"
+                              },
+                              "node": {
+                                "type": "string",
+                                "description": "The outline node whose component places it"
+                              },
+                              "block": {
+                                "type": "string",
+                                "description": "The block placing it"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "block"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); each deprecated or retired vocabulary value held, where (LIB-023); and each image published undeclared or past its grant, where (AST-052, AST-053)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -26408,7 +27482,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -97431,7 +98508,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -97923,7 +99003,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -176438,7 +177521,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -176629,10 +177715,36 @@
                               "label",
                               "state"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "asset_undeclared",
+                                  "asset_licence_expired"
+                                ],
+                                "description": "`asset_undeclared`: an image whose source and licence were never declared; `asset_licence_expired`: one whose grant is past its last day. Each published under the environment's `warn` policy (AST-052, AST-053)"
+                              },
+                              "node": {
+                                "type": "string",
+                                "description": "The outline node whose component places it"
+                              },
+                              "block": {
+                                "type": "string",
+                                "description": "The block placing it"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "block"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); each deprecated or retired vocabulary value held, where (LIB-023); and each image published undeclared or past its grant, where (AST-052, AST-053)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -182631,7 +183743,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -182822,10 +183937,36 @@
                               "label",
                               "state"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "asset_undeclared",
+                                  "asset_licence_expired"
+                                ],
+                                "description": "`asset_undeclared`: an image whose source and licence were never declared; `asset_licence_expired`: one whose grant is past its last day. Each published under the environment's `warn` policy (AST-052, AST-053)"
+                              },
+                              "node": {
+                                "type": "string",
+                                "description": "The outline node whose component places it"
+                              },
+                              "block": {
+                                "type": "string",
+                                "description": "The block placing it"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "block"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); each deprecated or retired vocabulary value held, where (LIB-023); and each image published undeclared or past its grant, where (AST-052, AST-053)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -251733,7 +252874,10 @@
                               "index_reference_unresolved",
                               "index_see_located",
                               "value_not_number",
-                              "message_form_arm_missing"
+                              "message_form_arm_missing",
+                              "asset_licence_forbids",
+                              "asset_undeclared",
+                              "asset_licence_expired"
                             ]
                           },
                           "node": {
@@ -251924,10 +253068,36 @@
                               "label",
                               "state"
                             ]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string",
+                                "enum": [
+                                  "asset_undeclared",
+                                  "asset_licence_expired"
+                                ],
+                                "description": "`asset_undeclared`: an image whose source and licence were never declared; `asset_licence_expired`: one whose grant is past its last day. Each published under the environment's `warn` policy (AST-052, AST-053)"
+                              },
+                              "node": {
+                                "type": "string",
+                                "description": "The outline node whose component places it"
+                              },
+                              "block": {
+                                "type": "string",
+                                "description": "The block placing it"
+                              }
+                            },
+                            "required": [
+                              "code",
+                              "node",
+                              "block"
+                            ]
                           }
                         ]
                       },
-                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)"
+                      "description": "What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); each deprecated or retired vocabulary value held, where (LIB-023); and each image published undeclared or past its grant, where (AST-052, AST-053)"
                     },
                     "publication": {
                       "description": "The publication it made, once done",
@@ -283365,6 +284535,430 @@
         }
       }
     },
+    "/v1/settings/images": {
+      "get": {
+        "operationId": "getImagesSettings",
+        "summary": "The environment's policy for images whose rights were never declared",
+        "description": "Returns the environment's policy for an image whose source and licence were never declared, or whose grant is past its last day, at publish: `warn`, the default, or `refuse`. An image whose licence does not permit publication is always refused. Anyone signed in may read it, since a publisher is told what an undeclared image does.",
+        "tags": [
+          "Settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The images settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "undeclared": {
+                      "type": "string",
+                      "enum": [
+                        "warn",
+                        "refuse"
+                      ],
+                      "description": "What a publish does with an image whose source and licence were never declared, or whose grant is past its last day (AST-052, AST-053): `warn`, the default, publishes it and reports it; `refuse` refuses the publish, naming the figure. An image whose licence does not permit publication is always refused"
+                    }
+                  },
+                  "required": [
+                    "undeclared"
+                  ]
+                },
+                "example": {
+                  "undeclared": "warn"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setImagesSettings",
+        "summary": "Change the environment's policy for images whose rights were never declared",
+        "description": "Changes the environment's policy for undeclared and lapsed images. It applies to each publish asked for from then on, and to republishing a baseline. Needs administer at the environment.",
+        "tags": [
+          "Settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "undeclared": {
+                    "type": "string",
+                    "enum": [
+                      "warn",
+                      "refuse"
+                    ],
+                    "description": "What a publish does with an image whose source and licence were never declared, or whose grant is past its last day (AST-052, AST-053): `warn`, the default, publishes it and reports it; `refuse` refuses the publish, naming the figure. An image whose licence does not permit publication is always refused"
+                  }
+                },
+                "required": [
+                  "undeclared"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "undeclared": "warn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The images settings, as changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "undeclared": {
+                      "type": "string",
+                      "enum": [
+                        "warn",
+                        "refuse"
+                      ],
+                      "description": "What a publish does with an image whose source and licence were never declared, or whose grant is past its last day (AST-052, AST-053): `warn`, the default, publishes it and reports it; `refuse` refuses the publish, naming the figure. An image whose licence does not permit publication is always refused"
+                    }
+                  },
+                  "required": [
+                    "undeclared"
+                  ]
+                },
+                "example": {
+                  "undeclared": "warn"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: not warn or refuse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller may not administer this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/settings/import": {
       "get": {
         "operationId": "getImportSettings",
@@ -286879,6 +288473,74 @@
                       }
                     ],
                     "description": "The image's default description for somebody who cannot see it, in a language, or null for none"
+                  },
+                  "name": {
+                    "description": "The name it is listed by, the file's own name where it has one",
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "rights": {
+                    "description": "Where it came from and the licence it is held under (AST-021, AST-044): `declared`, with its source, a licence of this environment, the last day the grant holds and the credit it needs; or `undeclared`, which is also what giving none records",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "undeclared"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "declared"
+                          },
+                          "source": {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "type": "string"
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "examples": [
+                                  "https://gauges.example.test/alloy"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "text"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "licence": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "expires": {
+                            "type": "string"
+                          },
+                          "credit": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "source",
+                          "licence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -287065,6 +288727,47 @@
           },
           "404": {
             "description": "No such thing in this environment, or none the caller may read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`asset_licence_missing`: the licence declared is no licence of this environment",
             "content": {
               "application/json": {
                 "schema": {

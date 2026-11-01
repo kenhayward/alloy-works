@@ -1036,6 +1036,8 @@ describe('a figure in the editor (figures 2)', () => {
     expect(figureOf(view)!.alternative).toEqual({ kind: 'inherited' });
     expect(asked.find((each) => each.route === 'POST /v1/spaces/s1/asset-uploads')?.body).toEqual({
       alternative: { text: 'Zwei Formen', language: 'de' },
+      name: 'shapes.png',
+      rights: { kind: 'undeclared' },
     });
     expect(asked.find((each) => each.route.startsWith('PUT /v1/asset-uploads'))?.body).toEqual({
       bytes: pngBytes.length,
@@ -1074,6 +1076,8 @@ describe('a figure in the editor (figures 2)', () => {
     );
     expect(asked.find((each) => each.route === 'POST /v1/spaces/s1/asset-uploads')?.body).toEqual({
       alternative: null,
+      name: expect.any(String),
+      rights: { kind: 'undeclared' },
     });
   });
 
@@ -1522,6 +1526,8 @@ describe('a figure in the editor (figures 2)', () => {
       expect(asked.find((each) => each.route === 'POST /v1/spaces/s1/asset-uploads')?.body).toEqual(
         {
           alternative: { text: 'A printer', language: 'en-GB' },
+          name: expect.any(String),
+          rights: { kind: 'undeclared' },
         },
       );
     });

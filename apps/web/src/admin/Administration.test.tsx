@@ -116,6 +116,15 @@ describe('Administration', () => {
     window.location.hash = '';
   });
 
+  it('lists Images among the environment sections, opened at #/admin/images', async () => {
+    window.location.hash = '#/admin/images';
+    const { client } = service(everything);
+    render(<Administration client={client} about={null} />);
+    expect(await screen.findByRole('heading', { name: 'Images', level: 1 })).toBeInTheDocument();
+    expect(section('Images')).toHaveAttribute('aria-current', 'page');
+    window.location.hash = '';
+  });
+
   it('lists Licences among the environment sections, opened at #/admin/licences', async () => {
     window.location.hash = '#/admin/licences';
     const { client } = service(everything);

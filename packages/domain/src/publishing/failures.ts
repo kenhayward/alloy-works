@@ -271,6 +271,14 @@ export const publishFailureCodes = [
   // form's binding, as an inline binding's do.
   'value_not_number',
   'message_form_arm_missing',
+  // resolve, from ALb (the AL plan, AL-F): an image whose licence does not permit publication (AST-023),
+  // one whose rights were never declared (AST-053), and one whose grant is past its last day (AST-052),
+  // each naming the figure, `detail` the licence's name where it has one. The second and third refuse
+  // under the environment's `refuse` policy and are warnings under `warn`; a preview is internal use,
+  // and finds none of them.
+  'asset_licence_forbids',
+  'asset_undeclared',
+  'asset_licence_expired',
 ] as const;
 
 export type PublishFailureCode = (typeof publishFailureCodes)[number];

@@ -1,18 +1,24 @@
 import type {
+  AssetParams,
+  AssetRightsView,
   AssetUploadParams,
   AssetUploadView,
   AssetVersionParams,
   AssetVersionView,
   CreateAssetUploadBody,
+  SetAssetRightsBody,
 } from '@alloy-works/api-contract';
 import { createHash } from 'node:crypto';
 import {
   createAssetUpload,
   documentsHoldingAsset,
   holdObject,
+  readAssetRights,
   readAssetUpload,
   readAssetVersion,
+  readDefinitionLatest,
   receiveAssetBytes,
+  recordAssetRights,
   refuseAssetUpload,
   type AssetUploadReason,
   type StoredAssetUpload,
@@ -35,6 +41,45 @@ import { contextOf } from './audit.js';
 import { connectionFacts } from './data/sql-access.js';
 import { AppError, storageUnavailable } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
+import { refused } from './wire-codes.js';
+
+const licenceMissing = () =>
+  refused(422, 'asset.licence_missing', 'The licence named is no licence of this environment.');
+
+/** An asset's rights now and every change to them, with who made each by name (AL-C). */
+async function rightsView(trx: TenantTransaction, asset: string): Promise<AssetRightsView> {
+  const history = await readAssetRights(trx, asset);
+  const by = [...new Set(history.map((each) => each.recordedBy))];
+  const people =
+    by.length === 0
+      ? []
+      : await trx
+          .selectFrom('principal')
+          .select(['id', 'display_name'])
+          .where('id', 'in', by)
+          .execute();
+  const names = new Map(people.map((each) => [each.id, each.display_name]));
+  return {
+    asset,
+    // An image recorded before 0180 has none: it was never declared.
+    current: history[0]?.rights ?? { kind: 'undeclared' },
+    history: history.map((each) => ({
+      rights: each.rights,
+      by: { id: each.recordedBy, name: names.get(each.recordedBy) ?? '' },
+      at: each.recordedAt.toISOString(),
+    })),
+  };
+}
+
+/** The asset by its id, as an asset: not found where the id is another kind's. */
+async function assetIn(trx: TenantTransaction, id: string): Promise<void> {
+  const artifact = await trx
+    .selectFrom('artifact')
+    .select('kind')
+    .where('id', '=', id)
+    .executeTakeFirst();
+  if (artifact?.kind !== 'asset') throw notFound();
+}
 
 /** Bytes a permission-checked route answers with, sent after its transaction commits (figures 1, R2). */
 export interface BinaryBody {
@@ -86,32 +131,37 @@ export const REFUSED_AT_THE_DOOR = {
 } as const satisfies Partial<Record<AssetUploadReason, object>>;
 
 /**
- * An asset version as a route reads it: `read` on it was decided by the route; an asset a dataset's
- * image made is read only by a caller who may also read a document holding it, as every value a
- * result returns is (the D8 plan, D8-I), and is otherwise not found, as an asset they may not read is.
+ * An asset as a route reads it: `read` on it was decided by the route; an asset a dataset's image
+ * made is read only by a caller who may also read a document holding it, as every value a result
+ * returns is (the D8 plan, D8-I), and is otherwise not found, as an asset they may not read is.
+ * Answers whether it is a dataset's.
  */
-async function readableAssetVersion(trx: TenantTransaction, caller: Caller, id: string) {
-  const version = await readAssetVersion(trx, id);
-  if (!version) throw notFound();
-  const holders = await documentsHoldingAsset(trx, version.assetId);
-  if (holders === undefined) return version;
+async function readableAsset(
+  trx: TenantTransaction,
+  caller: Caller,
+  assetId: string,
+): Promise<{ readonly fromDataset: boolean }> {
+  const holders = await documentsHoldingAsset(trx, assetId);
+  if (holders === undefined) return { fromDataset: false };
   let refusal: AppError | undefined;
   for (const document of holders) {
     const facts = await connectionFacts(trx, caller, document);
     if (!facts) continue;
     const reading = decide('read', facts);
-    if (reading.allowed) return version;
+    if (reading.allowed) return { fromDataset: true };
     // The image exists, and no document the caller may read holds it: a refusal, hidden (AU1-E),
     // by the first holding document's decision.
-    refusal ??= refusedBy(
-      notFound(),
-      reading,
-      facts,
-      { kind: 'artifact', id: version.assetId },
-      true,
-    );
+    refusal ??= refusedBy(notFound(), reading, facts, { kind: 'artifact', id: assetId }, true);
   }
   throw refusal ?? notFound();
+}
+
+/** An asset version as a route reads it, by its asset's rule. */
+async function readableAssetVersion(trx: TenantTransaction, caller: Caller, id: string) {
+  const version = await readAssetVersion(trx, id);
+  if (!version) throw notFound();
+  await readableAsset(trx, caller, version.assetId);
+  return version;
 }
 
 /**
@@ -141,11 +191,20 @@ export function assetHandlers(
     ): Promise<AssetUploadView> => {
       const { space } = request.params as { space: string };
       const body = request.body as CreateAssetUploadBody;
+      // A licence declared at upload is one of this environment (AST-044; AL-E).
+      if (
+        body.rights?.kind === 'declared' &&
+        (await readDefinitionLatest(trx, body.rights.licence))?.kind !== 'licence'
+      ) {
+        throw licenceMissing();
+      }
       return uploadView(
         await createAssetUpload(trx, {
           spaceId: space,
           uploader: principalId,
           alternative: body.alternative,
+          ...(body.name === undefined ? {} : { name: body.name }),
+          ...(body.rights === undefined ? {} : { rights: body.rights }),
         }),
       );
     },
@@ -256,7 +315,45 @@ export function assetHandlers(
         height: content.height,
         resolution: content.resolution,
         alternative: content.alternative && { ...content.alternative },
+        name: content.name ?? null,
       };
+    },
+
+    /** `read` was decided on the asset (AL-C); an id of another kind is no asset's. */
+    getAssetRights: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<AssetRightsView> => {
+      const { id } = request.params as AssetParams;
+      await assetIn(trx, id);
+      await readableAsset(trx, callerOf(request), id);
+      return rightsView(trx, id);
+    },
+
+    /** `edit` was decided on the asset; the change is a row of its own (AST-031), audited. */
+    setAssetRights: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<AssetRightsView> => {
+      const { id } = request.params as AssetParams;
+      await assetIn(trx, id);
+      // A dataset's image, by its upload rather than its rights row, which a migration may not have
+      // written (the ALb review, 3).
+      if ((await readableAsset(trx, callerOf(request), id)).fromDataset) {
+        throw refused(
+          409,
+          'asset.rights_dataset',
+          "A dataset's image takes its source from its dataset.",
+        );
+      }
+      const answer = await recordAssetRights(trx, {
+        assetId: id,
+        rights: (request.body as SetAssetRightsBody).rights,
+        by: principalId,
+      });
+      if (answer.answer === 'licence.missing') throw licenceMissing();
+      if (answer.answer === 'rights.invalid') throw notFound();
+      return rightsView(trx, id);
     },
 
     /**
