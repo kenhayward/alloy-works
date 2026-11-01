@@ -342338,7 +342338,7 @@
             }
           },
           "404": {
-            "description": "No such theme in this environment",
+            "description": "No such theme, or the caller may not manage definitions",
             "content": {
               "application/json": {
                 "schema": {
@@ -342772,7 +342772,7 @@
             }
           },
           "404": {
-            "description": "No such theme in this environment",
+            "description": "No such theme, or the caller may not manage definitions",
             "content": {
               "application/json": {
                 "schema": {
@@ -343269,7 +343269,7 @@
             }
           },
           "404": {
-            "description": "No such theme in this environment",
+            "description": "No such theme, or the caller may not manage definitions",
             "content": {
               "application/json": {
                 "schema": {

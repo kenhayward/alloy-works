@@ -138,7 +138,8 @@ describe('themes through the service (the SY plan, SY-C)', () => {
         style: warning,
       },
     );
-    expect(refused.statusCode).toBe(403);
+    // Decided at the theme: one Ada may not manage is answered as not there.
+    expect(refused.statusCode).toBe(404);
     const saved = await call(
       'grace',
       'PUT',
@@ -215,6 +216,7 @@ describe('themes through the service (the SY plan, SY-C)', () => {
       kind: 'paragraph',
       style: 'body',
     });
-    expect(refused.statusCode).toBe(403);
+    // Decided at the theme: one Ada may not manage is answered as not there.
+    expect(refused.statusCode).toBe(404);
   });
 });

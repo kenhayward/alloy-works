@@ -1135,7 +1135,9 @@ anything is written; then the catalogue's next version, the theme's next version
 `style.changed`, naming the properties that changed. A deletion waits until no component uses the
 style (`styleUseCount`), whoever may read them. Routes: `GET /v1/themes`, `GET /v1/themes/{id}`, `PUT`
 and `DELETE /v1/themes/{id}/styles/{kind}/{style}` with the theme version opened from, and `POST
-/v1/themes/{id}/impact`; writes and the impact need `manage_definitions` at the environment.
+/v1/themes/{id}/impact`; writes and the impact need `manage_definitions`, decided at the theme, so one
+the caller may not manage is not found. `duplicateTheme` copies a theme with catalogues of its own
+(SY-B); its route is SYc's.
 
 **Its reach** (`styleImpact`, STY-034, STY-067): the documents set in the theme, by their template or
 the environment's default, whose components' latest versions use the style or one based on it. A

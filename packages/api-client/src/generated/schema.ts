@@ -117218,7 +117218,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such theme in this environment */
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -117409,7 +117409,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such theme in this environment */
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -117605,7 +117605,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such theme in this environment */
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
