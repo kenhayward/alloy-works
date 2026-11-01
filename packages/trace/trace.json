@@ -16493,6 +16493,34 @@
         {
           "id": "AST-053",
           "howItIsMet": "An undeclared image, or one past its grant's last day, is reported on the request under the environment's `warn`, the default, and fails the publish under `refuse`; never passed silently (AL-F)"
+        },
+        {
+          "id": "AST-004",
+          "howItIsMet": "Each format declares its limit in `ADMITTED_FORMATS`, 25 MB for both; Administration's **Images** lowers either, never raises it (0181). An upload over its format's limit is refused `asset_too_large` at the door, and a dataset's image by the ingest job, the refusal recorded `too_large` (AL-I)"
+        },
+        {
+          "id": "AST-007",
+          "howItIsMet": "The policy is declared: the original keeps its metadata byte for byte, and every output and derivative is made from `stripImage`, which drops EXIF, GPS, XMP, IPTC, comments and text, keeping only the colour profile, transparency, density and a minimal EXIF of the orientation. What went is recorded on each `publication_asset` and `asset_derivative` (AL-G)"
+        },
+        {
+          "id": "AST-024",
+          "howItIsMet": "Content credentials (a JPEG's APP11 JUMBF, a PNG's `caBX`) are removed deliberately from every output and derivative, and recorded as `credentials` where they were (AL-G)"
+        },
+        {
+          "id": "AST-042",
+          "howItIsMet": "Every read of a stored original or derivative, by the service and the worker, is held to the SHA-256 its key names before it is used; the service refuses `asset_corrupt`, 502, and sends nothing (AL-I)"
+        },
+        {
+          "id": "AST-008",
+          "howItIsMet": "`recordAsset` asks the `derive` job for a version's thumbnail (256 px) and preview (1,024 px) as it records the asset, however it arrived (AL-H)"
+        },
+        {
+          "id": "AST-010",
+          "howItIsMet": "A derivative is made from its original's stripped bytes, never from another derivative, kept beside it by version in `asset_derivative`, never under the original's key; the original is never touched (AL-H)"
+        },
+        {
+          "id": "AST-048",
+          "howItIsMet": "An administrator of a space discards its derivatives (`DELETE /v1/spaces/{space}/asset-derivatives`, audited); a read finding one missing serves the original, never kept, and asks the job once to make it again (AL-H)"
         }
       ]
     },
@@ -21663,67 +21691,97 @@
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 334,
+      "line": 347,
       "kind": "rule"
     },
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 328,
+      "line": 341,
       "kind": "title"
     },
     {
       "id": "AST-002",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 328,
+      "line": 341,
+      "kind": "title"
+    },
+    {
+      "id": "AST-004",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 416,
+      "kind": "rule"
+    },
+    {
+      "id": "AST-004",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 404,
+      "kind": "title"
+    },
+    {
+      "id": "AST-008",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 545,
       "kind": "title"
     },
     {
       "id": "AST-026",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 421,
+      "line": 456,
       "kind": "title"
     },
     {
       "id": "AST-031",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 299,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "AST-035",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 401,
+      "line": 436,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 328,
+      "line": 341,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 384,
+      "line": 397,
       "kind": "rule"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 379,
+      "line": 392,
+      "kind": "title"
+    },
+    {
+      "id": "AST-042",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 494,
       "kind": "title"
     },
     {
       "id": "AST-044",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 247,
+      "line": 260,
+      "kind": "title"
+    },
+    {
+      "id": "AST-048",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 581,
       "kind": "title"
     },
     {
       "id": "AST-053",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 492,
+      "line": 632,
       "kind": "title"
     },
     {
@@ -21891,13 +21949,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 715,
+      "line": 720,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 728,
+      "line": 733,
       "kind": "title"
     },
     {
@@ -22437,7 +22495,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2174,
+      "line": 2179,
       "kind": "title"
     },
     {
@@ -24826,6 +24884,12 @@
       "id": "LIF-022",
       "file": "apps/web/src/admin/Holds.test.tsx",
       "line": 63,
+      "kind": "title"
+    },
+    {
+      "id": "AST-004",
+      "file": "apps/web/src/admin/ImagesPolicy.test.tsx",
+      "line": 40,
       "kind": "title"
     },
     {
@@ -27769,6 +27833,24 @@
       "kind": "title"
     },
     {
+      "id": "AST-008",
+      "file": "apps/worker/src/derive.test.ts",
+      "line": 134,
+      "kind": "title"
+    },
+    {
+      "id": "AST-010",
+      "file": "apps/worker/src/derive.test.ts",
+      "line": 178,
+      "kind": "title"
+    },
+    {
+      "id": "AST-048",
+      "file": "apps/worker/src/derive.test.ts",
+      "line": 178,
+      "kind": "title"
+    },
+    {
       "id": "GEN-033",
       "file": "apps/worker/src/embed.test.ts",
       "line": 152,
@@ -28009,27 +28091,33 @@
       "kind": "title"
     },
     {
+      "id": "AST-004",
+      "file": "apps/worker/src/ingest.test.ts",
+      "line": 204,
+      "kind": "title"
+    },
+    {
       "id": "AST-005",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 142,
+      "line": 144,
       "kind": "title"
     },
     {
       "id": "AST-006",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 233,
+      "line": 267,
       "kind": "title"
     },
     {
       "id": "AST-037",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 202,
+      "line": 236,
       "kind": "title"
     },
     {
       "id": "AST-051",
       "file": "apps/worker/src/ingest.test.ts",
-      "line": 233,
+      "line": 267,
       "kind": "title"
     },
     {
@@ -28087,6 +28175,12 @@
       "kind": "title"
     },
     {
+      "id": "AST-007",
+      "file": "apps/worker/src/publish.test.ts",
+      "line": 965,
+      "kind": "title"
+    },
+    {
       "id": "LOC-044",
       "file": "apps/worker/src/publish.test.ts",
       "line": 683,
@@ -28137,13 +28231,13 @@
     {
       "id": "PUB-065",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1598,
+      "line": 1601,
       "kind": "title"
     },
     {
       "id": "PUB-074",
       "file": "apps/worker/src/publish.test.ts",
-      "line": 1513,
+      "line": 1516,
       "kind": "title"
     },
     {
@@ -28264,6 +28358,12 @@
       "id": "REU-048",
       "file": "apps/worker/src/scan.test.ts",
       "line": 22,
+      "kind": "title"
+    },
+    {
+      "id": "AST-007",
+      "file": "apps/worker/src/strip.test.ts",
+      "line": 30,
       "kind": "title"
     },
     {
@@ -28594,6 +28694,12 @@
       "id": "LIF-073",
       "file": "packages/db/src/archival.test.ts",
       "line": 337,
+      "kind": "title"
+    },
+    {
+      "id": "AST-004",
+      "file": "packages/db/src/assets.test.ts",
+      "line": 282,
       "kind": "title"
     },
     {
@@ -29272,6 +29378,24 @@
       "id": "API-072",
       "file": "packages/db/src/delivered.test.ts",
       "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "AST-008",
+      "file": "packages/db/src/derivatives.test.ts",
+      "line": 94,
+      "kind": "title"
+    },
+    {
+      "id": "AST-010",
+      "file": "packages/db/src/derivatives.test.ts",
+      "line": 99,
+      "kind": "title"
+    },
+    {
+      "id": "AST-048",
+      "file": "packages/db/src/derivatives.test.ts",
+      "line": 127,
       "kind": "title"
     },
     {
@@ -30177,7 +30301,7 @@
     {
       "id": "IAM-075",
       "file": "packages/db/src/queue.test.ts",
-      "line": 88,
+      "line": 98,
       "kind": "title"
     },
     {
@@ -31305,31 +31429,31 @@
     {
       "id": "AST-002",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 158,
+      "line": 34,
       "kind": "title"
     },
     {
       "id": "AST-005",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 176,
+      "line": 52,
       "kind": "title"
     },
     {
       "id": "AST-006",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 359,
+      "line": 235,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 158,
+      "line": 34,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "packages/domain/src/assets/header.test.ts",
-      "line": 402,
+      "line": 278,
       "kind": "title"
     },
     {
@@ -31342,6 +31466,12 @@
       "id": "AST-045",
       "file": "packages/domain/src/assets/licence.test.ts",
       "line": 45,
+      "kind": "title"
+    },
+    {
+      "id": "AST-004",
+      "file": "packages/domain/src/assets/limits.test.ts",
+      "line": 7,
       "kind": "title"
     },
     {
@@ -31360,6 +31490,18 @@
       "id": "AST-053",
       "file": "packages/domain/src/assets/rights.test.ts",
       "line": 58,
+      "kind": "title"
+    },
+    {
+      "id": "AST-007",
+      "file": "packages/domain/src/assets/strip.test.ts",
+      "line": 68,
+      "kind": "title"
+    },
+    {
+      "id": "AST-024",
+      "file": "packages/domain/src/assets/strip.test.ts",
+      "line": 92,
       "kind": "title"
     },
     {
@@ -32433,7 +32575,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1135,
+      "line": 1142,
       "kind": "title"
     },
     {
