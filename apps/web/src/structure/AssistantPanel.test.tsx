@@ -1042,6 +1042,22 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
     expect(stream.mock.calls[1]![0].body).toMatchObject({ ask: 'When does it flood?' });
   });
 
+  it('empties the box as it sends, not once the reply ends, so a sent ask never looks unsent (issue #868)', async () => {
+    const user = userEvent.setup();
+    panel(
+      vi.fn(async (options: StreamPostOptions) => {
+        options.onEvent('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } });
+        // Still answering.
+        await new Promise(() => {});
+        return { kind: 'streamed' as const };
+      }),
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(await screen.findByRole('button', { name: 'Stop' })).toBeVisible();
+    expect(screen.getByLabelText('Ask the assistant')).toHaveValue('');
+  });
+
   it('asks again without wiping what you have started typing', async () => {
     const user = userEvent.setup();
     const stream = vi.fn(answered);

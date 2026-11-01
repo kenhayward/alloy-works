@@ -145,6 +145,7 @@ import {
 import type { Choosing, OfferedVersion } from './VersionChoice.js';
 import type { VersionNamed } from './NewerVersion.js';
 import { words as say } from '../words/words.js';
+import { dockRoom } from './dockRoom.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
@@ -818,6 +819,36 @@ export function DocumentPage({
   const tablePane = usePaneWidth(TABLE_PANE);
   // Where the Part panel stands: in that pane, once it is drawn.
   const [detailsHost, setDetailsHost] = useState<HTMLDivElement | null>(null);
+  // The panels beside the text given the room from where they stand to above the status bar, as the
+  // page scrolls them up to their sticky top, the window resizes or the status bar wraps (issue #868).
+  const [dockArea, setDockArea] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (dockArea === null) return undefined;
+    const root = window.document.documentElement;
+    const fit = () => {
+      if (getComputedStyle(dockArea).position !== 'sticky') {
+        dockArea.style.removeProperty('--dock-room');
+        return;
+      }
+      const room = dockRoom({
+        top: dockArea.getBoundingClientRect().top,
+        viewport: window.innerHeight,
+        status: parseFloat(getComputedStyle(root).getPropertyValue('--status-height')) || 0,
+        gap: 12,
+      });
+      dockArea.style.setProperty('--dock-room', `${room}px`);
+    };
+    fit();
+    window.addEventListener('scroll', fit, { passive: true });
+    window.addEventListener('resize', fit);
+    const watched = new MutationObserver(fit);
+    watched.observe(root, { attributes: true, attributeFilter: ['style'] });
+    return () => {
+      window.removeEventListener('scroll', fit);
+      window.removeEventListener('resize', fit);
+      watched.disconnect();
+    };
+  }, [dockArea]);
   // Each occurrence's content, by node, from one call for the whole document (interface slice 9),
   // read again for every version the page shows and whenever a component edited in place closes.
   const [texts, setTexts] = useState<ReadonlyMap<string, unknown>>(new Map());
@@ -2704,7 +2735,7 @@ export function DocumentPage({
             rail its panels are chosen from on its end edge (ADR-0074), which stays while the pane is hidden;
             kept while hidden, so a panel keeps what it holds. Next after the outline in the page, its panels
             before its rail, so the keyboard goes from the tree to the chosen part's settings. */}
-            <div className={styles['dockArea']}>
+            <div ref={setDockArea} className={styles['dockArea']}>
               <aside
                 className={styles['dock']}
                 aria-label={say('document.panels-beside-the-text')}
