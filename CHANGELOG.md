@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.223.0 - 2026-11-01 (PR #873)
+## 0.223.0 - 2026-11-01 (PR #875)
 
 T7's second slice closed (the AL plan): an image's licence and rights, its derivatives, the Images page and replacement; with it, the work merged since 0.222.0.
 
