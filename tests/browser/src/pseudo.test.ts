@@ -512,6 +512,8 @@ const administration = (ada: Adas): readonly Surface[] => [
     ['Administration, its vocabularies', '#/admin/vocabularies', 'admin.vocabularies'],
     // Licences, listed (the AL plan, AL-B).
     ['Administration, its licences', '#/admin/licences', 'admin.licences'],
+    // Document themes, listed (the SY plan, SY-F).
+    ['Administration, its document themes', '#/admin/themes', 'admin.document-themes'],
     // The policy for undeclared images (the AL plan, AL-F).
     ['Administration, its images', '#/admin/images', 'admin.images'],
   ]),

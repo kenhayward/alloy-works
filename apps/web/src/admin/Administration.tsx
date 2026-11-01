@@ -32,6 +32,7 @@ import { Roles, type RoleRow } from './Roles.js';
 import { Spaces } from './Spaces.js';
 import { Vocabularies } from './Vocabularies.js';
 import { Licences } from './Licences.js';
+import { Themes } from './Themes.js';
 import { Workflows } from './Workflows.js';
 import { words } from '../words/words.js';
 
@@ -107,6 +108,14 @@ const SECTIONS = [
     slug: 'licences',
     get title() {
       return words('admin.licences');
+    },
+    group: 'environment',
+  },
+  // The themes documents are set in and their styles (the SY plan, SY-F).
+  {
+    slug: 'themes',
+    get title() {
+      return words('admin.document-themes');
     },
     group: 'environment',
   },
@@ -329,6 +338,10 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
       const { data } = await client.GET('/v1/licences');
       return data?.items.length;
     });
+    count('themes', async () => {
+      const { data } = await client.GET('/v1/themes');
+      return data?.items.length;
+    });
     count('roles', async () => {
       const read = await everyPage((cursor) =>
         client.GET('/v1/roles', {
@@ -505,6 +518,7 @@ export function Administration({
         {shown === 'workflows' && <Workflows client={client} />}
         {shown === 'vocabularies' && <Vocabularies client={client} />}
         {shown === 'licences' && <Licences client={client} />}
+        {shown === 'themes' && <Themes client={client} />}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
