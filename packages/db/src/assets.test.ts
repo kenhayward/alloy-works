@@ -232,6 +232,12 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
         recordAssetRights(trx, { assetId: version.artifactId, rights: declared, by: ada }),
       ),
     ).toEqual({ answer: 'recorded', id: expect.any(String) });
+    // The same again is no change: no row and no event (the ALb review, 7).
+    expect(
+      await inTenant((trx) =>
+        recordAssetRights(trx, { assetId: version.artifactId, rights: declared, by: ada }),
+      ),
+    ).toEqual({ answer: 'unchanged' });
     const history = await inTenant((trx) => readAssetRights(trx, version.artifactId));
     expect(history.map((each) => each.rights)).toEqual([declared, { kind: 'undeclared' }]);
     // A licence that is not one, and a dataset's kind, are refused; nothing is recorded.

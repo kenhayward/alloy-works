@@ -96,6 +96,22 @@ describe('the Figure dialog asks where an image came from (the AL plan, AL-E)', 
     expect(upload).not.toHaveBeenCalled();
   });
 
+  it('keeps a long file name to 255 characters, never cutting one in two', async () => {
+    const user = userEvent.setup();
+    const { upload } = dialog();
+    const smile = String.fromCodePoint(0x1f600);
+    const long = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], smile.repeat(300), {
+      type: 'image/png',
+    });
+    await user.upload(screen.getByLabelText('Image'), long);
+    await user.click(screen.getByRole('checkbox', { name: 'It is decorative' }));
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+    expect(upload).toHaveBeenCalledWith(expect.any(Uint8Array), null, {
+      name: smile.repeat(255),
+      rights: { kind: 'undeclared' },
+    });
+  });
+
   it('asks for an https address and a source and credit it can hold, and sends nothing until it has them', async () => {
     const user = userEvent.setup();
     const { upload } = dialog();

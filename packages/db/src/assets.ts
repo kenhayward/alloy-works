@@ -487,6 +487,7 @@ export async function recordAssetRights(
   input: { readonly assetId: string; readonly rights: AssetRights; readonly by: string },
 ): Promise<
   | { readonly answer: 'recorded'; readonly id: string }
+  | { readonly answer: 'unchanged' }
   | { readonly answer: 'licence.missing' }
   | { readonly answer: 'rights.invalid' }
 > {
@@ -501,6 +502,11 @@ export async function recordAssetRights(
       .where('kind', '=', 'licence')
       .executeTakeFirst();
     if (!licence) return { answer: 'licence.missing' };
+  }
+  // Both parsed by one schema, so one key order: the same rights again change nothing.
+  const [current] = await readAssetRights(trx, input.assetId);
+  if (current && JSON.stringify(current.rights) === JSON.stringify(rights)) {
+    return { answer: 'unchanged' };
   }
   const row = await trx
     .insertInto('asset_rights')

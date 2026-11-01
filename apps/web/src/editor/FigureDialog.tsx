@@ -164,7 +164,8 @@ export function FigureDialog({
       );
       return;
     }
-    const name = file.name.trim().slice(0, 255);
+    // By code point, so a name is never cut inside a character (the ALb review, 8).
+    const name = [...file.name.trim()].slice(0, 255).join('').trim();
     setBusy(true);
     setSaid(null);
     let outcome: UploadOutcome;
