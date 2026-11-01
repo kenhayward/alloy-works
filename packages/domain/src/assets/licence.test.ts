@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { licenceName, licencePermits, LicenceRefused, parseLicence, type Licence } from './licence.js';
+import {
+  licenceName,
+  licencePermits,
+  LicenceRefused,
+  parseLicence,
+  type Licence,
+} from './licence.js';
 
 const ccBy: Licence = {
   schemaVersion: 1,

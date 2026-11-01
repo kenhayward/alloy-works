@@ -87,7 +87,10 @@ export function Licences({ client }: { client: Client }) {
       ],
       permits: USES.filter((use) => form.permits.includes(use)),
       attribution: form.required
-        ? { required: true, ...(form.wording.trim() === '' ? {} : { wording: form.wording.trim() }) }
+        ? {
+            required: true,
+            ...(form.wording.trim() === '' ? {} : { wording: form.wording.trim() }),
+          }
         : { required: false },
       ...(form.url.trim() === '' ? {} : { url: form.url.trim() }),
     };

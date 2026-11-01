@@ -51,6 +51,8 @@ a document places into the compile root under its hash.
 | **AST-035** | `checking` is the named state an upload waits in: its uploader alone sees it, it names no asset version, and nothing can place it until the job records one                                                                                                                                                                                                                                               |
 | **AST-026** | An asset is in exactly one space - the space of the component it was uploaded into - and reading it is decided on the asset, like any artifact's                                                                                                                                                                                                                                                          |
 | **AST-037** | A refused upload is recorded on its row, `refused`, never deleted and naming no asset version, so nothing can place it; its bytes are removed; and the refusal is on the audit log, `asset.refused` ([audit.md](audit.md)), at the door and after the check alike                                                                                                                                         |
+| **AST-022** | A licence is a definition, kind `licence`, whose `permits` is a subset of `internal`, `publication`, `redistribution` and `modification` (the AL plan, AL-B)                                                                                                                                                                                                                                              |
+| **AST-045** | A licence says whether it requires attribution, and what that attribution must say, its `wording`; rendering a credit is PUB's (AST-Q06)                                                                                                                                                                                                                                                                  |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
 upload's **check** rather than its scan. AST-051, AST-035 and, since the audit log is written (AU1),
@@ -64,14 +66,14 @@ is AST-007's declared policy, which is T7's; until then the design claims no mor
 
 ## What this document does not own
 
-| What                                                                                     | Whose                                                                                                                                        |
-| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Alternative text in three states, inherited, own or decorative                           | content-model.md (AST-012, AST-013, AST-015, AST-039). This design stores the default a figure inherits                                      |
-| How big a figure prints                                                                  | themes.md's image styles (STY-015 to STY-018, STY-078), built by themes 2; the default theme's two in [publishing.md](publishing.md#figures) |
-| Refusing a figure with no alternative text at publish                                    | publishing.md (PUB-033, AST-014)                                                                                                             |
-| Size limits a tenant can lower (AST-004), derivatives, licences, replacement             | T7 and T3. T1's limits are the product's, declared as constants                                                                              |
-| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028) | T7. In T1 an asset is reached only through the figure that places it                                                                         |
-| Pasting or dropping an image into a component                                            | A later editor slice. Paste keeps no image today, and still will after these slices                                                          |
+| What                                                                                                           | Whose                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alternative text in three states, inherited, own or decorative                                                 | content-model.md (AST-012, AST-013, AST-015, AST-039). This design stores the default a figure inherits                                      |
+| How big a figure prints                                                                                        | themes.md's image styles (STY-015 to STY-018, STY-078), built by themes 2; the default theme's two in [publishing.md](publishing.md#figures) |
+| Refusing a figure with no alternative text at publish                                                          | publishing.md (PUB-033, AST-014)                                                                                                             |
+| Size limits a tenant can lower (AST-004), derivatives, licences, replacement - see [The library](#the-library) | T7 and T3. T1's limits are the product's, declared as constants                                                                              |
+| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028)                       | T7. In T1 an asset is reached only through the figure that places it                                                                         |
+| Pasting or dropping an image into a component                                                                  | A later editor slice. Paste keeps no image today, and still will after these slices                                                          |
 
 ## Formats, measured
 
@@ -263,6 +265,26 @@ versions are recorded in `publication_request_asset` and `publication_asset` rat
 `publication_input` rows, since an input row's `node` says where in the outline a version stood and
 an image stands at no node. Bytes that do not match their key's hash are a broken store: the job is
 tried again and then failed at the engine's stage, never refused as the document's fault.
+
+## The library
+
+T7's assets library, built by [the AL plan](../plans/2026-11-01-al-assets-library.md) in five PRs;
+its decisions AL-A to AL-N are the design, and this section says what stands so far.
+
+- **A licence is an environment-wide definition** (AL-B), kind `licence`, made and changed through
+  `/v1/definitions` by whoever manages definitions and read by anyone signed in through
+  `/v1/licences`, from Administration's **Licences**. It says what it permits and whether it needs a
+  credit, and with what words. Its key is fixed; what it permits may change, each publish recording
+  the version it read.
+- **An image's rights are the asset's** (AL-C): its source, and the licence it is held under with the
+  grant's own expiry and credit line, or `undeclared`, each change a row of its own. Written by ALb.
+- **Publishing holds to them** (AL-F): a licence not permitting publication refuses; an undeclared
+  image follows the environment's policy, warn or refuse, warn by default (AST-053).
+- **Metadata stays in the original and leaves every output** (AL-G); derivatives are made after an
+  image is recorded and rebuilt when missing (AL-H). Replacing an image cuts a version a figure may
+  follow (AL-M).
+
+AST-025 and AST-043 were superseded by AST-052 and AST-053 while planning (the AST change history).
 
 ## Requirements challenged
 

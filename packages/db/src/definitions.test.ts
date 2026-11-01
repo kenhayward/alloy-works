@@ -442,9 +442,10 @@ describe('definitions through the service', () => {
       await version(ccBy.id, ccBy.version.id, licence('CC BY 4.0', 'cc_by_4', ['publication'])),
     );
     expect(narrowed.version.version).toBe(2);
-    expect(
-      await create('licence', licence('Another', 'cc_by_4', ['internal'])),
-    ).toMatchObject({ answer: 'definition.name_taken', holder: { id: ccBy.id } });
+    expect(await create('licence', licence('Another', 'cc_by_4', ['internal']))).toMatchObject({
+      answer: 'definition.name_taken',
+      holder: { id: ccBy.id },
+    });
     expect(
       await version(ccBy.id, narrowed.version.id, licence('CC BY 4.0', 'cc_by', ['internal'])),
     ).toMatchObject({ answer: 'definition.invalid', failures: [{ rule: 'fixed' }] });

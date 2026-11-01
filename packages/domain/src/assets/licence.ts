@@ -33,7 +33,9 @@ export const licenceDefinitionSchema = z
     key,
     base: languageTagSchema,
     names: z
-      .array(z.strictObject({ language: languageTagSchema, text: text('A name', LICENCE_LIMITS.name) }))
+      .array(
+        z.strictObject({ language: languageTagSchema, text: text('A name', LICENCE_LIMITS.name) }),
+      )
       .min(1)
       .max(LICENCE_LIMITS.languages),
     permits: z
@@ -48,7 +50,11 @@ export const licenceDefinitionSchema = z
   .superRefine((licence, ctx) => {
     licence.names.forEach((each, n) => {
       if (licence.names.findIndex((other) => other.language === each.language) !== n) {
-        ctx.addIssue({ code: 'custom', path: ['names', n, 'language'], message: 'Each language once' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['names', n, 'language'],
+          message: 'Each language once',
+        });
       }
     });
     if (!licence.names.some((each) => each.language === licence.base)) {
@@ -73,7 +79,9 @@ export interface LicenceProblem {
 /** A licence refused, with every problem found. */
 export class LicenceRefused extends Error {
   constructor(readonly problems: readonly LicenceProblem[]) {
-    super(`The licence is refused: ${problems.map((each) => each.path || '(the whole)').join(', ')}`);
+    super(
+      `The licence is refused: ${problems.map((each) => each.path || '(the whole)').join(', ')}`,
+    );
   }
 }
 
@@ -94,7 +102,5 @@ export const licencePermits = (licence: Licence, use: LicenceUse) => licence.per
 
 /** Its name in `language`, the base language's where it has none. */
 export const licenceName = (licence: Licence, language: string) =>
-  (
-    licence.names.find((each) => each.language === language) ??
-    licence.names.find((each) => each.language === licence.base)
-  )!.text;
+  (licence.names.find((each) => each.language === language) ??
+    licence.names.find((each) => each.language === licence.base))!.text;
