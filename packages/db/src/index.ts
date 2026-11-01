@@ -114,6 +114,7 @@ export {
   wantDerivatives,
   type StoredDerivative,
 } from './derivatives.js';
+export { listAssets, type LibraryAsset, type LibraryFilter } from './asset-library.js';
 export type { AssetUploadTable } from './assets-tables.js';
 export type {
   LocaleData,
@@ -1216,6 +1217,8 @@ export {
   type AttentionKind,
 } from './attention.js';
 export {
+  assetUses,
+  type AssetUses,
   componentUses,
   type ComponentUses,
   type UsingDocument,
