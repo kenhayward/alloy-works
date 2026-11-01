@@ -288,6 +288,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0175_entry_superseded',
       '0176_vocabularies',
       '0177_publication_vocabularies',
+      '0178_vocabulary_query_runs',
     ]);
     const kept = await queryAs(
       db.adminUrl,

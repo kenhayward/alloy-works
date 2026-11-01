@@ -355,6 +355,46 @@ describe('definitions through the service', () => {
     ).toEqual({ space_id: null });
   });
 
+  it("LIB-058 refuses a hand change to a sourced vocabulary's values but their states, which a refresh may make", async () => {
+    const north = {
+      id: 'north',
+      source: 'N',
+      labels: [{ language: 'en', text: 'North' }],
+      descriptions: [],
+      state: 'active',
+    };
+    const sites = (values: object[]) => ({
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name: 'Sites',
+      key: 'site',
+      base: 'en',
+      order: 'declared',
+      source: { kind: 'skos', url: 'https://terms.example/sites.ttl' },
+      values,
+    });
+    const made1 = made(await create('vocabulary', sites([north])));
+    const renamed = { ...north, labels: [{ language: 'en', text: 'Nord' }] };
+    expect(await version(made1.id, made1.version.id, sites([renamed]))).toMatchObject({
+      answer: 'definition.invalid',
+      failures: [{ field: 'north', rule: 'fixed' }],
+    });
+    const retired = made(
+      await version(made1.id, made1.version.id, sites([{ ...north, state: 'retired' }])),
+    );
+    expect(retired.version.version).toBe(2);
+    expect(
+      await run((trx) =>
+        recordDefinitionVersion(trx, {
+          id: made1.id,
+          openedFrom: retired.version.id,
+          definition: sites([{ ...renamed, state: 'retired' }]),
+          author: ada,
+          refreshed: true,
+        }),
+      ),
+    ).toMatchObject({ answer: 'recorded' });
+  });
+
   it('lists every vocabulary at its latest version by name, and keys one in the definitions listing', async () => {
     const vocabulary = (name: string, key: string, ids: string[]) => ({
       schemaVersion: DEFINITION_SCHEMA_VERSION,

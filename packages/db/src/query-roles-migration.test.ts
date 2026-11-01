@@ -245,6 +245,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0175_entry_superseded',
       '0176_vocabularies',
       '0177_publication_vocabularies',
+      '0178_vocabulary_query_runs',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -367,6 +368,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0175_entry_superseded',
       '0176_vocabularies',
       '0177_publication_vocabularies',
+      '0178_vocabulary_query_runs',
     ]);
 
     expect(await queryRoles(development)).toEqual([
