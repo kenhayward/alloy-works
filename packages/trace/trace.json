@@ -26733,7 +26733,7 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 770,
+      "line": 812,
       "kind": "title"
     },
     {
@@ -26763,7 +26763,7 @@
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 715,
+      "line": 757,
       "kind": "title"
     },
     {
@@ -26775,25 +26775,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 831,
+      "line": 873,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 831,
+      "line": 873,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 865,
+      "line": 907,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 584,
+      "line": 626,
       "kind": "title"
     },
     {
@@ -27309,25 +27309,25 @@
     {
       "id": "LIF-046",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 107,
+      "line": 123,
       "kind": "title"
     },
     {
       "id": "LOC-004",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 505,
+      "line": 521,
       "kind": "title"
     },
     {
       "id": "REU-011",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 512,
+      "line": 528,
       "kind": "title"
     },
     {
       "id": "REU-015",
       "file": "apps/web/src/structure/DocumentText.test.tsx",
-      "line": 512,
+      "line": 528,
       "kind": "title"
     },
     {
