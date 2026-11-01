@@ -2,6 +2,8 @@ import {
   GENERATION_FAILURE_CODES,
   MODEL_KINDS,
   MODEL_TIMEOUT_SECONDS,
+  MODEL_TOOL_CALLS,
+  MODEL_TURNS,
   ROUTED_PURPOSES,
   UNAVAILABLE_REASONS,
   modelEndpointSchema,
@@ -36,6 +38,12 @@ const settings = modelEndpointSchema.extend({
   ),
   supportsImages: modelEndpointSchema.shape.supportsImages.describe(
     'Whether the model reads images: a model that does not is sent none. No where unsaid',
+  ),
+  turnsPerRun: modelEndpointSchema.shape.turnsPerRun.describe(
+    `How many model turns an assistant run on it may take, ${MODEL_TURNS.least} to ${MODEL_TURNS.most}; ${MODEL_TURNS.default} where unsaid. A prompt run is one call`,
+  ),
+  toolCallsPerRun: modelEndpointSchema.shape.toolCallsPerRun.describe(
+    `How many tool calls an assistant run on it may make, ${MODEL_TOOL_CALLS.least} to ${MODEL_TOOL_CALLS.most}; ${MODEL_TOOL_CALLS.default} where unsaid`,
   ),
   baseUrl: modelEndpointSchema.shape.baseUrl.meta({ examples: ['https://api.anthropic.com'] }),
   model: modelEndpointSchema.shape.model.meta({ examples: ['claude-sonnet-5-5'] }),

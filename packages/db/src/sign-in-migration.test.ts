@@ -193,6 +193,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0181_asset_ingest',
       '0182_model_capabilities',
       '0183_conversation_kept',
+      '0184_model_run_limits',
     ]);
 
     const read = async () =>

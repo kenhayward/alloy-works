@@ -237358,6 +237358,18 @@
                           "supportsImages": {
                             "type": "boolean"
                           },
+                          "turnsPerRun": {
+                            "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                          },
+                          "toolCallsPerRun": {
+                            "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500
+                          },
                           "id": {
                             "type": "string"
                           },
@@ -237709,6 +237721,18 @@
                   "supportsImages": {
                     "description": "Whether the model reads images: a model that does not is sent none. No where unsaid",
                     "type": "boolean"
+                  },
+                  "turnsPerRun": {
+                    "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "toolCallsPerRun": {
+                    "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
                   }
                 },
                 "required": [
@@ -237827,6 +237851,18 @@
                         },
                         "supportsImages": {
                           "type": "boolean"
+                        },
+                        "turnsPerRun": {
+                          "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "toolCallsPerRun": {
+                          "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
                         },
                         "id": {
                           "type": "string"
@@ -238300,6 +238336,18 @@
                         "supportsImages": {
                           "type": "boolean"
                         },
+                        "turnsPerRun": {
+                          "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "toolCallsPerRun": {
+                          "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
+                        },
                         "id": {
                           "type": "string"
                         },
@@ -238727,6 +238775,18 @@
                   "supportsImages": {
                     "description": "Whether the model reads images: a model that does not is sent none. No where unsaid",
                     "type": "boolean"
+                  },
+                  "turnsPerRun": {
+                    "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "toolCallsPerRun": {
+                    "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
                   }
                 },
                 "required": [
@@ -238845,6 +238905,18 @@
                         },
                         "supportsImages": {
                           "type": "boolean"
+                        },
+                        "turnsPerRun": {
+                          "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "toolCallsPerRun": {
+                          "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
                         },
                         "id": {
                           "type": "string"
@@ -239384,6 +239456,18 @@
                         },
                         "supportsImages": {
                           "type": "boolean"
+                        },
+                        "turnsPerRun": {
+                          "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "toolCallsPerRun": {
+                          "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
                         },
                         "id": {
                           "type": "string"
@@ -239938,6 +240022,18 @@
                         },
                         "supportsImages": {
                           "type": "boolean"
+                        },
+                        "turnsPerRun": {
+                          "description": "How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 100
+                        },
+                        "toolCallsPerRun": {
+                          "description": "How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid",
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
                         },
                         "id": {
                           "type": "string"
