@@ -242,10 +242,19 @@ export const PublicationRequestView = z.object({
             .optional()
             .describe('For a deprecated value, the value it names as its replacement'),
         }),
+        z.object({
+          code: z
+            .enum(['asset_undeclared', 'asset_licence_expired'])
+            .describe(
+              "`asset_undeclared`: an image whose source and licence were never declared; `asset_licence_expired`: one whose grant is past its last day. Each published under the environment's `warn` policy (AST-052, AST-053)",
+            ),
+          node: z.string().describe('The outline node whose component places it'),
+          block: z.string().describe('The block placing it'),
+        }),
       ]),
     )
     .describe(
-      'What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); and each deprecated or retired vocabulary value held, where (LIB-023)',
+      'What does not stop it: the sources cited by what the document places that their source says are retracted, superseded or corrected, counted, whoever may read them (LIB-036); what its terms reported as it was asked for, each term once (LIB-018, LIB-050); each deprecated or retired vocabulary value held, where (LIB-023); and each image published undeclared or past its grant, where (AST-052, AST-053)',
     ),
   publication: z.string().nullable().describe('The publication it made, once done'),
   preview: PreviewView.nullable().describe(

@@ -83,6 +83,9 @@ const WIRE_CODES = {
   'vocabulary.source_parameters': 'vocabulary_source_parameters',
   'vocabulary.source_unreadable': 'vocabulary_source_unreadable',
   'vocabulary.source_failed': 'vocabulary_source_failed',
+  // An image's rights naming no licence of the environment, or a dataset's image's (the AL plan, AL-C).
+  'asset.licence_missing': 'asset_licence_missing',
+  'asset.rights_dataset': 'asset_rights_dataset',
   'definition.name_taken': 'definition_name_taken',
   'assignment.conflict': 'assignment_conflict',
   'schema.conflict': 'schema_conflict',

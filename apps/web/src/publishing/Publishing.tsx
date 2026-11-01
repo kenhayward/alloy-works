@@ -90,6 +90,9 @@ function warnedWords(warnings: unknown): string | null {
       [byNode('component_untranslated'), 'publishing.in-own-language-marked-untranslated'],
       [byNode('translation_out_of_date'), 'publishing.translated-but-out-of-date'],
       [byNode('override_skipped'), 'publishing.translated-overrides-not-applied'],
+      // And each image published undeclared or past its grant, under `warn` (AL-F).
+      [byNode('asset_undeclared'), 'publishing.images-with-no-licence-declared'],
+      [byNode('asset_licence_expired'), 'publishing.images-past-their-grant'],
     ] as const
   ).flatMap(([count, key]) => (count === 0 ? [] : [say(key, { count })]));
   const said = [

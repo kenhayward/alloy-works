@@ -57,6 +57,13 @@ import {
 } from '@alloy-works/domain';
 import { waivedKeys } from './waivers.js';
 import {
+  recordRequestRights,
+  resolveRights,
+  type PlacedImage,
+  type ReadRights,
+  type RightsWarning,
+} from './publication-rights.js';
+import {
   requestVocabularies,
   resolveVocabularies,
   valuesPrinted,
@@ -299,7 +306,7 @@ async function goneComponents(
  * paragraph's own, and for a term, an attribution or a caption the list's, the quotation's, the table's
  * or the figure's, as publishing names a failure in one.
  */
-function imagesIn(
+export function imagesIn(
   blocks: readonly BlockNode[],
 ): { readonly block: string; readonly asset: string }[] {
   const inRuns = (content: readonly InlineNode[] | undefined, block: string) =>
@@ -571,11 +578,13 @@ async function resolveImages(
 ): Promise<{
   readonly assets: readonly { readonly version: string; readonly asset: string }[];
   readonly failures: readonly PublishFailure[];
+  /** Each image the publisher may read, where it is placed, by its asset (AL-F). */
+  readonly places: readonly PlacedImage[];
 }> {
   const placed = resolved.flatMap(({ node, content }) =>
     imagesIn(content.content).map((figure) => ({ node, ...figure })),
   );
-  if (placed.length === 0) return { assets: [], failures: [] };
+  if (placed.length === 0) return { assets: [], failures: [], places: [] };
 
   const readable = await loadReadableSet(trx, principalId);
   const wanted = [...new Set(placed.map((each) => each.asset))];
@@ -607,7 +616,11 @@ async function resolveImages(
     });
   }
   const assets = [...assetOf].map(([version, asset]) => ({ version, asset }));
-  return { assets, failures };
+  const places = placed.flatMap((each) => {
+    const asset = assetOf.get(each.asset);
+    return asset === undefined ? [] : [{ node: each.node, block: each.block, asset }];
+  });
+  return { assets, failures, places };
 }
 
 /**
@@ -913,6 +926,9 @@ export interface Publishable {
   readonly vocabularies: readonly ReadVocabulary[];
   /** Each deprecated or retired value held, which never stops it (LIB-023; VO-D). */
   readonly vocabularyWarnings: readonly VocabularyValueWarning[];
+  /** The rights its images were read under, and what they report without stopping it (AL-F). */
+  readonly rights: readonly ReadRights[];
+  readonly rightsWarnings: readonly RightsWarning[];
   /** The language asked for (the TR plan, TR-I), or undefined: the document's own, read as always. */
   readonly language?: string;
   /** What each occurrence resolved to in that language, by node. */
@@ -1199,6 +1215,8 @@ export async function resolvePublishable(
     return { answer: 'binding.unresolved', bindings: bindings.unresolved };
   }
   const images = await resolveImages(trx, resolved, input.principal);
+  // Their rights, against their licences and the environment's policy (AL-F): a preview finds none.
+  const rights = await resolveRights(trx, images.places, kind);
   const held = await componentFailures(trx, resolved);
   // Generated content waiting to be accepted refuses a publish, never a preview (G3-A; GEN-025).
   const generated = kind === 'publish' ? await generatedFailures(trx, resolved) : [];
@@ -1222,9 +1240,12 @@ export async function resolvePublishable(
       ...held,
       ...generated,
       ...images.failures,
+      ...rights.failures,
     ],
     bindings: bindings.held,
     assets: images.assets,
+    rights: rights.read,
+    rightsWarnings: rights.warnings,
     entries: await resolveEntries(trx, resolved, input.principal),
     ...(await termsRead(
       trx,
@@ -1334,6 +1355,7 @@ export async function requestPublication(
     ...found.termWarnings,
     ...found.vocabularyWarnings,
     ...found.translationWarnings,
+    ...found.rightsWarnings,
   ];
   const { latest, layout, theme, resolved, failures, bindings } = found;
   // Recorded only where it says something: none is the empty profile, as on a request before 0106.
@@ -1399,6 +1421,8 @@ export async function requestPublication(
       )
       .execute();
   }
+  // And the rights each was read under (AL-F).
+  await recordRequestRights(trx, request.id, found.rights);
   // And each term version its uses read (TMb), likewise.
   if (found.terms.length > 0) {
     await trx
@@ -2712,7 +2736,7 @@ export interface StoredPublicationRequest {
    * What its terms (TMb) and its vocabulary values (VO-D) reported as it was made, which never stopped
    * it.
    */
-  readonly warnings: readonly (TermWarning | VocabularyValueWarning)[];
+  readonly warnings: readonly (TermWarning | VocabularyValueWarning | RightsWarning)[];
   readonly publication: string | null;
   /**
    * A done preview's PDF and when it expires; null for anything else - a publish always, and a preview
@@ -2766,7 +2790,7 @@ export async function readPublicationRequest(
       kind: row.kind,
       state: row.state,
       failures: row.failures as PublishFailure[],
-      warnings: (row.warnings ?? []) as (TermWarning | VocabularyValueWarning)[],
+      warnings: (row.warnings ?? []) as (TermWarning | VocabularyValueWarning | RightsWarning)[],
       publication: row.publication,
       // 0035 holds all four to a done preview and to nothing else; read only there regardless, so
       // nothing can make a publish request read as a preview.

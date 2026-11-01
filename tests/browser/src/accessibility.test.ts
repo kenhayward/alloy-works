@@ -734,7 +734,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('passes axe on the licences and a licence being edited (the AL plan, ALa)', async ({
+  it('passes axe on the licences, a licence being edited and the images policy (the AL plan, ALa, ALb)', async ({
     task,
   }) => {
     const name = `Stock ${randomUUID().slice(0, 8)}`;
@@ -771,6 +771,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           page.getByRole('button', { name: 'Save licence' }),
           page.getByRole('textbox', { name: 'Attribution' }),
         ],
+      });
+      await page.goto(`${SERVICE}/#/admin/images`);
+      await check('the policy for undeclared images', {
+        shows: page.getByRole('radio', { name: /Publish and report them/ }),
       });
     });
   });

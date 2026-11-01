@@ -1,4 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
+import type { DeclarableRights } from '@alloy-works/domain';
 import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -40,6 +41,10 @@ const SAID: Readonly<Record<string, string>> = {
   get forbidden() {
     return words('editor.you-may-not-add-an');
   },
+  // A licence removed while the dialog was open.
+  get asset_licence_missing() {
+    return words('editor.the-licence-chosen-is-no');
+  },
 };
 
 const FAILED = (): string => words('editor.the-image-could-not-be-3');
@@ -66,6 +71,9 @@ export async function uploadImage(
     readonly space: string;
     readonly bytes: Uint8Array;
     readonly alternative: { readonly text: string; readonly language: string } | null;
+    /** The file's name, and what its uploader declared of its source and licence (AL-E). */
+    readonly name?: string;
+    readonly rights?: DeclarableRights;
   },
   wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 ): Promise<UploadOutcome> {
@@ -85,7 +93,13 @@ async function attempt(
 ): Promise<UploadOutcome> {
   const made = await client.POST('/v1/spaces/{space}/asset-uploads', {
     params: { path: { space: input.space } },
-    body: { alternative: input.alternative },
+    body: {
+      alternative: input.alternative,
+      ...(input.name === undefined ? {} : { name: input.name }),
+      // The domain's shape, its optional members read as possibly undefined where the generated
+      // type's are only absent: the same value.
+      ...(input.rights === undefined ? {} : { rights: input.rights as never }),
+    },
   });
   if (!made.data) return refusal((made.error as { code?: string } | undefined)?.code);
   const id = made.data.id;

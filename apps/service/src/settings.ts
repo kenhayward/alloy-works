@@ -3,6 +3,7 @@ import type {
   DataSettingsBody,
   EditingSettings,
   EditingSettingsBody,
+  ImagesSettings,
   ImportSettings,
   TranslationSettings,
   TranslationSettingsBody,
@@ -12,11 +13,13 @@ import type {
 import {
   dataPolicy,
   editingPolicy,
+  imagesPolicy,
   importPolicy,
   lockTranslationPolicy,
   recordEvent,
   setDataPolicy,
   setEditingPolicy,
+  setImagesPolicy,
   setImportPolicy,
   setTranslationPolicy,
   translationPolicy,
@@ -37,7 +40,7 @@ import { cursorFor, languageOf, pageAsked } from './listing.js';
  */
 export async function recordSettingsChanged(
   trx: TenantTransaction,
-  area: 'editing' | 'data' | 'referenceSources' | 'import' | 'translation',
+  area: 'editing' | 'data' | 'referenceSources' | 'import' | 'translation' | 'images',
   before: object,
   after: object,
 ): Promise<void> {
@@ -100,6 +103,21 @@ export function settingsHandlers(
       }
       await recordSettingsChanged(trx, 'editing', before, answer.policy);
       return answer.policy;
+    },
+
+    // The environment's policy for undeclared and lapsed images (AL-F; AST-053): read by anybody
+    // signed in, as a publisher is told what one does; set by an administrator, audited.
+    getImagesSettings: async (request: FastifyRequest): Promise<ImagesSettings> =>
+      db.withTenant(tenantOf(request), (trx) => imagesPolicy(trx)),
+
+    setImagesSettings: async (
+      request: FastifyRequest,
+      { trx }: Authorised,
+    ): Promise<ImagesSettings> => {
+      const before = await imagesPolicy(trx);
+      const after = await setImagesPolicy(trx, request.body as ImagesSettings);
+      await recordSettingsChanged(trx, 'images', before, after);
+      return after;
     },
 
     // The tenant's identity policy for imports (IM-I; IMP-010): read by anybody signed in, as an

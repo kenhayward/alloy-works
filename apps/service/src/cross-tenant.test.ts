@@ -486,6 +486,8 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetUpload: async (tenant, db) => ({ id: (await assetIn(tenant, db)).upload }),
   getAssetVersion: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
   getAssetVersionContent: async (tenant, db) => ({ id: (await assetIn(tenant, db)).version }),
+  getAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
+  setAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
   setGroupMembers: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   deleteGroup: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
@@ -995,6 +997,8 @@ const VALID_INPUT: Readonly<
   issueServiceIdentityToken: { payload: { name: 'Elsewhere', scopes: [], expiresAt: IN_A_MONTH } },
   setEditingSettings: { payload: { iterationRetentionDays: 7 } },
   setImportSettings: { payload: { policy: 'keep' } },
+  setImagesSettings: { payload: { undeclared: 'refuse' } },
+  setAssetRights: { payload: { rights: { kind: 'undeclared' } } },
   setTranslationSettings: { payload: { fallback: 'refuse', outOfDate: 'publish', note: {} } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
@@ -1516,7 +1520,7 @@ const assetIn = (tenant: Tenant, db: TenantDatabase) =>
       resolution: null,
       end: 1,
     });
-    return { upload: upload.id, version: version.id };
+    return { upload: upload.id, version: version.id, asset: version.artifactId };
   });
 
 const publicationIn = async (tenant: Tenant, db: TenantDatabase) => {

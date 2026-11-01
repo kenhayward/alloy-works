@@ -24,4 +24,32 @@ export interface AssetUploadTable {
   asset_kind: ColumnType<'asset', never, never>;
   created_at: ColumnType<Date, never, never>;
   finished_at: ColumnType<Date | null, never, Date>;
+  /** What the uploader declared (0180; AL-E), the text of a JSON document, or null for nothing. */
+  rights: ColumnType<unknown, string | null | undefined, never>;
+  /** The file's name at upload (0180; AL-D). */
+  name: ColumnType<string | null, string | null | undefined, never>;
+}
+
+/** An image's rights, a row per change, never changed (0180; AL-C, AST-031). */
+export interface AssetRightsTable {
+  id: ColumnType<string, never, never>;
+  asset_id: ColumnType<string, string, never>;
+  asset_kind: ColumnType<'asset', never, never>;
+  rights: ColumnType<unknown, string, never>;
+  recorded_by: ColumnType<string, string, never>;
+  recorded_at: ColumnType<Date, never, never>;
+}
+
+/** The environment's policy for undeclared and lapsed images (0180; AST-053), one row. */
+export interface ImagesPolicyTable {
+  singleton: ColumnType<true, never, never>;
+  undeclared: ColumnType<'warn' | 'refuse', never, 'warn' | 'refuse'>;
+}
+
+/** The rights each image a request recorded was published under (0180; AL-F). */
+export interface PublicationRequestRightsTable {
+  request_id: ColumnType<string, string, never>;
+  asset_id: ColumnType<string, string, never>;
+  rights_id: ColumnType<string, string, never>;
+  licence_version_id: ColumnType<string | null, string | null, never>;
 }

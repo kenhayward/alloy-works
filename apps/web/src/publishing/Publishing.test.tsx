@@ -258,6 +258,60 @@ describe('publishing from the document page', () => {
     ).toBeInTheDocument();
   });
 
+  it('AST-053 publishes under warn despite images with no licence declared or past their grant, counting each', async () => {
+    const fake = service({
+      [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],
+      [`POST /v1/documents/${DOCUMENT}/publications`]: [
+        {
+          ...queued(),
+          warnings: [
+            { code: 'asset_undeclared', node: 'n1', block: 'f1' },
+            { code: 'asset_undeclared', node: 'n1', block: 'f2' },
+            { code: 'asset_licence_expired', node: 'n2', block: 'f3' },
+          ],
+        },
+      ],
+      [`GET /v1/publication-requests/${REQUEST}`]: [
+        { ...queued(), state: 'done', publication: PUBLICATION },
+      ],
+    });
+    open(fake.fetch);
+    await screen.findByText('Nothing has been published from this document.');
+    await userEvent.click(screen.getByRole('button', { name: 'Publish as PDF' }));
+    expect(await screen.findByRole('link', { name: 'Open the publication' })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Published with 2 images with no licence declared, 1 image past the last day of its licence grant.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('AST-023 says which licence refuses an image, and why an undeclared or lapsed one is refused', async () => {
+    const fake = failing([
+      {
+        stage: 'resolve',
+        code: 'asset_licence_forbids',
+        node: null,
+        block: 'f1',
+        detail: 'Stock, internal use',
+      },
+      { stage: 'resolve', code: 'asset_undeclared', node: null, block: 'f2', detail: null },
+      { stage: 'resolve', code: 'asset_licence_expired', node: null, block: 'f3', detail: null },
+    ]);
+    open(fake.fetch);
+    await userEvent.click(await screen.findByRole('button', { name: 'Publish as PDF' }));
+    const why = await screen.findByRole('list', { name: 'Why it could not be published' });
+    expect(why).toHaveTextContent(
+      'A figure shows an image whose licence, Stock, internal use, does not permit publication, so you cannot publish it.',
+    );
+    expect(why).toHaveTextContent(
+      'A figure shows an image whose source and licence were never declared, which this environment does not publish.',
+    );
+    expect(why).toHaveTextContent(
+      'A figure shows an image whose licence grant has ended, which this environment does not publish.',
+    );
+  });
+
   it('REU-027 publishes under a profile given in place of the document own, saying so, and under the document own once put back', async () => {
     const fake = service({
       [`GET /v1/documents/${DOCUMENT}/publications`]: [listed([])],

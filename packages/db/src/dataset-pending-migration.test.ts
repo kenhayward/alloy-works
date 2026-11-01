@@ -269,6 +269,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0177_publication_vocabularies',
       '0178_vocabulary_query_runs',
       '0179_licences',
+      '0180_asset_rights',
     ]);
     const kept = await queryAs(
       db.adminUrl,
@@ -306,9 +307,12 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       upgradedPrivileges.columns
         .filter((row) => row.table_name === table && row.privilege_type === privilege)
         .map((row) => row.column_name as string);
+    // And its name and declared rights, since 0180 (the AL plan, AL-E).
     expect(granted('asset_upload', 'INSERT')).toEqual([
       'alternative',
+      'name',
       'origin',
+      'rights',
       'space_id',
       'uploader',
     ]);

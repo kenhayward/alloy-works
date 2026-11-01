@@ -7,7 +7,12 @@ import type {
 } from '@alloy-works/domain';
 import type { ColumnType, Generated, RawBuilder, Transaction } from 'kysely';
 import type { ArtifactKind } from './artifact-kind.js';
-import type { AssetUploadTable } from './assets-tables.js';
+import type {
+  AssetRightsTable,
+  AssetUploadTable,
+  ImagesPolicyTable,
+  PublicationRequestRightsTable,
+} from './assets-tables.js';
 import type {
   ReviewRoundEventTable,
   ReviewRoundReviewerTable,
@@ -1383,6 +1388,9 @@ export interface TenantTables {
   publication_binding: PublicationBindingTable;
   publication_asset: PublicationAssetTable;
   asset_upload: AssetUploadTable;
+  asset_rights: AssetRightsTable;
+  images_policy: ImagesPolicyTable;
+  publication_request_rights: PublicationRequestRightsTable;
   search_entry: SearchEntryTable;
   artifact_archival: ArtifactArchivalTable;
   artifact_deletion: ArtifactDeletionTable;

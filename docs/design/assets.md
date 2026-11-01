@@ -53,6 +53,11 @@ a document places into the compile root under its hash.
 | **AST-037** | A refused upload is recorded on its row, `refused`, never deleted and naming no asset version, so nothing can place it; its bytes are removed; and the refusal is on the audit log, `asset.refused` ([audit.md](audit.md)), at the door and after the check alike                                                                                                                                         |
 | **AST-022** | A licence is a definition, kind `licence`, whose `permits` is a subset of `internal`, `publication`, `redistribution` and `modification` (the AL plan, AL-B)                                                                                                                                                                                                                                              |
 | **AST-045** | A licence says whether it requires attribution, and what that attribution must say, its `wording`; rendering a credit is PUB's (AST-Q06)                                                                                                                                                                                                                                                                  |
+| **AST-021** | An image's rights record its source, with an optional address, and the licence of the environment it is held under, or that neither was declared; every asset gets a row when it is recorded, however it arrived (AL-C)                                                                                                                                                                                   |
+| **AST-023** | A publish fails `asset_licence_forbids` for each figure whose image's licence does not permit publication, naming the figure and, in `detail`, the licence (AL-F)                                                                                                                                                                                                                                         |
+| **AST-031** | The bytes and the default description and name version together; the source, the licence and the grant are rows of `asset_rights`, each with who recorded it and when, never changed; what a licence permits is its definition's version chain                                                                                                                                                            |
+| **AST-044** | The Figure dialog asks for the source and licence with **Not declared** a visible choice, and an upload declaring neither records `undeclared` as a row of its own, so an undeclared image is told from a declared one (AL-E)                                                                                                                                                                             |
+| **AST-053** | An undeclared image, or one past its grant's last day, is reported on the request under the environment's `warn`, the default, and fails the publish under `refuse`; never passed silently (AL-F)                                                                                                                                                                                                         |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
 upload's **check** rather than its scan. AST-051, AST-035 and, since the audit log is written (AU1),
@@ -277,14 +282,23 @@ its decisions AL-A to AL-N are the design, and this section says what stands so 
   credit, and with what words. Its key is fixed; what it permits may change, each publish recording
   the version it read.
 - **An image's rights are the asset's** (AL-C): its source, and the licence it is held under with the
-  grant's own expiry and credit line, or `undeclared`, each change a row of its own. Written by ALb.
+  grant's own expiry and credit line, or `undeclared`, each change a row of `asset_rights` (0180).
+  `recordAsset` writes the first, whatever made the image: what its uploader declared in the Figure
+  dialog, `undeclared`, or `dataset` for a dataset's image, which is the environment's own data and
+  never declared by hand. `/v1/assets/{id}/rights` reads and changes them; a change is audited as
+  `asset.relicensed`.
 - **Publishing holds to them** (AL-F): a licence not permitting publication refuses; an undeclared
-  image follows the environment's policy, warn or refuse, warn by default (AST-053).
+  image, or one past its grant's last day, follows Administration's **Images**, warn or refuse, warn
+  by default (AST-053). A preview is internal use and checks none. A publish and a baseline's
+  republish record the rights row and licence version each image was read under
+  (`publication_request_rights`), outside the baseline's pins, so a republish answers to today's.
 - **Metadata stays in the original and leaves every output** (AL-G); derivatives are made after an
   image is recorded and rebuilt when missing (AL-H). Replacing an image cuts a version a figure may
   follow (AL-M).
 
 AST-025 and AST-043 were superseded by AST-052 and AST-053 while planning (the AST change history).
+AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
+image is used only in ALe.
 
 ## Requirements challenged
 

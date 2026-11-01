@@ -733,6 +733,11 @@ export function ComponentEditor({
   const [figureDialog, setFigureDialog] = useState<'Figure' | 'Image' | 'Replace image' | null>(
     null,
   );
+  // The licences the Figure dialog offers (the AL plan, AL-E), read when it opens; one callback.
+  const [licences] = useState(() => async () => {
+    const { data } = await client.GET('/v1/licences');
+    return (data?.items ?? []).map((each) => ({ id: each.id, name: each.licence.name }));
+  });
   // The Reference dialog, open over the view it was asked from - the surface, or a footnote's open
   // editor - with what it offers there, or closed (cross-references 1, ruling R11).
   const [referring, setReferring] = useState<
@@ -3262,9 +3267,10 @@ export function ComponentEditor({
           <FigureDialog
             title={figureDialog}
             language={headerOf(surface.state.doc).language}
-            upload={(bytes, alternative) =>
-              uploadImage(client, { space: shown.space.id, bytes, alternative })
+            upload={(bytes, alternative, declared) =>
+              uploadImage(client, { space: shown.space.id, bytes, alternative, ...declared })
             }
+            licences={licences}
             onDone={({ assetVersion, alternative, imageStyle }) => {
               // The phase as it is now, from the session, not as this render saw it: the lock can
               // be lost while the image is checked, and a command dispatches whatever the surface's

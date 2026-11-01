@@ -137,6 +137,7 @@ describe('routes that check a permission', () => {
   let readings: string;
   let dailyReadings: string;
   let clinicalImage: string;
+  let clinicalAsset: string;
   let graceAuthors: string;
 
   const give = async (input: Omit<NewGrant, 'grantedBy' | 'roleId'> & { role: string }) => {
@@ -363,19 +364,19 @@ describe('routes that check a permission', () => {
         format: 'png',
         bytes: 1,
       });
-      clinicalImage = (
-        await recordAsset(trx, upload.id, {
-          format: 'png',
-          width: 1,
-          height: 1,
-          orientation: 1,
-          colour: 'rgb',
-          alpha: false,
-          depth: 8,
-          resolution: null,
-          end: 1,
-        })
-      ).id;
+      const image = await recordAsset(trx, upload.id, {
+        format: 'png',
+        width: 1,
+        height: 1,
+        orientation: 1,
+        colour: 'rgb',
+        alpha: false,
+        depth: 8,
+        resolution: null,
+        end: 1,
+      });
+      clinicalImage = image.id;
+      clinicalAsset = image.artifactId;
     });
     await give({
       role: 'Administrator',
@@ -1944,6 +1945,11 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { policy: 'keep' },
     }),
+    setImagesSettings: () => ({
+      url: '/v1/settings/images',
+      status: 403,
+      payload: { undeclared: 'refuse' },
+    }),
     setTranslationSettings: () => ({
       url: '/v1/settings/translation',
       status: 403,
@@ -1962,6 +1968,12 @@ describe('routes that check a permission', () => {
     getAssetVersionContent: () => ({
       url: `/v1/asset-versions/${clinicalImage}/content`,
       status: 404,
+    }),
+    getAssetRights: () => ({ url: `/v1/assets/${clinicalAsset}/rights`, status: 404 }),
+    setAssetRights: () => ({
+      url: `/v1/assets/${clinicalAsset}/rights`,
+      status: 404,
+      payload: { rights: { kind: 'undeclared' } },
     }),
   };
 
