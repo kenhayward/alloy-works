@@ -12,7 +12,9 @@ import {
 } from '@alloy-works/domain';
 import { sql, type KyselyPlugin } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { recordAssetRights, setImagesPolicy } from './assets.js';
 import { bootstrapCluster } from './bootstrap.js';
+import { createDefinition } from './definitions.js';
 import { createComponent } from './creation.js';
 import { deleteArtifact } from './deletion.js';
 import { createDocument } from './documents.js';
@@ -2161,6 +2163,114 @@ describe('requesting and recording a publication', () => {
       expect(await requestAssets(trx, graces)).toEqual([
         { version_id: secret.id, asset_id: secret.artifactId },
       ]);
+    });
+  });
+
+  it("AST-023 AST-053 refuses an image its licence does not let be published, and reports or refuses an undeclared or lapsed one by the environment's policy", async () => {
+    await service.withTenant(production, async (trx) => {
+      const licence = async (key: string, permits: string[]) => {
+        const made = await createDefinition(trx, {
+          kind: 'licence',
+          definition: {
+            schemaVersion: 1,
+            name: `Licence ${key}`,
+            key,
+            base: 'en',
+            names: [{ language: 'en', text: `Licence ${key}` }],
+            permits,
+            attribution: { required: false },
+          },
+          author: ada,
+        });
+        if (made.answer !== 'created') throw new Error(made.answer);
+        return made.definition;
+      };
+      const internal = await licence('internal_only', ['internal']);
+      const stock = await licence('stock_published', ['internal', 'publication']);
+      const declare = async (asset: string, licenceId: string, expires?: string) =>
+        recordAssetRights(trx, {
+          assetId: asset,
+          rights: {
+            kind: 'declared',
+            source: { text: 'A stock library' },
+            licence: licenceId,
+            ...(expires === undefined ? {} : { expires }),
+          },
+          by: ada,
+        });
+      const forbidden = await image(trx, general, ada, '6');
+      const undeclared = await image(trx, general, ada, '8');
+      const lapsed = await image(trx, general, ada, 'c');
+      const cleared = await image(trx, general, ada, 'd');
+      await declare(forbidden.artifactId, internal.id);
+      await declare(lapsed.artifactId, stock.id, '2020-01-31');
+      await declare(cleared.artifactId, stock.id);
+      const placed = await holding(trx, ada, [
+        figureOf('f1', forbidden.id),
+        figureOf('f2', undeclared.id),
+        figureOf('f3', lapsed.id),
+        figureOf('f4', cleared.id),
+      ]);
+      const placement = reference(placed.artifactId);
+      const version = await documentWith(trx, [placement]);
+      const at = (block: string) => ({ node: placement.id, block });
+      const warningsIn = async (id: string) =>
+        (
+          await trx
+            .selectFrom('publication_request')
+            .select(sql<unknown[] | null>`warnings`.as('warnings'))
+            .where('id', '=', id)
+            .executeTakeFirstOrThrow()
+        ).warnings ?? [];
+
+      // Warn, the default: the licence forbidding it refuses; the other two are reported.
+      const warned = await requested(trx, version, ada);
+      expect(await failuresIn(trx, warned)).toEqual([
+        { stage: 'resolve', code: 'asset_licence_forbids', ...at('f1'), detail: 'Licence internal_only' },
+      ]);
+      expect(await warningsIn(warned)).toEqual([
+        { code: 'asset_undeclared', ...at('f2') },
+        { code: 'asset_licence_expired', ...at('f3') },
+      ]);
+      // What each was read under is recorded with the request: the rights row and the licence version.
+      const recorded = await trx
+        .selectFrom('publication_request_rights')
+        .select(['asset_id', 'licence_version_id'])
+        .where('request_id', '=', warned)
+        .orderBy('asset_id')
+        .execute();
+      expect(recorded).toEqual(
+        [
+          { asset_id: forbidden.artifactId, licence_version_id: internal.version.id },
+          { asset_id: lapsed.artifactId, licence_version_id: stock.version.id },
+          { asset_id: cleared.artifactId, licence_version_id: stock.version.id },
+        ].sort((a, b) => a.asset_id.localeCompare(b.asset_id)),
+      );
+
+      // Refuse: the undeclared and the lapsed refuse too.
+      await setImagesPolicy(trx, { undeclared: 'refuse' });
+      const refused = await requested(trx, version, ada);
+      expect(
+        ((await failuresIn(trx, refused)) as { code: string; block: string }[]).map((each) => [
+          each.code,
+          each.block,
+        ]),
+      ).toEqual([
+        ['asset_licence_forbids', 'f1'],
+        ['asset_undeclared', 'f2'],
+        ['asset_licence_expired', 'f3'],
+      ]);
+      // A preview is internal use: it finds none of them.
+      const preview = await requestPublication(trx, {
+        documentId: version.artifactId,
+        version: version.id,
+        formats: ['pdf'],
+        requester: ada,
+        kind: 'preview',
+      });
+      if (preview.answer !== 'requested') throw new Error(preview.answer);
+      expect(await failuresIn(trx, preview.request.id)).toEqual([]);
+      await setImagesPolicy(trx, { undeclared: 'warn' });
     });
   });
 
