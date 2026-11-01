@@ -27,7 +27,7 @@
 .layout {
   --left: var(--outline-width);
   --edge: 6px;
-  --right: var(--dock-panel);
+  --right: calc(var(--dock-panel) + var(--dock-rail));
   --dock-edge: 6px;
   display: grid;
   grid-template-columns: var(--left) var(--edge) minmax(0, 1fr) var(--dock-edge) var(--right);
@@ -43,7 +43,7 @@
 }
 
 .layout[data-dock-collapsed='true'] {
-  --right: var(--pane-collapsed-rail);
+  --right: var(--dock-rail);
   --dock-edge: 0;
 }
 
@@ -142,22 +142,18 @@
 }
 
 /*
- * The panels beside the text: one pane, standing beside the text as the page scrolls - under the
- * header band at the outline's height, above the status bar - and scrolling its own panels, as the
- * outline pane does. Hidden, it leaves a rail; it is kept in the page, so a panel keeps what it holds.
+ * The panels beside the text: one pane and its rail (ADR-0074), standing beside the text as the page
+ * scrolls - under the header band at the outline's height, above the status bar - the pane scrolling
+ * its own panels, as the outline pane does. Hidden, the rail stays; the pane is kept in the page, so a
+ * panel keeps what it holds.
  */
-.dock,
-.dockRail {
+.dockArea {
   position: sticky;
   top: calc(var(--header-height) + var(--band-height, 0px) + var(--space-12));
   grid-column: -2;
   grid-row: 1 / span 4;
-  min-width: 0;
-}
-
-.dock {
   display: flex;
-  flex-direction: column;
+  min-width: 0;
   max-height: calc(
     100vh - var(--header-height) - var(--band-height, 0px) - var(--space-12) -
       var(--status-height, 0px) - var(--space-12)
@@ -166,6 +162,17 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
+}
+
+.dockArea > nav {
+  flex-shrink: 0;
+}
+
+.dock {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
   font-size: var(--size-13);
 }
 
@@ -173,26 +180,12 @@
   display: none;
 }
 
-.dockStrip {
-  display: flex;
-  align-items: stretch;
-  padding-inline: var(--space-8) var(--space-4);
-  border-bottom: 1px solid var(--border);
-}
-
-.dockSpacer {
-  flex: 1;
-}
-
-.dockStrip > :last-child {
-  align-self: center;
-  border-color: transparent;
-  background: transparent;
-}
-
-.dockStrip > :last-child:hover {
-  border-color: var(--strong-border);
-  background: var(--accent-weak);
+/* The open panel, named in words above it (ADR-0074). */
+.dockHeading {
+  margin: 0;
+  padding: var(--space-12) var(--space-12) 0;
+  font-size: var(--size-14);
+  font-weight: 600;
 }
 
 .dockBody {
@@ -241,8 +234,7 @@
   }
 
   /* Where the pane goes below the text, so does the preview, the whole width, after it. */
-  .dock,
-  .dockRail,
+  .dockArea,
   .preview {
     position: static;
     grid-column: 1 / -1;
@@ -258,8 +250,7 @@
  */
 @media (max-height: 480px) {
   .layout > [data-panel] > [data-part='outline'],
-  .dock,
-  .dockRail {
+  .dockArea {
     position: static;
     max-height: none;
   }
@@ -399,11 +390,6 @@
 
 .access > a:hover {
   text-decoration: underline;
-}
-
-/* The pane's tabs, after its panels in the page (the keyboard's order), drawn above them. */
-.dockStrip {
-  order: -1;
 }
 
 /* Who else is in the document (the PL plan, PL2): initials on the bar, a stale one faded. */

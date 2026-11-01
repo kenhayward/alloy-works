@@ -50,7 +50,7 @@ import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
 import { Chip } from '../parts/Chip.js';
-import { PanelTabs } from '../parts/PanelTabs.js';
+import { PanelRail } from '../parts/PanelRail.js';
 import {
   PreviewButton,
   PreviewPane,
@@ -70,7 +70,7 @@ import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
-import { keep, kept, PaneSeparator, PaneToggle, usePaneWidth } from '../layouts/PaneWidth.js';
+import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
 import { UsedInButton } from '../reuse/UsedIn.js';
@@ -648,29 +648,33 @@ const BOUNDARIES_KEY = 'alloy-works.boundaries';
 /** The document view's three modes (document-view.md, "Modes"; CNT-155). */
 type Mode = 'reading' | 'review' | 'authoring';
 
-/** The panels beside the text, named in words (ADR-0046, decision 6; the LG plan, LG6c). */
+/** The panels beside the text, named in words and drawn as icons on the rail (ADR-0074; the LG plan, LG6c). */
 const DOCK_PANELS = [
   // While a component open in place holds a table (ADR-0052).
   {
     key: 'table',
+    icon: 'Table',
     get label() {
       return say('document.table');
     },
   },
   {
     key: 'part',
+    icon: 'Part',
     get label() {
       return say('document.part');
     },
   },
   {
     key: 'document',
+    icon: 'Document',
     get label() {
       return say('document.document');
     },
   },
   {
     key: 'lists',
+    icon: 'Lists',
     get label() {
       return say('document.lists');
     },
@@ -679,6 +683,7 @@ const DOCK_PANELS = [
   // Publishing, which stays last, where End reaches it.
   {
     key: 'assistant',
+    icon: 'Assistant',
     get label() {
       return say('document.assistant');
     },
@@ -686,12 +691,14 @@ const DOCK_PANELS = [
   // A document's versions and their restore (the RS plan, RS-H); before Publishing, which End reaches.
   {
     key: 'versions',
+    icon: 'Versions',
     get label() {
       return say('document.versions');
     },
   },
   {
     key: 'publishing',
+    icon: 'Publishing',
     get label() {
       return say('document.publishing');
     },
@@ -699,12 +706,14 @@ const DOCK_PANELS = [
   // In Review (the TH plan, Task 3; the SG plan, Task 3).
   {
     key: 'threads',
+    icon: 'Threads',
     get label() {
       return say('document.threads');
     },
   },
   {
     key: 'suggestions',
+    icon: 'Suggestions',
     get label() {
       return say('document.suggestions');
     },
@@ -712,6 +721,7 @@ const DOCK_PANELS = [
   // In Review (the RR plan, Task 4).
   {
     key: 'rounds',
+    icon: 'Rounds',
     get label() {
       return say('document.rounds');
     },
@@ -719,6 +729,7 @@ const DOCK_PANELS = [
   // In Review: cited sources retracted or corrected (the XR plan, XR-G).
   {
     key: 'sources',
+    icon: 'Source',
     get label() {
       return say('document.sources');
     },
@@ -2686,353 +2697,350 @@ export function DocumentPage({
                 if (node !== marked) setMarked(null);
               }}
             />
-            {/* The panels beside the text: one pane, standing beside the text as the page scrolls and
-            hidden to a rail as the outline is; kept while hidden, so a panel keeps what it holds. Next after
-            the outline in the page, its panels before its tabs, so the keyboard goes from the tree to the
-            chosen part's settings. */}
-            {dockPane.collapsed && (
-              <div className={styles['dockRail']}>
-                <OutlineRail
-                  pane={dockPane}
-                  chosen={shownDock}
-                  tabs={dockTabs}
-                  label={say('document.document-panels')}
-                  edge="end"
-                />
-              </div>
-            )}
-            <aside
-              className={styles['dock']}
-              aria-label={say('document.panels-beside-the-text')}
-              hidden={dockPane.collapsed}
-            >
-              <div className={styles['dockBody']}>
-                {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
-                {provenanceState?.held && (
-                  <ProvenancePanel
-                    client={client}
-                    document={document.id}
-                    language={document.outline.language}
-                    state={provenanceState}
-                    onClose={closeProvenance}
-                  />
-                )}
-                {/* A table's formatting, which the editor open in place sets here (ADR-0052). */}
-                <div
-                  id={dockIds('table').panel}
-                  role="tabpanel"
-                  aria-labelledby={dockIds('table').tab}
-                  hidden={shownDock !== 'table'}
-                  className={styles['tableTab']}
-                >
-                  <div ref={setTableHost} />
-                </div>
-                {/* The Part panel, which the outline draws, stands here (`details.host`). */}
-                <div ref={setDetailsHost} />
-                <div className={styles['side']}>
-                  <div
-                    id={dockIds('document').panel}
-                    role="tabpanel"
-                    aria-labelledby={dockIds('document').tab}
-                    hidden={shownDock !== 'document'}
-                  >
-                    {/* What the document's template asks of the document itself, filled in and checked as it
-                    is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
-                    {document.fields.document.length > 0 && (
-                      <HeldFields
-                        label={say('document.fields-of-this-document')}
-                        fields={document.fields.document}
-                        schemas={document.schemas}
-                        people={people}
-                        stored={document.values}
-                        readOnly={!document.mayEdit || !authoring}
-                        onSave={saveValues}
-                      />
-                    )}
-                    {/* Who it is for: its values on each condition axis, and a preview under any (R6-H). */}
-                    <ProfilePanel
+            {/* The panels beside the text: one pane, standing beside the text as the page scrolls, and the
+            rail its panels are chosen from on its end edge (ADR-0074), which stays while the pane is hidden;
+            kept while hidden, so a panel keeps what it holds. Next after the outline in the page, its panels
+            before its rail, so the keyboard goes from the tree to the chosen part's settings. */}
+            <div className={styles['dockArea']}>
+              <aside
+                className={styles['dock']}
+                aria-label={say('document.panels-beside-the-text')}
+                hidden={dockPane.collapsed}
+              >
+                <h2 className={styles['dockHeading']}>
+                  {dockTabs.find((each) => each.key === shownDock)?.label}
+                </h2>
+                <div className={styles['dockBody']}>
+                  {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
+                  {provenanceState?.held && (
+                    <ProvenancePanel
                       client={client}
-                      profile={(document.outline as { profile?: StoredProfile }).profile}
-                      readOnly={!document.mayEdit || !authoring}
-                      onSave={saveProfile}
-                      onPreview={(profile) => void preview.ask(profile)}
-                      {...(document.mayPublish
-                        ? {
-                            onPublish: (profile: StoredProfile) => {
-                              setPublishProfile(profile);
-                              setDock('publishing');
-                            },
-                          }
-                        : {})}
+                      document={document.id}
+                      language={document.outline.language}
+                      state={provenanceState}
+                      onClose={closeProvenance}
                     />
-                    {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
-                    {(document.templated || holdsValues) && (
-                      <ParametersPanel
+                  )}
+                  {/* A table's formatting, which the editor open in place sets here (ADR-0052). */}
+                  <div
+                    id={dockIds('table').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('table').tab}
+                    hidden={shownDock !== 'table'}
+                    className={styles['tableTab']}
+                  >
+                    <div ref={setTableHost} />
+                  </div>
+                  {/* The Part panel, which the outline draws, stands here (`details.host`). */}
+                  <div ref={setDetailsHost} />
+                  <div className={styles['side']}>
+                    <div
+                      id={dockIds('document').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('document').tab}
+                      hidden={shownDock !== 'document'}
+                    >
+                      {/* What the document's template asks of the document itself, filled in and checked as it
+                    is typed, and saved a pause after (definitions.md, "Shown as they arise"). */}
+                      {document.fields.document.length > 0 && (
+                        <HeldFields
+                          label={say('document.fields-of-this-document')}
+                          fields={document.fields.document}
+                          schemas={document.schemas}
+                          people={people}
+                          stored={document.values}
+                          readOnly={!document.mayEdit || !authoring}
+                          onSave={saveValues}
+                        />
+                      )}
+                      {/* Who it is for: its values on each condition axis, and a preview under any (R6-H). */}
+                      <ProfilePanel
+                        client={client}
+                        profile={(document.outline as { profile?: StoredProfile }).profile}
+                        readOnly={!document.mayEdit || !authoring}
+                        onSave={saveProfile}
+                        onPreview={(profile) => void preview.ask(profile)}
+                        {...(document.mayPublish
+                          ? {
+                              onPublish: (profile: StoredProfile) => {
+                                setPublishProfile(profile);
+                                setDock('publishing');
+                              },
+                            }
+                          : {})}
+                      />
+                      {/* What the document was made with, beside its fields (the TP1 plan, TP1-I). */}
+                      {(document.templated || holdsValues) && (
+                        <ParametersPanel
+                          client={client}
+                          document={document.id}
+                          version={document.version.id}
+                          values={document.parameters}
+                          readOnly={!document.mayEdit || !authoring}
+                          onSave={saveParameters}
+                          onDeclarations={(read) =>
+                            setDeclared({ document: document.id, declarations: read })
+                          }
+                        />
+                      )}
+                    </div>
+                    <div
+                      id={dockIds('lists').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('lists').tab}
+                      hidden={shownDock !== 'lists'}
+                    >
+                      <GeneratedLists
+                        document={document.id}
+                        outline={document.outline}
+                        scheme={document.scheme}
+                        known={known}
+                        names={names}
+                        onRetry={() => setKnownAttempt((count) => count + 1)}
+                        onArriveAgain={onArriveAgain}
+                      />
+                    </div>
+                    {reviewing && (
+                      <div
+                        id={dockIds('suggestions').panel}
+                        role="tabpanel"
+                        aria-labelledby={dockIds('suggestions').tab}
+                        hidden={shownDock !== 'suggestions'}
+                      >
+                        <SuggestionsPanel
+                          client={client}
+                          document={document.id}
+                          principalId={principalId}
+                          refresh={suggestionsRead}
+                          mayResolve={(component) =>
+                            [...componentOfNode].some(
+                              ([node, of]) =>
+                                of === component && editable.get(node)?.mayEdit === true,
+                            )
+                          }
+                          placeOf={(component) => {
+                            const node = [...componentOfNode].find(
+                              ([, of]) => of === component,
+                            )?.[0];
+                            return node === undefined ? say('document.a-component') : place(node);
+                          }}
+                          onChanged={() => setTextsAttempt((count) => count + 1)}
+                        />
+                      </div>
+                    )}
+                    {reviewing && (
+                      <div
+                        id={dockIds('sources').panel}
+                        role="tabpanel"
+                        aria-labelledby={dockIds('sources').tab}
+                        hidden={shownDock !== 'sources'}
+                      >
+                        <SourcesPanel
+                          client={client}
+                          document={document.id}
+                          active={shownDock === 'sources'}
+                        />
+                      </div>
+                    )}
+                    {reviewing && (
+                      <div
+                        id={dockIds('rounds').panel}
+                        role="tabpanel"
+                        aria-labelledby={dockIds('rounds').tab}
+                        hidden={shownDock !== 'rounds'}
+                      >
+                        <RoundsPanel
+                          client={client}
+                          document={document.id}
+                          principalId={principalId}
+                          mayOpen={document.mayEdit}
+                          people={people}
+                          sections={(() => {
+                            const all: { id: string; label: string }[] = [];
+                            walkOutline(document.outline.nodes, (node) =>
+                              all.push({ id: node.id, label: place(node.id) }),
+                            );
+                            return all;
+                          })()}
+                          onOpenBaseline={(baseline) => {
+                            window.location.hash = baselineLink(document.id, baseline);
+                          }}
+                        />
+                      </div>
+                    )}
+                    {reviewing && (
+                      <div
+                        id={dockIds('threads').panel}
+                        role="tabpanel"
+                        aria-labelledby={dockIds('threads').tab}
+                        hidden={shownDock !== 'threads'}
+                      >
+                        <ThreadsPanel
+                          client={client}
+                          document={document.id}
+                          targets={targets}
+                          people={people}
+                          principalId={principalId}
+                          mayAnswer={(on) =>
+                            on.kind === 'document'
+                              ? document.mayComment
+                              : [...componentOfNode].some(
+                                  ([node, component]) =>
+                                    component === on.id && editable.get(node)?.mayComment === true,
+                                )
+                          }
+                          placeOf={(thread) => {
+                            const node =
+                              thread.anchor.kind === 'node'
+                                ? thread.anchor.node
+                                : thread.places?.[0]?.node;
+                            if (node !== undefined) return place(node);
+                            // Placed nowhere: a component it no longer holds, since deleted (COL-067).
+                            return thread.on.kind === 'component'
+                              ? say('document.a-component-no-longer-in')
+                              : say('document.this-document');
+                          }}
+                          onThreads={setThreadList}
+                          opening={
+                            atPanel?.panel === 'threads' && atPanel.thread !== undefined
+                              ? { thread: atPanel.thread, arrival: atPanel.arrival }
+                              : null
+                          }
+                          onGoTo={(thread) => {
+                            const node =
+                              thread.anchor.kind === 'node'
+                                ? thread.anchor.node
+                                : thread.places?.find((each) => !each.orphaned)?.node;
+                            if (node === undefined) return;
+                            setMarked(node);
+                            textColumn.current
+                              ?.querySelector(`[data-node="${node}"]`)
+                              ?.scrollIntoView?.({ block: 'start' });
+                          }}
+                        />
+                      </div>
+                    )}
+                    {authoring && (
+                      <div
+                        id={dockIds('assistant').panel}
+                        role="tabpanel"
+                        aria-labelledby={dockIds('assistant').tab}
+                        hidden={shownDock !== 'assistant'}
+                      >
+                        <AssistantPanel
+                          client={client}
+                          document={document.id}
+                          component={
+                            editing === null ? null : (componentOfNode.get(editing) ?? null)
+                          }
+                          node={editing}
+                          nameOf={(component) => names?.get(component)}
+                          onCite={(component) => {
+                            const node = [...componentOfNode].find(
+                              ([, each]) => each === component,
+                            )?.[0];
+                            if (node === undefined) return;
+                            setMarked(node);
+                            textColumn.current
+                              ?.querySelector(`[data-node="${node}"]`)
+                              ?.scrollIntoView?.({ block: 'start' });
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div
+                      id={dockIds('publishing').panel}
+                      role="tabpanel"
+                      aria-labelledby={dockIds('publishing').tab}
+                      hidden={shownDock !== 'publishing'}
+                    >
+                      <Publishing
                         client={client}
                         document={document.id}
                         version={document.version.id}
-                        values={document.parameters}
-                        readOnly={!document.mayEdit || !authoring}
-                        onSave={saveParameters}
-                        onDeclarations={(read) =>
-                          setDeclared({ document: document.id, declarations: read })
+                        mayPublish={document.mayPublish}
+                        placeOf={(node) =>
+                          placeInOutline(document.outline, node, names, document.scheme)
                         }
-                      />
-                    )}
-                  </div>
-                  <div
-                    id={dockIds('lists').panel}
-                    role="tabpanel"
-                    aria-labelledby={dockIds('lists').tab}
-                    hidden={shownDock !== 'lists'}
-                  >
-                    <GeneratedLists
-                      document={document.id}
-                      outline={document.outline}
-                      scheme={document.scheme}
-                      known={known}
-                      names={names}
-                      onRetry={() => setKnownAttempt((count) => count + 1)}
-                      onArriveAgain={onArriveAgain}
-                    />
-                  </div>
-                  {reviewing && (
-                    <div
-                      id={dockIds('suggestions').panel}
-                      role="tabpanel"
-                      aria-labelledby={dockIds('suggestions').tab}
-                      hidden={shownDock !== 'suggestions'}
-                    >
-                      <SuggestionsPanel
-                        client={client}
-                        document={document.id}
-                        principalId={principalId}
-                        refresh={suggestionsRead}
-                        mayResolve={(component) =>
-                          [...componentOfNode].some(
-                            ([node, of]) =>
-                              of === component && editable.get(node)?.mayEdit === true,
-                          )
-                        }
-                        placeOf={(component) => {
-                          const node = [...componentOfNode].find(([, of]) => of === component)?.[0];
-                          return node === undefined ? say('document.a-component') : place(node);
+                        followMs={followMs}
+                        formats={document.formats}
+                        language={document.outline.language}
+                        languages={document.languages}
+                        titles={{
+                          in: (language) => {
+                            const list: TitleToTranslate[] = [
+                              {
+                                node: null,
+                                own: document.outline.title,
+                                translated: titleIn(document.outline.titles, language),
+                              },
+                            ];
+                            walkOutline(document.outline.nodes, (node) => {
+                              if (node.type === 'section') {
+                                list.push({
+                                  node: node.id,
+                                  own: nodeName(node, names),
+                                  translated: titleIn(node.titles, language),
+                                });
+                              }
+                            });
+                            return list;
+                          },
+                          mayEdit: document.mayEdit === true && !document.archived,
+                          onSave: async (change) =>
+                            typeof (await apply(change, false)) === 'object',
                         }}
-                        onChanged={() => setTextsAttempt((count) => count + 1)}
+                        fallback={{
+                          own: document.outline.fallback ?? null,
+                          mayChange: document.mayEdit === true && !document.archived,
+                          onChange: (next) => void saveFallback(next),
+                        }}
+                        shown={atPanel?.request ?? null}
+                        {...(publishProfile === null
+                          ? {}
+                          : {
+                              profile: {
+                                chosen: publishProfile,
+                                said: profileWords(publishProfile, axes),
+                                onClear: () => setPublishProfile(null),
+                              },
+                            })}
+                      />
+                      <TranslationJobsButton
+                        client={client}
+                        documentId={document.id}
+                        mayEdit={document.mayEdit === true && !document.archived}
                       />
                     </div>
-                  )}
-                  {reviewing && (
                     <div
-                      id={dockIds('sources').panel}
+                      id={dockIds('versions').panel}
                       role="tabpanel"
-                      aria-labelledby={dockIds('sources').tab}
-                      hidden={shownDock !== 'sources'}
+                      aria-labelledby={dockIds('versions').tab}
+                      hidden={shownDock !== 'versions'}
                     >
-                      <SourcesPanel
-                        client={client}
-                        document={document.id}
-                        active={shownDock === 'sources'}
-                      />
+                      {shownDock === 'versions' && (
+                        <DocumentVersions
+                          client={client}
+                          id={document.id}
+                          mayEdit={document.mayEdit}
+                          latest={document.version.id}
+                          onRestored={() => void readOutlineAgain()}
+                        />
+                      )}
                     </div>
-                  )}
-                  {reviewing && (
-                    <div
-                      id={dockIds('rounds').panel}
-                      role="tabpanel"
-                      aria-labelledby={dockIds('rounds').tab}
-                      hidden={shownDock !== 'rounds'}
-                    >
-                      <RoundsPanel
-                        client={client}
-                        document={document.id}
-                        principalId={principalId}
-                        mayOpen={document.mayEdit}
-                        people={people}
-                        sections={(() => {
-                          const all: { id: string; label: string }[] = [];
-                          walkOutline(document.outline.nodes, (node) =>
-                            all.push({ id: node.id, label: place(node.id) }),
-                          );
-                          return all;
-                        })()}
-                        onOpenBaseline={(baseline) => {
-                          window.location.hash = baselineLink(document.id, baseline);
-                        }}
-                      />
-                    </div>
-                  )}
-                  {reviewing && (
-                    <div
-                      id={dockIds('threads').panel}
-                      role="tabpanel"
-                      aria-labelledby={dockIds('threads').tab}
-                      hidden={shownDock !== 'threads'}
-                    >
-                      <ThreadsPanel
-                        client={client}
-                        document={document.id}
-                        targets={targets}
-                        people={people}
-                        principalId={principalId}
-                        mayAnswer={(on) =>
-                          on.kind === 'document'
-                            ? document.mayComment
-                            : [...componentOfNode].some(
-                                ([node, component]) =>
-                                  component === on.id && editable.get(node)?.mayComment === true,
-                              )
-                        }
-                        placeOf={(thread) => {
-                          const node =
-                            thread.anchor.kind === 'node'
-                              ? thread.anchor.node
-                              : thread.places?.[0]?.node;
-                          if (node !== undefined) return place(node);
-                          // Placed nowhere: a component it no longer holds, since deleted (COL-067).
-                          return thread.on.kind === 'component'
-                            ? say('document.a-component-no-longer-in')
-                            : say('document.this-document');
-                        }}
-                        onThreads={setThreadList}
-                        opening={
-                          atPanel?.panel === 'threads' && atPanel.thread !== undefined
-                            ? { thread: atPanel.thread, arrival: atPanel.arrival }
-                            : null
-                        }
-                        onGoTo={(thread) => {
-                          const node =
-                            thread.anchor.kind === 'node'
-                              ? thread.anchor.node
-                              : thread.places?.find((each) => !each.orphaned)?.node;
-                          if (node === undefined) return;
-                          setMarked(node);
-                          textColumn.current
-                            ?.querySelector(`[data-node="${node}"]`)
-                            ?.scrollIntoView?.({ block: 'start' });
-                        }}
-                      />
-                    </div>
-                  )}
-                  {authoring && (
-                    <div
-                      id={dockIds('assistant').panel}
-                      role="tabpanel"
-                      aria-labelledby={dockIds('assistant').tab}
-                      hidden={shownDock !== 'assistant'}
-                    >
-                      <AssistantPanel
-                        client={client}
-                        document={document.id}
-                        component={editing === null ? null : (componentOfNode.get(editing) ?? null)}
-                        node={editing}
-                        nameOf={(component) => names?.get(component)}
-                        onCite={(component) => {
-                          const node = [...componentOfNode].find(
-                            ([, each]) => each === component,
-                          )?.[0];
-                          if (node === undefined) return;
-                          setMarked(node);
-                          textColumn.current
-                            ?.querySelector(`[data-node="${node}"]`)
-                            ?.scrollIntoView?.({ block: 'start' });
-                        }}
-                      />
-                    </div>
-                  )}
-                  <div
-                    id={dockIds('publishing').panel}
-                    role="tabpanel"
-                    aria-labelledby={dockIds('publishing').tab}
-                    hidden={shownDock !== 'publishing'}
-                  >
-                    <Publishing
-                      client={client}
-                      document={document.id}
-                      version={document.version.id}
-                      mayPublish={document.mayPublish}
-                      placeOf={(node) =>
-                        placeInOutline(document.outline, node, names, document.scheme)
-                      }
-                      followMs={followMs}
-                      formats={document.formats}
-                      language={document.outline.language}
-                      languages={document.languages}
-                      titles={{
-                        in: (language) => {
-                          const list: TitleToTranslate[] = [
-                            {
-                              node: null,
-                              own: document.outline.title,
-                              translated: titleIn(document.outline.titles, language),
-                            },
-                          ];
-                          walkOutline(document.outline.nodes, (node) => {
-                            if (node.type === 'section') {
-                              list.push({
-                                node: node.id,
-                                own: nodeName(node, names),
-                                translated: titleIn(node.titles, language),
-                              });
-                            }
-                          });
-                          return list;
-                        },
-                        mayEdit: document.mayEdit === true && !document.archived,
-                        onSave: async (change) => typeof (await apply(change, false)) === 'object',
-                      }}
-                      fallback={{
-                        own: document.outline.fallback ?? null,
-                        mayChange: document.mayEdit === true && !document.archived,
-                        onChange: (next) => void saveFallback(next),
-                      }}
-                      shown={atPanel?.request ?? null}
-                      {...(publishProfile === null
-                        ? {}
-                        : {
-                            profile: {
-                              chosen: publishProfile,
-                              said: profileWords(publishProfile, axes),
-                              onClear: () => setPublishProfile(null),
-                            },
-                          })}
-                    />
-                    <TranslationJobsButton
-                      client={client}
-                      documentId={document.id}
-                      mayEdit={document.mayEdit === true && !document.archived}
-                    />
-                  </div>
-                  <div
-                    id={dockIds('versions').panel}
-                    role="tabpanel"
-                    aria-labelledby={dockIds('versions').tab}
-                    hidden={shownDock !== 'versions'}
-                  >
-                    {shownDock === 'versions' && (
-                      <DocumentVersions
-                        client={client}
-                        id={document.id}
-                        mayEdit={document.mayEdit}
-                        latest={document.version.id}
-                        onRestored={() => void readOutlineAgain()}
-                      />
-                    )}
                   </div>
                 </div>
-              </div>
-              <div className={styles['dockStrip']}>
-                <PanelTabs
-                  label={say('document.document-panels-2')}
-                  tabs={dockTabs}
-                  chosen={shownDock}
-                  onChoose={(key) => setDock(key as DockPanel)}
-                  ids={dockIds}
-                />
-                <span className={styles['dockSpacer']} />
-                <PaneToggle label={say('document.document-panels')} pane={dockPane} edge="end" />
-              </div>
-            </aside>
+              </aside>
+              <PanelRail
+                label={say('document.document-panels')}
+                listLabel={say('document.document-panels-2')}
+                tabs={dockTabs}
+                chosen={shownDock}
+                onChoose={(key) => setDock(key as DockPanel)}
+                ids={dockIds}
+                pane={dockPane}
+              />
+            </div>
             {!outlinePane.collapsed && (
               <div className={styles['separator']}>
                 <PaneSeparator label="outline" pane={outlinePane} />

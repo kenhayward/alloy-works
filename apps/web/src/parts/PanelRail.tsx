@@ -82,7 +82,8 @@ export function PanelRail({
         title={toggle}
         onClick={() => pane.setCollapsed(!pane.collapsed)}
       >
-        <Icon name={pane.collapsed ? 'Show pane' : 'Hide pane'} size={18} />
+        {/* On the end edge, hidden, the arrow points back into the page (as `PaneToggle`'s). */}
+        <Icon name={pane.collapsed ? 'Hide pane' : 'Show pane'} size={18} />
       </button>
       <span className={styles['rule']} />
       <div

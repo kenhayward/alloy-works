@@ -71,7 +71,7 @@
   --pane-outline-min: 220px;
   --pane-outline-max: 520px;
   --pane-collapsed-rail: 46px;
-  --dock-rail: 38px;
+  --dock-rail: 44px;
   --dock-panel: 320px;
   /* The panel beside the text while it offers a Table tab (ADR-0052), the same width throughout. */
   --panel-table: 400px;

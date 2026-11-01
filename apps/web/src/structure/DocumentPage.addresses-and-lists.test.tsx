@@ -1896,24 +1896,30 @@ describe('the address of every node', () => {
     expect(screen.getByRole('tab', { name: 'Contents' })).toBeInTheDocument();
   });
 
-  it('holds the panels beside the text in a pane of their own, hidden to a rail and remembered, as the outline is', async () => {
+  it('holds the panels beside the text in a pane of their own, chosen from a rail that stays when the pane is hidden (ADR-0074)', async () => {
     const user = userEvent.setup();
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
     open(fake.fetch);
     await screen.findByRole('tree');
     const pane = screen.getByRole('complementary', { name: 'Panels beside the text' });
-    // The Part panel, which the outline draws, stands in the pane under its tab.
-    expect(within(pane).getByRole('tablist', { name: 'Document panels' })).toBeInTheDocument();
+    // The Part panel, which the outline draws, stands in the pane, named in words above it.
     expect(within(pane).getByRole('tabpanel', { name: 'Part' })).toBeInTheDocument();
-    await user.click(within(pane).getByRole('button', { name: 'Hide the document panels' }));
-    expect(screen.queryByRole('tablist', { name: 'Document panels' })).toBeNull();
-    const show = screen.getByRole('button', { name: 'Show the document panels' });
-    // On the right, the rail's arrow points back into the page.
-    expect(show.querySelector('[data-icon]')).toHaveAttribute('data-icon', 'Hide pane');
-    expect(show.closest('[data-rail]')).toHaveTextContent('Part');
+    expect(within(pane).getByRole('heading', { level: 2, name: 'Part' })).toBeInTheDocument();
+    const rail = screen.getByRole('navigation', { name: 'Document panels' });
+    expect(within(rail).getByRole('tablist', { name: 'Document panels' })).toBeInTheDocument();
+    // The toggle comes first on the rail.
+    const hide = within(rail).getAllByRole('button')[0]!;
+    expect(hide).toHaveAccessibleName('Hide the document panels');
+    await user.click(hide);
+    expect(pane).not.toBeVisible();
     expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('true');
-    await user.click(show);
-    expect(screen.getByRole('tablist', { name: 'Document panels' })).toBeInTheDocument();
+    // Hidden, the rail stands, its arrow pointing back into the page, its tabs still offered.
+    const show = within(rail).getByRole('button', { name: 'Show the document panels' });
+    expect(show.querySelector('[data-icon]')).toHaveAttribute('data-icon', 'Hide pane');
+    expect(within(rail).getByRole('tab', { name: 'Part' })).toBeInTheDocument();
+    await user.click(within(rail).getByRole('tab', { name: 'Lists' }));
+    expect(pane).toBeVisible();
+    expect(within(pane).getByRole('heading', { level: 2, name: 'Lists' })).toBeInTheDocument();
     expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('false');
   });
 
@@ -1935,7 +1941,7 @@ describe('the address of every node', () => {
     await screen.findByRole('tree');
     const pane = screen.getByRole('complementary', { name: 'Panels beside the text' });
     expect(pane).toBeVisible();
-    expect(within(pane).getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -1944,9 +1950,9 @@ describe('the address of every node', () => {
     expect(window.localStorage.getItem('aw.document.panels.collapsed')).toBe('true');
 
     // Another panel chosen, the same address followed again opens Publishing again.
-    await user.click(within(pane).getByRole('tab', { name: 'Part' }));
+    await user.click(screen.getByRole('tab', { name: 'Part' }));
     rerender(page(1));
-    expect(within(pane).getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Publishing' })).toHaveAttribute(
       'aria-selected',
       'true',
     );

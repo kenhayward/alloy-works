@@ -1,5 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 
@@ -103,5 +105,13 @@ describe('the document panels’ rail (ADR-0074)', () => {
     expect(name).toHaveTextContent('Part');
     await userEvent.keyboard('{Escape}');
     expect(name).not.toBeVisible();
+  });
+});
+
+describe('the rail right to left (ADR-0074)', () => {
+  it('opens a tab’s name towards the text, the start side, whichever way the line runs', () => {
+    const css = readFileSync(join(import.meta.dirname, 'PanelRail.module.css'), 'utf8');
+    expect(css).toMatch(/\.name \{[^}]*inset-inline-end: calc\(100% \+ 8px\);/);
+    expect(css).not.toMatch(/\.name \{[^}]*\b(left|right):/);
   });
 });
