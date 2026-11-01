@@ -833,39 +833,19 @@ function chains(
   >();
   const inReportedCycle = new Set<string>();
   for (const style of styles.values()) {
-    const path: ParagraphStyle[] = [];
-    let current = style;
-    let broken = false;
-    for (;;) {
-      const at = path.indexOf(current);
-      if (at >= 0) {
-        broken = true;
-        const members = path.slice(at).map((each) => each.id);
-        if (members.includes(style.id) && !inReportedCycle.has(style.id)) {
-          for (const member of members) inReportedCycle.add(member);
-          refusals.push({
-            code: 'style_cycle',
-            message: `The paragraph style ${style.id} is based on itself: ${[...path.map((each) => each.id), current.id].join(', ')}`,
-          });
+    const walked = ancestry(style, styles);
+    if (!walked.ok) {
+      if (walked.cycle !== undefined) {
+        if (walked.cycle.includes(style.id) && !inReportedCycle.has(style.id)) {
+          for (const member of walked.cycle) inReportedCycle.add(member);
+          refusals.push(walked.refusal);
         }
-        break;
+      } else if (walked.at === style) {
+        refusals.push(walked.refusal);
       }
-      path.push(current);
-      if (current.basedOn === undefined) break;
-      const parent = styles.get(current.basedOn);
-      if (parent === undefined) {
-        broken = true;
-        if (current === style) {
-          refusals.push({
-            code: 'style_parent_missing',
-            message: `The paragraph style ${style.id} is based on ${style.basedOn}, which the paragraph catalogue does not contain`,
-          });
-        }
-        break;
-      }
-      current = parent;
+      continue;
     }
-    if (broken) continue;
+    const path = walked.path;
     // The base, then each ancestor from the root down, then the style: a stated property overrides.
     const properties = path.reduceRight<ResolvedParagraphProperties>(
       (inherited, link) => overlay(inherited, link.properties),
@@ -874,6 +854,56 @@ function chains(
     resolved.set(style.id, { style, properties });
   }
   return resolved;
+}
+
+export type Ancestry =
+  | { ok: true; path: readonly ParagraphStyle[] }
+  | {
+      ok: false;
+      refusal: ThemeRefusal;
+      /** The cycle's members, where the chain loops. */
+      cycle?: readonly string[];
+      /** The style whose parent is missing, where it breaks so. */
+      at?: ParagraphStyle;
+    };
+
+/**
+ * A style's chain, the style first and its root last, walked with a visited list (STY-056): the one
+ * walk the reader and `explainStyle` share. The refusal names where the chain breaks.
+ */
+export function ancestry(
+  style: ParagraphStyle,
+  styles: ReadonlyMap<string, ParagraphStyle>,
+): Ancestry {
+  const path: ParagraphStyle[] = [];
+  let current = style;
+  for (;;) {
+    const at = path.indexOf(current);
+    if (at >= 0) {
+      return {
+        ok: false,
+        cycle: path.slice(at).map((each) => each.id),
+        refusal: {
+          code: 'style_cycle',
+          message: `The paragraph style ${style.id} is based on itself: ${[...path.map((each) => each.id), current.id].join(', ')}`,
+        },
+      };
+    }
+    path.push(current);
+    if (current.basedOn === undefined) return { ok: true, path };
+    const parent = styles.get(current.basedOn);
+    if (parent === undefined) {
+      return {
+        ok: false,
+        at: current,
+        refusal: {
+          code: 'style_parent_missing',
+          message: `The paragraph style ${current.id} is based on ${current.basedOn}, which the paragraph catalogue does not contain`,
+        },
+      };
+    }
+    current = parent;
+  }
 }
 
 /**

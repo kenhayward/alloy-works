@@ -866,7 +866,18 @@ export const auditKindSpecs = {
   'line.merged': kind(['LIF-045'], empty, LATER),
   'component.type_changed': kind(['MET-014'], empty, LATER),
   'theme.moved': kind(['STY-026', 'STY-066'], empty, LATER),
-  'style.changed': kind(['STY-032'], empty, LATER),
+  // A style added, changed or deleted in a theme, its subject (the SY plan, SY-C): the catalogue's
+  // kind, the style and the properties that changed, by name.
+  'style.changed': kind(
+    ['STY-032'],
+    z.strictObject({
+      catalogue: z.enum(['paragraph', 'character', 'table', 'image']),
+      style: Identifier,
+      change: z.enum(['added', 'changed', 'deleted']),
+      properties: z.array(AuditName),
+    }),
+    'packages/db/src/theme-styles.ts',
+  ),
 } as const satisfies Record<string, KindSpec>;
 
 export type AuditKind = keyof typeof auditKindSpecs;
