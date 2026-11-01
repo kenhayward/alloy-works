@@ -64,6 +64,8 @@ describe('the domain package', () => {
         // The size an image may be, by format, lowered by an environment (AL-I).
         'byteLimitOf',
         'imageLimitsSchema',
+        // An image as an output carries it, its metadata stripped (AL-G).
+        'stripImage',
         // A licence an image is held under (the AL plan, AL-B).
         'LICENCE_LIMITS',
         'LICENCE_USES',

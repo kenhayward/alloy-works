@@ -311,7 +311,7 @@ function entropyEnd(bytes: Uint8Array, from: number): number {
  * that cannot be walked, or an orientation out of range, is none - 1 - rather than a refusal, because
  * sharp sets such a file upright and so does the engine; the two readings are compared by the worker.
  */
-function readExif(tiff: Uint8Array): { orientation: number; resolution: number | null } {
+export function readExif(tiff: Uint8Array): { orientation: number; resolution: number | null } {
   const none = { orientation: 1, resolution: null };
   const order = String.fromCharCode(tiff[0] ?? 0, tiff[1] ?? 0);
   if (order !== 'II' && order !== 'MM') return none;

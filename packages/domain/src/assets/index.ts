@@ -24,6 +24,8 @@ export {
 } from './version.js';
 export type { AssetAlternative, AssetVersionContent } from './version.js';
 export { byteLimitOf, imageLimitsSchema } from './limits.js';
+export { stripImage } from './strip.js';
+export type { MetadataFound, StrippedImage } from './strip.js';
 export type { ImageLimits } from './limits.js';
 export {
   LICENCE_LIMITS,
