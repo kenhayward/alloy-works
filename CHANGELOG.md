@@ -40,6 +40,9 @@ T7's second slice closed (the AL plan): an image's licence and rights, its deriv
 - **Conversations are kept by choice.** Keep a conversation, or name it, to find it under Earlier conversations; one you do not keep is not listed again. Conversations you had before are kept.
 - **Model lines act through icons.** Edit and Test are icon buttons, with Set key and Retire under More actions; Edit opens the model's settings beside its line.
 - **The chat offers no embedding model.** Its endpoint list holds LLMs alone.
+- **A turn's footer says tokens and speed.** Under an answer, its tokens in and out and how fast it came, in tokens a second; its cost only where it had one, and no longer the month's runs. **Copy the answer** and **Ask again** are small icons.
+- **Your question is said once**, in its bubble, never again as the conversation's title over it; a follow-up scrolls into view whole, its answer coming under it.
+- **The assistant may make a hundred tool calls a run**, over as many as forty model turns, within its four minutes.
 
 ### Fixed
 
@@ -53,6 +56,7 @@ T7's second slice closed (the AL plan): an image's licence and rights, its deriv
 - **CT Studio's shared connection tests pass.** CT Studio tests a shared connection without naming an instance, and Alloy Works refused it as "This address serves no such instance". An unnamed instance now means the environment the address serves; a different one is still refused.
 - **CT Studio can browse Alloy Works spaces.** Choosing a space for a CT Studio publishing target failed with "no instance is not an instance of" the connection. Alloy Works now lists no instances, as CT Studio expects of a shared connection, since the address already names the environment.
 - **Confirm and embed failed every time.** The sample's run was recorded without an audit context, so the service refused it; it is now recorded as the administrator, and any failure says why.
+- **The assistant's edits were refused when it named a block as it reads it, with its `#`**, so a run spent its tool calls retrying them. (#870)
 
 ## 0.222.0 - 2026-11-01 (PR #846)
 
