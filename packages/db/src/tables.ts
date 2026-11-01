@@ -10,6 +10,8 @@ import type { ArtifactKind } from './artifact-kind.js';
 import type {
   AssetRightsTable,
   AssetUploadTable,
+  AssetDerivativeTable,
+  AssetDerivativeWantedTable,
   ImagesPolicyTable,
   PublicationRequestRightsTable,
 } from './assets-tables.js';
@@ -1390,6 +1392,8 @@ export interface TenantTables {
   asset_upload: AssetUploadTable;
   asset_rights: AssetRightsTable;
   images_policy: ImagesPolicyTable;
+  asset_derivative: AssetDerivativeTable;
+  asset_derivative_wanted: AssetDerivativeWantedTable;
   publication_request_rights: PublicationRequestRightsTable;
   search_entry: SearchEntryTable;
   artifact_archival: ArtifactArchivalTable;

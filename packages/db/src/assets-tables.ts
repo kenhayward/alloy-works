@@ -55,3 +55,23 @@ export interface PublicationRequestRightsTable {
   rights_id: ColumnType<string, string, never>;
   licence_version_id: ColumnType<string | null, string | null, never>;
 }
+
+/** An image's derivatives (0181; AL-H), one of each kind per version. */
+export interface AssetDerivativeTable {
+  version_id: ColumnType<string, string, never>;
+  asset_id: ColumnType<string, string, never>;
+  asset_kind: ColumnType<'asset', never, never>;
+  kind: ColumnType<'thumbnail' | 'preview', 'thumbnail' | 'preview', never>;
+  object_key: ColumnType<string, string, never>;
+  width: ColumnType<number, number, never>;
+  height: ColumnType<number, number, never>;
+  bytes: ColumnType<number, number, never>;
+  stripped: ColumnType<string[], string[], never>;
+  made_at: ColumnType<Date, never, never>;
+}
+
+/** A version whose derivatives the `derive` job was asked for and has not made (0181). */
+export interface AssetDerivativeWantedTable {
+  version_id: ColumnType<string, string, never>;
+  wanted_at: ColumnType<Date, never, never>;
+}
