@@ -556,8 +556,18 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
         calls += 1;
         return calls === 1
           ? [
-              { type: 'tool_call', id: 't1', name: 'read_component', input: { component: sitesId } },
-              { type: 'tool_call', id: 't2', name: 'read_component', input: { component: sitesId } },
+              {
+                type: 'tool_call',
+                id: 't1',
+                name: 'read_component',
+                input: { component: sitesId },
+              },
+              {
+                type: 'tool_call',
+                id: 't2',
+                name: 'read_component',
+                input: { component: sitesId },
+              },
               { ...ended, stop: 'tool_use' },
             ]
           : [text('It floods.'), ended];
