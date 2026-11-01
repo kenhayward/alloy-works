@@ -152,7 +152,7 @@ changing a column under queries that read it is a person's decision.
 
 | Answer                                         | Meaning                                                           |
 | ---------------------------------------------- | ----------------------------------------------------------------- |
-| `instance_not_allowed`                         | The hostname or environment is not one this sink serves           |
+| `instance_not_allowed`                         | The hostname or a named environment is not one this sink serves   |
 | `credential_rejected`                          | A bad, expired or person's token, or the identity lacks the grant |
 | `not_configured`                               | The space has no bridge settings, or its data is off              |
 | `name_conflict` with `details.field: tableSet` | Two tables would become one PostgreSQL name                       |

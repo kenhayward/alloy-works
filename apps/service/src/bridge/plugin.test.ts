@@ -303,6 +303,16 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
     expect(elsewhere.json()).toMatchObject({ code: 'instance_not_allowed' });
   });
 
+  it('connections:test of a shared connection, which names no instance, is this address’s', async () => {
+    // CT Studio tests a shared connection with an empty instance: the hostname already names the tenant.
+    const tested = await signed('POST', '/connections:test', {
+      instanceId: '',
+      credential: credential(),
+    });
+    expect(tested.statusCode, tested.body).toBe(200);
+    expect(tested.json()).toEqual({ ok: true, identity: 'CT Studio on Production' });
+  });
+
   it('browse lists spaces the identity may create in', async () => {
     const browsed = await signed('POST', '/browse', {
       instanceId: instance,

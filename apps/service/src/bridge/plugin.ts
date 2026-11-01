@@ -83,9 +83,12 @@ async function instanceOf(db: TenantDatabase, tenant: Tenant) {
   return { id: tenant.id, label: profile?.display_name ?? tenant.id };
 }
 
-/** The one instance this hostname serves: its tenant's slug, or `instance_not_allowed`. */
+/**
+ * The one instance this hostname serves: its tenant's slug, or none named (`''` or null, as CT Studio
+ * tests a shared connection), since the hostname already names it. Any other is `instance_not_allowed`.
+ */
 function checkInstance(tenant: Tenant, instanceId: string | null): void {
-  if (instanceId !== tenant.id) {
+  if (instanceId && instanceId !== tenant.id) {
     throw refuse('instance_not_allowed', 'This address serves no such instance.');
   }
 }
