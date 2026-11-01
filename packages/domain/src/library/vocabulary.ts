@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { languageTagSchema } from '../content/model/document.js';
 import { characters, CONTROL, storable } from '../data/primitives.js';
+import { httpsUrl } from '../extensions/manifest.js';
 import { definitionIdentity } from '../metadata/definition.js';
 
 /**
@@ -15,7 +16,19 @@ export const VOCABULARY_LIMITS = {
   languages: 50,
   label: 500,
   description: 2_000,
+  sourceIdentifier: 2_000,
 } as const;
+
+/**
+ * Where a vocabulary's values come from (LIB-058; the VO plan, VO-J): a query definition's rows, its
+ * `id`, `label` and optional `description` columns, run as the administrator refreshing; or a SKOS
+ * address the connector fetches. Refreshed on demand; none, kept by hand.
+ */
+export const vocabularySourceSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('query'), query: z.string().min(1).max(200) }),
+  z.strictObject({ kind: z.literal('skos'), url: httpsUrl }),
+]);
+export type VocabularySource = z.infer<typeof vocabularySourceSchema>;
 
 const key = z.string().regex(/^[a-z][a-z0-9_]{0,63}$/, {
   message: 'A key is a lower-case letter, then letters, digits or underscores',
@@ -64,6 +77,8 @@ const valueSchema = z.strictObject({
   state: z.enum(['active', 'deprecated', 'retired']),
   /** A deprecated value's replacement, another value of the vocabulary (LIB-055). */
   replacedBy: key.optional(),
+  /** The identifier its source gives it, which a refresh keeps it by (LIB-058; VO-J). */
+  source: z.string().min(1).max(VOCABULARY_LIMITS.sourceIdentifier).optional(),
 });
 export type VocabularyValue = z.infer<typeof valueSchema>;
 
@@ -73,11 +88,22 @@ export const vocabularyDefinitionSchema = z
     key,
     base: languageTagSchema,
     order: z.enum(['declared', 'label']),
+    source: vocabularySourceSchema.optional(),
     values: z.array(valueSchema).max(VOCABULARY_LIMITS.values),
   })
   .superRefine((vocabulary, ctx) => {
     const ids = new Map(vocabulary.values.map((each) => [each.id, each]));
     vocabulary.values.forEach((value, n) => {
+      if (
+        value.source !== undefined &&
+        vocabulary.values.findIndex((each) => each.source === value.source) !== n
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['values', n, 'source'],
+          message: 'Each value has a source identifier of its own',
+        });
+      }
       if (vocabulary.values.findIndex((each) => each.id === value.id) !== n) {
         ctx.addIssue({
           code: 'custom',
