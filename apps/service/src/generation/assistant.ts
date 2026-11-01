@@ -78,7 +78,7 @@ import { authoriseAt, callerOf, notFound, type Authorised } from '../access.js';
 import { contextOf } from '../audit.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
-import { liveBindingStates } from '../data/bindings.js';
+import { heldTableRows, liveBindingStates } from '../data/bindings.js';
 import { mayCite, mayCiteIn } from '../bibliography/citing.js';
 import { mayUseTerms, mayUseTermsIn } from '../terms/editing.js';
 import { askSource, sourceSwitchedOn } from '../bibliography/sources.js';
@@ -440,10 +440,17 @@ export function assistantHandlers(
             return await inDocument(async (trx) => {
               const views = await liveBindingStates(trx, caller, objects, tenant, document);
               if (!views) return missing('document');
+              // A bound table's rows as its reader sees them (issue #859).
+              const tables = await heldTableRows(trx, caller, objects, tenant, document);
               // One line a value, as the page shows it: its place, the query it came from, and what
               // it holds, never the provenance around it.
               const values = views.map((view) =>
-                valueLine(view.node, view.definition?.title, view.held),
+                valueLine(
+                  view.node,
+                  view.definition?.title,
+                  view.held,
+                  tables?.(view.node, view.binding.id),
+                ),
               );
               return {
                 ok: true,

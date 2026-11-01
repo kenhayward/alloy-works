@@ -656,6 +656,54 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       expect(response.body).not.toContain('confidential');
     });
 
+    it("reads a bound table's rows to the model as a reader sees them, in its order and only the columns it shows (issue #859)", async () => {
+      const connection = await h.connection('Table readings');
+      const definition = await h.definition(connection.id);
+      const whole = binding('b1', definition.id);
+      delete (whole as { take?: unknown }).take;
+      const tabled = await h.component(h.general, 'Tabled');
+      await h.placeBlocks(tabled, {
+        type: 'boundTable',
+        id: 't1',
+        binding: whole,
+        caption: [{ type: 'text', value: 'Sites', marks: [] }],
+        columns: [{ column: 'name', header: 'Site | name' }],
+        headerColumn: false,
+        sort: [{ column: 'id', direction: 'descending', nulls: 'last' }],
+      });
+      const tableDocument = await h.documentReferencing([tabled.id]);
+      const node = tableDocument.nodes[0]!;
+      h.connector.mode = 'answer';
+      h.connector.run = ranOk([
+        ['1', 'North'],
+        ['2', 'South'],
+      ]);
+      const resolved = await h.call(
+        'ada',
+        'POST',
+        `/v1/documents/${tableDocument.id}/bindings/resolve`,
+        { bindings: [{ node, binding: 'b1' }] },
+      );
+      expect(resolved.statusCode, resolved.body).toBe(200);
+      h.connector.modelFor = compliant(tool('t1', 'read_values', {}));
+      const response = await h.call(
+        'ada',
+        'POST',
+        `/v1/documents/${tableDocument.id}/assistant/runs`,
+        {
+          ask: 'What does the table hold?',
+        },
+      );
+      const result = String(
+        framesOf(response.body).find((frame) => frame.event === 'tool_result')!.data.result,
+      );
+      expect(result).toContain(
+        ['a bound table of 2 rows:', '| Site \\| name |', '| --- |', '| South |', '| North |'].join(
+          '\n',
+        ),
+      );
+    });
+
     it('GEN-020 holds an imported document to data: pasted text, admitted as the readers admit it, asking for calls changes nothing', async () => {
       const pasted = await h.component(h.general, 'Pasted');
       const reading = readHtml(

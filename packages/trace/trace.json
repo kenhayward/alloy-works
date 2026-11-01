@@ -21825,7 +21825,7 @@
     {
       "id": "ADM-010",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 787,
+      "line": 835,
       "kind": "title"
     },
     {
@@ -21927,13 +21927,13 @@
     {
       "id": "GEN-033",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 787,
+      "line": 835,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 787,
+      "line": 835,
       "kind": "title"
     },
     {
