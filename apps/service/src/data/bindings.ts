@@ -1073,7 +1073,10 @@ async function runOnce(
 }
 
 /** The run a prepared binding sends its connection's connector: none for a stored result's query. */
-function runRequestOf(tenant: Tenant, prepared: Prepared): RunRequest {
+function runRequestOf(
+  tenant: Tenant,
+  prepared: Pick<Prepared, 'connection' | 'sealed' | 'draft' | 'values' | 'limits' | 'acting'>,
+): RunRequest {
   return {
     requestId: randomUUID(),
     tenant: tenant.id,
@@ -1085,6 +1088,109 @@ function runRequestOf(tenant: Tenant, prepared: Prepared): RunRequest {
     limits: prepared.limits,
     deadlineMs: prepared.limits.seconds * 1000,
     ...runIdentity(prepared.acting),
+  };
+}
+
+/** A vocabulary's source query's rows, or why there are none (the VO plan, VO-J). */
+export type SourceRun =
+  | { readonly ok: true; readonly result: CanonicalResult }
+  | { readonly ok: false; readonly failure: FailureIn; readonly seesSource: boolean };
+
+/**
+ * **A vocabulary's source query, decided** (LIB-058; the VO plan, VO-J): as a binding's run is, as the
+ * administrator refreshing - `read` on the definition, one not retired and asking no required
+ * parameter, `use_connection` and SQL permitted at its connection, or `read` on the stored result it
+ * queries - in the deciding transaction; the run it answers is asked after, outside any, and recorded
+ * as the act `vocabulary` (DAT-053), its rows held to their checksum.
+ */
+export async function prepareSourceQuery(
+  trx: TenantTransaction,
+  caller: Caller,
+  definitionId: string,
+  through: RunsThrough,
+): Promise<(tenant: Tenant, signal: AbortSignal) => Promise<SourceRun>> {
+  const stored = await readQueryDefinition(trx, definitionId);
+  const facts = stored && (await connectionFacts(trx, caller, stored.id));
+  // One the caller may not read is answered as one that is not there.
+  if (!stored || !facts || !decide('read', facts).allowed) {
+    throw refused(
+      409,
+      'vocabulary.source_missing',
+      'The query definition this vocabulary takes its values from is not one here that you may read.',
+    );
+  }
+  const definition = stored.definition;
+  if (definition.retired) {
+    throw refused(409, 'definition.retired', 'The query definition is retired, so it runs nothing.');
+  }
+  if (definition.parameters.some((each) => each.required)) {
+    throw refused(
+      409,
+      'vocabulary.source_parameters',
+      'A vocabulary takes its values from a query definition that asks no required parameter.',
+    );
+  }
+  const draft = draftOf(definition);
+  const limits = effectiveLimits(definition.limits, await dataPolicy(trx));
+  const id = stored.id;
+  if (definition.fetch.kind === 'dataset') {
+    const atDataset = await connectionFacts(trx, caller, definition.fetch.dataset);
+    if (!(atDataset && decide('read', atDataset).allowed)) {
+      throw new AppError(403, 'forbidden', 'This needs read on the stored result the query reads.');
+    }
+    const source = await datasetOf(trx, definition.fetch);
+    if (!source || datasetProblems(draft, source).length > 0) {
+      throw refused(
+        409,
+        'vocabulary.source_missing',
+        'The query definition reads a stored result this environment no longer holds.',
+      );
+    }
+    return async () => {
+      const asked = await through.runDataset(source, draft, {}, limits, id);
+      if ('refused' in asked) {
+        return { ok: false, failure: { code: asked.refused.code }, seesSource: false };
+      }
+      return asked.answer.outcome === 'ok'
+        ? { ok: true, result: asked.answer.result }
+        : { ok: false, failure: asked.answer.failure, seesSource: false };
+    };
+  }
+  const connection = await through.runnable(trx, definition.connection!);
+  const atConnection = await connectionFacts(trx, caller, connection.id);
+  if (!(atConnection && decide('use_connection', atConnection).allowed)) {
+    throw new AppError(
+      403,
+      'forbidden',
+      "This needs the use connection permission on the query definition's connection.",
+    );
+  }
+  await requireSqlPermitted(trx, connection, asWritten(definition));
+  if (capabilityProblems(definition, connection.settings).length > 0) {
+    throw refused(
+      409,
+      'capability.undeclared',
+      "The query definition binds parameters, which its connection's source declares it does not.",
+    );
+  }
+  const { sealed } = await through.usableSealed(trx, connection.id);
+  const acting = await through.acting(trx, connection);
+  const seesSource = decide('write_sql', atConnection).allowed;
+  const prepared = { connection, sealed, draft, values: {}, limits, acting };
+  return async (tenant, signal) => {
+    const asked = await through.run(runRequestOf(tenant, prepared), signal, id);
+    if (signal.aborted) throw signal.reason;
+    if ('refused' in asked) return { ok: false, failure: { code: asked.refused.code }, seesSource };
+    const ran = asked.answer;
+    if (ran.outcome === 'failed') return { ok: false, failure: ran.failure, seesSource };
+    // A person's run says whom the source saw (D7-A), and its rows hash to its checksum (D2-K).
+    if (
+      (acting.kind === 'asserted' && ran.asSeen === undefined) ||
+      sha256(canonicalResultBytes(ran.result)) !== ran.checksum
+    ) {
+      return { ok: false, failure: { code: 'connector_error' }, seesSource };
+    }
+    return { ok: true, result: ran.result };
   };
 }
 

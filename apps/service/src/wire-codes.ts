@@ -76,6 +76,13 @@ const WIRE_CODES = {
   'import.too_many': 'import_too_many',
   // The vocabulary an import would make, refused by its shape (the VO plan, VO-I).
   'vocabulary.invalid': 'vocabulary_invalid',
+  // A refresh from a vocabulary's source (the VO plan, VO-J): none, one not to be read or run, one
+  // whose answer is no values.
+  'vocabulary.unsourced': 'vocabulary_unsourced',
+  'vocabulary.source_missing': 'vocabulary_source_missing',
+  'vocabulary.source_parameters': 'vocabulary_source_parameters',
+  'vocabulary.source_unreadable': 'vocabulary_source_unreadable',
+  'vocabulary.source_failed': 'vocabulary_source_failed',
   'definition.name_taken': 'definition_name_taken',
   'assignment.conflict': 'assignment_conflict',
   'schema.conflict': 'schema_conflict',

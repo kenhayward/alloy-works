@@ -1,6 +1,7 @@
 import { vocabularyDefinitionSchema } from '@alloy-works/domain';
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
+import { DataRefusal, SqlRefusal, unauthenticatedOrEnded } from './connections.js';
 import { DefinitionRefusal } from './definitions.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
 import { SKOS_FORMATS, TERM_IMPORT_BODY_MOST, TERM_IMPORT_MOST } from './terms.js';
@@ -97,6 +98,30 @@ const unauthenticated = {
   description: 'No session, or not one this environment issued',
   schema: ErrorBody,
 } as const;
+/** What a refresh from a vocabulary's source did (LIB-058; the VO plan, VO-J), by value id. */
+export const VocabularyRefreshAnswer = z.object({
+  answer: z
+    .enum(['recorded', 'unchanged'])
+    .describe('`recorded`: a new version; `unchanged`: the source gave nothing new'),
+  vocabulary: VocabularyView,
+  report: z.object({
+    added: z.array(z.string()).describe('Values new to the source, added active'),
+    relabelled: z.array(z.string()).describe('Values whose labels or descriptions the source changed'),
+    retired: z.array(z.string()).describe('Values gone from the source, retired, never removed'),
+    returned: z
+      .array(z.string())
+      .describe('Values retired here and in the source again, kept retired to be restored by hand'),
+    unchanged: z.int().describe('How many values the source gave as they were'),
+    refused: z
+      .array(z.object({ source: z.string(), reason: z.string() }))
+      .describe(
+        'The first 1,000 rows or concepts no value could hold, by their identifier in the source',
+      ),
+    refusedTotal: z.int(),
+  }),
+});
+export type VocabularyRefreshAnswer = z.infer<typeof VocabularyRefreshAnswer>;
+
 const notFound = {
   description: 'No such vocabulary in this environment',
   schema: ErrorBody,
@@ -142,6 +167,54 @@ export const vocabularyRoutes = {
       401: unauthenticated,
       403: { description: 'The caller may not manage definitions', schema: ErrorBody },
       413: { description: 'The body is larger than 5 MiB', schema: ErrorBody },
+    },
+  },
+  refreshVocabulary: {
+    operationId: 'refreshVocabulary',
+    method: 'POST',
+    path: '/v1/vocabularies/{id}/refresh',
+    summary: "Refresh a vocabulary's values from its source, recording a version",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'manage_definitions', target: { tenant: true } },
+    params: VocabularyParams,
+    // Answered after the deciding transaction commits, as a sample is; a repeat refreshes again.
+    idempotencyKey: false,
+    responses: {
+      200: {
+        description:
+          'The vocabulary at its new version, or as it was where nothing changed, and what the refresh did',
+        schema: VocabularyRefreshAnswer,
+      },
+      401: unauthenticatedOrEnded,
+      403: {
+        description:
+          "The caller may not manage definitions, use the query definition's connection, or read the stored result it queries",
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description:
+          '`vocabulary_unsourced`: it has no source. `vocabulary_source_missing`: its query definition is not one the caller may read here. ' +
+          '`vocabulary_source_parameters`: the query asks a required parameter. `definition_retired`, `connection_retired`, ' +
+          '`credential_missing`, `credential_target_changed`, `sql_not_permitted`, `capability_undeclared` or `identity_unavailable`, as a sample refuses them. ' +
+          '`version_precondition`: the vocabulary changed while the source answered',
+        schema: SqlRefusal,
+      },
+      422: {
+        description:
+          "`vocabulary_source_unreadable`: the address's text does not read as SKOS, holds more than 5,000 concepts, or the query has no `id` or `label` column",
+        schema: ErrorBody,
+      },
+      502: {
+        description:
+          "`vocabulary_source_failed`: the address could not be fetched, `failure` saying why (`host_refused`, `connection_failed`, `timeout`, `source_refused`, `source_too_large`, `connector_error`); or the query's run failed, by its failure's code and attribution",
+        schema: DataRefusal,
+      },
+      503: {
+        description:
+          '`connector_unavailable`, `connector_busy` or `query_throttled`, as a sample answers them',
+        schema: DataRefusal,
+      },
     },
   },
   getVocabulary: {

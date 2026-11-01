@@ -517,6 +517,7 @@ const operationTags = {
   Vocabularies: [
     'listVocabularies',
     'importVocabulary',
+    'refreshVocabulary',
     'getVocabulary',
     'getVocabularyUses',
     'exportVocabulary',
@@ -1129,6 +1130,8 @@ const descriptions: Readonly<Record<string, string>> = {
     "Exports a vocabulary as a SKOS concept scheme in JSON-LD. The scheme, identified `urn:alloy-works:vocabulary:` and its key, has the key as its `notation` and its name as its `prefLabel` in the base language. Each value is a `skos:Concept` `inScheme` it, with its id as its `notation`, its labels as `prefLabel` and its descriptions as `definition` by language, and a deprecated or retired value `owl:deprecated`, its replacement as `dct:isReplacedBy`. What SKOS has no word for is in the namespace `urn:alloy-works:skos:` (prefix `aw`): `aw:retired` true for a retired value, `aw:order` on the scheme, and `aw:position`, a value's place in the declared order. Anyone signed in may export it.",
   importVocabulary:
     "Imports one SKOS concept scheme, from JSON-LD in the compact form `exportVocabulary` writes or from Turtle, as a vocabulary. The scheme's `notation` is its key: a vocabulary with that key gets a new version, else one is made, named by the scheme's `prefLabel`. Each concept is a value, its `notation` its id, in `aw:position` order. A value is never removed: one the vocabulary holds and the import does not is kept, and listed. What no value can hold is reported rather than dropped: a concept with no notation, or one not in an id's form, or another concept's; a label in a language tag the product does not read, or too long; a replacement outside the import; any other predicate, and any subject that is not a concept. Nothing a file names is fetched. At most 5,000 concepts and 200,000 statements are taken, in a body of at most 5 MiB. It needs manage_definitions at the tenant, and is refused as `/v1/definitions` refuses a definition.",
+  refreshVocabulary:
+    "Refreshes a vocabulary's values from its source and records the next version. A query definition's source is run as the caller, who needs use connection on its connection as a sample does, and recorded as the act `vocabulary`; its `id`, `label` and optional `description` columns give each value's identifier and its words in the base language. A SKOS address is fetched by the connector: one `GET`, no redirect followed, at most 5 MB in 20 seconds, never a private address; each concept gives its identity, its `notation` as the suggested id, and its `prefLabel` and `definition` by language. A value is kept by its identifier: one new to the source is added active, one gone from it retired, never removed, and one whose words changed takes the source's. What no value can hold is reported by its identifier. A sourced vocabulary's values are otherwise changed only in their state. It needs manage_definitions at the tenant.",
   getTerm:
     'Returns a term at its latest version, its workflow state and the transitions and gates the caller may take, whether it is deprecated or archived, and whether the caller may change or archive it.',
   recordTermVersion:

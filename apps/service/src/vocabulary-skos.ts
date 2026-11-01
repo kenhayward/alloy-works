@@ -3,6 +3,8 @@ import {
   isLanguageTag,
   isVocabularyKey,
   VOCABULARY_LIMITS,
+  type CanonicalResult,
+  type SourcedValue,
   type Vocabulary,
   type VocabularyValue,
 } from '@alloy-works/domain';
@@ -285,4 +287,78 @@ export async function readVocabularySkos(
     notRepresented,
     notRepresentedTotal,
   };
+}
+
+/**
+ * A SKOS address's concepts as a refresh takes them (LIB-058; the VO plan, VO-J): any scheme's, each
+ * by its identity, its notation suggested as its id, its preferred labels and definitions by language
+ * (the first in each, a tag the product reads). The refresh decides what a value can hold.
+ */
+export async function readSkosSource(
+  format: 'json-ld' | 'turtle',
+  text: string,
+): Promise<SourcedValue[] | 'unreadable' | 'too many'> {
+  const subjects = await readSubjects(
+    format,
+    text,
+    VOCABULARY_SKOS_CONTEXT,
+    VOCABULARY_LIMITS.values + 1,
+  );
+  if (subjects === undefined) return 'unreadable';
+  if (subjects === TOO_MANY) return 'too many';
+  const byLanguage = (subject: Subject, predicate: string) => {
+    const held = new Map<string, string>();
+    for (const each of literals(subject, predicate)) {
+      const language = each.language === null ? undefined : canonicalTag(each.language);
+      if (language !== undefined && isLanguageTag(language) && !held.has(language)) {
+        held.set(language, each.value);
+      }
+    }
+    return [...held].map(([language, text]) => ({ language, text }));
+  };
+  return subjects
+    .filter((each) => typed(each, CONCEPT))
+    .map((subject) => {
+      const notation = literals(subject, `${SKOS}notation`)[0]?.value;
+      return {
+        source: subject.key,
+        ...(notation === undefined ? {} : { notation }),
+        labels: byLanguage(subject, `${SKOS}prefLabel`),
+        descriptions: byLanguage(subject, `${SKOS}definition`),
+      };
+    });
+}
+
+/** The format a fetched text is in: its media type's, else JSON-LD where it opens as JSON does. */
+export const sourceFormat = (text: string, contentType?: string): 'json-ld' | 'turtle' =>
+  contentType?.includes('turtle')
+    ? 'turtle'
+    : contentType?.includes('json')
+      ? 'json-ld'
+      : /^\s*[[{]/.test(text)
+        ? 'json-ld'
+        : 'turtle';
+
+/**
+ * A source query's rows as a refresh takes them (VO-J): its `id`, `label` and optional `description`
+ * columns, by name, the label and description in the base language; or the columns it lacks.
+ */
+export function sourceRows(
+  result: CanonicalResult,
+  base: string,
+): SourcedValue[] | { readonly missing: string[] } {
+  const at = (name: string) => result.columns.findIndex(([each]) => each.toLowerCase() === name);
+  const [id, label, description] = [at('id'), at('label'), at('description')];
+  const missing = [...(id < 0 ? ['id'] : []), ...(label < 0 ? ['label'] : [])];
+  if (missing.length > 0) return { missing };
+  const cell = (row: readonly unknown[], n: number) =>
+    n < 0 || row[n] === null || row[n] === undefined ? '' : String(row[n]);
+  return result.rows.map((row) => {
+    const said = cell(row, description);
+    return {
+      source: cell(row, id),
+      labels: cell(row, label) === '' ? [] : [{ language: base, text: cell(row, label) }],
+      descriptions: said === '' ? [] : [{ language: base, text: said }],
+    };
+  });
 }
