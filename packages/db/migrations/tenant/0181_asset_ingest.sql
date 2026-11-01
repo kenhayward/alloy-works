@@ -15,6 +15,14 @@ alter table images_policy
         and (limits ->> 'jpeg')::numeric = trunc((limits ->> 'jpeg')::numeric)))
   );
 
+-- What each image a publication printed carried that its outputs do not (AST-007, AST-024; AL-G):
+-- the domain's `MetadataFound`, sorted, empty where it carried nothing. Null for a publication made
+-- before this, which printed its images as they were uploaded.
+alter table publication_asset
+  add column stripped text[] check (
+    stripped <@ array['comment', 'credentials', 'exif', 'gps', 'iptc', 'other', 'text', 'xmp']
+  );
+
 do $$
 begin
   execute format('grant update (limits) on images_policy to %I', current_schema());

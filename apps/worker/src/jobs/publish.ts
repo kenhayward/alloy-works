@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { publishedImagePath, type PublishingAsset } from '@alloy-works/domain';
+import {
+  publishedImagePath,
+  stripImage,
+  type MetadataFound,
+  type PublishingAsset,
+} from '@alloy-works/domain';
 import { renderCitations } from '@alloy-works/domain/citations';
 import { capHeightOfFile } from '@alloy-works/fonts';
 import {
@@ -134,18 +139,31 @@ class StoreFailed extends Error {
 export async function rootImages(
   assets: ReadonlyMap<string, PublishingAsset>,
   get: (key: string) => Promise<Uint8Array>,
-): Promise<RootImage[]> {
-  const images: RootImage[] = [];
-  for (const asset of assets.values()) {
+): Promise<StrippedRootImage[]> {
+  const images: StrippedRootImage[] = [];
+  for (const [version, asset] of assets) {
     const hash = asset.object.slice(asset.object.lastIndexOf('/') + 1);
     const bytes = await get(asset.object);
     if (createHash('sha256').update(bytes).digest('hex') !== hash) {
       throw new Error(`The bytes under ${asset.object} are not the bytes it names`);
     }
+    // Never the original (AL-G): its metadata stripped, its pixels as they were, and what went said.
+    const stripped = stripImage(bytes);
     // The place the published document names it at, by the one rule that names it.
-    images.push({ path: publishedImagePath(asset), bytes });
+    images.push({
+      path: publishedImagePath(asset),
+      bytes: stripped.bytes,
+      version,
+      found: stripped.found,
+    });
   }
   return images;
+}
+
+/** An image as the compile root holds it, and what its original carried that it does not. */
+export interface StrippedRootImage extends RootImage {
+  readonly version: string;
+  readonly found: readonly MetadataFound[];
 }
 
 /**
@@ -677,6 +695,7 @@ export function publishJob(deps: {
               outputs,
               // Node's own, which sorts every glossary, index and bibliography (TE-F; LOC-044).
               localeData: LOCALE_DATA,
+              stripped: new Map(images.map((each) => [each.version, each.found])),
             });
             if (publication !== undefined) {
               await recordPublicationEvent(

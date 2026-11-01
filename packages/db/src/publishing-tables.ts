@@ -136,6 +136,8 @@ export interface PublicationAssetTable {
     'asset' | 'bibliographyEntry' | 'term' | 'vocabulary' | undefined,
     never
   >;
+  /** What the image carried that the outputs do not (0181; AST-007), or null before it. */
+  stripped: ColumnType<string[] | null, string[] | undefined, never>;
 }
 
 /** Insert and read, nothing else (PUB-050). */
