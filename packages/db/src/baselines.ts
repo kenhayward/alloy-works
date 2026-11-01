@@ -26,6 +26,9 @@ import { readableComponents } from './documents.js';
 import { recordRequestRights, resolveRights } from './publication-rights.js';
 import {
   documentCitesAPage,
+  followedVersions,
+  followingIn,
+  followTo,
   imagesIn,
   pageCitations,
   recordPublicationEvent,
@@ -736,14 +739,21 @@ export async function requestBaselinePublication(
     version: baseline.document_version_id,
   });
   if (!outline.ok) throw new Error(`The document ${baseline.document_id} does not read`);
-  const contents = occurrences.map((each) => {
-    const read = readContent(each.content, {
+  const read = occurrences.map((each) => {
+    const content = readContent(each.content, {
       artifact: each.artifact_id,
       version: each.version_id,
     });
-    if (!read.ok) throw new Error(`The component ${each.artifact_id} does not read`);
-    return read.document;
+    if (!content.ok) throw new Error(`The component ${each.artifact_id} does not read`);
+    return content.document;
   });
+  // A following image at the version the baseline pinned for it (AL-M), never one cut since.
+  const followed = await followedVersions(
+    trx,
+    read.flatMap(followingIn),
+    assets.map((each) => each.version_id),
+  );
+  const contents = read.map((each) => followTo(each, followed));
   // A term it pinned the requester may not read prints its words and is reported (TMb), as a publish
   // of the latest does: the pin is recorded and never read.
   const uses = usesIn(

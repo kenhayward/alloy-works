@@ -4,7 +4,7 @@ import { describe, expect, it, vi, type TaskMeta } from 'vitest';
 import { SERVICE } from './testing/addresses.js';
 import { api, edit, makeDocument, nodesOf, type Client } from './testing/api.js';
 import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
-import { generalSpace, makeComponent, uploadImage } from './testing/component.js';
+import { generalSpace, makeComponent, squarePng, uploadImage } from './testing/component.js';
 import { everyBlock } from './testing/every-block.js';
 import { allowPageNoise, withPage } from './testing/page.js';
 import { approvedTerm, translatedComponent } from './testing/fixtures.js';
@@ -630,7 +630,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it("passes axe on a space's images and where one is used (the AL plan, ALd)", async ({
+  it("passes axe on a space's images, where one is used and one replaced (the AL plan, ALd, ALe)", async ({
     task,
   }) => {
     await uploadImage(api(), 'A harbour at dawn');
@@ -650,6 +650,14 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       await page.getByRole('button', { name: 'Where used' }).first().click();
       await check('where an image is used', {
         shows: page.getByRole('region', { name: /^Where .* is used$/ }),
+      });
+      // Replaced from its card (the AL plan, ALe): the status says so once its check has passed.
+      await page
+        .getByLabel(/^Replace /)
+        .first()
+        .setInputFiles({ name: 'harbour.png', mimeType: 'image/png', buffer: squarePng() });
+      await check('an image replaced', {
+        shows: page.getByRole('status').filter({ hasText: /was replaced\.$/ }),
       });
     });
   });

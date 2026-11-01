@@ -27,6 +27,7 @@ import {
   createTenant,
   DEFAULT_LAYOUT_ID,
   DEFAULT_THEME_ID,
+  duplicateTheme,
   findRole,
   grant,
   invite,
@@ -491,6 +492,7 @@ const OTHER_TENANT_IDS: Readonly<
   getAssetUses: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   listSpaceAssets: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   setAssetRights: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
+  createAssetReplacement: async (tenant, db) => ({ id: (await assetIn(tenant, db)).asset }),
   getAssetVersionDerivative: async (tenant, db) => ({
     id: (await assetIn(tenant, db)).version,
     kind: 'thumbnail',
@@ -611,6 +613,19 @@ const OTHER_TENANT_IDS: Readonly<
   getVocabularyUses: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   refreshVocabulary: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
   getLicence: async (tenant, db) => ({ id: await definitionIdIn(tenant, db) }),
+  // A theme of the other environment's own: its default's id is every environment's (0024).
+  getTheme: async (tenant, db) => ({ id: await themeIdIn(tenant, db) }),
+  saveThemeStyle: async (tenant, db) => ({
+    id: await themeIdIn(tenant, db),
+    kind: 'paragraph',
+    style: 'body',
+  }),
+  deleteThemeStyle: async (tenant, db) => ({
+    id: await themeIdIn(tenant, db),
+    kind: 'paragraph',
+    style: 'body',
+  }),
+  getStyleImpact: async (tenant, db) => ({ id: await themeIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
   endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
   leavePresence: async () => ({ viewer: '55555555-5555-4555-8555-555555555555' }),
@@ -728,6 +743,9 @@ const VALID_INPUT: Readonly<
   acceptImport: { payload: { revision: 0 } },
   importTerms: { payload: { format: 'json-ld', text: '{"@graph": []}' } },
   importVocabulary: { payload: { format: 'json-ld', text: '{"@graph": []}' } },
+  saveThemeStyle: { payload: { openedFrom: SESSION, style: { id: 'body' } } },
+  deleteThemeStyle: { query: `openedFrom=${SESSION}` },
+  getStyleImpact: { payload: { kind: 'paragraph', style: 'body' } },
   recordTermVersion: { payload: { openedFrom: SESSION, term: aTerm } },
   transitionTerm: { payload: { transition: 'deprecate', from: 'approved', reason: 'Probe' } },
   decideTermGate: {
@@ -1008,6 +1026,7 @@ const VALID_INPUT: Readonly<
   setImportSettings: { payload: { policy: 'keep' } },
   setImagesSettings: { payload: { undeclared: 'refuse' } },
   setAssetRights: { payload: { rights: { kind: 'undeclared' } } },
+  createAssetReplacement: { payload: {} },
   setTranslationSettings: { payload: { fallback: 'refuse', outOfDate: 'publish', note: {} } },
   makeGrant: {
     payload: { role: SESSION, subject: { principal: SESSION }, level: 'tenant', effect: 'allow' },
@@ -1114,6 +1133,27 @@ const componentIdIn = (tenant: Tenant, db: TenantDatabase) =>
 /** A document in environment B's General space, made through the store as the route makes one, so a
  * route that opens one has a real version to find. */
 /** A field of this environment's own, named uniquely: every environment holds the starter type. */
+const themeIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const manager = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const made = await duplicateTheme(trx, {
+      themeId: DEFAULT_THEME_ID,
+      name: `Probe ${randomUUID()}`,
+      author: manager.id,
+    });
+    if (made.answer !== 'created') throw new Error(made.answer);
+    return made.theme.artifactId;
+  });
+
 const definitionIdIn = (tenant: Tenant, db: TenantDatabase) =>
   db.withTenant(tenant, async (trx) => {
     const manager = await trx

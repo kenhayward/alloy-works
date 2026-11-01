@@ -88,11 +88,17 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 const notFound = { description: 'No such theme in this environment', schema: ErrorBody } as const;
+// Decided at the theme: one the caller may not manage is answered as one that is not there.
+const notManaged = {
+  description: 'No such theme, or the caller may not manage definitions',
+  schema: ErrorBody,
+} as const;
 const forbidden = { description: 'The caller may not manage definitions', schema: ErrorBody };
+// Decided at the theme, as a vocabulary's refresh is, so one that is not here is not found.
 const managed = {
   check: 'permission',
   permission: 'manage_definitions',
-  target: { tenant: true },
+  target: { artifact: 'id' },
 } as const;
 const changed = {
   200: { description: 'The theme at its new version', schema: ThemeView },
@@ -103,7 +109,7 @@ const changed = {
   },
   401: unauthenticated,
   403: forbidden,
-  404: notFound,
+  404: notManaged,
   409: {
     description: '`version.precondition`: the theme has a newer version than `openedFrom`',
     schema: ErrorBody,
@@ -178,7 +184,7 @@ export const themeRoutes = {
       200: { description: 'The documents it reaches', schema: StyleImpactView },
       401: unauthenticated,
       403: forbidden,
-      404: notFound,
+      404: notManaged,
     },
   },
 } as const satisfies Record<string, RouteContract>;

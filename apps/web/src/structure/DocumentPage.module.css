@@ -159,7 +159,9 @@
     100vh - var(--header-height) - var(--band-height, 0px) - var(--space-12) -
       var(--status-height, 0px) - var(--space-12)
   );
-  max-height: var(--dock-most);
+  /* Its room where the page has measured it, so no tab runs under the status bar (issues #868,
+     #878). */
+  max-height: min(var(--dock-most), var(--dock-room, var(--dock-most)));
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);

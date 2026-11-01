@@ -70,6 +70,11 @@ a document places into the compile root under its hash.
 | **AST-018** | `GET /v1/assets/{id}/uses` and the page's **Where used** name the components whose latest version places the image, the documents placing those, and the baselines and publications pinning it; what the reader may not read is never named, only said to be there (AL-K)                                                                                                                                 |
 | **AST-050** | The listing's `unused` filter, and the page's **Only unused**, leave the images no component, baseline or publication holds; a publication counts too, so nothing a publication printed is offered for tidying (AL-K)                                                                                                                                                                                     |
 | **AST-029** | Choosing a file in the Figure dialog hashes it in the browser and asks the listing for an image of the space with that SHA-256 (`sha256`), which the uploader may read, never a dataset's; the dialog offers **Use this image** instead of a second copy. Only within the space: another space's copy is not offered (AL-L)                                                                               |
+| **AST-016** | Replacing an image (`POST /v1/assets/{id}/replacements`, edit on it) makes an upload naming it; once its bytes pass the check, `recordAsset` cuts the asset's next version, carrying its description and name unless given. Its rights stay the asset's, and no version is ever overwritten (0184; AL-M)                                                                                                  |
+| **AST-017** | A figure or an inline image may follow its asset (`follow: 'latest'`, Figure settings' **Always show the latest version**): it keeps the version it was placed at, is indexed `latest` on the asset, drawn from `?follow=latest` in the editor, and published at the asset's latest version, which the request and a baseline record, so a republish places what it pinned (AL-M)                         |
+| **AST-049** | A derivative is kept by version, so a replacement asks for its own as it is recorded, and a superseded version is only ever served its own (AL-H, AL-M)                                                                                                                                                                                                                                                   |
+| **AST-032** | Wherever an image is used, the Figure panel flags its rights now: **Licence expired**, **Not licensed for publication** or **Rights not declared**, read from `/v1/assets/{id}/rights` at its licence's latest version; Figure settings says the licence and when the rights or licence last changed. A following figure is checked at publish against today's rights, as every figure is (AL-F, AL-M)    |
+| **AST-052** | A grant's expiry is recorded with the image's rights (AL-C), reported or refused at publish (AL-F), flagged on the Images page, and flagged on every figure placing the image (AST-032's flags)                                                                                                                                                                                                           |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
 upload's **check** rather than its scan. AST-051, AST-035 and, since the audit log is written (AU1),
@@ -318,12 +323,21 @@ its decisions AL-A to AL-N are the design, and this section says what stands so 
 - **The Images page** (AL-J, AL-K, AL-L): a space's images by thumbnail, filtered and searched,
   where each is used, and those nothing uses; the Figure dialog chooses one of them, and offers the
   one a chosen file duplicates.
-- Replacing an image cuts a version a figure may follow (AL-M).
+- **Replacement and following** (AL-M): **Replace** on the Images page makes an upload naming the
+  image, whose check cuts its next version (0184). A figure following its image is resolved at
+  request time to the latest version, which the request records; the worker and a baseline's
+  republish place the newest version they recorded of that asset, never one cut since.
+- **Rights where used** (AST-032, AST-052): the Figure panel flags what needs attention about the
+  image's rights now, and Figure settings says what they are and when they changed.
+- **An import reuses** an image of its space with the same bytes that its acceptor may read, never a
+  dataset's, and records no import as its source (AL-L, pre-flight 11).
 
 AST-025 and AST-043 were superseded by AST-052 and AST-053 while planning (the AST change history).
-AST-049 (a replacement's derivatives) waits for replacement, ALe, and an import's reuse of an image
-the space holds (AL-L, pre-flight 11) does too. AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
-image is used only in ALe.
+
+**Not round-tripped by the bridge.** CT Studio has no notion of following an image, as it has none
+of an image style: a component delivered again from CT Studio places its images pinned, in the
+`figure` style. An inline image may follow its asset in the stored model and the editor, but only a
+figure has the switch.
 
 ## Requirements challenged
 

@@ -299,6 +299,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assets/{id}/replacements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make an upload replacing an image: its check cuts the image's next version
+         * @description Starts an upload replacing an image. Upload its bytes separately, as for any upload; once they pass the check, they become the image's next version, and every earlier version is kept as it was. Its description and name are the latest version's unless given; its rights stay the image's. A figure following the image's latest version shows the replacement from then on; a figure pinned to a version keeps it. Needs edit on the image.
+         */
+        post: operations["createAssetReplacement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assets/{id}/rights": {
         parameters: {
             query?: never;
@@ -9957,6 +9977,8 @@ export interface components {
                 /** @constant */
                 type: "image";
                 asset: string;
+                /** @constant */
+                follow?: "latest";
                 imageStyle: string;
                 alternative: {
                     /** @constant */
@@ -10258,6 +10280,8 @@ export interface components {
                 /** @constant */
                 type: "image";
                 asset: string;
+                /** @constant */
+                follow?: "latest";
                 imageStyle: string;
                 alternative: {
                     /** @constant */
@@ -12140,7 +12164,9 @@ export interface operations {
     };
     getAssetVersionContent: {
         parameters: {
-            query?: never;
+            query?: {
+                follow?: "latest";
+            };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
                 "X-Request-Id"?: string;
@@ -12152,7 +12178,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The bytes, never sniffed and never run: a version never changes, so they may be kept for a year */
+            /** @description The bytes, never sniffed and never run: a version never changes, so they may be kept for a year; the latest, asked for, is never kept */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -12416,6 +12442,171 @@ export interface operations {
             };
         };
     };
+    createAssetReplacement: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /** @description The next version's default description, null for none, or the latest's where absent */
+                    alternative?: {
+                        text: string;
+                        language: string;
+                    } | null;
+                    /** @description The name it is listed by, or the latest's where absent */
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The upload, awaiting its bytes, which go to `putAssetUploadBytes` */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "space": "example",
+                     *       "state": "awaiting",
+                     *       "reason": "not_permitted",
+                     *       "assetVersion": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        space: string;
+                        /**
+                         * @description `awaiting` its bytes; `checking` them; `ready`, with its asset version; or `refused`, with why. Nothing can place an upload that is not ready
+                         * @enum {string}
+                         */
+                        state: "awaiting" | "checking" | "ready" | "refused";
+                        /** @description Why it was refused, once refused */
+                        reason: ("not_permitted" | "too_large" | "too_many_pixels" | "malformed" | "undecodable" | "unchecked") | null;
+                        /** @description The asset version it made, once ready */
+                        assetVersion: string | null;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the image but not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such thing in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `asset_replace_dataset`: a dataset's image, which its dataset replaces */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getAssetRights: {
         parameters: {
             query?: never;
@@ -12444,7 +12635,14 @@ export interface operations {
                      *       "current": {
                      *         "kind": "undeclared"
                      *       },
-                     *       "history": []
+                     *       "history": [],
+                     *       "licence": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "permits": []
+                     *       },
+                     *       "expired": false,
+                     *       "changedAt": "2026-01-01T00:00:00.000Z"
                      *     }
                      */
                     "application/json": {
@@ -12500,6 +12698,19 @@ export interface operations {
                              */
                             at: string;
                         }[];
+                        /** @description The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared */
+                        licence: {
+                            id: string;
+                            name: string;
+                            permits: ("internal" | "publication" | "redistribution" | "modification")[];
+                        } | null;
+                        /** @description Whether the grant it is held under has lapsed (AST-052) */
+                        expired: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When its rights or its licence last changed, whichever is later (AST-032)
+                         */
+                        changedAt: string;
                     };
                 };
             };
@@ -12646,7 +12857,14 @@ export interface operations {
                      *       "current": {
                      *         "kind": "undeclared"
                      *       },
-                     *       "history": []
+                     *       "history": [],
+                     *       "licence": {
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "permits": []
+                     *       },
+                     *       "expired": false,
+                     *       "changedAt": "2026-01-01T00:00:00.000Z"
                      *     }
                      */
                     "application/json": {
@@ -12702,6 +12920,19 @@ export interface operations {
                              */
                             at: string;
                         }[];
+                        /** @description The licence its rights declare, at its latest version: its name and what it permits now (AST-032); null where none is declared */
+                        licence: {
+                            id: string;
+                            name: string;
+                            permits: ("internal" | "publication" | "redistribution" | "modification")[];
+                        } | null;
+                        /** @description Whether the grant it is held under has lapsed (AST-052) */
+                        expired: boolean;
+                        /**
+                         * Format: date-time
+                         * @description When its rights or its licence last changed, whichever is later (AST-032)
+                         */
+                        changedAt: string;
                     };
                 };
             };
@@ -55461,6 +55692,8 @@ export interface operations {
                                 /** @constant */
                                 type: "image";
                                 asset: string;
+                                /** @constant */
+                                follow?: "latest";
                                 imageStyle: string;
                                 alternative: {
                                     /** @constant */
@@ -55783,6 +56016,8 @@ export interface operations {
                             /** @constant */
                             type: "image";
                             asset: string;
+                            /** @constant */
+                            follow?: "latest";
                             imageStyle: string;
                             alternative: {
                                 /** @constant */
@@ -58786,6 +59021,8 @@ export interface operations {
                         /** @constant */
                         type: "image";
                         asset: string;
+                        /** @constant */
+                        follow?: "latest";
                         imageStyle: string;
                         alternative: {
                             /** @constant */
@@ -117218,7 +117455,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such theme in this environment */
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -117409,7 +117646,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such theme in this environment */
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -117605,7 +117842,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description No such theme in this environment */
+            /** @description No such theme, or the caller may not manage definitions */
             404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

@@ -548,6 +548,25 @@ export async function createArtifact(
   return version;
 }
 
+/**
+ * A theme's or a catalogue's first version, under a new artifact in no space: the one writer of a new
+ * one but the migrations, `duplicateTheme` (the SY plan, SY-B), which has read the theme whole first.
+ */
+export async function createThemePart(
+  trx: TenantTransaction,
+  input: Authorship & {
+    readonly substance: Extract<VersionSubstance, { kind: 'theme' | 'catalogue' }>;
+  },
+): Promise<StoredVersion> {
+  checkAuthorship(input);
+  const artifact = await trx
+    .insertInto('artifact')
+    .values({ kind: input.substance.kind, space_id: null })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  return insertVersion(trx, artifact.id, { revision: 0, version: 1 }, input, input.substance, null);
+}
+
 /** One version by its id, or undefined when this tenant holds no such version. */
 export async function readVersion(
   trx: TenantTransaction,

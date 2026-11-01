@@ -732,6 +732,8 @@ describe('the listings through the service', () => {
       'listVocabularies',
       // And the licences: the environment's handful, each a definition (the AL plan, AL-B).
       'listLicences',
+      // And the themes: the environment's handful (the SY plan, SY-C).
+      'listThemes',
     ];
     const listings = allRoutes.filter(
       (route) =>

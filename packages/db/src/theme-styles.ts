@@ -21,7 +21,7 @@ import {
   type ThemeStoreRefusal,
 } from './themes.js';
 import { readableAmong, styleUseCount, usingStyle } from './uses.js';
-import { latestVersion, lockArtifact } from './versions.js';
+import { createThemePart, latestVersion, lockArtifact } from './versions.js';
 
 /** The kinds of style an administrator edits one at a time (the SY plan, SY-F). */
 export type EditableStyleKind = 'paragraph' | 'character' | 'table' | 'image';
@@ -293,4 +293,44 @@ export async function styleImpact(
       .sort((a, b) => compare(a.title, b.title) || compare(a.id, b.id)),
     unreadable: shown.total - shown.length,
   };
+}
+
+export type DuplicateAnswer =
+  | { readonly answer: 'created'; readonly theme: StoredTheme }
+  | { readonly answer: 'artifact.missing' }
+  | { readonly answer: 'refused'; readonly refusals: readonly ThemeStoreRefusal[] };
+
+/**
+ * **A theme of an environment's own** (STY-072; the SY plan, SY-B): a copy of one, named, whose
+ * catalogues are new artifacts holding what the original's held, so a style changed in either never
+ * reaches the other, and each catalogue's chain has one writer. Read whole before anything is written.
+ */
+export async function duplicateTheme(
+  trx: TenantTransaction,
+  input: { readonly themeId: string; readonly name: string; readonly author: string },
+): Promise<DuplicateAnswer> {
+  const theme = await latestVersion(trx, input.themeId);
+  if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
+  const original = await themeLatest(trx, input.themeId);
+  const named: Theme = { ...original.content, name: input.name.trim() };
+  const read = readTheme(named, original.catalogues);
+  if (!read.ok) return { answer: 'refused', refusals: read.refusals };
+  const catalogues: Record<string, string> = {};
+  for (const [kind, version] of Object.entries(original.content.catalogues)) {
+    if (version === undefined) continue;
+    const made = await createThemePart(trx, {
+      author: input.author,
+      // As the original's version holds it, at whichever shape it was written in.
+      substance: {
+        kind: 'catalogue',
+        content: original.catalogues.get(version),
+      } as Parameters<typeof createThemePart>[1]['substance'],
+    });
+    catalogues[kind] = made.id;
+  }
+  const made = await createThemePart(trx, {
+    author: input.author,
+    substance: { kind: 'theme', content: { ...named, catalogues } as Theme },
+  });
+  return { answer: 'created', theme: await themeLatest(trx, made.artifactId) };
 }

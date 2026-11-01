@@ -1,4 +1,5 @@
 import type {
+  AssetContentQuery,
   AssetDerivativeParams,
   AssetDerivativesDiscarded,
   AssetParams,
@@ -8,6 +9,7 @@ import type {
   AssetUsesView,
   AssetVersionParams,
   AssetVersionView,
+  CreateAssetReplacementBody,
   CreateAssetUploadBody,
   LibraryAssetList,
   LibraryAssetQuery,
@@ -31,10 +33,12 @@ import {
   receiveAssetBytes,
   recordAssetRights,
   imagesPolicy,
+  latestVersion,
   listAssets,
   refuseAssetUpload,
   type AssetUploadReason,
   type StoredAssetUpload,
+  type StoredDefinition,
   type Tenant,
   type TenantDatabase,
   type TenantTransaction,
@@ -79,10 +83,30 @@ async function rightsView(trx: TenantTransaction, asset: string): Promise<AssetR
           .where('id', 'in', by)
           .execute();
   const names = new Map(people.map((each) => [each.id, each.display_name]));
+  // An image recorded before 0180 has none: it was never declared.
+  const current = history[0]?.rights ?? { kind: 'undeclared' };
+  // What it is held under now, wherever it is used (AST-032, AST-052): its licence at its latest
+  // version, whether its grant has lapsed, and when either last changed.
+  const declared = current.kind === 'declared' ? current : undefined;
+  const licence = declared && (await readDefinitionLatest(trx, declared.licence));
+  const terms = licence?.kind === 'licence' ? (licence as StoredDefinition<'licence'>) : undefined;
+  const changed = [history[0]?.recordedAt, terms?.version.createdAt].filter(
+    (each): each is Date => each !== undefined,
+  );
   return {
     asset,
-    // An image recorded before 0180 has none: it was never declared.
-    current: history[0]?.rights ?? { kind: 'undeclared' },
+    current,
+    licence:
+      declared && terms
+        ? {
+            id: declared.licence,
+            name: terms.definition.name,
+            permits: [...terms.definition.permits],
+          }
+        : null,
+    expired:
+      declared?.expires !== undefined && declared.expires < new Date().toISOString().slice(0, 10),
+    changedAt: new Date(Math.max(0, ...changed.map((each) => each.getTime()))).toISOString(),
     history: history.map((each) => ({
       rights: each.rights,
       by: { id: each.recordedBy, name: names.get(each.recordedBy) ?? '' },
@@ -258,6 +282,39 @@ export function assetHandlers(
     },
 
     /**
+     * `edit` was decided on the image (AL-M; AST-016): an upload in its space naming it, its
+     * description and name the latest version's where not given. A dataset's image is its dataset's.
+     */
+    createAssetReplacement: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<AssetUploadView> => {
+      const { id } = request.params as AssetParams;
+      await assetIn(trx, id);
+      if ((await readableAsset(trx, callerOf(request), id)).fromDataset) {
+        throw refused(
+          409,
+          'asset.replace_dataset',
+          "A dataset's image is replaced by its dataset.",
+        );
+      }
+      const latest = await latestVersion(trx, id);
+      const { spaceId, content } = (latest && (await readAssetVersion(trx, latest.id))) || {};
+      if (spaceId === undefined || content === undefined) throw notFound();
+      const body = request.body as CreateAssetReplacementBody;
+      const name = body.name ?? content.name;
+      return uploadView(
+        await createAssetUpload(trx, {
+          spaceId,
+          uploader: principalId,
+          alternative: body.alternative === undefined ? content.alternative : body.alternative,
+          ...(name === undefined ? {} : { name }),
+          replaces: id,
+        }),
+      );
+    },
+
+    /**
      * The service's half of the check (assets.md, "The upload and the check"): the format from the
      * bytes, the header walk, the pixel limit - each refused with nothing stored, the refusal recorded
      * on the upload - then the bytes kept under their hash and the `ingest` job queued. A refusal is
@@ -283,11 +340,16 @@ export function assetHandlers(
         async (trx) => {
           const upload = await theirs(request, trx);
           // `create` in the space, decided again now that something will be made in it: a grant
-          // removed since the upload was made stops it here (final review, finding 6).
-          await authoriseAt(trx, callerOf(request), 'create', {
-            kind: 'space',
-            id: upload.spaceId,
-          });
+          // removed since the upload was made stops it here (final review, finding 6). A
+          // replacement makes nothing new: `edit` on the image it replaces, decided again (AL-M).
+          await authoriseAt(
+            trx,
+            callerOf(request),
+            upload.replaces === null ? 'create' : 'edit',
+            upload.replaces === null
+              ? { kind: 'space', id: upload.spaceId }
+              : { kind: 'artifact', id: upload.replaces },
+          );
           if (bytes === undefined) {
             throw new AppError(
               415,
@@ -476,13 +538,18 @@ export function assetHandlers(
       { trx }: Authorised,
     ): Promise<BinaryBody> => {
       const { id } = request.params as AssetVersionParams;
-      const version = await readableAssetVersion(trx, callerOf(request), id);
+      const placed = await readableAssetVersion(trx, callerOf(request), id);
+      // A figure following its image shows its asset's latest (AL-M), which is never kept.
+      const following = (request.query as AssetContentQuery).follow === 'latest';
+      const latest = following ? await latestVersion(trx, placed.assetId) : undefined;
+      const version = (latest && (await readAssetVersion(trx, latest.id))) || placed;
       if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
       return {
         contentType: ADMITTED_FORMATS[version.content.format].contentType,
         bytes: await verified(store, version.content.object),
-        immutable: true,
+        immutable: !following,
+        ...(following ? { unkept: true } : {}),
       };
     },
 

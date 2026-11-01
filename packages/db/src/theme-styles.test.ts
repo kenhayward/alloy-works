@@ -24,7 +24,7 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { listThemes, saveStyle, styleImpact } from './theme-styles.js';
+import { duplicateTheme, listThemes, saveStyle, styleImpact } from './theme-styles.js';
 import { DEFAULT_THEME_ID, themeLatest } from './themes.js';
 import { recordVersion, substanceOf } from './versions.js';
 
@@ -356,6 +356,43 @@ describe('styles saved, deleted and weighed (the SY plan, SY-C, SY-D)', () => {
       }),
     );
     expect(impact.documents.map((each) => each.title)).toEqual(['Pump checks', 'Unrelated']);
+  });
+
+  it('adds a theme by duplicating one, its catalogues its own, so a style changed in the copy leaves the original alone', async () => {
+    const { as, people, latest } = await environment();
+    const original = await latest();
+    const made = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: 'Field manual', author: people.ada }),
+    );
+    if (made.answer !== 'created') throw new Error(JSON.stringify(made));
+    const copy = made.theme;
+    expect(copy.artifactId).not.toBe(DEFAULT_THEME_ID);
+    expect(copy.content.name).toBe('Field manual');
+    expect(copy.number).toBe('0.1');
+    // Each catalogue a new artifact holding what the original's did.
+    for (const kind of ['paragraph', 'character', 'table', 'image'] as const) {
+      expect(copy.content.catalogues[kind]).not.toBe(original.content.catalogues[kind]);
+      expect(copy.catalogues.get(copy.content.catalogues[kind])).toEqual(
+        original.catalogues.get(original.content.catalogues[kind]),
+      );
+    }
+    const changed = await as((trx) =>
+      saveStyle(trx, {
+        themeId: copy.artifactId,
+        openedFrom: copy.versionId,
+        kind: 'paragraph',
+        styleId: 'warning',
+        style: warning,
+        author: people.ada,
+      }),
+    );
+    expect(changed.answer).toBe('recorded');
+    expect((await latest()).versionId).toBe(original.versionId);
+    expect((await as(listThemes)).map((each) => each.name)).toEqual(['Default', 'Field manual']);
+    const unnamed = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: ' ', author: people.ada }),
+    );
+    expect(unnamed).toMatchObject({ answer: 'refused', refusals: [{ code: 'theme_malformed' }] });
   });
 
   it('lists the environment’s themes, each at its latest version, the declared one marked', async () => {
