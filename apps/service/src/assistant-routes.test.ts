@@ -251,7 +251,8 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       .filter((frame) => frame.event === 'tool_result')
       .map((frame) => frame.data);
     expect(results[0]).toMatchObject({ name: 'read_outline', ok: true });
-    expect(String(results[0]!.result)).toContain(`Component ${sites.id}`);
+    // Each component by its title too, so the model can tell which one a person means (issue #856).
+    expect(String(results[0]!.result)).toContain(`Component ${sites.id}: Readings`);
     expect(results[1]).toMatchObject({
       name: 'fetch_url',
       ok: false,

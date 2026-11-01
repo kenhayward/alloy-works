@@ -250,14 +250,58 @@ const EDITABLE_MARKS = new Set([
   'hyperlink',
 ]);
 
-/** A block's inline content's text, as the model reads it. */
+/** An image's words for the model: its own description, or what it is when it has none. */
+function imageWords(alternative: { kind: string; text?: string }): string {
+  if (alternative.kind === 'own') return alternative.text ?? '';
+  return alternative.kind === 'decorative' ? 'decorative' : "described by the image's own record";
+}
+
+/**
+ * A block's inline content's text, as the model reads it (issue #856): every node by what it says,
+ * where it stands - an equation by its LaTeX, a footnote by its words, a citation by its entry, a
+ * variable and a bound value by their names - never a bare kind it can do nothing with.
+ */
 function inlineText(content: readonly InlineNode[]): string {
   return content
     .map((node) => {
-      if (node.type === 'text') return node.value;
-      // An index marker prints nothing, so the model is not shown one to copy (the IX plan, IX-F).
-      if (node.type === 'indexMarker') return '';
-      return `[${node.type}]`;
+      switch (node.type) {
+        case 'text':
+          return node.value;
+        // An index marker prints nothing, so the model is not shown one to copy (the IX plan, IX-F).
+        case 'indexMarker':
+          return '';
+        case 'equation':
+          return node.latex === undefined
+            ? '[an equation held as MathML alone]'
+            : `$${node.latex}$`;
+        case 'footnote':
+          return `[footnote: ${(node.content as BlockNode[]).map(blockText).join(' ')}]`;
+        case 'citation':
+          return `[citation: ${node.entry}${node.locator === undefined ? '' : `, ${node.locator}`}]`;
+        case 'variable':
+          return `{${node.name}}`;
+        case 'binding':
+          return `[bound value: ${node.take.column}]`;
+        case 'image':
+          return `[image: ${imageWords(node.alternative)}]`;
+        case 'crossReference': {
+          const target = node.target as {
+            kind: string;
+            block?: string;
+            node?: string;
+            entry?: string;
+          };
+          const to = target.block ?? target.node ?? target.entry;
+          return to === undefined ? '[cross-reference]' : `[cross-reference to #${to}]`;
+        }
+        // The arm a count other than one takes, its value named: the sentence as it most often reads.
+        case 'messageForm':
+          return (node.arms.other ?? [])
+            .map((arm) => (arm.type === 'text' ? arm.value : `[${node.binding.take.column}]`))
+            .join('');
+        default:
+          return `[${(node as { type: string }).type}]`;
+      }
     })
     .join('');
 }
@@ -301,7 +345,31 @@ export function editableProblem(block: BlockNode): string | undefined {
   return `It is a ${block.type}, which a proposal cannot write.`;
 }
 
-/** A block as the model reads it: its identifier, kind and text, one line each, a list's items. */
+/** A table's cell as one line: its blocks run together, a `|` in it escaped so the row stays a row. */
+const cellText = (content: readonly BlockNode[]) =>
+  content
+    .map(blockText)
+    .join(' ')
+    .replace(/\s*\n\s*/g, ' ')
+    .replace(/\|/g, '\\|');
+
+/** A table's rows as Markdown's, the header rows ruled off, a spanning cell padded to its columns. */
+function rowsText(rows: readonly (readonly string[])[], headerRows: number): string[] {
+  const line = (cells: readonly string[]) => `| ${cells.join(' | ')} |`;
+  const width = Math.max(...rows.map((row) => row.length));
+  return rows.flatMap((row, index) => {
+    const cells = [...row, ...Array<string>(width - row.length).fill('')];
+    return index === headerRows - 1
+      ? [line(cells), line(Array<string>(width).fill('---'))]
+      : [line(cells)];
+  });
+}
+
+/**
+ * A block as the model reads it (issue #856): its text, a list's items, a table's rows, a figure's
+ * caption and description, an equation's LaTeX, a quotation's lines - what the reader of the page
+ * reads, so a question about any of it can be answered.
+ */
 function blockText(block: BlockNode): string {
   switch (block.type) {
     case 'paragraph':
@@ -311,15 +379,57 @@ function blockText(block: BlockNode): string {
         .map((item) =>
           item.content
             .map((child) =>
-              child.type === 'paragraph' ? `- ${inlineText(child.content)}` : `- [${child.type}]`,
+              child.type === 'paragraph'
+                ? `- ${item.term === undefined ? '' : `${inlineText(item.term)}: `}${inlineText(child.content)}`
+                : blockText(child)
+                    .split('\n')
+                    .map((line) => `  ${line}`)
+                    .join('\n'),
             )
             .join('\n'),
         )
         .join('\n');
     case 'preformatted':
       return block.text;
+    case 'table': {
+      const rows = block.rows.map((row) =>
+        row.cells.flatMap((cell) => [
+          cellText(cell.content),
+          ...Array<string>(cell.colspan - 1).fill(''),
+        ]),
+      );
+      return [
+        ...(block.caption.length > 0 ? [`Table: ${inlineText(block.caption)}`] : []),
+        ...rowsText(rows, block.headerRows),
+        ...(block.note === undefined ? [] : [`Note: ${inlineText(block.note)}`]),
+      ].join('\n');
+    }
+    case 'boundTable':
+      return [
+        ...(block.caption.length > 0 ? [`Table: ${inlineText(block.caption)}`] : []),
+        ...rowsText([block.columns.map((column) => column.header.replace(/\|/g, '\\|'))], 1),
+        '[its rows are read from a query when the document is shown, not held in the component]',
+      ].join('\n');
+    case 'figure':
+      return [
+        ...(block.caption.length > 0 ? [`Figure: ${inlineText(block.caption)}`] : []),
+        `Image: ${imageWords(block.alternative)}`,
+      ].join('\n');
+    case 'equation':
+      return block.latex === undefined
+        ? '[an equation held as MathML alone]'
+        : `$$${block.latex}$$`;
+    case 'blockquote':
+      return [
+        ...block.content.map(blockText),
+        ...(block.attribution === undefined ? [] : [`(${inlineText(block.attribution)})`]),
+      ]
+        .join('\n')
+        .split('\n')
+        .map((line) => `> ${line}`)
+        .join('\n');
     default:
-      return `[${block.type}]`;
+      return `[${(block as { type: string }).type}]`;
   }
 }
 
