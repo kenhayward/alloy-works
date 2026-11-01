@@ -10,6 +10,7 @@ import {
   readAssetUpload,
   recordAsset,
   removeGrant,
+  setImagesPolicy,
   seedDevelopmentContent,
   type Tenant,
   type TenantDatabase,
@@ -388,6 +389,28 @@ describe('uploading an image through the service (figures 1)', () => {
     });
   });
 
+  it('AST-004 refuses an image over the limit its environment lowered its format to, recording why', async () => {
+    const lower = (limits: { png: number | null; jpeg: number | null }) =>
+      tenantDb.withTenant(tenant, (trx) => setImagesPolicy(trx, { limits }));
+    // A PNG of 2,000 by 2,000 compresses to more than 1 KB; one of 4 by 3 to less.
+    const large = png(2000, 2000);
+    expect(large.length).toBeGreaterThan(1024);
+    await lower({ png: 1024, jpeg: null });
+    try {
+      const id = await made('grace', general);
+      const answer = await fill('grace', id, large);
+      expect(answer.statusCode).toBe(413);
+      expect(code(answer)).toBe('asset_too_large');
+      expect(answer.json()).toMatchObject({ rule: 'AST-004' });
+      expect(await upload('grace', id)).toMatchObject({ state: 'refused', reason: 'too_large' });
+      // Another format keeps its own.
+      const small = await made('grace', general);
+      expect((await fill('grace', small, png())).statusCode).toBe(200);
+    } finally {
+      await lower({ png: null, jpeg: null });
+    }
+  });
+
   it('refuses a body over the byte limit before reading it whole, and leaves the upload awaiting', async () => {
     const id = await made('grace', general);
     const answer = await fill('grace', id, Buffer.alloc(25_000_001));
@@ -490,8 +513,10 @@ describe('uploading an image through the service (figures 1)', () => {
     expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
   });
   it("AST-053 keeps the environment's policy for undeclared images, read by anyone signed in and set by an administrator", async () => {
+    const own = { png: null, jpeg: null };
     expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({
       undeclared: 'warn',
+      limits: own,
     });
     const administers = await tenantDb.withTenant(tenant, async (trx) => {
       const administrator = await findRole(trx, 'Administrator');
@@ -504,17 +529,29 @@ describe('uploading an image through the service (figures 1)', () => {
       });
     });
     expect(
-      (await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse' })).statusCode,
+      (
+        await call('grace', 'PUT', '/v1/settings/images', { undeclared: 'refuse', limits: own })
+      ).statusCode,
     ).toBe(403);
-    const set = await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'refuse' });
+    // AST-004: a format's limit lowered, never raised past its own.
+    const lowered = { png: 2_000_000, jpeg: null };
+    const set = await call('ada', 'PUT', '/v1/settings/images', {
+      undeclared: 'refuse',
+      limits: lowered,
+    });
     expect(set.statusCode, set.body).toBe(200);
     expect((await call('alice', 'GET', '/v1/settings/images')).json()).toEqual({
       undeclared: 'refuse',
+      limits: lowered,
     });
-    expect(
-      (await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'never' })).statusCode,
-    ).toBe(400);
-    await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'warn' });
+    for (const body of [
+      { undeclared: 'never', limits: own },
+      { undeclared: 'warn', limits: { png: 25_000_001, jpeg: null } },
+      { undeclared: 'warn' },
+    ]) {
+      expect((await call('ada', 'PUT', '/v1/settings/images', body)).statusCode).toBe(400);
+    }
+    await call('ada', 'PUT', '/v1/settings/images', { undeclared: 'warn', limits: own });
     if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
     await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, administers.granted.id));
   });

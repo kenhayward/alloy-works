@@ -2,10 +2,12 @@ import {
   ASSET_SCHEMA_VERSION,
   assetAlternativeSchema,
   assetRightsSchema,
+  imageLimitsSchema,
   parseAssetVersion,
   type AssetAlternative,
   type AssetRights,
   type AssetFormat,
+  type ImageLimits,
   type AssetVersionContent,
   type ImageHeader,
 } from '@alloy-works/domain';
@@ -527,19 +529,37 @@ export async function recordAssetRights(
 
 export interface ImagesPolicy {
   readonly undeclared: 'warn' | 'refuse';
+  /** The limit each format is lowered to, or null for its own (AST-004; AL-I). */
+  readonly limits: ImageLimits;
 }
 
-/** The environment's policy for an undeclared or lapsed image at publish (AST-053; AL-F). */
+/**
+ * The environment's policy for an undeclared or lapsed image at publish (AST-053; AL-F), and the
+ * size each format may be (AST-004; AL-I).
+ */
 export async function imagesPolicy(trx: TenantTransaction): Promise<ImagesPolicy> {
-  const row = await trx.selectFrom('images_policy').select('undeclared').executeTakeFirst();
-  return { undeclared: row?.undeclared ?? 'warn' };
+  const row = await trx
+    .selectFrom('images_policy')
+    .select(['undeclared', 'limits'])
+    .executeTakeFirst();
+  return {
+    undeclared: row?.undeclared ?? 'warn',
+    limits: imageLimitsSchema.parse(row?.limits ?? { png: null, jpeg: null }),
+  };
 }
 
 /** The policy set whole; the caller decided `administer` at the tenant. */
 export async function setImagesPolicy(
   trx: TenantTransaction,
-  policy: ImagesPolicy,
+  policy: Partial<ImagesPolicy>,
 ): Promise<ImagesPolicy> {
-  await trx.updateTable('images_policy').set({ undeclared: policy.undeclared }).execute();
+  const limits = policy.limits && JSON.stringify(imageLimitsSchema.parse(policy.limits));
+  await trx
+    .updateTable('images_policy')
+    .set({
+      ...(policy.undeclared === undefined ? {} : { undeclared: policy.undeclared }),
+      ...(limits === undefined ? {} : { limits }),
+    })
+    .execute();
   return imagesPolicy(trx);
 }

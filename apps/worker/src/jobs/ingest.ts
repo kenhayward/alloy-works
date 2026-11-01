@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import {
   holdObject,
+  imagesPolicy,
   objectInUse,
   readAssetUpload,
   recordAsset,
@@ -12,6 +13,7 @@ import {
 } from '@alloy-works/db';
 import {
   ASSET_MAX_PIXELS,
+  byteLimitOf,
   readImageHeader,
   type AuditContext,
   type ImageHeader,
@@ -175,7 +177,14 @@ export function ingestJob(deps: {
       const read = readImageHeader(bytes);
       const walked: typeof read =
         read.ok && read.header.end !== bytes.length ? { ok: false, refusal: 'malformed' } : read;
-      const refusal = walked.ok ? await refusalOfDecode(walked.header, bytes) : walked.refusal;
+      // Its format's limit as the environment has it now (AST-004), for a dataset's image as for an
+      // upload, which the service held to it at the door.
+      const { limits } = await deps.db.withTenant(tenant, imagesPolicy);
+      const refusal = !walked.ok
+        ? walked.refusal
+        : bytes.length > byteLimitOf(walked.header.format, limits)
+          ? 'too_large'
+          : await refusalOfDecode(walked.header, bytes);
       if (refusal !== undefined || !walked.ok) {
         await refuse(tenant, store, upload, refusal ?? 'malformed');
         // Refused on its merits: the same bytes fail the same way every time (issue #146).

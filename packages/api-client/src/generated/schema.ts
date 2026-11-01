@@ -98448,7 +98448,11 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "undeclared": "warn"
+                     *       "undeclared": "warn",
+                     *       "limits": {
+                     *         "png": 1024,
+                     *         "jpeg": 1024
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -98457,6 +98461,11 @@ export interface operations {
                          * @enum {string}
                          */
                         undeclared: "warn" | "refuse";
+                        /** @description The most bytes an image of each format may be in this environment (AST-004), from 1,024 to the format's own limit of 25,000,000, or null for the format's own. An upload over its format's limit is refused `asset_too_large` */
+                        limits: {
+                            png: number | null;
+                            jpeg: number | null;
+                        };
                     };
                 };
             };
@@ -98518,7 +98527,11 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "undeclared": "warn"
+                 *       "undeclared": "warn",
+                 *       "limits": {
+                 *         "png": 1024,
+                 *         "jpeg": 1024
+                 *       }
                  *     }
                  */
                 "application/json": {
@@ -98527,6 +98540,11 @@ export interface operations {
                      * @enum {string}
                      */
                     undeclared: "warn" | "refuse";
+                    /** @description The most bytes an image of each format may be in this environment (AST-004), from 1,024 to the format's own limit of 25,000,000, or null for the format's own. An upload over its format's limit is refused `asset_too_large` */
+                    limits: {
+                        png: number | null;
+                        jpeg: number | null;
+                    };
                 };
             };
         };
@@ -98543,7 +98561,11 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "undeclared": "warn"
+                     *       "undeclared": "warn",
+                     *       "limits": {
+                     *         "png": 1024,
+                     *         "jpeg": 1024
+                     *       }
                      *     }
                      */
                     "application/json": {
@@ -98552,6 +98574,11 @@ export interface operations {
                          * @enum {string}
                          */
                         undeclared: "warn" | "refuse";
+                        /** @description The most bytes an image of each format may be in this environment (AST-004), from 1,024 to the format's own limit of 25,000,000, or null for the format's own. An upload over its format's limit is refused `asset_too_large` */
+                        limits: {
+                            png: number | null;
+                            jpeg: number | null;
+                        };
                     };
                 };
             };

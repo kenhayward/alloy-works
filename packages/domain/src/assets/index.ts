@@ -23,6 +23,8 @@ export {
   parseAssetVersion,
 } from './version.js';
 export type { AssetAlternative, AssetVersionContent } from './version.js';
+export { byteLimitOf, imageLimitsSchema } from './limits.js';
+export type { ImageLimits } from './limits.js';
 export {
   LICENCE_LIMITS,
   LICENCE_USES,

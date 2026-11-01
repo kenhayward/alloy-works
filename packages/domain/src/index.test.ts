@@ -61,6 +61,9 @@ describe('the domain package', () => {
         'assetVersionSchema',
         'parseAssetVersion',
         'readImageHeader',
+        // The size an image may be, by format, lowered by an environment (AL-I).
+        'byteLimitOf',
+        'imageLimitsSchema',
         // A licence an image is held under (the AL plan, AL-B).
         'LICENCE_LIMITS',
         'LICENCE_USES',

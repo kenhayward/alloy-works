@@ -19,6 +19,7 @@ import {
   readDefinitionLatest,
   receiveAssetBytes,
   recordAssetRights,
+  imagesPolicy,
   refuseAssetUpload,
   type AssetUploadReason,
   type StoredAssetUpload,
@@ -26,7 +27,13 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
-import { ADMITTED_FORMATS, ASSET_MAX_BYTES, decide, readImageHeader } from '@alloy-works/domain';
+import {
+  ADMITTED_FORMATS,
+  ASSET_MAX_BYTES,
+  byteLimitOf,
+  decide,
+  readImageHeader,
+} from '@alloy-works/domain';
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyRequest } from 'fastify';
 import {
@@ -121,6 +128,12 @@ export const REFUSED_AT_THE_DOOR = {
     code: 'asset_too_large',
     message: 'This image has more than 50 million pixels, which is more than an image may have.',
     rule: 'AST-040',
+  },
+  too_large: {
+    status: 413,
+    code: 'asset_too_large',
+    message: 'This image is larger than this environment allows an image of its format to be.',
+    rule: 'AST-004',
   },
   malformed: {
     status: 400,
@@ -265,6 +278,14 @@ export function assetHandlers(
             if (!(await refuseAssetUpload(trx, upload.id, read.refusal, 'awaiting')))
               throw filled();
             return { refused: REFUSED_AT_THE_DOOR[read.refusal] } as const;
+          }
+          // Its format's limit, as this environment has it (AST-004): refused and recorded, as the
+          // header's refusals are.
+          const { limits } = await imagesPolicy(trx);
+          if (read.header.end > byteLimitOf(read.header.format, limits)) {
+            if (!(await refuseAssetUpload(trx, upload.id, 'too_large', 'awaiting')))
+              throw filled();
+            return { refused: REFUSED_AT_THE_DOOR.too_large } as const;
           }
           if (!objects) throw storageUnavailable();
           // The image alone: whatever follows its end - a phone's second picture or motion clip, or a

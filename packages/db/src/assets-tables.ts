@@ -44,6 +44,8 @@ export interface AssetRightsTable {
 export interface ImagesPolicyTable {
   singleton: ColumnType<true, never, never>;
   undeclared: ColumnType<'warn' | 'refuse', never, 'warn' | 'refuse'>;
+  /** The limit each format is lowered to, in bytes, or null for its own (0181; AST-004). */
+  limits: ColumnType<unknown, never, string>;
 }
 
 /** The rights each image a request recorded was published under (0180; AL-F). */
