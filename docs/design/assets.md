@@ -58,6 +58,13 @@ a document places into the compile root under its hash.
 | **AST-031** | The bytes and the default description and name version together; the source, the licence and the grant are rows of `asset_rights`, each with who recorded it and when, never changed; what a licence permits is its definition's version chain                                                                                                                                                            |
 | **AST-044** | The Figure dialog asks for the source and licence with **Not declared** a visible choice, and an upload declaring neither records `undeclared` as a row of its own, so an undeclared image is told from a declared one (AL-E)                                                                                                                                                                             |
 | **AST-053** | An undeclared image, or one past its grant's last day, is reported on the request under the environment's `warn`, the default, and fails the publish under `refuse`; never passed silently (AL-F)                                                                                                                                                                                                         |
+| **AST-004** | Each format declares its limit in `ADMITTED_FORMATS`, 25 MB for both; Administration's **Images** lowers either, never raises it (0181). An upload over its format's limit is refused `asset_too_large` at the door, and a dataset's image by the ingest job, the refusal recorded `too_large` (AL-I)                                                                                                     |
+| **AST-007** | The policy is declared: the original keeps its metadata byte for byte, and every output and derivative is made from `stripImage`, which drops EXIF, GPS, XMP, IPTC, comments and text, keeping only the colour profile, transparency, density and a minimal EXIF of the orientation. What went is recorded on each `publication_asset` and `asset_derivative` (AL-G)                                      |
+| **AST-024** | Content credentials (a JPEG's APP11 JUMBF, a PNG's `caBX`) are removed deliberately from every output and derivative, and recorded as `credentials` where they were (AL-G)                                                                                                                                                                                                                                |
+| **AST-042** | Every read of a stored original or derivative, by the service and the worker, is held to the SHA-256 its key names before it is used; the service refuses `asset_corrupt`, 502, and sends nothing (AL-I)                                                                                                                                                                                                  |
+| **AST-008** | `recordAsset` asks the `derive` job for a version's thumbnail (256 px) and preview (1,024 px) as it records the asset, however it arrived (AL-H)                                                                                                                                                                                                                                                          |
+| **AST-010** | A derivative is made from its original's stripped bytes, never from another derivative, kept beside it by version in `asset_derivative`, never under the original's key; the original is never touched (AL-H)                                                                                                                                                                                             |
+| **AST-048** | An administrator of a space discards its derivatives (`DELETE /v1/spaces/{space}/asset-derivatives`, audited); a read finding one missing serves the original, never kept, and asks the job once to make it again (AL-H)                                                                                                                                                                                  |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
 upload's **check** rather than its scan. AST-051, AST-035 and, since the audit log is written (AU1),
@@ -67,7 +74,7 @@ AST-037 are claimed above.
 and application segments, can carry any bytes at all - a zip in a text chunk is still a well-formed
 PNG, measured by the figures 1 review. They are inert here: the bytes are served only as the image's
 own type, never sniffed and never run, and never offered for download. Removing what metadata carries
-is AST-007's declared policy, which is T7's; until then the design claims no more than AST-051 says.
+is AST-007's declared policy, claimed above: an output never carries it.
 
 ## What this document does not own
 
@@ -292,12 +299,22 @@ its decisions AL-A to AL-N are the design, and this section says what stands so 
   by default (AST-053). A preview is internal use and checks none. A publish and a baseline's
   republish record the rights row and licence version each image was read under
   (`publication_request_rights`), outside the baseline's pins, so a republish answers to today's.
-- **Metadata stays in the original and leaves every output** (AL-G); derivatives are made after an
-  image is recorded and rebuilt when missing (AL-H). Replacing an image cuts a version a figure may
-  follow (AL-M).
+- **Metadata stays in the original and leaves every output** (AL-G): `stripImage` in the domain drops
+  whole segments and chunks, never a pixel, so a stripped image draws as its original did, every
+  orientation measured. The worker prints stripped images and records on `publication_asset` what each
+  carried.
+- **Derivatives** (AL-H): a `derive` job, asked for by `recordAsset`, makes a WebP thumbnail and
+  preview, upright and never enlarged, kept in `asset_derivative` by version, so a version is never
+  served another's. `/v1/asset-versions/{id}/derivatives/{kind}` serves one, or the original, never
+  kept, while it is made. A worker claims only the job kinds it runs, so a worker older than `derive`
+  leaves it for one that knows it.
+- **Limits and reads** (AL-I): each format's limit, lowered per environment; every original read is
+  held to its hash.
+- Replacing an image cuts a version a figure may follow (AL-M).
 
 AST-025 and AST-043 were superseded by AST-052 and AST-053 while planning (the AST change history).
-AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
+AST-009 (browsing by derivative) waits for the Images page, ALd, and AST-049 (a replacement's
+derivatives) for replacement, ALe. AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
 image is used only in ALe.
 
 ## Requirements challenged

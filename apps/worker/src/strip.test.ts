@@ -13,7 +13,9 @@ const photograph = (orientation: number) =>
   sharp({ create: { width: 30, height: 20, channels: 3, background: { r: 200, g: 40, b: 10 } } })
     .composite([
       {
-        input: { create: { width: 10, height: 5, channels: 3, background: { r: 0, g: 0, b: 255 } } },
+        input: {
+          create: { width: 10, height: 5, channels: 3, background: { r: 0, g: 0, b: 255 } },
+        },
         left: 2,
         top: 3,
       },
@@ -45,7 +47,12 @@ describe("an image stripped for an output still draws as it did (the AL plan, AL
 
   it('keeps a PNG with text and transparency drawn the same', async () => {
     const original = await sharp({
-      create: { width: 12, height: 9, channels: 4, background: { r: 10, g: 200, b: 30, alpha: 0.5 } },
+      create: {
+        width: 12,
+        height: 9,
+        channels: 4,
+        background: { r: 10, g: 200, b: 30, alpha: 0.5 },
+      },
     })
       .png()
       .withMetadata({ density: 144 })

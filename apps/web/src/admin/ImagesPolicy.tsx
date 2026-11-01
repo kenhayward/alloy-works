@@ -88,7 +88,10 @@ export function ImagesPolicy({ client, mayChange }: { client: Client; mayChange:
     setBusy(true);
     try {
       const { data, error } = await client.PUT('/v1/settings/images', {
-        body: { undeclared: draft, limits: { png: bytesOf(limits.png), jpeg: bytesOf(limits.jpeg) } },
+        body: {
+          undeclared: draft,
+          limits: { png: bytesOf(limits.png), jpeg: bytesOf(limits.jpeg) },
+        },
       });
       if (data) {
         setRead(data.undeclared);

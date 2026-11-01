@@ -40,6 +40,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'asset.relicensed'() {
     return words('admin.asset-licence-changed');
   },
+  get 'asset.derivatives_discarded'() {
+    return words('admin.image-thumbnails-discarded');
+  },
   get 'asset.replaced'() {
     return words('admin.asset-replaced');
   },

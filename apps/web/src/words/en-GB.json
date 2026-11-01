@@ -3281,6 +3281,7 @@
   "admin.asset-added": "Asset added",
   "admin.asset-refused": "Asset refused",
   "admin.asset-licence-changed": "Asset licence changed",
+  "admin.image-thumbnails-discarded": "Image thumbnails and previews discarded",
   "admin.asset-replaced": "Asset replaced",
   "admin.a-person-s-names-erased": "A person''s names erased from the log",
   "admin.sign-in-failed": "Sign-in failed",

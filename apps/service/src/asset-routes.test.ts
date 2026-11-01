@@ -612,6 +612,7 @@ describe('uploading an image through the service (figures 1)', () => {
         grantedBy: ids.ada!,
       });
     });
+    if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
     try {
       const discarded = await call('ada', 'DELETE', path);
       expect(discarded.statusCode, discarded.body).toBe(200);
@@ -624,7 +625,6 @@ describe('uploading an image through the service (figures 1)', () => {
       expect(preview.headers['content-type']).toBe('image/png');
       expect(preview.headers['cache-control']).toBe('private, no-store');
     } finally {
-      if (!('granted' in administers)) throw new Error(JSON.stringify(administers));
       await tenantDb.withTenant(tenant, (trx) => removeGrant(trx, administers.granted.id));
     }
   });

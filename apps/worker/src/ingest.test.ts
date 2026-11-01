@@ -203,7 +203,9 @@ describe('the ingest job, which proves an upload is only an image (figures 1)', 
 
   it("AST-004 refuses a dataset's image over the limit its environment lowered its format to, as the service refuses an upload", async () => {
     // Noise, so it compresses to more than the lowest limit there is.
-    const image = await sharp(randomBytes(64 * 64 * 3), { raw: { width: 64, height: 64, channels: 3 } })
+    const image = await sharp(randomBytes(64 * 64 * 3), {
+      raw: { width: 64, height: 64, channels: 3 },
+    })
       .png()
       .toBuffer();
     expect(image.length).toBeGreaterThan(1024);

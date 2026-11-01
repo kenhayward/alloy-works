@@ -131,7 +131,7 @@ export const ImagesSettings = z.strictObject({
       'What a publish does with an image whose source and licence were never declared, or whose grant is past its last day (AST-052, AST-053): `warn`, the default, publishes it and reports it; `refuse` refuses the publish, naming the figure. An image whose licence does not permit publication is always refused',
     ),
   limits: imageLimitsSchema.describe(
-    'The most bytes an image of each format may be in this environment (AST-004), from 1,024 to the format\'s own limit of 25,000,000, or null for the format\'s own. An upload over its format\'s limit is refused `asset_too_large`',
+    "The most bytes an image of each format may be in this environment (AST-004), from 1,024 to the format's own limit of 25,000,000, or null for the format's own. An upload over its format's limit is refused `asset_too_large`",
   ),
 });
 export type ImagesSettings = z.infer<typeof ImagesSettings>;
