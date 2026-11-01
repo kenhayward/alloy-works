@@ -337,11 +337,16 @@ export function assetHandlers(
         async (trx) => {
           const upload = await theirs(request, trx);
           // `create` in the space, decided again now that something will be made in it: a grant
-          // removed since the upload was made stops it here (final review, finding 6).
-          await authoriseAt(trx, callerOf(request), 'create', {
-            kind: 'space',
-            id: upload.spaceId,
-          });
+          // removed since the upload was made stops it here (final review, finding 6). A
+          // replacement makes nothing new: `edit` on the image it replaces, decided again (AL-M).
+          await authoriseAt(
+            trx,
+            callerOf(request),
+            upload.replaces === null ? 'create' : 'edit',
+            upload.replaces === null
+              ? { kind: 'space', id: upload.spaceId }
+              : { kind: 'artifact', id: upload.replaces },
+          );
           if (bytes === undefined) {
             throw new AppError(
               415,

@@ -2173,6 +2173,9 @@ describe('requesting and recording a publication', () => {
       expect(blocks[0]).toMatchObject({ id: 'f1', asset: latest.id });
       expect(blocks[1]).toMatchObject({ id: 'f2', asset: first.id });
       expect(blocks[2]).toMatchObject({ content: [{ asset: latest.id }] });
+      // And what each following image was placed at resolves to, for content the job is handed in
+      // place of what the request recorded: a range preview's (the ALe review, 1).
+      expect(inputs!.followed.get(first.id)).toBe(latest.id);
     });
   });
 

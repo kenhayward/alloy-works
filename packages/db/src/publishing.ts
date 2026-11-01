@@ -1692,6 +1692,11 @@ export interface PublicationInputs {
    */
   readonly boundAssets: ReadonlyMap<string, PublishingAsset>;
   /**
+   * Each following image's version as placed, to the version the request recorded for it (AL-M): the
+   * occurrences are already followed; content handed in their place - a range preview's - is not.
+   */
+  readonly followed: ReadonlyMap<string, string>;
+  /**
    * What its citations are published from (CIc): the citation style version its theme names, read
    * whole, or null where it names none; and each entry version the request recorded, by node and then
    * entry, for each node whose component is in the entry's space (CI-B). Neither is read where no
@@ -2210,6 +2215,7 @@ async function inputsOf(
     assets,
     bindings,
     boundAssets,
+    followed,
     citations: cites
       ? await recordedCitations(
           trx,

@@ -562,6 +562,28 @@ describe('uploading an image through the service (figures 1)', () => {
     const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, id));
     expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
   });
+  it("decides edit on the image again when a replacement's bytes arrive, so a grant taken away since stops it", async () => {
+    const id = await made('ada', general);
+    const bytes = png(3, 3);
+    await fill('ada', id, bytes);
+    const image = await ingested(id, bytes);
+    const asked = await call('ada', 'POST', `/v1/assets/${image.artifactId}/replacements`, {});
+    expect(asked.statusCode, asked.body).toBe(200);
+    const replacing = asked.json<{ id: string }>().id;
+    await tenantDb.withTenant(tenant, async (trx) =>
+      grant(trx, {
+        roleId: (await findRole(trx, 'Author'))!.id,
+        subject: { principal: ids.ada! },
+        level: { kind: 'artifact', id: image.artifactId },
+        effect: 'deny',
+        grantedBy: ids.grace!,
+      }),
+    );
+    expect((await fill('ada', replacing, png(4, 3))).statusCode).not.toBe(200);
+    const held = await tenantDb.withTenant(tenant, (trx) => readAssetUpload(trx, replacing));
+    expect(held).toMatchObject({ state: 'awaiting', objectKey: null });
+  });
+
   it("AST-028 AST-029 lists a space's images to a reader, searched, filtered and found by their bytes' hash", async () => {
     const uploaded = async (name: string, image: Buffer) => {
       const answer = await call('grace', 'POST', `/v1/spaces/${general}/asset-uploads`, {
