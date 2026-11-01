@@ -30,9 +30,7 @@ describe("an image's rights (the AL plan, AL-C)", () => {
     );
     expect(assetRightsSchema.parse({ kind: 'undeclared' })).toEqual({ kind: 'undeclared' });
     expect(assetRightsSchema.safeParse({ kind: 'declared', licence: LICENCE }).success).toBe(false);
-    expect(
-      assetRightsSchema.safeParse(declared({ source: { text: ' ' } })).success,
-    ).toBe(false);
+    expect(assetRightsSchema.safeParse(declared({ source: { text: ' ' } })).success).toBe(false);
   });
 
   it('AST-052 records an expiry on the grant an image is held under, a calendar date', () => {

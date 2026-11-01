@@ -244,7 +244,7 @@ describe('uploading an image through the service (figures 1)', () => {
     return answer.definition.id;
   };
 
-  it('AST-044 asks for an image\'s source and licence at upload, and records what was declared with its name (AL-E)', async () => {
+  it("AST-044 asks for an image's source and licence at upload, and records what was declared with its name (AL-E)", async () => {
     const licence = await aLicence('stock_at_upload');
     const declared = {
       kind: 'declared',

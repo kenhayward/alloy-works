@@ -194,7 +194,9 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     const undeclared = await inTenant((trx) => recordAsset(trx, silent.id, header));
     expect(undeclared.content).not.toHaveProperty('name');
     expect(
-      (await inTenant((trx) => readAssetRights(trx, undeclared.artifactId))).map((each) => each.rights),
+      (await inTenant((trx) => readAssetRights(trx, undeclared.artifactId))).map(
+        (each) => each.rights,
+      ),
     ).toEqual([{ kind: 'undeclared' }]);
 
     // A dataset's image is the environment's own data.
@@ -220,7 +222,11 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
       receiveAssetBytes(trx, upload.id, { key: key('4'), format: 'png', bytes: 3530 }),
     );
     const version = await inTenant((trx) => recordAsset(trx, upload.id, header));
-    const declared = { kind: 'declared' as const, source: { text: 'Ada, the photographer' }, licence };
+    const declared = {
+      kind: 'declared' as const,
+      source: { text: 'Ada, the photographer' },
+      licence,
+    };
     expect(
       await inTenant((trx) =>
         recordAssetRights(trx, { assetId: version.artifactId, rights: declared, by: ada }),
@@ -240,7 +246,11 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     ).toEqual({ answer: 'licence.missing' });
     expect(
       await inTenant((trx) =>
-        recordAssetRights(trx, { assetId: version.artifactId, rights: { kind: 'dataset' }, by: ada }),
+        recordAssetRights(trx, {
+          assetId: version.artifactId,
+          rights: { kind: 'dataset' },
+          by: ada,
+        }),
       ),
     ).toEqual({ answer: 'rights.invalid' });
     expect(await inTenant((trx) => readAssetRights(trx, version.artifactId))).toHaveLength(2);
@@ -248,9 +258,9 @@ describe('an asset upload, and the asset it makes (figures 1)', () => {
     await expect(
       inTenant((trx) => sql`update asset_rights set recorded_at = now()`.execute(trx)),
     ).rejects.toThrow(/permission denied/);
-    await expect(
-      inTenant((trx) => sql`delete from asset_rights`.execute(trx)),
-    ).rejects.toThrow(/permission denied/);
+    await expect(inTenant((trx) => sql`delete from asset_rights`.execute(trx))).rejects.toThrow(
+      /permission denied/,
+    );
   });
 
   it("AST-053 keeps the environment's policy for undeclared images, warn until an administrator says refuse", async () => {

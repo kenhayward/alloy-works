@@ -6,7 +6,8 @@ import { FigureDialog } from './FigureDialog.js';
 
 const STOCK = '6f1c2a4e-0b3d-4c5e-8f7a-9b0c1d2e3f40';
 
-const png = () => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'harbour.png', { type: 'image/png' });
+const png = () =>
+  new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'harbour.png', { type: 'image/png' });
 
 function dialog() {
   const upload = vi.fn(async () => ({ ok: true as const, assetVersion: 'v1' }));

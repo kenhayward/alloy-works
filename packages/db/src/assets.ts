@@ -282,7 +282,9 @@ export async function recordAsset(
     .values({
       asset_id: version.artifactId,
       rights: JSON.stringify(
-        upload.origin === 'dataset' ? { kind: 'dataset' } : (upload.rights ?? { kind: 'undeclared' }),
+        upload.origin === 'dataset'
+          ? { kind: 'dataset' }
+          : (upload.rights ?? { kind: 'undeclared' }),
       ),
       recorded_by: upload.uploader,
     })

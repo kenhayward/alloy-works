@@ -2226,7 +2226,12 @@ describe('requesting and recording a publication', () => {
       // Warn, the default: the licence forbidding it refuses; the other two are reported.
       const warned = await requested(trx, version, ada);
       expect(await failuresIn(trx, warned)).toEqual([
-        { stage: 'resolve', code: 'asset_licence_forbids', ...at('f1'), detail: 'Licence internal_only' },
+        {
+          stage: 'resolve',
+          code: 'asset_licence_forbids',
+          ...at('f1'),
+          detail: 'Licence internal_only',
+        },
       ]);
       expect(await warningsIn(warned)).toEqual([
         { code: 'asset_undeclared', ...at('f2') },

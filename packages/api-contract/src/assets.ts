@@ -106,7 +106,7 @@ export const AssetRightsChange = z.object({
 export const AssetRightsView = z.object({
   asset: z.string(),
   current: assetRightsSchema.describe(
-    '`declared`, `undeclared`, or `dataset` for an image a dataset holds, the environment\'s own data',
+    "`declared`, `undeclared`, or `dataset` for an image a dataset holds, the environment's own data",
   ),
   history: z.array(AssetRightsChange),
 });
@@ -136,7 +136,8 @@ export const assetRoutes = {
       403: { description: 'The caller may read the space but not create in it', schema: ErrorBody },
       404: notFound,
       422: {
-        description: '`asset_licence_missing`: the licence declared is no licence of this environment',
+        description:
+          '`asset_licence_missing`: the licence declared is no licence of this environment',
         schema: ErrorBody,
       },
     },
