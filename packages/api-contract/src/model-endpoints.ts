@@ -1,5 +1,7 @@
 import {
   GENERATION_FAILURE_CODES,
+  MODEL_KINDS,
+  MODEL_TIMEOUT_SECONDS,
   ROUTED_PURPOSES,
   UNAVAILABLE_REASONS,
   modelEndpointSchema,
@@ -23,6 +25,18 @@ export type ModelRouteParams = z.infer<typeof ModelRouteParams>;
 
 /** The domain's settings, with examples a reader can try: a base URL and a currency are checked. */
 const settings = modelEndpointSchema.extend({
+  kind: modelEndpointSchema.shape.kind.describe(
+    '`llm`, which answers, or `embedding`, which embeds: an LLM where unsaid. An embedding model is routed to embedding alone, and an LLM to every other purpose',
+  ),
+  timeoutSeconds: modelEndpointSchema.shape.timeoutSeconds.describe(
+    `How long one call may take, in whole seconds, ${MODEL_TIMEOUT_SECONDS.least} to ${MODEL_TIMEOUT_SECONDS.most}; ${MODEL_TIMEOUT_SECONDS.default} where unsaid`,
+  ),
+  supportsTools: modelEndpointSchema.shape.supportsTools.describe(
+    'Whether the model calls tools: a model that does not is sent none. Yes where unsaid',
+  ),
+  supportsImages: modelEndpointSchema.shape.supportsImages.describe(
+    'Whether the model reads images: a model that does not is sent none. No where unsaid',
+  ),
   baseUrl: modelEndpointSchema.shape.baseUrl.meta({ examples: ['https://api.anthropic.com'] }),
   model: modelEndpointSchema.shape.model.meta({ examples: ['claude-sonnet-5-5'] }),
   currency: modelEndpointSchema.shape.currency.meta({ examples: ['USD'] }),
@@ -64,6 +78,9 @@ const KeyState = z
   .describe('Whether a key is set, never the key');
 
 export const ModelEndpointView = settings.extend({
+  kind: z.enum(MODEL_KINDS),
+  supportsTools: z.boolean(),
+  supportsImages: z.boolean(),
   id: z.string(),
   madeAt: z.string(),
   changedAt: z.string(),
@@ -296,7 +313,7 @@ export const modelEndpointRoutes = {
       404: { description: 'The endpoint named is not one of this environment', schema: ErrorBody },
       409: {
         description:
-          '`endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol',
+          '`endpoint_unusable`: the endpoint is retired, or has no key set for where it points; `embedding_unsupported`: embedding routed to an endpoint not speaking the OpenAI protocol; `endpoint_kind_mismatch`: embedding routed to an LLM, or another purpose to an embedding model',
         schema: ErrorBody,
       },
     },

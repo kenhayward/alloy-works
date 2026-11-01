@@ -164,7 +164,17 @@ export const assistantEvents = {
   },
   text: {
     summary: "The model's answer, a piece at a time, as it is made",
-    schema: z.object({ text: z.string() }),
+    schema: z.object({
+      text: z.string(),
+      tokens: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe(
+          'How many tokens of the reply have arrived so far, this piece among them: counted as the pieces the provider streamed, about a token each',
+        ),
+    }),
   },
   tool_call: {
     summary: 'The model called one of its tools, with these arguments',

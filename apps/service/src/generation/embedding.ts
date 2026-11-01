@@ -15,12 +15,15 @@ import {
   type TenantDatabase,
   type TenantTransaction,
 } from '@alloy-works/db';
+import { modelDeadlineMs, type EmbedAnswer, type GenerationFailure } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 
 import { type Authorised } from '../access.js';
+import { contextOf } from '../audit.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
 import { AppError } from '../errors.js';
+import { failureView } from './models.js';
 import { microsText } from './money.js';
 
 /**
@@ -111,51 +114,66 @@ export function embeddingHandlers(
         throw new AppError(503, 'connector_unavailable', 'The connector could not be reached.');
       }
       // One sample, a run of the administrator's, to learn how long the model's vectors are (G7-D).
-      // Its own transactions, so the sample's run is kept whether or not the model is confirmed.
-      const run = await db.withTenant(tenantOf(request), (inner) =>
-        startRun(inner, {
-          purpose: 'embedding',
-          endpoint,
-          parameters: { inputs: 1, model, sample: true },
-          contextDigest: '0'.repeat(64),
-          by: principalId,
-        }),
+      // Its own transactions, so the sample's run is kept whether or not the model is confirmed; each
+      // as the administrator, so the run's event names them.
+      const tenant = tenantOf(request);
+      const context = contextOf(request);
+      const run = await db.withTenant(
+        tenant,
+        (inner) =>
+          startRun(inner, {
+            purpose: 'embedding',
+            endpoint,
+            parameters: { inputs: 1, model, sample: true },
+            contextDigest: '0'.repeat(64),
+            by: principalId,
+          }),
+        context,
       );
-      const answered = await client.embed({
-        requestId: randomUUID(),
-        tenant: tenantOf(request).id,
-        endpoint: { id: endpoint.id, protocol: endpoint.protocol, baseUrl: endpoint.baseUrl },
-        sealed,
-        call: { model, inputs: [SAMPLE] },
-        deadlineMs: 30_000,
-      });
-      const answer = 'answer' in answered ? answered.answer : undefined;
-      const dims = answer?.type === 'embedded' ? (answer.vectors[0]?.length ?? 0) : 0;
-      await db.withTenant(tenantOf(request), async (inner) => {
-        const recorded = await endRun(
-          inner,
-          run,
-          answer?.type === 'embedded'
-            ? {
-                outcome: 'finished',
-                model: answer.model,
-                usage: answer.usage ? { in: answer.usage.in, out: 0 } : null,
-              }
-            : {
-                outcome:
-                  answer?.type === 'failed'
-                    ? answer.failure.code
-                    : 'refused' in answered
-                      ? answered.refused.code
-                      : 'connector_error',
-              },
+      let failure: GenerationFailure = { code: 'connector_error' };
+      let answer: EmbedAnswer | undefined;
+      try {
+        const answered = await client.embed({
+          requestId: randomUUID(),
+          tenant: tenant.id,
+          endpoint: { id: endpoint.id, protocol: endpoint.protocol, baseUrl: endpoint.baseUrl },
+          sealed,
+          call: { model, inputs: [SAMPLE] },
+          deadlineMs: modelDeadlineMs(endpoint),
+        });
+        if ('answer' in answered) answer = answered.answer;
+        else failure = { code: answered.refused.code };
+        if (answer?.type === 'failed') failure = answer.failure;
+      } finally {
+        // Never left running, whatever became of the call.
+        await db.withTenant(
+          tenant,
+          async (inner) => {
+            const recorded = await endRun(
+              inner,
+              run,
+              answer?.type === 'embedded'
+                ? {
+                    outcome: 'finished',
+                    model: answer.model,
+                    usage: answer.usage ? { in: answer.usage.in, out: 0 } : null,
+                  }
+                : { outcome: failure.code },
+            );
+            await recordGenerationRun(inner, recorded);
+            return recorded;
+          },
+          context,
         );
-        await recordGenerationRun(inner, recorded);
-        return recorded;
-      });
+      }
+      const dims = answer?.type === 'embedded' ? (answer.vectors[0]?.length ?? 0) : 0;
 
       if (answer?.type !== 'embedded') {
-        throw new AppError(409, 'embedding_unavailable', 'The model did not answer a sample.');
+        throw new AppError(
+          409,
+          'embedding_unavailable',
+          `The model did not answer a sample: ${failureView(failure).message}`,
+        );
       }
       if (!isDimensions(dims)) {
         throw new AppError(

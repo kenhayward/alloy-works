@@ -54,6 +54,7 @@ import {
   isConversationTool,
   applyEdits,
   asData,
+  endpointKind,
   citeIn,
   citedSourceSchema,
   pendingResolved,
@@ -102,7 +103,6 @@ const sourcesOn = async (trx: TenantTransaction) =>
 export const ASSISTANT_LIMITS = {
   turns: 6,
   toolCalls: 12,
-  turnMs: 60_000,
   runMs: 240_000,
   maxTokens: 4096,
 } as const;
@@ -510,6 +510,54 @@ export function assistantHandlers(
   }
 
   /**
+   * What the person chose the assistant be given with a turn on a document: the component open, or
+   * every component of the document, each read as them now at the version placed there. Parts past
+   * about half the model's context window, at four characters a token, are left out and counted.
+   */
+  async function readChosen(
+    trx: TenantTransaction,
+    conversation: Conversation,
+    principal: string,
+    chosen: { context: TurnBody['context']; component: string | undefined },
+    window: number,
+  ) {
+    const read: { component: string; version: string; number: string; content: ContentDocument }[] =
+      [];
+    if (conversation.documentId === null || chosen.context === undefined) {
+      return { read, left: 0 };
+    }
+    const found = await placed(trx, conversation.documentId, principal);
+    if (!found) return { read, left: 0 };
+    const wanted =
+      chosen.context === 'document'
+        ? [...found.readable.keys()]
+        : chosen.component !== undefined && found.readable.has(chosen.component)
+          ? [chosen.component]
+          : [];
+    const versions = wanted.map((each) => found.readable.get(each)!);
+    const contents = await versionContents(trx, versions);
+    let budget = window * 2;
+    let left = 0;
+    for (const [at, component] of wanted.entries()) {
+      const content = contents.get(versions[at]!);
+      if (!content) continue;
+      const document = content.content as ContentDocument;
+      budget -= componentAsText(document).length;
+      if (budget < 0) {
+        left += 1;
+        continue;
+      }
+      read.push({
+        component,
+        version: versions[at]!,
+        number: `${content.revision}.${content.version}`,
+        content: document,
+      });
+    }
+    return { read, left };
+  }
+
+  /**
    * A conversation's tray as its person may read it now (G5-D; GEN-053): each part decided again,
    * never trusted for having been read before; on a document, at the version placed there, else at
    * its latest. A part they may no longer read is left out and named.
@@ -883,6 +931,8 @@ export function assistantHandlers(
         const fallback = await defaultEndpoint(trx);
         const items = [];
         for (const each of await listModelEndpoints(trx)) {
+          // An embedding model answers nothing, so no conversation runs on one.
+          if (endpointKind(each) === 'embedding') continue;
           if (each.retiredAt !== null || (await usableModelKey(trx, each)) === undefined) continue;
           items.push({
             id: each.id,
@@ -976,7 +1026,7 @@ export function assistantHandlers(
     takeTurn: async (request: FastifyRequest) => {
       const principalId = principalOf(request).principalId;
       const tenant = tenantOf(request);
-      const { ask, endpoint: named, component } = request.body as TurnBody;
+      const { ask, endpoint: named, component, context: chosen } = request.body as TurnBody;
       const prepared = await db.withTenant(
         tenant,
         async (trx) => {
@@ -1013,6 +1063,13 @@ export function assistantHandlers(
             guardrails: await listGuardrails(trx),
             sources: await sourcesOn(trx),
             tray: await readTray(trx, request, conversation, principalId),
+            given: await readChosen(
+              trx,
+              conversation,
+              principalId,
+              { context: chosen, component },
+              endpoint.contextWindow,
+            ),
           };
         },
         contextOf(request),
@@ -1020,7 +1077,7 @@ export function assistantHandlers(
       if (!client) {
         throw new AppError(503, 'connector_unavailable', failureWords('connector_unavailable'));
       }
-      const { conversation, turns, endpoint, sealed, guardrails, tray, sources } = prepared;
+      const { conversation, turns, endpoint, sealed, guardrails, tray, sources, given } = prepared;
       const document = conversation.documentId;
       // The earlier finished turns' words, never their tool results (G5-A).
       const earlier: ModelMessage[] = turns.flatMap((each): ModelMessage[] =>
@@ -1033,19 +1090,31 @@ export function assistantHandlers(
       );
       const asked =
         component === undefined ? ask : `${ask}\n\n(The author has component ${component} open.)`;
-      // The tray's parts, as data, before the words (G5-D): re-read as the person this turn.
+      // The parts chosen, then the tray's, as data, before the words (G5-D): re-read as the person
+      // this turn, each once.
+      const reading = [
+        ...given.read,
+        ...tray.read.filter(
+          (each) => !given.read.some((part) => part.component === each.component),
+        ),
+      ];
       const words =
-        tray.read.length === 0
+        reading.length === 0
           ? asked
           : [
               'What you may read:',
-              ...tray.read.map((each) =>
+              ...reading.map((each) =>
                 asData(
                   `component:${each.component}`,
                   each.number,
                   capped(componentAsText(each.content)),
                 ),
               ),
+              ...(given.left === 0
+                ? []
+                : [
+                    `(${given.left} more components of the document were left out: too long to give.)`,
+                  ]),
               asked,
             ].join('\n\n');
       return streamedRun({
@@ -1083,7 +1152,7 @@ export function assistantHandlers(
           conversation: conversation.id,
           tray: { read: tray.read.map((each) => each.component), dropped: tray.dropped },
         },
-        context: tray.read.map((each) => ({
+        context: reading.map((each) => ({
           component: each.component,
           version: each.version,
           blocks: each.content.content.map((block) => block.id),
@@ -1227,6 +1296,13 @@ export function assistantHandlers(
         409,
         'endpoint_unusable',
         'That endpoint is retired, or is not one of this environment’s.',
+      );
+    }
+    if (endpointKind(endpoint) === 'embedding') {
+      throw new AppError(
+        409,
+        'endpoint_kind_mismatch',
+        'That endpoint is an embedding model, which answers nothing: choose an LLM.',
       );
     }
     return endpoint;

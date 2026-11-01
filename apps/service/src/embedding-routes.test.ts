@@ -26,6 +26,8 @@ describe('embedding a corpus, costed and confirmed first (the G7 plan, G7-J)', (
       await h.call('ada', 'POST', '/v1/model-endpoints', {
         name: 'Embedding',
         protocol: 'openai',
+        kind: 'embedding',
+        timeoutSeconds: 200,
         baseUrl: 'https://models.example.test',
         model: 'stand-in-embed-384',
         contextWindow: 8192,
@@ -84,6 +86,18 @@ describe('embedding a corpus, costed and confirmed first (the G7 plan, G7-J)', (
     expect(confirmed.statusCode, confirmed.body).toBe(200);
     // One sample, to learn its dimensions.
     expect(h.connector.asked.slice(asked).map((each) => each.path)).toEqual(['/v1/embed']);
+    // Within the endpoint's own timeout.
+    expect(h.connector.asked.at(-1)?.body).toMatchObject({ deadlineMs: 200_000 });
+    // The sample's run, ended and recorded as the administrator who confirmed it.
+    const runs = (await h.call('ada', 'GET', '/v1/audit?kind=generation.run&limit=50')).json<{
+      items: { actor: string | null; detail: { purpose: string; outcome: string } }[];
+    }>().items;
+    expect(runs.filter((each) => each.detail.purpose === 'embedding')).toEqual([
+      expect.objectContaining({
+        actor: h.ids.ada,
+        detail: expect.objectContaining({ outcome: 'finished' }),
+      }),
+    ]);
     expect(confirmed.json<View>().pending).toMatchObject({ confirmed: true, dims: 384 });
     expect(await models()).toEqual([
       { model: 'stand-in-embed-384', dims: 384, endpointId: endpoint },
@@ -104,6 +118,7 @@ describe('embedding a corpus, costed and confirmed first (the G7 plan, G7-J)', (
       await h.call('ada', 'POST', '/v1/model-endpoints', {
         name: 'Odd',
         protocol: 'openai',
+        kind: 'embedding',
         baseUrl: 'https://models.example.test',
         model: 'stand-in-embed-100',
         contextWindow: 8192,
@@ -125,6 +140,43 @@ describe('embedding a corpus, costed and confirmed first (the G7 plan, G7-J)', (
       expect((await view()).pending).toMatchObject({ confirmed: false });
     } finally {
       dims = 384;
+    }
+  });
+
+  it("says why a model did not answer its sample, and ends the sample's run", async () => {
+    const other = (
+      await h.call('ada', 'POST', '/v1/model-endpoints', {
+        name: 'Sleepy',
+        protocol: 'openai',
+        kind: 'embedding',
+        baseUrl: 'https://models.example.test',
+        model: 'stand-in-embed-sleepy',
+        contextWindow: 8192,
+        priceIn: 1,
+        priceOut: 0,
+        currency: 'USD',
+        boundary: 'inside',
+      })
+    ).json<{ endpoint: { id: string } }>().endpoint.id;
+    await h.call('ada', 'PUT', `/v1/model-endpoints/${other}/key`, { key: 'an-invented-key' });
+    await h.call('ada', 'PUT', '/v1/model-routes/embedding', { endpoint: other });
+    const was = h.connector.embedFor;
+    h.connector.embedFor = () => ({ type: 'failed', failure: { code: 'timeout' } });
+    try {
+      const refused = await h.call('ada', 'POST', '/v1/embedding/confirmation', {
+        model: 'stand-in-embed-sleepy',
+      });
+      expect(refused.statusCode).toBe(409);
+      expect(refused.json()).toMatchObject({
+        code: 'embedding_unavailable',
+        message: 'The model did not answer a sample: The endpoint did not finish in time.',
+      });
+      const runs = (await h.call('ada', 'GET', '/v1/audit?kind=generation.run&limit=50')).json<{
+        items: { actor: string | null; detail: { outcome: string } }[];
+      }>().items;
+      expect(runs[0]).toMatchObject({ actor: h.ids.ada, detail: { outcome: 'timeout' } });
+    } finally {
+      h.connector.embedFor = was;
     }
   });
 });

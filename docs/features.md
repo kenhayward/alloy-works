@@ -178,7 +178,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   connector, which alone calls an endpoint, and no page or route shows it again. **Test** makes one
   short call and says what came back, as which model, how long it took and what it cost; every test is
   recorded as a run with its tokens and cost. Each purpose (drafting, chat, summarising, embedding)
-  goes to one endpoint, or to none.
+  goes to one endpoint, or to none. Each endpoint is an LLM or an embedding model: embedding goes to an
+  embedding model alone, and every other purpose, and every conversation, to an LLM. Each has a
+  timeout, 120 seconds unless set, which every call to it waits; and says whether its model calls
+  tools, a model that does not being sent none, and reads images. **Edit** and **Test** are icons on
+  its line, **Edit** opening its settings beside it; **Set key** and **Retire** are under More actions.
 - **The assistant.** While you author a document, its **Assistant** tab answers what you ask about it,
   through the endpoint drafting goes to, saying which one and whether it sits outside your data
   boundary. It reads the outline, a part, a search of the document and its bound values, only what you
@@ -192,7 +196,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
 - **Conversations.** The Assistant tab holds your conversations about the document: each turn
   carries the earlier turns' words, runs as the assistant does, and is kept with what it said. You
   choose the endpoint a turn runs on, and it says whether that sits outside your data boundary
-  (`/v1/conversations`). Nothing is refused for being off the subject.
+  (`/v1/conversations`). Nothing is refused for being off the subject. **Context** gives a turn the
+  **Current component** or **All components** of the document, read as you, beside what its tools
+  find. While a reply streams, the tab says it is answering and how many tokens have arrived.
   **Conversations** holds conversations on no document, its tools your own search, reads and
   proposals. Each conversation shows **What it reads**: every part a turn read, or that you added,
   read again as you each turn, a part you may no longer read left out and said so; remove a part, or

@@ -1,5 +1,10 @@
 import { readRun } from '@alloy-works/db';
-import { canonicalCall, modelRequestSchema, type ModelEvent } from '@alloy-works/domain';
+import {
+  MODEL_TIMEOUT_SECONDS,
+  canonicalCall,
+  modelRequestSchema,
+  type ModelEvent,
+} from '@alloy-works/domain';
 import { createHash } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -180,6 +185,7 @@ describe('model endpoints through the service (the G1 plan)', () => {
     const inside = await keyed({
       name: 'Embedding inside',
       protocol: 'openai',
+      kind: 'embedding',
       boundary: 'inside',
       model: 'stand-in-embed-768',
     });
@@ -261,6 +267,85 @@ describe('model endpoints through the service (the G1 plan)', () => {
     } finally {
       h.connector.model = before;
     }
+  });
+
+  it("keeps a model's kind, timeout and what it supports: an LLM with tools, no images and the default timeout unless said", async () => {
+    const plain = await make({ name: 'Plain' });
+    expect(plain).toMatchObject({ kind: 'llm', supportsTools: true, supportsImages: false });
+    expect(plain).not.toHaveProperty('timeoutSeconds');
+    const made = await make({
+      name: 'Slow local',
+      protocol: 'openai',
+      kind: 'llm',
+      timeoutSeconds: 180,
+      supportsTools: false,
+      supportsImages: true,
+    });
+    expect(made).toMatchObject({
+      kind: 'llm',
+      timeoutSeconds: 180,
+      supportsTools: false,
+      supportsImages: true,
+    });
+    const changed = await h.call(
+      'ada',
+      'PUT',
+      `/v1/model-endpoints/${made.id}`,
+      endpoint({ name: 'Slow local', protocol: 'openai', kind: 'embedding', timeoutSeconds: 90 }),
+    );
+    expect(changed.statusCode, changed.body).toBe(200);
+    expect(changed.json()).toMatchObject({
+      endpoint: { kind: 'embedding', timeoutSeconds: 90, supportsTools: true },
+    });
+    expect(
+      (await events('model_endpoint.changed'))
+        .filter((each) => each.subject?.id === made.id)
+        .map((each) => each.detail),
+    ).toEqual([{ settings: ['kind', 'timeoutSeconds', 'supportsTools', 'supportsImages'] }]);
+    for (const timeoutSeconds of [0, 241, 1.5]) {
+      const refused = await h.call(
+        'ada',
+        'POST',
+        '/v1/model-endpoints',
+        endpoint({ name: `Timeout ${timeoutSeconds}`, timeoutSeconds }),
+      );
+      expect(refused.statusCode, String(timeoutSeconds)).toBe(400);
+    }
+  });
+
+  it('routes an embedding model to embedding alone, and an LLM to everything else', async () => {
+    const embedder = await keyed({
+      name: 'Embedder',
+      protocol: 'openai',
+      kind: 'embedding',
+      model: 'stand-in-embed-768',
+    });
+    const llm = await keyed({ name: 'Talker', protocol: 'openai' });
+    const set = async (purpose: string, id: string | null) =>
+      h.call('ada', 'PUT', `/v1/model-routes/${purpose}`, { endpoint: id });
+    expect((await set('chat', embedder.id)).json()).toMatchObject({
+      code: 'endpoint_kind_mismatch',
+    });
+    expect((await set('embedding', llm.id)).json()).toMatchObject({
+      code: 'endpoint_kind_mismatch',
+    });
+    expect((await set('embedding', embedder.id)).statusCode).toBe(200);
+    expect((await set('chat', llm.id)).statusCode).toBe(200);
+    await set('embedding', null);
+    await set('chat', null);
+  });
+
+  it('tests an endpoint within its own timeout, or the default where it names none', async () => {
+    const slow = await keyed({ name: 'Slow test', timeoutSeconds: 200 });
+    const plain = await keyed({ name: 'Plain test' });
+    const deadline = async (id: string) => {
+      expect((await h.call('ada', 'POST', `/v1/model-endpoints/${id}/test`)).statusCode).toBe(200);
+      return modelRequestSchema.parse(
+        h.connector.asked.filter((each) => each.path === '/v1/model').at(-1)!.body,
+      ).deadlineMs;
+    };
+    expect(await deadline(slow.id)).toBe(200_000);
+    expect(await deadline(plain.id)).toBe(MODEL_TIMEOUT_SECONDS.default * 1000);
   });
 
   it('refuses every model endpoint route to anybody who does not administer the environment', async () => {

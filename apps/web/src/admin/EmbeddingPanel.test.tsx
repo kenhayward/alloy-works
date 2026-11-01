@@ -12,7 +12,7 @@ const inside = { id: 'e1', name: 'Our embedder', boundary: 'inside', retired: fa
 
 const measured = { versions: 20, p95Seconds: 1.4, maxSeconds: 4.02 };
 
-function service(freshness: unknown = measured) {
+function service(freshness: unknown = measured, confirming?: () => Response | Promise<Response>) {
   const sent: unknown[] = [];
   let view = {
     serving: { model: 'embed-small-768', dims: 768, endpoint: inside },
@@ -33,6 +33,7 @@ function service(freshness: unknown = measured) {
     if (path === '/v1/search/meaning/freshness') return json(200, freshness);
     if (path === '/v1/embedding/confirmation') {
       sent.push(await request.json());
+      if (confirming) return confirming();
       view = { ...view, pending: { ...view.pending, confirmed: true, dims: 1024, missing: 11000 } };
       return json(200, view);
     }
@@ -77,5 +78,41 @@ describe("Models' searching by meaning", () => {
         'How long new versions take to be findable by meaning has not been measured in the last 7 days.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it("says why confirming failed, in the service's words", async () => {
+    const user = userEvent.setup();
+    const { client } = service(measured, () =>
+      json(409, {
+        code: 'embedding_unavailable',
+        message: 'The model did not answer a sample: The endpoint did not finish in time.',
+      }),
+    );
+    render(<EmbeddingPanel client={client} generation={0} />);
+    const panel = await screen.findByRole('region', { name: 'Searching by meaning' });
+    await user.click(within(panel).getByRole('button', { name: 'Confirm and embed' }));
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(
+      'embed-large-1024 could not be confirmed: The model did not answer a sample: The endpoint did not finish in time.',
+    );
+    expect(within(panel).getByRole('button', { name: 'Confirm and embed' })).toBeEnabled();
+  });
+
+  it('says so when the service could not be reached, or failed without saying why', async () => {
+    const user = userEvent.setup();
+    let failing: () => Response = () => {
+      throw new TypeError('Failed to fetch');
+    };
+    const { client } = service(measured, () => failing());
+    render(<EmbeddingPanel client={client} generation={0} />);
+    const panel = await screen.findByRole('region', { name: 'Searching by meaning' });
+    await user.click(within(panel).getByRole('button', { name: 'Confirm and embed' }));
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(
+      'embed-large-1024 could not be confirmed: the service could not be reached.',
+    );
+    failing = () => new Response('', { status: 500 });
+    await user.click(within(panel).getByRole('button', { name: 'Confirm and embed' }));
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(
+      'embed-large-1024 could not be confirmed: the service failed (HTTP 500).',
+    );
   });
 });

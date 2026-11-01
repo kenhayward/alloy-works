@@ -22755,7 +22755,7 @@
     {
       "id": "GEN-044",
       "file": "apps/service/src/embedding-routes.test.ts",
-      "line": 58,
+      "line": 60,
       "kind": "title"
     },
     {
@@ -23349,31 +23349,31 @@
     {
       "id": "GEN-028",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 138,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "GEN-029",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 83,
+      "line": 88,
       "kind": "title"
     },
     {
       "id": "GEN-031",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 63,
+      "line": 68,
       "kind": "title"
     },
     {
       "id": "GEN-032",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 240,
+      "line": 246,
       "kind": "title"
     },
     {
       "id": "GEN-038",
       "file": "apps/service/src/model-endpoint-routes.test.ts",
-      "line": 173,
+      "line": 178,
       "kind": "title"
     },
     {
@@ -24879,13 +24879,13 @@
     {
       "id": "GEN-044",
       "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
-      "line": 45,
+      "line": 46,
       "kind": "title"
     },
     {
       "id": "SCH-067",
       "file": "apps/web/src/admin/EmbeddingPanel.test.tsx",
-      "line": 63,
+      "line": 64,
       "kind": "title"
     },
     {
@@ -24969,19 +24969,19 @@
     {
       "id": "GEN-028",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 183,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "GEN-029",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 141,
+      "line": 255,
       "kind": "title"
     },
     {
       "id": "GEN-031",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 103,
+      "line": 125,
       "kind": "title"
     },
     {
@@ -32511,13 +32511,13 @@
     {
       "id": "GEN-031",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 39,
+      "line": 42,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 79,
+      "line": 105,
       "kind": "title"
     },
     {
@@ -32679,7 +32679,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1142,
+      "line": 1149,
       "kind": "title"
     },
     {

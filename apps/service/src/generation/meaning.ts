@@ -16,7 +16,7 @@ import {
   type Tenant,
   type TenantDatabase,
 } from '@alloy-works/db';
-import { EMBED_INPUT_CHARS_MOST, parseQuery } from '@alloy-works/domain';
+import { EMBED_INPUT_CHARS_MOST, parseQuery, modelDeadlineMs } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 
 import { contextOf } from '../audit.js';
@@ -35,7 +35,10 @@ export type MeaningState = 'used' | 'unavailable' | 'unconfigured' | 'skipped';
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
-/** How long a search's embedding may take before search answers by words alone. */
+/**
+ * How long a search's embedding may take before search answers by words alone: the model's own
+ * timeout where that is shorter.
+ */
 const QUERY_EMBED_MS = 10_000;
 
 /** How long a model that failed a search is left alone, so no search waits on it again at once. */
@@ -108,7 +111,7 @@ export function meaningSearcher(db: TenantDatabase, connector: ConnectorOptions 
         endpoint: { id: endpoint.id, protocol: endpoint.protocol, baseUrl: endpoint.baseUrl },
         sealed: ready.sealed,
         call: { model: ready.serving.model, inputs: [words.slice(0, EMBED_INPUT_CHARS_MOST)] },
-        deadlineMs: QUERY_EMBED_MS,
+        deadlineMs: modelDeadlineMs(endpoint, QUERY_EMBED_MS),
       });
       const answer = 'answer' in answered ? answered.answer : undefined;
       const fits = answer?.type === 'embedded' && answer.vectors[0]?.length === ready.serving.dims;

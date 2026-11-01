@@ -40,6 +40,7 @@ import {
   xliffUnits,
   type GenerationFailure,
   type XliffPart,
+  modelDeadlineMs,
 } from '@alloy-works/domain';
 import { readXliff } from '@alloy-works/readers/xliff';
 import type { FastifyRequest } from 'fastify';
@@ -62,9 +63,6 @@ import { RateLimited, rateLimitedWords, refuseOverLimit, startLimited } from './
  * it commits, each piece a run; each reply read back by the XLIFF mapping, so a code missing, repeated
  * or invented refuses the whole draft; the guardrails on what came back; and the draft cut and marked.
  */
-
-/** A piece's call's deadline. */
-const PIECE_MS = 120_000;
 
 const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
@@ -282,7 +280,7 @@ export function machineDraftHandlers(
                   },
                   sealed,
                   call,
-                  deadlineMs: PIECE_MS,
+                  deadlineMs: modelDeadlineMs(endpoint),
                 },
                 (event) => {
                   if (event.type === 'text') said += event.text;

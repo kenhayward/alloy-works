@@ -433,4 +433,94 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       h.connector.modelFor = was;
     }
   });
+
+  describe("the model's settings and the context chosen", () => {
+    const keyed = async (over: Json) => {
+      const made = await h.call('ada', 'POST', '/v1/model-endpoints', {
+        protocol: 'openai',
+        baseUrl: 'https://models.example.test',
+        model: 'stand-in-1',
+        contextWindow: 200_000,
+        priceIn: 0,
+        priceOut: 0,
+        currency: 'USD',
+        boundary: 'inside',
+        ...over,
+      });
+      expect(made.statusCode, made.body).toBe(200);
+      const { id } = made.json<{ endpoint: { id: string } }>().endpoint;
+      await h.call('ada', 'PUT', `/v1/model-endpoints/${id}/key`, { key: 'an-invented-key' });
+      return id;
+    };
+
+    it('offers no embedding model for a conversation, and refuses a turn on one', async () => {
+      const embedder = await keyed({ name: 'Vectors', kind: 'embedding' });
+      const offered = (await h.call('grace', 'GET', '/v1/conversation-endpoints')).json<{
+        items: { id: string }[];
+      }>().items;
+      expect(offered.map((each) => each.id)).not.toContain(embedder);
+      expect(offered.map((each) => each.id)).toContain(inside);
+      const refused = await turn('grace', await start('grace'), {
+        ask: 'Hello',
+        endpoint: embedder,
+      });
+      expect(refused.statusCode).toBe(409);
+      expect(refused.json()).toMatchObject({ code: 'endpoint_kind_mismatch' });
+    });
+
+    it('calls the model within its own timeout, or the default where it names none', async () => {
+      const slow = await keyed({ name: 'Slow chat', timeoutSeconds: 200 });
+      const id = await start('grace');
+      await turn('grace', id, { ask: 'Hello', endpoint: slow });
+      expect(asked.at(-1)!.deadlineMs).toBe(200_000);
+      await turn('grace', id, { ask: 'Hello again', endpoint: inside });
+      expect(asked.at(-1)!.deadlineMs).toBe(120_000);
+    });
+
+    it('sends no tools to a model that does not call them', async () => {
+      const toolless = await keyed({ name: 'No tools', supportsTools: false });
+      await turn('grace', await start('grace', { document: document.id }), {
+        ask: 'Summarise it.',
+        endpoint: toolless,
+      });
+      expect(asked.at(-1)!.call).not.toHaveProperty('tools');
+    });
+
+    it('gives the turn the component open, or every component of the document, as chosen', async () => {
+      const other = await h.component(h.general, 'Gardens');
+      await h.place(other, { type: 'text', value: 'Roses in the borders.', marks: [] });
+      const both = await h.documentReferencing([sitesId, other.id]);
+      const id = await start('grace', { document: both.id });
+      const sent = () => JSON.stringify(asked.at(-1)!.call.messages.at(-1));
+
+      await turn('grace', id, { ask: 'What is here?', component: sitesId, context: 'component' });
+      expect(sent()).toContain('The north weir floods each spring.');
+      expect(sent()).not.toContain('Roses in the borders.');
+
+      await turn('grace', id, { ask: 'And here?', component: sitesId, context: 'document' });
+      expect(sent()).toContain('The north weir floods each spring.');
+      expect(sent()).toContain('Roses in the borders.');
+
+      const refused = await turn('grace', id, { ask: 'Hm?', context: 'everything' });
+      expect(refused.statusCode).toBe(400);
+    });
+
+    it('counts the tokens received as the reply streams', async () => {
+      const was = h.connector.modelFor;
+      h.connector.modelFor = (request) => {
+        asked.push(request);
+        return [text('One'), text(' two'), text(' three.'), ended];
+      };
+      try {
+        const framed = framesOf(
+          (await turn('grace', await start('grace'), { ask: 'Count.' })).body,
+        );
+        expect(
+          framed.filter((frame) => frame.event === 'text').map((frame) => frame.data.tokens),
+        ).toEqual([1, 2, 3]);
+      } finally {
+        h.connector.modelFor = was;
+      }
+    });
+  });
 });

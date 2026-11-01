@@ -132,6 +132,13 @@ holds a purpose and an endpoint. An endpoint `outside` is labelled so in the end
 route, the assistant panel and the run (GEN-031); a tenant that keeps content inside routes only
 endpoints marked `inside`, or none.
 
+An endpoint also holds (0182) its `kind`, `llm` or `embedding`: `embedding` is routed to an embedding
+model alone, every other purpose and every conversation to an LLM (`endpoint_kind_mismatch`); its
+`timeout_seconds`, every call's deadline (`modelDeadlineMs`), 120 s where null, at most the connector's
+240 s, a run's own time left still bounding each turn; and `supports_tools` and `supports_images`. A
+model that calls no tools is sent none and answers from what its turn was given; nothing sends images
+yet, so `supports_images` gates nothing until something does.
+
 ## The run
 
 Every model call belongs to a `generation_run`, insert-only but for its ending:
@@ -160,6 +167,11 @@ open document's outline and the component the requester has chosen. Resolution r
 requester (GEN-058), so what they cannot read is absent, never flagged to the model. The resolved set
 is recorded before the call (GEN-057). Nothing is added after resolution: tool results are the only
 later content, and each is a recorded step.
+
+A conversation's turn may also declare `context`: `component`, the component open, or `document`,
+every component of the document the requester may read, each at the version placed there and sent
+as data before the ask with the tray's parts, the whole kept to about half the endpoint's window at
+four characters a token, the parts past it counted and named as left out.
 
 Size: the request is measured against the endpoint's declared window at three bytes a token, which
 overestimates for prose; above it the run fails `context_too_large`, naming both sizes, before any
