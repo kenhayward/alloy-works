@@ -181,12 +181,15 @@ function withLibrary(duplicate: typeof HARBOUR | null = null) {
   return { upload, onDone, search, duplicateOf };
 }
 
-describe("the Figure dialog chooses an image the space holds (the AL plan, ALd)", () => {
+describe('the Figure dialog chooses an image the space holds (the AL plan, ALd)', () => {
   it('AST-028 places an image chosen from the space, its own description inherited, uploading nothing', async () => {
     const user = userEvent.setup();
     const { upload, onDone, search } = withLibrary();
     await user.click(screen.getByRole('radio', { name: 'Choose one in this space' }));
-    await user.type(screen.getByRole('searchbox', { name: "Search the space's images" }), 'harbour');
+    await user.type(
+      screen.getByRole('searchbox', { name: "Search the space's images" }),
+      'harbour',
+    );
     await user.click(screen.getByRole('button', { name: 'Search' }));
     expect(search).toHaveBeenLastCalledWith('harbour');
     await user.click(await screen.findByRole('radio', { name: 'harbour.png' }));

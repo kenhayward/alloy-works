@@ -31,7 +31,7 @@ describe("a space's images, as the renderer reads them (the AL plan, AL-J, AL-L)
     expect(thumbnailPath(VERSION)).toBe(`/v1/asset-versions/${VERSION}/derivatives/thumbnail`);
   });
 
-  it("hashes bytes as SHA-256, in lowercase hexadecimal, as the service names an image's object", async () => {
+  it("hashes bytes in lowercase hexadecimal, as the service names an image's object", async () => {
     const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
     expect(await sha256Of(bytes)).toBe(createHash('sha256').update(bytes).digest('hex'));
   });
@@ -48,7 +48,10 @@ describe("a space's images, as the renderer reads them (the AL plan, AL-J, AL-L)
         return json(200, { items: [image], next: null, total: 1 });
       }),
     });
-    expect(await duplicateOf(client, GENERAL, bytes)).toMatchObject({ id: ASSET, name: 'harbour.png' });
+    expect(await duplicateOf(client, GENERAL, bytes)).toMatchObject({
+      id: ASSET,
+      name: 'harbour.png',
+    });
     expect(asked).toEqual([`/v1/spaces/${GENERAL}/assets?sha256=${hash}&limit=1`]);
   });
 
@@ -57,8 +60,18 @@ describe("a space's images, as the renderer reads them (the AL plan, AL-J, AL-L)
       createApiClient({ baseUrl: 'http://localhost', fetch: vi.fn(async () => response()) });
     const bytes = new Uint8Array([4]);
     expect(
-      await duplicateOf(answering(() => json(200, { items: [], next: null, total: 0 })), GENERAL, bytes),
+      await duplicateOf(
+        answering(() => json(200, { items: [], next: null, total: 0 })),
+        GENERAL,
+        bytes,
+      ),
     ).toBeNull();
-    expect(await duplicateOf(answering(() => json(500, {})), GENERAL, bytes)).toBeNull();
+    expect(
+      await duplicateOf(
+        answering(() => json(500, {})),
+        GENERAL,
+        bytes,
+      ),
+    ).toBeNull();
   });
 });

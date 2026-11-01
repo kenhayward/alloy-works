@@ -16521,6 +16521,26 @@
         {
           "id": "AST-048",
           "howItIsMet": "An administrator of a space discards its derivatives (`DELETE /v1/spaces/{space}/asset-derivatives`, audited); a read finding one missing serves the original, never kept, and asks the job once to make it again (AL-H)"
+        },
+        {
+          "id": "AST-028",
+          "howItIsMet": "The Images page (`#/images`) shows a space's images, each at its latest version, as thumbnails with name, size, licence, an expired grant and unused, filtered by format, rights, orientation, licence and unused, and searched by name, description, format, licence and source (`GET /v1/spaces/{space}/assets`). A dataset's images, and deleted and archived ones, are left out (AL-J)"
+        },
+        {
+          "id": "AST-009",
+          "howItIsMet": "The page and the Figure dialog's chooser show each image by `/v1/asset-versions/{id}/derivatives/thumbnail`, never its original (AL-J)"
+        },
+        {
+          "id": "AST-018",
+          "howItIsMet": "`GET /v1/assets/{id}/uses` and the page's **Where used** name the components whose latest version places the image, the documents placing those, and the baselines and publications pinning it; what the reader may not read is never named, only said to be there (AL-K)"
+        },
+        {
+          "id": "AST-050",
+          "howItIsMet": "The listing's `unused` filter, and the page's **Only unused**, leave the images no component, baseline or publication holds; a publication counts too, so nothing a publication printed is offered for tidying (AL-K)"
+        },
+        {
+          "id": "AST-029",
+          "howItIsMet": "Choosing a file in the Figure dialog hashes it in the browser and asks the listing for an image of the space with that SHA-256 (`sha256`), which the uploader may read, never a dataset's; the dialog offers **Use this image** instead of a second copy. Only within the space: another space's copy is not offered (AL-L)"
         }
       ]
     },
@@ -21691,97 +21711,109 @@
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 347,
+      "line": 348,
       "kind": "rule"
     },
     {
       "id": "AST-001",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 341,
+      "line": 342,
       "kind": "title"
     },
     {
       "id": "AST-002",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 341,
+      "line": 342,
       "kind": "title"
     },
     {
       "id": "AST-004",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 416,
+      "line": 417,
       "kind": "rule"
     },
     {
       "id": "AST-004",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 404,
+      "line": 405,
       "kind": "title"
     },
     {
       "id": "AST-008",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 545,
+      "line": 611,
       "kind": "title"
     },
     {
       "id": "AST-026",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 456,
+      "line": 457,
+      "kind": "title"
+    },
+    {
+      "id": "AST-028",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 546,
+      "kind": "title"
+    },
+    {
+      "id": "AST-029",
+      "file": "apps/service/src/asset-routes.test.ts",
+      "line": 546,
       "kind": "title"
     },
     {
       "id": "AST-031",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 312,
+      "line": 313,
       "kind": "title"
     },
     {
       "id": "AST-035",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 436,
+      "line": 437,
       "kind": "title"
     },
     {
       "id": "AST-038",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 341,
+      "line": 342,
       "kind": "title"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 397,
+      "line": 398,
       "kind": "rule"
     },
     {
       "id": "AST-040",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 392,
+      "line": 393,
       "kind": "title"
     },
     {
       "id": "AST-042",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 494,
+      "line": 495,
       "kind": "title"
     },
     {
       "id": "AST-044",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 260,
+      "line": 261,
       "kind": "title"
     },
     {
       "id": "AST-048",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 581,
+      "line": 647,
       "kind": "title"
     },
     {
       "id": "AST-053",
       "file": "apps/service/src/asset-routes.test.ts",
-      "line": 632,
+      "line": 698,
       "kind": "title"
     },
     {
@@ -21949,13 +21981,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 720,
+      "line": 722,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 733,
+      "line": 735,
       "kind": "title"
     },
     {
@@ -22495,7 +22527,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2179,
+      "line": 2181,
       "kind": "title"
     },
     {
@@ -25721,6 +25753,18 @@
       "kind": "title"
     },
     {
+      "id": "AST-028",
+      "file": "apps/web/src/editor/FigureDialog.test.tsx",
+      "line": 185,
+      "kind": "title"
+    },
+    {
+      "id": "AST-029",
+      "file": "apps/web/src/editor/FigureDialog.test.tsx",
+      "line": 232,
+      "kind": "title"
+    },
+    {
       "id": "AST-044",
       "file": "apps/web/src/editor/FigureDialog.test.tsx",
       "line": 29,
@@ -25963,25 +26007,61 @@
     {
       "id": "LIF-005",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 209,
+      "line": 210,
       "kind": "title"
     },
     {
       "id": "LIF-017",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 176,
+      "line": 177,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 176,
+      "line": 177,
       "kind": "title"
     },
     {
       "id": "SCH-070",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 132,
+      "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "AST-009",
+      "file": "apps/web/src/images/images.test.tsx",
+      "line": 100,
+      "kind": "title"
+    },
+    {
+      "id": "AST-018",
+      "file": "apps/web/src/images/images.test.tsx",
+      "line": 155,
+      "kind": "title"
+    },
+    {
+      "id": "AST-028",
+      "file": "apps/web/src/images/images.test.tsx",
+      "line": 100,
+      "kind": "title"
+    },
+    {
+      "id": "AST-050",
+      "file": "apps/web/src/images/images.test.tsx",
+      "line": 122,
+      "kind": "title"
+    },
+    {
+      "id": "AST-009",
+      "file": "apps/web/src/images/library.test.ts",
+      "line": 30,
+      "kind": "title"
+    },
+    {
+      "id": "AST-029",
+      "file": "apps/web/src/images/library.test.ts",
+      "line": 39,
       "kind": "title"
     },
     {
@@ -28694,6 +28774,30 @@
       "id": "LIF-073",
       "file": "packages/db/src/archival.test.ts",
       "line": 337,
+      "kind": "title"
+    },
+    {
+      "id": "AST-018",
+      "file": "packages/db/src/asset-library.test.ts",
+      "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "AST-028",
+      "file": "packages/db/src/asset-library.test.ts",
+      "line": 245,
+      "kind": "title"
+    },
+    {
+      "id": "AST-029",
+      "file": "packages/db/src/asset-library.test.ts",
+      "line": 280,
+      "kind": "title"
+    },
+    {
+      "id": "AST-050",
+      "file": "packages/db/src/asset-library.test.ts",
+      "line": 285,
       "kind": "title"
     },
     {

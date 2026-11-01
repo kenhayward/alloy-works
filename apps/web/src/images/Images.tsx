@@ -211,7 +211,10 @@ export function Images({ client }: { readonly client: Client }) {
         </label>
         <label>
           {words('images.licence')}
-          <select value={filters.licence} onChange={(event) => choose('licence', event.target.value)}>
+          <select
+            value={filters.licence}
+            onChange={(event) => choose('licence', event.target.value)}
+          >
             <option value="">{words('images.any')}</option>
             {licences.map((each) => (
               <option key={each.id} value={each.id} data-content>

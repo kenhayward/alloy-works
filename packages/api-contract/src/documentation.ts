@@ -1213,7 +1213,7 @@ const descriptions: Readonly<Record<string, string>> = {
   listSpaceAssets:
     "Lists a space's images the caller may read, each at its latest version with its rights now, whether its licence has expired and whether anything uses it, in stable cursor pages. Search their names, descriptions, formats, licences and sources with `q`; filter by format, licence, undeclared or expired rights, orientation and whether unused; and find an upload's duplicate by the SHA-256 of its bytes. Images a dataset holds, and deleted or archived ones, are left out. Needs read on the space.",
   getAssetUses:
-    "Returns where an image is used: the components whose latest version places it, the documents placing those, and the baselines and publications pinning it. Anything the caller may not read is never named; only whether there is any is said. Needs read on the image.",
+    'Returns where an image is used: the components whose latest version places it, the documents placing those, and the baselines and publications pinning it. Anything the caller may not read is never named; only whether there is any is said. Needs read on the image.',
   getAssetRights:
     "Returns an image's rights now and every change to them, newest first, each with who recorded it and when: `declared`, with where it came from, the licence of this environment it is held under, the last day the grant holds and the credit it needs; `undeclared`, recorded so that undeclared images can be listed; or `dataset`, for an image a dataset holds, which is the environment's own data. Rights are the image's, not a version's, so a figure pinning an older version answers to them as they are now. Needs read on the image.",
   setAssetRights:

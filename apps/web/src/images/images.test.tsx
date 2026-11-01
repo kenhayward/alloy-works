@@ -73,8 +73,7 @@ function service() {
       const q = url.searchParams.get('q');
       const unused = url.searchParams.get('unused');
       const items = [harbour, tower].filter(
-        (each) =>
-          (q === null || each.name.includes(q)) && (unused === null || !each.used),
+        (each) => (q === null || each.name.includes(q)) && (unused === null || !each.used),
       );
       return json(200, { items, next: null, total: items.length });
     }
@@ -158,9 +157,7 @@ describe("the Images page: a space's images (the AL plan, AL-J, AL-K)", () => {
     const { client } = service();
     render(<Images client={client} />);
     const list = await screen.findByRole('list', { name: 'Images' });
-    await user.click(
-      within(list).getAllByRole('button', { name: 'Where used' })[0]!,
-    );
+    await user.click(within(list).getAllByRole('button', { name: 'Where used' })[0]!);
     const uses = await screen.findByRole('region', { name: 'Where harbour.png is used' });
     expect(within(uses).getByRole('link', { name: 'Pump station' })).toHaveAttribute(
       'href',

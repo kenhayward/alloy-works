@@ -65,6 +65,11 @@ a document places into the compile root under its hash.
 | **AST-008** | `recordAsset` asks the `derive` job for a version's thumbnail (256 px) and preview (1,024 px) as it records the asset, however it arrived (AL-H)                                                                                                                                                                                                                                                          |
 | **AST-010** | A derivative is made from its original's stripped bytes, never from another derivative, kept beside it by version in `asset_derivative`, never under the original's key; the original is never touched (AL-H)                                                                                                                                                                                             |
 | **AST-048** | An administrator of a space discards its derivatives (`DELETE /v1/spaces/{space}/asset-derivatives`, audited); a read finding one missing serves the original, never kept, and asks the job once to make it again (AL-H)                                                                                                                                                                                  |
+| **AST-028** | The Images page (`#/images`) shows a space's images, each at its latest version, as thumbnails with name, size, licence, an expired grant and unused, filtered by format, rights, orientation, licence and unused, and searched by name, description, format, licence and source (`GET /v1/spaces/{space}/assets`). A dataset's images, and deleted and archived ones, are left out (AL-J)                |
+| **AST-009** | The page and the Figure dialog's chooser show each image by `/v1/asset-versions/{id}/derivatives/thumbnail`, never its original (AL-J)                                                                                                                                                                                                                                                                    |
+| **AST-018** | `GET /v1/assets/{id}/uses` and the page's **Where used** name the components whose latest version places the image, the documents placing those, and the baselines and publications pinning it; what the reader may not read is never named, only said to be there (AL-K)                                                                                                                                 |
+| **AST-050** | The listing's `unused` filter, and the page's **Only unused**, leave the images no component, baseline or publication holds; a publication counts too, so nothing a publication printed is offered for tidying (AL-K)                                                                                                                                                                                     |
+| **AST-029** | Choosing a file in the Figure dialog hashes it in the browser and asks the listing for an image of the space with that SHA-256 (`sha256`), which the uploader may read, never a dataset's; the dialog offers **Use this image** instead of a second copy. Only within the space: another space's copy is not offered (AL-L)                                                                               |
 
 AST-003 is superseded by AST-051 (decision F-A, issue #206), and AST-035 and AST-037 now speak of an
 upload's **check** rather than its scan. AST-051, AST-035 and, since the audit log is written (AU1),
@@ -84,7 +89,7 @@ is AST-007's declared policy, claimed above: an output never carries it.
 | How big a figure prints                                                                                        | themes.md's image styles (STY-015 to STY-018, STY-078), built by themes 2; the default theme's two in [publishing.md](publishing.md#figures) |
 | Refusing a figure with no alternative text at publish                                                          | publishing.md (PUB-033, AST-014)                                                                                                             |
 | Size limits a tenant can lower (AST-004), derivatives, licences, replacement - see [The library](#the-library) | T7 and T3. T1's limits are the product's, declared as constants                                                                              |
-| An asset library, search over assets, where an asset is used (AST-018, AST-027, AST-028)                       | T7. In T1 an asset is reached only through the figure that places it                                                                         |
+| An image's caption (AST-027)                                                                                   | content-model.md: a caption is a figure's, not an image's                                                                                    |
 | Pasting or dropping an image into a component                                                                  | A later editor slice. Paste keeps no image today, and still will after these slices                                                          |
 
 ## Formats, measured
@@ -310,11 +315,14 @@ its decisions AL-A to AL-N are the design, and this section says what stands so 
   leaves it for one that knows it.
 - **Limits and reads** (AL-I): each format's limit, lowered per environment; every original read is
   held to its hash.
+- **The Images page** (AL-J, AL-K, AL-L): a space's images by thumbnail, filtered and searched,
+  where each is used, and those nothing uses; the Figure dialog chooses one of them, and offers the
+  one a chosen file duplicates.
 - Replacing an image cuts a version a figure may follow (AL-M).
 
 AST-025 and AST-043 were superseded by AST-052 and AST-053 while planning (the AST change history).
-AST-009 (browsing by derivative) waits for the Images page, ALd, and AST-049 (a replacement's
-derivatives) for replacement, ALe. AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
+AST-049 (a replacement's derivatives) waits for replacement, ALe, and an import's reuse of an image
+the space holds (AL-L, pre-flight 11) does too. AST-052 is not claimed yet: an expiry is recorded and reported at publish, and is surfaced where an
 image is used only in ALe.
 
 ## Requirements challenged

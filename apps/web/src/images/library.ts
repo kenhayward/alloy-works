@@ -19,8 +19,10 @@ export interface LibraryImage {
 }
 
 /** Where a version's thumbnail is read: a library is browsed by derivatives, never originals (AST-009). */
-export const thumbnailPath = (version: string): string =>
-  `/v1/asset-versions/${encodeURIComponent(version)}/derivatives/thumbnail`;
+export const thumbnailPath = (
+  version: string,
+  kind: 'thumbnail' | 'preview' = 'thumbnail',
+): string => `/v1/asset-versions/${encodeURIComponent(version)}/derivatives/${kind}`;
 
 /** The SHA-256 of bytes in lowercase hexadecimal, as the service names an image's object. */
 export async function sha256Of(bytes: Uint8Array): Promise<string> {

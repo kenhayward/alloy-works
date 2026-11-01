@@ -192,10 +192,7 @@ const NamedUses = <T extends z.ZodRawShape>(shape: T, what: string) =>
 export const AssetUsesView = z.object({
   components: NamedUses({ id: z.string(), title: z.string() }, 'a component'),
   documents: NamedUses({ id: z.string(), title: z.string() }, 'a document'),
-  baselines: NamedUses(
-    { id: z.string(), name: z.string(), document: z.string() },
-    'a baseline',
-  ),
+  baselines: NamedUses({ id: z.string(), name: z.string(), document: z.string() }, 'a baseline'),
   publications: NamedUses({ id: z.string(), title: z.string() }, 'a publication'),
 });
 export type AssetUsesView = z.infer<typeof AssetUsesView>;
@@ -221,7 +218,8 @@ export const assetRoutes = {
     responses: {
       200: { description: 'A page of images', schema: LibraryAssetList },
       400: {
-        description: 'A cursor this listing did not give out, a limit outside 1 to 100, or a bad filter',
+        description:
+          'A cursor this listing did not give out, a limit outside 1 to 100, or a bad filter',
         schema: ErrorBody,
       },
       401: unauthenticated,
