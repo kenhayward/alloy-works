@@ -21471,6 +21471,12 @@
       "kind": "title"
     },
     {
+      "id": "LIB-058",
+      "file": "apps/connector/src/vocabulary-source.test.ts",
+      "line": 34,
+      "kind": "title"
+    },
+    {
       "id": "ADM-051",
       "file": "apps/desktop/src/connection.test.ts",
       "line": 20,
@@ -32225,7 +32231,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1112,
+      "line": 1117,
       "kind": "title"
     },
     {

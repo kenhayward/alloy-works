@@ -5,12 +5,14 @@ import {
   childModelRequestSchema,
   childReferenceRequestSchema,
   childRequestSchema,
+  childVocabularySourceRequestSchema,
 } from '@alloy-works/domain';
 
 import { answerDeliver } from './deliver.js';
 import { answerManifest } from './manifest.js';
 import { answerEmbed, answerModel } from './model.js';
 import { answerReference } from './reference.js';
+import { answerVocabularySource } from './vocabulary-source.js';
 import { answerRequest } from './work.js';
 
 /**
@@ -42,6 +44,12 @@ async function main(): Promise<number> {
   const manifest = childManifestRequestSchema.safeParse(input);
   if (manifest.success) {
     await line(await answerManifest(manifest.data));
+    return 0;
+  }
+  // A vocabulary's SKOS address (the VO plan, VO-J): one answer.
+  const vocabulary = childVocabularySourceRequestSchema.safeParse(input);
+  if (vocabulary.success) {
+    await line(await answerVocabularySource(vocabulary.data));
     return 0;
   }
   // A reference source asked (the XR plan, XR-B): one answer.

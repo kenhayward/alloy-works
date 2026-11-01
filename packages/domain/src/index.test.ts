@@ -1109,6 +1109,11 @@ describe('the domain package', () => {
         'vocabularySourceSchema',
         'refreshVocabulary',
         'sourcedEditRefusals',
+        // VOc: a vocabulary's SKOS address, fetched through the connector (VO-J).
+        'VOCABULARY_SOURCE_MOST_BYTES',
+        'vocabularySourceRequestSchema',
+        'vocabularySourceAnswerSchema',
+        'childVocabularySourceRequestSchema',
       ].sort(),
     );
   });

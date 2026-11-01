@@ -30,6 +30,8 @@ import {
   referenceSealRequestSchema,
   type ReferenceAnswer,
   type ReferenceRequest,
+  vocabularySourceRequestSchema,
+  type VocabularySourceAnswer,
 } from '@alloy-works/domain';
 
 /** The key a harness's service presents to its fake connector: invented, and made afresh. */
@@ -63,6 +65,8 @@ export interface FakeConnector {
   embedFor?: ((request: EmbedRequest) => EmbedAnswer) | undefined;
   /** What a manifest fetch answers, by its URL: refused unless a test says (the EX plan). */
   manifestFor?: ((url: string) => ManifestAnswer) | undefined;
+  /** What a vocabulary's SKOS address answers, by its URL: refused unless a test says (VO-J). */
+  vocabularySourceFor?: ((url: string) => VocabularySourceAnswer) | undefined;
   /** What a reference source answers, by what it was asked: unavailable unless a test says (XR-B). */
   referenceFor?: ((request: ReferenceRequest) => ReferenceAnswer) | undefined;
   /** Where set, a run's answer by what it was sent, in place of `run`. */
@@ -157,7 +161,9 @@ export function fakeConnector(): FakeConnector {
                           ? referenceRequestSchema
                           : path === '/v1/reference/seal'
                             ? referenceSealRequestSchema
-                            : undefined;
+                            : path === '/v1/vocabulary-source'
+                              ? vocabularySourceRequestSchema
+                              : undefined;
       if (door && !door.safeParse(body).success) {
         return Response.json({ code: 'request_invalid' }, { status: 400 });
       }
@@ -179,6 +185,14 @@ export function fakeConnector(): FakeConnector {
           code: 'manifest_refused',
         };
         return Response.json(answer);
+      }
+      if (path === '/v1/vocabulary-source') {
+        return Response.json(
+          fake.vocabularySourceFor?.(String(body.url)) ?? {
+            type: 'failed',
+            code: 'source_refused',
+          },
+        );
       }
       if (path === '/v1/reference') {
         const request = body as unknown as ReferenceRequest;
