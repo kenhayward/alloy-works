@@ -1,8 +1,9 @@
 import { streamPost, type createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
 import { PENDING_ENTRY } from '@alloy-works/domain';
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import styles from './AssistantPanel.module.css';
+import { AnswerMarkdown } from './AnswerMarkdown.js';
 import { PersonalPrompts } from './PersonalPrompts.js';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
@@ -589,27 +590,21 @@ export function AssistantPanel({
       ? null
       : { percent, band: percent < 50 ? 'low' : percent < 75 ? 'mid' : 'high' };
 
-  // The answer's text, each citation kept a button to the part it names, numbered as Sources lists it.
-  const pieces: ReactNode[] = [];
-  let from = 0;
-  for (const match of answer.matchAll(CITATION)) {
-    pieces.push(answer.slice(from, match.index));
-    from = match.index + match[0].length;
-    const at = cited.findIndex((each) => each.component === match[1] && each.block === match[2]);
-    if (at === -1) continue;
-    pieces.push(
+  // Each citation kept is a button to the part it names, numbered as Sources lists it.
+  const cite = (component: string, block: string, key: string) => {
+    const at = cited.findIndex((each) => each.component === component && each.block === block);
+    return at === -1 ? null : (
       <button
-        key={match.index}
+        key={key}
         type="button"
         className={styles['cite']}
         aria-label={words('document.source-n', { number: at + 1 })}
         onClick={() => onCite(cited[at]!.component, cited[at]!.block)}
       >
         {formats().number(at + 1)}
-      </button>,
+      </button>
     );
-  }
-  pieces.push(answer.slice(from));
+  };
 
   return (
     <section className={styles['assistant']} aria-label={words('document.assistant')}>
@@ -656,13 +651,16 @@ export function AssistantPanel({
                     <span className={styles['you']}>{words('document.you')}</span> {each.ask}
                   </p>
                 )}
-                <p className={styles['answer']}>
-                  {each.outcome === 'finished'
-                    ? (each.reply ?? '')
-                    : each.outcome === 'running'
-                      ? words('document.still-answering')
-                      : words('document.this-turn-did-not-finish')}
-                </p>
+                <div className={styles['answer']}>
+                  {each.outcome === 'finished' ? (
+                    // An earlier turn's citations were numbered with its own Sources, not shown now.
+                    <AnswerMarkdown text={each.reply ?? ''} cite={() => null} />
+                  ) : each.outcome === 'running' ? (
+                    words('document.still-answering')
+                  ) : (
+                    words('document.this-turn-did-not-finish')
+                  )}
+                </div>
               </li>
             ))}
         </ol>
@@ -697,7 +695,7 @@ export function AssistantPanel({
             aria-live="polite"
             className={styles['answer']}
           >
-            {pieces}
+            <AnswerMarkdown text={answer} cite={cite} />
           </div>
           {/* Announced as each arrives, as the answer is (GEN-021). */}
           <div aria-live="polite">

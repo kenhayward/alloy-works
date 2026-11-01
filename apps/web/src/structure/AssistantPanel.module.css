@@ -178,6 +178,52 @@
   line-height: 1.55;
 }
 
+/* The answer's Markdown (issue #857): blocks spaced as a reply reads, tables and code kept small. */
+.answer :where(p, ul, ol, blockquote, pre, table, h3, h4, h5, h6) {
+  margin: 0 0 var(--space-8);
+}
+
+.answer > :last-child {
+  margin-bottom: 0;
+}
+
+.answer :where(h3, h4, h5, h6) {
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.answer :where(ul, ol) {
+  padding-inline-start: 1.5em;
+}
+
+.answer blockquote {
+  padding-inline-start: var(--space-8);
+  border-inline-start: 2px solid var(--strong-border);
+}
+
+.answer pre {
+  overflow-x: auto;
+  padding: var(--space-8);
+  border-radius: var(--radius-4);
+  background: var(--sunken);
+}
+
+.answer code {
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}
+
+.answer table {
+  border-collapse: collapse;
+  font-size: var(--size-12);
+}
+
+.answer :where(th, td) {
+  padding: var(--space-4) var(--space-8);
+  border: 1px solid var(--strong-border);
+  text-align: start;
+}
+
 /* A citation in the answer: its number, a button to the part it names. */
 .cite {
   min-width: 16px;

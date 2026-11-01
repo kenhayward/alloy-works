@@ -1,3 +1,4 @@
+import { valueLine } from './values-text.js';
 import {
   createComponent,
   makeCreationProposal,
@@ -352,6 +353,17 @@ export function assistantHandlers(
               const found = await placed(trx, document, principal);
               if (!found) return missing('document');
               const lines: string[] = [`Document: ${found.outline.title}`];
+              // Each component by its title too, so the model can tell which a person means (issue #856).
+              const contents = await versionContents(trx, [...found.readable.values()]);
+              const titled = (component: string) => {
+                const title = (
+                  contents.get(found.readable.get(component)!)?.content as
+                    { title?: unknown } | undefined
+                )?.title;
+                return typeof title === 'string' && title.trim() !== ''
+                  ? `: ${title.replace(/\s+/g, ' ')}`
+                  : '';
+              };
               const visit = (nodes: readonly unknown[], depth: number) => {
                 for (const raw of nodes) {
                   const node = raw as {
@@ -366,7 +378,7 @@ export function assistantHandlers(
                       `${indent}Section: ${titleOf(node.title ?? []).replace(/\s+/g, ' ')}`,
                     );
                   } else if (node.component !== undefined && found.readable.has(node.component)) {
-                    lines.push(`${indent}Component ${node.component}`);
+                    lines.push(`${indent}Component ${node.component}${titled(node.component)}`);
                   }
                   visit(node.children ?? [], depth + 1);
                 }
@@ -430,17 +442,9 @@ export function assistantHandlers(
               if (!views) return missing('document');
               // One line a value, as the page shows it: its place, the query it came from, and what
               // it holds, never the provenance around it.
-              const values = views.map((view) => {
-                const held = view.held as { taken?: { value?: unknown } | null } | null;
-                const value = held?.taken?.value;
-                const shown =
-                  value === undefined || value === null
-                    ? 'nothing held'
-                    : typeof value === 'object'
-                      ? JSON.stringify(value)
-                      : String(value);
-                return `At ${view.node}, from ${view.definition?.title ?? 'a query you may not read'}: ${shown}`;
-              });
+              const values = views.map((view) =>
+                valueLine(view.node, view.definition?.title, view.held),
+              );
               return {
                 ok: true,
                 content: asData(

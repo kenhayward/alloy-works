@@ -124,13 +124,150 @@ describe("the assistant's terms", () => {
     expect(wrapped).toContain('&lt;/content>');
   });
 
-  it('numbers each block as the model reads it, a block it cannot read named by its kind', () => {
-    const content = document(paragraph('p1', 'The weir floods.'), {
+  it('numbers each block as the model reads it, its kind on the line before its text', () => {
+    expect(componentAsText(document(paragraph('p1', 'The weir floods.')))).toBe(
+      '[#p1] paragraph\nThe weir floods.',
+    );
+  });
+
+  it('reads a table as its rows, the header rows ruled off, with its caption and note (issue #856)', () => {
+    const cell = (text: string, colspan = 1) => ({
+      content: [paragraph('c', text)],
+      colspan,
+      rowspan: 1,
+    });
+    const table = {
       type: 'table',
       id: 't1',
-    } as unknown as BlockNode);
-    expect(componentAsText(content)).toBe(
-      '[#p1] paragraph\nThe weir floods.\n\n[#t1] table\n[table]',
+      style: 'table',
+      caption: [{ type: 'text', value: 'Weir levels', marks: [] }],
+      headerRows: 1,
+      headerColumns: 0,
+      note: [{ type: 'text', value: 'Measured in May.', marks: [] }],
+      rows: [
+        { cells: [cell('Site'), cell('Level')] },
+        { cells: [cell('North | upper'), cell('3.2 m')] },
+        { cells: [cell('Closed for repair', 2)] },
+      ],
+    } as unknown as BlockNode;
+    expect(componentAsText(document(table))).toBe(
+      [
+        '[#t1] table',
+        'Table: Weir levels',
+        '| Site | Level |',
+        '| --- | --- |',
+        '| North \\| upper | 3.2 m |',
+        '| Closed for repair |  |',
+        'Note: Measured in May.',
+      ].join('\n'),
+    );
+  });
+
+  it('reads a figure, an equation, a quotation and a bound table by what they say (issue #856)', () => {
+    const text = (value: string) => [{ type: 'text', value, marks: [] }];
+    const blocks = [
+      {
+        type: 'figure',
+        id: 'f1',
+        asset: 'a1',
+        imageStyle: 'figure',
+        caption: text('The north weir'),
+        alternative: { kind: 'own', text: 'A weir in flood' },
+      },
+      { type: 'equation', id: 'e1', mathml: '<math/>', latex: 'Q = CLH^{3/2}', numbered: true },
+      { type: 'equation', id: 'e2', mathml: '<math/>', numbered: false },
+      {
+        type: 'blockquote',
+        id: 'q1',
+        content: [paragraph('qp', 'Water finds a way.')],
+        attribution: text('Ada'),
+      },
+      {
+        type: 'boundTable',
+        id: 'b1',
+        style: 'table',
+        binding: { type: 'binding', id: 'k', query: 'q', parameters: {}, mode: 'checked' },
+        caption: text('Sites'),
+        columns: [
+          { column: 'site', header: 'Site' },
+          { column: 'level', header: 'Level' },
+        ],
+        headerColumn: false,
+      },
+    ] as unknown as BlockNode[];
+    expect(componentAsText(document(...blocks))).toBe(
+      [
+        '[#f1] figure',
+        'Figure: The north weir',
+        'Image: A weir in flood',
+        '',
+        '[#e1] equation',
+        '$$Q = CLH^{3/2}$$',
+        '',
+        '[#e2] equation',
+        '[an equation held as MathML alone]',
+        '',
+        '[#q1] blockquote',
+        '> Water finds a way.',
+        '> (Ada)',
+        '',
+        '[#b1] boundTable',
+        'Table: Sites',
+        '| Site | Level |',
+        '| --- | --- |',
+        '[its rows are read from a query when the document is shown, not held in the component]',
+      ].join('\n'),
+    );
+  });
+
+  it('reads equations, footnotes, citations, variables, bound values and images where they stand in a line (issue #856)', () => {
+    const run = {
+      type: 'paragraph',
+      id: 'p1',
+      style: 'body',
+      content: [
+        { type: 'text', value: 'Flow ', marks: [] },
+        { type: 'equation', mathml: '<math/>', latex: 'q' },
+        { type: 'text', value: ' rises', marks: [] },
+        {
+          type: 'footnote',
+          id: 'n1',
+          anchor: { kind: 'span' },
+          content: [paragraph('np', 'In May.')],
+        },
+        { type: 'text', value: ' ', marks: [] },
+        { type: 'citation', entry: 'smith2020', locator: 'p. 4' },
+        { type: 'text', value: ' at ', marks: [] },
+        { type: 'variable', name: 'site' },
+        { type: 'text', value: ' to ', marks: [] },
+        {
+          type: 'binding',
+          id: 'k',
+          query: 'q',
+          parameters: {},
+          mode: 'checked',
+          take: { column: 'level' },
+        },
+        { type: 'text', value: ' ', marks: [] },
+        {
+          type: 'image',
+          asset: 'a1',
+          imageStyle: 'inline',
+          alternative: { kind: 'own', text: 'a gauge' },
+        },
+        { type: 'text', value: ' ', marks: [] },
+        {
+          type: 'crossReference',
+          id: 'x1',
+          target: { kind: 'block', block: 'f1' },
+          display: 'number',
+        },
+      ],
+    } as unknown as BlockNode;
+    expect(componentAsText(document(run))).toBe(
+      '[#p1] paragraph\n' +
+        'Flow $q$ rises[footnote: In May.] [citation: smith2020, p. 4] at {site} to ' +
+        '[bound value: level] [image: a gauge] [cross-reference to #f1]',
     );
   });
 
