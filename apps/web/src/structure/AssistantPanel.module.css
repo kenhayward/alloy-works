@@ -16,8 +16,11 @@
   flex-shrink: 0;
   align-items: center;
   gap: var(--space-8);
-  min-height: 44px;
-  padding: 0 var(--space-4) 0 var(--space-12);
+  /* Level with the rail beside it (issue #868): its 6px inset, a button, then the space to its rule,
+     so the controls centre on its collapse button and the rule continues its rule. */
+  box-sizing: border-box;
+  height: calc(6px + var(--icon-button) + 2 * var(--space-4) + 1px);
+  padding: 6px var(--space-4) calc(2 * var(--space-4)) var(--space-12);
   border-bottom: 1px solid var(--border);
 }
 
