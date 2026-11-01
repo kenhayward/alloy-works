@@ -5,6 +5,7 @@ import {
   valuesInOrder,
   vocabularyDefinitionSchema,
   type Vocabulary,
+  type VocabularySource,
   type VocabularyValue,
 } from '@alloy-works/domain';
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
@@ -421,6 +422,23 @@ function Opened({
   const [busy, setBusy] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [uses, setUses] = useState<Uses | null>(null);
+  const [queries, setQueries] = useState<readonly Titled[]>([]);
+
+  // The query definitions a source may name, the first page of 100 as other pickers read them (VO-J).
+  const namesQuery = manages || (held !== null && held !== 'failed' && isQuery(held.vocabulary));
+  useEffect(() => {
+    if (!namesQuery) return;
+    let current = true;
+    client
+      .GET('/v1/query-definitions', { params: { query: { limit: '100' } } })
+      .then(({ data }) => {
+        if (current && data) setQueries(data.items.map(({ id, title }) => ({ id, title })));
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [client, namesQuery]);
 
   // Where it is used (LIB-005; the VO plan, VO-G), read again with it, so a value is not deprecated
   // or retired blind. Nothing is said where it cannot be read.
@@ -535,6 +553,47 @@ function Opened({
     }
   };
 
+  // A refresh records a version from the source and says what it did (LIB-058; the VO plan, VO-J).
+  const refresh = async () => {
+    setSaid('');
+    setWhy([]);
+    setConflict(false);
+    setBusy(true);
+    try {
+      const { data, error } = await client.POST('/v1/vocabularies/{id}/refresh', {
+        params: { path: { id } },
+      });
+      if (!data) {
+        setSaid(refusal(error, words('admin.the-vocabulary-could-not-be-refreshed')));
+        setWhy(refusalLines(error));
+        return;
+      }
+      const { report } = data;
+      const count = (each: readonly string[]) => formats().number(each.length);
+      setSaid(
+        data.answer === 'unchanged'
+          ? words('admin.refresh-changed-nothing', { refused: report.refusedTotal })
+          : words('admin.refreshed-at', {
+              number: data.vocabulary.version.number,
+              added: count(report.added),
+              relabelled: count(report.relabelled),
+              retired: count(report.retired),
+              returned: count(report.returned),
+              refused: formats().number(report.refusedTotal),
+            }),
+      );
+      setWhy(
+        report.refused.map((each) =>
+          words('admin.failure-of', { field: each.source, detail: each.reason }),
+        ),
+      );
+      setReads((was) => was + 1);
+      onSaved();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const exportSkos = async () => {
     const { data } = await client.GET('/v1/vocabularies/{id}/export', {
       params: { path: { id } },
@@ -545,6 +604,14 @@ function Opened({
 
   const shown = valuesInOrder(draft, language);
   const declared = draft.order === 'declared';
+  // A sourced vocabulary's labels and descriptions are its source's; their states are not (VO-J).
+  const sourced = held.vocabulary.source !== undefined;
+  const setSource = (source: VocabularySource | undefined) => {
+    const next: Vocabulary = { ...draft };
+    if (source === undefined) delete next.source;
+    else next.source = source;
+    setDraft(next);
+  };
 
   return (
     <section aria-label={held.vocabulary.name} className={styles['notes']}>
@@ -573,8 +640,19 @@ function Opened({
           <OrderChoice order={draft.order} onChange={(order) => setDraft({ ...draft, order })} />
         </div>
       )}
+      {manages && <SourceChoice source={draft.source} queries={queries} onChange={setSource} />}
+      {manages && sourced && (
+        <div className={styles['toolbar']}>
+          <button type="button" disabled={busy} onClick={() => void refresh()}>
+            {words('admin.refresh-from-source')}
+          </button>
+        </div>
+      )}
       {!manages && (
-        <p>{declared ? words('admin.ordered-as-declared') : words('admin.ordered-by-label')}</p>
+        <>
+          <p>{declared ? words('admin.ordered-as-declared') : words('admin.ordered-by-label')}</p>
+          <p data-content>{sourceText(held.vocabulary.source, queries)}</p>
+        </>
       )}
       <p className={styles['muted']}>{words('admin.a-value-is-never-deleted')}</p>
       {uses && <WhereUsed uses={uses} />}
@@ -610,14 +688,14 @@ function Opened({
                   what="label"
                   items={value.labels}
                   base={draft.base}
-                  editable={manages}
+                  editable={manages && !sourced}
                   onChange={(labels) => change(value.id, (was) => ({ ...was, labels }))}
                 />
                 <ByLanguage
                   what="description"
                   items={value.descriptions}
                   base={draft.base}
-                  editable={manages}
+                  editable={manages && !sourced}
                   onChange={(descriptions) => change(value.id, (was) => ({ ...was, descriptions }))}
                 />
                 {manages ? (
@@ -673,6 +751,11 @@ function Opened({
                         })}
                   </p>
                 )}
+                {value.source !== undefined && (
+                  <p className={styles['muted']} data-content>
+                    {words('admin.from-the-source-as', { source: value.source })}
+                  </p>
+                )}
                 {uses && (
                   <p className={styles['muted']}>
                     {words('admin.held-by-components', {
@@ -687,10 +770,12 @@ function Opened({
       </ol>
       {manages && (
         <>
-          <AddValue
-            vocabulary={draft}
-            onAdd={(value) => setDraft({ ...draft, values: [...draft.values, value] })}
-          />
+          {!sourced && (
+            <AddValue
+              vocabulary={draft}
+              onAdd={(value) => setDraft({ ...draft, values: [...draft.values, value] })}
+            />
+          )}
           <div className={styles['toolbar']}>
             <button type="button" className="primary" disabled={busy} onClick={() => void save()}>
               {words('admin.save')}
@@ -706,6 +791,90 @@ function Opened({
       <p role="status">{said}</p>
       <Why lines={why} />
     </section>
+  );
+}
+
+/** A query definition a source may name, by its title. */
+interface Titled {
+  readonly id: string;
+  readonly title: string;
+}
+
+const isQuery = (vocabulary: Vocabulary) => vocabulary.source?.kind === 'query';
+
+/** Where a vocabulary's values come from, said to somebody who may not change it. */
+function sourceText(source: VocabularySource | undefined, queries: readonly Titled[]) {
+  if (source === undefined) return words('admin.values-kept-by-hand');
+  if (source.kind === 'skos')
+    return words('admin.values-come-from', { kind: 'skos', name: source.url });
+  const name = queries.find((each) => each.id === source.query)?.title ?? source.query;
+  return words('admin.values-come-from', { kind: 'query', name });
+}
+
+/** None, a query definition or a SKOS address, saved with the vocabulary (LIB-058; VO-J). */
+function SourceChoice({
+  source,
+  queries,
+  onChange,
+}: {
+  source: VocabularySource | undefined;
+  queries: readonly Titled[];
+  onChange: (source: VocabularySource | undefined) => void;
+}) {
+  const kind = source?.kind ?? 'none';
+  const choose = (to: string) =>
+    onChange(
+      to === 'query'
+        ? { kind: 'query', query: '' }
+        : to === 'skos'
+          ? { kind: 'skos', url: '' }
+          : undefined,
+    );
+  return (
+    <div>
+      <div className={styles['toolbar']}>
+        <label className={styles['filter']}>
+          {words('admin.source')}
+          <select value={kind} onChange={(event) => choose(event.target.value)}>
+            {(['none', 'query', 'skos'] as const).map((each) => (
+              <option key={each} value={each}>
+                {words('admin.source-kind', { kind: each })}
+              </option>
+            ))}
+          </select>
+        </label>
+        {source?.kind === 'query' && (
+          <label className={styles['filter']}>
+            {words('admin.query-definition')}
+            <select
+              value={source.query}
+              onChange={(event) => onChange({ kind: 'query', query: event.target.value })}
+            >
+              <option value="">{words('admin.choose-a-query-definition')}</option>
+              {source.query !== '' && !queries.some((each) => each.id === source.query) && (
+                <option value={source.query}>{source.query}</option>
+              )}
+              {queries.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {source?.kind === 'skos' && (
+          <label className={styles['filter']}>
+            {words('admin.skos-address')}
+            <input
+              type="url"
+              value={source.url}
+              onChange={(event) => onChange({ kind: 'skos', url: event.target.value })}
+            />
+          </label>
+        )}
+      </div>
+      <p className={styles['muted']}>{words('admin.a-source-gives-the-values')}</p>
+    </div>
   );
 }
 
