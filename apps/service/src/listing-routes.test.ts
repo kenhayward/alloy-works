@@ -698,6 +698,8 @@ describe('the listings through the service', () => {
       'listExtensionUses',
       // And the vocabularies: the environment's handful, each a definition (the VO plan, VO-A).
       'listVocabularies',
+      // And the licences: the environment's handful, each a definition (the AL plan, AL-B).
+      'listLicences',
     ];
     const listings = allRoutes.filter(
       (route) =>

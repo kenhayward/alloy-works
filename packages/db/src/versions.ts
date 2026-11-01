@@ -4,6 +4,7 @@ import {
   conditionAxisDefinitionSchema,
   relationshipTypeDefinitionSchema,
   vocabularyDefinitionSchema,
+  licenceDefinitionSchema,
   componentTypeOf,
   definitionKinds,
   fieldDefinitionSchema,
@@ -203,6 +204,7 @@ const definitionSchemas = {
   conditionAxis: conditionAxisDefinitionSchema,
   relationshipType: relationshipTypeDefinitionSchema,
   vocabulary: vocabularyDefinitionSchema,
+  licence: licenceDefinitionSchema,
 } as const;
 
 /**

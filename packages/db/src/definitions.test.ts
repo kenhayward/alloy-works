@@ -7,6 +7,7 @@ import { currentDefinitionsFor } from './creation.js';
 import {
   createDefinition,
   listDefinitions,
+  listLicences,
   listVocabularies,
   readDefinitionLatest,
   recordDefinitionVersion,
@@ -104,7 +105,7 @@ describe('definitions through the service', () => {
   const run = <T>(work: (trx: TenantTransaction) => Promise<T>) =>
     service.withTenant(production, work);
   const create = (
-    kind: 'field' | 'metadataSchema' | 'componentType' | 'vocabulary',
+    kind: 'field' | 'metadataSchema' | 'componentType' | 'vocabulary' | 'licence',
     definition: object,
   ) => run((trx) => createDefinition(trx, { kind, definition, author: ada }));
   const version = (id: string, openedFrom: string, definition: object) =>
@@ -424,6 +425,39 @@ describe('definitions through the service', () => {
     expect((await run((trx) => listDefinitions(trx))).items).toContainEqual(
       expect.objectContaining({ id: sites.id, kind: 'vocabulary', key: 'trial_site' }),
     );
+  });
+
+  it("AST-022 keeps a licence as the environment's, its key its own and fixed, listed by name", async () => {
+    const licence = (name: string, key: string, permits: string[]) => ({
+      schemaVersion: DEFINITION_SCHEMA_VERSION,
+      name,
+      key,
+      base: 'en',
+      names: [{ language: 'en', text: name }],
+      permits,
+      attribution: { required: false },
+    });
+    const ccBy = made(await create('licence', licence('CC BY 4.0', 'cc_by_4', ['internal'])));
+    const narrowed = made(
+      await version(ccBy.id, ccBy.version.id, licence('CC BY 4.0', 'cc_by_4', ['publication'])),
+    );
+    expect(narrowed.version.version).toBe(2);
+    expect(
+      await create('licence', licence('Another', 'cc_by_4', ['internal'])),
+    ).toMatchObject({ answer: 'definition.name_taken', holder: { id: ccBy.id } });
+    expect(
+      await version(ccBy.id, narrowed.version.id, licence('CC BY 4.0', 'cc_by', ['internal'])),
+    ).toMatchObject({ answer: 'definition.invalid', failures: [{ rule: 'fixed' }] });
+    expect(
+      await run((trx) =>
+        trx.selectFrom('artifact').select('space_id').where('id', '=', ccBy.id).executeTakeFirst(),
+      ),
+    ).toEqual({ space_id: null });
+    const listed = await run((trx) => listLicences(trx));
+    expect(listed.map((each) => [each.definition.key, each.definition.permits])).toContainEqual([
+      'cc_by_4',
+      ['publication'],
+    ]);
   });
 
   it('serialises definition writes within one environment, and never across two', async () => {

@@ -776,6 +776,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0176_vocabularies',
         '0177_publication_vocabularies',
         '0178_vocabulary_query_runs',
+        '0179_licences',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

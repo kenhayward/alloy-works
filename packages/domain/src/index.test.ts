@@ -60,6 +60,14 @@ describe('the domain package', () => {
         'assetVersionSchema',
         'parseAssetVersion',
         'readImageHeader',
+        // A licence an image is held under (the AL plan, AL-B).
+        'LICENCE_LIMITS',
+        'LICENCE_USES',
+        'LicenceRefused',
+        'licenceDefinitionSchema',
+        'licenceName',
+        'licencePermits',
+        'parseLicence',
         // Metadata, promoted in the plan that built it, on the same terms.
         'DEFINITION_SCHEMA_VERSION',
         'DefinitionConflictError',

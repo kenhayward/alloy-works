@@ -39,6 +39,11 @@ export const documentationGroups = [
           "Read the environment's vocabularies, the values a field or an axis may take with their labels per language, and import and export them as SKOS.",
       },
       {
+        name: 'Licences',
+        description:
+          "Read the environment's licences: what an image held under each may be used for, and the credit it needs.",
+      },
+      {
         name: 'Translations',
         description:
           "Translate a component into another language as a variant of its own, see each variant's status against its source, and declare which source changes need retranslating.",
@@ -522,6 +527,7 @@ const operationTags = {
     'getVocabularyUses',
     'exportVocabulary',
   ],
+  Licences: ['listLicences', 'getLicence'],
   Translations: [
     'getSpaceTranslations',
     'listComponentTranslations',
@@ -1120,6 +1126,10 @@ const descriptions: Readonly<Record<string, string>> = {
     "Imports SKOS concepts as terms of the space, from JSON-LD in the compact form `exportTerms` writes or from Turtle. A concept whose preferred label in its base language is a term's of the space, case aside, is merged into it: the answer names the labels, definitions and relations it was given. Each other concept is made, in draft. What no term can hold is reported rather than dropped: another predicate, a subject that is not a concept, a language tag the product does not read, an alternative label in a language with no preferred one, and a relation to a concept outside the file. Nothing a file names is fetched. At most 2,000 concepts and 200,000 statements are taken at a time, in a body of at most 5 MiB. It needs edit in the space.",
   exportTerms:
     "Exports the space's terms the caller may read, archived or not, as SKOS in JSON-LD: each a `skos:Concept` identified `urn:uuid:` and its id, with `prefLabel`, `altLabel` and `definition` by language, an abbreviation as a `notation` in its label's language, `broader`, `narrower` and `related`, and a replacement as `dct:isReplacedBy`.",
+  listLicences:
+    "Lists the environment's licences by name, each at its latest version: its key, its names per language, what it permits (`internal` use, `publication`, `redistribution`, `modification`), whether it requires attribution and what that must say, and the address of its terms. Anyone signed in may read them, since whoever uploads an image declares the licence it is held under; they are made and changed through `/v1/definitions`, as kind `licence`, by whoever manages definitions.",
+  getLicence:
+    'Returns a licence at its latest version, as `listLicences` lists it. Anyone signed in may read it.',
   listVocabularies:
     "Lists the environment's vocabularies by name, each with its key, its latest version and how many values it holds. Anyone signed in may read them, since authors choose their values; they are made and changed through `/v1/definitions`, as kind `vocabulary`, by whoever manages definitions.",
   getVocabulary:

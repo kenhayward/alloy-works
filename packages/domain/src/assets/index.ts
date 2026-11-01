@@ -22,3 +22,13 @@ export {
   parseAssetVersion,
 } from './version.js';
 export type { AssetAlternative, AssetVersionContent } from './version.js';
+export {
+  LICENCE_LIMITS,
+  LICENCE_USES,
+  LicenceRefused,
+  licenceDefinitionSchema,
+  licenceName,
+  licencePermits,
+  parseLicence,
+} from './licence.js';
+export type { Licence, LicenceProblem, LicenceUse } from './licence.js';

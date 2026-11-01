@@ -33,6 +33,8 @@ import {
   type Vocabulary,
   vocabularyChangeRefusals,
   vocabularyDefinitionSchema,
+  licenceDefinitionSchema,
+  type Licence,
 } from '@alloy-works/domain';
 import { brokenByType } from './relationships.js';
 import { sql } from 'kysely';
@@ -111,6 +113,7 @@ const parsers = {
   conditionAxis: conditionAxisDefinitionSchema,
   relationshipType: relationshipTypeDefinitionSchema,
   vocabulary: vocabularyDefinitionSchema,
+  licence: licenceDefinitionSchema,
 } as const;
 
 /** Every definition of a kind at its latest version, read as stored definitions are. */
@@ -224,7 +227,10 @@ export async function listDefinitions(
       id: row.id,
       kind: row.kind,
       name: row.name,
-      ...((row.kind === 'variable' || row.kind === 'conditionAxis' || row.kind === 'vocabulary') &&
+      ...((row.kind === 'variable' ||
+        row.kind === 'conditionAxis' ||
+        row.kind === 'vocabulary' ||
+        row.kind === 'licence') &&
       row.key !== null
         ? { key: row.key }
         : {}),
@@ -240,6 +246,9 @@ export async function listDefinitions(
  * the route, not `listDefinitions`, serves them.
  */
 export const listVocabularies = (trx: TenantTransaction) => latestOfKind(trx, 'vocabulary');
+
+/** Every licence at its latest version, by name (the AL plan, AL-B): read by anyone signed in. */
+export const listLicences = (trx: TenantTransaction) => latestOfKind(trx, 'licence');
 
 /**
  * Every place a schema may be applied at in T1 (definitions.md, "Where a schema applies"): each
@@ -436,6 +445,12 @@ async function refusal(
     const refused = await keyRefused(trx, 'conditionAxis', axis.key, self);
     if (refused) return refused;
   }
+  if (kind === 'licence') {
+    // Its key fixed and its own, as a vocabulary's (AL-B); what it permits may change, each publish
+    // recording the version it read (AL-F).
+    const refused = await keyRefused(trx, 'licence', (candidate as Licence).key, self);
+    if (refused) return refused;
+  }
   if (kind === 'vocabulary') {
     // Its key fixed and its own; and a version keeps every value, retired ones too, so the latest
     // alone is checked (LIB-023; the VO plan, VO-B).
@@ -587,7 +602,7 @@ export async function recordDefinitionVersion(
  */
 async function keyRefused(
   trx: TenantTransaction,
-  kind: 'variable' | 'conditionAxis' | 'vocabulary',
+  kind: 'variable' | 'conditionAxis' | 'vocabulary' | 'licence',
   key: string,
   self: string | undefined,
 ): Promise<DefinitionAnswer | undefined> {
@@ -603,7 +618,7 @@ async function keyRefused(
             field: self,
             rule: 'fixed',
             schemas: [],
-            detail: `${{ variable: 'A variable', conditionAxis: 'An axis', vocabulary: 'A vocabulary' }[kind]} keeps its key, ${held.key}`,
+            detail: `${{ variable: 'A variable', conditionAxis: 'An axis', vocabulary: 'A vocabulary', licence: 'A licence' }[kind]} keeps its key, ${held.key}`,
           },
         ],
       };

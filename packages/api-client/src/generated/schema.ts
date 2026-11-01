@@ -4275,6 +4275,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/licences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The environment's licences, each at its latest version
+         * @description Lists the environment's licences by name, each at its latest version: its key, its names per language, what it permits (`internal` use, `publication`, `redistribution`, `modification`), whether it requires attribution and what that must say, and the address of its terms. Anyone signed in may read them, since whoever uploads an image declares the licence it is held under; they are made and changed through `/v1/definitions`, as kind `licence`, by whoever manages definitions.
+         */
+        get: operations["listLicences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/licences/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A licence at its latest version
+         * @description Returns a licence at its latest version, as `listLicences` lists it. Anyone signed in may read it.
+         */
+        get: operations["getLicence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -36045,10 +36085,10 @@ export interface operations {
                         items: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                             name: string;
                             /** @description A variable's or an axis's key, which text names it by */
                             key?: string;
@@ -36172,10 +36212,10 @@ export interface operations {
                  */
                 "application/json": {
                     /**
-                     * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                     * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                      * @enum {string}
                      */
-                    kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                    kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                     definition: {
                         [key: string]: unknown;
                     };
@@ -36210,10 +36250,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -36281,10 +36321,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -36403,10 +36443,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -36563,10 +36603,10 @@ export interface operations {
                     "application/json": {
                         id: string;
                         /**
-                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                         * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                          * @enum {string}
                          */
-                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                        kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                         version: {
                             id: string;
                             /** @description `revision.version`, as `0.2` */
@@ -36634,10 +36674,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -36766,10 +36806,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
@@ -78655,6 +78695,241 @@ export interface operations {
             };
         };
     };
+    listLicences: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every licence, by name */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            version: {
+                                id: string;
+                                number: string;
+                            };
+                            licence: {
+                                /** @constant */
+                                schemaVersion: 1;
+                                id: string;
+                                name: string;
+                                key: string;
+                                base: string;
+                                names: {
+                                    language: string;
+                                    text: string;
+                                }[];
+                                permits: ("internal" | "publication" | "redistribution" | "modification")[];
+                                attribution: {
+                                    required: boolean;
+                                    wording?: string;
+                                };
+                                /** @example https://gauges.example.test/alloy */
+                                url?: string;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getLicence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The licence */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "version": {
+                     *         "id": "example",
+                     *         "number": "example"
+                     *       },
+                     *       "licence": {
+                     *         "schemaVersion": 1,
+                     *         "id": "example",
+                     *         "name": "example",
+                     *         "key": "example",
+                     *         "base": "en",
+                     *         "names": [
+                     *           {
+                     *             "language": "en",
+                     *             "text": "example"
+                     *           }
+                     *         ],
+                     *         "permits": [],
+                     *         "attribution": {
+                     *           "required": false
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        version: {
+                            id: string;
+                            number: string;
+                        };
+                        licence: {
+                            /** @constant */
+                            schemaVersion: 1;
+                            id: string;
+                            name: string;
+                            key: string;
+                            base: string;
+                            names: {
+                                language: string;
+                                text: string;
+                            }[];
+                            permits: ("internal" | "publication" | "redistribution" | "modification")[];
+                            attribution: {
+                                required: boolean;
+                                wording?: string;
+                            };
+                            /** @example https://gauges.example.test/alloy */
+                            url?: string;
+                        };
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such licence in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getMe: {
         parameters: {
             query?: never;
@@ -117261,10 +117536,10 @@ export interface operations {
                         current?: {
                             id: string;
                             /**
-                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020)
+                             * @description variable: a value text may name, taken from the document that places it (REU-018); conditionAxis: an axis text may be conditioned on, with its permitted values (REU-020); relationshipType: a kind of relationship between artifacts, and what it permits (REL-047); vocabulary: a named list of permitted values a field or an axis draws on (LIB-020); licence: what an image held under it may be used for, and the credit it needs (AST-022)
                              * @enum {string}
                              */
-                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary";
+                            kind: "field" | "metadataSchema" | "componentType" | "variable" | "conditionAxis" | "relationshipType" | "vocabulary" | "licence";
                             version: {
                                 id: string;
                                 /** @description `revision.version`, as `0.2` */
