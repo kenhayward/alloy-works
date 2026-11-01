@@ -1033,7 +1033,8 @@ describe('the citations in the committed model', () => {
     // 2372 (2026-11-01): ALe - replacement, following, rights where used, import reuse, AST-016, AST-017, AST-029, AST-032, AST-049, AST-052.
     // 2353 (2026-11-01): ALd - the library listed, searched and filtered, where used, unused and duplicates, AST-009, AST-018, AST-028, AST-029, AST-050.
     // 2383 (2026-11-01): SYa - where a style's values come from, styles saved, deleted and weighed, STY-029, STY-031, STY-032, STY-034, STY-056, STY-057, STY-067.
-    expect(model.citations).toHaveLength(2383);
+    // 2389 (2026-11-01): SYb - the Document themes page, STY-029, STY-031, STY-034, STY-057, STY-067, STY-069.
+    expect(model.citations).toHaveLength(2389);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1179,6 +1180,7 @@ describe('scanning the repository for test files', () => {
     // 152, from 151 (2026-11-01): images/images.test.tsx, citing AST-028.
     // 155, from 154 (2026-11-01): structure/AnswerMarkdown.test.tsx, citing nothing (issue #857).
     // 156, from 155 (2026-11-01): parts/MenuButton.test.tsx, citing nothing (the DQ plan).
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(156);
+    // 157, from 156 (2026-11-01): admin/Themes.test.tsx, citing STY-029, STY-031, STY-034, STY-057, STY-067 and STY-069 (SYb).
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(157);
   });
 });

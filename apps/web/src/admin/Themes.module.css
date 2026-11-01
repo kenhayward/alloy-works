@@ -75,3 +75,16 @@
   max-block-size: 16rem;
   overflow: auto;
 }
+
+/* A stated value's control kept to a row's width, beside its words and its action. */
+.property input:not([type='checkbox']),
+.property select {
+  max-inline-size: 10rem;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-4, 4px);
+  /* Level with the name above it, whatever the page's own label rules give a later one. */
+  margin: 0;
+}

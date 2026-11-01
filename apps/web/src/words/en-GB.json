@@ -3517,6 +3517,7 @@
   "admin.delete-style": "Delete style",
   "admin.save-style-question": "Save {name}?",
   "admin.style-reaches-nothing": "This change reaches no document.",
+  "admin.style-reach": "Documents it reaches",
   "admin.style-reaches": "{count, plural, one {This change reaches # document as soon as it is saved:} other {This change reaches # documents as soon as it is saved:}}",
   "admin.style-reaches-unreadable": "{count, plural, one {And # more you may not open.} other {And # more you may not open.}}",
   "admin.style-saved": "{name} saved: {theme} {number}",

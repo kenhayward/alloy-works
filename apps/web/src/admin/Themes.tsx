@@ -393,7 +393,7 @@ function StyleForm({
       <div className={own['editor']}>
         <div>
           <div className={own['heading']}>
-            <label className={styles['filter']}>
+            <label className={own['field']}>
               {words('admin.name')}
               <input
                 value={draft.name}
@@ -401,7 +401,7 @@ function StyleForm({
               />
             </label>
             {draft.isNew && (
-              <label className={styles['filter']}>
+              <label className={own['field']}>
                 {words('admin.style-identifier')}
                 <input
                   value={draft.id}
@@ -409,7 +409,7 @@ function StyleForm({
                 />
               </label>
             )}
-            <label className={styles['filter']}>
+            <label className={own['field']}>
               {words('admin.style-based-on')}
               <select
                 value={draft.basedOn}
@@ -516,7 +516,8 @@ function StyleForm({
                 })}
           </p>
           {impact.documents.length > 0 && (
-            <ul className={own['reach']}>
+            // Scrolled where long, so the keyboard reaches it too.
+            <ul className={own['reach']} tabIndex={0} aria-label={words('admin.style-reach')}>
               {impact.documents.map((each) => (
                 <li key={each.id} data-content>
                   {each.title}

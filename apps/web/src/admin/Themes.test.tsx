@@ -39,8 +39,8 @@ function service(refuse?: { status: number; code: string; message: string }) {
         : ((await request.json()) as Record<string, unknown>);
     sent.push({ method: request.method, path: path + url.search, body });
     if (request.method === 'GET' && path === '/v1/themes') {
-      const { content: _content, catalogues: _catalogues, ...summary } = view;
-      return json(200, { items: [summary] });
+      const { id, name, version, isDefault } = view;
+      return json(200, { items: [{ id, name, version, isDefault }] });
     }
     if (request.method === 'GET' && path === `/v1/themes/${THEME}`) return json(200, view);
     if (request.method === 'POST' && path === `/v1/themes/${THEME}/impact`) {
