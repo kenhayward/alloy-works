@@ -313,6 +313,8 @@ describe("a space's images, browsed and traced (the AL plan, AL-J, AL-K)", () =>
     expect(
       (await tenant((trx) => assetUses(trx, ada, harbour.artifactId))).components.named,
     ).toHaveLength(2);
+    // In the reader's language, its titles sorted as that language sorts them.
+    expect(await tenant((trx) => assetUses(trx, grace, harbour.artifactId, 'en-GB'))).toEqual(uses);
 
     // Nothing places the pump or the tower; the harbour is used.
     expect(await names(ada, { unused: true })).toEqual(['pump.jpg', 'tower.png']);

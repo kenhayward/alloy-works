@@ -206,20 +206,24 @@ export async function assetUses(
   const readable = await loadReadableSet(trx, by);
   const order = await collated(trx, language);
   const { rows: components } = await sql<{ id: string; space_id: string; title: string | null }>`
-    select distinct a.id, a.space_id, v.content ->> 'title' as title
-      from reference r
-      join artifact a on a.id = r.from_id and a.kind = 'component'
-      join artifact_version v on v.id = r.from_version
-     where r.to_id = ${assetId}
-     order by title ${order}, a.id`.execute(trx);
+    select * from (
+      select distinct a.id, a.space_id, v.content ->> 'title' as title
+        from reference r
+        join artifact a on a.id = r.from_id and a.kind = 'component'
+        join artifact_version v on v.id = r.from_version
+       where r.to_id = ${assetId}) held
+     -- Sorted outside the distinct, where a collation may name its column.
+     order by held.title ${order}, held.id`.execute(trx);
   const shownComponents = await readableAmong(trx, readable, components);
   const { rows: documents } = await sql<{ id: string; space_id: string; title: string | null }>`
-    select distinct a.id, a.space_id, v.content ->> 'title' as title
-      from reference r
-      join artifact a on a.id = r.from_id and a.kind = 'document'
-      join artifact_version v on v.id = r.from_version
-     where r.to_id in (select c.from_id from reference c where c.to_id = ${assetId})
-     order by title ${order}, a.id`.execute(trx);
+    select * from (
+      select distinct a.id, a.space_id, v.content ->> 'title' as title
+        from reference r
+        join artifact a on a.id = r.from_id and a.kind = 'document'
+        join artifact_version v on v.id = r.from_version
+       where r.to_id in (select c.from_id from reference c where c.to_id = ${assetId})) held
+     -- Sorted outside the distinct, where a collation may name its column.
+     order by held.title ${order}, held.id`.execute(trx);
   const shownDocuments = await readableAmong(trx, readable, documents);
   const { rows: baselines } = await sql<{
     id: string;
