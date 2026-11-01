@@ -1,0 +1,43 @@
+# AL: The assets library
+
+> T7's second slice, extending [assets.md](../design/assets.md) (written in ALa). **Full tier**: a
+> definition kind and its migration, an asset's stored shape, a figure's reference, a publication's
+> recorded inputs, a publish refusal. Ken's answers of 2026-11-01 are marked **(Ken)**; the rest
+> **(default)**. The pre-flight review's findings are folded in.
+
+**Goal:** an image says where it came from and what its licence lets anyone do with it, and publishing
+holds to that; a space's images are browsed by thumbnail, searched, and shown where they are used,
+unused or uploaded twice; an image is replaced by a newer version that a figure may follow.
+
+| PR  | Holds                                                                                                                                  |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| ALa | This plan, the design, AST amendments; `licence` (0179), its routes and its Administration page                                        |
+| ALb | An image's rights and their history, written by `recordAsset`; asked at upload; checked at publish and recorded on the publication      |
+| ALc | Derivatives made after `recordAsset`, discarded and rebuilt; outputs stripped at publish; the hash verified on read; per-format limits  |
+| ALd | The Images page: browse, filter, search; where used and unused; duplicates at upload; the figure dialog chooses an existing image      |
+| ALe | Replacing an image; a figure following the latest; a rights change and an expiry surfaced where used; the walks; the review; the close |
+
+## Decisions
+
+| ID   | Decision |
+| ---- | -------- |
+| AL-A | **Scope** (Ken): licences and rights, derivatives, the library, replacement. **Deferred**: format conversion for an output (AST-011, AST-046, AST-047), since no output converts an image today; asset export and import (AST-030), to EI; **deleting an asset** (AST-019, AST-020), since deletion (0085) admits components and documents only and finds publications through `publication_input` alone (pre-flight 9). |
+| AL-B | **A licence is an environment-wide definition** (Ken), kind `licence` beside `vocabulary`, null space, written with `manage_definitions` through `/v1/definitions`, read by anyone signed in through `/v1/licences`. Shape: `key`, `base`, `names` by language, `permits` (a subset of `internal`, `publication`, `redistribution`, `modification`; AST-022), `attribution` `required` with an optional `wording` (AST-045), an optional `url`. |
+| AL-C | **An image's rights are the asset's, not a version's** (default): `source` (text, optional `url`), and `licence` (a licence id, optional `expires` date, optional `credit` line) or `undeclared`, recorded explicitly (AST-021, AST-044). **Expiry is on the image's grant** (Ken; AST-025 amended). Held in insert-only `asset_rights`, a row per change with author and time (AST-031); the latest is current, so a pinned figure answers to today's rights. **One seam** (pre-flight 6): `recordAsset` writes the first row, `undeclared` unless the caller declares, so uploads, imports, the bridge and dataset images all get one. A **dataset image** (`origin = 'dataset'`) records its dataset as source and is exempt from the undeclared policy: it is the tenant's own data (default; Ken may differ). |
+| AL-D | **Name and default description stay on the version** (default; pre-flight 12): `name` joins the version's content as an optional member at schema 1, from the file's name at upload; changing either cuts a version of the same object, so AST-031's history of them is the version chain and audit labels keep reading `name`. |
+| AL-E | **Asked at upload** (AST-044): the upload's description gains optional `name` and `rights`; the figure dialog asks with "Not declared" as a visible choice. |
+| AL-F | **Checked at publish** (AST-023, AST-043; Ken): in `resolvePublishable` and the baseline path (`baselines.ts`), over figures' assets and bound images' alike. A licence not permitting `publication` fails `asset_licence_forbids` in `publishFailureCodes`, naming the figure and its licence. An undeclared image follows the environment's **Images** setting, `undeclared: 'warn' \| 'refuse'`, **default warn** (AST-Q04 settled; AST-043 amended with a change history), a warning riding the request's `warnings`; an expired grant likewise. A preview is internal use. Each publish records per image the rights row and licence version read in insert-only `publication_request_rights` and `publication_rights`, outside `baseline_pin` (0073), so a baseline republished after a licence change is checked against today's. |
+| AL-G | **Metadata: the original kept, outputs stripped** (Ken; AST-007, AST-024): the original stays byte for byte. `stripImage` in `packages/domain` drops JPEG APP1, APP11, APP13 and COM and PNG text, `eXIf` and `caBX`, keeping ICC and **a minimal EXIF holding the orientation** (pre-flight 2). The worker strips at publish (`rootImages`), never embedding the original (pre-flight 3), and each derivative is made from stripped bytes. What was found (EXIF, GPS, XMP, IPTC, content credentials) and dropped is recorded on `publication_asset`'s successor row and on the derivative. Credit and copyright fields go too; a credit is the grant's, rendered by PUB (AST-Q06). |
+| AL-H | **Derivatives** (AST-008 to AST-010, AST-048, AST-049): a `derive` job enqueued by `recordAsset` makes `thumbnail` (256 px long side) and `preview` (1,024 px), WebP, oriented, in `asset_derivative (version, kind, object, carried)`. Keyed by version, so a replacement is never served an older one's. A missing one is rebuilt by a job on read while the route answers the original `no-store` (pre-flight 5). `objectInUse` counts derivatives, and no derivative equal to its original is written (pre-flight 4). An administrator may discard a space's derivatives. |
+| AL-I | **Ingest rows** (ALc): per-format limits in `ADMITTED_FORMATS`, lowered per environment in the Images setting (AST-004); the content route re-hashes before answering, refusing `asset.corrupt` (AST-042). AST-036 is not claimed: it speaks of a scan, which no admitted format has. |
+| AL-J | **The Images page** (AST-028, AST-050): a space's images as thumbnails, filtered by format, licence, undeclared, expired, unused and orientation; searched by name, description, format, licence and source. Dataset images are left out (pre-flight 10). `/v1/spaces/{space}/assets`. AST-027 is not claimed: a caption is a figure's, not an image's. |
+| AL-K | **Where used** (AST-018, AST-050): `/v1/assets/{id}/uses`, components, documents, baselines and publications, unreadable ones counted, as `componentUses` does, the publications through `publication_asset` and `publication_binding`. |
+| AL-L | **Duplicates** (AST-029): the upload's description carries the client's SHA-256; the service answers the assets with that hash the uploader may read (`readableArtifacts`), dataset images never; the dialog offers "Use this image". The bytes are re-hashed on arrival. An import reuses a match in the space and records no `import_made` for it (pre-flight 11). |
+| AL-M | **Replacement and following** (AST-016, AST-017, AST-032, AST-049): `PUT /v1/assets/{id}/bytes` cuts a version. A figure and an inline image gain an optional `follow: 'latest'` beside `asset`, at schema 1 with no migration (pre-flight 1, as B6-B did), through the editor's attribute and mapping both ways and the bridge's round trip; its reference row is mode `latest`. Publish resolves the latest readable version. A rights change, a licence version narrowing `permits`, or an expiry is flagged on the component and the Images page, and in publish's report (AST-025, AST-032). |
+| AL-N | **Claims**: AST-004, AST-007 to AST-010, AST-016 to AST-018, AST-021 to AST-025, AST-028, AST-029, AST-031, AST-032, AST-042 to AST-045, AST-048 to AST-050 in `assets.md`. Tenant export gains `asset_rights` and `licence` parts. Not: AST-011, AST-019, AST-020, AST-027, AST-030, AST-036, AST-046, AST-047. |
+
+## Risks
+
+- **A reader of `asset` missing `follow`** (AL-M): every one named by the pre-flight (`references.ts`, `bridge/blocks.ts`, `readback.ts`, `assemble.ts`, `publishing.ts`, `imports.ts`) gets a test.
+- **Publish starts refusing** (AL-F): only on a declared licence that forbids it, or an administrator's `refuse`.
+- **The strip** must keep every image the decoder accepted decodable, pixel-identical and turned the same: a test over the ingest fixtures, orientations 2 to 8 included.
