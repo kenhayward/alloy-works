@@ -359,6 +359,32 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     }
   });
 
+  it('says how much context the turn’s last call took, apart from the tokens it took in all (the DP plan)', async () => {
+    const id = await start('grace');
+    const was = h.connector.modelFor;
+    let calls = 0;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      calls += 1;
+      return calls === 1
+        ? [
+            { type: 'tool_call', id: 't1', name: 'read_component', input: { component: sitesId } },
+            { type: 'ended', model: 'stand-in-1', stop: 'tool_use', usage: { in: 1, out: 1 } },
+          ]
+        : [text('It floods.'), ended];
+    };
+    try {
+      const frames = framesOf((await turn('grace', id, { ask: 'Read the weir part.' })).body);
+      // Each call sends the whole conversation again: the last call's is what the window holds.
+      expect(frames.at(-1)).toMatchObject({
+        event: 'ended',
+        data: { tokensIn: 11, contextTokens: 10 },
+      });
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
   it('GEN-052 proposes a component to be made, made at 0.1 only once accepted, and reported as generated once placed', async () => {
     const id = await start('grace');
     const was = h.connector.modelFor;

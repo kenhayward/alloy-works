@@ -225,7 +225,8 @@ export function streamedRun(input: {
     const offersDeclined = tools.some((each) => each.name === DECLINED.name);
     // The reply's pieces as they arrive, about a token each: said with each piece sent.
     let received = 0;
-    const usage = { in: 0, out: 0, reported: false };
+    // `last`: what the last call took in, the whole conversation as it then stood (the DP plan).
+    const usage = { in: 0, out: 0, last: 0, reported: false };
     const read = new Map<string, Set<string>>();
     const readContext: { component: string; version: string; blocks: readonly string[] }[] = [
       ...(input.context ?? []),
@@ -298,6 +299,7 @@ export function streamedRun(input: {
         if (ended.usage) {
           usage.in += ended.usage.in;
           usage.out += ended.usage.out;
+          usage.last = ended.usage.in;
           usage.reported = true;
         }
         if (holding && text !== '') {
@@ -446,6 +448,7 @@ export function streamedRun(input: {
           model,
           tokensIn: recorded?.tokensIn ?? null,
           tokensOut: recorded?.tokensOut ?? null,
+          contextTokens: usage.reported ? usage.last : null,
           cost: recorded?.costMicros == null ? null : microsText(recorded.costMicros),
           currency: endpoint.currency,
           ...input.ended?.(said, read),

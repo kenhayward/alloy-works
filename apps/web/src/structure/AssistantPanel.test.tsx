@@ -903,6 +903,18 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
     expect(stream.mock.calls[1]![0].body).toMatchObject({ ask: 'When does it flood?' });
   });
 
+  it('asks again without wiping what you have started typing', async () => {
+    const user = userEvent.setup();
+    const stream = vi.fn(answered);
+    panel(stream);
+    await user.type(screen.getByLabelText('Ask the assistant'), 'When does it flood?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    await user.type(screen.getByLabelText('Ask the assistant'), 'And the south weir?');
+    await user.click(await screen.findByRole('button', { name: 'Ask again' }));
+    await waitFor(() => expect(stream).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Ask the assistant')).toHaveValue('And the south weir?');
+  });
+
   it('says what it is doing while it answers, with Stop where Ask was', async () => {
     const user = userEvent.setup();
     let release = () => {};
@@ -999,6 +1011,32 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     expect(stream.mock.calls[0]![0].body).toMatchObject({ component: SITES, context: 'component' });
   });
 
+  it('lets the part go once the box is left, so the next part opened is the one asked about', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = vi.fn(answered());
+    const panel = (component: string | null) => (
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={component}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />
+    );
+    const { rerender } = render(panel(SITES));
+    await user.click(screen.getByLabelText('Ask the assistant'));
+    await user.click(document.body);
+    rerender(panel(null));
+    // No part open, and the box left: there is no part to ask about.
+    expect(screen.getByRole('radio', { name: 'This part' })).toBeDisabled();
+    rerender(panel(LIBRARY));
+    await user.type(screen.getByLabelText('Ask the assistant'), 'And this one?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(stream.mock.calls[0]![0].body).toMatchObject({ component: LIBRARY });
+  });
+
   it('asks on Enter, and starts a new line on Shift+Enter', async () => {
     const user = userEvent.setup();
     const { client } = service();
@@ -1022,16 +1060,24 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     expect(stream.mock.calls[0]![0].body).toMatchObject({ ask: 'One\ntwo' });
   });
 
-  it('measures the last turn against the endpoint’s context window, in three bands', async () => {
+  it('measures what the last call took in against the window of the endpoint that ran it', async () => {
     const user = userEvent.setup();
     const { client } = service();
+    const turn = (contextTokens: number) =>
+      running([
+        ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'outside' } }],
+        ['text', { text: 'It floods.' }],
+        // Three calls, each sending the whole conversation again: their sum is no measure.
+        ended({ tokensIn: 3 * contextTokens, contextTokens }),
+      ]);
+    const stream = vi.fn(turn(100_000));
     render(
       <AssistantPanel
         client={client}
         document={DOCUMENT}
         component={SITES}
         onCite={() => {}}
-        stream={vi.fn(answered(100_000))}
+        stream={stream}
         origin="http://doc.test"
       />,
     );
@@ -1042,9 +1088,14 @@ describe('the assistant’s composer (the DP plan, Task 6)', () => {
     await user.click(screen.getByRole('button', { name: 'Ask' }));
     const gauge = await screen.findByRole('img', { name: '50% of the context used' });
     expect(gauge).toHaveAttribute('data-band', 'mid');
-    // The same turn against a smaller window.
+    // Another endpoint chosen for the next turn: the last one's measure stands.
     await user.selectOptions(screen.getByRole('combobox', { name: 'Endpoint' }), SITES);
-    expect(screen.getByRole('img', { name: '1,250% of the context used' })).toHaveAttribute(
+    expect(screen.getByRole('img', { name: '50% of the context used' })).toBeVisible();
+    stream.mockImplementation(turn(160_000));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Endpoint' }), ENDPOINT);
+    await user.type(screen.getByLabelText('Ask the assistant'), 'And now?');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(await screen.findByRole('img', { name: '80% of the context used' })).toHaveAttribute(
       'data-band',
       'high',
     );

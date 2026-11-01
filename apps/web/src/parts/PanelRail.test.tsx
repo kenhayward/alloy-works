@@ -115,3 +115,34 @@ describe('the rail right to left (ADR-0074)', () => {
     expect(css).not.toMatch(/\.name \{[^}]*\b(left|right):/);
   });
 });
+
+describe('the rail in the document page (ADR-0074)', () => {
+  const css = readFileSync(
+    join(import.meta.dirname, '../structure/DocumentPage.module.css'),
+    'utf8',
+  );
+  /** A rule's body, by its selector exactly as the stylesheet writes it. */
+  const rule = (selector: string) => {
+    const at = css.indexOf(`
+${selector} {`);
+    return at === -1 ? '' : css.slice(at, css.indexOf('}', at));
+  };
+
+  it('clips the panel, never the rail, so a tab’s name shows beside it while the panel is hidden', () => {
+    expect(rule('.dockArea')).not.toMatch(/overflow/);
+    expect(rule('.dock')).toMatch(/overflow: hidden;/);
+  });
+
+  it('holds the rail and its borders whole when the panel is hidden, one border at its start', () => {
+    expect(rule(".layout[data-dock-collapsed='true']")).toMatch(
+      /--right: calc\(var\(--dock-rail\) \+ 2px\);/,
+    );
+    expect(rule('.dockArea > .dock[hidden] + nav')).toMatch(/border-inline-start: 0;/);
+  });
+
+  it('leaves the rail alone at the end of a narrow window when the panel is hidden', () => {
+    expect(css).toMatch(
+      /@media \(max-width: 1100px\) \{[\s\S]*\.layout\[data-dock-collapsed='true'\] \.dockArea \{[^}]*justify-self: end;/,
+    );
+  });
+});

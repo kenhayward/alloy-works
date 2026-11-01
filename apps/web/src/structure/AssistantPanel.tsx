@@ -50,6 +50,8 @@ interface Citation {
 interface Ended {
   readonly tokensIn: number | null;
   readonly tokensOut: number | null;
+  /** What the last model call took in, which the context window holds; `tokensIn` sums every call. */
+  readonly contextTokens?: number | null;
   readonly cost: string | null;
   readonly currency: string;
   readonly citations: readonly Citation[];
@@ -253,6 +255,11 @@ export function AssistantPanel({
   // The part asked about, held from when the box is entered until the ask is sent, so the cursor
   // leaving the part for the box does not change what is asked about (as Diariz holds its scope).
   const [held, setHeld] = useState<string | null>(null);
+  // Let go once the box is left and another part, or none, is open: that is the one asked about.
+  const inBox = useRef(false);
+  useEffect(() => {
+    if (!inBox.current) setHeld(null);
+  }, [component]);
   const asking = held ?? component;
   const given = asking === null ? 'document' : scope;
   // The reply's tokens so far, while it streams.
@@ -374,6 +381,7 @@ export function AssistantPanel({
 
   /** A conversation of this document's opened, or none: a new one, begun by the next ask. */
   const open = (id: string | null) => {
+    setHeld(null);
     setConversation(id);
     setTurns([]);
     setCurrent(null);
@@ -415,7 +423,8 @@ export function AssistantPanel({
       ...(asking === null ? {} : { component: asking }),
       ...(document === null ? {} : { context: given }),
     });
-    setAsk('');
+    // Only the words sent: what was typed since, asking again, stays.
+    setAsk((was) => (was.trim() === text.trim() ? '' : was));
     setHeld(null);
     await Promise.all([readTurns(id), readConversations()]).catch(() => undefined);
   };
@@ -568,12 +577,13 @@ export function AssistantPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [citedKey]);
 
-  // The last turn measured against the chosen endpoint's context window, in Diariz's three bands.
-  const window_ = endpoints.find((each) => each.id === chosen)?.contextWindow;
+  // The last turn measured against the context window of the endpoint that ran it, in Diariz's three
+  // bands: what its last call took in, the conversation as it then stood, not the run's sum.
+  const window_ = endpoints.find((each) => each.name === endpoint?.name)?.contextWindow;
   const percent =
-    ended?.tokensIn == null || window_ === undefined
+    ended?.contextTokens == null || window_ === undefined
       ? null
-      : Math.round((ended.tokensIn / window_) * 100);
+      : Math.round((ended.contextTokens / window_) * 100);
   const measured =
     percent === null
       ? null
@@ -960,7 +970,13 @@ export function AssistantPanel({
             value={ask}
             rows={3}
             onChange={(change) => setAsk(change.target.value)}
-            onFocus={() => setHeld(component)}
+            onFocus={() => {
+              inBox.current = true;
+              setHeld(component);
+            }}
+            onBlur={() => {
+              inBox.current = false;
+            }}
             onKeyDown={(event) => {
               // Enter asks; Shift and Enter starts a new line (Diariz's composer).
               if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;

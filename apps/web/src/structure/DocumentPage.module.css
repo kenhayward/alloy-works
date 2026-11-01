@@ -43,7 +43,8 @@
 }
 
 .layout[data-dock-collapsed='true'] {
-  --right: var(--dock-rail);
+  /* The rail and the box's two borders. */
+  --right: calc(var(--dock-rail) + 2px);
   --dock-edge: 0;
 }
 
@@ -158,14 +159,22 @@
     100vh - var(--header-height) - var(--band-height, 0px) - var(--space-12) -
       var(--status-height, 0px) - var(--space-12)
   );
-  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
 }
 
+/* Unclipped, so a tab's name shows beside the rail, over the text, while the panel is hidden. */
 .dockArea > nav {
   flex-shrink: 0;
+  border-start-end-radius: var(--radius-8);
+  border-end-end-radius: var(--radius-8);
+}
+
+/* Hidden, the panel's border is the box's own: the rail draws none of its own at its start. */
+.dockArea > .dock[hidden] + nav {
+  border-inline-start: 0;
+  border-radius: var(--radius-8);
 }
 
 .dock {
@@ -173,6 +182,10 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-start-start-radius: var(--radius-8);
+  border-end-start-radius: var(--radius-8);
   font-size: var(--size-13);
 }
 
@@ -234,6 +247,11 @@
   }
 
   /* Where the pane goes below the text, so does the preview, the whole width, after it. */
+  /* Hidden, the rail alone at the end of the window, not an empty box across it. */
+  .layout[data-dock-collapsed='true'] .dockArea {
+    justify-self: end;
+  }
+
   .dockArea,
   .preview {
     position: static;
