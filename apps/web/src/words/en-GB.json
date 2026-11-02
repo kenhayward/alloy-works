@@ -12,6 +12,7 @@
   "shell.search.key": "Ctrl K",
   "shell.signIn": "Sign in",
   "shell.signInGoogle": "Sign in with Google",
+  "shell.signInThrough": "Sign in with {name}",
   "shell.account": "Account",
   "shell.signedIn": "Signed in",
   "shell.unread": "unread",

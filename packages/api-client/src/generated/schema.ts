@@ -6136,7 +6136,7 @@ export interface paths {
         };
         /**
          * Begin signing in with the organisation's identity provider
-         * @description Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.
+         * @description Browser sign-in route. Redirects to the organisation’s identity provider named by `provider`, or the only one open; with several open and none named, back to the application, which offers each. An API token cannot complete this flow.
          */
         get: operations["startOrganisationSignIn"];
         put?: never;
@@ -73800,6 +73800,8 @@ export interface operations {
                     name: string;
                     /** @description Given: the group stands for this value of the provider's groups claim, matched exactly, and its members are the sign-ins' to decide. Absent: the environment's own group */
                     providerValue?: string;
+                    /** @description With providerValue, the identity provider whose claim it reads; required where more than one is open, and the only one otherwise. Another provider asserting the same value joins nothing */
+                    provider?: string & (unknown & unknown);
                 };
             };
         };
@@ -73885,7 +73887,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description group_name_taken or group_value_taken */
+            /** @description group_name_taken, group_value_taken, group_provider_required or group_provider_unknown */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -100384,6 +100386,7 @@ export interface operations {
         parameters: {
             query?: {
                 to?: string;
+                provider?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -100667,6 +100670,7 @@ export interface operations {
         parameters: {
             query?: {
                 to?: string;
+                provider?: string & (unknown & unknown);
             };
             header?: {
                 /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
@@ -115331,7 +115335,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "name": "example",
-                     *       "signIn": []
+                     *       "signIn": [],
+                     *       "providers": []
                      *     }
                      */
                     "application/json": {
@@ -115339,6 +115344,11 @@ export interface operations {
                         name: string;
                         /** @description The ways in it offers: the organisation's provider, Google, or both */
                         signIn: ("organisation" | "google")[];
+                        /** @description The organisation's open identity providers, by name, each a way in of its own */
+                        providers: {
+                            id: string;
+                            name: string;
+                        }[];
                     };
                 };
             };

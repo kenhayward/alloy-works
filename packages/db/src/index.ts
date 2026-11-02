@@ -173,6 +173,7 @@ export type {
   VersionDefinitionTable,
 } from './tables.js';
 export {
+  closeProvider,
   closeSignInRoute,
   configureOrganisationSignIn,
   identifyKnown,

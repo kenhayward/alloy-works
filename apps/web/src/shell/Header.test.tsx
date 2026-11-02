@@ -92,6 +92,33 @@ describe('the header band', () => {
     }
   });
 
+  it('IAM-011 offers each open provider by name where there is more than one', async () => {
+    render(
+      <Header
+        fetch={serviceThat({
+          ...signedOut,
+          '/v1/tenant': {
+            name: 'Development',
+            signIn: ['organisation'],
+            providers: [
+              { id: 'p-1', name: 'Contractors' },
+              { id: 'p-2', name: 'Staff' },
+            ],
+          },
+        })}
+      />,
+    );
+    expect(await screen.findByRole('link', { name: 'Sign in with Contractors' })).toHaveAttribute(
+      'href',
+      '/v1/sign-in/organisation?provider=p-1',
+    );
+    expect(screen.getByRole('link', { name: 'Sign in with Staff' })).toHaveAttribute(
+      'href',
+      '/v1/sign-in/organisation?provider=p-2',
+    );
+    expect(screen.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+
   it('signs out from the account chip', async () => {
     const posted: string[] = [];
     const signedOutNow = vi.fn();

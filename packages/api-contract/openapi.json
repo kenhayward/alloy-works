@@ -215736,6 +215736,18 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256
+                  },
+                  "provider": {
+                    "description": "With providerValue, the identity provider whose claim it reads; required where more than one is open, and the only one otherwise. Another provider asserting the same value joins nothing",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -215935,7 +215947,7 @@
             }
           },
           "409": {
-            "description": "group_name_taken or group_value_taken",
+            "description": "group_name_taken, group_value_taken, group_provider_required or group_provider_unknown",
             "content": {
               "application/json": {
                 "schema": {
@@ -288397,6 +288409,23 @@
             }
           },
           {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The identity provider to sign in through, as the environment lists them; the only one open where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
             "name": "X-Request-Id",
             "in": "header",
             "required": false,
@@ -288960,7 +288989,7 @@
       "get": {
         "operationId": "startOrganisationSignIn",
         "summary": "Begin signing in with the organisation's identity provider",
-        "description": "Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.",
+        "description": "Browser sign-in route. Redirects to the organisation’s identity provider named by `provider`, or the only one open; with several open and none named, back to the application, which offers each. An API token cannot complete this flow.",
         "tags": [
           "Identity"
         ],
@@ -288976,6 +289005,23 @@
               "type": "string",
               "maxLength": 200,
               "pattern": "^[a-z]+(\\/[a-z0-9-]+)*$"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "description": "The identity provider to sign in through, as the environment lists them; the only one open where absent",
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
             }
           },
           {
@@ -337310,16 +337356,37 @@
                         ]
                       },
                       "description": "The ways in it offers: the organisation's provider, Google, or both"
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      "description": "The organisation's open identity providers, by name, each a way in of its own"
                     }
                   },
                   "required": [
                     "name",
-                    "signIn"
+                    "signIn",
+                    "providers"
                   ]
                 },
                 "example": {
                   "name": "example",
-                  "signIn": []
+                  "signIn": [],
+                  "providers": []
                 }
               }
             },

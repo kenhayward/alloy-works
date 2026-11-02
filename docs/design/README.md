@@ -55,6 +55,7 @@ understand the storage layer, rather than something to be thrown away.
 | [ct-studio-connect.md](ct-studio-connect.md)           | An administrator connects CT Studio from Administration: identity, grant, token and settings in one flow, ending on what to paste into CT Studio                              |
 | [reference-sources.md](reference-sources.md)           | Crossref and PubMed searched through the connector and cited; a cited source's retraction or correction found, flagged and told                                               |
 | [vocabularies.md](vocabularies.md)                     | Vocabularies as environment-wide definitions, drawn on by fields and condition axes; values labelled per language, deprecated and retired, never dropped; SKOS; from a source |
+| [identity.md](identity.md)                             | More than one identity provider configured in Administration, session lifetimes, re-authentication, SCIM, the high-risk permissions                                           |
 
 ## Why these are not one per requirement area
 

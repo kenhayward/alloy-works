@@ -24,8 +24,9 @@ export function configureStandIn(
     readonly clientId: string;
     readonly clientSecret?: string;
     readonly groupsClaim?: string;
+    readonly name?: string;
   },
-): Promise<void> {
+): Promise<string> {
   return configureOrganisationSignIn(
     adminUrl,
     tenant,

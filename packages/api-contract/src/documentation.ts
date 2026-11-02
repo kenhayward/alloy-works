@@ -1571,7 +1571,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getTranslationSettingsHistory:
     'Lists every change to the environment’s policy for publishing in a language, the newest first: each change’s values whole, who made it and when. The first is the policy as it stood when the history began, by nobody. A publish or preview in a language names the change it was decided under. Needs administer at the environment.',
   startOrganisationSignIn:
-    'Browser sign-in route. Redirects to the organisation’s identity provider; an API token cannot complete this flow.',
+    'Browser sign-in route. Redirects to the organisation’s identity provider named by `provider`, or the only one open; with several open and none named, back to the application, which offers each. An API token cannot complete this flow.',
   finishOrganisationSignIn:
     'Browser callback for the organisation’s identity provider. The browser’s sign-in attempt and returned state must match.',
   startGoogleSignIn:

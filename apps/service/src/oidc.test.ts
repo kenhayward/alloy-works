@@ -109,6 +109,49 @@ describe('the OpenID Connect client', () => {
     }
   });
 
+  it('IAM-065 signs in after the provider rotates its signing key, without a step, and refuses a token naming a key it does not publish', async () => {
+    const before = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      keyId: 'first',
+    });
+    const port = Number(new URL(before.issuer).port);
+    const settings = { issuer: before.issuer, clientId: 'alloy', clientSecret: 'stand-in-secret' };
+    const rotating = createOidcClient({ allowInsecureIssuers: true });
+    const signIn = async (at: StandInProvider) => {
+      const start = await rotating.start(settings, REDIRECT);
+      return rotating.finish(settings, await completeAtStandIn(start.url, 'ada', at.issuer), start);
+    };
+    expect((await signIn(before)).subject).toBe('ada');
+    await before.close();
+
+    // The same issuer, its key rotated within the minute the client trusts the keys it holds: the
+    // token naming the new key is refused, and the next sign-in fetches the keys afresh.
+    const after = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      port,
+      keyId: 'second',
+    });
+    try {
+      await expect(signIn(after)).rejects.toThrow(SignInFailed);
+      expect((await signIn(after)).subject).toBe('ada');
+    } finally {
+      await after.close();
+    }
+
+    const unpublished = await startStandInProvider({
+      clients: [{ clientId: 'alloy', clientSecret: 'stand-in-secret', redirectUris: [REDIRECT] }],
+      port,
+      keyId: 'third',
+      signsWithUnpublishedKey: true,
+      publishedKeyId: 'fourth',
+    });
+    try {
+      await expect(signIn(unpublished)).rejects.toThrow(SignInFailed);
+    } finally {
+      await unpublished.close();
+    }
+  });
+
   it('refuses a provider reached over plain HTTP unless told the stand-in is allowed', async () => {
     const strict = createOidcClient({ allowInsecureIssuers: false });
     await expect(strict.start(provider, REDIRECT)).rejects.toThrow(/HTTPS/);

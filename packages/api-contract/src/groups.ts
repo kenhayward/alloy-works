@@ -41,6 +41,9 @@ export const GroupBody = z.strictObject({
     .describe(
       "Given: the group stands for this value of the provider's groups claim, matched exactly, and its members are the sign-ins' to decide. Absent: the environment's own group",
     ),
+  provider: LowercaseUuid.optional().describe(
+    'With providerValue, the identity provider whose claim it reads; required where more than one is open, and the only one otherwise. Another provider asserting the same value joins nothing',
+  ),
 });
 export type GroupBody = z.infer<typeof GroupBody>;
 
@@ -112,7 +115,11 @@ export const groupRoutes = {
       200: { description: 'Made, with no members yet', schema: GroupMade },
       401: unauthenticated,
       403: forbidden,
-      409: { description: 'group_name_taken or group_value_taken', schema: ErrorBody },
+      409: {
+        description:
+          'group_name_taken, group_value_taken, group_provider_required or group_provider_unknown',
+        schema: ErrorBody,
+      },
     },
   },
   setGroupMembers: {

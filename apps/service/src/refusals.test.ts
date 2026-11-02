@@ -86,6 +86,9 @@ describe('the rule behind a refusal', () => {
       // whose members are the sign-ins' (access.md, GP-C) - a design's decision, not IAM-009's.
       'group.name_taken',
       'group.value_taken',
+      // Which provider a provider's group reads, asked for or unknown (identity.md, IN-I).
+      'group.provider_required',
+      'group.provider_unknown',
       'group.from_provider',
       'group.member_missing',
       // A value written that does not fit, or that nothing can be checked against because the

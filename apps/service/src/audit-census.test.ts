@@ -669,7 +669,8 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
   },
   /** The vendor's functions: everything in packages/db that runs through `asAdministrator`. */
   vendor: {
-    closeSignInRoute: writes('sign_in_route.closed', 'authentication.signed_out'),
+    closeProvider: writes('sign_in_route.closed', 'authentication.signed_out', 'token.revoked'),
+    closeSignInRoute: writes('sign_in_route.closed', 'authentication.signed_out', 'token.revoked'),
     configureOrganisationSignIn: writes('sign_in_route.configured'),
     inviteToTenant: writes('tenant.invited'),
     permitGoogleSignIn: writes('sign_in_route.configured'),

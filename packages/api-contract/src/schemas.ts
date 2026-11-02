@@ -50,6 +50,9 @@ export const TenantProfile = z.object({
   signIn: z
     .array(z.enum(['organisation', 'google']))
     .describe("The ways in it offers: the organisation's provider, Google, or both"),
+  providers: z
+    .array(z.object({ id: z.string(), name: z.string() }))
+    .describe("The organisation's open identity providers, by name, each a way in of its own"),
 });
 
 /**
@@ -66,6 +69,9 @@ export const SignInStartQuery = z.object({
     .regex(SIGN_IN_RETURN)
     .optional()
     .describe('The page to come back to once signed in, as its address after `#/` names it'),
+  provider: LowercaseUuid.optional().describe(
+    'The identity provider to sign in through, as the environment lists them; the only one open where absent',
+  ),
 });
 export type SignInStartQuery = z.infer<typeof SignInStartQuery>;
 export type TenantProfile = z.infer<typeof TenantProfile>;

@@ -20,6 +20,9 @@ export const signedInAddressQuery = (prefix: string) => `
   select 1 from ${prefix}principal
   where issuer is not null and email_verified and lower(email) = $1`;
 
+/** What a provider configured without a name is called: the one an environment had before 0187. */
+const DEFAULT_PROVIDER_NAME = 'Your organisation';
+
 /** What a provider asserts of who has just authenticated, as a sign-in keeps it on their principal. */
 export interface SignedInClaims {
   readonly issuer: string;
@@ -62,8 +65,10 @@ export async function identifyKnown(
 }
 
 /**
- * Points a tenant at its organisation's identity provider and permits the route, run as an
- * administrator. The client secret is sealed with `key` to this tenant and to sign-in before it is
+ * Points a tenant at one of its organisation's identity providers (the ID plan, IDa; IAM-011) and
+ * permits the route, run as an administrator; the provider's id is returned. The provider is the one of
+ * this issuer; or, named nothing, the default one, repointed, as an operator replaces a configuration;
+ * or a new one. A closed provider configured again is opened. The client secret is sealed with `key` to this tenant and to sign-in before it is
  * written, so the row holds this environment's secret and no other's, and opens for nobody but this
  * tenant; a name left from before 0042 is cleared. `groupsClaim` names the ID token claim carrying the
  * provider's group values (IAM-009, GP-A): `groups` for a new configuration, and left as it was when a
@@ -77,21 +82,30 @@ export async function configureOrganisationSignIn(
     readonly clientId: string;
     readonly clientSecret: string;
     readonly groupsClaim?: string;
+    /** Shown on the sign-in page; a new provider's defaults to "Your organisation". */
+    readonly name?: string;
   },
   key: Buffer,
-): Promise<void> {
+): Promise<string> {
   if (provider.clientSecret.length === 0) throw new Error('A client secret is required');
   const sealed = sealSecret(key, 'sign-in', tenant.id, provider.clientSecret);
-  await asAdministrator(adminUrl, tenant, async (client, schema) => {
+  return asAdministrator(adminUrl, tenant, async (client, schema) => {
     // What was configured before, to record a change only where there is one (the AU1 review, L10).
     const held = await client.query<{
+      id: string;
       issuer: string;
       client_id: string;
       sealed_secret: string | null;
       groups_claim: string;
+      name: string;
+      closed: boolean;
     }>(
-      `select issuer, client_id, sealed_secret, groups_claim from ${schema}.identity_provider
-       for update`,
+      `select id, issuer, client_id, sealed_secret, groups_claim, name,
+         closed_at is not null as closed
+       from ${schema}.identity_provider
+       where issuer = $1 or ($2::text is null and name = '${DEFAULT_PROVIDER_NAME}')
+       order by issuer = $1 desc limit 1 for update`,
+      [provider.issuer, provider.name ?? null],
     );
     const previous = held.rows[0];
     const sameSecret = (sealedBefore: string | null) => {
@@ -107,23 +121,138 @@ export async function configureOrganisationSignIn(
       previous.issuer === provider.issuer &&
       previous.client_id === provider.clientId &&
       (provider.groupsClaim === undefined || previous.groups_claim === provider.groupsClaim) &&
+      (provider.name === undefined || previous.name === provider.name) &&
+      !previous.closed &&
       sameSecret(previous.sealed_secret);
-    await client.query(
-      `insert into ${schema}.identity_provider (issuer, client_id, sealed_secret, groups_claim)
-       values ($1, $2, $3, coalesce($4, 'groups'))
-       on conflict (singleton) do update
-         set issuer = excluded.issuer, client_id = excluded.client_id,
-           sealed_secret = excluded.sealed_secret, secret_name = null,
-           groups_claim = coalesce($4, ${schema}.identity_provider.groups_claim)`,
-      [provider.issuer, provider.clientId, sealed, provider.groupsClaim ?? null],
-    );
+    const values = [
+      provider.issuer,
+      provider.clientId,
+      sealed,
+      provider.groupsClaim ?? null,
+      provider.name ?? null,
+    ];
+    const configured = previous
+      ? await client.query<{ id: string }>(
+          `update ${schema}.identity_provider
+           set issuer = $1, client_id = $2, sealed_secret = $3, secret_name = null, closed_at = null,
+             groups_claim = coalesce($4, groups_claim), name = coalesce($5, name)
+           where id = $6 returning id`,
+          [...values, previous.id],
+        )
+      : await client.query<{ id: string }>(
+          `insert into ${schema}.identity_provider
+             (issuer, client_id, sealed_secret, groups_claim, name)
+           values ($1, $2, $3, coalesce($4, 'groups'), coalesce($5, '${DEFAULT_PROVIDER_NAME}'))
+           returning id`,
+          values,
+        );
     const opened = await client.query(
       `insert into ${schema}.sign_in_route (route) values ('organisation') on conflict do nothing`,
     );
     if (!unchanged || opened.rowCount) {
       await routeEvent(client, 'sign_in_route.configured', 'organisation');
     }
+    return configured.rows[0]!.id;
   });
+}
+
+/**
+ * Closes one provider (IAM-011, IAM-043): nobody signs in through it again, and every session it
+ * issued ends now, with every sign-in to it in progress. The organisation's route stays open for its
+ * other providers. Run as an administrator; Administration's own close is IDb's.
+ */
+export async function closeProvider(
+  adminUrl: string,
+  tenant: Tenant,
+  providerId: string,
+): Promise<void> {
+  await asAdministrator(adminUrl, tenant, async (client, schema) => {
+    const closing = await client.query(
+      `update ${schema}.identity_provider set closed_at = now()
+       where id = $1 and closed_at is null`,
+      [providerId],
+    );
+    await endSessions(client, schema, 'provider_id = $1', providerId, 'provider_closed');
+    await revokeTokens(
+      client,
+      schema,
+      `p.issuer = (select issuer from ${schema}.identity_provider where id = $1)`,
+      [providerId],
+    );
+    await client.query(`delete from ${schema}.sign_in_attempt where provider_id = $1`, [
+      providerId,
+    ]);
+    if (closing.rowCount) {
+      await recordEventSql(client, {
+        kind: 'sign_in_route.closed',
+        subject: { kind: 'sign_in_route' },
+        detail: { route: 'organisation', provider: providerId },
+      });
+    }
+  });
+}
+
+/**
+ * Revokes every token of the principals `where` names (the ID plan's pre-flight): a way in closed
+ * leaves nothing of it working, and a token would otherwise outlast it by up to a year. Service
+ * identities have no issuer, so none is named.
+ */
+async function revokeTokens(
+  client: pg.ClientBase,
+  schema: string,
+  where: string,
+  values: readonly string[],
+): Promise<void> {
+  const held = await client.query<{
+    id: string;
+    name: string;
+    principal_id: string;
+    holder: string | null;
+  }>(
+    `select t.id, t.name, t.principal_id, coalesce(p.display_name, p.email) as holder
+     from ${schema}.api_token t join ${schema}.principal p on p.id = t.principal_id
+     where ${where} order by t.id for update of t`,
+    [...values],
+  );
+  for (const token of held.rows) {
+    await recordEventSql(
+      client,
+      { kind: 'token.revoked', subject: { kind: 'token', id: token.id } },
+      labels(
+        labelled('subject', token.name, token.principal_id),
+        labelled('holder', token.holder, token.principal_id),
+      ),
+    );
+    await client.query(`delete from ${schema}.api_token where id = $1`, [token.id]);
+  }
+}
+
+/** Ends every session `where` names, each an event written before its row goes (the AU1 plan, AU1-F). */
+async function endSessions(
+  client: pg.ClientBase,
+  schema: string,
+  where: string,
+  value: string,
+  ended: 'route_closed' | 'provider_closed',
+): Promise<void> {
+  const ending = await client.query<{ id: string; principal_id: string; name: string | null }>(
+    `select s.id, s.principal_id, coalesce(p.display_name, p.email) as name
+     from ${schema}.session s join ${schema}.principal p on p.id = s.principal_id
+     where s.${where} order by s.id for update of s`,
+    [value],
+  );
+  for (const session of ending.rows) {
+    await recordEventSql(
+      client,
+      {
+        kind: 'authentication.signed_out',
+        subject: { kind: 'principal', id: session.principal_id },
+        detail: { ended, session: session.id },
+      },
+      labels(labelled('subject', session.name, session.principal_id)),
+    );
+  }
+  await client.query(`delete from ${schema}.session where ${where}`, [value]);
 }
 
 /** Records the vendor's act on a route (IAM-043), in the tenant's own log. */
@@ -214,25 +343,15 @@ export async function closeSignInRoute(
     const closing = await client.query(`delete from ${schema}.sign_in_route where route = $1`, [
       route,
     ]);
-    // Every session it issued ends, each an event, written before its row goes (the AU1 plan, AU1-F).
-    const ending = await client.query<{ id: string; principal_id: string; name: string | null }>(
-      `select s.id, s.principal_id, coalesce(p.display_name, p.email) as name
-       from ${schema}.session s join ${schema}.principal p on p.id = s.principal_id
-       where s.route = $1 order by s.id for update of s`,
-      [route],
+    await endSessions(client, schema, 'route = $1', route, 'route_closed');
+    // The tokens of those who came in by it: a Google account's issuer is no provider's.
+    await revokeTokens(
+      client,
+      schema,
+      `p.issuer is not null and p.issuer ${route === 'google' ? 'not ' : ''}in
+         (select issuer from ${schema}.identity_provider)`,
+      [],
     );
-    for (const session of ending.rows) {
-      await recordEventSql(
-        client,
-        {
-          kind: 'authentication.signed_out',
-          subject: { kind: 'principal', id: session.principal_id },
-          detail: { ended: 'route_closed', session: session.id },
-        },
-        labels(labelled('subject', session.name, session.principal_id)),
-      );
-    }
-    await client.query(`delete from ${schema}.session where route = $1`, [route]);
     await client.query(`delete from ${schema}.sign_in_attempt where route = $1`, [route]);
     if (route === 'google') await client.query(`delete from ${schema}.sign_in_handoff`);
     // A route already closed is closed again silently (the AU1 review, L10).

@@ -38,12 +38,19 @@ function groupView(group: ListedGroup): GroupView {
 type GroupRefusal =
   | 'group.name_taken'
   | 'group.value_taken'
+  | 'group.provider_required'
+  | 'group.provider_unknown'
   | Exclude<Extract<SetMembersAnswer, { refused: string }>['refused'], 'group.missing'>;
 
 /** What each refusal says, for a person managing groups rather than for somebody reading the code. */
 const REFUSALS = new Map<GroupRefusal, string>([
   ['group.name_taken', 'There is already a group with that name.'],
   ['group.value_taken', 'There is already a group standing for that value.'],
+  [
+    'group.provider_required',
+    'More than one sign-in provider is open, so say which one this group reads.',
+  ],
+  ['group.provider_unknown', 'There is no such open sign-in provider here.'],
   [
     'group.from_provider',
     "This group's members are whoever the organisation's sign-in says are in it, so they cannot be named here.",
@@ -93,7 +100,12 @@ export function groupHandlers() {
       const answer = await createGroup(
         trx,
         body.name,
-        body.providerValue === undefined ? {} : { providerValue: body.providerValue },
+        body.providerValue === undefined
+          ? {}
+          : {
+              providerValue: body.providerValue,
+              ...(body.provider === undefined ? {} : { providerId: body.provider }),
+            },
       );
       if ('refused' in answer) throw refuse(answer.refused);
       return { group: groupView({ ...answer.group, members: [] }) };

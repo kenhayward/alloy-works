@@ -421,9 +421,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
     request.log.warn(message);
   }
 
+  /** The open providers of the organisation's route, by name, as the sign-in page offers them. */
+  async function openProviders(tenant: Tenant) {
+    if (!(await permits(tenant, 'organisation'))) return [];
+    return db.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('identity_provider')
+        .select(['id', 'name'])
+        .where('closed_at', 'is', null)
+        .orderBy('name')
+        .execute(),
+    );
+  }
+
   /**
-   * The organisation's provider, with the client secret this environment holds, sealed in its own
-   * schema and opened for this tenant alone: nothing names a secret another environment could hold.
+   * One of the organisation's providers (IAM-011), open, with the client secret this environment
+   * holds, sealed in its own schema and opened for this tenant alone: nothing names a secret another
+   * environment could hold.
    * An environment configured before secrets were sealed names its secret instead, and one whose
    * sealed secret does not open for it holds somebody else's; neither signs anybody in, and the log
    * says which, never with the secret.
@@ -431,10 +445,16 @@ export function buildApp(options: AppOptions): FastifyInstance {
   async function organisationProvider(
     request: FastifyRequest,
     tenant: Tenant,
-  ): Promise<ProviderSettings | undefined> {
+    providerId: string,
+  ): Promise<(ProviderSettings & { readonly id: string }) | undefined> {
     if (!(await permits(tenant, 'organisation'))) return undefined;
     const row = await db.withTenant(tenant, (trx) =>
-      trx.selectFrom('identity_provider').selectAll().executeTakeFirst(),
+      trx
+        .selectFrom('identity_provider')
+        .selectAll()
+        .where('id', '=', providerId)
+        .where('closed_at', 'is', null)
+        .executeTakeFirst(),
     );
     if (!row) return undefined;
     if (row.sealed_secret === null) {
@@ -458,6 +478,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return undefined;
     }
     return {
+      id: row.id,
       issuer: row.issuer,
       clientId: row.client_id,
       clientSecret,
@@ -474,6 +495,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     route: SignInRoute,
     stateHash: string,
     start: SignInStart,
+    providerId: string | null = null,
   ): Promise<void> {
     await db.withTenant(tenant, (trx) =>
       trx
@@ -483,6 +505,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           nonce: start.nonce,
           code_verifier: start.codeVerifier,
           route,
+          provider_id: providerId,
           expires_at: new Date(Date.now() + SIGN_IN_ATTEMPT_MS),
         })
         .execute(),
@@ -551,7 +574,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
     tenant: Tenant,
     principalId: string,
     route: SignInRoute,
-    groups?: readonly string[],
+    /** The provider an organisation's sign-in came through, and the group values it asserted. */
+    asserted?: { readonly providerId: string; readonly groups: readonly string[] },
   ): Promise<FastifyReply> {
     let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
     const token = await db
@@ -564,9 +588,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
           held = await holdPrincipal(trx, principalId);
           if (held !== 'held') throw new SignInUnheld();
         };
-        if (groups === undefined) await hold();
-        else await syncProviderGroups(trx, principalId, groups, hold);
-        return createSession(trx, principalId, route);
+        if (asserted === undefined) await hold();
+        else await syncProviderGroups(trx, principalId, asserted.groups, hold, asserted.providerId);
+        return createSession(trx, principalId, route, undefined, asserted?.providerId ?? null);
       })
       .catch((error: unknown) => {
         if (error instanceof SignInUnheld) return undefined;
@@ -713,9 +737,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
       );
       // The ways in, so a sign-in page offers Google to somebody from outside where it may.
       const signIn: ('organisation' | 'google')[] = [];
-      if (await permits(tenant, 'organisation')) signIn.push('organisation');
+      const providers = await openProviders(tenant);
+      if (providers.length > 0) signIn.push('organisation');
       if (options.google && (await permits(tenant, 'google'))) signIn.push('google');
-      return { name: profile.display_name, signIn };
+      return { name: profile.display_name, signIn, providers };
     },
 
     // The locale data it sorts and formats with (TE-F; LOC-044), the database's collations beside:
@@ -736,13 +761,19 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     startOrganisationSignIn: async (request, reply) => {
       const tenant = tenantOf(request);
-      const provider = await organisationProvider(request, tenant);
+      // The provider asked for, or the only one open: with several, the sign-in page names one.
+      const asked = (request.query as SignInStartQuery).provider;
+      const open = await openProviders(tenant);
+      // Named by nobody among several: back to the page that offers them, which a plain link reaches.
+      if (asked === undefined && open.length > 1) return reply.redirect('/', 302);
+      const chosen = asked ?? open[0]?.id;
+      const provider = chosen && (await organisationProvider(request, tenant, chosen));
       if (!provider) throw routeClosed();
       const start = await oidc.start(
         provider,
         `${request.protocol}://${request.host}${CALLBACK_PATH}`,
       );
-      await recordAttempt(tenant, 'organisation', hashToken(start.state), start);
+      await recordAttempt(tenant, 'organisation', hashToken(start.state), start, provider.id);
       reply.setCookie(SIGN_IN_COOKIE, start.state, {
         ...COOKIE,
         maxAge: SIGN_IN_ATTEMPT_MS / 1000,
@@ -767,7 +798,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
         throw signInFailed();
       }
       const attempt = await takeAttempt(tenant, 'organisation', hashToken(state));
-      const provider = await organisationProvider(request, tenant);
+      // The provider the attempt went to, so a code is exchanged where it was issued.
+      const provider =
+        attempt?.provider_id && (await organisationProvider(request, tenant, attempt.provider_id));
       if (!attempt || !provider) throw signInFailed();
       const identity = await finishAt(request, tenant, 'organisation', provider, {
         state,
@@ -782,7 +815,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const principal = await db.withTenant(tenant, async (trx) => {
         const known = await identifyKnown(trx, identity);
         if (known) return known;
-        const invited = await claimInvitation(trx, identity, 'organisation', request.id);
+        const invited = await claimInvitation(
+          trx,
+          identity,
+          { route: 'organisation', providerId: provider.id },
+          request.id,
+        );
         if (invited) return { id: invited };
         // An upsert still: the same identity's first sign-in in another window may land between the
         // lookup above and this insert. An erased one is never renamed, and answers nothing.
@@ -813,7 +851,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
         await recordSignInFailure(db, request, tenant, 'organisation', 'principal_erased');
         throw principalErased();
       }
-      return signInAs(request, reply, tenant, principal.id, 'organisation', identity.groups);
+      return signInAs(request, reply, tenant, principal.id, 'organisation', {
+        providerId: provider.id,
+        groups: identity.groups,
+      });
     },
 
     startGoogleSignIn: async (request, reply) => {

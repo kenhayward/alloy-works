@@ -224,17 +224,21 @@ export function Header({
   // The ways in the environment offers, and the page to come back to once signed in: a shared
   // publication's, so the person it was shared with lands on it (the R17 plan, R17-A).
   const [ways, setWays] = useState<readonly string[]>(['organisation']);
+  // The organisation's open providers: named where there is more than one (IAM-011).
+  const [providers, setProviders] = useState<readonly { id: string; name: string }[]>([]);
   const [here, setHere] = useState(() => window.location.hash);
   useEffect(() => {
     const moved = () => setHere(window.location.hash);
     window.addEventListener('hashchange', moved);
     return () => window.removeEventListener('hashchange', moved);
   }, []);
-  const signInAt = (route: string) => {
+  const signInAt = (route: string, provider?: string) => {
     const to = here.replace(/^#\//, '');
-    return /^[a-z]+(\/[a-z0-9-]+)*$/.test(to) && to.length <= 200
-      ? `/v1/sign-in/${route}?to=${encodeURIComponent(to)}`
-      : `/v1/sign-in/${route}`;
+    const query = new URLSearchParams();
+    if (provider !== undefined) query.set('provider', provider);
+    if (/^[a-z]+(\/[a-z0-9-]+)*$/.test(to) && to.length <= 200) query.set('to', to);
+    const asked = query.toString();
+    return asked === '' ? `/v1/sign-in/${route}` : `/v1/sign-in/${route}?${asked}`;
   };
   const [managingTokens, setManagingTokens] = useState(false);
   const [seeingSessions, setSeeingSessions] = useState(false);
@@ -257,6 +261,7 @@ export function Header({
         if (!current || !data) return;
         setEnvironment(data.name);
         if (Array.isArray(data.signIn)) setWays(data.signIn);
+        if (Array.isArray(data.providers)) setProviders(data.providers);
       })
       .catch(() => undefined);
     client
@@ -360,11 +365,23 @@ export function Header({
       <span className={styles['spacer']} />
       <ThemeMenu />
       {who !== undefined && who !== 'nobody' && <LanguageMenu />}
-      {who === 'nobody' && ways.includes('organisation') && (
+      {who === 'nobody' && ways.includes('organisation') && providers.length <= 1 && (
         <a className={styles['chip']} href={signInAt('organisation')}>
           {words('shell.signIn')}
         </a>
       )}
+      {who === 'nobody' &&
+        ways.includes('organisation') &&
+        providers.length > 1 &&
+        providers.map((provider) => (
+          <a
+            key={provider.id}
+            className={styles['chip']}
+            href={signInAt('organisation', provider.id)}
+          >
+            {words('shell.signInThrough', { name: provider.name })}
+          </a>
+        ))}
       {who === 'nobody' && ways.includes('google') && (
         <a className={styles['chip']} href={signInAt('google')}>
           {words('shell.signInGoogle')}

@@ -194,7 +194,14 @@ export const auditKindSpecs = {
     z.strictObject({
       // `ended_by_holder`: its holder ended it from another of their sessions (IAM-040). `erased`:
       // its holder was erased (the ER plan, ER-A).
-      ended: z.enum(['signed_out', 'expired', 'route_closed', 'ended_by_holder', 'erased']),
+      ended: z.enum([
+        'signed_out',
+        'expired',
+        'route_closed',
+        'provider_closed',
+        'ended_by_holder',
+        'erased',
+      ]),
       session: Id,
       expiredAt: z.iso.datetime({ offset: true }).optional(),
     }),
@@ -240,7 +247,8 @@ export const auditKindSpecs = {
   ),
   'sign_in_route.closed': kind(
     ['IAM-043'],
-    z.strictObject({ route: SignInRoute }),
+    // `provider` where one provider closed and the route stayed open for the rest (IAM-011).
+    z.strictObject({ route: SignInRoute, provider: z.string().optional() }),
     'packages/db/src/sign-in.ts',
   ),
   'token.issued': kind(
