@@ -648,7 +648,7 @@ export const connectionRoutes = {
     path: '/v1/spaces/{space}/connections',
     summary: 'Make a connection in this space, at version 0.1',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
+    access: { check: 'permission', permission: 'configure_services', target: { space: 'space' } },
     params: SpaceParams,
     body: CreateConnectionBody,
     responses: {
@@ -658,7 +658,7 @@ export const connectionRoutes = {
       400: settingsRefused,
       401: unauthenticated,
       403: {
-        description: 'The caller may read the space but may not administer it',
+        description: 'The caller may read the space but does not hold `configure_services` there',
         schema: ErrorBody,
       },
       404: {
@@ -692,7 +692,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}/versions',
     summary: "Cut a connection's next version from the one the caller opened; retiring among them",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { artifact: 'id' } },
+    access: { check: 'permission', permission: 'configure_services', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: ConnectionVersionBody,
     responses: {
@@ -704,7 +704,8 @@ export const connectionRoutes = {
       400: settingsRefused,
       401: unauthenticated,
       403: {
-        description: 'The caller may read the connection but may not administer it',
+        description:
+          'The caller may read the connection but does not hold `configure_services` there',
         schema: ErrorBody,
       },
       404: notFound,
@@ -723,7 +724,7 @@ export const connectionRoutes = {
     path: '/v1/connections/{id}/credential',
     summary: "Set or replace a connection's credential, then test the connection with it",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { artifact: 'id' } },
+    access: { check: 'permission', permission: 'rotate_secrets', target: { artifact: 'id' } },
     params: ConnectionParams,
     body: CredentialBody,
     idempotencyKey: false,
@@ -739,7 +740,7 @@ export const connectionRoutes = {
       },
       401: unauthenticatedOrEnded,
       403: {
-        description: 'The caller may read the connection but may not administer it',
+        description: 'The caller may read the connection but does not hold `rotate_secrets` there',
         schema: ErrorBody,
       },
       404: notFound,

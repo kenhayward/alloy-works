@@ -169,7 +169,7 @@ SCIM disabled, since a provider replays what it holds and must not undo an admin
 Pushing somebody deleted brings them back.
 
 **So that turning SCIM on locks nobody out** before the first push, somebody already known by issuer and
-subject who holds `administer` at the environment by a direct, unexpiring grant is admitted though not
+subject who holds `configure_services` at the environment by a direct, unexpiring grant is admitted though not
 pushed (IN-B). Their memberships still come from SCIM alone.
 
 **Groups**: a SCIM group matches its provider's group whose value equals its `externalId`, else its
@@ -204,7 +204,11 @@ Six permissions join the closed set; every route below loses `administer` for it
 
 The Administrator starter role, every role holding `administer`, and every token scoped `administer`
 gain all six by migration, so nobody and no automation loses an act on upgrade; a tenant then makes a
-narrower role (IN-H). All six join `externalCap`. Access explains them as any other permission
+narrower role (IN-H). All six join `externalCap`. **Connecting CT Studio and issuing its token stay
+`administer`'s**: they make a grant of Author and a token that creates and edits, and configuring services
+must not reach content. Somebody holding `configure_services` and `rotate_secrets` can still turn SCIM on
+and push members into a provider's groups, as they could by configuring a provider at all: they are trusted
+as the identity provider is. Access explains them as any other permission
 (IAM-029 to IAM-031).
 
 ## Decisions

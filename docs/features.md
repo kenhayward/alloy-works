@@ -128,8 +128,11 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **provision by SCIM 2.0**, at `/scim/v2/`, through a service identity of its own: it then admits only
   those it pushed, linked by the claim it names and never by email, and anybody it sets inactive or
   deletes is signed out at once. Its groups come from SCIM alone, applied on receipt. Neither Entra ID's
-  nor Okta's validator has been run against it yet. The high-risk permissions apart from administer are
-  not built yet. [Inviting, disabling and SCIM](guides/people-and-scim.md) says how.
+  nor Okta's validator has been run against it yet. [Inviting, disabling and SCIM](guides/people-and-scim.md) says how. Six high-risk acts are
+  permissions of their own, apart from administer: exporting the environment, exporting the audit,
+  holds, rotating secrets, configuring services (Sign-in among them) and configuring webhooks.
+  Administrators keep them all, and a narrower role may hold one. Explaining a disabled person's access
+  refuses every permission and says why.
 
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
   denial, on the whole environment, one space, or one item. Every environment starts with eleven roles -

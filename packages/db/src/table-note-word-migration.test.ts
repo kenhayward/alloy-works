@@ -231,6 +231,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0187_identity_providers',
       '0188_sign_in_settings',
       '0189_scim',
+      '0190_high_risk_permissions',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

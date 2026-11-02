@@ -1159,7 +1159,7 @@ const descriptions: Readonly<Record<string, string>> = {
   listReferenceSources:
     'Lists the reference sources the product declares, Crossref and PubMed, and the reference extensions installed here, keyed `ext:` and the extension’s id, each with the one host it is reached at, what a record is fetched by, and whether this environment searches it. Each is on until an administrator switches it off.',
   setReferenceSource:
-    'Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs administer on the environment.',
+    'Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs configure_services on the environment.',
   searchReferenceSource:
     "Searches a reference source for the terms given, which are sent to the source, and answers at most 20 results as CSL-JSON, each matched against the space's entries by DOI, PubMed identifier, ISBN or ISSN, else by title, year and first author. It says whether the caller may make an entry in the space. It needs read in the space. A source that cannot be reached, or answers out of shape, is `reference_unavailable`.",
   createBibliographyEntryFromSource:
@@ -1325,23 +1325,23 @@ const descriptions: Readonly<Record<string, string>> = {
   discardProposal:
     'Discards a proposal from your run. It is kept, and recorded as discarded by you; nothing about the component changes.',
   listModelEndpoints:
-    'Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs administer at the environment.',
+    'Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs configure_services at the environment.',
   makeModelEndpoint:
-    'Makes a model endpoint on one of two protocols, Anthropic’s Messages API or OpenAI’s chat completions, which self-hosted servers speak too. Whether it sits outside the data boundary is stated here, never inferred. Recorded as an endpoint made. Needs administer at the environment.',
+    'Makes a model endpoint on one of two protocols, Anthropic’s Messages API or OpenAI’s chat completions, which self-hosted servers speak too. Whether it sits outside the data boundary is stated here, never inferred. Recorded as an endpoint made. Needs configure_services at the environment.',
   getModelEndpoint:
-    'Returns a model endpoint, and whether its key is set and still for where it points. Needs administer at the environment.',
+    'Returns a model endpoint, and whether its key is set and still for where it points. Needs configure_services at the environment.',
   changeModelEndpoint:
-    'Replaces a model endpoint’s settings; its protocol never changes. Moving its base URL to another host leaves its key needing to be set again. Recorded as an endpoint changed, naming the settings that changed and none of their values. Needs administer at the environment.',
+    'Replaces a model endpoint’s settings; its protocol never changes. Moving its base URL to another host leaves its key needing to be set again. Recorded as an endpoint changed, naming the settings that changed and none of their values. Needs configure_services at the environment.',
   retireModelEndpoint:
-    'Retires a model endpoint: every purpose routed to it goes nowhere, and it takes no key or test. Kept, so the runs it made still name it. Needs administer at the environment.',
+    'Retires a model endpoint: every purpose routed to it goes nowhere, and it takes no key or test. Kept, so the runs it made still name it. Needs configure_services at the environment.',
   setModelEndpointKey:
-    'Sets or replaces a model endpoint’s key, the tenant’s own provider account. The connector seals it to the endpoint and its host; no route, log or error ever answers it. Recorded as a key set. Needs administer at the environment.',
+    'Sets or replaces a model endpoint’s key, the tenant’s own provider account. The connector seals it to the endpoint and its host; no route, log or error ever answers it. Recorded as a key set. Needs rotate_secrets at the environment.',
   testModelEndpoint:
-    'Calls a model endpoint once, through the connector, with a short fixed message, and answers its reply, the model it named, its tokens, cost and time, or how it failed. Never tries another endpoint. Recorded as a run, and as an endpoint tested. Needs administer at the environment.',
+    'Calls a model endpoint once, through the connector, with a short fixed message, and answers its reply, the model it named, its tokens, cost and time, or how it failed. Never tries another endpoint. Recorded as a run, and as an endpoint tested. Needs configure_services at the environment.',
   listModelRoutes:
-    'Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs administer at the environment.',
+    'Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs configure_services at the environment.',
   setModelRoute:
-    'Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs administer at the environment.',
+    'Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs configure_services at the environment.',
   createImport:
     'Makes an import in a space, awaiting its file: its name and whether it is a Word document, Markdown or HTML. Send the bytes next. An import is seen only by whoever made it and the space’s administrators. Needs create in the space.',
   putImportFile:
@@ -1367,13 +1367,13 @@ const descriptions: Readonly<Record<string, string>> = {
   abandonImport:
     'Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.',
   requestTenantExport:
-    'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs administer at the environment.',
+    'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.',
   listTenantExports:
-    'Lists the environment’s exports, the newest first, a page at a time: each queued, done, failed or expired, with its size and when its archive is removed. Needs administer at the environment.',
+    'Lists the environment’s exports, the newest first, a page at a time: each queued, done, failed or expired, with its size and when its archive is removed. Needs export_environment at the environment.',
   getTenantExport:
-    'Returns an export of the environment: whether its job has written it, how many of each part it holds, and when its archive is removed, seven days after it was written. Needs administer at the environment.',
+    'Returns an export of the environment: whether its job has written it, how many of each part it holds, and when its archive is removed, seven days after it was written. Needs export_environment at the environment.',
   downloadTenantExport:
-    'Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs administer at the environment.',
+    'Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs export_environment at the environment.',
   getQueryUsage:
     'Totals the environment’s query runs in a period - samples, resolves, checks and document creations - by query definition and by document: how many ran, failed or were throttled, their time, rows and bytes. Most time first. The last 30 days unless named, never more than 13 months. Needs administer at the environment.',
   getQueryRunsCsv:
@@ -1425,31 +1425,31 @@ const descriptions: Readonly<Record<string, string>> = {
   setExtensionSecret:
     'Sets the secret a reference extension is sent as a bearer, where its manifest declares one: sealed by the connector for the extension and its endpoint, so it opens nowhere else, and never answered again; an endpoint changed by an update needs it set again. Recorded as an extension changed. Needs administer at the environment, with a signed-in session.',
   listWebhooks:
-    'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.',
+    'Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs configure_webhooks at the environment, with a signed-in session.',
   createWebhook:
-    'Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Delivery is at least once and in no promised order: a receiver deduplicates by the payload’s `id` and orders what matters to it by the artifact’s version, or by the number in `sequence`, which is its source’s order and not the order acts committed in. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+    'Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Delivery is at least once and in no promised order: a receiver deduplicates by the payload’s `id` and orders what matters to it by the artifact’s version, or by the number in `sequence`, which is its source’s order and not the order acts committed in. Recorded as a webhook changed. Needs configure_webhooks at the environment, with a signed-in session.',
   getWebhook:
-    'Returns a webhook subscription, never its secret. Needs administer at the environment, with a signed-in session.',
+    'Returns a webhook subscription, never its secret. Needs configure_webhooks at the environment, with a signed-in session.',
   changeWebhook:
-    'Changes a subscription’s URL, description or event types, or turns it on again after it was turned off. A new URL ends the old secret at once and answers a new one; a type no longer wanted is not sent, though it was waiting. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+    'Changes a subscription’s URL, description or event types, or turns it on again after it was turned off. A new URL ends the old secret at once and answers a new one; a type no longer wanted is not sent, though it was waiting. Recorded as a webhook changed. Needs configure_webhooks at the environment, with a signed-in session.',
   rotateWebhookSecret:
-    'Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+    'Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs rotate_secrets at the environment, with a signed-in session.',
   removeWebhook:
-    'Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.',
+    'Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs configure_webhooks at the environment, with a signed-in session.',
   listWebhookDeliveries:
-    'Lists a subscription’s deliveries, newest first: each one’s event type, sequence, state and how many attempts it has had. Kept 30 days. Needs administer at the environment, with a signed-in session.',
+    'Lists a subscription’s deliveries, newest first: each one’s event type, sequence, state and how many attempts it has had. Kept 30 days. Needs configure_webhooks at the environment, with a signed-in session.',
   getWebhookDelivery:
-    'Returns one delivery: exactly what was sent, identifiers and versions and never content, and at each attempt what the receiver answered, its status, how long it took and at most 2 KiB of its reply, or why there was no answer. Needs administer at the environment, with a signed-in session.',
+    'Returns one delivery: exactly what was sent, identifiers and versions and never content, and at each attempt what the receiver answered, its status, how long it took and at most 2 KiB of its reply, or why there was no answer. Needs configure_webhooks at the environment, with a signed-in session.',
   getBridgeSettings:
-    'Returns a space’s settings for CT Studio deliveries: its component type and template, the template field each property fills, whether data delivery is on, and the connection data delivery made, never its credential. A space never set up answers the empty settings. Needs administer on the space.',
+    'Returns a space’s settings for CT Studio deliveries: its component type and template, the template field each property fills, whether data delivery is on, and the connection data delivery made, never its credential. A space never set up answers the empty settings. Needs configure_services on the space.',
   putBridgeSettings:
-    'Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs administer on the space.',
+    'Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs configure_services on the space.',
   getCtStudio:
-    'Returns the environment’s CT Studio as Administration shows it: whether the service has a signing key (never the key), the service identity CT Studio’s deliveries act as and whether it is disabled, the token CT Studio holds and when it expires, every space with CT Studio settings and whether the identity may still deliver there, the environment’s hostnames, and the address and sink id last handed to CT Studio. Needs administer at the environment, with a signed-in session.',
+    'Returns the environment’s CT Studio as Administration shows it: whether the service has a signing key (never the key), the service identity CT Studio’s deliveries act as and whether it is disabled, the token CT Studio holds and when it expires, every space with CT Studio settings and whether the identity may still deliver there, the environment’s hostnames, and the address and sink id last handed to CT Studio. Needs configure_services at the environment, with a signed-in session.',
   connectCtStudio:
     'Connects a space to CT Studio in one transaction: the first time it makes the service identity CT Studio’s deliveries act as (or adopts one made by hand, with the token CT Studio already holds), and afterwards reuses it; grants it Author at the space unless it holds that already; issues its token the first time, with scopes create and edit for 365 days; and sets the space’s bridge settings as PUT bridge-settings does. Anything refused leaves nothing made. The token’s secret is answered this once and never kept. Needs administer at the environment, with a signed-in session.',
   disconnectCtStudio:
-    'Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs administer at the environment, with a signed-in session.',
+    'Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs configure_services at the environment, with a signed-in session.',
   issueCtStudioToken:
     'Issues CT Studio’s identity a new token, scopes create and edit for 365 days, and records it as the one CT Studio holds; the old token stays until it expires or is revoked. Asked to replace the identity, it makes a new one in place of a disabled one, records it, and grants it Author at every space with CT Studio settings. The secret is answered this once. Needs administer at the environment, with a signed-in session.',
   listPeople: 'Lists people in the environment by name for a user selection field.',
@@ -1466,9 +1466,9 @@ const descriptions: Readonly<Record<string, string>> = {
   downloadAuditExport:
     'Hands out a link to a written export, signed for five minutes. Each link handed out is recorded on the log.',
   placeHold:
-    'Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs administer at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.',
+    'Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs hold at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.',
   releaseHold:
-    'Releases a legal hold, with why: once, and recorded with who and when. Needs administer at the environment. Audited, without the reason.',
+    'Releases a legal hold, with why: once, and recorded with who and when. Needs hold at the environment. Audited, without the reason.',
   listDeleted:
     'Lists the deleted components and documents the caller may read but for their deletion, the latest deleted first in cursor pages, each with who deleted it, when, and whether the caller may undelete it (retire on it). Archived ones deleted are listed here, not among the archived.',
   getRetention:
@@ -1536,7 +1536,7 @@ const descriptions: Readonly<Record<string, string>> = {
   setRetention:
     'Sets or clears one retention keep, for a kind, a space, or a kind in a space; null days clears it. Setting what is in force changes nothing. Undeleting is never refused by a keep. Needs administer at the environment. Audited.',
   listHolds:
-    'Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs administer at the environment.',
+    'Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs hold at the environment.',
   listAuditEvents:
     'Lists the environment’s audit events, newest first, filtered by who acted, the kind or its family, when, what about and the space, in cursor pages. Each event carries the names and titles it was recorded with. Reading is not itself an event.',
   listSessions:
@@ -1557,25 +1557,25 @@ const descriptions: Readonly<Record<string, string>> = {
   invite:
     'Invites an address so access can be granted before the person first signs in. `through` names the ways in that may claim it; every way open now where absent.',
   getSignInSettings:
-    'How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs administer at the environment; a token may read it, but no token may change it.',
+    'How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs configure_services at the environment; a token may read it, but no token may change it.',
   addProvider:
-    'Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.',
+    'Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.',
   changeProvider:
-    'Renames an identity provider, or changes the claim its groups come in. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+    'Renames an identity provider, or changes the claim its groups come in. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.',
   replaceProviderSecret:
-    "Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the secret.",
+    "Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the secret.",
   closeProvider:
-    "Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+    "Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.",
   turnScimOn:
-    'Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds administer outright, and its memberships come from SCIM alone. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+    'Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds configure_services outright, and its memberships come from SCIM alone. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.',
   turnScimOff:
-    'Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+    'Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.',
   issueScimToken:
-    "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
+    "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
   setGoogleSignIn:
-    "Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+    "Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.",
   setSessionSettings:
-    "Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+    "Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.",
   disablePerson:
     'Disables a person: their sessions and tokens end at once, a stream of theirs within two seconds, and they are refused at sign-in until enabled. Refused `last_way_in` where nobody could then sign in and configure sign-in, and for the caller themselves. Disabling somebody disabled changes nothing. Needs administer at the environment. Audited.',
   enablePerson:

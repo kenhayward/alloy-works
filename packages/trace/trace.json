@@ -23092,7 +23092,7 @@
     {
       "id": "IAM-071",
       "file": "apps/service/src/grant-routes.test.ts",
-      "line": 297,
+      "line": 298,
       "kind": "rule"
     },
     {
@@ -23105,6 +23105,12 @@
       "id": "GEN-049",
       "file": "apps/service/src/guardrail-routes.test.ts",
       "line": 82,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-032",
+      "file": "apps/service/src/high-risk-permissions.test.ts",
+      "line": 215,
       "kind": "title"
     },
     {
@@ -24040,13 +24046,13 @@
     {
       "id": "IAM-003",
       "file": "apps/service/src/scim.test.ts",
-      "line": 226,
+      "line": 227,
       "kind": "title"
     },
     {
       "id": "IAM-008",
       "file": "apps/service/src/scim.test.ts",
-      "line": 246,
+      "line": 247,
       "kind": "title"
     },
     {
@@ -25048,7 +25054,7 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1777,
+      "line": 1778,
       "kind": "title"
     },
     {
@@ -25060,7 +25066,7 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1919,
+      "line": 1920,
       "kind": "title"
     },
     {
@@ -33184,7 +33190,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1163,
+      "line": 1164,
       "kind": "title"
     },
     {

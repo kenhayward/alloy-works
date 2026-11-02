@@ -88,7 +88,7 @@ export const bridgeSettingsRoutes = {
     path: '/v1/spaces/{space}/bridge-settings',
     summary: "A space's settings for CT Studio deliveries",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
+    access: { check: 'permission', permission: 'configure_services', target: { space: 'space' } },
     params: SpaceParams,
     responses: {
       200: {
@@ -97,7 +97,7 @@ export const bridgeSettingsRoutes = {
       },
       401: unauthenticated,
       403: {
-        description: 'The caller may read the space but may not administer it',
+        description: 'The caller may read the space but does not hold `configure_services` there',
         schema: ErrorBody,
       },
       404: {
@@ -112,14 +112,14 @@ export const bridgeSettingsRoutes = {
     path: '/v1/spaces/{space}/bridge-settings',
     summary: "Set a space's settings for CT Studio deliveries, and turn data delivery on or off",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { space: 'space' } },
+    access: { check: 'permission', permission: 'configure_services', target: { space: 'space' } },
     params: SpaceParams,
     body: BridgeSettingsBody,
     responses: {
       200: { description: 'The settings as now stored', schema: BridgeSettingsView },
       401: unauthenticated,
       403: {
-        description: 'The caller may read the space but may not administer it',
+        description: 'The caller may read the space but does not hold `configure_services` there',
         schema: ErrorBody,
       },
       404: {

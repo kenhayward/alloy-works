@@ -575,8 +575,13 @@
   position: relative;
 }
 
+/* Room for the role and every permission's column; the scroller around it takes what the window lacks. */
 .grid {
-  min-width: 1040px;
+  min-width: 1720px;
+}
+
+.grid thead th {
+  overflow-wrap: anywhere;
 }
 
 .grid th,

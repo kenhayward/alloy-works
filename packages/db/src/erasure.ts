@@ -172,7 +172,14 @@ export async function erasePerson(
   }
   if (state.refusals.length > 0) return { answer: 'refused', refusals: state.refusals };
 
-  if (state.person.invited) {
+  // Somebody pushed by SCIM who has not signed in has no identity either, and no invitation: they are
+  // erased below as anybody who has.
+  const pushed = await trx
+    .selectFrom('principal')
+    .select('provider_id')
+    .where('id', '=', person)
+    .executeTakeFirst();
+  if (state.person.invited && pushed?.provider_id == null) {
     // Its principal goes, with its grants, and the invitation with it (ER-A).
     const withdrawn =
       state.invitationId === null ? undefined : await withdrawInvitation(trx, state.invitationId);
@@ -266,6 +273,8 @@ async function endAccess(trx: TenantTransaction, person: string): Promise<void> 
   await trx.deleteFrom('access_grant').where('principal_id', '=', person).execute();
   await recordMembershipsRemoved(trx, { principal: person });
   await trx.deleteFrom('group_member').where('principal_id', '=', person).execute();
+  // And what SCIM holds for them, or its next push would put them back.
+  await trx.deleteFrom('scim_group_member').where('principal_id', '=', person).execute();
 }
 
 /**

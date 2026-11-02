@@ -117,7 +117,7 @@ function useAdministeredSpaces(client: Client): readonly Space[] | null {
             : [],
         );
         const allowed = await Promise.all(
-          readable.map((space) => administersAt(client, `space:${space.id}`)),
+          readable.map((space) => administersAt(client, `space:${space.id}`, 'configure_services')),
         );
         if (current) setSpaces(readable.filter((_, index) => allowed[index]));
       } catch {

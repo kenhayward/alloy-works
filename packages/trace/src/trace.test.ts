@@ -1038,7 +1038,7 @@ describe('the citations in the committed model', () => {
     // 2393 (2026-11-01): SYc - themes of their own, STY-072 and STY-026.
     // 2399 (2026-11-02): SYd - the character form and the styles offered to authors, STY-033.
     // 2409 (2026-11-02): SYe - catalogues exported and imported, STY-043, STY-044, STY-071, STY-073.
-    expect(model.citations).toHaveLength(2428);
+    expect(model.citations).toHaveLength(2429);
   });
 
   it('cites no identifier the corpus does not hold', () => {

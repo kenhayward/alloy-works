@@ -86,7 +86,7 @@ import {
   type Contribution,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { administersTenant, notFound, type Authorised } from './access.js';
+import { holdsAtTenant, notFound, type Authorised } from './access.js';
 import { afterVersion, fieldViews, lockView, versionCursor, versionView } from './components.js';
 import type { AppError } from './errors.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -455,7 +455,7 @@ export async function createdView(
       mayEdit: decide('edit', facts).allowed,
       mayPublish: decide('publish', facts).allowed,
       mayRetire: decide('retire', facts).allowed,
-      mayHold: administersTenant(facts),
+      mayHold: holdsAtTenant(facts),
       facts,
       mayComment: decide('comment', facts).allowed,
       mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -563,7 +563,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -890,7 +890,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -935,7 +935,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -978,7 +978,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -1015,7 +1015,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -1107,7 +1107,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
@@ -1180,7 +1180,7 @@ export function documentHandlers(
         mayEdit: decide('edit', facts).allowed,
         mayPublish: decide('publish', facts).allowed,
         mayRetire: decide('retire', facts).allowed,
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         facts,
         mayComment: decide('comment', facts).allowed,
         mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,

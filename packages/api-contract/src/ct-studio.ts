@@ -108,17 +108,22 @@ const unauthenticated = {
 } as const;
 const notAdministering = {
   description:
-    'forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token',
+    'forbidden: `configure_services` is not held at the environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token',
   schema: ErrorBody,
 } as const;
 const ADMINISTER = {
   check: 'permission',
-  permission: 'administer',
+  permission: 'configure_services',
   target: { tenant: true },
   credential: 'session',
 } as const;
 /** Connecting grants CT Studio's identity Author, so the transaction changes access. */
 const CHANGES_ACCESS = { ...ADMINISTER, changesAccess: true } as const;
+/**
+ * Connecting makes a grant of Author and a token that creates and edits, so it stays `administer`'s, as
+ * every grant is: configuring services alone must not reach content (identity.md, "High-risk permissions").
+ */
+const GRANTS_ACCESS = { ...CHANGES_ACCESS, permission: 'administer' } as const;
 
 export const ctStudioRoutes = {
   getCtStudio: {
@@ -141,7 +146,7 @@ export const ctStudioRoutes = {
     summary:
       'Connect a space to CT Studio: its identity, its Author grant, its token and its settings',
     tenantScoped: true,
-    access: CHANGES_ACCESS,
+    access: GRANTS_ACCESS,
     // A token's secret is answered once and never kept, so no answer is remembered for a replay.
     idempotencyKey: false,
     body: CtStudioConnectBody,
@@ -172,7 +177,7 @@ export const ctStudioRoutes = {
     path: '/v1/ct-studio/tokens',
     summary: 'Issue CT Studio a new token, or a new identity in place of a disabled one',
     tenantScoped: true,
-    access: CHANGES_ACCESS,
+    access: GRANTS_ACCESS,
     // A token's secret is answered once and never kept, so no answer is remembered for a replay.
     idempotencyKey: false,
     body: CtStudioTokenBody,

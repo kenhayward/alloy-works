@@ -199,6 +199,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0187_identity_providers',
       '0188_sign_in_settings',
       '0189_scim',
+      '0190_high_risk_permissions',
     ]);
 
     const read = async () =>

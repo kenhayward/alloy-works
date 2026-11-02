@@ -3,8 +3,9 @@
 > For the administrator of an Alloy Works environment. How people come and go: by hand in Administration,
 > or pushed by your identity provider. The design is [identity.md](../design/identity.md).
 
-Everything here needs `administer` at the environment. Everything in **Sign-in** also needs a sign-in in
-the last ten minutes, which the page asks for as it opens.
+Inviting and disabling need `administer` at the environment. **Sign-in** needs `configure_services`, its
+secrets and the SCIM token `rotate_secrets`, and a sign-in in the last ten minutes, which the page asks for
+as it opens.
 
 ## Without SCIM: invite and disable
 
@@ -34,7 +35,7 @@ SCIM is per provider, at the subset Entra ID and Okta use (`Users`, `Groups`; no
 From then on:
 
 - **Only those pushed sign in through that provider**, refused otherwise, with one exception so that turning
-  SCIM on cannot lock you out: somebody already known who holds `administer` at the environment by a direct,
+  SCIM on cannot lock you out: somebody already known who holds `configure_services` at the environment by a direct,
   unexpiring grant.
 - **Inactive or deleted** signs them out and ends their tokens at once. Delete keeps the principal, disabled,
   so authorship and the audit still name them. Pushing them again brings them back.

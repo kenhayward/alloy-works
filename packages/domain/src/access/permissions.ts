@@ -24,6 +24,14 @@ export const permissions = [
   // Archiving a component or a document, decided at the artifact (ADR-0060; lifecycle.md).
   // Administrator holds it.
   'retire',
+  // The high-risk acts, granted apart from `administer` (IAM-070; identity.md, IN-H). The Administrator
+  // role, every role holding `administer` and every token scoped to it gained all six by migration.
+  'export_environment',
+  'export_audit',
+  'hold',
+  'rotate_secrets',
+  'configure_services',
+  'configure_webhooks',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -45,7 +53,7 @@ export function isPermission(value: string): value is Permission {
 /**
  * What an external principal is refused whatever the grants say. `edit`, `approve` and `publish` are
  * IAM-047's; `create`, `design`, `manage_definitions` and `administer` are access.md's own choice,
- * `use_connection` and `write_sql` data.md's, and `retire` lifecycle.md's.
+ * `use_connection` and `write_sql` data.md's, `retire` lifecycle.md's, and the six identity.md's.
  */
 export const externalCap: readonly Permission[] = [
   'create',
@@ -58,6 +66,26 @@ export const externalCap: readonly Permission[] = [
   'use_connection',
   'write_sql',
   'retire',
+  'export_environment',
+  'export_audit',
+  'hold',
+  'rotate_secrets',
+  'configure_services',
+  'configure_webhooks',
+];
+
+/**
+ * What is decided "at the target's level or above" (access.md, "Routes"), so a denial below does not
+ * stand against somebody holding it above: `administer`, and the six split out of it, which keep its rule.
+ */
+export const administrativePermissions: readonly Permission[] = [
+  'administer',
+  'export_environment',
+  'export_audit',
+  'hold',
+  'rotate_secrets',
+  'configure_services',
+  'configure_webhooks',
 ];
 
 /** A principal's kind. Only `external` changes a decision. */

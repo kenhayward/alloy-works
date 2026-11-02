@@ -54,6 +54,21 @@ const PERMISSIONS: Readonly<Record<string, readonly [WordKey, WordKey]>> = {
   use_connection: ['account.permission.use-connection', 'account.permission-label.use-connection'],
   write_sql: ['account.permission.write-sql', 'account.permission-label.write-sql'],
   retire: ['account.permission.retire', 'account.permission-label.retire'],
+  export_environment: [
+    'account.permission.export-environment',
+    'account.permission-label.export-environment',
+  ],
+  export_audit: ['account.permission.export-audit', 'account.permission-label.export-audit'],
+  hold: ['account.permission.hold', 'account.permission-label.hold'],
+  rotate_secrets: ['account.permission.rotate-secrets', 'account.permission-label.rotate-secrets'],
+  configure_services: [
+    'account.permission.configure-services',
+    'account.permission-label.configure-services',
+  ],
+  configure_webhooks: [
+    'account.permission.configure-webhooks',
+    'account.permission-label.configure-webhooks',
+  ],
 };
 
 /** A permission as a list of them says it; the access page's words for one this page does not know. */

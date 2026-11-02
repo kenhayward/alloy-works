@@ -141,13 +141,13 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 const forbidden = {
-  description: 'The caller may not administer this environment',
+  description: 'The caller does not hold the permission this needs at the environment',
   schema: ErrorBody,
 } as const;
 const missing = { description: 'No such endpoint in this environment', schema: ErrorBody } as const;
-const ADMINISTER = {
+const CONFIGURE = {
   check: 'permission',
-  permission: 'administer',
+  permission: 'configure_services',
   target: { tenant: true },
 } as const;
 
@@ -158,7 +158,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints',
     summary: "The environment's model endpoints, those in use first",
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     responses: {
       200: {
         description: 'Every endpoint, each with whether its key is set',
@@ -174,7 +174,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints',
     summary: 'Make a model endpoint, saying whether it sits outside the data boundary',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     body: ModelEndpointBody,
     responses: {
       200: { description: 'Made, with no key yet', schema: ModelEndpointAnswer },
@@ -193,7 +193,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}',
     summary: 'A model endpoint, and whether its key is set',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: ModelEndpointParams,
     responses: {
       200: { description: 'The endpoint', schema: ModelEndpointAnswer },
@@ -208,7 +208,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}',
     summary: "Change a model endpoint's settings; its protocol stays",
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: ModelEndpointParams,
     body: ModelEndpointBody,
     responses: {
@@ -230,7 +230,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}/retirement',
     summary: 'Retire a model endpoint: every purpose routed to it goes nowhere',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: ModelEndpointParams,
     responses: {
       200: {
@@ -248,7 +248,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-endpoints/{id}/key',
     summary: "Set or replace a model endpoint's key, sealed by the connector and never answered",
     tenantScoped: true,
-    access: ADMINISTER,
+    access: { ...CONFIGURE, permission: 'rotate_secrets' },
     params: ModelEndpointParams,
     body: ModelKeyBody,
     idempotencyKey: false,
@@ -272,7 +272,7 @@ export const modelEndpointRoutes = {
     summary:
       'Test a model endpoint with one short call, recorded as a run with its tokens and cost',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: ModelEndpointParams,
     idempotencyKey: false,
     responses: {
@@ -297,7 +297,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-routes',
     summary: 'Which model endpoint each purpose goes to',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     responses: {
       200: { description: 'Every purpose, and its endpoint or none', schema: ModelRouteList },
       401: unauthenticated,
@@ -310,7 +310,7 @@ export const modelEndpointRoutes = {
     path: '/v1/model-routes/{purpose}',
     summary: 'Send a purpose to a model endpoint, or to none',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: ModelRouteParams,
     body: ModelRouteBody,
     responses: {

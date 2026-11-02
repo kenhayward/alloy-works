@@ -144,6 +144,12 @@ describe('API tokens, from the account chip', () => {
       'Use connection',
       'Write SQL',
       'Retire',
+      'Export environment',
+      'Export audit',
+      'Hold',
+      'Rotate secrets',
+      'Configure services',
+      'Configure webhooks',
     ]);
     expect(offered).toHaveLength(tokenScopes.length);
     expect(within(form).queryByRole('checkbox', { name: 'Read' })).toBeNull();

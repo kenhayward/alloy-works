@@ -891,6 +891,7 @@ describe('the domain package', () => {
         'PROMPT_RUN_MAX_TOKENS',
         'SEED_PROMPT_WORKFLOW',
         'acceptsModel',
+        'administrativePermissions',
         'promptCall',
         'tooLarge',
         'wholeText',

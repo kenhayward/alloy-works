@@ -250,7 +250,8 @@ describe('making, listing and removing grants through the service', () => {
     ).resolves.toMatchObject({
       status: 409,
       code: 'grant_administer_denied_at_tenant',
-      message: 'A role that includes administer cannot be denied across the whole environment.',
+      message:
+        'A role that includes administer or configure services cannot be denied across the whole environment.',
     });
     await expect(refusal({ ...base, role: MISSING })).resolves.toMatchObject({
       status: 409,

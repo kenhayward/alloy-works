@@ -934,6 +934,7 @@ describe('migration 0091, which keeps one row a place over every version', () =>
         '0187_identity_providers',
         '0188_sign_in_settings',
         '0189_scim',
+        '0190_high_risk_permissions',
       ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(migrated).toHaveLength(1);
@@ -1134,6 +1135,7 @@ describe("migration 0093, which keeps every version's titles in history", () => 
         '0187_identity_providers',
         '0188_sign_in_settings',
         '0189_scim',
+        '0190_high_risk_permissions',
       ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(String(migrated[0]?.title_vector)).toMatch(/'bilbi'.*'dunnart'|'dunnart'.*'bilbi'/u);
@@ -1365,6 +1367,7 @@ describe("migration 0094, which keeps every version's fields' words in history",
         '0187_identity_providers',
         '0188_sign_in_settings',
         '0189_scim',
+        '0190_high_risk_permissions',
       ]);
       const migrated = await service.withTenant(tenant, (trx) => historyOf(trx, artifact));
       expect(String(migrated[0]?.fields_vector)).toMatch(/'pend'.*'settl'|'settl'.*'pend'/u);

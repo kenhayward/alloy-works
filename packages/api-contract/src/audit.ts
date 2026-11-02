@@ -140,7 +140,7 @@ export const auditRoutes = {
     path: '/v1/audit/exports',
     summary: 'Export every event matching these filters, as the log stands now',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'export_audit', target: { tenant: true } },
     body: AuditExportBody,
     responses: {
       200: { description: 'Asked for: queued, and written by a job', schema: AuditExportMade },
@@ -158,7 +158,7 @@ export const auditRoutes = {
     path: '/v1/audit/exports/{id}',
     summary: 'An export of the audit log: whether it is ready, and what it holds',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'export_audit', target: { tenant: true } },
     params: AuditExportParams,
     responses: {
       200: { description: 'The export', schema: AuditExportMade },
@@ -173,7 +173,7 @@ export const auditRoutes = {
     path: '/v1/audit/exports/{id}/download',
     summary: 'A link to download an export of the audit log; each one handed out is recorded',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'export_audit', target: { tenant: true } },
     params: AuditExportParams,
     responses: {
       200: { description: 'A link to the export', schema: AuditExportDownload },

@@ -3,23 +3,15 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.225.0 - 2026-11-02 (PR #888)
+## 0.226.0 - 2026-11-02 (PR #888)
 
-T7's authoring page closed (the AP plan): one header with menus, a side dock, style labels in the margin, an icon rail and one registry of commands. Also folds the fragments of the slices merged since 0.224.0.
+T7's authoring page closed (the AP plan): one header with menus, a side dock, style labels in the margin, an icon rail and one registry of commands.
 
 ### Added
 
 - **One header for a document.** Its name, version and who is here, then **Document, Edit, View, Insert, Format, Review and Help** menus, each command named and keyed as it is everywhere else. Its lifecycle as steps with the next act beside them, then its mode and Preview. Dates, Effective for, Relationships, Manage access, holds, Archive and Delete are in the Document menu.
 - **A side dock.** Beside the text it floats the panels (Contents with a filter over its sections, Baselines, Data) above the tools used most. The outline hides to it and comes back from it. What a selection offers stands in the panels' **Selection** tab.
 - **Each paragraph's style in the margin.** Named on the sheet, never in what is copied or published, the current one a button that changes it. View turns the labels off, and below 75% zoom they give way. A paragraph holding an inline image, or a mark larger than its text, has only the button.
-- **More than one identity provider.** An environment can sign in through several identity providers, each offered by name. A provider's groups and invitations are its own, and closing one ends its sessions and tokens alone.
-- **SCIM.** An identity provider can provision people and groups, turned on in Administration's Sign-in with a token shown once. It then admits only the people it pushed, linked by the claim it names and never by address. Somebody it sets inactive or deletes is signed out and loses their API tokens at once, and a group change applies as it arrives.
-- **A guide to inviting, disabling and SCIM.**
-- **Administration's Sign-in.** An administrator adds, renames and closes identity providers, replaces a provider's secret, opens or closes the Google route and its domains, and sets how long a session lasts, all after signing in again within the last ten minutes. A shorter lifetime reaches every open session at once.
-- **Signing in again within a session.** A route can ask for a recent sign-in, which goes through the way in the session came by and is accepted only for the same person.
-- **Disabling a person.** Administration's People disables and enables anybody: they are signed out and lose their API tokens at once, and cannot sign in until enabled.
-- **An invitation's ways in, and a group's provider.** Inviting somebody can name who may claim it, and a group standing for a provider's value names which provider where there are several.
-- **Each model says how many turns and tool calls an assistant run on it may make.** On **Models**, beside its timeout: **Turns a run**, 1 to 100, and **Tool calls a run**, 1 to 500; empty, 40 and 100.
 
 ### Changed
 
@@ -28,6 +20,26 @@ T7's authoring page closed (the AP plan): one header with menus, a side dock, st
 - **Theme, language and the go-to keys moved to the account menu.**
 - **Pages as you edit and Show boundaries moved to the View menu.**
 - **No native menu bar in the desktop app**, but for a Mac's, so no key is taken before the page has it. Ctrl S in the text makes no version.
+
+## 0.225.0 - 2026-11-02 (PR #889)
+
+T7's fourth slice closed (the ID plan): more than one identity provider, Administration's Sign-in, signing in again, disabling people, SCIM and the high-risk permissions; with it, the work merged since 0.224.0.
+
+### Added
+
+- **More than one identity provider.** An environment can sign in through several identity providers, each offered by name. A provider's groups and invitations are its own, and closing one ends its sessions and tokens alone.
+- **Administration's Sign-in.** An administrator adds, renames and closes identity providers, replaces a provider's secret, opens or closes the Google route and its domains, and sets how long a session lasts, all after signing in again within the last ten minutes. A shorter lifetime reaches every open session at once.
+- **Signing in again within a session.** A route can ask for a recent sign-in, which goes through the way in the session came by and is accepted only for the same person.
+- **Disabling a person.** Administration's People disables and enables anybody: they are signed out and lose their API tokens at once, and cannot sign in until enabled.
+- **An invitation's ways in, and a group's provider.** Inviting somebody can name who may claim it, and a group standing for a provider's value names which provider where there are several.
+- **SCIM.** An identity provider can provision people and groups, turned on in Administration's Sign-in with a token shown once. It then admits only the people it pushed, linked by the claim it names and never by address. Somebody it sets inactive or deletes is signed out and loses their API tokens at once, and a group change applies as it arrives.
+- **A guide to inviting, disabling and SCIM.**
+- **High-risk acts granted apart.** Exporting the environment, exporting the audit, placing holds, rotating secrets, configuring services and configuring webhooks are each a permission of their own. Administrators and tokens scoped to administer keep all six, and a narrower role can now hold one without the rest.
+- **Access names a disabled person.** Explaining a disabled person's access answers every permission as refused, and says why.
+- **Each model says how many turns and tool calls an assistant run on it may make.** On **Models**, beside its timeout: **Turns a run**, 1 to 100, and **Tool calls a run**, 1 to 500; empty, 40 and 100.
+
+### Changed
+
 - **Closing a sign-in route ends its people's tokens too**, not only their sessions.
 - **A connection naming people by subject** refuses each act while more than one provider is open, since a subject means a person at only one.
 - **No act leaves nobody able to get in.** Disabling a person, closing a provider or the Google route, and removing a grant are refused where nobody who can sign in could then configure sign-in.
@@ -37,9 +49,9 @@ T7's authoring page closed (the AP plan): one header with menus, a side dock, st
 
 ### Fixed
 
-- **An accepted assistant edit shows at once.** The document scrolls to the part, shows its new version and marks it with a green rule down its left edge and **Changed** on its label; an editor open on it opens again on the new version. (#876)
 - **A rotated signing key** is picked up by the next sign-in, even within a minute of the provider's keys being fetched.
 - **Citation styles and Reference sources** open in Administration, rather than Overview.
+- **An accepted assistant edit shows at once.** The document scrolls to the part, shows its new version and marks it with a green rule down its left edge and **Changed** on its label; an editor open on it opens again on the new version. (#876)
 
 ## 0.224.0 - 2026-11-02 (PR #882)
 

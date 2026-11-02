@@ -257,6 +257,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0187_identity_providers',
       '0188_sign_in_settings',
       '0189_scim',
+      '0190_high_risk_permissions',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -391,6 +392,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0187_identity_providers',
       '0188_sign_in_settings',
       '0189_scim',
+      '0190_high_risk_permissions',
     ]);
 
     expect(await queryRoles(development)).toEqual([

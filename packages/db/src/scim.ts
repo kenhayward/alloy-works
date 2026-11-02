@@ -682,7 +682,7 @@ export type AdmittedProvisioned = { readonly id: string } | 'erased' | 'not_prov
  * to it from then on. Nothing is made and no invitation claimed; email is never the link.
  *
  * One exception, so turning SCIM on cannot lock an environment out before its first push (IN-B): somebody
- * already known by issuer and subject who holds `administer` at the environment outright is admitted,
+ * already known by issuer and subject who holds `configure_services` at the environment outright is admitted,
  * as the lockout guard counts them, until they are pushed or disabled.
  */
 export async function admitProvisioned(
@@ -751,7 +751,7 @@ export async function admitProvisioned(
           .where('g.level', '=', 'tenant')
           .where('g.effect', '=', 'allow')
           .where('g.expires_at', 'is', null)
-          .where(sql<boolean>`'administer' = any (r.permissions)`),
+          .where(sql<boolean>`'configure_services' = any (r.permissions)`),
       ),
     )
     .executeTakeFirst();

@@ -187,7 +187,7 @@ function service(
         target,
         permissions: [
           { permission: 'read', allowed: true },
-          { permission: 'administer', allowed: allowed },
+          { permission: 'configure_services', allowed: allowed },
         ],
       });
     }

@@ -2056,7 +2056,7 @@ export interface paths {
         };
         /**
          * The environment's CT Studio: its identity, its token, and the spaces it delivers to
-         * @description Returns the environment’s CT Studio as Administration shows it: whether the service has a signing key (never the key), the service identity CT Studio’s deliveries act as and whether it is disabled, the token CT Studio holds and when it expires, every space with CT Studio settings and whether the identity may still deliver there, the environment’s hostnames, and the address and sink id last handed to CT Studio. Needs administer at the environment, with a signed-in session.
+         * @description Returns the environment’s CT Studio as Administration shows it: whether the service has a signing key (never the key), the service identity CT Studio’s deliveries act as and whether it is disabled, the token CT Studio holds and when it expires, every space with CT Studio settings and whether the identity may still deliver there, the environment’s hostnames, and the address and sink id last handed to CT Studio. Needs configure_services at the environment, with a signed-in session.
          */
         get: operations["getCtStudio"];
         put?: never;
@@ -2099,7 +2099,7 @@ export interface paths {
         post?: never;
         /**
          * Disconnect a space from CT Studio: its Author grant and its settings go
-         * @description Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs administer at the environment, with a signed-in session.
+         * @description Disconnects a space from CT Studio: the Author grant its identity holds there is removed and the space’s CT Studio settings and unlisted properties go, so CT Studio can no longer deliver to it. What CT Studio delivered stays, and so does the space’s data connection. The identity, its token and every other space are kept, so connecting the space again issues nothing. Needs configure_services at the environment, with a signed-in session.
          */
         delete: operations["disconnectCtStudio"];
         options?: never;
@@ -3556,13 +3556,13 @@ export interface paths {
         };
         /**
          * The environment's exports, the newest first, a page at a time
-         * @description Lists the environment’s exports, the newest first, a page at a time: each queued, done, failed or expired, with its size and when its archive is removed. Needs administer at the environment.
+         * @description Lists the environment’s exports, the newest first, a page at a time: each queued, done, failed or expired, with its size and when its archive is removed. Needs export_environment at the environment.
          */
         get: operations["listTenantExports"];
         put?: never;
         /**
          * Export the environment's content as it stands now, as a job
-         * @description Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs administer at the environment.
+         * @description Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.
          */
         post: operations["requestTenantExport"];
         delete?: never;
@@ -3580,7 +3580,7 @@ export interface paths {
         };
         /**
          * An export of the environment: whether it is ready, and what it holds
-         * @description Returns an export of the environment: whether its job has written it, how many of each part it holds, and when its archive is removed, seven days after it was written. Needs administer at the environment.
+         * @description Returns an export of the environment: whether its job has written it, how many of each part it holds, and when its archive is removed, seven days after it was written. Needs export_environment at the environment.
          */
         get: operations["getTenantExport"];
         put?: never;
@@ -3600,7 +3600,7 @@ export interface paths {
         };
         /**
          * A link to download an export of the environment; each one handed out is recorded
-         * @description Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs administer at the environment.
+         * @description Returns a link to an export’s archive, signed for five minutes; each one handed out is recorded as an export downloaded. Refused export_not_ready until it is written, and once it has failed or expired. Needs export_environment at the environment.
          */
         get: operations["downloadTenantExport"];
         put?: never;
@@ -3940,13 +3940,13 @@ export interface paths {
         };
         /**
          * Every legal hold, in force or released, newest first
-         * @description Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs administer at the environment.
+         * @description Lists every legal hold, in force or released, newest first in cursor pages, each with what it holds, who placed it, when and why, and its release. Needs hold at the environment.
          */
         get: operations["listHolds"];
         put?: never;
         /**
          * Place a legal hold on an artifact or a space
-         * @description Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs administer at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.
+         * @description Places a legal hold on a component, document, publication or asset, or on a space, which holds everything in it, with why. Several may stand on one thing. Needs hold at the environment. The reason is shown only by the holds listing and never written to the audit log; the act is audited.
          */
         post: operations["placeHold"];
         delete?: never;
@@ -3966,7 +3966,7 @@ export interface paths {
         put?: never;
         /**
          * Release a legal hold
-         * @description Releases a legal hold, with why: once, and recorded with who and when. Needs administer at the environment. Audited, without the reason.
+         * @description Releases a legal hold, with why: once, and recorded with who and when. Needs hold at the environment. Audited, without the reason.
          */
         post: operations["releaseHold"];
         delete?: never;
@@ -4624,13 +4624,13 @@ export interface paths {
         };
         /**
          * The environment's model endpoints, those in use first
-         * @description Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs administer at the environment.
+         * @description Lists the environment’s model endpoints, those in use first: each with its protocol, base URL, model, context window, prices per million tokens, whether it sits outside the data boundary, and whether its key is set, never the key. Needs configure_services at the environment.
          */
         get: operations["listModelEndpoints"];
         put?: never;
         /**
          * Make a model endpoint, saying whether it sits outside the data boundary
-         * @description Makes a model endpoint on one of two protocols, Anthropic’s Messages API or OpenAI’s chat completions, which self-hosted servers speak too. Whether it sits outside the data boundary is stated here, never inferred. Recorded as an endpoint made. Needs administer at the environment.
+         * @description Makes a model endpoint on one of two protocols, Anthropic’s Messages API or OpenAI’s chat completions, which self-hosted servers speak too. Whether it sits outside the data boundary is stated here, never inferred. Recorded as an endpoint made. Needs configure_services at the environment.
          */
         post: operations["makeModelEndpoint"];
         delete?: never;
@@ -4648,12 +4648,12 @@ export interface paths {
         };
         /**
          * A model endpoint, and whether its key is set
-         * @description Returns a model endpoint, and whether its key is set and still for where it points. Needs administer at the environment.
+         * @description Returns a model endpoint, and whether its key is set and still for where it points. Needs configure_services at the environment.
          */
         get: operations["getModelEndpoint"];
         /**
          * Change a model endpoint's settings; its protocol stays
-         * @description Replaces a model endpoint’s settings; its protocol never changes. Moving its base URL to another host leaves its key needing to be set again. Recorded as an endpoint changed, naming the settings that changed and none of their values. Needs administer at the environment.
+         * @description Replaces a model endpoint’s settings; its protocol never changes. Moving its base URL to another host leaves its key needing to be set again. Recorded as an endpoint changed, naming the settings that changed and none of their values. Needs configure_services at the environment.
          */
         put: operations["changeModelEndpoint"];
         post?: never;
@@ -4673,7 +4673,7 @@ export interface paths {
         get?: never;
         /**
          * Set or replace a model endpoint's key, sealed by the connector and never answered
-         * @description Sets or replaces a model endpoint’s key, the tenant’s own provider account. The connector seals it to the endpoint and its host; no route, log or error ever answers it. Recorded as a key set. Needs administer at the environment.
+         * @description Sets or replaces a model endpoint’s key, the tenant’s own provider account. The connector seals it to the endpoint and its host; no route, log or error ever answers it. Recorded as a key set. Needs rotate_secrets at the environment.
          */
         put: operations["setModelEndpointKey"];
         post?: never;
@@ -4694,7 +4694,7 @@ export interface paths {
         put?: never;
         /**
          * Retire a model endpoint: every purpose routed to it goes nowhere
-         * @description Retires a model endpoint: every purpose routed to it goes nowhere, and it takes no key or test. Kept, so the runs it made still name it. Needs administer at the environment.
+         * @description Retires a model endpoint: every purpose routed to it goes nowhere, and it takes no key or test. Kept, so the runs it made still name it. Needs configure_services at the environment.
          */
         post: operations["retireModelEndpoint"];
         delete?: never;
@@ -4714,7 +4714,7 @@ export interface paths {
         put?: never;
         /**
          * Test a model endpoint with one short call, recorded as a run with its tokens and cost
-         * @description Calls a model endpoint once, through the connector, with a short fixed message, and answers its reply, the model it named, its tokens, cost and time, or how it failed. Never tries another endpoint. Recorded as a run, and as an endpoint tested. Needs administer at the environment.
+         * @description Calls a model endpoint once, through the connector, with a short fixed message, and answers its reply, the model it named, its tokens, cost and time, or how it failed. Never tries another endpoint. Recorded as a run, and as an endpoint tested. Needs configure_services at the environment.
          */
         post: operations["testModelEndpoint"];
         delete?: never;
@@ -4776,7 +4776,7 @@ export interface paths {
         };
         /**
          * Which model endpoint each purpose goes to
-         * @description Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs administer at the environment.
+         * @description Lists each purpose - drafting, chat, summarising and embedding - and the endpoint it goes to, or none, which turns that capability off. Needs configure_services at the environment.
          */
         get: operations["listModelRoutes"];
         put?: never;
@@ -4797,7 +4797,7 @@ export interface paths {
         get?: never;
         /**
          * Send a purpose to a model endpoint, or to none
-         * @description Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs administer at the environment.
+         * @description Sends a purpose to an endpoint in use with a key set for where it points, or to none. Recorded as a route set. Needs configure_services at the environment.
          */
         put: operations["setModelRoute"];
         post?: never;
@@ -5521,7 +5521,7 @@ export interface paths {
         get: operations["listReferenceSources"];
         /**
          * Switch a reference source on or off for this environment
-         * @description Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs administer on the environment.
+         * @description Switches a reference source, or a reference extension installed here, on or off for the environment. Off, it is neither searched, made an entry from nor re-checked; a reference extension is removed only once off. It needs configure_services on the environment.
          */
         put: operations["setReferenceSource"];
         post?: never;
@@ -6120,7 +6120,7 @@ export interface paths {
         };
         /**
          * How people sign in to this environment: its providers, Google and session lifetimes
-         * @description How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs administer at the environment; a token may read it, but no token may change it.
+         * @description How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs configure_services at the environment; a token may read it, but no token may change it.
          */
         get: operations["getSignInSettings"];
         put?: never;
@@ -6141,7 +6141,7 @@ export interface paths {
         get?: never;
         /**
          * Open or close the Google route, and set the Workspace domains it admits
-         * @description Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         * @description Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.
          */
         put: operations["setGoogleSignIn"];
         post?: never;
@@ -6162,7 +6162,7 @@ export interface paths {
         put?: never;
         /**
          * Add an identity provider, or open one of the same issuer closed before
-         * @description Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.
+         * @description Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.
          */
         post: operations["addProvider"];
         delete?: never;
@@ -6181,7 +6181,7 @@ export interface paths {
         get?: never;
         /**
          * Rename an identity provider, or change the claim its groups come in
-         * @description Renames an identity provider, or changes the claim its groups come in. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         * @description Renames an identity provider, or changes the claim its groups come in. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.
          */
         put: operations["changeProvider"];
         post?: never;
@@ -6202,7 +6202,7 @@ export interface paths {
         put?: never;
         /**
          * Close an identity provider, ending its sessions and its people’s tokens
-         * @description Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         * @description Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.
          */
         post: operations["closeProvider"];
         delete?: never;
@@ -6222,12 +6222,12 @@ export interface paths {
         put?: never;
         /**
          * Have an identity provider provision people and groups by SCIM
-         * @description Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds administer outright, and its memberships come from SCIM alone. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         * @description Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds configure_services outright, and its memberships come from SCIM alone. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.
          */
         post: operations["turnScimOn"];
         /**
          * Stop an identity provider provisioning, ending its token
-         * @description Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         * @description Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.
          */
         delete: operations["turnScimOff"];
         options?: never;
@@ -6246,7 +6246,7 @@ export interface paths {
         put?: never;
         /**
          * Make a provider's SCIM token, shown this once, ending any before it
-         * @description Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the token.
+         * @description Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the token.
          */
         post: operations["issueScimToken"];
         delete?: never;
@@ -6265,7 +6265,7 @@ export interface paths {
         get?: never;
         /**
          * Replace an open identity provider's client secret
-         * @description Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the secret.
+         * @description Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs rotate_secrets at the environment and a sign-in in the last ten minutes. Audited, never with the secret.
          */
         put: operations["replaceProviderSecret"];
         post?: never;
@@ -6285,7 +6285,7 @@ export interface paths {
         get?: never;
         /**
          * Set how long a session lasts; a shortening reaches open sessions at once
-         * @description Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         * @description Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs configure_services at the environment and a sign-in in the last ten minutes. Audited.
          */
         put: operations["setSessionSettings"];
         post?: never;
@@ -6612,12 +6612,12 @@ export interface paths {
         };
         /**
          * A space's settings for CT Studio deliveries
-         * @description Returns a space’s settings for CT Studio deliveries: its component type and template, the template field each property fills, whether data delivery is on, and the connection data delivery made, never its credential. A space never set up answers the empty settings. Needs administer on the space.
+         * @description Returns a space’s settings for CT Studio deliveries: its component type and template, the template field each property fills, whether data delivery is on, and the connection data delivery made, never its credential. A space never set up answers the empty settings. Needs configure_services on the space.
          */
         get: operations["getBridgeSettings"];
         /**
          * Set a space's settings for CT Studio deliveries, and turn data delivery on or off
-         * @description Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs administer on the space.
+         * @description Sets a space’s settings for CT Studio deliveries, whole. Every property must map to a document field of the template, and the component type and template must exist. Turning data delivery on makes the environment’s delivery schema and a read-only account for it, makes or reuses this space’s connection to it and sets that connection’s credential, sealed by the connector; no response, event or log holds the password. Turning it on again makes a new password for the account and seals it onto every delivery connection of the environment; turning it off keeps the connection and the tables and stops new data deliveries. Recorded as a bridge settings change, with the connection made and its credential set. Needs configure_services on the space.
          */
         put: operations["putBridgeSettings"];
         post?: never;
@@ -7704,13 +7704,13 @@ export interface paths {
         };
         /**
          * The environment's webhook subscriptions, a page at a time, never their secrets
-         * @description Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs administer at the environment, with a signed-in session.
+         * @description Lists the environment’s webhook subscriptions: each one’s service identity, URL, event types and whether it is disabled, never its secret. Needs configure_webhooks at the environment, with a signed-in session.
          */
         get: operations["listWebhooks"];
         put?: never;
         /**
          * Subscribe a service identity’s endpoint to events, answering its signing secret once
-         * @description Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Delivery is at least once and in no promised order: a receiver deduplicates by the payload’s `id` and orders what matters to it by the artifact’s version, or by the number in `sequence`, which is its source’s order and not the order acts committed in. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         * @description Subscribes a service identity’s HTTPS endpoint to event types. Each event of those types is posted to it, signed as Standard Webhooks specifies, carrying identifiers and versions and never content, and only where the service identity may read what it is about. Answers the signing secret this once. Delivery is at least once and in no promised order: a receiver deduplicates by the payload’s `id` and orders what matters to it by the artifact’s version, or by the number in `sequence`, which is its source’s order and not the order acts committed in. Recorded as a webhook changed. Needs configure_webhooks at the environment, with a signed-in session.
          */
         post: operations["createWebhook"];
         delete?: never;
@@ -7728,21 +7728,21 @@ export interface paths {
         };
         /**
          * A webhook subscription, never its secret
-         * @description Returns a webhook subscription, never its secret. Needs administer at the environment, with a signed-in session.
+         * @description Returns a webhook subscription, never its secret. Needs configure_webhooks at the environment, with a signed-in session.
          */
         get: operations["getWebhook"];
         put?: never;
         post?: never;
         /**
          * Remove a subscription, and every delivery waiting for it
-         * @description Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         * @description Removes a subscription and every delivery waiting for it. Recorded as a webhook changed. Needs configure_webhooks at the environment, with a signed-in session.
          */
         delete: operations["removeWebhook"];
         options?: never;
         head?: never;
         /**
          * Change a subscription’s URL, description or event types
-         * @description Changes a subscription’s URL, description or event types, or turns it on again after it was turned off. A new URL ends the old secret at once and answers a new one; a type no longer wanted is not sent, though it was waiting. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         * @description Changes a subscription’s URL, description or event types, or turns it on again after it was turned off. A new URL ends the old secret at once and answers a new one; a type no longer wanted is not sent, though it was waiting. Recorded as a webhook changed. Needs configure_webhooks at the environment, with a signed-in session.
          */
         patch: operations["changeWebhook"];
         trace?: never;
@@ -7756,7 +7756,7 @@ export interface paths {
         };
         /**
          * A subscription’s deliveries, newest first, kept 30 days
-         * @description Lists a subscription’s deliveries, newest first: each one’s event type, sequence, state and how many attempts it has had. Kept 30 days. Needs administer at the environment, with a signed-in session.
+         * @description Lists a subscription’s deliveries, newest first: each one’s event type, sequence, state and how many attempts it has had. Kept 30 days. Needs configure_webhooks at the environment, with a signed-in session.
          */
         get: operations["listWebhookDeliveries"];
         put?: never;
@@ -7776,7 +7776,7 @@ export interface paths {
         };
         /**
          * One delivery: what was sent, and what came back at each attempt
-         * @description Returns one delivery: exactly what was sent, identifiers and versions and never content, and at each attempt what the receiver answered, its status, how long it took and at most 2 KiB of its reply, or why there was no answer. Needs administer at the environment, with a signed-in session.
+         * @description Returns one delivery: exactly what was sent, identifiers and versions and never content, and at each attempt what the receiver answered, its status, how long it took and at most 2 KiB of its reply, or why there was no answer. Needs configure_webhooks at the environment, with a signed-in session.
          */
         get: operations["getWebhookDelivery"];
         put?: never;
@@ -7798,7 +7798,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate a subscription’s signing secret; the old one signs beside it for 24 hours
-         * @description Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs administer at the environment, with a signed-in session.
+         * @description Rotates a subscription’s signing secret and answers the new one this once; the old one signs beside it for 24 hours, so a receiver can move without losing an event. Recorded as a webhook changed. Needs rotate_secrets at the environment, with a signed-in session.
          */
         post: operations["rotateWebhookSecret"];
         delete?: never;
@@ -10810,7 +10810,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks";
                             allowed: boolean;
                         }[];
                     };
@@ -10925,21 +10925,24 @@ export interface operations {
                      * @example {
                      *       "principal": "example",
                      *       "target": "example",
+                     *       "disabled": false,
                      *       "permissions": []
                      *     }
                      */
                     "application/json": {
                         principal: string;
                         target: string;
+                        /** @description Disabled: every permission is refused, whatever the grants say */
+                        disabled: boolean;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks";
                             allowed: boolean;
                             /**
-                             * @description capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
+                             * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
                              * @enum {string}
                              */
-                            reason: "allowed" | "denied" | "not_granted" | "capped" | "scoped";
+                            reason: "allowed" | "denied" | "not_granted" | "capped" | "scoped" | "disabled";
                             /** @description The level that decided, or null when none said anything */
                             level: string | null;
                             /** @description Every level looked at, nearest first */
@@ -31423,7 +31426,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the connection but may not administer it */
+            /** @description The caller may read the connection but does not hold `rotate_secrets` there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -33991,7 +33994,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the connection but may not administer it */
+            /** @description The caller may read the connection but does not hold `configure_services` there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -35650,7 +35653,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
+            /** @description forbidden: `configure_services` is not held at the environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -35847,7 +35850,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -35914,7 +35917,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
+            /** @description forbidden: `configure_services` is not held at the environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -36136,7 +36139,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
+            /** @description forbidden: `configure_services` is not held at the environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -36320,7 +36323,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -36352,7 +36355,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
+            /** @description forbidden: `configure_services` is not held at the environment; or token_not_allowed: CT Studio is connected with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -70896,7 +70899,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `export_environment` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -71020,7 +71023,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `export_environment` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -71142,7 +71145,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `export_environment` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -71257,7 +71260,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `export_environment` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -75077,7 +75080,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `hold` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -75262,7 +75265,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `hold` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -75458,7 +75461,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `hold` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -82736,7 +82739,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -82962,7 +82965,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -83138,7 +83141,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -83386,7 +83389,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -83614,7 +83617,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -83834,7 +83837,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -83972,7 +83975,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -84545,7 +84548,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -84681,7 +84684,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description The caller does not hold the permission this needs at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -85564,7 +85567,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description administer at the environment is not held */
+            /** @description The permission this needs is not held at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -85704,7 +85707,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description administer at the environment is not held */
+            /** @description The permission this needs is not held at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -86141,7 +86144,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -94570,7 +94573,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may not administer this environment */
+            /** @description `configure_services` is not held at this environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -96792,7 +96795,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -99304,7 +99307,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -99338,7 +99341,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -101328,7 +101331,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description administer at the environment is not held */
+            /** @description The permission this needs is not held at the environment */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -101497,7 +101500,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -101698,7 +101701,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -101888,7 +101891,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102084,7 +102087,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102295,7 +102298,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102471,7 +102474,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102576,7 +102579,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -102607,7 +102610,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -102811,7 +102814,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -103000,7 +103003,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            /** @description forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -109082,7 +109085,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the space but may not administer it */
+            /** @description The caller may read the space but does not hold `configure_services` there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -109256,7 +109259,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the space but may not administer it */
+            /** @description The caller may read the space but does not hold `configure_services` there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -111132,7 +111135,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description The caller may read the space but may not administer it */
+            /** @description The caller may read the space but does not hold `configure_services` there */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -123003,7 +123006,7 @@ export interface operations {
                             /** @description What the person called it, to tell their tokens apart */
                             name: string;
                             /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                            scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                             createdAt: string;
                             /** @description When it stops working; nothing extends a token */
                             expiresAt: string;
@@ -123120,7 +123123,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed */
                     name: string;
                     /** @description The permissions it may use: a mask over its creator's grants, never a grant */
-                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                    scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                     /**
                      * Format: date-time
                      * @description When it stops working: required, in the future and at most 365 days away
@@ -123154,7 +123157,7 @@ export interface operations {
                         /** @description What the person called it, to tell their tokens apart */
                         name: string;
                         /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
-                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
                         createdAt: string;
                         /** @description When it stops working; nothing extends a token */
                         expiresAt: string;
@@ -124494,7 +124497,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -124660,7 +124663,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -124798,7 +124801,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -124916,7 +124919,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -125096,7 +125099,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -125251,7 +125254,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -125402,7 +125405,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -125542,7 +125545,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
+            /** @description forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

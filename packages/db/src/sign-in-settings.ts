@@ -425,7 +425,7 @@ async function anyWayIn(trx: TenantTransaction, change?: WayInChange): Promise<b
     join role r on r.id = g.role_id
     join principal p on p.id = g.principal_id
     where g.level = 'tenant' and g.effect = 'allow' and g.expires_at is null
-      and 'administer' = any (r.permissions)
+      and 'configure_services' = any (r.permissions)
       and p.kind <> 'external' and p.disabled_at is null and p.erased_at is null
       and (${removing}::uuid is null or g.id <> ${removing}::uuid)
       and (${disabling}::uuid is null or p.id <> ${disabling}::uuid)

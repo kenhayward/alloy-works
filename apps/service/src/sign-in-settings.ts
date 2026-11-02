@@ -17,7 +17,6 @@ import {
   disablePrincipal,
   enablePrincipal,
   googleRoute,
-  listApiTokens,
   listProviders,
   revokeApiToken,
   turnScimOff,
@@ -256,8 +255,13 @@ export function signInSettingsHandlers(options: {
       if (provider.scim_identity === null) {
         throw new AppError(409, 'scim_off', 'Turn SCIM on for this provider first.');
       }
-      const held = await listApiTokens(trx, provider.scim_identity, { limit: 100 });
-      for (const token of held.items) {
+      const held = await trx
+        .selectFrom('api_token')
+        .select('id')
+        .where('principal_id', '=', provider.scim_identity)
+        .orderBy('id')
+        .execute();
+      for (const token of held) {
         await revokeApiToken(trx, provider.scim_identity, token.id);
         await notifyTenant(trx, { kind: 'credential_ended', token: token.id });
       }

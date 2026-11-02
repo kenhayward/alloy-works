@@ -1,4 +1,5 @@
 export {
+  administrativePermissions,
   externalCap,
   isPermission,
   permissions,
