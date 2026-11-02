@@ -371,6 +371,8 @@ describe('the domain package', () => {
         'projectCss',
         // The SY plan, SY-E: where each value of a paragraph style comes from.
         'explainStyle',
+        // The SY plan, SY-H: the styles a theme allows authors, one rule for the editor and the publisher.
+        'allowsStyle',
         // The SY plan, SY-I: a catalogue as a document, exported and imported.
         'CATALOGUE_DOCUMENT_FORMAT',
         'CATALOGUE_DOCUMENT_VERSION',

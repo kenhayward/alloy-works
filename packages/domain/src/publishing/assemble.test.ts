@@ -5026,30 +5026,39 @@ describe('the theme a publication is set from (themes 1)', () => {
     ]);
   });
 
-  it('STY-033 fails style_not_allowed for a style the theme does not allow authors, each place default always allowed', () => {
+  it('STY-033 fails style_not_allowed for a style the theme does not allow authors, a default content carries always allowed', () => {
     const narrowed = themed((inputs) => {
       addStyle(inputs, 'warning', ['text']);
       addStyle(inputs, 'aside', ['text']);
       const [first] = inputs.catalogues.table.styles;
-      inputs.catalogues.table.styles.push({ ...first!, id: 'grid', name: 'Grid' });
-      inputs.theme.allowed = { paragraph: ['aside'], table: ['table'], image: ['figure'] };
+      inputs.catalogues.table.styles.push(
+        { ...first!, id: 'grid', name: 'Grid' },
+        { ...first!, id: 'ledger', name: 'Ledger' },
+      );
+      const inline = inputs.catalogues.image.styles.find((each) => each.id === 'inline')!;
+      inputs.catalogues.image.styles.push({ ...inline, id: 'mark', name: 'Mark' });
+      inputs.theme.allowed = { paragraph: ['aside'], table: ['grid'], image: [] };
     });
     const assembled = assemble(
       under(
         narrowed,
+        // Each in a default content carries where no style is chosen: a place's, `table`, `figure`
+        // and `inline`, none of them listed.
         paragraph('p0', text('In the place default.')),
         styled('p1', 'aside', text('Allowed.')),
         styled('p2', 'warning', text('Not allowed.')),
-        table('t1', { style: 'grid' }),
+        table('t1', { style: 'ledger' }),
         table('t2'),
+        table('t3', { style: 'grid' }),
         figure('f1'),
-        paragraph('p3', text('A logo '), image()),
+        paragraph('p3', text('A logo '), image('mark')),
+        paragraph('p4', text('A logo '), image()),
       ),
     );
     expect(failuresOf(assembled)).toEqual([
       failed('style_not_allowed', 'p2', 'warning'),
-      failed('style_not_allowed', 't1', 'grid'),
-      failed('style_not_allowed', 'p3', 'inline'),
+      failed('style_not_allowed', 't1', 'ledger'),
+      failed('style_not_allowed', 'p3', 'mark'),
     ]);
   });
 

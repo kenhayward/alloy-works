@@ -33008,7 +33008,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1156,
+      "line": 1158,
       "kind": "title"
     },
     {
@@ -33464,19 +33464,19 @@
     {
       "id": "LOC-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7428,
+      "line": 7437,
       "kind": "title"
     },
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7287,
+      "line": 7296,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6996,
+      "line": 7005,
       "kind": "title"
     },
     {
@@ -33506,25 +33506,25 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7308,
+      "line": 7317,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6279,
+      "line": 6288,
       "kind": "title"
     },
     {
       "id": "REU-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7379,
+      "line": 7388,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7322,
+      "line": 7331,
       "kind": "title"
     },
     {
@@ -33548,7 +33548,7 @@
     {
       "id": "REU-038",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7379,
+      "line": 7388,
       "kind": "title"
     },
     {
@@ -33626,19 +33626,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5486,
+      "line": 5495,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5486,
+      "line": 5495,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5510,
+      "line": 5519,
       "kind": "title"
     },
     {
@@ -33662,7 +33662,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7213,
+      "line": 7222,
       "kind": "title"
     },
     {

@@ -1150,7 +1150,8 @@ another theme records `theme.moved`, from and to (STY-026).
 
 **The styles offered to authors** (SY-H, STY-033): a theme's optional `allowed` names, by kind, the
 paragraph, table and image styles an author may choose; a kind absent offers every style, and a place's
-or a role's default is always allowed, since an author chooses neither. Character styles are not
+or a role's default is always allowed, since an author chooses neither, as are `table`, `figure`
+and `inline`, what content carries where no style is chosen (`allowsStyle`, the one rule). Character styles are not
 narrowed: each is a mark's, never chosen. The reader refuses a name its catalogue lacks; the editor's
 choices (`paragraphChoices`, `tableChoices`, `imageChoices`) offer only those allowed; a publish refuses
 another as `style_not_allowed`, naming the block and the style. `PUT /v1/themes/{id}/allowed` records
