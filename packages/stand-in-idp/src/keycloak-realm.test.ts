@@ -41,6 +41,13 @@ describe('the Keycloak development realm', () => {
     }
   });
 
+  it('ends its own session within seconds, so the next person is not refused as a different user', () => {
+    const configure = readFileSync(repo('deploy/keycloak/configure.sh'), 'utf8');
+    const seconds = Number(/-s ssoSessionMaxLifespan=(\d+)/.exec(configure)?.[1]);
+    expect(seconds).toBeGreaterThan(0);
+    expect(seconds).toBeLessThanOrEqual(30);
+  });
+
   it('answers to the client the development setup seals', () => {
     const setup = readFileSync(repo('packages/db/src/dev-setup.ts'), 'utf8');
     const client = realm.clients[0];

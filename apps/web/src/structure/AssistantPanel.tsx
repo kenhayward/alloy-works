@@ -221,6 +221,9 @@ const CITATION = /\[\[([0-9a-f-]{36})#([A-Za-z0-9_-]{1,64})\]\]/g;
 /** A citation's mark and the space before it: what a copied answer leaves out. */
 const CITATION_MARK = new RegExp(`\\s*${CITATION.source}`, 'g');
 
+/** Where an accepted edit leaves the document: at the latest already, moved to it, or as it was. */
+export type AcceptedInDocument = 'follows' | 'moved' | 'kept';
+
 /**
  * The document page's **Assistant** (generation.md, "The assistant"; the G2 plan, G2-K): ask about
  * the open document; the answer as it streams; what it did, each call and what came back; each
@@ -253,8 +256,11 @@ export function AssistantPanel({
   onCite: (component: string, block: string) => void;
   /** The citations the last answer kept, once each in its order: none while another is asked. */
   onCitations?: (cited: readonly Citation[]) => void;
-  /** An edit accepted: the component it made a new version of (issue #876). */
-  onAccepted?: (component: string) => void;
+  /**
+   * An edit accepted: the component it made a new version of, and that version (issue #876). Answers
+   * where that leaves the document, which the proposal then says (issue #902).
+   */
+  onAccepted?: (component: string, version?: string) => Promise<AcceptedInDocument> | void;
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
@@ -703,14 +709,6 @@ export function AssistantPanel({
           ? '/v1/assistant/proposals/{id}/keeping'
           : '/v1/assistant/proposals/{id}/discarding';
     const { data, error } = await client.POST(path, { params: { path: { id: proposal.id } } });
-    // A comment changes no text: there is no new version for the page to show.
-    if (
-      data?.proposal.state === 'accepted' &&
-      proposal.component !== null &&
-      proposal.comment === null
-    ) {
-      onAccepted?.(proposal.component);
-    }
     setProposals((was) =>
       was.map((each) =>
         each.id !== proposal.id
@@ -738,6 +736,21 @@ export function AssistantPanel({
               },
       ),
     );
+    // A comment changes no text: there is no new version for the page to show.
+    if (
+      data?.proposal.state !== 'accepted' ||
+      proposal.component === null ||
+      proposal.comment !== null
+    ) {
+      return;
+    }
+    const left = await onAccepted?.(proposal.component, data.proposal.version);
+    if (left === undefined || left === 'follows') return;
+    const said =
+      left === 'moved'
+        ? words('document.accepted-this-document-now-shows')
+        : words('document.accepted-this-document-still-shows');
+    setProposals((was) => was.map((each) => (each.id === proposal.id ? { ...each, said } : each)));
   };
 
   const kept = new Set((ended?.citations ?? []).map((each) => `${each.component}#${each.block}`));

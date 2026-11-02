@@ -185,12 +185,11 @@ anybody: the setup points the environment's provider at it and carries Ada's and
 Drop the file to move back. People, once added, live in the `keycloak-data` volume; a realm file changed
 later needs that volume removed.
 
-**Adding somebody:** the console is at `http://idp.localhost:9090/admin` (`admin`, and
-`KEYCLOAK_ADMIN_PASSWORD`, else the default in the file), realm `alloy`. Under **Users**, add them with an
-email, **Email verified** on, and a password under **Credentials**. Invite that address in Administration,
-as a claim needs it verified. **Groups** reach the service in the ID token's `groups` claim. Every sign-in
-asks who is signing in, since signing out of Alloy Works does not end Keycloak's session
-(`deploy/keycloak/configure.sh`, which also sets where a sign-in may return, at every start).
+**Adding somebody, and giving them access:** [the guide](../docs/guides/keycloak-and-people.md). **Groups**
+reach the service in the ID token's `groups` claim. Every sign-in shows the login form, and
+Keycloak's own session lasts 15 seconds, since signing out of Alloy Works does not end it and Keycloak
+refuses anybody else while it runs (`deploy/keycloak/configure.sh`, which also sets where a sign-in may
+return, at every start).
 
 ### A source to connect to: the `sources` profile
 

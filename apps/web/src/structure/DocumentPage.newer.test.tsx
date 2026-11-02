@@ -1,8 +1,9 @@
 import { compareContent, type ContentDocument } from '@alloy-works/domain';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { OutlineNode } from '@alloy-works/domain';
+import type { StreamPostOptions } from '@alloy-works/api-client';
 import { DocumentPage } from './DocumentPage.js';
 import {
   ADA,
@@ -18,6 +19,8 @@ import {
 const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
 const PINNED = 'bbbbbbbb-0000-4000-8000-000000000002';
 const NEWER = 'bbbbbbbb-0000-4000-8000-000000000003';
+const CONVERSATION = 'cccccccc-0000-4000-8000-000000000001';
+const PROPOSAL = 'cccccccc-0000-4000-8000-000000000002';
 const printer = (value: string): ContentDocument => ({
   schemaVersion: 1,
   title: 'Install the printer',
@@ -29,14 +32,22 @@ const printer = (value: string): ContentDocument => ({
 });
 
 /** The document, placing the printer pinned at 0.2 while 0.3 is its latest, `newer` saying so or not. */
-async function openPinned({ newer, failing = false }: { newer: boolean; failing?: boolean }) {
+async function openPinned({
+  newer,
+  failing = false,
+  mayEdit,
+}: {
+  newer: boolean;
+  failing?: boolean;
+  mayEdit?: boolean;
+}) {
   // What the texts route names as newer: a test may move it on, as another author's version would.
   const latest = { id: NEWER, number: '0.3' };
   const pinned = {
     ...reference(REFERENCE, 'latest'),
     mode: { kind: 'pinned', version: PINNED },
   } as OutlineNode;
-  const fake = service(outline([pinned]));
+  const fake = service(outline([pinned]), mayEdit === undefined ? {} : { mayEdit });
   const asked: string[] = [];
   const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
@@ -50,7 +61,7 @@ async function openPinned({ newer, failing = false }: { newer: boolean; failing?
           {
             node: REFERENCE,
             version: PINNED,
-            mayEdit: false,
+            mayEdit: mayEdit === false,
             mayComment: false,
             maySuggest: false,
             pendingSuggestions: 0,
@@ -74,15 +85,106 @@ async function openPinned({ newer, failing = false }: { newer: boolean; failing?
         changes: compareContent(older, newerContent).changes,
       });
     }
+    if (request.method === 'POST' && url.pathname === '/v1/conversations') {
+      return json(200, {
+        conversation: {
+          id: CONVERSATION,
+          document: DOCUMENT,
+          title: 'Asked',
+          madeAt: '2026-11-02T10:00:00.000Z',
+          kept: false,
+          turns: [],
+        },
+      });
+    }
+    if (url.pathname === '/v1/conversations') return json(200, { items: [] });
+    if (url.pathname === '/v1/conversation-endpoints') return json(200, { items: [] });
+    if (url.pathname.endsWith(`/proposals/${PROPOSAL}/acceptance`)) {
+      return json(200, {
+        proposal: { id: PROPOSAL, state: 'accepted', suggestion: 'x', version: NEWER },
+      });
+    }
     return fake.fetch(request);
   }) as typeof globalThis.fetch;
-  render(<DocumentPage client={client(fetching)} id={DOCUMENT} principalId={ADA} />);
+  render(
+    <DocumentPage
+      client={client(fetching)}
+      id={DOCUMENT}
+      principalId={ADA}
+      assistantStream={proposing}
+    />,
+  );
   const text = await screen.findByRole('region', { name: "The document's text" });
   await within(text).findByText('Unbox the printer.');
-  return { text, asked, latest };
+  return { text, asked, latest, fake };
+}
+
+/** A turn that proposes an edit of the printer, and ends. */
+const proposing = async (options: StreamPostOptions) => {
+  options.onEvent('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } });
+  options.onEvent('proposal', {
+    id: PROPOSAL,
+    number: 1,
+    component: PRINTER,
+    against: PINNED,
+    proposed: printer('Unbox the printer carefully.'),
+  });
+  options.onEvent('ended', {
+    outcome: 'finished',
+    model: 'stand-in-1',
+    tokensIn: 1,
+    tokensOut: 1,
+    cost: '0',
+    currency: 'USD',
+    citations: [],
+    dropped: [],
+  });
+  return { kind: 'streamed' as const };
+};
+
+/** Asks the Assistant in Authoring, and accepts what it proposes. */
+async function acceptProposal() {
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('radio', { name: 'Authoring' }));
+  await user.click(await screen.findByRole('tab', { name: 'Assistant' }));
+  await user.type(await screen.findByLabelText('Ask the assistant'), 'Say carefully.');
+  await user.click(screen.getByRole('button', { name: 'Ask' }));
+  const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+  await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
+  return proposal;
 }
 
 describe('a reference pinned below a newer version (document-view.md, Versions)', () => {
+  afterEach(() => {
+    try {
+      window.localStorage.removeItem('alloy-works.mode');
+    } catch {
+      // Storage refused: nothing was kept.
+    }
+  });
+
+  it('moves the pin to the version an accepted edit made, and says so (issue #902)', async () => {
+    const { fake } = await openPinned({ newer: true });
+    const proposal = await acceptProposal();
+    await within(proposal).findByText(
+      'Accepted: this document now shows the new version. Undo in the outline takes it back.',
+    );
+    expect(fake.edits().map((each) => each.body)).toEqual([
+      expect.objectContaining({
+        operation: { operation: 'set', node: REFERENCE, mode: { kind: 'pinned', version: NEWER } },
+      }),
+    ]);
+  });
+
+  it('leaves the pin where the person may not change the document, and says so (issue #902)', async () => {
+    const { fake } = await openPinned({ newer: true, mayEdit: false });
+    const proposal = await acceptProposal();
+    await within(proposal).findByText(
+      'Accepted: it is a new version of the part. This document still shows the version it had.',
+    );
+    expect(fake.edits()).toEqual([]);
+  });
+
   it('CNT-181 says a newer version exists, naming it, and compares the two when asked, asking nothing until then', async () => {
     const { text, asked } = await openPinned({ newer: true });
     expect(within(text).getByText('Version 0.3 is newer than the 0.2 pinned here.')).toBeVisible();

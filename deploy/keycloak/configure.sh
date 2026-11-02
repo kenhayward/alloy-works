@@ -31,6 +31,10 @@ cookie=$("$kcadm" get authentication/flows/browser/executions -r "$realm" --conf
 "$kcadm" update authentication/flows/browser/executions -r "$realm" --config "$config" \
   -b "{\"id\":\"$cookie\",\"requirement\":\"DISABLED\"}"
 
+# Signing out of Alloy Works leaves that session running, and while it runs Keycloak refuses anybody
+# else at the form. The service keeps its own session, needing this one only to finish the sign-in.
+"$kcadm" update "realms/$realm" --config "$config" -s ssoSessionMaxLifespan=15
+
 # Where a sign-in may return, which moves with this machine's address.
 client=$("$kcadm" get clients -r "$realm" --config "$config" -q clientId=alloy-dev --fields id \
   --format csv --noquotes)

@@ -1687,6 +1687,7 @@ export function assistantHandlers(
       generated: { run: proposal.runId, digest: proposal.contextDigest },
     });
     if (made.answer !== 'made') throw suggestionRefused(made.answer);
+    let version: string | undefined;
     if (act === 'accepted') {
       const accepted = await acceptSuggestion(trx, {
         suggestion: made.suggestion,
@@ -1699,9 +1700,17 @@ export function assistantHandlers(
         },
       });
       if (accepted.answer !== 'accepted') throw suggestionRefused(accepted.answer);
+      version = accepted.version.id;
     }
     await actOnProposal(trx, { proposal, act, suggestion: made.suggestion, by: principalId });
-    return { proposal: { id, state: act, suggestion: made.suggestion } };
+    return {
+      proposal: {
+        id,
+        state: act,
+        suggestion: made.suggestion,
+        ...(version === undefined ? {} : { version }),
+      },
+    };
   }
 }
 

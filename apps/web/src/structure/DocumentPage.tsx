@@ -52,7 +52,7 @@ import {
 } from '../publishing/Preview.js';
 import { RANGE_FOLLOW_MS, RangePreviewPane, useRangePreview } from '../publishing/RangePreview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
-import { AssistantPanel } from './AssistantPanel.js';
+import { AssistantPanel, type AcceptedInDocument } from './AssistantPanel.js';
 import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
@@ -93,7 +93,7 @@ import { OverrideDialog } from './OverrideDialog.js';
 import { overridesIn, withOverrides, type OverrideBody, type OverrideView } from './overrides.js';
 import { useLiveDocument, type LiveDocument } from './live.js';
 import { PeopleHere } from './PeopleHere.js';
-import type { FollowOptions } from '@alloy-works/api-client';
+import type { FollowOptions, StreamPostOptions, streamPost } from '@alloy-works/api-client';
 import { GeneratedLists, type Known } from './GeneratedLists.js';
 import { baselineLink, documentAccessLink, nodeLink } from './links.js';
 import { BaselinesTab } from './BaselinesTab.js';
@@ -618,6 +618,8 @@ export interface DocumentPageProps {
   readonly principalId?: string;
   /** Follows the document's stream: given in tests. */
   readonly follow?: (options: FollowOptions) => () => void;
+  /** Sends the Assistant's turns: given in tests. */
+  readonly assistantStream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
 }
 
 /**
@@ -809,6 +811,7 @@ export function DocumentPage({
   followMs = FOLLOW_MS,
   principalId,
   follow,
+  assistantStream,
 }: DocumentPageProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: 'loading' });
   const outlinePane = usePaneWidth(OUTLINE_PANE);
@@ -1882,14 +1885,15 @@ export function DocumentPage({
   );
 
   const apply = useCallback(
-    async (operation: OutlineOperation, undoing: boolean): Promise<Answered> => {
+    // `onLatest`: an act of several, each made against what the one before it left, not yet rendered.
+    async (operation: OutlineOperation, undoing: boolean, onLatest = false): Promise<Answered> => {
       if (pending.current || opened === null) return 'unsent';
       // A belt over what the `busy` checks already close: every handler in the panel reads `busy`
       // from the same render as the outline it acts on, so no act from an older render should reach
       // here. Were one to - computed against an outline before the answer the page now holds - it
       // would be refused as a conflict with the author's own act, so it is not sent at all.
-      if (opened.version.id !== latest.current?.version.id) return 'unsent';
-      const before = opened;
+      if (!onLatest && opened.version.id !== latest.current?.version.id) return 'unsent';
+      const before = onLatest ? (latest.current ?? opened) : opened;
       pending.current = true;
       setBusy(true);
       // An undo's entry, taken off the stack once it has been answered for good.
@@ -2027,6 +2031,32 @@ export function DocumentPage({
       },
     }),
     [listVersions, apply],
+  );
+
+  // An accepted edit is what its acceptor means this document to show: each reference pinned to another
+  // version of the component moves to the one made, as the outline's own act (issue #902). One waiting
+  // on an approved revision stays, as does every reference where the document may not be changed.
+  const movePins = useCallback(
+    async (component: string, version: string): Promise<AcceptedInDocument> => {
+      const now = latest.current;
+      if (now === null) return 'kept';
+      const pinned: string[] = [];
+      let waiting = false;
+      walkOutline(now.outline.nodes, (node) => {
+        if (node.type !== 'reference' || node.component !== component) return;
+        if (node.mode.kind === 'approved') waiting = true;
+        if (node.mode.kind === 'pinned' && node.mode.version !== version) pinned.push(node.id);
+      });
+      if (pinned.length === 0) return waiting ? 'kept' : 'follows';
+      if (!now.mayEdit) return 'kept';
+      for (const node of pinned) {
+        const mode = { kind: 'pinned' as const, version };
+        const answer = await apply({ operation: 'set', node, mode }, false, true);
+        if (typeof answer === 'string') return 'kept';
+      }
+      return waiting ? 'kept' : 'moved';
+    },
+    [apply],
   );
 
   // Every component's edges and label, rather than on hover and focus (document-view.md, "Boundaries";
@@ -3193,11 +3223,14 @@ export function DocumentPage({
                                   ?.querySelector(`[data-node="${node}"]`)
                                   ?.scrollIntoView?.({ block: 'start' });
                               }}
-                              onAccepted={(component) => {
+                              {...(assistantStream === undefined
+                                ? {}
+                                : { stream: assistantStream })}
+                              onAccepted={async (component, version) => {
                                 const nodes = [...componentOfNode]
                                   .filter(([, each]) => each === component)
                                   .map(([node]) => node);
-                                if (nodes.length === 0) return;
+                                if (nodes.length === 0) return 'follows';
                                 setChangedNodes((was) => new Set([...was, ...nodes]));
                                 setAcceptances((was) =>
                                   new Map(was).set(component, (was.get(component) ?? 0) + 1),
@@ -3206,6 +3239,9 @@ export function DocumentPage({
                                 textColumn.current
                                   ?.querySelector(`[data-node="${nodes[0]!}"]`)
                                   ?.scrollIntoView?.({ block: 'start' });
+                                return version === undefined
+                                  ? 'follows'
+                                  : movePins(component, version);
                               }}
                               onCitations={(cited) => {
                                 const nodes = cited.flatMap(({ component }) => {

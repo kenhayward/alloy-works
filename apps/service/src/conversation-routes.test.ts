@@ -627,6 +627,13 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
         `/v1/assistant/proposals/${String(proposed.id)}/acceptance`,
       );
       expect(accepted.statusCode, accepted.body).toBe(200);
+      // The version it made, which the page moves a pin to (issue #902).
+      const head = (await h.call('grace', 'GET', `/v1/components/${part.id}`)).json<{
+        version: { id: string };
+      }>();
+      expect(accepted.json<{ proposal: { version: string } }>().proposal.version).toBe(
+        head.version.id,
+      );
       await turn('grace', id, { ask: 'Read it again.' });
       const read = JSON.stringify(asked.at(-1)!.call.messages.at(-1));
       expect(read).toContain('The weir was rebuilt.');

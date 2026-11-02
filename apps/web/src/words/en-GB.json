@@ -1022,6 +1022,8 @@
   "document.accepted-the-part-is-made": "Accepted: the part is made.",
   "document.changed-by-the-assistant": "Changed",
   "document.accepted-it-is-a-new": "Accepted: it is a new version of the part.",
+  "document.accepted-this-document-now-shows": "Accepted: this document now shows the new version. Undo in the outline takes it back.",
+  "document.accepted-this-document-still-shows": "Accepted: it is a new version of the part. This document still shows the version it had.",
   "document.kept-as-a-suggestion-marked": "Kept as a suggestion, marked generated, for review.",
   "document.discarded": "Discarded.",
   "document.it-could-not-be-done": "It could not be done.",

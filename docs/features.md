@@ -801,7 +801,9 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   own version, taken back with `Ctrl+Z` - after which the text and the label show what you chose.
   Where a component is pinned below a newer version you may read, its text says so - "Version 0.3 is
   newer than the 0.2 pinned here" - with **Compare 0.2 with 0.3**, which shows what changed between
-  them as a redline in place.
+  them as a redline in place. Accepting the assistant's edit of a pinned component moves the pin to the
+  version it made, which Undo in the outline takes back; where you may not change the document the pin
+  stays, and the proposal says so.
 
   **This is the document as it is written, not as it is paginated.** The page shows the outline you
   build beside the text in reading order, set in the document's theme, and in Authoring each
