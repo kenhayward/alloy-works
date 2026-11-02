@@ -279,7 +279,7 @@ const groupName = (group: (typeof GROUPS)[number]): string =>
 
 /** The section an address names: Overview for `#/admin` and for anything it does not know. */
 export function sectionOf(hash: string): Section {
-  const slug = /^#\/admin\/([a-z]+)$/.exec(hash)?.[1];
+  const slug = /^#\/admin\/([a-z-]+)$/.exec(hash)?.[1];
   return SECTIONS.find((each) => each.slug === slug)?.slug ?? 'overview';
 }
 

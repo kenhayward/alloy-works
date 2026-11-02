@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Administration } from './Administration.js';
+import { Administration, sectionOf } from './Administration.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -966,6 +966,20 @@ describe("Administration's Overview, Roles and About", () => {
       await screen.findByRole('heading', { name: `What changed in ${notes.version}` }),
     ).toBeInTheDocument();
     expect(screen.getByText(notes.sections[0]!.items[0]!.title)).toBeInTheDocument();
+  });
+});
+
+describe('the section an address names', () => {
+  it('opens a section whose name has a hyphen in it', () => {
+    expect(sectionOf('#/admin/citation-styles')).toBe('citation-styles');
+    expect(sectionOf('#/admin/reference-sources')).toBe('reference-sources');
+    expect(sectionOf('#/admin/sign-in')).toBe('sign-in');
+  });
+
+  it('opens Overview for an address it does not know', () => {
+    expect(sectionOf('#/admin')).toBe('overview');
+    expect(sectionOf('#/admin/nothing-here')).toBe('overview');
+    expect(sectionOf('#/admin/people/more')).toBe('overview');
   });
 });
 
