@@ -340,9 +340,13 @@ describe('the theme every environment starts with', () => {
     }
   });
 
-  it('gives the runtime role no update, delete or truncate on the declaration', async () => {
+  it('gives the runtime role update of the declared theme alone, and no delete or truncate', async () => {
+    // Declaring a theme the environment's is the runtime's since 0185 (the SY plan, SY-G).
+    await service.withTenant(acme, (trx) =>
+      sql`update theme_default set theme_id = ${DEFAULT_THEME_ID}, set_at = now()`.execute(trx),
+    );
     for (const statement of [
-      sql`update theme_default set theme_id = ${DEFAULT_THEME_ID}`,
+      sql`update theme_default set theme_kind = 'theme'`,
       sql`delete from theme_default`,
       sql`truncate theme_default`,
     ]) {
