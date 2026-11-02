@@ -6,7 +6,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import { migrate } from './migrate.js';
 import { createTenant, provisionTenant, type Tenant } from './provision.js';
-import { createRole } from './roles.js';
 import type { TenantDatabase } from './tenant-database.js';
 import {
   freshDatabase,
@@ -90,8 +89,11 @@ describe('migration 0058, which starts every environment with Query builder and 
     // rows it made: today's seed records its grants on the audit log, which comes with 0060.
     const development = await beforeRoles('Development');
     await service.withTenant(development, async (trx) => {
-      const made = await createRole(trx, 'Query builder', ['read', 'use_connection']);
-      if (!('role' in made)) throw new Error(`Query builder was refused: ${made.refused}`);
+      const made = await trx
+        .insertInto('role')
+        .values({ name: 'Query builder', permissions: ['read', 'use_connection'] })
+        .returning('id')
+        .executeTakeFirstOrThrow();
       const grace = await trx
         .insertInto('principal')
         .values({ issuer: ISSUER, subject: 'grace', display_name: 'Grace' })
@@ -106,7 +108,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       await trx
         .insertInto('access_grant')
         .values({
-          role_id: made.role.id,
+          role_id: made.id,
           principal_id: grace.id,
           level: 'space',
           space_id: general.id,
@@ -120,7 +122,9 @@ describe('migration 0058, which starts every environment with Query builder and 
 
     // Another made its own Query writer, holding less.
     const own = await beforeRoles('Own');
-    await service.withTenant(own, (trx) => createRole(trx, 'Query writer', ['read']));
+    await service.withTenant(own, (trx) =>
+      trx.insertInto('role').values({ name: 'Query writer', permissions: ['read'] }).execute(),
+    );
     const made = await queryRoles(own);
 
     const applied = (await migrate(db.migratorUrl)).tenants;
