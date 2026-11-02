@@ -64,6 +64,7 @@ The tenant comes from the hostname, so address it as one. `curl` can say it outr
 curl -H "Host: dev.acme.localhost" http://127.0.0.1:8088/v1/tenant
 ```
 
+In the whole stack, [Keycloak can take the stand-in's place](../deploy/README.md#keycloak-in-place-of-the-stand-in-composekeycloakyaml).
 Signing in needs the stand-in provider running beside it, which offers invented people to sign in
 as:
 
