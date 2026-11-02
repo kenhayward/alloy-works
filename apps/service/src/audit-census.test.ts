@@ -537,6 +537,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getStyleImpact: read,
   createTheme: writes('content.version_cut'),
   renameTheme: writes('content.version_cut'),
+  allowThemeStyles: writes('content.version_cut'),
   declareTheme: writes('theme.declared'),
   listPeople: read,
   search: read,

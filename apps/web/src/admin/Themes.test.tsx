@@ -253,4 +253,69 @@ describe("Administration's Document themes (the SY plan, SY-F)", () => {
       screen.queryByRole('button', { name: "Use as the environment's default" }),
     ).not.toBeInTheDocument();
   });
+
+  it('STY-029 changes a character style without a release, its sample set as the editor sets the mark', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    const characters = await screen.findByRole('table', { name: 'Character styles' });
+    await user.click(within(characters).getByRole('button', { name: 'Edit Inline code' }));
+    const form = await screen.findByRole('form', { name: 'Character style Inline code' });
+    expect(within(row(form, 'Scale')).getByRole('spinbutton', { name: 'Scale' })).toHaveValue(0.8);
+    expect(within(row(form, 'Bold')).getByText('From the text it stands in')).toBeInTheDocument();
+
+    await user.click(within(row(form, 'Bold')).getByRole('button', { name: 'Set here' }));
+    await user.click(within(row(form, 'Bold')).getByRole('checkbox', { name: 'Bold' }));
+    const sample = within(form).getByTestId('style-sample');
+    expect(sample.querySelector('.aw-mark-inlineCode .aw-mark-run')).not.toBeNull();
+    expect(sample.querySelector('style')!.textContent).toContain('.aw-mark-inlineCode');
+
+    await user.click(within(form).getByRole('button', { name: 'Save style' }));
+    const asked = await screen.findByRole('dialog', { name: 'Save Inline code?' });
+    await user.click(within(asked).getByRole('button', { name: 'Save' }));
+    const put = sent.find((each) => each.method === 'PUT')!;
+    expect(put.path).toBe(`/v1/themes/${THEME}/styles/character/inline-code`);
+    expect(put.body!['style']).toEqual({
+      id: 'inline-code',
+      name: 'Inline code',
+      mark: 'inlineCode',
+      properties: { typeface: 'mono', scale: 0.8, bold: true },
+    });
+    expect(
+      sent.find((each) => each.path === `/v1/themes/${THEME}/impact`)!.body,
+    ).toEqual({ kind: 'character', style: 'inline-code' });
+  });
+
+  it('STY-033 narrows the styles offered to authors, listing first the documents using what it drops', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    const offered = await screen.findByRole('group', { name: 'Paragraph styles offered' });
+    expect(within(offered).getByRole('radio', { name: 'Every style' })).toBeChecked();
+    await user.click(within(offered).getByRole('radio', { name: 'Only these' }));
+    await user.click(within(offered).getByRole('checkbox', { name: 'Quotation' }));
+    await user.click(screen.getByRole('button', { name: 'Save offered styles' }));
+
+    const asked = await screen.findByRole('dialog', { name: 'Save the offered styles?' });
+    expect(within(asked).getByText('Flush the line')).toBeInTheDocument();
+    expect(sent.find((each) => each.path === `/v1/themes/${THEME}/impact`)!.body).toEqual({
+      kind: 'paragraph',
+      style: 'quotation',
+    });
+    await user.click(within(asked).getByRole('button', { name: 'Save' }));
+    const put = sent.find((each) => each.path === `/v1/themes/${THEME}/allowed`)!;
+    const paragraphs = (
+      view.catalogues.find((each) => (each.content as { kind: string }).kind === 'paragraph')!
+        .content as { styles: { id: string }[] }
+    ).styles.map((each) => each.id);
+    expect(put.body).toEqual({
+      openedFrom: 'tv1',
+      allowed: { paragraph: paragraphs.filter((id) => id !== 'quotation') },
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent('The offered styles saved: Default 0.12');
+  });
 });

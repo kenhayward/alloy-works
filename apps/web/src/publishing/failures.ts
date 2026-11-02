@@ -428,6 +428,9 @@ export function failureWords(failure: Failure, wordOffered = false): string {
     // wrote, never the author's text; the block is named by where it is, as for `style_missing`.
     case 'style_not_applicable':
       return words('publishing.this-paragraph-table-or-figure-2', { value1: failure.detail ?? '' });
+    // The SY plan, SY-H (STY-033): the theme allows authors fewer styles than its catalogue holds.
+    case 'style_not_allowed':
+      return words('publishing.style-not-allowed', { value1: failure.detail ?? '' });
     // Themes 1 (STY-042): the theme records each typeface's licence, and this one's forbids embedding
     // it in a PDF, or since Word 1 in a Word document. Nothing in the document caused it and another
     // attempt fails the same way, so it blames the theme, as `layout_glyph_missing` blames the layout,
@@ -927,6 +930,9 @@ export const FAILURE_SUMMARIES: Readonly<Record<PublishFailureCode, string>> = {
   },
   get style_not_applicable() {
     return words('publishing.it-uses-a-style-where');
+  },
+  get style_not_allowed() {
+    return words('publishing.it-uses-a-style-not-allowed');
   },
   get typeface_not_embeddable() {
     return words('publishing.its-theme-uses-a-typeface');

@@ -64,6 +64,16 @@ export const RenameThemeBody = z.strictObject({
 });
 export type RenameThemeBody = z.infer<typeof RenameThemeBody>;
 
+const AllowedIds = z.array(z.string().min(1).max(64)).max(500);
+export const AllowStylesBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe('The theme version the change was made from'),
+  allowed: z
+    .strictObject({ paragraph: AllowedIds, table: AllowedIds, image: AllowedIds })
+    .partial()
+    .describe('The styles authors may choose, by kind; a kind absent allows every style of it'),
+});
+export type AllowStylesBody = z.infer<typeof AllowStylesBody>;
+
 export const DeleteStyleQuery = z.object({
   openedFrom: LowercaseUuid.describe('The theme version the deletion was made from'),
 });
@@ -187,6 +197,17 @@ export const themeRoutes = {
     access: managed,
     params: ThemeParams,
     body: RenameThemeBody,
+    responses: changed,
+  },
+  allowThemeStyles: {
+    operationId: 'allowThemeStyles',
+    method: 'PUT',
+    path: '/v1/themes/{id}/allowed',
+    summary: 'Set the styles a theme allows authors, as its next version',
+    tenantScoped: true,
+    access: managed,
+    params: ThemeParams,
+    body: AllowStylesBody,
     responses: changed,
   },
   declareTheme: {

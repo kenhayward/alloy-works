@@ -546,6 +546,7 @@ const operationTags = {
     'getTheme',
     'createTheme',
     'renameTheme',
+    'allowThemeStyles',
     'declareTheme',
     'saveThemeStyle',
     'deleteThemeStyle',
@@ -1165,6 +1166,8 @@ const descriptions: Readonly<Record<string, string>> = {
     "Makes a theme by copying another under a new name: each of its catalogues is copied into one of the new theme's own, so a style changed in either theme never reaches the other. The copy starts at 0.1. Needs manage definitions at the environment.",
   renameTheme:
     "Renames a theme as its next version, every catalogue bound as it was. `openedFrom` must be the theme's latest version. Needs manage definitions at the environment.",
+  allowThemeStyles:
+    "Sets the paragraph, table and image styles authors may choose in documents set in the theme, as its next version: the editor offers only those, and a publish refuses another as `style_not_allowed`. A kind left out allows every style of it, and a place's or a role's default is always allowed. Refused, with nothing written, when a style named is not in its catalogue. `openedFrom` must be the theme's latest version. Needs manage definitions at the environment.",
   declareTheme:
     "Makes a theme the environment's: every document with no template is set in it from now, at once, and a baseline keeps the theme version it pinned. Audited as `theme.declared`, naming the theme declared before. Needs manage definitions at the environment.",
   saveThemeStyle:

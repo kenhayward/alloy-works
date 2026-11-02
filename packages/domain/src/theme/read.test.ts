@@ -215,6 +215,33 @@ describe('readTheme', () => {
     ]);
   });
 
+  it('STY-033 keeps the styles a theme allows authors, by kind, and refuses one its catalogue does not contain', () => {
+    const inputs = defaultInputs();
+    expect(resolved(inputs).allowed).toEqual({ paragraph: null, table: null, image: null });
+
+    inputs.theme.allowed = { paragraph: ['quotation'], image: ['figure'] };
+    expect(resolved(inputs).allowed).toEqual({
+      paragraph: ['quotation'],
+      table: null,
+      image: ['figure'],
+    });
+
+    inputs.theme.allowed = { paragraph: ['quotation', 'warning'], table: ['grid'] };
+    const outcome = read(inputs);
+    expect(outcome.ok ? [] : outcome.refusals).toEqual([
+      {
+        code: 'style_missing',
+        message:
+          'The theme allows authors the paragraph style warning, which the paragraph catalogue does not contain',
+      },
+      {
+        code: 'style_missing',
+        message:
+          'The theme allows authors the table style grid, which the table catalogue does not contain',
+      },
+    ]);
+  });
+
   it('STY-006 requires every style to declare where it applies, and refuses a place or a role given one that does not apply there', () => {
     // The declaration: a style that says nothing of where it applies does not read.
     const bare: Record<string, unknown> = { ...DEFAULT_CATALOGUES.paragraph.styles[0]! };

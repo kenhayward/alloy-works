@@ -250,4 +250,25 @@ describe('themes through the service (the SY plan, SY-C)', () => {
     // Declared back, so the other tests' documents stand in the default theme.
     await call('grace', 'POST', `/v1/themes/${DEFAULT_THEME_ID}/default`);
   });
+
+  it('STY-033 sets the styles a theme allows authors through the service, refusing one its catalogue lacks', async () => {
+    const made = await call('grace', 'POST', '/v1/themes', {
+      from: DEFAULT_THEME_ID,
+      name: 'House style',
+    });
+    const theme = made.json<{ id: string; version: { id: string } }>();
+    const allowed = await call('grace', 'PUT', `/v1/themes/${theme.id}/allowed`, {
+      openedFrom: theme.version.id,
+      allowed: { paragraph: ['lead'] },
+    });
+    expect(allowed.statusCode, allowed.body).toBe(200);
+    const view = allowed.json<{ version: { id: string }; content: { allowed: unknown } }>();
+    expect(view.content.allowed).toEqual({ paragraph: ['lead'] });
+    const refused = await call('grace', 'PUT', `/v1/themes/${theme.id}/allowed`, {
+      openedFrom: view.version.id,
+      allowed: { table: ['nowhere'] },
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toMatchObject({ code: 'style_refused' });
+  });
 });

@@ -368,6 +368,43 @@ export async function renameTheme(
 }
 
 /**
+ * **The styles a theme allows authors** (STY-033; SY-H), by kind, as its next version: a kind absent
+ * allows every style its catalogue holds, and the reader refuses one the catalogue does not contain.
+ * What a narrowing drops is shown first through `styleImpact`, a style at a time.
+ */
+export async function allowStyles(
+  trx: TenantTransaction,
+  input: {
+    readonly themeId: string;
+    readonly openedFrom: string;
+    readonly allowed: NonNullable<Theme['allowed']>;
+    readonly author: string;
+  },
+): Promise<StyleChangeAnswer> {
+  const theme = await latestVersion(trx, input.themeId);
+  if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
+  const current = await themeLatest(trx, input.themeId);
+  const { allowed: _, ...rest } = current.content;
+  const answer = await addThemeVersion(trx, {
+    artifactId: input.themeId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    theme: Object.keys(input.allowed).length === 0 ? rest : { ...rest, allowed: input.allowed },
+  });
+  switch (answer.answer) {
+    case 'recorded':
+      return { answer: 'recorded', theme: await themeLatest(trx, input.themeId) };
+    case 'version.precondition':
+      return { answer: 'version.precondition', current: answer.current.id };
+    case 'version.unchanged':
+    case 'artifact.missing':
+      return { answer: answer.answer };
+    case 'refused':
+      return answer;
+  }
+}
+
+/**
  * **The environment's theme declared** (STY-072; SY-G): what a document with no template is set in
  * from now, at once, as a style change reaches its documents; audited `theme.declared`, naming the one
  * declared before it.

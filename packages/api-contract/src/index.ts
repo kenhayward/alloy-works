@@ -257,6 +257,7 @@ export {
   CreateThemeBody,
   DeleteStyleQuery,
   RenameThemeBody,
+  AllowStylesBody,
   SaveStyleBody,
   STYLE_KINDS,
   StyleImpactBody,

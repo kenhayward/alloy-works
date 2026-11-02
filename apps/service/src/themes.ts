@@ -1,4 +1,5 @@
 import type {
+  AllowStylesBody,
   CreateThemeBody,
   DeleteStyleQuery,
   RenameThemeBody,
@@ -11,6 +12,7 @@ import type {
   ThemeView,
 } from '@alloy-works/api-contract';
 import {
+  allowStyles,
   declareTheme,
   duplicateTheme,
   latestVersion,
@@ -164,6 +166,19 @@ export function themeHandlers(
         trx,
         id,
         await renameTheme(trx, { themeId: id, openedFrom, name, author: principalId }),
+      );
+    },
+
+    allowThemeStyles: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ThemeView> => {
+      const { id } = request.params as ThemeParams;
+      const { openedFrom, allowed } = request.body as AllowStylesBody;
+      return answered(
+        trx,
+        id,
+        await allowStyles(trx, { themeId: id, openedFrom, allowed, author: principalId }),
       );
     },
 

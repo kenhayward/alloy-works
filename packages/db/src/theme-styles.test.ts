@@ -30,6 +30,7 @@ import {
   duplicateTheme,
   listThemes,
   renameTheme,
+  allowStyles,
   saveStyle,
   styleImpact,
 } from './theme-styles.js';
@@ -403,6 +404,47 @@ describe('styles saved, deleted and weighed (the SY plan, SY-C, SY-D)', () => {
       duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: ' ', author: people.ada }),
     );
     expect(unnamed).toMatchObject({ answer: 'refused', refusals: [{ code: 'theme_malformed' }] });
+  });
+
+  it('STY-033 narrows the styles a theme allows authors as its next version, refusing one its catalogue lacks', async () => {
+    const { as, people } = await environment();
+    const made = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: 'Field manual', author: people.ada }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const id = made.theme.artifactId;
+    const narrowed = await as((trx) =>
+      allowStyles(trx, {
+        themeId: id,
+        openedFrom: made.theme.versionId,
+        allowed: { paragraph: ['lead'], table: ['table'] },
+        author: people.ada,
+      }),
+    );
+    if (narrowed.answer !== 'recorded') throw new Error(narrowed.answer);
+    expect(narrowed.theme.content.allowed).toEqual({ paragraph: ['lead'], table: ['table'] });
+
+    const refused = await as((trx) =>
+      allowStyles(trx, {
+        themeId: id,
+        openedFrom: narrowed.theme.versionId,
+        allowed: { paragraph: ['nowhere'] },
+        author: people.ada,
+      }),
+    );
+    expect(refused).toMatchObject({ answer: 'refused', refusals: [{ code: 'style_missing' }] });
+
+    // Every style allowed again: the theme names no list.
+    const widened = await as((trx) =>
+      allowStyles(trx, {
+        themeId: id,
+        openedFrom: narrowed.theme.versionId,
+        allowed: {},
+        author: people.ada,
+      }),
+    );
+    if (widened.answer !== 'recorded') throw new Error(widened.answer);
+    expect(widened.theme.content).not.toHaveProperty('allowed');
   });
 
   it('STY-072 renames a theme as its next version, and declares it the environment’s, audited', async () => {

@@ -4,6 +4,7 @@ import {
   projectCss,
   projectFontFaces,
   readTheme,
+  type CharacterStyle,
   type ParagraphStyle,
   type ResolvedParagraphProperties,
   type ThemeRefusal,
@@ -37,8 +38,21 @@ interface ParagraphCatalogue {
   readonly styles: readonly ParagraphStyle[];
 }
 
+interface CharacterCatalogue {
+  readonly kind: 'character';
+  readonly styles: readonly CharacterStyle[];
+}
+
 type Key = keyof ResolvedParagraphProperties;
-type Control = 'number' | 'check' | 'colour' | 'fill' | 'typeface' | 'alignment';
+type Control =
+  | 'number'
+  | 'fraction'
+  | 'check'
+  | 'colour'
+  | 'fill'
+  | 'typeface'
+  | 'alignment'
+  | 'position';
 
 /** Every paragraph property, in the order the form sets them, with its control and its name. */
 const PROPERTIES: readonly (readonly [Key, Control, WordKey])[] = [
@@ -63,6 +77,31 @@ const PROPERTIES: readonly (readonly [Key, Control, WordKey])[] = [
   ['contextualSpacing', 'check', 'admin.style-contextual-spacing'],
 ];
 const ALIGNMENTS = ['start', 'end', 'centre', 'justify'] as const;
+const POSITIONS = ['subscript', 'superscript'] as const;
+
+type CharacterKey = keyof CharacterStyle['properties'];
+
+/** Every character property, in the order the form sets them; each absent one is the run's around it. */
+const CHARACTER_PROPERTIES: readonly (readonly [CharacterKey, Control, WordKey])[] = [
+  ['typeface', 'typeface', 'admin.style-typeface'],
+  ['scale', 'fraction', 'admin.style-scale'],
+  ['bold', 'check', 'admin.style-bold'],
+  ['italic', 'check', 'admin.style-italic'],
+  ['underline', 'check', 'admin.style-underline'],
+  ['colour', 'colour', 'admin.style-colour'],
+  ['position', 'position', 'admin.style-position'],
+];
+
+/** What a property starts at when it is set here; a typeface and a colour, the paragraphs' base. */
+const CHARACTER_START: Readonly<
+  Record<Exclude<CharacterKey, 'typeface' | 'colour'>, string | boolean>
+> = {
+  scale: '1',
+  bold: false,
+  italic: false,
+  underline: false,
+  position: 'superscript',
+};
 
 /** A style being edited: what it states, each value as its control holds it. */
 interface Draft {
@@ -308,6 +347,14 @@ function ThemeStyles({
   const catalogue = theme.catalogues.find((each) => each.versionId === paragraphVersion)!
     .content as ParagraphCatalogue;
   const names = new Map(catalogue.styles.map((style) => [style.id, style.name]));
+  const characterVersion = theme.content.catalogues['character']!;
+  const characters = theme.catalogues.find((each) => each.versionId === characterVersion)!
+    .content as CharacterCatalogue;
+  const [character, setCharacter] = useState<CharacterStyle | null>(null);
+  const saved = (next: ThemeView, message: string) => {
+    setCharacter(null);
+    onSaved(next, message);
+  };
   return (
     <section aria-labelledby="theme-styles">
       <h2 id="theme-styles">{theme.name}</h2>
@@ -335,7 +382,8 @@ function ThemeStyles({
                 <button
                   type="button"
                   aria-label={words('admin.edit', { name: style.name })}
-                  onClick={() =>
+                  onClick={() => {
+                    setCharacter(null);
                     setDraft({
                       isNew: false,
                       id: style.id,
@@ -343,8 +391,8 @@ function ThemeStyles({
                       basedOn: style.basedOn ?? '',
                       appliesTo: style.appliesTo,
                       stated: asStated(style.properties),
-                    })
-                  }
+                    });
+                  }}
                 >
                   {words('admin.edit-2')}
                 </button>
@@ -355,9 +403,10 @@ function ThemeStyles({
       </table>
       <button
         type="button"
-        onClick={() =>
-          setDraft({ isNew: true, id: '', name: '', basedOn: '', appliesTo: ['text'], stated: {} })
-        }
+        onClick={() => {
+          setCharacter(null);
+          setDraft({ isNew: true, id: '', name: '', basedOn: '', appliesTo: ['text'], stated: {} });
+        }}
       >
         {words('admin.add-paragraph-style')}
       </button>
@@ -369,10 +418,54 @@ function ThemeStyles({
           catalogue={catalogue}
           draft={draft}
           setDraft={setDraft}
-          onSaved={onSaved}
+          onSaved={saved}
           onSaid={onSaid}
         />
       )}
+      <table aria-label={words('admin.character-styles')} className={styles['table']}>
+        <thead>
+          <tr>
+            <th scope="col">{words('admin.name')}</th>
+            <th scope="col">
+              <span className={styles['hidden']}>{words('admin.actions')}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {characters.styles.map((style) => (
+            <tr key={style.id}>
+              <th scope="row" data-content>
+                {style.name}
+              </th>
+              <td>
+                <button
+                  type="button"
+                  aria-label={words('admin.edit', { name: style.name })}
+                  onClick={() => {
+                    setDraft(null);
+                    setCharacter(style);
+                  }}
+                >
+                  {words('admin.edit-2')}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {character !== null && (
+        <CharacterForm
+          key={character.id}
+          client={client}
+          theme={theme}
+          catalogue={characters}
+          style={character}
+          setStyle={setCharacter}
+          onSaved={saved}
+          onSaid={onSaid}
+        />
+      )}
+      <OfferedStyles key={theme.version.id} client={client} theme={theme} onSaved={saved} onSaid={onSaid} />
     </section>
   );
 }
@@ -394,11 +487,7 @@ function StyleForm({
   onSaved: (theme: ThemeView, message: string) => void;
   onSaid: (message: string) => void;
 }) {
-  const asking = useId();
-  const [impact, setImpact] = useState<{
-    documents: readonly { id: string; title: string }[];
-    unreadable: number;
-  } | null>(null);
+  const [impact, setImpact] = useState<Impact | null>(null);
   const [deleting, setDeleting] = useState(false);
   const style = styleOf(draft);
   const shownName = draft.name.trim() === '' ? draft.id : draft.name;
@@ -613,37 +702,12 @@ function StyleForm({
         </div>
       </div>
       {impact !== null && (
-        <Modal labelledBy={asking} size="dialog" onClose={() => setImpact(null)}>
-          <h2 id={asking}>{words('admin.save-style-question', { name: shownName })}</h2>
-          <p>
-            {impact.documents.length + impact.unreadable === 0
-              ? words('admin.style-reaches-nothing')
-              : words('admin.style-reaches', {
-                  count: impact.documents.length + impact.unreadable,
-                })}
-          </p>
-          {impact.documents.length > 0 && (
-            // Scrolled where long, so the keyboard reaches it too.
-            <ul className={own['reach']} tabIndex={0} aria-label={words('admin.style-reach')}>
-              {impact.documents.map((each) => (
-                <li key={each.id} data-content>
-                  {each.title}
-                </li>
-              ))}
-            </ul>
-          )}
-          {impact.unreadable > 0 && (
-            <p>{words('admin.style-reaches-unreadable', { count: impact.unreadable })}</p>
-          )}
-          <div className={own['actions']}>
-            <button type="button" data-autofocus onClick={() => setImpact(null)}>
-              {words('admin.cancel')}
-            </button>
-            <button type="button" className="primary" onClick={() => void save()}>
-              {words('admin.save')}
-            </button>
-          </div>
-        </Modal>
+        <Reach
+          question={words('admin.save-style-question', { name: shownName })}
+          impact={impact}
+          onCancel={() => setImpact(null)}
+          onSave={() => void save()}
+        />
       )}
       {deleting && (
         <ConfirmDialog
@@ -653,6 +717,387 @@ function StyleForm({
           act={words('admin.delete')}
           onKeep={() => setDeleting(false)}
           onAct={remove}
+        />
+      )}
+    </form>
+  );
+}
+
+/** The documents a style change reaches, as `POST /v1/themes/{id}/impact` answers. */
+interface Impact {
+  readonly documents: readonly { readonly id: string; readonly title: string }[];
+  readonly unreadable: number;
+}
+
+/** The reach of a change, asked before it is saved (STY-034, STY-067). */
+function Reach({
+  question,
+  impact,
+  onCancel,
+  onSave,
+}: {
+  question: string;
+  impact: Impact;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  const asking = useId();
+  return (
+    <Modal labelledBy={asking} size="dialog" onClose={onCancel}>
+      <h2 id={asking}>{question}</h2>
+      <p>
+        {impact.documents.length + impact.unreadable === 0
+          ? words('admin.style-reaches-nothing')
+          : words('admin.style-reaches', {
+              count: impact.documents.length + impact.unreadable,
+            })}
+      </p>
+      {impact.documents.length > 0 && (
+        // Scrolled where long, so the keyboard reaches it too.
+        <ul className={own['reach']} tabIndex={0} aria-label={words('admin.style-reach')}>
+          {impact.documents.map((each) => (
+            <li key={each.id} data-content>
+              {each.title}
+            </li>
+          ))}
+        </ul>
+      )}
+      {impact.unreadable > 0 && (
+        <p>{words('admin.style-reaches-unreadable', { count: impact.unreadable })}</p>
+      )}
+      <div className={own['actions']}>
+        <button type="button" data-autofocus onClick={onCancel}>
+          {words('admin.cancel')}
+        </button>
+        <button type="button" className="primary" onClick={onSave}>
+          {words('admin.save')}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+/** The kinds of style a theme may narrow what authors are offered of (STY-033). */
+const OFFERED_KINDS = ['paragraph', 'table', 'image'] as const;
+type OfferedKind = (typeof OFFERED_KINDS)[number];
+type Offered = Partial<Record<OfferedKind, string[]>>;
+
+/**
+ * **The styles offered to authors** (the SY plan, SY-H; STY-033): by kind, every style or only those
+ * chosen. Saving first lists the documents using a style it drops, as a style change does (SY-D).
+ */
+function OfferedStyles({
+  client,
+  theme,
+  onSaved,
+  onSaid,
+}: {
+  client: Client;
+  theme: ThemeView;
+  onSaved: (theme: ThemeView, message: string) => void;
+  onSaid: (message: string) => void;
+}) {
+  const named = useId();
+  const listed = (kind: OfferedKind) =>
+    (
+      theme.catalogues.find((each) => each.versionId === theme.content.catalogues[kind])!
+        .content as { styles: readonly { id: string; name: string }[] }
+    ).styles;
+  const stated = (theme.content['allowed'] as Offered | undefined) ?? {};
+  const [offered, setOffered] = useState<Offered>(stated);
+  const [impact, setImpact] = useState<Impact | null>(null);
+  const changed = JSON.stringify(offered) !== JSON.stringify(stated);
+  const offer = (kind: OfferedKind, ids: string[] | undefined) => {
+    const next = { ...offered };
+    if (ids === undefined) delete next[kind];
+    else next[kind] = ids;
+    setOffered(next);
+  };
+
+  const weigh = async () => {
+    const dropped = OFFERED_KINDS.flatMap((kind) => {
+      const now = offered[kind];
+      if (now === undefined) return [];
+      const before = stated[kind] ?? listed(kind).map((each) => each.id);
+      return before.filter((id) => !now.includes(id)).map((style) => ({ kind, style }));
+    });
+    const answers = await Promise.all(
+      dropped.map((body) =>
+        client.POST('/v1/themes/{id}/impact', { params: { path: { id: theme.id } }, body }),
+      ),
+    );
+    const failed = answers.find((each) => !each.data);
+    if (failed) return onSaid(refusal(failed.error, words('admin.offered-could-not-be-saved')));
+    const documents = new Map<string, { id: string; title: string }>();
+    for (const each of answers) for (const one of each.data!.documents) documents.set(one.id, one);
+    setImpact({
+      documents: [...documents.values()],
+      unreadable: Math.max(0, ...answers.map((each) => each.data!.unreadable)),
+    });
+  };
+  const save = async () => {
+    setImpact(null);
+    const { data, error } = await client.PUT('/v1/themes/{id}/allowed', {
+      params: { path: { id: theme.id } },
+      body: { openedFrom: theme.version.id, allowed: offered },
+    });
+    if (!data) return onSaid(refusal(error, words('admin.offered-could-not-be-saved')));
+    onSaved(
+      data as unknown as ThemeView,
+      words('admin.offered-saved', { theme: data.name, number: data.version.number }),
+    );
+  };
+
+  return (
+    <section aria-labelledby={named}>
+      <h3 id={named}>{words('admin.offered-to-authors')}</h3>
+      <p>{words('admin.offered-lead')}</p>
+      {OFFERED_KINDS.map((kind) => {
+        const only = offered[kind];
+        return (
+          <fieldset key={kind} className={own['offered']}>
+            <legend>{words(`admin.offered-${kind}` as WordKey)}</legend>
+            <label>
+              <input
+                type="radio"
+                name={`${named}-${kind}`}
+                checked={only === undefined}
+                onChange={() => offer(kind, undefined)}
+              />
+              {words('admin.offered-every')}
+            </label>
+            <label>
+              <input
+                type="radio"
+                name={`${named}-${kind}`}
+                checked={only !== undefined}
+                onChange={() => offer(kind, listed(kind).map((each) => each.id))}
+              />
+              {words('admin.offered-only')}
+            </label>
+            {only !== undefined && (
+              <div className={own['choices']}>
+                {listed(kind).map((style) => (
+                  <label key={style.id} data-content>
+                    <input
+                      type="checkbox"
+                      checked={only.includes(style.id)}
+                      onChange={(change) =>
+                        offer(
+                          kind,
+                          change.target.checked
+                            ? listed(kind)
+                                .map((each) => each.id)
+                                .filter((id) => id === style.id || only.includes(id))
+                            : only.filter((id) => id !== style.id),
+                        )
+                      }
+                    />
+                    {style.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
+        );
+      })}
+      <div className={own['actions']}>
+        <button type="button" className="primary" disabled={!changed} onClick={() => void weigh()}>
+          {words('admin.offered-save')}
+        </button>
+      </div>
+      {impact !== null && (
+        <Reach
+          question={words('admin.offered-save-question')}
+          impact={impact}
+          onCancel={() => setImpact(null)}
+          onSave={() => void save()}
+        />
+      )}
+    </section>
+  );
+}
+
+/**
+ * A character style's form (the SY plan, SY-F): one mark's look, each property stated here or left
+ * to the text it stands in, beside a paragraph with the mark in it, set by the editor's CSS.
+ */
+function CharacterForm({
+  client,
+  theme,
+  catalogue,
+  style,
+  setStyle,
+  onSaved,
+  onSaid,
+}: {
+  client: Client;
+  theme: ThemeView;
+  catalogue: CharacterCatalogue;
+  style: CharacterStyle;
+  setStyle: (style: CharacterStyle | null) => void;
+  onSaved: (theme: ThemeView, message: string) => void;
+  onSaid: (message: string) => void;
+}) {
+  const [impact, setImpact] = useState<Impact | null>(null);
+  const version = theme.content.catalogues['character']!;
+  // The scale as the catalogue holds it, a number, for the reader to judge.
+  const proposed = useMemo<CharacterStyle>(() => {
+    const scale = style.properties.scale as number | string | undefined;
+    return {
+      ...style,
+      properties: {
+        ...style.properties,
+        ...(typeof scale === 'string' ? { scale: Number(scale) } : {}),
+      },
+    };
+  }, [style]);
+  const read = useMemo(
+    () =>
+      readTheme(
+        theme.content,
+        new Map(
+          theme.catalogues.map((each) => [
+            each.versionId,
+            each.versionId === version
+              ? {
+                  ...catalogue,
+                  styles: catalogue.styles.map((one) => (one.id === style.id ? proposed : one)),
+                }
+              : each.content,
+          ]),
+        ),
+      ),
+    [theme, catalogue, proposed, style.id, version],
+  );
+  const css = read.ok
+    ? projectFontFaces(read.theme, faceUrl).css + projectCss(read.theme, { capHeight })
+    : '';
+  const paragraphs = theme.content.catalogues['paragraph']!;
+  const { base } = theme.catalogues.find((each) => each.versionId === paragraphs)!
+    .content as ParagraphCatalogue;
+  const faces = (
+    (theme.content['typefaces'] as readonly { id: string }[] | undefined) ?? []
+  ).map((each) => each.id);
+  const place = (key: CharacterKey, value: string | boolean | undefined) => {
+    const properties: Record<string, unknown> = { ...style.properties };
+    if (value === undefined) delete properties[key];
+    else properties[key] = value;
+    setStyle({ ...style, properties: properties as CharacterStyle['properties'] });
+  };
+
+  const weigh = async (event: FormEvent) => {
+    event.preventDefault();
+    const { data, error } = await client.POST('/v1/themes/{id}/impact', {
+      params: { path: { id: theme.id } },
+      body: { kind: 'character', style: style.id },
+    });
+    if (!data) return onSaid(refusal(error, words('admin.style-could-not-be-saved')));
+    setImpact(data);
+  };
+  const save = async () => {
+    setImpact(null);
+    const { data, error } = await client.PUT('/v1/themes/{id}/styles/{kind}/{style}', {
+      params: { path: { id: theme.id, kind: 'character', style: style.id } },
+      body: { openedFrom: theme.version.id, style: proposed as unknown as Record<string, unknown> },
+    });
+    if (!data) return onSaid(refusal(error, words('admin.style-could-not-be-saved')));
+    onSaved(
+      data as unknown as ThemeView,
+      words('admin.style-saved', {
+        name: style.name,
+        theme: data.name,
+        number: data.version.number,
+      }),
+    );
+  };
+
+  return (
+    <form
+      aria-label={words('admin.character-style-named', { name: style.name })}
+      onSubmit={(event) => void weigh(event)}
+      noValidate
+    >
+      <div className={own['editor']}>
+        <div>
+          {CHARACTER_PROPERTIES.map(([key, control, label]) => {
+            const stated = style.properties[key] as string | number | boolean | undefined;
+            const name = words(label);
+            return (
+              <fieldset key={key} className={own['property']}>
+                <legend>{name}</legend>
+                {stated === undefined ? (
+                  <>
+                    <span className={own['from']}>{words('admin.style-from-the-text')}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        place(
+                          key,
+                          key === 'typeface' || key === 'colour' ? base[key] : CHARACTER_START[key],
+                        )
+                      }
+                    >
+                      {words('admin.style-set-here')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Field
+                      control={control}
+                      label={name}
+                      value={typeof stated === 'number' ? String(stated) : stated}
+                      typefaces={faces}
+                      onChange={(value) => place(key, value)}
+                    />
+                    <span className={own['from']}>{words('admin.style-set-here-said')}</span>
+                    <button type="button" onClick={() => place(key, undefined)}>
+                      {words('admin.style-use-inherited')}
+                    </button>
+                  </>
+                )}
+              </fieldset>
+            );
+          })}
+        </div>
+        <div className={own['side']}>
+          <div className={own['sample']} data-testid="style-sample">
+            {css !== '' && <style>{css}</style>}
+            <div className="aw-canvas">
+              <p data-style="body" data-place="text">
+                {words('admin.style-sample-before')}{' '}
+                <span className={`aw-mark-${style.mark}`}>
+                  <span className="aw-mark-below">
+                    <span className="aw-mark-run">{words('admin.style-sample-marked')}</span>
+                  </span>
+                </span>{' '}
+                {words('admin.style-sample-after')}
+              </p>
+            </div>
+          </div>
+          {!read.ok && (
+            <ul role="alert">
+              {read.refusals.map((each) => (
+                <li key={each.code + each.message}>{each.message}</li>
+              ))}
+            </ul>
+          )}
+          <div className={own['actions']}>
+            <button type="submit" className="primary" disabled={!read.ok}>
+              {words('admin.save-style')}
+            </button>
+            <button type="button" onClick={() => setStyle(null)}>
+              {words('admin.cancel')}
+            </button>
+          </div>
+        </div>
+      </div>
+      {impact !== null && (
+        <Reach
+          question={words('admin.save-style-question', { name: style.name })}
+          impact={impact}
+          onCancel={() => setImpact(null)}
+          onSave={() => void save()}
         />
       )}
     </form>
@@ -690,8 +1135,9 @@ function Field({
       />
     );
   }
-  if (control === 'typeface' || control === 'alignment') {
-    const options = control === 'typeface' ? typefaces : ALIGNMENTS;
+  if (control === 'typeface' || control === 'alignment' || control === 'position') {
+    const options =
+      control === 'typeface' ? typefaces : control === 'alignment' ? ALIGNMENTS : POSITIONS;
     return (
       <select
         aria-label={label}
@@ -700,7 +1146,11 @@ function Field({
       >
         {options.map((each) => (
           <option key={each} value={each}>
-            {control === 'alignment' ? words(`admin.style-align-${each}` as WordKey) : each}
+            {control === 'alignment'
+              ? words(`admin.style-align-${each}` as WordKey)
+              : control === 'position'
+                ? words(`admin.style-position-${each}` as WordKey)
+                : each}
           </option>
         ))}
       </select>
@@ -709,7 +1159,7 @@ function Field({
   return (
     <input
       aria-label={label}
-      {...(control === 'number' ? { type: 'number', step: 'any' } : {})}
+      {...(control === 'number' || control === 'fraction' ? { type: 'number', step: 'any' } : {})}
       value={String(value)}
       onChange={(change) => onChange(change.target.value)}
     />

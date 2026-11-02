@@ -1473,6 +1473,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { openedFrom: MISSING, name: 'Probe' },
     }),
+    allowThemeStyles: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/allowed`,
+      status: 404,
+      payload: { openedFrom: MISSING, allowed: {} },
+    }),
     declareTheme: () => ({
       url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/default`,
       status: 404,

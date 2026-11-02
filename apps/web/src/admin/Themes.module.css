@@ -103,3 +103,18 @@
 .naming h2 {
   margin: 0;
 }
+
+/* The styles offered to authors, a kind at a time (SY-H). */
+.offered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8, 8px) var(--space-16, 16px);
+  margin-block-end: var(--space-12, 12px);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8, 8px) var(--space-16, 16px);
+  flex-basis: 100%;
+}
