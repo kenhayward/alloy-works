@@ -258,6 +258,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0183_conversation_kept',
       '0184_asset_replacement',
       '0185_themes_of_their_own',
+      '0186_model_run_limits',
     ]);
 
     // The component and its version are as they were.
@@ -507,6 +508,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0183_conversation_kept',
       '0184_asset_replacement',
       '0185_themes_of_their_own',
+      '0186_model_run_limits',
     ]);
 
     const { rows } = await queryAs(

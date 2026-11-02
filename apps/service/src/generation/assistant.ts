@@ -65,6 +65,7 @@ import {
   componentAsText,
   isAssistantTool,
   parseContentDocument,
+  runLimitsOf,
   toolInputSchemas,
   type ContentDocument,
   type ModelMessage,
@@ -106,13 +107,13 @@ const sourcesOn = async (trx: TenantTransaction) =>
  */
 
 /**
- * The run's limits (G2-B): within the stream's five minutes. A hundred tool calls over as many as forty
- * model turns, so a run editing many parts is held by its time, not its count (issue #870).
+ * The run's limits (G2-B): ten minutes, and the turns and tool calls its model allows, forty and a
+ * hundred where it names none (issue #872). The answer's stream has no lifetime of its own.
  */
 export const ASSISTANT_LIMITS = {
   turns: 40,
   toolCalls: 100,
-  runMs: 240_000,
+  runMs: 600_000,
   maxTokens: 4096,
 } as const;
 
@@ -935,7 +936,7 @@ export function assistantHandlers(
         system: ASSISTANT_INSTRUCTIONS,
         tools: withReferenceSources(ASSISTANT_TOOLS, await sourcesOn(trx)),
         messages: [first],
-        limits: ASSISTANT_LIMITS,
+        limits: { ...ASSISTANT_LIMITS, ...runLimitsOf(endpoint) },
         tool: (run) => tools(request, id, principalId, run),
         ended: (said, read) => {
           const cited = citationsIn(said);
@@ -1177,7 +1178,7 @@ export function assistantHandlers(
           sources,
         ),
         messages: [...earlier, { role: 'user', content: [{ type: 'text', text: words }] }],
-        limits: ASSISTANT_LIMITS,
+        limits: { ...ASSISTANT_LIMITS, ...runLimitsOf(endpoint) },
         tool: (run) =>
           document === null
             ? looseTools(request, principalId, run)

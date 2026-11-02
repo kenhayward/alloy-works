@@ -313,6 +313,26 @@ describe('model endpoints through the service (the G1 plan)', () => {
     }
   });
 
+  it("keeps a model's turns and tool calls a run, none where unsaid, and refuses them out of bounds (issue #872)", async () => {
+    expect(await make({ name: 'Unsaid' })).not.toHaveProperty('turnsPerRun');
+    const made = await make({ name: 'Long runs', turnsPerRun: 80, toolCallsPerRun: 400 });
+    expect(made).toMatchObject({ turnsPerRun: 80, toolCallsPerRun: 400 });
+    for (const [setting, value] of [
+      ['turnsPerRun', 0],
+      ['turnsPerRun', 101],
+      ['toolCallsPerRun', 0],
+      ['toolCallsPerRun', 501],
+    ] as const) {
+      const refused = await h.call(
+        'ada',
+        'POST',
+        '/v1/model-endpoints',
+        endpoint({ name: `${setting} ${value}`, [setting]: value }),
+      );
+      expect(refused.statusCode, `${setting} ${value}`).toBe(400);
+    }
+  });
+
   it('routes an embedding model to embedding alone, and an LLM to everything else', async () => {
     const embedder = await keyed({
       name: 'Embedder',

@@ -275,6 +275,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0183_conversation_kept',
       '0184_asset_replacement',
       '0185_themes_of_their_own',
+      '0186_model_run_limits',
     ]);
     const kept = await queryAs(
       db.adminUrl,

@@ -299,6 +299,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0183_conversation_kept',
       '0184_asset_replacement',
       '0185_themes_of_their_own',
+      '0186_model_run_limits',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

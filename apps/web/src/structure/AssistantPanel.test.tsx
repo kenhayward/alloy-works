@@ -400,6 +400,23 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         /^You have started as many model runs this hour as you may\. One is free again at /,
       ),
     ).not.toHaveTextContent('In English');
+    rerender(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        onCite={() => {}}
+        stream={failing({ code: 'turns_spent' })}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Once more.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    expect(
+      await screen.findByText(
+        'The assistant took all the turns its model allows. Ask again, or raise its Turns a run on Models.',
+      ),
+    ).toBeVisible();
   });
 
   it('GEN-011 links each citation it kept to the part it names, and says when one was left out', async () => {

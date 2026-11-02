@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { MODEL_TIMEOUT_SECONDS } from '@alloy-works/domain';
+import { MODEL_TIMEOUT_SECONDS, MODEL_TOOL_CALLS, MODEL_TURNS } from '@alloy-works/domain';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
@@ -29,6 +29,9 @@ interface Endpoint {
   readonly kind: 'llm' | 'embedding';
   /** How long one call may take; absent, the default (`MODEL_TIMEOUT_SECONDS`). */
   readonly timeoutSeconds?: number;
+  /** How many model turns and tool calls an assistant run may make; absent, the defaults. */
+  readonly turnsPerRun?: number;
+  readonly toolCallsPerRun?: number;
   readonly supportsTools: boolean;
   readonly supportsImages: boolean;
   readonly retiredAt: string | null;
@@ -106,6 +109,8 @@ interface Draft {
   kind: Endpoint['kind'];
   /** Empty for the default. */
   timeoutSeconds: string;
+  turnsPerRun: string;
+  toolCallsPerRun: string;
   supportsTools: boolean;
   supportsImages: boolean;
 }
@@ -123,6 +128,8 @@ const BLANK: Draft = {
   boundary: '',
   kind: 'llm',
   timeoutSeconds: '',
+  turnsPerRun: '',
+  toolCallsPerRun: '',
   supportsTools: true,
   supportsImages: false,
 };
@@ -140,6 +147,8 @@ const draftOf = (endpoint: Endpoint): Draft => ({
   boundary: endpoint.boundary,
   kind: endpoint.kind,
   timeoutSeconds: endpoint.timeoutSeconds === undefined ? '' : String(endpoint.timeoutSeconds),
+  turnsPerRun: endpoint.turnsPerRun === undefined ? '' : String(endpoint.turnsPerRun),
+  toolCallsPerRun: endpoint.toolCallsPerRun === undefined ? '' : String(endpoint.toolCallsPerRun),
   supportsTools: endpoint.supportsTools,
   supportsImages: endpoint.supportsImages,
 });
@@ -173,6 +182,7 @@ export function Models({ client }: { client: Client }) {
   const [busy, setBusy] = useState(false);
   const again = () => setGeneration((was) => was + 1);
   const hint = useId();
+  const limitsHint = useId();
   // The form's first field, focused as it opens: beside its line, it may open far down the page.
   const first = useRef<HTMLInputElement>(null);
   const opened = editing === null ? null : (editing.id ?? 'new');
@@ -186,6 +196,20 @@ export function Models({ client }: { client: Client }) {
     const { draft, id } = editing;
     if (draft.boundary === '') {
       setSaid(words('admin.say-whether-this-endpoint-sits'));
+      return;
+    }
+    const beyond = (value: string, bounds: { readonly least: number; readonly most: number }) => {
+      if (value.trim() === '') return false;
+      const number = Number(value);
+      return !Number.isInteger(number) || number < bounds.least || number > bounds.most;
+    };
+    if (beyond(draft.turnsPerRun, MODEL_TURNS) || beyond(draft.toolCallsPerRun, MODEL_TOOL_CALLS)) {
+      setSaid(
+        words('admin.run-limits-out-of-bounds', {
+          turns: MODEL_TURNS.most,
+          calls: MODEL_TOOL_CALLS.most,
+        }),
+      );
       return;
     }
     const body = {
@@ -203,6 +227,10 @@ export function Models({ client }: { client: Client }) {
       ...(draft.timeoutSeconds.trim() === ''
         ? {}
         : { timeoutSeconds: Number(draft.timeoutSeconds) }),
+      ...(draft.turnsPerRun.trim() === '' ? {} : { turnsPerRun: Number(draft.turnsPerRun) }),
+      ...(draft.toolCallsPerRun.trim() === ''
+        ? {}
+        : { toolCallsPerRun: Number(draft.toolCallsPerRun) }),
       supportsTools: draft.supportsTools,
       supportsImages: draft.supportsImages,
     };
@@ -322,6 +350,29 @@ export function Models({ client }: { client: Client }) {
       </label>
     );
 
+  const limit = (
+    name: 'turnsPerRun' | 'toolCallsPerRun',
+    label: string,
+    bounds: { readonly least: number; readonly default: number; readonly most: number },
+  ) =>
+    editing && (
+      <label className={styles['filter']}>
+        {label}
+        <input
+          type="number"
+          step={1}
+          min={bounds.least}
+          max={bounds.most}
+          placeholder={String(bounds.default)}
+          aria-describedby={limitsHint}
+          value={editing.draft[name]}
+          onChange={(change) =>
+            setEditing({ ...editing, draft: { ...editing.draft, [name]: change.target.value } })
+          }
+        />
+      </label>
+    );
+
   const check = (name: 'supportsTools' | 'supportsImages', label: string) =>
     editing && (
       <label className={styles['filter']}>
@@ -405,6 +456,14 @@ export function Models({ client }: { client: Client }) {
         </label>
         <span id={hint} className={styles['muted']}>
           {words('admin.default-timeout', { seconds: MODEL_TIMEOUT_SECONDS.default })}
+        </span>
+        {limit('turnsPerRun', words('admin.turns-a-run'), MODEL_TURNS)}
+        {limit('toolCallsPerRun', words('admin.tool-calls-a-run'), MODEL_TOOL_CALLS)}
+        <span id={limitsHint} className={styles['muted']}>
+          {words('admin.default-run-limits', {
+            turns: MODEL_TURNS.default,
+            calls: MODEL_TOOL_CALLS.default,
+          })}
         </span>
         {check('supportsTools', words('admin.calls-tools'))}
         {check('supportsImages', words('admin.reads-images'))}

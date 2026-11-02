@@ -180,7 +180,8 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   recorded as a run with its tokens and cost. Each purpose (drafting, chat, summarising, embedding)
   goes to one endpoint, or to none. Each endpoint is an LLM or an embedding model: embedding goes to an
   embedding model alone, and every other purpose, and every conversation, to an LLM. Each has a
-  timeout, 120 seconds unless set, which every call to it waits; and says whether its model calls
+  timeout, 120 seconds unless set, which every call to it waits; how many turns and tool calls an assistant run on it may make, 40 and
+  100 unless set; and says whether its model calls
   tools, a model that does not being sent none, and reads images. **Edit** and **Test** are icons on
   its line, **Edit** opening its settings beside it; **Set key** and **Retire** are under More actions.
 - **The assistant.** While you author a document, its **Assistant** tab answers what you ask about it,

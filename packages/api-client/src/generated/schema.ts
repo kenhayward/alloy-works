@@ -82323,6 +82323,10 @@ export interface operations {
                             timeoutSeconds?: number;
                             supportsTools: boolean;
                             supportsImages: boolean;
+                            /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                            turnsPerRun?: number;
+                            /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                            toolCallsPerRun?: number;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -82459,6 +82463,10 @@ export interface operations {
                     supportsTools?: boolean;
                     /** @description Whether the model reads images: a model that does not is sent none. No where unsaid */
                     supportsImages?: boolean;
+                    /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                    turnsPerRun?: number;
+                    /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                    toolCallsPerRun?: number;
                 };
             };
         };
@@ -82521,6 +82529,10 @@ export interface operations {
                             timeoutSeconds?: number;
                             supportsTools: boolean;
                             supportsImages: boolean;
+                            /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                            turnsPerRun?: number;
+                            /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                            toolCallsPerRun?: number;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -82713,6 +82725,10 @@ export interface operations {
                             timeoutSeconds?: number;
                             supportsTools: boolean;
                             supportsImages: boolean;
+                            /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                            turnsPerRun?: number;
+                            /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                            toolCallsPerRun?: number;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -82871,6 +82887,10 @@ export interface operations {
                     supportsTools?: boolean;
                     /** @description Whether the model reads images: a model that does not is sent none. No where unsaid */
                     supportsImages?: boolean;
+                    /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                    turnsPerRun?: number;
+                    /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                    toolCallsPerRun?: number;
                 };
             };
         };
@@ -82933,6 +82953,10 @@ export interface operations {
                             timeoutSeconds?: number;
                             supportsTools: boolean;
                             supportsImages: boolean;
+                            /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                            turnsPerRun?: number;
+                            /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                            toolCallsPerRun?: number;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -83157,6 +83181,10 @@ export interface operations {
                             timeoutSeconds?: number;
                             supportsTools: boolean;
                             supportsImages: boolean;
+                            /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                            turnsPerRun?: number;
+                            /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                            toolCallsPerRun?: number;
                             id: string;
                             madeAt: string;
                             changedAt: string;
@@ -83393,6 +83421,10 @@ export interface operations {
                             timeoutSeconds?: number;
                             supportsTools: boolean;
                             supportsImages: boolean;
+                            /** @description How many model turns an assistant run on it may take, 1 to 100; 40 where unsaid. A prompt run is one call */
+                            turnsPerRun?: number;
+                            /** @description How many tool calls an assistant run on it may make, 1 to 500; 100 where unsaid */
+                            toolCallsPerRun?: number;
                             id: string;
                             madeAt: string;
                             changedAt: string;

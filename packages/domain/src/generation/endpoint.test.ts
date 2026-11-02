@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   MODEL_DEADLINE_MS,
   MODEL_TIMEOUT_SECONDS,
+  MODEL_TOOL_CALLS,
+  MODEL_TURNS,
   canonicalCall,
+  runLimitsOf,
   modelDeadlineMs,
   costMicros,
   modelCredentialContext,
@@ -80,6 +83,31 @@ describe('a model endpoint', () => {
     expect(modelDeadlineMs({ timeoutSeconds: 200 })).toBe(200_000);
     expect(modelDeadlineMs({ timeoutSeconds: 200 }, 90_500)).toBe(90_500);
     expect(modelDeadlineMs({ timeoutSeconds: 5 }, 10_000)).toBe(5_000);
+  });
+
+  it('takes how many model turns and tool calls a run on it may make, within their bounds (issue #872)', () => {
+    expect(
+      modelEndpointSchema.safeParse({ ...endpoint, turnsPerRun: 100, toolCallsPerRun: 500 })
+        .success,
+    ).toBe(true);
+    for (const turnsPerRun of [0, 101, 2.5]) {
+      expect(modelEndpointSchema.safeParse({ ...endpoint, turnsPerRun }).success).toBe(false);
+    }
+    for (const toolCallsPerRun of [0, 501, 2.5]) {
+      expect(modelEndpointSchema.safeParse({ ...endpoint, toolCallsPerRun }).success).toBe(false);
+    }
+    expect([MODEL_TURNS, MODEL_TOOL_CALLS]).toEqual([
+      { least: 1, default: 40, most: 100 },
+      { least: 1, default: 100, most: 500 },
+    ]);
+  });
+
+  it("gives a run an endpoint's own turns and tool calls, or the defaults (issue #872)", () => {
+    expect(runLimitsOf({})).toEqual({ turns: 40, toolCalls: 100 });
+    expect(runLimitsOf({ turnsPerRun: 8, toolCallsPerRun: 30 })).toEqual({
+      turns: 8,
+      toolCalls: 30,
+    });
   });
 
   it('seals a key to its endpoint and the origin it signs in at, not to a path', () => {

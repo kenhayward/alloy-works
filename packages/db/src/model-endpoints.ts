@@ -58,6 +58,9 @@ interface EndpointRow {
   timeout_seconds?: number | null;
   supports_tools?: boolean;
   supports_images?: boolean;
+  /** Absent from a schema before 0186. */
+  turns_per_run?: number | null;
+  tool_calls_per_run?: number | null;
   made_at: Date;
   changed_at: Date;
   retired_at: Date | null;
@@ -82,6 +85,8 @@ const endpointOf = (row: EndpointRow): StoredModelEndpoint => ({
   ...(row.timeout_seconds == null ? {} : { timeoutSeconds: row.timeout_seconds }),
   supportsTools: row.supports_tools ?? true,
   supportsImages: row.supports_images ?? false,
+  ...(row.turns_per_run == null ? {} : { turnsPerRun: row.turns_per_run }),
+  ...(row.tool_calls_per_run == null ? {} : { toolCallsPerRun: row.tool_calls_per_run }),
   madeAt: row.made_at,
   changedAt: row.changed_at,
   retiredAt: row.retired_at,
@@ -187,14 +192,18 @@ const SETTING_MEMBERS = [
   'timeoutSeconds',
   'supportsTools',
   'supportsImages',
+  'turnsPerRun',
+  'toolCallsPerRun',
 ] as const;
 
-/** 0182's settings and their columns. */
+/** 0182's settings and 0186's, and their columns. */
 const CAPABILITIES = [
   ['kind', 'kind'],
   ['timeoutSeconds', 'timeout_seconds'],
   ['supportsTools', 'supports_tools'],
   ['supportsImages', 'supports_images'],
+  ['turnsPerRun', 'turns_per_run'],
+  ['toolCallsPerRun', 'tool_calls_per_run'],
 ] as const;
 
 export async function changeModelEndpoint(
