@@ -49,6 +49,12 @@ html:has([data-side-dock]) body {
   overflow-anchor: none;
 }
 
+/* On a document's desk the text shows only between the panes' edges, so what is scrolled to stops there. */
+html:has([data-side-dock]) {
+  scroll-padding-block: calc(var(--header-height) + var(--space-12))
+    calc(var(--status-height, 0px) + var(--space-12));
+}
+
 /*
  * And the status bar stands over its foot, its height told to the page by the bar itself, one line
  * or wrapped: what is scrolled to stops above it too (issue #336).

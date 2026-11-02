@@ -222,7 +222,7 @@ made before 0183 are kept. Its title and `kept` are all of it that changes.
 
 **Drafting against the open document** (GEN-012), on the document page's **Assistant** panel. The
 requester asks; the service starts a run (`POST /v1/documents/{id}/assistant/runs`), whose response is
-`text/event-stream` (realtime.md's model output): `text`, `tool_call`, `tool_result`, `proposal`,
+`text/event-stream` (realtime.md's model output): `text`, `progress` (a count of what is not yet words: thinking, a tool call being written), `tool_call`, `tool_result`, `proposal`,
 `citation`, `ended` and `failed`, declared as AsyncAPI messages beside the stream's (API-064). Closing
 the request cancels the run.
 

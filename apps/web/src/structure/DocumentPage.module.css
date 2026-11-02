@@ -329,15 +329,39 @@
   margin: var(--space-12) var(--space-24) 0;
 }
 
-/* The sheet level with the panels beside it: the desk adds no gap of its own above it here. */
+/* The sheet level with the panels beside it, first and last: the desk adds no gap of its own to it. */
 .layout > .text {
-  padding-top: 0;
+  padding-block: 0;
 }
 
 /* As far below the panes as above them, the gap they keep from the status bar: any more, and the
    document's end would push them up under the header as it came into view. */
 .page[data-desk-page] > .layout {
   padding: var(--space-12) var(--space-16);
+}
+
+/* That gap held in the desk's colour at the header and at the status bar, so the sheet scrolls away at
+   the panes' top and bottom edges rather than past them. */
+.page[data-desk-page] > .layout::before,
+.page[data-desk-page] > .layout::after {
+  content: '';
+  position: sticky;
+  z-index: 2;
+  grid-column: 1 / -1;
+  grid-row: 1 / span 4;
+  height: var(--space-12);
+  background: var(--desk);
+}
+
+.page[data-desk-page] > .layout::before {
+  top: var(--header-height);
+  margin-block-start: calc(-1 * var(--space-12));
+}
+
+.page[data-desk-page] > .layout::after {
+  bottom: var(--status-height, 0px);
+  align-self: end;
+  margin-block-end: calc(-1 * var(--space-12));
 }
 
 /* The document bar: one line under the header, on the chrome. */

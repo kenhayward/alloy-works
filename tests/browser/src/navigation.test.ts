@@ -268,15 +268,15 @@ const INTERLEAVINGS: readonly {
   },
 ];
 
-/** Waits for a linked node's heading to have been taken to just below the header. */
+/** Waits for a linked node's heading to have been taken to where the text shows from, by the panes' top. */
 async function arrivedAt(page: Page, node: string): Promise<void> {
   await page.waitForFunction(
     (id) => {
       const element = document.querySelector(
         `[aria-label="The document's text"] [data-node="${id}"]`,
       );
-      const header = document.querySelector('header')!.getBoundingClientRect().bottom;
-      return element !== null && Math.abs(element.getBoundingClientRect().top - header) < 2;
+      const from = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop);
+      return element !== null && Math.abs(element.getBoundingClientRect().top - from) < 2;
     },
     node,
     { polling: 'raf' },

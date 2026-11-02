@@ -318,6 +318,8 @@ export function promptRunHandlers(
         ...(reused ? { cachedFrom: reused.id } : {}),
       });
       let said = '';
+      // The reply's pieces as they arrive, about a token each, as a conversation's are counted.
+      let received = 0;
       let model: string | null = null;
       let usage: { in: number; out: number; cached?: number | undefined } | null = null;
       let outcome = 'finished';
@@ -353,7 +355,12 @@ export function promptRunHandlers(
               (event) => {
                 if (event.type === 'text') {
                   said += event.text;
-                  if (!holding) send('text', { text: event.text });
+                  received += 1;
+                  if (holding) send('progress', { tokens: received });
+                  else send('text', { text: event.text, tokens: received });
+                } else if (event.type === 'progress') {
+                  received += 1;
+                  send('progress', { tokens: received });
                 }
               },
               stopped,

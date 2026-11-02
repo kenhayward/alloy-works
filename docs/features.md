@@ -236,7 +236,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   choose the endpoint a turn runs on, and it says whether that sits outside your data boundary
   (`/v1/conversations`). Nothing is refused for being off the subject. **Context** gives a turn the
   **Component** open or the whole **Document**, read as you, beside what its tools
-  find. While a reply streams, the tab says it is answering and how many tokens have arrived.
+  find. While a reply streams, the tab says it is answering and how many tokens have arrived, its
+  thinking and tool calls among them, and keeps the newest in view until you scroll back. In the box,
+  `/clear` clears the conversation and starts a new one, `/tools` lists the tools the model can use,
+  `/save` keeps the conversation and `/commands` lists these; none reaches the model.
   **Conversations** holds conversations on no document, its tools your own search, reads and
   proposals. Each conversation shows **What it reads**: every part a turn read, or that you added,
   read again as you each turn, a part you may no longer read left out and said so; remove a part, or

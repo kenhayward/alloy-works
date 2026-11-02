@@ -1,0 +1,74 @@
+# Development only, and opt-in: Keycloak as the sign-in provider, in place of the stand-in.
+#
+#   docker compose -f deploy/compose.yaml -f deploy/compose.keycloak.yaml up -d --build --wait
+#
+# or ALLOY_SIGN_IN=keycloak with deploy\BringUpDev.cmd, which adds compose.lan.yaml too and tells this
+# file the address other machines use (KEYCLOAK_PUBLIC_URL). The stand-in does not start and Google is
+# not offered, since the stand-in played Google as well.
+#
+# It answers where the stand-in did, on the provider's port and name, and calls itself by the same
+# name to the browser and the service. Its people keep the stand-in's subjects and addresses, so
+# `setup` moves the environment's provider to it and Ada and Grace keep what they held
+# (carryStandInPeople). See deploy/README.md, "Keycloak in place of the stand-in".
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    command:
+      - start-dev
+      - --http-port=${IDP_PORT:-9090}
+      - --hostname=${KEYCLOAK_PUBLIC_URL:-http://idp.localhost:${IDP_PORT:-9090}}
+      - --proxy-headers=xforwarded
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      # A local default, as every password in compose.yaml is. Used once, as its data is first made.
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-admin}
+    ports:
+      - '127.0.0.1:${IDP_PORT:-9090}:${IDP_PORT:-9090}'
+    volumes:
+      - ./keycloak/alloy-realm.json:/opt/keycloak/data/import/alloy-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+    networks:
+      default:
+        aliases: [idp.localhost]
+
+  # Runs at every start: what a realm file cannot say, and what depends on this machine's address.
+  keycloak-configure:
+    image: quay.io/keycloak/keycloak:26.4.7@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    entrypoint: ['bash', '/configure.sh']
+    environment:
+      KEYCLOAK_URL: http://keycloak:${IDP_PORT:-9090}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-keycloak-dev-admin}
+      # Where the service's callback may be, and so where a sign-in may return.
+      ALLOY_REDIRECT_URIS: >-
+        http://acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback,http://dev.acme.localhost:${SERVICE_PORT:-8088}/v1/sign-in/organisation/callback${ALLOY_LAN_ADDRESS:+,https://${ALLOY_LAN_ADDRESS}:${LAN_SERVICE_PORT:-8443}/v1/sign-in/organisation/callback}
+    volumes:
+      - ./keycloak/configure.sh:/configure.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_started
+    restart: 'no'
+
+  # None of it: a profile would leave a running one holding the port, on a stack moving to Keycloak.
+  stand-in-idp:
+    scale: 0
+
+  setup:
+    environment:
+      # The provider `setup` configures: its name is the stand-in's, its meaning any provider's.
+      STAND_IN_ISSUER: ${KEYCLOAK_PUBLIC_URL:-http://idp.localhost:${IDP_PORT:-9090}}/realms/alloy
+      DEV_GOOGLE_ROUTE: closed
+
+  service:
+    environment:
+      GOOGLE_ISSUER: !reset null
+      GOOGLE_CLIENT_ID: !reset null
+      SECRET_GOOGLE: !reset null
+      SIGN_IN_HOST: !reset null
+    depends_on:
+      stand-in-idp: !reset null
+      keycloak-configure:
+        condition: service_completed_successfully
+
+volumes:
+  keycloak-data: {}

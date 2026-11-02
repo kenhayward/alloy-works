@@ -1,5 +1,6 @@
 import { createApiClient, type StreamPostOptions } from '@alloy-works/api-client';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { CONVERSATION_TOOLS, DOCUMENT_CONVERSATION_TOOLS } from '@alloy-works/domain';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -42,6 +43,7 @@ function service() {
             name: 'Drafting',
             model: 'stand-in-1',
             contextWindow: 200_000,
+            supportsTools: true,
             boundary: 'outside',
             isDefault: true,
           },
@@ -50,6 +52,7 @@ function service() {
             name: 'Ours',
             model: 'stand-in-1',
             contextWindow: 8_000,
+            supportsTools: false,
             boundary: 'inside',
             isDefault: false,
           },
@@ -1108,6 +1111,291 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
     } finally {
       HTMLElement.prototype.scrollTo = was;
     }
+  });
+
+  describe('as a turn progresses (the chat progress change)', () => {
+    const scrolling = () => {
+      const tops: number[] = [];
+      const room = { height: 1000 };
+      const was = HTMLElement.prototype.scrollTo;
+      HTMLElement.prototype.scrollTo = function (this: HTMLElement, options: unknown) {
+        const { top } = options as { top: number };
+        tops.push(top);
+        this.scrollTop = top;
+      } as typeof HTMLElement.prototype.scrollTo;
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+        configurable: true,
+        get: () => room.height,
+      });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+        configurable: true,
+        get: () => 200,
+      });
+      return {
+        tops,
+        room,
+        restore: () => {
+          HTMLElement.prototype.scrollTo = was;
+          delete (HTMLElement.prototype as { scrollHeight?: number }).scrollHeight;
+          delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
+        },
+      };
+    };
+    const held = () => {
+      const on: {
+        send?: StreamPostOptions['onEvent'] | undefined;
+        release?: () => void;
+      } = {};
+      const stream = (options: StreamPostOptions) =>
+        new Promise<{ kind: 'streamed' }>((resolve) => {
+          on.send = options.onEvent;
+          on.release = () => resolve({ kind: 'streamed' });
+        });
+      return { on, stream };
+    };
+
+    it('keeps the newest in view as it streams, a follow-up too, until the person scrolls away', async () => {
+      const user = userEvent.setup();
+      const { tops, room, restore } = scrolling();
+      try {
+        const { on, stream } = held();
+        panel(stream);
+        await user.type(screen.getByLabelText('Ask the assistant'), 'When?{Enter}');
+        await waitFor(() => expect(on.send).toBeDefined());
+        // The turn before moves above this one as its run begins, pushing it down.
+        room.height = 1100;
+        act(() =>
+          on.send!('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'outside' } }),
+        );
+        expect(tops.at(-1)).toBe(1100);
+        room.height = 1200;
+        act(() => on.send!('text', { text: 'It floods ', tokens: 1 }));
+        expect(tops.at(-1)).toBe(1200);
+        room.height = 1300;
+        act(() => on.send!('tool_call', { id: 't1', name: 'read_outline' }));
+        expect(tops.at(-1)).toBe(1300);
+
+        // Reading back: left where they are, however much more comes.
+        const scroller = screen.getByRole('article', { name: 'This turn' }).parentElement!;
+        scroller.scrollTop = 100;
+        fireEvent.scroll(scroller);
+        const count = tops.length;
+        room.height = 1400;
+        act(() => on.send!('text', { text: 'each spring.', tokens: 2 }));
+        expect(tops).toHaveLength(count);
+        act(() => on.release!());
+        await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+
+        // The next ask brings them back to it.
+        room.height = 1500;
+        on.send = undefined;
+        await user.type(screen.getByLabelText('Ask the assistant'), 'And when not?{Enter}');
+        await waitFor(() => expect(on.send).toBeDefined());
+        expect(tops.at(-1)).toBe(1500);
+        act(() => on.release!());
+        await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+      } finally {
+        restore();
+      }
+    });
+
+    it('counts what arrives before any words: thinking and tool calls', async () => {
+      const user = userEvent.setup();
+      const { on, stream } = held();
+      panel(stream);
+      await user.type(screen.getByLabelText('Ask the assistant'), 'When?{Enter}');
+      await waitFor(() => expect(on.send).toBeDefined());
+      act(() => on.send!('progress', { tokens: 1 }));
+      act(() => on.send!('progress', { tokens: 2 }));
+      expect(screen.getByRole('progressbar')).toHaveTextContent('2 tokens');
+      expect(screen.getByRole('region', { name: 'The answer' })).toHaveTextContent('');
+      act(() => on.send!('text', { text: 'It floods.', tokens: 3 }));
+      expect(screen.getByRole('progressbar')).toHaveTextContent('3 tokens');
+      act(() => on.release!());
+      await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+    });
+  });
+
+  describe('commands typed in the box (the chat commands change)', () => {
+    const typed = async (user: ReturnType<typeof userEvent.setup>, words: string) =>
+      user.type(screen.getByLabelText('Ask the assistant'), `${words}{Enter}`);
+
+    it('lists the commands, sending nothing and making no conversation', async () => {
+      const user = userEvent.setup();
+      const stream = vi.fn(answered);
+      const { client, asked } = service();
+      render(
+        <AssistantPanel
+          client={client}
+          document={DOCUMENT}
+          component={SITES}
+          onCite={() => {}}
+          stream={stream}
+          origin="http://doc.test"
+        />,
+      );
+      await typed(user, '/commands');
+      const table = await screen.findByRole('table', { name: 'Commands' });
+      expect(
+        within(table)
+          .getAllByRole('row')
+          .slice(1)
+          .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
+      ).toEqual(['/clear', '/tools', '/save', '/commands']);
+      expect(screen.getByLabelText('Ask the assistant')).toHaveValue('');
+      expect(stream).not.toHaveBeenCalled();
+      expect(asked).not.toContain('POST /v1/conversations');
+      await user.click(screen.getByRole('button', { name: 'Close Commands' }));
+      expect(screen.queryByRole('table', { name: 'Commands' })).toBeNull();
+    });
+
+    it('lists the tools of a conversation on a document, each named and described, and goes with the next ask', async () => {
+      const user = userEvent.setup();
+      panel(vi.fn(answered));
+      await typed(user, '/tools');
+      const table = await screen.findByRole('table', { name: 'Tools' });
+      const rows = within(table).getAllByRole('row').slice(1);
+      expect(rows.map((row) => within(row).getAllByRole('cell')[0]!.textContent)).toEqual(
+        DOCUMENT_CONVERSATION_TOOLS.map((tool) => tool.name),
+      );
+      for (const row of rows) {
+        expect(within(row).getAllByRole('cell')[1]!.textContent).not.toBe('');
+      }
+      await typed(user, 'When does it flood?');
+      await screen.findByRole('article', { name: 'This turn' });
+      expect(screen.queryByRole('table', { name: 'Tools' })).toBeNull();
+    });
+
+    it('lists the tools of a conversation on no document as its own', async () => {
+      const user = userEvent.setup();
+      const { client } = service();
+      render(
+        <AssistantPanel
+          client={client}
+          document={null}
+          component={null}
+          onCite={() => {}}
+          stream={vi.fn(answered)}
+          origin="http://doc.test"
+        />,
+      );
+      await typed(user, '/tools');
+      const table = await screen.findByRole('table', { name: 'Tools' });
+      expect(
+        within(table)
+          .getAllByRole('row')
+          .slice(1)
+          .map((row) => within(row).getAllByRole('cell')[0]!.textContent),
+      ).toEqual(CONVERSATION_TOOLS.map((tool) => tool.name));
+    });
+
+    it('says a model that calls no tools has none', async () => {
+      const user = userEvent.setup();
+      panel(vi.fn(answered));
+      await user.click(await screen.findByRole('button', { name: /^Model:/ }));
+      await user.click(screen.getByRole('menuitemradio', { name: /^Ours/ }));
+      await typed(user, '/tools');
+      expect(
+        await screen.findByText('Ours calls no tools: it answers from what it is given.'),
+      ).toBeVisible();
+      expect(screen.queryByRole('table', { name: 'Tools' })).toBeNull();
+    });
+
+    it('clears the conversation: the window emptied, and the next ask a new one', async () => {
+      const user = userEvent.setup();
+      const stream = vi.fn(answered);
+      const { client, asked } = service();
+      render(
+        <AssistantPanel
+          client={client}
+          document={DOCUMENT}
+          component={SITES}
+          onCite={() => {}}
+          stream={stream}
+          origin="http://doc.test"
+        />,
+      );
+      await typed(user, 'When does it flood?');
+      await screen.findByRole('button', { name: 'Copy the answer' });
+      await typed(user, '/clear');
+      await waitFor(() => expect(screen.queryByRole('article', { name: 'This turn' })).toBeNull());
+      expect(stream).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Keep this conversation' })).toBeDisabled();
+      const starts = () => asked.filter((each) => each === 'POST /v1/conversations').length;
+      expect(starts()).toBe(1);
+      await typed(user, 'And when not?');
+      await waitFor(() => expect(stream).toHaveBeenCalledTimes(2));
+      expect(starts()).toBe(2);
+    });
+
+    it('saves the conversation by keeping it, saying so, and says when there is nothing to save', async () => {
+      const user = userEvent.setup();
+      const { client, patched } = service();
+      render(
+        <AssistantPanel
+          client={client}
+          document={DOCUMENT}
+          component={SITES}
+          onCite={() => {}}
+          stream={vi.fn(answered)}
+          origin="http://doc.test"
+        />,
+      );
+      await typed(user, '/save');
+      expect(await screen.findByText('Nothing to save yet: ask something first.')).toBeVisible();
+      expect(patched).toEqual([]);
+      await typed(user, 'When does it flood?');
+      await screen.findByRole('button', { name: 'Copy the answer' });
+      await typed(user, '/save');
+      await waitFor(() => expect(patched).toEqual([{ kept: true }]));
+      expect(await screen.findByText('Saved: find it under Earlier conversations.')).toBeVisible();
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Keep this conversation' })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        ),
+      );
+      await typed(user, '/save');
+      expect(await screen.findByText('This conversation is already saved.')).toBeVisible();
+      expect(patched).toHaveLength(1);
+    });
+
+    it('holds /clear and /save while it answers, and shows the lists all the same', async () => {
+      const user = userEvent.setup();
+      const on: { release?: () => void } = {};
+      const stream = () =>
+        new Promise<{ kind: 'streamed' }>((resolve) => {
+          on.release = () => resolve({ kind: 'streamed' });
+        });
+      panel(stream);
+      await typed(user, 'When does it flood?');
+      await waitFor(() => expect(on.release).toBeDefined());
+      await typed(user, '/clear');
+      expect(
+        await screen.findByText('Wait for the answer, or stop it, before you use /clear.'),
+      ).toBeVisible();
+      expect(screen.getByRole('article', { name: 'This turn' })).toBeVisible();
+      await typed(user, '/commands');
+      expect(await screen.findByRole('table', { name: 'Commands' })).toBeVisible();
+      act(() => on.release!());
+      await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+    });
+
+    it('sends nothing for a command it does not know, the words left to correct, but asks what merely starts with a slash', async () => {
+      const user = userEvent.setup();
+      const stream = vi.fn(answered);
+      panel(stream);
+      await typed(user, '/nonsense');
+      expect(
+        await screen.findByText('There is no command /nonsense. Type /commands for the list.'),
+      ).toBeVisible();
+      expect(stream).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Ask the assistant')).toHaveValue('/nonsense');
+      await user.clear(screen.getByLabelText('Ask the assistant'));
+      await typed(user, '/etc/hosts holds what?');
+      await waitFor(() => expect(stream).toHaveBeenCalledTimes(1));
+      expect(stream.mock.calls[0]![0]).toMatchObject({ body: { ask: '/etc/hosts holds what?' } });
+    });
   });
 
   it('copies the answer without its citation marks', async () => {

@@ -84574,6 +84574,10 @@
                             "maximum": 9007199254740991,
                             "description": "The most tokens its model takes in one call: what a turn is measured against"
                           },
+                          "supportsTools": {
+                            "type": "boolean",
+                            "description": "Whether its model calls tools: one that does not answers from what it is given"
+                          },
                           "boundary": {
                             "type": "string",
                             "description": "`outside` where it sits outside the data boundary"
@@ -84588,6 +84592,7 @@
                           "name",
                           "model",
                           "contextWindow",
+                          "supportsTools",
                           "boundary",
                           "isDefault"
                         ]

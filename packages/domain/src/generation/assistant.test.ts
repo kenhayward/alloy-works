@@ -18,6 +18,7 @@ import {
   conversationToolInputSchemas,
   editableProblem,
   pendingResolved,
+  proposeEditProblem,
   referencesAsText,
   toolInputSchemas,
   withReferenceSources,
@@ -56,6 +57,71 @@ describe("the assistant's terms", () => {
       'search_references',
       'cite_reference',
     ]);
+  });
+
+  it('offers propose_edit the very forms of edit it enforces, each whole and none mixed (issue #890)', () => {
+    const proposing = ASSISTANT_TOOLS.find((tool) => tool.name === 'propose_edit')!;
+    const schema = proposing.inputSchema as {
+      properties: {
+        edits: {
+          items: {
+            anyOf: {
+              properties: Record<string, unknown>;
+              required: string[];
+              additionalProperties: boolean;
+            }[];
+          };
+        };
+      };
+    };
+    const forms = schema.properties.edits.items.anyOf;
+    expect(forms.map((form) => Object.keys(form.properties).sort())).toEqual([
+      ['markdown', 'replace'],
+      ['insertAfter', 'markdown'],
+      ['delete'],
+      ['cell', 'markdown'],
+      ['caption', 'headerRows', 'rows', 'table'],
+    ]);
+    expect(forms.map((form) => [...form.required].sort())).toEqual([
+      ['markdown', 'replace'],
+      ['insertAfter', 'markdown'],
+      ['delete'],
+      ['cell', 'markdown'],
+      ['rows', 'table'],
+    ]);
+    for (const form of forms) expect(form.additionalProperties).toBe(false);
+    expect(JSON.stringify(schema)).not.toContain('$schema');
+  });
+
+  it('says of a refused edit which it is, what does not belong and what is missing, so a model can correct it (issue #890)', () => {
+    const mixed = {
+      component: 'c1',
+      edits: [
+        { replace: 'p1', markdown: 'Fine.' },
+        {
+          cell: { table: '#t1', row: 3, column: 3 },
+          rows: [['3.4 m']],
+          caption: '',
+          headerRows: 1,
+        },
+        { delete: 'p2', markdown: 'Also wrong.' },
+      ],
+    };
+    expect(toolInputSchemas.propose_edit.safeParse(mixed).success).toBe(false);
+    const problem = proposeEditProblem(mixed);
+    expect(problem).toMatch(/^The arguments are not what this tool takes\./);
+    expect(problem).toContain('Edit 2 sets one table cell');
+    expect(problem).toContain('Take out rows, caption, headerRows.');
+    expect(problem).toContain('It needs markdown.');
+    expect(problem).toContain('1 more edit is refused too.');
+    expect(proposeEditProblem({ component: 'c1', edits: [{ markdown: 'Where?' }] })).toContain(
+      'Edit 1 is none of the forms an edit takes: { replace, markdown }',
+    );
+    expect(proposeEditProblem({ component: 'c1', edits: 'not a list' })).toContain('edits:');
+    // What the model wrote into a field is never repeated back, only the field's name.
+    expect(
+      proposeEditProblem({ component: 'c1', edits: [{ replace: 'p1', markdown: 7 }] }),
+    ).not.toContain('7');
   });
 
   it("LIB-040 offers searching a source and citing from it wherever an edit may be proposed, its terms the person's own", () => {

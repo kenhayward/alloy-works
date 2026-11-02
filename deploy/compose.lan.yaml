@@ -50,6 +50,8 @@ services:
       LAN_STORE_PORT: ${LAN_STORE_PORT:-8343}
       SERVICE_PORT: ${SERVICE_PORT:-8088}
       IDP_PORT: ${IDP_PORT:-9090}
+      # The provider behind its port: the stand-in, or Keycloak (deploy/compose.keycloak.yaml).
+      IDP_UPSTREAM: ${ALLOY_IDP_UPSTREAM:-stand-in-idp}
       STORE_PORT: ${STORE_PORT:-8333}
     volumes:
       - ./lan-proxy/Caddyfile:/etc/caddy/Caddyfile:ro

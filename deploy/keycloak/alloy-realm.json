@@ -1,0 +1,111 @@
+{
+  "realm": "alloy",
+  "enabled": true,
+  "displayName": "Alloy Works development people",
+  "groups": [
+    {
+      "name": "authors"
+    },
+    {
+      "name": "publishers"
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "alloy-dev",
+      "name": "Alloy Works",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "secret": "stand-in-dev-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "ada",
+      "username": "ada",
+      "email": "ada@example.com",
+      "firstName": "Ada",
+      "lastName": "Example",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": ["/authors"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alloy-dev-person",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "grace",
+      "username": "grace",
+      "email": "grace@example.com",
+      "firstName": "Grace",
+      "lastName": "Example",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": ["/authors", "/publishers"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alloy-dev-person",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "ivy",
+      "username": "ivy",
+      "email": "ivy@example.com",
+      "firstName": "Ivy",
+      "lastName": "Example",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alloy-dev-person",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "alice",
+      "username": "alice",
+      "email": "alice@example.org",
+      "firstName": "Alice",
+      "lastName": "Example",
+      "enabled": true,
+      "emailVerified": true,
+      "groups": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alloy-dev-person",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

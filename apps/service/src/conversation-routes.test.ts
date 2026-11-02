@@ -503,6 +503,38 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     }
   });
 
+  it('says what to change of an edit it refuses in a conversation with no document (issue #890)', async () => {
+    const id = await start('grace');
+    const was = h.connector.modelFor;
+    let calls = 0;
+    h.connector.modelFor = (request) => {
+      asked.push(request);
+      calls += 1;
+      return calls === 1
+        ? [
+            {
+              type: 'tool_call',
+              id: 't1',
+              name: 'propose_edit',
+              input: {
+                component: 'c1',
+                edits: [{ cell: { table: 't1', row: 1, column: 1 }, rows: [['3.4 m']] }],
+              },
+            },
+            { ...ended, stop: 'tool_use' },
+          ]
+        : [text('Done.'), ended];
+    };
+    try {
+      const frames = framesOf((await turn('grace', id, { ask: 'Correct the level.' })).body);
+      const answer = frames.find((frame) => frame.event === 'tool_result')!.data;
+      expect(answer).toMatchObject({ ok: false, said: { code: 'arguments_refused' } });
+      expect(answer.result).toContain('Take out rows.');
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
   it('reads a part as accepted from its proposal on the next turn, not as it was (issue #876)', async () => {
     const part = await h.component(h.general, 'Weir works');
     await h.place(part, { type: 'text', value: 'The weir is old.', marks: [] });
