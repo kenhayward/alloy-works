@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.225.0 - 2026-11-02 (PR #PRNUMBER)
+## 0.225.0 - 2026-11-02 (PR #889)
 
 T7's fourth slice closed (the ID plan): more than one identity provider, Administration's Sign-in, signing in again, disabling people, SCIM and the high-risk permissions; with it, the work merged since 0.224.0.
 
