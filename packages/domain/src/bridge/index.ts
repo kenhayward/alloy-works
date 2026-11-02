@@ -7,6 +7,7 @@ export type { CarryCode, CarryEntry } from './report.js';
 export { mapBlocks, mapTitle } from './blocks.js';
 export type { BlockContext, CrossTarget, DecomposedBlock, DecomposedNote } from './blocks.js';
 export { mapDocument } from './document.js';
+export { apartFromLanguage, languageKept, type LanguageKept } from './language.js';
 export type { MappedComponent, MappedDocument } from './document.js';
 export { mapProperties, unlistedNames, type PropertyMap } from './properties.js';
 export type { DecomposedProperty } from './properties.js';

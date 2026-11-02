@@ -56,6 +56,7 @@ import { AssistantPanel, type AcceptedInDocument } from './AssistantPanel.js';
 import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
+import { IconButton } from '../parts/IconButton.js';
 import { IdleBand } from '../editor/IdleBand.js';
 import {
   ActiveEditorContext,
@@ -68,6 +69,7 @@ import { OPEN_SEARCH } from '../shell/CommandPalette.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { StatusLead } from '../shell/Status.js';
 import { DocumentHeader } from './DocumentHeader.js';
+import { DocumentLanguage } from './DocumentLanguage.js';
 import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
@@ -960,6 +962,7 @@ export function DocumentPage({
   // What the menus open and read (ADR-0075).
   const datesAct = useRef<() => void>(null);
   const scopeAct = useRef<() => void>(null);
+  const languageAct = useRef<() => void>(null);
   const relationshipsAct = useRef<() => void>(null);
   const archiveAct = useRef<() => void>(null);
   const deleteAct = useRef<() => void>(null);
@@ -2536,6 +2539,8 @@ export function DocumentPage({
         return opening(datesAct, document.mayEdit && !document.archived && !!document.dates);
       case 'scope':
         return opening(scopeAct);
+      case 'language':
+        return opening(languageAct, document.mayEdit && !document.archived);
       case 'relationships':
         return opening(relationshipsAct);
       case 'hold':
@@ -2669,12 +2674,55 @@ export function DocumentPage({
                     <p className={styles['modeShown']}>{say('document.reading')}</p>
                   )
                 }
-                preview={<PreviewButton preview={preview} />}
+                preview={
+                  <>
+                    {document.mayEdit && !document.archived && (
+                      <IconButton
+                        label={say('document.language-is', { language: document.outline.language })}
+                        tooltip={say('document.language-is', {
+                          language: document.outline.language,
+                        })}
+                        onClick={() => languageAct.current?.()}
+                      >
+                        <Icon name="Language" size={16} />
+                      </IconButton>
+                    )}
+                    <PreviewButton preview={preview} />
+                  </>
+                }
                 styles={() => activeEditor.current?.styles() ?? []}
                 onKeys={pageKeys}
                 stateOf={commandState}
               />
               {/* What the Document menu opens: its dialogs, no buttons (ADR-0075). */}
+              <DocumentLanguage
+                act={languageAct}
+                client={client}
+                id={document.id}
+                version={document.version.id}
+                language={document.outline.language}
+                onChanged={(data, said, components) => {
+                  const after = documentIn(data);
+                  if (after !== undefined && after !== 'unreadable') show(after);
+                  else setAttempt((count) => count + 1);
+                  // An editor open on one, holding no lock yet, starts again from its new version.
+                  setAcceptances((was) => {
+                    const next = new Map(was);
+                    for (const each of components) next.set(each, (next.get(each) ?? 0) + 1);
+                    return next;
+                  });
+                  setTextsAttempt((count) => count + 1);
+                  setUndo([]);
+                  setNotice(said);
+                }}
+                onStale={(current) => {
+                  const after = documentIn(current);
+                  if (after !== undefined && after !== 'unreadable') show(after);
+                  else setAttempt((count) => count + 1);
+                  setUndo([]);
+                  setNotice(SOMEBODY_ELSE());
+                }}
+              />
               {document.dates && (
                 <DatesButton
                   act={datesAct}

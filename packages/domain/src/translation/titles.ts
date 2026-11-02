@@ -1,14 +1,14 @@
 import type { OutlineDocument, OutlineNode } from '../structure/outline.js';
 
 /** Whether one language tag serves another: equal, or either a range of the other (TR-I). */
-const serves = (a: string, b: string) => {
+export const languageServes = (a: string, b: string) => {
   const [x, y] = [a.toLowerCase(), b.toLowerCase()];
   return x === y || x.startsWith(`${y}-`) || y.startsWith(`${x}-`);
 };
 
 /** The title given in a language serving `language`, its exact tag first. */
 function titleIn(titles: Readonly<Record<string, string>> | undefined, language: string) {
-  const entries = Object.entries(titles ?? {}).filter(([tag]) => serves(tag, language));
+  const entries = Object.entries(titles ?? {}).filter(([tag]) => languageServes(tag, language));
   return (entries.find(([tag]) => tag.toLowerCase() === language.toLowerCase()) ?? entries[0])?.[1];
 }
 
@@ -27,7 +27,7 @@ export function titlesIn(
   /** Whether the document's own title is given none. */
   readonly untitled: boolean;
 } {
-  if (serves(outline.language, language)) return { outline, missing: [], untitled: false };
+  if (languageServes(outline.language, language)) return { outline, missing: [], untitled: false };
   const missing: string[] = [];
   const title = titleIn(outline.titles, language);
   const translate = (node: OutlineNode): OutlineNode => {

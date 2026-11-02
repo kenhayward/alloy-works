@@ -27,6 +27,8 @@ export interface Space {
 export interface SpaceState extends Space {
   readonly archivedAt: Date | null;
   readonly archivedBy: string | null;
+  /** What new documents and deliveries here take; null where it names none. */
+  readonly language: string | null;
 }
 
 /** Why an act on a space is refused (SP-B, SP-D). */
@@ -92,7 +94,16 @@ async function recordSpaceEvent(
   ]);
 }
 
-const stateColumns = ['id', 'name', 'created_at', 'archived_at', 'archived_by'] as const;
+// `to_jsonb`, as current code runs on old schemas in the migration tests.
+const defaultLanguage = sql<string | null>`to_jsonb(space) ->> 'default_language'`.as('language');
+const stateColumns = [
+  'id',
+  'name',
+  'created_at',
+  'archived_at',
+  'archived_by',
+  defaultLanguage,
+] as const;
 
 function stateOf(row: {
   id: string;
@@ -100,6 +111,7 @@ function stateOf(row: {
   created_at: Date;
   archived_at: Date | null;
   archived_by: string | null;
+  language: string | null;
 }): SpaceState {
   return {
     id: row.id,
@@ -107,6 +119,7 @@ function stateOf(row: {
     createdAt: row.created_at,
     archivedAt: row.archived_at,
     archivedBy: row.archived_by,
+    language: row.language,
   };
 }
 
@@ -159,6 +172,43 @@ export async function renameSpace(
     if (isNameTaken(error)) throw new SpaceRefused('space.name_taken');
     throw error;
   }
+}
+
+/**
+ * Sets a space's default language, archived or not, or clears it with null: the caller has checked the
+ * tag. Setting what it is already changes nothing. Undefined where there is no such space.
+ */
+export async function setSpaceLanguage(
+  trx: TenantTransaction,
+  id: string,
+  language: string | null,
+): Promise<SpaceState | undefined> {
+  const before = await trx
+    .selectFrom('space')
+    .select(['default_language'])
+    .where('id', '=', id)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!before) return undefined;
+  const row = await trx
+    .updateTable('space')
+    .set({ default_language: language })
+    .where('id', '=', id)
+    .returning(stateColumns)
+    .executeTakeFirstOrThrow();
+  if (before.default_language !== language) {
+    await recordEvent(
+      trx,
+      {
+        kind: 'space.language_changed',
+        subject: { kind: 'space', id },
+        space: id,
+        detail: { from: before.default_language, to: language },
+      },
+      [{ role: 'subject', text: row.name, refersTo: id }],
+    );
+  }
+  return stateOf(row);
 }
 
 /**
@@ -248,6 +298,8 @@ export async function checkSpaceLive(trx: TenantTransaction, spaceId: string): P
 export interface SpaceForPrincipal {
   readonly id: string;
   readonly name: string;
+  /** What new documents and deliveries here take; null where it names none. */
+  readonly language: string | null;
   /** Archived: listed to its readers, marked, and never one to create in (SP-E). */
   readonly archived: boolean;
   readonly mayCreate: boolean;
@@ -287,18 +339,16 @@ export async function listSpacesFor(
   let inner = trx
     .selectFrom('space as s')
     .select(['s.id', 's.name', 's.archived_at'])
+    .select(sql<string | null>`to_jsonb(s) ->> 'default_language'`.as('language'))
     .select(sortColumns([sql`s.name`]))
     .where('s.id', 'in', [...spaces]);
   if (options.archived === false) inner = inner.where('s.archived_at', 'is', null);
-  const { rows, next } = await keysetPage<{ id: string; name: string; archived_at: Date | null }>(
-    trx,
-    inner,
-    types,
-    request.order ?? order,
-    limit,
-    request.after,
-    request.language,
-  );
+  const { rows, next } = await keysetPage<{
+    id: string;
+    name: string;
+    archived_at: Date | null;
+    language: string | null;
+  }>(trx, inner, types, request.order ?? order, limit, request.after, request.language);
   const shown: SpaceForPrincipal[] = [];
   for (const row of rows) {
     const facts: AccessFacts | undefined = await loadFacts(trx, principalId, {
@@ -310,6 +360,7 @@ export async function listSpacesFor(
       id: row.id,
       name: row.name,
       archived,
+      language: row.language,
       mayCreate: !archived && facts !== undefined && decide('create', { ...facts, scopes }).allowed,
     });
   }

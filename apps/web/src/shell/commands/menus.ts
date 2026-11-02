@@ -120,7 +120,7 @@ export function buildMenus(
     menu('document', 'menu.document', 'D', [
       lifecycleRows,
       rows('preview', 'save-version', 'history'),
-      rows('dates', 'scope', 'relationships', 'access'),
+      rows('dates', 'scope', 'language', 'relationships', 'access'),
       rows('hold', 'archive'),
       [item('delete', stateOf, true)],
     ]),

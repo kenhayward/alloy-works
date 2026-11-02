@@ -22,8 +22,8 @@ delivery store apart from the platform's database, which the space reads through
 `connection` and SQL `queryDefinition`s. A delivery is **all or nothing** (one tenant transaction), is
 written **at most once per key** and answers a replay with the first receipt, keeps its identifiers
 stable from one delivery to the next, refuses an update whose expected versions have moved on in
-Alloy Works, and reads back what it wrote before it says it succeeded. Delivery is
-**language-neutral**: content is recorded as `und` until the contract carries a language.
+Alloy Works, and reads back what it wrote before it says it succeeded. Delivered content takes **the
+space's default language**, else `und`, since the contract carries none.
 
 ## Requirements owned
 
@@ -131,9 +131,12 @@ and **AST-001** (the asset door).
   when they choose to.
 - **Components take the target's component type** ([Metadata](#metadata)), the starter type when
   none is set.
-- **Language-neutral**: every `ContentDocument` and the outline record `language: "und"`, which the
-  language tag schema already admits, and `direction: "ltr"`. Ken, 2026-10-29: language stays out of
-  this design until the contract carries one.
+- **Language**: the outline, each `ContentDocument` and a new asset's alternative take the space's
+  default language, else `und` ([the DL plan](../plans/2026-11-02-dl-document-language.md), Ken,
+  2026-11-02, replacing his 2026-10-29 call to leave it out). On an update each keeps what it holds
+  unless that is `und`; a component new to a document takes the document's. A person changing the
+  language is no edit: `changed_in_target` passes a version differing from the delivered one only in
+  language and direction, and pins moved to such versions, so a real edit still refuses.
 
 ### Blocks and inlines
 
@@ -513,7 +516,7 @@ system behaves now.
 - Deliveries land straight in as content, overriding API-N05 and IMP-003 for this integration.
 - The sink lives inside Alloy Works, with the same capabilities through the contract as 3ds-sink.
 - Data tables are real Postgres tables queried with SQL, not datasets.
-- Delivery is language-neutral for now.
+- Delivery takes the space's default language (Ken, 2026-11-02), replacing language-neutral.
 - Accepted as proposed: stable identifiers derived across deliveries, and SVG rasterised to PNG with
   the original kept.
 
@@ -549,7 +552,7 @@ system behaves now.
 
 ## Open questions
 
-- **Language**: when the contract carries a document language, components take it instead of `und`.
+- **Language**: if the contract comes to carry a document's language, it would go before the space's.
 - **Withdrawing**: the contract defines no withdraw call, and the bridge forces `withdraw` off for
   external sinks, so a delivered document stays until a person in Alloy Works removes it.
 - **SVG as an asset**: whether the asset door admits SVG, which would let a figure hold the original.

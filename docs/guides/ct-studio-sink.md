@@ -99,6 +99,11 @@ sets them with `PUT /v1/spaces/{space}/bridge-settings`:
   a person here.
 - `data` turns data tables on; see the next step.
 
+**Language.** CT Studio sends none, so what it delivers takes the space's default language, set from **More
+actions** on the space's row in Administration's **Spaces**, or `und` where it names none. Set it and deliver
+again to bring an `und` document into it. A document already in a language keeps it, and changing a delivered
+document's language in Alloy Works does not block its next delivery.
+
 `GET` on the same route reads the settings back. A refusal names each setting that is wrong, for
 example `field_not_in_template` with the path `propertyMap.<property>`.
 

@@ -1,4 +1,4 @@
-import { TRANSLATION_STATUSES } from '@alloy-works/domain';
+import { contentDocumentSchema, TRANSLATION_STATUSES } from '@alloy-works/domain';
 import { z } from 'zod';
 import { FacetCountView, idsFilter, listingQuery, nextCursor, pageQuery } from './listing.js';
 import type { RouteContract } from './contract.js';
@@ -38,6 +38,12 @@ export type ComponentQuery = z.infer<typeof ComponentQuery>;
 export const SpaceParams = z.object({ space: LowercaseUuid });
 export type SpaceParams = z.infer<typeof SpaceParams>;
 
+const spaceLanguage = contentDocumentSchema.shape.language
+  .nullable()
+  .describe(
+    'The language new documents and CT Studio deliveries here take; null where it names none',
+  );
+
 export const SpaceList = z.object({
   items: z.array(
     z.object({
@@ -46,6 +52,7 @@ export const SpaceList = z.object({
       archived: z
         .boolean()
         .describe('Archived: nothing new is made in it, and what it holds is unchanged'),
+      language: spaceLanguage,
       mayCreate: z
         .boolean()
         .describe('Whether the caller may create a component in this space; never in one archived'),
@@ -85,6 +92,7 @@ export const SpaceView = z.object({
     .string()
     .nullable()
     .describe('The principal who archived it; null while it is not archived'),
+  language: spaceLanguage,
 });
 export type SpaceView = z.infer<typeof SpaceView>;
 
@@ -104,10 +112,12 @@ export const UpdateSpaceBody = z
       .boolean()
       .optional()
       .describe('true archives it, false restores it; either again changes nothing'),
+    language: spaceLanguage.optional(),
   })
-  .refine((body) => body.name !== undefined || body.archived !== undefined, {
-    message: 'Name a change: a name, archived, or both',
-  })
+  .refine(
+    (body) => body.name !== undefined || body.archived !== undefined || body.language !== undefined,
+    { message: 'Name a change: a name, archived, a language, or any of them' },
+  )
   .meta({ minProperties: 1 });
 export type UpdateSpaceBody = z.infer<typeof UpdateSpaceBody>;
 

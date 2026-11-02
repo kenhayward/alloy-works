@@ -6,6 +6,24 @@ import { everyPage } from './paging.js';
 export interface Space {
   readonly id: string;
   readonly name: string;
+  /** What new work here starts in; null where the space names none. */
+  readonly language: string | null;
+}
+
+/** What a language field starts with where the space names nothing. */
+const FALLBACK_LANGUAGE = 'en-GB';
+
+/**
+ * A create form's language: the chosen space's default until the author types their own, which then
+ * stays whichever space they choose.
+ */
+export function useLanguageField(
+  spaces: readonly Space[] | null,
+  where: string,
+): readonly [string, (typed: string) => void] {
+  const [typed, setTyped] = useState<string | null>(null);
+  const offered = spaces?.find((space) => space.id === where)?.language ?? FALLBACK_LANGUAGE;
+  return [typed ?? offered, setTyped];
 }
 
 /**
@@ -22,9 +40,9 @@ export function creatableSpacesIn(data: unknown): Space[] | undefined {
   if (!Array.isArray(items)) return undefined;
   return items.flatMap((item: unknown) => {
     if (typeof item !== 'object' || item === null) return [];
-    const { id, name, mayCreate } = item as Record<string, unknown>;
+    const { id, name, mayCreate, language } = item as Record<string, unknown>;
     if (typeof id !== 'string' || typeof name !== 'string' || mayCreate !== true) return [];
-    return [{ id, name }];
+    return [{ id, name, language: typeof language === 'string' ? language : null }];
   });
 }
 

@@ -90,6 +90,10 @@ export function Spaces({
           onSelect: () => setAct({ kind: 'archive', space }),
         });
       }
+      more.unshift({
+        label: say('admin.default-language'),
+        onSelect: () => setAct({ kind: 'language', space }),
+      });
       // A legal hold on everything in it (AH-G), an environment administrator's as the rest is.
       more.push({
         label: say('admin.place-a-hold'),

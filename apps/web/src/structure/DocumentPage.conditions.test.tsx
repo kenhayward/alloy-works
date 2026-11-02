@@ -65,6 +65,21 @@ describe("a node's conditions in the outline (the R12 plan)", () => {
     });
   });
 
+  it('opens the language dialog from the Document menu and from its icon', async () => {
+    const fake = service(outline([section(RESULTS, 'Results')]));
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: 'Results' });
+
+    await userEvent.click(screen.getByRole('button', { name: /^Language: / }));
+    let dialog = await screen.findByRole('dialog', { name: 'Language of this document' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Document' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Language' }));
+    dialog = await screen.findByRole('dialog', { name: 'Language of this document' });
+    expect(within(dialog).getByRole('combobox', { name: 'Language' })).toHaveValue('en-GB');
+  });
+
   it('REU-027 publishes under the profile chosen in the Profile panel, from the Publishing tab, saying which', async () => {
     const fake = service(outline([section(RESULTS, 'Results')]), { axes: true, mayPublish: true });
     open(fake.fetch);

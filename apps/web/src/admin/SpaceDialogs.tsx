@@ -1,8 +1,10 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useState } from 'react';
+import { contentDocumentSchema } from '@alloy-works/domain';
+import { useId, useState } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
+import { DeclaredLanguages } from '../parts/DeclaredLanguages.js';
 import { PlaceHoldDialog } from '../lifecycle/Hold.js';
 import styles from './Administration.module.css';
 import { words } from '../words/words.js';
@@ -15,12 +17,16 @@ export interface SpaceRow {
   readonly name: string;
   readonly archived: boolean;
   readonly mayCreate: boolean;
+  readonly language?: string | null;
 }
 
 /** What is being done to a space, while its dialog is open. */
 export type SpaceAct =
   | { readonly kind: 'new' }
-  | { readonly kind: 'rename' | 'archive' | 'restore' | 'hold'; readonly space: SpaceRow };
+  | {
+      readonly kind: 'rename' | 'language' | 'archive' | 'restore' | 'hold';
+      readonly space: SpaceRow;
+    };
 
 /**
  * Making or renaming a space (the SP1 plan, SP-G): a name, which the service normalises, trims and
@@ -103,6 +109,77 @@ function Naming({
           </button>
           <button type="submit" className="primary" disabled={busy}>
             {space === null ? words('admin.make-space') : words('admin.rename-space')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** A space's default language, which new work there and CT Studio's deliveries take: empty is none. */
+function Language({
+  client,
+  space,
+  onDone,
+  onClose,
+}: {
+  client: Client;
+  space: SpaceRow;
+  onDone: (said: string) => void;
+  onClose: () => void;
+}) {
+  const [tag, setTag] = useState(space.language ?? '');
+  const [said, setSaid] = useState('');
+  const [busy, setBusy] = useState(false);
+  const offered = useId();
+  const failed = words('admin.the-language-could-not-be-set');
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const given = tag.trim();
+    if (given !== '' && !contentDocumentSchema.shape.language.safeParse(given).success) {
+      setSaid(words('editor.a-language-tag-looks-like'));
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await client.PATCH('/v1/spaces/{id}', {
+        params: { path: { id: space.id } },
+        body: { language: given === '' ? null : given },
+      });
+      if (data) {
+        onDone(
+          given === ''
+            ? words('admin.space-has-no-default-language', { name: space.name })
+            : words('admin.space-starts-in-language', { name: space.name, language: given }),
+        );
+      } else setSaid(refusal(error, failed));
+    } catch {
+      setSaid(failed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal labelledBy="space-language-heading" onClose={onClose}>
+      <form className={styles['dialog']} onSubmit={(event) => void save(event)}>
+        <h2 id="space-language-heading">
+          {words('admin.default-language-of', { name: space.name })}
+        </h2>
+        <label>
+          {words('document.language')}
+          <input list={offered} value={tag} onChange={(event) => setTag(event.target.value)} />
+        </label>
+        <DeclaredLanguages id={offered} />
+        <p className={styles['muted']}>{words('admin.space-language-explained')}</p>
+        <p role="status">{said}</p>
+        <div className={styles['actions']}>
+          <button type="button" onClick={onClose}>
+            {words('admin.cancel')}
+          </button>
+          <button type="submit" className="primary" disabled={busy}>
+            {words('admin.save')}
           </button>
         </div>
       </form>
@@ -213,6 +290,9 @@ export function SpaceDialog({
   }
   if (act.kind === 'rename') {
     return <Naming client={client} space={act.space} onDone={onDone} onClose={onClose} />;
+  }
+  if (act.kind === 'language') {
+    return <Language client={client} space={act.space} onDone={onDone} onClose={onClose} />;
   }
   return (
     <Archiving

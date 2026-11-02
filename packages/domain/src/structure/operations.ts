@@ -18,6 +18,7 @@ import {
   type OutlineNode,
 } from './outline.js';
 import { contentDocumentSchema } from '../content/model/document.js';
+import { languageServes } from '../translation/titles.js';
 import { OVERRIDES_MAX, overrideSchema } from './overrides.js';
 
 // Reused rather than restated: every identifier and every switch an operation names is the same zod
@@ -404,18 +405,33 @@ function retitle(
   return applyNodes(outline, result.nodes);
 }
 
-/** Whether one language tag serves another: equal, or either a range of the other (TR-I). */
-const serves = (a: string, b: string) => {
-  const [x, y] = [a.toLowerCase(), b.toLowerCase()];
-  return x === y || x.startsWith(`${y}-`) || y.startsWith(`${x}-`);
-};
+/**
+ * The outline in another language and direction (the DL plan, L6-L7). A title is never translated into
+ * the outline's own, so one given in a language serving the new one refuses: nothing is discarded.
+ */
+export function withLanguage(
+  outline: OutlineDocument,
+  language: string,
+  direction: 'ltr' | 'rtl',
+): OutlineApplied {
+  const titledIn = (titles: Readonly<Record<string, string>> | undefined) =>
+    Object.keys(titles ?? {}).some((tag) => languageServes(tag, language));
+  let titled = titledIn(outline.titles);
+  walkOutline(outline.nodes, (node) => {
+    if (node.type === 'section' && titledIn(node.titles)) titled = true;
+  });
+  if (titled) {
+    return refuse(`A title is translated into ${language}: clear that translation first`);
+  }
+  return { applied: true, outline: { ...outline, language, direction } };
+}
 
 /** A title's words in a further language, set or cleared (TR-L): never in the outline's own. */
 function translateTitle(
   outline: OutlineDocument,
   operation: Extract<OutlineOperation, { operation: 'translateTitle' }>,
 ): OutlineApplied {
-  if (serves(outline.language, operation.language)) {
+  if (languageServes(outline.language, operation.language)) {
     return refuse(`The title is in ${outline.language} already: change it there`);
   }
   // One title a language, its tag matched whatever its case (the TR final review).
