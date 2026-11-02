@@ -1549,7 +1549,7 @@ const descriptions: Readonly<Record<string, string>> = {
   invite:
     'Invites an address so access can be granted before the person first signs in. `through` names the ways in that may claim it; every way open now where absent.',
   getSignInSettings:
-    "How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs administer at the environment; a token may read it, but no token may change it.",
+    'How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs administer at the environment; a token may read it, but no token may change it.',
   addProvider:
     'Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.',
   changeProvider:
@@ -1563,11 +1563,11 @@ const descriptions: Readonly<Record<string, string>> = {
   setSessionSettings:
     "Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
   disablePerson:
-    "Disables a person: their sessions and tokens end at once, a stream of theirs within two seconds, and they are refused at sign-in until enabled. Refused `last_way_in` where nobody could then sign in and configure sign-in, and for the caller themselves. Disabling somebody disabled changes nothing. Needs administer at the environment. Audited.",
+    'Disables a person: their sessions and tokens end at once, a stream of theirs within two seconds, and they are refused at sign-in until enabled. Refused `last_way_in` where nobody could then sign in and configure sign-in, and for the caller themselves. Disabling somebody disabled changes nothing. Needs administer at the environment. Audited.',
   enablePerson:
     'Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment. Audited.',
   startReauthentication:
-    "Asks for this session to be signed in again and answers where to send the browser: the way in it came by, with the provider told to authenticate the person afresh. It comes back through the sign-in callbacks and is accepted only for the same person, authenticated since this was asked; a route needing a recent sign-in then accepts the session. A session only, never a token.",
+    'Asks for this session to be signed in again and answers where to send the browser: the way in it came by, with the provider told to authenticate the person afresh. It comes back through the sign-in callbacks and is accepted only for the same person, authenticated since this was asked; a route needing a recent sign-in then accepts the session. A session only, never a token.',
   withdrawInvitation:
     'Withdraws an unaccepted invitation and removes the principal and grants created for it.',
   listRoles: 'Lists roles available to grants and the permissions each role holds.',

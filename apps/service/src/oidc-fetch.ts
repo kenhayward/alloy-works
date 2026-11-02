@@ -67,8 +67,7 @@ export async function guardedProviderAddress(
   refuses: (address: string) => boolean = refusedProviderAddress,
 ): Promise<{ readonly address: string; readonly family: number }> {
   const bare = host.replace(/^\[|\]$/g, '');
-  const addresses =
-    isIP(bare) === 0 ? await lookup(bare) : [{ address: bare, family: isIP(bare) }];
+  const addresses = isIP(bare) === 0 ? await lookup(bare) : [{ address: bare, family: isIP(bare) }];
   if (addresses.length === 0 || addresses.some((each) => refuses(each.address))) {
     throw new ProviderAddressRefused('The identity provider is not at an address it may be at.');
   }
@@ -116,7 +115,9 @@ export function guardedProviderFetch(seams: GuardSeams = {}) {
           // Only the address checked, whatever the name answers now.
           lookup: (_name, options, callback) => {
             if ((options as { all?: boolean }).all) {
-              (callback as unknown as (e: null, all: object[]) => void)(null, [{ address, family }]);
+              (callback as unknown as (e: null, all: object[]) => void)(null, [
+                { address, family },
+              ]);
             } else callback(null, address, family);
           },
         },

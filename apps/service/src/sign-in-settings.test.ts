@@ -152,7 +152,8 @@ describe('administration of sign-in', () => {
         .execute(),
     );
 
-  const hashOf = (cookie: string) => createHash('sha256').update(cookie.split('=')[1]!).digest('hex');
+  const hashOf = (cookie: string) =>
+    createHash('sha256').update(cookie.split('=')[1]!).digest('hex');
 
   const session = (cookie: string) =>
     tenantDb.withTenant(tenant, (trx) =>
@@ -192,9 +193,11 @@ describe('administration of sign-in', () => {
         url: `${back.pathname}${back.search}`,
         headers: {
           ...HEADERS,
-          cookie: [cookie, `${attempt.name}=${attempt.value}`, `${returned!.name}=${returned!.value}`].join(
-            '; ',
-          ),
+          cookie: [
+            cookie,
+            `${attempt.name}=${attempt.value}`,
+            `${returned!.name}=${returned!.value}`,
+          ].join('; '),
         },
       }),
     };
@@ -249,7 +252,9 @@ describe('administration of sign-in', () => {
       const settings = await call('GET', '/v1/sign-in-settings', cookie);
       expect(settings.json<{ recentSignIn: boolean }>().recentSignIn).toBe(false);
       await reauthenticate(cookie, 'mary');
-      expect((await call('PUT', '/v1/sign-in-settings/sessions', cookie, body)).statusCode).toBe(200);
+      expect((await call('PUT', '/v1/sign-in-settings/sessions', cookie, body)).statusCode).toBe(
+        200,
+      );
     });
   });
 
@@ -278,6 +283,28 @@ describe('administration of sign-in', () => {
       });
       expect(shortened.statusCode).toBe(200);
       expect((await call('GET', '/v1/me', idle)).statusCode).toBe(401);
+      await call('PUT', '/v1/sign-in-settings/sessions', cookie, {
+        idleMinutes: 60,
+        absoluteHours: 12,
+      });
+    });
+
+    it('IAM-038 shortening the absolute lifetime ends a session older than it at its next request', async () => {
+      const { cookie } = await administrator('joan');
+      const old = await cookieOf('hedy');
+      await tenantDb.withTenant(tenant, (trx) =>
+        trx
+          .updateTable('session')
+          .set({ created_at: new Date(Date.now() - 2 * 60 * 60_000) })
+          .where('token_hash', '=', hashOf(old))
+          .execute(),
+      );
+      expect((await call('GET', '/v1/me', old)).statusCode).toBe(200);
+      await call('PUT', '/v1/sign-in-settings/sessions', cookie, {
+        idleMinutes: 60,
+        absoluteHours: 1,
+      });
+      expect((await call('GET', '/v1/me', old)).statusCode).toBe(401);
       await call('PUT', '/v1/sign-in-settings/sessions', cookie, {
         idleMinutes: 60,
         absoluteHours: 12,
@@ -331,9 +358,9 @@ describe('administration of sign-in', () => {
       const added2 = added.json<{ providers: { id: string; name: string }[] }>();
       const contractors = added2.providers.find((each) => each.name === 'Contractors')!;
       const tenantView = await app.inject({ url: '/v1/tenant', headers: HEADERS });
-      expect(tenantView.json<{ providers: { name: string }[] }>().providers.map((p) => p.name)).toEqual(
-        ['Contractors', 'Your organisation'],
-      );
+      expect(
+        tenantView.json<{ providers: { name: string }[] }>().providers.map((p) => p.name),
+      ).toEqual(['Contractors', 'Your organisation']);
       expect((await signIn('grace', other, contractors.id)).cookie).toBeDefined();
 
       const replaced = await call(
@@ -442,9 +469,9 @@ describe('administration of sign-in', () => {
       expect(refused.code).toBe('principal_disabled');
       expect(refused.cookie).toBeUndefined();
 
-      expect((await call('DELETE', `/v1/principals/${id}/disablement`, admin.cookie)).statusCode).toBe(
-        200,
-      );
+      expect(
+        (await call('DELETE', `/v1/principals/${id}/disablement`, admin.cookie)).statusCode,
+      ).toBe(200);
       expect((await signIn('hedy')).cookie).toBeDefined();
     });
 

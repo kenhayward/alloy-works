@@ -114,7 +114,9 @@ export async function sessionHeld(
   if (!row) return undefined;
   if (now.getTime() - row.last_seen_at.getTime() > SESSION_POLICY.touchAfterMs) {
     const { idleMinutes } = await sessionSettings(trx);
-    const idle = new Date(Math.min(now.getTime() + idleMinutes * MINUTE_MS, row.expires_at.getTime()));
+    const idle = new Date(
+      Math.min(now.getTime() + idleMinutes * MINUTE_MS, row.expires_at.getTime()),
+    );
     await trx
       .updateTable('session')
       .set({ last_seen_at: now, idle_expires_at: idle })

@@ -785,7 +785,7 @@ describe('migration 0088, which keeps earlier versions searchable', () => {
         '0185_themes_of_their_own',
         '0186_model_run_limits',
         '0187_identity_providers',
-      '0188_sign_in_settings',
+        '0188_sign_in_settings',
       ]);
       const kept = await service.withTenant(tenant, (trx) =>
         trx

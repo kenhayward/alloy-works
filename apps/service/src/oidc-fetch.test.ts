@@ -42,8 +42,10 @@ describe('where an identity provider may be reached', () => {
   });
 
   it('refuses a name with any address refused, and one with none', async () => {
-    const answers = (...addresses: string[]) => async () =>
-      addresses.map((address) => ({ address, family: 4 }));
+    const answers =
+      (...addresses: string[]) =>
+      async () =>
+        addresses.map((address) => ({ address, family: 4 }));
     await expect(
       guardedProviderAddress('idp.example', answers('8.8.8.8', '10.0.0.1')),
     ).rejects.toBeInstanceOf(ProviderAddressRefused);
@@ -89,26 +91,29 @@ describe('where an identity provider may be reached', () => {
     const seen: { method: string; body: string; host: string }[] = [];
 
     beforeAll(async () => {
-      server = createServer({ key: read('server-key.pem'), cert: read('server.pem') }, (ask, say) => {
-        let body = '';
-        ask.on('data', (part: Buffer) => (body += part.toString()));
-        ask.on('end', () => {
-          seen.push({ method: ask.method!, body, host: ask.headers.host! });
-          if (ask.url === '/moved') {
-            say.writeHead(302, { location: 'https://169.254.169.254/' });
-            say.end();
-            return;
-          }
-          say.writeHead(200, { 'content-type': 'application/json' });
-          say.end(
-            JSON.stringify(
-              ask.url === '/issuer/.well-known/openid-configuration'
-                ? { issuer: at('/issuer'), token_endpoint: at('/token') }
-                : { issuer: 'theirs' },
-            ),
-          );
-        });
-      });
+      server = createServer(
+        { key: read('server-key.pem'), cert: read('server.pem') },
+        (ask, say) => {
+          let body = '';
+          ask.on('data', (part: Buffer) => (body += part.toString()));
+          ask.on('end', () => {
+            seen.push({ method: ask.method!, body, host: ask.headers.host! });
+            if (ask.url === '/moved') {
+              say.writeHead(302, { location: 'https://169.254.169.254/' });
+              say.end();
+              return;
+            }
+            say.writeHead(200, { 'content-type': 'application/json' });
+            say.end(
+              JSON.stringify(
+                ask.url === '/issuer/.well-known/openid-configuration'
+                  ? { issuer: at('/issuer'), token_endpoint: at('/token') }
+                  : { issuer: 'theirs' },
+              ),
+            );
+          });
+        },
+      );
       await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
       port = (server.address() as AddressInfo).port;
     });

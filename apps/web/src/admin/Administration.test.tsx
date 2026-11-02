@@ -650,7 +650,9 @@ describe('People in Administration', () => {
     const { client, sent } = peopleService();
     const { table, page } = await openPeople(client);
     const more = (who: RegExp, name: string) =>
-      userEvent.click(within(row(table, who)).getByRole('button', { name: `More actions for ${name}` }));
+      userEvent.click(
+        within(row(table, who)).getByRole('button', { name: `More actions for ${name}` }),
+      );
     // Never oneself; a service has its own, which is a service's.
     await more(/^Ada /, 'Ada');
     expect(screen.queryByRole('menuitem', { name: 'Disable' })).toBeNull();

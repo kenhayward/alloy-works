@@ -140,8 +140,7 @@ describe("Administration's Sign-in", () => {
 
   it('shows no Google settings where this service holds no Google client', async () => {
     const { client } = service({
-      read: () =>
-        json(200, settings({ google: { available: false, open: false, domains: [] } })),
+      read: () => json(200, settings({ google: { available: false, open: false, domains: [] } })),
     });
     render(<SignIn client={client} />);
     await screen.findByRole('cell', { name: 'Staff' });

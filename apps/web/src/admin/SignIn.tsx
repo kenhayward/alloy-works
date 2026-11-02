@@ -355,12 +355,7 @@ export function SignIn({ client }: { client: Client }) {
     <>
       <div className={styles['lead']}>
         <p>{words('admin.signin-lead')}</p>
-        <button
-          type="button"
-          className="primary"
-          disabled={!fresh}
-          onClick={() => setAdding(true)}
-        >
+        <button type="button" className="primary" disabled={!fresh} onClick={() => setAdding(true)}>
           {words('admin.signin-add-provider')}
         </button>
       </div>
@@ -443,21 +438,23 @@ export function SignIn({ client }: { client: Client }) {
           ))}
         </tbody>
       </table>
-      {read.providers.length === 0 && <p className={styles['muted']}>{words('admin.signin-none')}</p>}
+      {read.providers.length === 0 && (
+        <p className={styles['muted']}>{words('admin.signin-none')}</p>
+      )}
       {read.google.available && (
         <form className={styles['settings']} onSubmit={(event) => void saveGoogle(event)}>
           <h3>{words('admin.signin-google')}</h3>
-          <label className={styles['setting']}>
-            <span>
+          <div className={styles['check']}>
+            <label>
               <input
                 type="checkbox"
                 checked={google.open}
                 disabled={!fresh}
                 onChange={(event) => setGoogle({ ...google, open: event.target.checked })}
-              />{' '}
+              />
               {words('admin.signin-google-open')}
-            </span>
-          </label>
+            </label>
+          </div>
           <label className={styles['setting']}>
             {words('admin.signin-google-domains')}
             <textarea
@@ -514,8 +511,7 @@ export function SignIn({ client }: { client: Client }) {
           onClose={() => setAdding(false)}
           send={async (body) => {
             const refused = await attempt(
-              () =>
-                client.POST('/v1/sign-in-settings/providers', { body }) as Promise<Answer>,
+              () => client.POST('/v1/sign-in-settings/providers', { body }) as Promise<Answer>,
               words('admin.signin-could-not-add'),
               words('admin.signin-added', { name: body.name }),
             );

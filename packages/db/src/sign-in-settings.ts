@@ -311,7 +311,11 @@ export async function googleRoute(
     .select('route')
     .where('route', '=', 'google')
     .executeTakeFirst();
-  const domains = await trx.selectFrom('google_domain').select('domain').orderBy('domain').execute();
+  const domains = await trx
+    .selectFrom('google_domain')
+    .select('domain')
+    .orderBy('domain')
+    .execute();
   return { open: open !== undefined, domains: domains.map((row) => row.domain) };
 }
 
@@ -384,7 +388,8 @@ export type WayInChange =
 
 /** Whether somebody, the change made, could sign in through an open way in and configure sign-in. */
 async function anyWayIn(trx: TenantTransaction, change?: WayInChange): Promise<boolean> {
-  const closing = change !== undefined && 'closingProvider' in change ? change.closingProvider : null;
+  const closing =
+    change !== undefined && 'closingProvider' in change ? change.closingProvider : null;
   const google = change === undefined || !('closingGoogle' in change);
   const disabling = change !== undefined && 'disabling' in change ? change.disabling : null;
   const removing = change !== undefined && 'removingGrant' in change ? change.removingGrant : null;
@@ -451,9 +456,10 @@ export async function narrowInvitation(
     .where('id', '=', invitation)
     .execute();
   const removed = trx.deleteFrom('invitation_provider').where('invitation_id', '=', invitation);
-  await (through.providers.length > 0
-    ? removed.where('provider_id', 'not in', [...through.providers])
-    : removed
+  await (
+    through.providers.length > 0
+      ? removed.where('provider_id', 'not in', [...through.providers])
+      : removed
   ).execute();
   return 'narrowed';
 }

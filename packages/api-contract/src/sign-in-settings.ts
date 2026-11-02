@@ -155,7 +155,7 @@ export const signInSettingsRoutes = {
     operationId: 'changeProvider',
     method: 'PUT',
     path: '/v1/sign-in-settings/providers/{id}',
-    summary: "Rename an identity provider, or change the claim its groups come in",
+    summary: 'Rename an identity provider, or change the claim its groups come in',
     tenantScoped: true,
     access: CHANGING,
     params: ProviderParams,

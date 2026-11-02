@@ -80,9 +80,7 @@ describe('sessions', () => {
       createSession(trx, ada, 'organisation', at(0)),
     );
     expect(
-      await service.withTenant(tenant, (trx) =>
-        findSession(trx, idle, at(IDLE_MS + 1)),
-      ),
+      await service.withTenant(tenant, (trx) => findSession(trx, idle, at(IDLE_MS + 1))),
     ).toBeUndefined();
 
     const busy = await service.withTenant(tenant, (trx) =>
@@ -95,9 +93,7 @@ describe('sessions', () => {
       ).toBeDefined();
     }
     expect(
-      await service.withTenant(tenant, (trx) =>
-        findSession(trx, busy, at(ABSOLUTE_MS + 1)),
-      ),
+      await service.withTenant(tenant, (trx) => findSession(trx, busy, at(ABSOLUTE_MS + 1))),
     ).toBeUndefined();
   });
 

@@ -205,8 +205,15 @@ async function personIdIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
   return db.withTenant(tenant, async (trx) => {
     const made = await trx
       .insertInto('principal')
-      .values({ issuer: 'https://theirs.example', subject: 'somebody', email: null, display_name: null })
-      .onConflict((conflict) => conflict.columns(['issuer', 'subject']).doUpdateSet({ email: null }))
+      .values({
+        issuer: 'https://theirs.example',
+        subject: 'somebody',
+        email: null,
+        display_name: null,
+      })
+      .onConflict((conflict) =>
+        conflict.columns(['issuer', 'subject']).doUpdateSet({ email: null }),
+      )
       .returning('id')
       .executeTakeFirstOrThrow();
     return made.id;
