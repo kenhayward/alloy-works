@@ -20,6 +20,7 @@ import { admitGoogleAccount } from './google.js';
 import type { Identity } from './oidc.js';
 
 const account = (subject: string, email: string, extra: Partial<Identity> = {}): Identity => ({
+  authTime: null,
   issuer: 'https://accounts.google.com',
   subject,
   email,

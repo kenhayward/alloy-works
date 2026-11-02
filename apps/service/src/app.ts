@@ -19,6 +19,7 @@ import {
   type RouteContract,
   type Sample,
   type SampleParams,
+  type ReauthenticationBody,
   type SignInCallback,
   type SignInStartQuery,
   SIGN_IN_RETURN,
@@ -32,6 +33,7 @@ import {
   findApiToken,
   groupNames,
   holdPrincipal,
+  sessionSettings,
   identifyKnown,
   loadFacts,
   notifyTenant,
@@ -157,9 +159,10 @@ import {
   endSession,
   hashToken,
   sessionHeld,
-  SESSION_POLICY,
+  markReauthenticated,
   type SessionPrincipal,
 } from './sessions.js';
+import { refuseUnlessRecent, signInSettingsHandlers } from './sign-in-settings.js';
 import { signState, verifyState } from './sign-in-state.js';
 import { streamToViewer } from './stream.js';
 import { cachedResolver } from './tenants.js';
@@ -193,7 +196,13 @@ declare module 'fastify' {
  * replica, so an act still running as it stops (IAM-082, the D7 plan's D7-I).
  */
 export type Credential =
-  | { readonly kind: 'session'; readonly id: string; readonly route: SignInRoute }
+  | {
+      readonly kind: 'session';
+      readonly id: string;
+      readonly route: SignInRoute;
+      readonly providerId: string | null;
+      readonly authenticatedAt: Date;
+    }
   | { readonly kind: 'token'; readonly id: string; readonly scopes: readonly Permission[] };
 
 export interface AppOptions extends HttpOptions {
@@ -228,6 +237,8 @@ export const SIGN_IN_COOKIE = '__Host-aw_signin';
 /** The page a sign-in comes back to, as `SIGN_IN_RETURN` holds it (the R17 plan, R17-A). */
 export const RETURN_COOKIE = '__Host-aw_return';
 const SIGN_IN_ATTEMPT_MS = 10 * 60 * 1000;
+/** How far apart the provider's clock and ours may be, as openid-client allows of an ID token. */
+const PROVIDER_CLOCK_TOLERANCE_S = 30;
 const CALLBACK_PATH = '/v1/sign-in/organisation/callback';
 const GOOGLE_CALLBACK_PATH = '/v1/sign-in/google/callback';
 const GOOGLE_COMPLETE_PATH = '/v1/sign-in/google/complete';
@@ -332,6 +343,15 @@ const signInFailed = () =>
 
 /** Thrown inside a sign-in's transaction, so it commits nothing, where its principal is not held. */
 class SignInUnheld extends Error {}
+
+/** A disabled person signing in (identity.md, "Disabled people"): refused until enabled. */
+const principalDisabled = () =>
+  new AppError(
+    403,
+    'principal_disabled',
+    'This account has been disabled in this environment. An administrator can enable it.',
+    'IAM-008',
+  );
 
 /** An erased person signing in again (the ER plan, ER-D): their identity is refused for good. */
 const principalErased = () =>
@@ -496,6 +516,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
     stateHash: string,
     start: SignInStart,
     providerId: string | null = null,
+    /** The session asking, where this re-authenticates it rather than signs somebody in. */
+    sessionId: string | null = null,
   ): Promise<void> {
     await db.withTenant(tenant, (trx) =>
       trx
@@ -506,6 +528,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           code_verifier: start.codeVerifier,
           route,
           provider_id: providerId,
+          session_id: sessionId,
           expires_at: new Date(Date.now() + SIGN_IN_ATTEMPT_MS),
         })
         .execute(),
@@ -578,7 +601,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     asserted?: { readonly providerId: string; readonly groups: readonly string[] },
   ): Promise<FastifyReply> {
     let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
-    const token = await db
+    const started = await db
       .withTenant(tenant, async (trx) => {
         // The sign-in, and the memberships it settles, are the principal's own acts (AU1-F).
         await actAs(trx, principalId, request.id);
@@ -590,22 +613,123 @@ export function buildApp(options: AppOptions): FastifyInstance {
         };
         if (asserted === undefined) await hold();
         else await syncProviderGroups(trx, principalId, asserted.groups, hold, asserted.providerId);
-        return createSession(trx, principalId, route, undefined, asserted?.providerId ?? null);
+        return {
+          token: await createSession(
+            trx,
+            principalId,
+            route,
+            undefined,
+            asserted?.providerId ?? null,
+          ),
+          lifetimes: await sessionSettings(trx),
+        };
       })
       .catch((error: unknown) => {
         if (error instanceof SignInUnheld) return undefined;
         throw error;
       });
-    if (token === undefined) {
+    if (started === undefined) {
       if (held === 'missing') throw signInFailed();
+      if (held === 'disabled') {
+        await recordSignInFailure(db, request, tenant, route, 'principal_disabled', principalId);
+        throw principalDisabled();
+      }
       await recordSignInFailure(db, request, tenant, route, 'principal_erased');
       throw principalErased();
     }
-    reply.setCookie(SESSION_COOKIE, token, { ...COOKIE, maxAge: SESSION_POLICY.absoluteMs / 1000 });
-    // Back to the page the sign-in started from, held to a page of this app again as it is read.
+    reply.setCookie(SESSION_COOKIE, started.token, {
+      ...COOKIE,
+      maxAge: started.lifetimes.absoluteHours * 60 * 60,
+    });
+    return backToThePage(request, reply);
+  }
+
+  /** Back to the page a sign-in started from, held to a page of this app again as it is read. */
+  function backToThePage(request: FastifyRequest, reply: FastifyReply): FastifyReply {
     const to = request.cookies[RETURN_COOKIE];
     reply.clearCookie(RETURN_COOKIE, COOKIE);
     return reply.redirect(to !== undefined && SIGN_IN_RETURN.test(to) ? `/#/${to}` : '/', 302);
+  }
+
+  /**
+   * Whether an authentication answers the session asking (identity.md, "Re-authentication"; IAM-012):
+   * this browser's own session, of the same issuer and subject, authenticated since the attempt began.
+   * What it refuses is recorded and said as any failed sign-in; the session stays as it was.
+   */
+  async function asking(
+    request: FastifyRequest,
+    tenant: Tenant,
+    route: SignInRoute,
+    attempt: { readonly session_id: string | null; readonly created_at: Date },
+    identity: Identity,
+  ): Promise<{ readonly id: string; readonly principalId: string }> {
+    const session = await db.withTenant(tenant, (trx) =>
+      trx
+        .selectFrom('session as s')
+        .innerJoin('principal as p', 'p.id', 's.principal_id')
+        .select(['s.id', 'p.id as principal_id', 'p.issuer', 'p.subject'])
+        .where('s.id', '=', attempt.session_id!)
+        .executeTakeFirst(),
+    );
+    if (!session) throw signInFailed();
+    const since = attempt.created_at.getTime() / 1000 - PROVIDER_CLOCK_TOLERANCE_S;
+    if (
+      session.issuer !== identity.issuer ||
+      session.subject !== identity.subject ||
+      identity.authTime === null ||
+      identity.authTime < since
+    ) {
+      await recordSignInFailure(
+        db,
+        request,
+        tenant,
+        route,
+        'reauthentication_refused',
+        session.principal_id,
+      );
+      throw signInFailed();
+    }
+    return { id: session.id, principalId: session.principal_id };
+  }
+
+  /**
+   * Marks the session authenticated afresh and returns to the page that asked, the provider's groups
+   * read again as a sign-in reads them. Only in this browser's own session.
+   */
+  async function reauthenticated(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    tenant: Tenant,
+    session: { readonly id: string; readonly principalId: string },
+    route: SignInRoute,
+    asserted?: { readonly providerId: string; readonly groups: readonly string[] },
+  ): Promise<FastifyReply> {
+    const token = request.cookies[SESSION_COOKIE];
+    await db
+      .withTenant(tenant, async (trx) => {
+        const held = token ? await sessionHeld(trx, token) : undefined;
+        if (held?.id !== session.id) throw new SignInUnheld();
+        await actAs(trx, session.principalId, request.id);
+        const hold = async () => {
+          if ((await holdPrincipal(trx, session.principalId)) !== 'held') throw new SignInUnheld();
+        };
+        if (asserted === undefined) await hold();
+        else {
+          await syncProviderGroups(
+            trx,
+            session.principalId,
+            asserted.groups,
+            hold,
+            asserted.providerId,
+          );
+        }
+        await markReauthenticated(trx, { ...session, route });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof SignInUnheld) throw signInFailed();
+        throw error;
+      });
+    return backToThePage(request, reply);
   }
 
   /** Remembers the page to come back to, for the browser starting this sign-in. */
@@ -730,6 +854,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
     getHealth: async () => ({ status: 'ok' }),
 
+    ...signInSettingsHandlers({
+      tenantOf,
+      sealingKey: options.sealingKey,
+      googleAvailable: options.google !== undefined,
+      callbackPath: CALLBACK_PATH,
+    }),
+
     getTenant: async (request) => {
       const tenant = tenantOf(request);
       const profile = await db.withTenant(tenant, (trx) =>
@@ -807,6 +938,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
         nonce: attempt.nonce,
         codeVerifier: attempt.code_verifier,
       });
+      if (attempt.session_id !== null) {
+        const session = await asking(request, tenant, 'organisation', attempt, identity);
+        return reauthenticated(request, reply, tenant, session, 'organisation', {
+          providerId: provider.id,
+          groups: identity.groups,
+        });
+      }
       // Found by issuer and subject, never by email address, which can be reassigned. Only somebody
       // this environment has never seen can become an invitation's principal, and only for an
       // address the provider verifies; anybody else the provider authenticates is made a principal
@@ -908,8 +1046,14 @@ export function buildApp(options: AppOptions): FastifyInstance {
         codeVerifier: attempt.code_verifier,
       });
       const code = randomBytes(32).toString('base64url');
+      // A re-authentication marks the session asking, at the environment, rather than admitting anyone.
+      const again =
+        attempt.session_id === null
+          ? undefined
+          : await asking(request, tenant, 'google', attempt, identity);
       const admitted = await db.withTenant(tenant, async (trx) => {
-        const principalId = await admitGoogleAccount(trx, identity, request.id);
+        const principalId =
+          again?.principalId ?? (await admitGoogleAccount(trx, identity, request.id));
         if (principalId === undefined || principalId === 'erased') return principalId ?? false;
         // The hand-off names the attempt, so only the browser holding that attempt's cookie can
         // redeem it at the environment.
@@ -919,6 +1063,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
             code_hash: hashToken(code),
             principal_id: principalId,
             attempt_hash: attempt.state_hash,
+            session_id: again?.id ?? null,
             expires_at: new Date(Date.now() + HANDOFF_MS),
           })
           .execute();
@@ -970,7 +1115,64 @@ export function buildApp(options: AppOptions): FastifyInstance {
         await recordSignInFailure(db, request, tenant, 'google', failure, handoff.principal_id);
         throw signInFailed();
       }
+      if (handoff.session_id !== null) {
+        const session = { id: handoff.session_id, principalId: handoff.principal_id };
+        return reauthenticated(request, reply, tenant, session, 'google');
+      }
       return signInAs(request, reply, tenant, handoff.principal_id, 'google');
+    },
+
+    // Through the way in the session came by, returning to the callbacks a sign-in returns to (IAM-012).
+    startReauthentication: async (request, reply) => {
+      const tenant = tenantOf(request);
+      const credential = request.credential;
+      if (credential?.kind !== 'session') throw tokenNotAllowed();
+      const { to } = request.body as ReauthenticationBody;
+      const providerId = credential.providerId;
+      let url: string;
+      let cookie: string;
+      if (credential.route === 'organisation') {
+        const provider = providerId && (await organisationProvider(request, tenant, providerId));
+        if (!provider) throw routeClosed();
+        const start = await oidc.start(
+          provider,
+          `${request.protocol}://${request.host}${CALLBACK_PATH}`,
+          { reauthenticate: true },
+        );
+        await recordAttempt(
+          tenant,
+          'organisation',
+          hashToken(start.state),
+          start,
+          provider.id,
+          credential.id,
+        );
+        url = start.url;
+        cookie = start.state;
+      } else {
+        const { google } = options;
+        if (!google || !(await permits(tenant, 'google'))) throw routeClosed();
+        const attempt = randomBytes(32).toString('base64url');
+        const start = await oidc.start(
+          googleProvider(google),
+          `${request.protocol}://${google.signInHost}${GOOGLE_CALLBACK_PATH}`,
+          {
+            reauthenticate: true,
+            state: signState(secret('sign_in_state'), {
+              tenant: tenant.id,
+              host: request.host,
+              attempt,
+            }),
+          },
+        );
+        await recordAttempt(tenant, 'google', hashToken(attempt), start, null, credential.id);
+        url = start.url;
+        cookie = attempt;
+      }
+      reply.setCookie(SIGN_IN_COOKIE, cookie, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
+      if (to === undefined) reply.clearCookie(RETURN_COOKIE, COOKIE);
+      else reply.setCookie(RETURN_COOKIE, to, { ...COOKIE, maxAge: SIGN_IN_ATTEMPT_MS / 1000 });
+      return { url };
     },
 
     signOut: async (request, reply) => {
@@ -1213,6 +1415,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
           await beforeDeciding(trx, access);
           const principal = principalOf(request).principalId;
           const authorised = await authorise(trx, principal, access, request);
+          if (access.recentSignIn !== undefined) {
+            refuseUnlessRecent(request.credential, access.recentSignIn);
+          }
           const done = await once(trx, principal, keyed, () => run(request, authorised));
           // A keyed answer is recorded here, in the deciding transaction, so work that runs after it
           // commits would go unrecorded: such a route declares `idempotencyKey: false`.
@@ -1333,7 +1538,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
           : undefined;
         if (!held) throw unauthenticated();
         request.principal = held.principal;
-        request.credential = { kind: 'session', id: held.id, route: held.route };
+        request.credential = {
+          kind: 'session',
+          id: held.id,
+          route: held.route,
+          providerId: held.providerId,
+          authenticatedAt: held.authenticatedAt,
+        };
       });
     }
     http.route({

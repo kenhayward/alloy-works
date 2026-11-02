@@ -274,12 +274,15 @@ async function endAccess(trx: TenantTransaction, person: string): Promise<void> 
 export async function holdPrincipal(
   trx: TenantTransaction,
   person: string,
-): Promise<'held' | 'erased' | 'missing'> {
+): Promise<'held' | 'erased' | 'disabled' | 'missing'> {
   const row = await trx
     .selectFrom('principal')
+    .select('disabled_at')
     .select(erasedIn().as('erased'))
     .where('id', '=', person)
     .forShare()
     .executeTakeFirst();
-  return !row ? 'missing' : row.erased ? 'erased' : 'held';
+  if (!row) return 'missing';
+  if (row.erased) return 'erased';
+  return row.disabled_at === null ? 'held' : 'disabled';
 }

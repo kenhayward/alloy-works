@@ -35,6 +35,8 @@ export interface Identity {
    * where it is not a list; a member that is not a string is dropped (GP-B).
    */
   readonly groups: readonly string[];
+  /** When the person authenticated at the provider, in seconds, where it says (IAM-012). */
+  readonly authTime: number | null;
 }
 
 /**
@@ -63,7 +65,11 @@ export interface OidcClient {
   start(
     provider: ProviderSettings,
     redirectUri: string,
-    options?: { readonly state?: string },
+    options?: {
+      readonly state?: string;
+      /** Asks the provider to authenticate the person again, whoever it holds signed in (IAM-012). */
+      readonly reauthenticate?: boolean;
+    },
   ): Promise<SignInStart>;
   finish(
     provider: ProviderSettings,
@@ -141,7 +147,9 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         redirect_uri: redirectUri,
         scope: SCOPES,
         // Without it a provider still signed in skips straight back to whoever signed out.
-        prompt: 'select_account',
+        ...(options?.reauthenticate
+          ? { prompt: 'login', max_age: '0' }
+          : { prompt: 'select_account' }),
         code_challenge: await client.calculatePKCECodeChallenge(codeVerifier),
         code_challenge_method: 'S256',
         state,
@@ -186,6 +194,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         hostedDomain: typeof claims.hd === 'string' ? claims.hd : null,
         // From the ID token alone, under the basic scopes: no scope is ever asked for groups (IAM-044).
         groups: provider.groupsClaim === undefined ? [] : groupValues(claims[provider.groupsClaim]),
+        authTime: typeof claims.auth_time === 'number' ? claims.auth_time : null,
       };
     },
   };

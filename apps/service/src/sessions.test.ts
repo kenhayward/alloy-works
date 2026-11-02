@@ -13,7 +13,11 @@ import {
   testTenantDatabase,
 } from '@alloy-works/db/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createSession, endSession, findSession, hashToken, SESSION_POLICY } from './sessions.js';
+import { createSession, endSession, findSession, hashToken } from './sessions.js';
+
+/** A new environment's lifetimes (0188), an hour idle and twelve hours at most. */
+const IDLE_MS = 60 * 60 * 1000;
+const ABSOLUTE_MS = 12 * 60 * 60 * 1000;
 
 describe('sessions', () => {
   let db: TestDatabase;
@@ -77,7 +81,7 @@ describe('sessions', () => {
     );
     expect(
       await service.withTenant(tenant, (trx) =>
-        findSession(trx, idle, at(SESSION_POLICY.idleMs + 1)),
+        findSession(trx, idle, at(IDLE_MS + 1)),
       ),
     ).toBeUndefined();
 
@@ -92,7 +96,7 @@ describe('sessions', () => {
     }
     expect(
       await service.withTenant(tenant, (trx) =>
-        findSession(trx, busy, at(SESSION_POLICY.absoluteMs + 1)),
+        findSession(trx, busy, at(ABSOLUTE_MS + 1)),
       ),
     ).toBeUndefined();
   });

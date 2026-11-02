@@ -50,7 +50,11 @@ export function grantView(listed: ListedGrant): GrantView {
 
 /** What each refusal says, for a person managing access rather than for somebody reading the code. */
 const REFUSALS = new Map<
-  GrantRefusal | 'grant.last_administrator' | 'grant.not_external' | 'grant.not_later',
+  | GrantRefusal
+  | 'grant.last_administrator'
+  | 'grant.last_way_in'
+  | 'grant.not_external'
+  | 'grant.not_later',
   string
 >([
   [
@@ -91,11 +95,20 @@ const REFUSALS = new Map<
     'grant.last_administrator',
     'This is the last grant that lets anyone administer this environment, so it cannot be removed.',
   ],
+  [
+    'grant.last_way_in',
+    'Nobody who can still sign in would hold administer then, so this grant cannot be removed.',
+  ],
 ]);
 
 /** A refusal where a grant is made or removed, as 409 with the wire's spelling of the store's answer. */
 function refuse(
-  refusal: GrantRefusal | 'grant.last_administrator' | 'grant.not_external' | 'grant.not_later',
+  refusal:
+    | GrantRefusal
+    | 'grant.last_administrator'
+    | 'grant.last_way_in'
+    | 'grant.not_external'
+    | 'grant.not_later',
 ): AppError {
   return refused(409, refusal, REFUSALS.get(refusal)!);
 }

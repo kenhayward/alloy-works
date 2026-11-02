@@ -8,6 +8,7 @@ import {
 import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { labelled, labels, principalLabel, recordEvent } from './audit.js';
+import { wayInRemains } from './sign-in-settings.js';
 import type { TenantTransaction } from './tables.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -400,7 +401,7 @@ export async function administeringGrants(trx: TenantTransaction): Promise<strin
 
 export type RemovalAnswer =
   | { readonly removed: StoredGrant }
-  | { readonly refused: 'grant.missing' | 'grant.last_administrator' };
+  | { readonly refused: 'grant.missing' | 'grant.last_administrator' | 'grant.last_way_in' };
 
 /**
  * Removes a grant, or says why not: it is not this tenant's, or it is the last grant keeping the tenant
@@ -421,6 +422,10 @@ export async function removeGrant(trx: TenantTransaction, id: string): Promise<R
   const administering = await administeringGrants(trx);
   if (administering.includes(id) && administering.length === 1) {
     return { refused: 'grant.last_administrator' };
+  }
+  // Nor the last held by anybody who can still sign in (identity.md, "Lockout"; IN-B).
+  if (administering.includes(id) && !(await wayInRemains(trx, { removingGrant: id }))) {
+    return { refused: 'grant.last_way_in' };
   }
   const removed = storedOf(row);
   // Written before the row goes, its labels read while it stands (audit.md, "Writing").

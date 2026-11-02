@@ -112,6 +112,9 @@ export interface PrincipalTable {
   erased_at: ColumnType<Date | null, never, Date | null>;
   /** Their interface language (0166; UI-E), null for their browser's; absent before 0166. */
   interface_language: ColumnType<string | null, never, string | null>;
+  /** When they were disabled (0188), and whether by a person or by SCIM. */
+  disabled_at: ColumnType<Date | null, never, Date | null>;
+  disabled_by: ColumnType<'person' | 'scim' | null, never, 'person' | 'scim' | null>;
 }
 
 export interface ProfileTable {
@@ -152,6 +155,9 @@ export interface SignInAttemptTable {
   route: 'organisation' | 'google';
   /** The provider an organisation's sign-in went to (0187). */
   provider_id: string | null;
+  /** The session asking, where this is a re-authentication rather than a sign-in (0188). */
+  session_id: string | null;
+  created_at: Generated<Date>;
   expires_at: Date;
 }
 
@@ -163,6 +169,8 @@ export interface SessionTable {
   /** The provider an organisation's sign-in came through (0187). */
   provider_id: Generated<string | null>;
   created_at: Generated<Date>;
+  /** When its person last authenticated (0188): a route may require it to be recent (IAM-012). */
+  authenticated_at: Generated<Date>;
   last_seen_at: Generated<Date>;
   idle_expires_at: Date;
   expires_at: Date;
@@ -283,7 +291,16 @@ export interface SignInHandoffTable {
   code_hash: string;
   principal_id: string;
   attempt_hash: string;
+  /** The session a Google re-authentication marks, rather than a session to make (0188). */
+  session_id: string | null;
   expires_at: Date;
+}
+
+/** An environment's session lifetimes (0188; IAM-038): one row. */
+export interface SessionSettingsTable {
+  singleton: Generated<boolean>;
+  idle_minutes: number;
+  absolute_hours: number;
 }
 
 export interface ObjectStoreCredentialTable {
@@ -1375,6 +1392,7 @@ export interface TenantTables {
   invitation_provider: InvitationProviderTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;
+  session_settings: SessionSettingsTable;
   object_store_credential: ObjectStoreCredentialTable;
   sample: SampleTable;
   audit_export: AuditExportTable;

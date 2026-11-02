@@ -54,6 +54,7 @@ describe('migration 0014, over invitations made before it', () => {
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0014_invitations',
       '0187_identity_providers',
+      '0188_sign_in_settings',
     ]);
 
     const { rows } = await queryAs(

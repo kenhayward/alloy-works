@@ -16,6 +16,8 @@ export interface PersonSummary {
   readonly invited: boolean;
   /** Erased (the ER plan, ER-F): named by the fixed word, their address gone. */
   readonly erased: boolean;
+  /** Disabled (identity.md, "Disabled people"): they sign in no more until enabled. */
+  readonly disabled: boolean;
 }
 
 export interface ListedGrant {
@@ -185,6 +187,7 @@ export async function listPrincipals(
     .select(['id', 'display_name as name', 'email', 'kind'])
     .select(sql<boolean>`issuer is null and kind <> 'service'`.as('invited'))
     .select(erasedIn().as('erased'))
+    .select(sql<boolean>`disabled_at is not null`.as('disabled'))
     .$if(page.after !== undefined, (query) => query.where('id', '>', page.after!))
     .orderBy('id')
     .limit(page.limit + 1)

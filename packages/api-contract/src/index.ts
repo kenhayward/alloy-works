@@ -529,6 +529,18 @@ export {
   InvitationWithdrawn,
 } from './invitations.js';
 export {
+  GoogleSettingsBody,
+  PersonDisablement,
+  PrincipalParams,
+  ProviderBody,
+  ProviderChangeBody,
+  ProviderParams,
+  ProviderSecretBody,
+  SessionSettingsBody,
+  SignInSettings,
+  signInSettingsRoutes,
+} from './sign-in-settings.js';
+export {
   GroupBody,
   GroupDeleted,
   GroupList,
@@ -701,6 +713,8 @@ export {
   SampleParams,
   SignInCallback,
   SIGN_IN_RETURN,
+  ReauthenticationBody,
+  ReauthenticationStarted,
   SignInStartQuery,
   TenantProfile,
   About,

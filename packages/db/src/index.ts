@@ -183,6 +183,30 @@ export {
   type SignInRoute,
 } from './sign-in.js';
 export {
+  addProvider,
+  changeProvider,
+  closeProviderAsked,
+  googleRoute,
+  listProviders,
+  narrowInvitation,
+  sealProviderSecret,
+  sessionSettings,
+  setGoogleRoute,
+  setSessionSettings,
+  wayInRemains,
+  type Ended,
+  type ListedProvider,
+  type ProviderRefusal,
+  type SessionSettings,
+  type WayInChange,
+} from './sign-in-settings.js';
+export {
+  disablePrincipal,
+  enablePrincipal,
+  type DisablementAnswer,
+  type DisablementBy,
+} from './disablement.js';
+export {
   createJobQueue,
   enqueueJob,
   retryDelayMs,
