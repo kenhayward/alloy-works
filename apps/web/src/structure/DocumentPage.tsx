@@ -2055,6 +2055,21 @@ export function DocumentPage({
     setDockState(next);
     keep(DOCK_KEY, next);
   };
+  // What a selection offers takes the panels while it stands, unless they are in the middle of the
+  // Assistant, as the toolbar's second line once came at once; it hands them back as it was (ADR-0075).
+  const beforeSelection = useRef<DockPanel | null>(null);
+  useEffect(() => {
+    if (selectionHeld) {
+      if (dock === 'assistant' || dock === 'selection') return;
+      beforeSelection.current = dock;
+      setDockState('selection');
+    } else if (dock === 'selection') {
+      setDockState(beforeSelection.current ?? keptDock());
+      beforeSelection.current = null;
+    }
+    // Told as the selection changes, not as the reader chooses a panel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionHeld]);
   // Whether the component open in place holds a table, and where its formatting is set (ADR-0052):
   // the Table tab is offered while it does, and chosen each time the cursor enters a table.
   const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
@@ -2910,7 +2925,8 @@ export function DocumentPage({
                     {dockTabs.find((each) => each.key === shownDock)?.label}
                   </h2>
                 )}
-                <div className={styles['dockBody']}>
+                {/* A stop of its own, for the keyboard to scroll what has no control to tab to. */}
+                <div className={styles['dockBody']} tabIndex={0}>
                   {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
                   {provenanceState?.held && (
                     <ProvenancePanel

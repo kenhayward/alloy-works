@@ -1,5 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiTokens } from '../account/ApiTokens.js';
 import { Inbox } from '../account/Inbox.js';
@@ -57,12 +57,15 @@ function Menu({
   label,
   button,
   named,
+  namedByContent = false,
   children,
 }: {
   label: string;
   button: React.ReactNode;
   /** The button's name, where it shows an icon rather than words. */
   named?: string;
+  /** Its name is a person's, not the interface's. */
+  namedByContent?: boolean;
   children: (close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -88,6 +91,7 @@ function Menu({
         className={named === undefined ? styles['chip'] : styles['iconButton']}
         aria-expanded={open}
         aria-label={named}
+        {...(namedByContent ? { 'data-content-name': '' } : {})}
         title={named}
         onClick={() => setOpen((was) => !was)}
       >
@@ -318,8 +322,26 @@ export function Header({
     keepEditingAgain();
   };
 
+  // How tall the band stands, one line or wrapped where its words are long (WCAG 1.4.10), told to the
+  // page as `--header-height`: what stands under it and what the window scrolls to stop below it.
+  const band = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const element = band.current;
+    if (element === null || typeof ResizeObserver === 'undefined') return undefined;
+    const root = document.documentElement;
+    const measure = () =>
+      root.style.setProperty('--header-height', `${element.getBoundingClientRect().height}px`);
+    measure();
+    const resized = new ResizeObserver(measure);
+    resized.observe(element);
+    return () => {
+      resized.disconnect();
+      root.style.removeProperty('--header-height');
+    };
+  }, []);
+
   return (
-    <header className={styles['band']} data-app-region>
+    <header ref={band} className={styles['band']} data-app-region>
       <div ref={leadHost} className={styles['lead']} />
       <span className={styles['moduleName']}>
         {module === null || module === 'Search'
@@ -374,6 +396,7 @@ export function Header({
       {who !== undefined && who !== 'nobody' && (
         <Menu
           label={words('shell.account')}
+          namedByContent
           named={[
             who.displayName ?? who.email ?? words('shell.signedIn'),
             // Said here, since a name given to the button stands in for what it holds (COL-063).

@@ -88,7 +88,8 @@ export function marginLabelRules(theme: ResolvedTheme): string {
   // A paragraph whose lines the theme holds open has its pseudo-elements taken (`lineOpeners`): it has
   // no label, and the button over the current block still names it.
   const free = `:not(:has(${lineOpeners(theme).join(', ')}))`;
-  const paragraph = `.aw-labels :not(li, td, th, [data-role]) > p${free}`;
+  // Text's alone: a table note and the like stand away from the margin, and hold their markers there.
+  const paragraph = `.aw-labels :not(li, td, th, [data-role]) > p[data-place="text"]${free}`;
   const role = (name: string) => `.aw-labels [data-role="${name}"]${free}`;
   const levels = [1, 2, 3, 4, 5, 6].map((level) => `heading${level}`);
   const every = [paragraph, ...[...levels, 'title'].map(role)];

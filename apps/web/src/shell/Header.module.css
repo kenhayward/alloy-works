@@ -49,8 +49,9 @@
   z-index: var(--z-popover);
   display: flex;
   align-items: center;
-  gap: var(--space-12);
-  height: var(--header-height);
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  min-height: var(--header-size);
   padding-inline: var(--space-16);
   border-bottom: 1px solid var(--border);
   background: var(--chrome);

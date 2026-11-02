@@ -79,7 +79,8 @@
   /* The label column of the Table tab's two-column fields. */
   --panel-label: 92px;
   /* One header on every screen, the rail beside it (ADR-0075). */
-  --header-height: 56px;
+  --header-size: 56px;
+  --header-height: var(--header-size);
   --nav-rail: 56px;
   --menubar-item: 24px;
   --menu: 300px;

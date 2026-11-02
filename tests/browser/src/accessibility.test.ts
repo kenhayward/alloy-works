@@ -1852,7 +1852,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         throw new Error(`The ${name} tab was never chosen`);
       };
 
-      await page.goto(`${SERVICE}/#/components`);
+      await page.goto(`${SERVICE}/#/admin/overview`);
       const toDefinitions = page.getByRole('link', { name: /^Query definitions/ });
       await arrive({ shows: toDefinitions });
       await tabTo(toDefinitions);

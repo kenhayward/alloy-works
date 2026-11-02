@@ -93,6 +93,7 @@ export function Rail({ module, environment }: RailProps) {
             role="img"
             tabIndex={0}
             data-content
+            data-content-name
           >
             {chipOf(environment)}
           </span>

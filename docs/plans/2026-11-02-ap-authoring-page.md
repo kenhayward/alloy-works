@@ -213,8 +213,8 @@ Departures from the handoff and from what is above, each with its reason:
   built.
 - **Compare versions is History** (the Versions panel), which already compares. **Documentation** is cut:
   there is no target. The **Direction** submenu is cut: Language is the prompt that sets it.
-- **Selection does not switch the panels by itself**: a selected list would otherwise take the reader from
-  the Assistant mid-question. The tab is offered, and chosen by the reader.
+- **Selection takes the panels by itself, but not from the Assistant**: a selected list would otherwise take
+  the reader from it mid-question. It hands the panels back when the selection moves on.
 - **Pages as you edit** is a View menu item, not a header button.
 - **Label tooltips** only on the current block's button; a pseudo-element takes no title.
 - **No passive label on a paragraph holding an inline image or a mark larger than its text.** The theme
