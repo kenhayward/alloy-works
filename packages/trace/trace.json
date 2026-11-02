@@ -25100,13 +25100,13 @@
     {
       "id": "GEN-028",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 297,
+      "line": 332,
       "kind": "title"
     },
     {
       "id": "GEN-029",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 255,
+      "line": 290,
       "kind": "title"
     },
     {
@@ -26948,13 +26948,13 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 770,
+      "line": 787,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 484,
+      "line": 501,
       "kind": "title"
     },
     {
@@ -26966,19 +26966,19 @@
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 405,
+      "line": 422,
       "kind": "title"
     },
     {
       "id": "GEN-021",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 447,
+      "line": 464,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 715,
+      "line": 732,
       "kind": "title"
     },
     {
@@ -26990,25 +26990,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 831,
+      "line": 848,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 831,
+      "line": 848,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 865,
+      "line": 882,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 584,
+      "line": 601,
       "kind": "title"
     },
     {
@@ -30344,19 +30344,19 @@
     {
       "id": "GEN-027",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 102,
+      "line": 103,
       "kind": "title"
     },
     {
       "id": "GEN-028",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 187,
+      "line": 215,
       "kind": "title"
     },
     {
       "id": "IAM-076",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 127,
+      "line": 155,
       "kind": "title"
     },
     {
@@ -32840,13 +32840,13 @@
     {
       "id": "GEN-031",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 42,
+      "line": 45,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 105,
+      "line": 133,
       "kind": "title"
     },
     {
@@ -33008,7 +33008,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1158,
+      "line": 1161,
       "kind": "title"
     },
     {
