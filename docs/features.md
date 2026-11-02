@@ -1577,6 +1577,10 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Threads** panel. Select words in a component's text, or put the caret in a table cell, and start a
   thread on them; or on a whole component or a section. Reply, mention people, edit your own comment
   (every earlier text is kept and readable), and resolve, once; a resolved thread takes nothing more.
+  **Authoring** shows the same panel and marks beside the text, so an author can read and answer what
+  was said while updating the document; a new thread is started from Review. In both, a component with
+  an open comment shows a small glyph in the gutter to its left: hover to read the comment, click to
+  open it in **Threads**.
   Filter by open or resolved. A thread whose words have gone is listed as orphaned, never lost; in a
   document a component's thread is placed by the version each occurrence shows, and one on a component
   the document once placed, since deleted, is listed as orphaned too. Starting and resolving a thread

@@ -930,6 +930,15 @@ export function DocumentPage({
   const [suggestionsRead, setSuggestionsRead] = useState(0);
   // In Review: the threads the panel lists, and what the reader's selection offers a thread on.
   const [threadList, setThreadList] = useState<readonly ThreadSummary[]>([]);
+  // Counted up as the assistant's comment is accepted: the threads panel reads its list again.
+  const [threadsRead, setThreadsRead] = useState(0);
+  // The thread a comment's glyph asked for, each click below zero so no address's arrival is taken for
+  // it; an address arriving afterwards asks instead.
+  const [threadOpened, setThreadOpened] = useState<{
+    readonly thread: string;
+    readonly arrival: number;
+  } | null>(null);
+  useEffect(() => setThreadOpened(null), [atPanel?.arrival]);
   const [proposed, setProposed] = useState<{
     readonly node: string;
     readonly anchor: ThreadAnchor;
@@ -2327,6 +2336,9 @@ export function DocumentPage({
   const mayReview =
     document.mayReview || [...editable.values()].some((each) => each.mayComment === true);
   const reviewing = mayReview && chosenMode === 'review';
+  // An author updating a document reads what was said of it: the threads stand beside the text in
+  // Authoring too, marked where they stand. A thread is started from Review, on what is selected there.
+  const threadsShown = reviewing || authoring;
   const modeNow: Mode = authoring ? 'authoring' : reviewing ? 'review' : 'reading';
   const offered = MODES.filter(
     ({ mode }) =>
@@ -2382,7 +2394,8 @@ export function DocumentPage({
   // Where each thread stands in the text, and how many stand on a card or a section as a whole.
   const threadMarks = new Map<string, Placed[]>();
   const threadCounts = new Map<string, number>();
-  if (reviewing) {
+  const commentsByNode = new Map<string, { readonly thread: string; readonly said: string }[]>();
+  if (threadsShown) {
     for (const thread of threadList) {
       const nodes =
         thread.on.kind === 'document'
@@ -2391,6 +2404,19 @@ export function DocumentPage({
             : []
           : (thread.places ?? []).filter((each) => !each.orphaned).map((each) => each.node);
       for (const node of nodes) {
+        if (thread.on.kind === 'component' && thread.resolvedAt === null) {
+          const said = (thread.said ?? [])
+            .map((part) =>
+              'text' in part
+                ? part.text
+                : `@${people.find((each) => each.id === part.mention)?.name ?? ''}`,
+            )
+            .join('');
+          commentsByNode.set(node, [
+            ...(commentsByNode.get(node) ?? []),
+            { thread: thread.id, said },
+          ]);
+        }
         if (thread.anchor.kind === 'span' || thread.anchor.kind === 'cell') {
           threadMarks.set(node, [
             ...(threadMarks.get(node) ?? []),
@@ -2431,7 +2457,8 @@ export function DocumentPage({
       (each.key !== 'document' || holdsOwn) &&
       (each.key !== 'selection' || selectionHeld) &&
       (each.key !== 'table' || heldTable.holds) &&
-      (!['threads', 'suggestions', 'rounds', 'sources'].includes(each.key) || reviewing) &&
+      (each.key !== 'threads' || threadsShown) &&
+      (!['suggestions', 'rounds', 'sources'].includes(each.key) || reviewing) &&
       (each.key !== 'assistant' || authoring),
   );
   // A remembered Document panel on a document that has none shows the part instead.
@@ -3144,7 +3171,7 @@ export function DocumentPage({
                             />
                           </div>
                         )}
-                        {reviewing && (
+                        {threadsShown && (
                           <div
                             id={dockIds('threads').panel}
                             role="tabpanel"
@@ -3178,10 +3205,12 @@ export function DocumentPage({
                                   : say('document.this-document');
                               }}
                               onThreads={setThreadList}
+                              readAgain={threadsRead}
                               opening={
-                                atPanel?.panel === 'threads' && atPanel.thread !== undefined
+                                threadOpened ??
+                                (atPanel?.panel === 'threads' && atPanel.thread !== undefined
                                   ? { thread: atPanel.thread, arrival: atPanel.arrival }
-                                  : null
+                                  : null)
                               }
                               onGoTo={(thread) => {
                                 const node =
@@ -3243,6 +3272,7 @@ export function DocumentPage({
                                   ? 'follows'
                                   : movePins(component, version);
                               }}
+                              onCommented={() => setThreadsRead((count) => count + 1)}
                               onCitations={(cited) => {
                                 const nodes = cited.flatMap(({ component }) => {
                                   const node = [...componentOfNode].find(
@@ -3475,7 +3505,23 @@ export function DocumentPage({
                     {...(document.mayEdit && authoring ? { choosing } : {})}
                     bindingStates={bindingStates}
                     boundTables={boundTables}
-                    {...(reviewing ? { threadMarks, threadCounts } : {})}
+                    {...(threadsShown
+                      ? {
+                          threadMarks,
+                          threadCounts,
+                          openComments: {
+                            byNode: commentsByNode,
+                            open: (thread: string) => {
+                              setDock('threads');
+                              setDockCollapsed(false);
+                              setThreadOpened((was) => ({
+                                thread,
+                                arrival: (was?.arrival ?? 0) - 1,
+                              }));
+                            },
+                          },
+                        }
+                      : {})}
                     {...(reviewing && principalId !== undefined
                       ? {
                           onSuggest: (node: string) => {

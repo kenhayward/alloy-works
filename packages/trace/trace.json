@@ -24640,7 +24640,7 @@
     {
       "id": "COL-051",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 374,
+      "line": 384,
       "kind": "title"
     },
     {
@@ -24652,7 +24652,7 @@
     {
       "id": "IAM-081",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 393,
+      "line": 403,
       "kind": "title"
     },
     {
@@ -26986,25 +26986,25 @@
     {
       "id": "CNT-137",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 192,
+      "line": 212,
       "kind": "title"
     },
     {
       "id": "CNT-157",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 169,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "COL-038",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 305,
+      "line": 325,
       "kind": "title"
     },
     {
       "id": "COL-067",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 271,
+      "line": 291,
       "kind": "title"
     },
     {
@@ -27118,7 +27118,7 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 877,
+      "line": 880,
       "kind": "title"
     },
     {
@@ -27148,7 +27148,7 @@
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 822,
+      "line": 825,
       "kind": "title"
     },
     {
@@ -27160,25 +27160,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 938,
+      "line": 941,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 938,
+      "line": 941,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 972,
+      "line": 975,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 691,
+      "line": 694,
       "kind": "title"
     },
     {
@@ -27622,19 +27622,19 @@
     {
       "id": "CNT-155",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 165,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "CNT-157",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 188,
+      "line": 243,
       "kind": "title"
     },
     {
       "id": "IAM-081",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 165,
+      "line": 220,
       "kind": "title"
     },
     {

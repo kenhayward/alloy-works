@@ -166,6 +166,26 @@ const panel = (client: ReturnType<typeof service>['client'], as = ADA) =>
   );
 
 describe('the threads panel in Review', () => {
+  it('reads its threads again when told to, for an act that was not its own', async () => {
+    const { client, asked } = service();
+    const props = {
+      client,
+      document: DOCUMENT,
+      targets: [],
+      people: PEOPLE,
+      principalId: ADA,
+      mayAnswer: () => true,
+      placeOf: () => '1 Method',
+    };
+    const shown = render(<ThreadsPanel {...props} readAgain={0} />);
+    await screen.findByText('No threads here.');
+    const listed = () =>
+      asked.filter((each) => each.startsWith(`GET /v1/documents/${DOCUMENT}/threads`)).length;
+    expect(listed()).toBe(1);
+    shown.rerender(<ThreadsPanel {...props} readAgain={1} />);
+    await waitFor(() => expect(listed()).toBe(2));
+  });
+
   it('CNT-157 starts a thread on the selected text, naming people, and says who could not be told', async () => {
     const { client, asked, threads } = service();
     panel(client);

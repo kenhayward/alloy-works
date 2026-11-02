@@ -371,6 +371,16 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
     expect(await list('open')).toEqual([]);
   });
 
+  it('lists each thread with what its first comment says, a reply changing nothing of it', async () => {
+    const version = await component([para('p1', 'Set the tray, then wait.')]);
+    const thread = (await start(version, SPAN, 'grace')).json<ThreadView>();
+    await call('POST', `/v1/threads/${thread.id}/comments`, 'ada', { parts: said('Yes.') });
+    const listed = await call('GET', `/v1/components/${version.artifactId}/threads`, 'ada');
+    expect(listed.json<{ threads: { said: unknown }[] }>().threads[0]!.said).toEqual(
+      said('Is this right?'),
+    );
+  });
+
   it('COL-051 keeps every text of a comment its author edits, and refuses anybody else’s edit', async () => {
     const version = await component([para('p1', 'Set the tray.')]);
     const thread = (await start(version, { kind: 'component' })).json<ThreadView>();

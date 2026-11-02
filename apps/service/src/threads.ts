@@ -159,6 +159,7 @@ const summaryView = (
   resolvedAt: thread.resolvedAt?.toISOString() ?? null,
   comments: thread.comments,
   lastAt: thread.lastAt.toISOString(),
+  said: [...thread.said],
   orphaned,
   ...(places === undefined ? {} : { places }),
 });

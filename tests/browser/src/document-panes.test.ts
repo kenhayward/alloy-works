@@ -36,6 +36,38 @@ describe("the panes beside a document's text, in Chromium", () => {
       node: { type: 'reference', component: component.id, mode: { kind: 'latest' } },
     });
     report = made.id;
+    const { data } = await client.GET('/v1/components/{id}', {
+      params: { path: { id: component.id } },
+    });
+    const started = await client.POST('/v1/components/{id}/threads', {
+      params: { path: { id: component.id } },
+      body: {
+        version: data!.version.id,
+        anchor: { kind: 'component' },
+        parts: [{ text: 'Are these readings from this year?' }],
+      },
+    });
+    expect(started.response.status).toBe(200);
+  });
+
+  it('marks a component with an open comment in its gutter, clear of the text, and opens the comment from there', async () => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(`${SERVICE}/#/documents/${report}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      const glyph = page.getByRole('button', {
+        name: 'Open the comment: Are these readings from this year?',
+      });
+      await glyph.waitFor();
+      const box = await glyph.boundingBox();
+      const text = await page.getByText('Paragraph 1. The readings').first().boundingBox();
+      expect(box!.x + box!.width).toBeLessThanOrEqual(text!.x);
+      expect(box!.width).toBeGreaterThanOrEqual(24);
+      expect(await glyph.getAttribute('title')).toBe('Are these readings from this year?');
+      await glyph.click();
+      const panel = page.getByRole('tabpanel', { name: 'Threads' });
+      await panel.getByText('Are these readings from this year?').first().waitFor();
+    });
   });
 
   it('starts both panes at one height, holds them still as the text scrolls, and hides the right to its rail', async ({

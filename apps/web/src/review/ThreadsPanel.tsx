@@ -28,6 +28,8 @@ export interface ThreadSummary {
   readonly internal?: boolean;
   readonly resolvedAt: string | null;
   readonly comments: number;
+  /** Its first comment as it reads now. */
+  readonly said?: readonly Part[];
   readonly orphaned: boolean;
   readonly places?: readonly { readonly node: string; readonly orphaned: boolean }[];
 }
@@ -239,6 +241,7 @@ export function ThreadsPanel({
   placeOf,
   onThreads,
   onGoTo,
+  readAgain,
   baseline,
   opening = null,
 }: {
@@ -260,6 +263,8 @@ export function ThreadsPanel({
   onGoTo?: (thread: ThreadSummary) => void;
   /** A thread to open, once for each arrival of the address naming it (the SV plan, SV-M). */
   opening?: { readonly thread: string; readonly arrival: number } | null;
+  /** Counted up for what started a thread elsewhere, such as the assistant's comment accepted. */
+  readAgain?: number;
 }) {
   // Whether the reader is from outside the organisation (IAM-045), who neither starts an internal
   // thread nor makes one so (COL-038; the R13 plan, R13-C).
@@ -313,7 +318,7 @@ export function ThreadsPanel({
 
   useEffect(() => {
     void read().catch(() => setThreads(null));
-  }, [read]);
+  }, [read, readAgain]);
 
   const open = async (id: string) => {
     setRefused('');

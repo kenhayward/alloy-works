@@ -1,3 +1,5 @@
+import { IconButton } from '../parts/IconButton.js';
+import { Icon } from '../editor/Icon.js';
 import type { createApiClient } from '@alloy-works/api-client';
 import { statusWords, type TranslationSaid } from '../translation/Translations.js';
 import type { OverrideView } from './overrides.js';
@@ -259,6 +261,30 @@ function ThreadsSaid({ count }: { count: number | undefined }) {
 }
 
 /**
+ * That a component has open comments, in the gutter to its left (the sheet's margin): what they say
+ * as its hover text, and a click opens the newest in the Threads panel.
+ */
+function CommentGlyph({
+  comments,
+  onOpen,
+}: {
+  comments: readonly { readonly thread: string; readonly said: string }[];
+  onOpen: (thread: string) => void;
+}) {
+  const said = comments.map((each) => each.said).join('\n\n');
+  return (
+    <IconButton
+      className={styles['commentGlyph']}
+      label={say('document.open-the-comments', { count: comments.length, said })}
+      tooltip={said}
+      onClick={() => onOpen(comments[0]!.thread)}
+    >
+      <Icon name="Threads" size={14} />
+    </IconButton>
+  );
+}
+
+/**
  * A component's text, rendered once for its content and set into the card: markup, not a view.
  * Given `onOpen`, the text is the way into the component's editor (interface slice 13): a click
  * opens it with the caret where the click landed, and Enter opens it from the keyboard, the text
@@ -475,6 +501,7 @@ export function DocumentText({
   onTableRows,
   threadMarks,
   threadCounts,
+  openComments,
   onSuggest,
   newer,
 }: {
@@ -561,6 +588,14 @@ export function DocumentText({
   threadMarks?: ReadonlyMap<string, readonly Placed[]>;
   /** In Review, how many threads stand on each node as a whole: a component or a section. */
   threadCounts?: ReadonlyMap<string, number>;
+  /** The open comments on each component, newest first, and what opens one, for its gutter glyph. */
+  openComments?: {
+    readonly byNode: ReadonlyMap<
+      string,
+      readonly { readonly thread: string; readonly said: string }[]
+    >;
+    readonly open: (thread: string) => void;
+  };
   /** In Review, opens a draft of a component to suggest a change to it (the SG plan, SG-J). */
   onSuggest?: (node: string) => void;
   /**
@@ -682,6 +717,12 @@ export function DocumentText({
           data-changed={changed?.has(node.id) === true ? 'true' : undefined}
         >
           <div className={styles['component']} data-component="" data-editing={editing === node.id}>
+            {openComments?.byNode.has(node.id) === true && (
+              <CommentGlyph
+                comments={openComments.byNode.get(node.id)!}
+                onOpen={openComments.open}
+              />
+            )}
             {/* The component's label (CNT-073): what it is, which version and how it is placed
                 (CNT-162), whether the reader may edit it and who holds it, and Open - seen on hover, on
                 focus and under Show boundaries, and always there for a screen reader. While it is
