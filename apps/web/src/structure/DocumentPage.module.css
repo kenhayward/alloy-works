@@ -498,3 +498,85 @@
   color: var(--muted);
   font-size: var(--size-12);
 }
+
+/* The side dock (ADR-0075): floating on the desk 12px in, full height, the panel extending it. */
+.layout {
+  --left: calc(var(--side-dock) + var(--outline-width));
+}
+
+.layout[data-collapsed='true'] {
+  --left: var(--side-dock);
+}
+
+.sideDock {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-12));
+  z-index: 2;
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  justify-self: start;
+  width: var(--side-dock);
+  height: calc(100vh - var(--header-height) - var(--status-height, 0px) - 2 * var(--space-12));
+  padding-block: var(--space-4);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.dockToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+}
+
+.dockToggle:hover {
+  background: var(--hover);
+}
+
+.dockToggle[aria-pressed='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.dockRule {
+  flex: none;
+  width: 24px;
+  height: 1px;
+  margin-block: 4px;
+  background: var(--divider-strong);
+}
+
+/* The panel, 1px of rule from the dock: the same surface. */
+.layout > [data-panel] > [data-part='outline'] {
+  margin-inline-start: var(--side-dock);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
+.modeName {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+label[data-chosen='true'] .modeName {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}

@@ -378,3 +378,32 @@ button.danger {
   background: var(--accent-weak);
   color: var(--accent-text);
 }
+
+/* A paragraph's style in the sheet's margin (ADR-0075; CNT-190), its words from `marginLabelRules`: out of
+   the flow, so the measure is untouched, and 10px at every zoom it shows at. */
+.aw-labels :not(li, td, th, [data-role]) > p,
+.aw-labels [data-role^='heading'],
+.aw-labels [data-role='title'] {
+  position: relative;
+}
+
+.aw-labels :not(li, td, th, [data-role]) > p::before,
+.aw-labels [data-role^='heading']::before,
+.aw-labels [data-role='title']::before {
+  position: absolute;
+  top: 0.2em;
+  inset-inline-end: calc(100% + 8px);
+  width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px);
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: end;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+  user-select: none;
+}

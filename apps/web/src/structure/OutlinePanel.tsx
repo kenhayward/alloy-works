@@ -289,6 +289,8 @@ export interface OutlinePanelProps {
    * The chosen part's settings as the Part panel beside the text (the LG plan, LG6c): its id, the tab
    * that names it, and whether another panel is shown in its place.
    */
+  /** What the pane's filter holds; every node where none. */
+  readonly filter?: string;
   readonly details?: {
     readonly id: string;
     readonly labelledBy: string;
@@ -514,6 +516,7 @@ export function OutlinePanel({
   tab,
   instead,
   details,
+  filter,
   root = null,
   scheme,
   editable,
@@ -1049,7 +1052,13 @@ export function OutlinePanel({
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
   };
 
-  const renderNodes = (list: readonly OutlineViewNode[], level: number) =>
+  // What the pane's filter leaves: a node whose title holds it, and the way down to one.
+  const kept = (node: OutlineViewNode): boolean =>
+    filter === undefined ||
+    filter.trim() === '' ||
+    nodeName(node, names).toLowerCase().includes(filter.trim().toLowerCase()) ||
+    ('children' in node && (node.children as readonly OutlineViewNode[]).some(kept));
+  const renderNodes = (all: readonly OutlineViewNode[], level: number, list = all.filter(kept)) =>
     list.map((node, index) => {
       const labelId = `${prefix}-${node.id}`;
       const numberId = `${labelId}-number`;

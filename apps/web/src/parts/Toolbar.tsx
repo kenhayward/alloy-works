@@ -20,8 +20,11 @@ export function Toolbar({
   className,
   children,
   ref,
+  orientation = 'horizontal',
 }: {
   label: string;
+  /** A dock's column moves on Up and Down (ADR-0075). */
+  orientation?: 'horizontal' | 'vertical';
   className?: string | undefined;
   children: ReactNode;
   ref?: Ref<HTMLDivElement> | undefined;
@@ -54,8 +57,10 @@ export function Toolbar({
     const from = items().indexOf(event.target as HTMLElement);
     if (from < 0) return;
     const key = inlineKey(event.key);
-    if (key === 'ArrowRight') moveTo(from + 1);
-    else if (key === 'ArrowLeft') moveTo(from - 1);
+    const next = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight';
+    const previous = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft';
+    if (key === next) moveTo(from + 1);
+    else if (key === previous) moveTo(from - 1);
     else if (event.key === 'Home') moveTo(0);
     else if (event.key === 'End') moveTo(items().length - 1);
     else return;
@@ -71,6 +76,7 @@ export function Toolbar({
       }}
       role="toolbar"
       aria-label={label}
+      {...(orientation === 'vertical' ? { 'aria-orientation': 'vertical' as const } : {})}
       className={className ?? styles['toolbar']}
       // So the region ring has somewhere to land even if the row were ever empty.
       tabIndex={-1}

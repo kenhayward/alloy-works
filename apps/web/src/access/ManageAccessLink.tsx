@@ -31,6 +31,22 @@ export async function administersAt(client: Client, target: string): Promise<boo
  * The check is a convenience for the link alone: the access page itself enforces permission again,
  * server-side. Shared by a component, a document and each template in Templates.
  */
+/** Whether the reader may administer `target`, asked once for each. */
+export function useAdministers(client: Client, target: string): boolean {
+  const [administers, setAdministers] = useState(false);
+  useEffect(() => {
+    let current = true;
+    setAdministers(false);
+    void administersAt(client, target).then((answer) => {
+      if (current) setAdministers(answer);
+    });
+    return () => {
+      current = false;
+    };
+  }, [client, target]);
+  return administers;
+}
+
 export function ManageAccessLink({
   client,
   target,
@@ -49,17 +65,7 @@ export function ManageAccessLink({
   /** A glyph before the words, where the link stands on a bar of icons (ADR-0056). */
   icon?: React.ReactNode;
 }) {
-  const [administers, setAdministers] = useState(false);
-  useEffect(() => {
-    let current = true;
-    setAdministers(false);
-    void administersAt(client, target).then((answer) => {
-      if (current) setAdministers(answer);
-    });
-    return () => {
-      current = false;
-    };
-  }, [client, target]);
+  const administers = useAdministers(client, target);
   if (!administers) return null;
   return (
     <a href={href} className={className} {...(label === undefined ? {} : { 'aria-label': label })}>

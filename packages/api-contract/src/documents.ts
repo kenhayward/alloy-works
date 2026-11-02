@@ -20,6 +20,7 @@ import {
   DatesView,
   ScopeView,
   WorkflowStandingView,
+  WorkflowStatesView,
   WorkflowStateView,
 } from './workflows.js';
 import { templateParameterSchema } from '@alloy-works/domain';
@@ -392,6 +393,7 @@ export const DocumentView = z.object({
     ),
   mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
   state: WorkflowStandingView,
+  states: WorkflowStatesView,
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),

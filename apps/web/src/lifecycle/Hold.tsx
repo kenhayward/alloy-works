@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useState } from 'react';
+import { useState, useImperativeHandle, type Ref } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
@@ -117,6 +117,7 @@ export async function releaseHold(
  * administrator, as its view says (AH-G); the route decides again.
  */
 export function PlaceHoldButton({
+  act,
   client,
   target,
   title,
@@ -124,6 +125,8 @@ export function PlaceHoldButton({
   onPlaced,
   className,
 }: {
+  /** Set to what opens it, where a menu does and no button is drawn (ADR-0075). */
+  act?: Ref<() => void>;
   client: Client;
   target: HoldTarget;
   title: string;
@@ -132,12 +135,15 @@ export function PlaceHoldButton({
   className?: string | undefined;
 }) {
   const [asking, setAsking] = useState(false);
+  useImperativeHandle(act, () => () => setAsking(true), []);
   if (!mayHold) return null;
   return (
     <>
-      <button type="button" className={className} onClick={() => setAsking(true)}>
-        {words('lifecycle.place-a-hold')}
-      </button>
+      {act === undefined && (
+        <button type="button" className={className} onClick={() => setAsking(true)}>
+          {words('lifecycle.place-a-hold')}
+        </button>
+      )}
       {asking && (
         <PlaceHoldDialog
           client={client}

@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, useImperativeHandle, type Ref } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import {
@@ -136,6 +136,7 @@ export function ScopeChips({
  * none ticked is everywhere. Saved as one act, a refusal said in the service's words.
  */
 export function ScopeButton({
+  act,
   client,
   kind,
   id,
@@ -146,6 +147,8 @@ export function ScopeButton({
   mayEdit = true,
   line,
 }: {
+  /** Set to what opens it, where a menu does and no button is drawn (ADR-0075). */
+  act?: Ref<() => void>;
   client: Client;
   kind: 'component' | 'document';
   id: string;
@@ -159,11 +162,14 @@ export function ScopeButton({
   line?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
+  useImperativeHandle(act, () => () => setOpen(true), []);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
-        {words('lifecycle.effective-for-2')}
-      </button>
+      {act === undefined && (
+        <button type="button" className={className} onClick={() => setOpen(true)}>
+          {words('lifecycle.effective-for-2')}
+        </button>
+      )}
       {open && (
         <ScopeDialog
           client={client}

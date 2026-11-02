@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useStyledImages } from './images.js';
 import { usePresentation, useZoom, ZOOMS, type Zoom } from './presentation.js';
+import { LABELS_FROM, useStyleLabels } from './styleLabels.js';
 import { Icon } from '../editor/Icon.js';
 import { IconButton } from '../parts/IconButton.js';
 import { Notice } from '../states/Notice.js';
@@ -54,6 +55,7 @@ export function useCanvas(
   const ready = presentation?.state === 'ready' ? presentation : null;
   const measure = ready?.frame.measure;
   const fit = zooming?.zoom === 'fit';
+  const [labelsOn] = useStyleLabels();
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -71,7 +73,9 @@ export function useCanvas(
   const zoom = zooming.zoom === 'fit' ? fitted : zooming.zoom;
   return {
     ref,
-    className: sheet ? 'aw-canvas aw-sheet' : 'aw-canvas',
+    className: sheet
+      ? `aw-canvas aw-sheet${labelsOn && zoom >= LABELS_FROM ? ' aw-labels' : ''}`
+      : 'aw-canvas',
     style: {
       '--aw-measure': `${ready.frame.measure}pt`,
       '--aw-zoom': String(Number(zoom.toFixed(4))),

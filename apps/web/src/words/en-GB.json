@@ -1,5 +1,11 @@
 {
   "menu.document": "Document",
+  "document.lifecycle": "Where it stands",
+  "editor.more-text-formatting": "More text formatting",
+  "document.selection": "Selection",
+  "document.filter-sections": "Filter sections",
+  "document.component-menu": "Component",
+  "shell.keyboard-shortcuts-list": "Commands and their keys",
   "shell.go-to-keys": "Go-to keys",
   "menu.edit": "Edit",
   "menu.view": "View",

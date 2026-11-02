@@ -70,7 +70,16 @@ import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
 import { Icon } from '../editor/Icon.js';
 import { IdleBand } from '../editor/IdleBand.js';
+import {
+  ActiveEditorContext,
+  InPlaceSettings,
+  type ActiveEditorHandle,
+} from '../editor/ActiveEditor.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
+import { NameTip } from '../parts/NameTip.js';
+import type { CommandState } from '../shell/commands/menus.js';
+import { StatusLead } from '../shell/Status.js';
+import { DocumentHeader } from './DocumentHeader.js';
 import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
@@ -112,8 +121,7 @@ import {
 } from '../review/ThreadsPanel.js';
 import { DataTab } from './DataTab.js';
 import {
-  OutlineRail,
-  OutlineTabs,
+  OutlineHead,
   offeredTabs,
   shownTab,
   tabIds,
@@ -652,6 +660,14 @@ type Mode = 'reading' | 'review' | 'authoring';
 
 /** The panels beside the text, named in words and drawn as icons on the rail (ADR-0074; the LG plan, LG6c). */
 const DOCK_PANELS = [
+  // Offered while the selection stands where it has settings (ADR-0075).
+  {
+    key: 'selection',
+    icon: 'Format',
+    get label() {
+      return say('document.selection');
+    },
+  },
   // While a component open in place holds a table (ADR-0052).
   {
     key: 'table',
@@ -947,6 +963,17 @@ export function DocumentPage({
   >(new Map());
   // The band a component open in place keeps its toolbar in (ADR-0056).
   const [band, setBand] = useState<HTMLElement | null>(null);
+  // What the menus open and read (ADR-0075).
+  const datesAct = useRef<() => void>(null);
+  const scopeAct = useRef<() => void>(null);
+  const relationshipsAct = useRef<() => void>(null);
+  const archiveAct = useRef<() => void>(null);
+  const deleteAct = useRef<() => void>(null);
+  const holdAct = useRef<() => void>(null);
+  const activeEditor = useRef<ActiveEditorHandle | null>(null);
+  const [selectionHost, setSelectionHost] = useState<HTMLDivElement | null>(null);
+  const [selectionHeld, setSelectionHeld] = useState(false);
+  const [sectionFilter, setSectionFilter] = useState('');
   // Each space's term index, read once for every editor opened in this document (TM-L): a fresh
   // one for each document, though nothing in it reads `id`.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2357,7 +2384,6 @@ export function DocumentPage({
     read: declared?.document === document.id ? declared.declarations : undefined,
     holdsValues,
   });
-  const ids = tabIds(shown);
   // The panels beside the text, named in words (the LG plan, LG6c): the document's own only where it
   // holds fields or parameters, or where a condition axis is declared, for its Profile (issue #675).
   const holdsOwn =
@@ -2365,18 +2391,137 @@ export function DocumentPage({
   const dockTabs = DOCK_PANELS.filter(
     (each) =>
       (each.key !== 'document' || holdsOwn) &&
+      (each.key !== 'selection' || selectionHeld) &&
       (each.key !== 'table' || heldTable.holds) &&
       (!['threads', 'suggestions', 'rounds', 'sources'].includes(each.key) || reviewing) &&
       (each.key !== 'assistant' || authoring),
   );
   // A remembered Document panel on a document that has none shows the part instead.
   const shownDock: DockPanel = dockTabs.some((each) => each.key === dock) ? dock : 'part';
+  const togglePanel = (key: string) => {
+    if (!outlinePane.collapsed && shown === key) {
+      outlinePane.setCollapsed(true);
+      return;
+    }
+    chooseTab(key);
+    outlinePane.setCollapsed(false);
+  };
+  const assistantOpen = !dockPane.collapsed && shownDock === 'assistant';
+  const toggleAssistant = () => {
+    if (assistantOpen) {
+      dockPane.setCollapsed(true);
+      return;
+    }
+    setDock('assistant');
+    dockPane.setCollapsed(false);
+  };
+  const pageKeys = {
+    'Mod-j': () => {
+      toggleAssistant();
+      return true;
+    },
+    // A version is a decision and the text saves itself, so the key makes none, and the browser's
+    // Save page does not open over the text (ADR-0076).
+    'Mod-s': () => editing !== null,
+  };
+  const opening = (act: { readonly current: (() => void) | null }, enabled = true): CommandState => ({
+    enabled,
+    run: () => act.current?.(),
+  });
+  const panelState = (key: string): CommandState => ({
+    enabled: tabs.some((each) => each.key === key),
+    checked: !outlinePane.collapsed && shown === key,
+    run: () => togglePanel(key),
+  });
+  const modeState = (mode: Mode): CommandState => ({
+    enabled: offered.some((each) => each.mode === mode),
+    checked: modeNow === mode,
+    run: () => chooseMode(mode),
+  });
+  const commandState = (id: string): CommandState => {
+    const fromEditor = activeEditor.current?.state(id);
+    if (fromEditor !== undefined) return fromEditor;
+    const never: CommandState = { enabled: false, run: () => undefined };
+    switch (id) {
+      case 'search':
+        return { enabled: true, run: () => window.dispatchEvent(new CustomEvent('aw-search')) };
+      case 'preview':
+        return { enabled: true, run: () => void preview.ask() };
+      case 'history':
+        return {
+          enabled: true,
+          run: () => {
+            setDock('versions');
+            dockPane.setCollapsed(false);
+          },
+        };
+      case 'dates':
+        return opening(datesAct, document.mayEdit && !document.archived && !!document.dates);
+      case 'scope':
+        return opening(scopeAct);
+      case 'relationships':
+        return opening(relationshipsAct);
+      case 'hold':
+        return opening(holdAct, document.mayHold);
+      case 'archive':
+        return {
+          ...opening(archiveAct, document.mayRetire),
+          said: document.archived ? say('lifecycle.unarchive') : say('lifecycle.archive'),
+        };
+      case 'delete':
+        return opening(deleteAct, document.mayRetire);
+      case 'mode.reading':
+        return modeState('reading');
+      case 'mode.review':
+        return modeState('review');
+      case 'mode.authoring':
+        return modeState('authoring');
+      case 'panel.contents':
+        return panelState('contents');
+      case 'panel.baselines':
+        return panelState('baselines');
+      case 'panel.data':
+        return panelState('data');
+      case 'assistant':
+        return { enabled: true, checked: assistantOpen, run: toggleAssistant };
+      case 'boundaries':
+        return { enabled: true, checked: boundaries, run: () => showBoundaries(!boundaries) };
+      case 'pages':
+        return { enabled: editing !== null, checked: rangePreview.on, run: rangePreview.toggle };
+      case 'comment':
+        return { enabled: mayReview, run: () => chooseMode('review') };
+      case 'manage-styles':
+        return {
+          enabled: true,
+          run: () => {
+            window.location.hash = '#/admin/themes';
+          },
+        };
+      case 'whats-new':
+        return {
+          enabled: true,
+          run: () => {
+            window.location.hash = '#/admin/about';
+          },
+        };
+      default:
+        return never;
+    }
+  };
   return (
     // Set in the theme and layout this document publishes under, its own and its components' text alike
     // (themes.md, "The theme in the editor", ET-A).
     <PresentationProvider client={client} document={document.id}>
       <Presented onSettled={presented.told} />
       {/* Named by its title and the mode it is in, so a screen reader arriving hears which (CNT-154). */}
+      <ActiveEditorContext.Provider value={activeEditor}>
+      <InPlaceSettings.Provider
+        value={{
+          host: selectionHost,
+          onHeld: setSelectionHeld,
+          onComment: () => chooseMode('review'),
+        }}
+      >
       <InPlaceBand.Provider value={band}>
         <article
           aria-labelledby="document-title document-mode"
@@ -2387,48 +2532,143 @@ export function DocumentPage({
             {say('document.in', { name: MODES.find(({ mode }) => mode === modeNow)!.name })}
           </span>
           {!document.mayEdit && !withdrawn && <p>{say('document.you-may-read-this-document')}</p>}
-          {/* The document bar (ADR-0056): where it is, the mode as two segments, Preview, the zoom,
-            Show boundaries and, at its end, access - one line on the chrome over the desk. */}
-          <div className={styles['bar']}>
-            <nav aria-label={say('document.breadcrumb')} className={styles['trail']}>
-              <a href="#/documents">{say('document.documents')}</a>
-              <span>{` / ${document.space.name}`}</span>
-            </nav>
-            <span className={styles['rule']} aria-hidden="true" />
-            {offered.length > 1 ? (
-              <div role="radiogroup" aria-label={say('document.mode')} className={styles['mode']}>
-                {offered.map(({ mode, name }) => (
-                  <label key={mode}>
-                    <input
-                      type="radio"
-                      name={`mode-${document.id}`}
-                      checked={modeNow === mode}
-                      onChange={() => chooseMode(mode)}
-                    />
-                    <Icon name={name} size={14} />
-                    {name}
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className={styles['modeShown']}>{say('document.reading')}</p>
-            )}
-            <PreviewButton preview={preview} />
-            {editing !== null && (
-              <RangePreviewButton range={rangePreview} className={styles['toggle']} />
-            )}
-            <button
-              type="button"
-              className={styles['toggle']}
-              aria-pressed={boundaries}
-              onClick={() => showBoundaries(!boundaries)}
-            >
-              <Icon name="Show boundaries" size={14} />
-              {say('document.show-boundaries')}
-            </button>
-            <PeopleHere people={live.people} connected={live.connected} />
-            {document.standing && <StateLozenge state={document.standing.state} />}
-            <RevisionChip revision={document.standing?.revision} />
+          <DocumentHeader
+            client={client}
+            accessTarget={`artifact:${document.id}`}
+            accessHref={documentAccessLink(document.id)}
+            title={document.outline.title}
+            space={document.space.name}
+            version={document.version.number}
+            beside={
+              <>
+                <PeopleHere people={live.people} connected={live.connected} />
+                <RevisionChip revision={document.standing?.revision} />
+              </>
+            }
+            transition={
+              document.standing
+                ? {
+                    client,
+                    kind: 'document',
+                    id: document.id,
+                    title: document.outline.title,
+                    standing: document.standing,
+                    versionId: document.version.id,
+                    onMoved: (standing, said) => {
+                      if (latest.current?.id === document.id) show({ ...latest.current, standing });
+                      setNotice(said);
+                    },
+                    onNotice: setNotice,
+                    onStale: restand,
+                  }
+                : undefined
+            }
+            mode={
+              offered.length > 1 ? (
+                <div role="radiogroup" aria-label={say('document.mode')} className={styles['mode']}>
+                  {offered.map(({ mode, name }) => (
+                    <NameTip key={mode} name={name}>
+                      <label data-chosen={modeNow === mode}>
+                        <input
+                          type="radio"
+                          name={`mode-${document.id}`}
+                          checked={modeNow === mode}
+                          onChange={() => chooseMode(mode)}
+                        />
+                        <Icon name={name} size={14} />
+                        <span className={styles['modeName']}>{name}</span>
+                      </label>
+                    </NameTip>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles['modeShown']}>{say('document.reading')}</p>
+              )
+            }
+            preview={
+              <>
+                <PreviewButton preview={preview} />
+                {editing !== null && (
+                  <RangePreviewButton range={rangePreview} className={styles['toggle']} />
+                )}
+              </>
+            }
+            styles={() => activeEditor.current?.styles() ?? []}
+            onKeys={pageKeys}
+            stateOf={commandState}
+          />
+          {/* What the Document menu opens: its dialogs, no buttons (ADR-0075). */}
+          {document.dates && (
+            <DatesButton
+              act={datesAct}
+              client={client}
+              kind="document"
+              id={document.id}
+              title={document.outline.title}
+              dates={document.dates}
+              onSaved={(dates) => {
+                if (latest.current?.id === document.id) show({ ...latest.current, dates });
+                setNotice(say('document.its-dates-are-saved'));
+              }}
+            />
+          )}
+          <ScopeButton
+            act={scopeAct}
+            mayEdit={document.mayEdit && !document.archived && document.scope !== null}
+            client={client}
+            kind="document"
+            id={document.id}
+            title={document.outline.title}
+            scope={document.scope ?? NO_SCOPE}
+            onSaved={(scope) => {
+              if (latest.current?.id === document.id) show({ ...latest.current, scope });
+              setNotice(say('document.its-scope-is-saved'));
+            }}
+          />
+          <RelationshipsButton
+            act={relationshipsAct}
+            client={client}
+            id={document.id}
+            kind="document"
+            title={document.outline.title}
+          />
+          <ArchiveButton
+            act={archiveAct}
+            client={client}
+            kind="document"
+            id={document.id}
+            title={document.outline.title}
+            archived={document.archived}
+            mayRetire={document.mayRetire}
+            onChanged={(archived, said) => {
+              if (latest.current?.id === document.id) show({ ...latest.current, archived });
+              setNotice(said);
+            }}
+          />
+          <DeleteButton
+            act={deleteAct}
+            client={client}
+            kind="document"
+            id={document.id}
+            title={document.outline.title}
+            mayRetire={document.mayRetire}
+            onDeleted={() => setLoaded({ state: 'deleted' })}
+          />
+          <PlaceHoldButton
+            act={holdAct}
+            client={client}
+            target={{ artifact: document.id }}
+            title={document.outline.title}
+            mayHold={document.mayHold}
+            onPlaced={(said) => {
+              if (latest.current?.id === document.id) {
+                show({ ...latest.current, onHold: true });
+              }
+              setNotice(said);
+            }}
+          />
+          {/* What is true of the document as a whole, at the status bar's left (ADR-0075). */}
+          <StatusLead>
             <DatesChips dates={document.dates ?? undefined} />
             <ScopeChips
               client={client}
@@ -2442,119 +2682,12 @@ export function DocumentPage({
             />
             {document.archived && <Chip>{say('document.archived')}</Chip>}
             {document.onHold && <Chip>{say('document.on-hold')}</Chip>}
-            {/* Access to the document, offered to whoever may administer it (access.md, GP-E), and
-              Archive or Unarchive to whoever may retire it (lifecycle.md). */}
-            <span className={styles['access']}>
-              {document.standing && (
-                <TransitionButtons
-                  client={client}
-                  kind="document"
-                  id={document.id}
-                  title={document.outline.title}
-                  standing={document.standing}
-                  versionId={document.version.id}
-                  className={styles['toggle']}
-                  onMoved={(standing, said) => {
-                    if (latest.current?.id === document.id) show({ ...latest.current, standing });
-                    setNotice(said);
-                  }}
-                  onNotice={setNotice}
-                  onStale={restand}
-                />
-              )}
-              {/* Its dates, to whoever may edit it (the WF5 plan, WF5-A). */}
-              {document.mayEdit && !document.archived && document.dates && (
-                <DatesButton
-                  client={client}
-                  kind="document"
-                  id={document.id}
-                  title={document.outline.title}
-                  dates={document.dates}
-                  className={styles['toggle']}
-                  onSaved={(dates) => {
-                    if (latest.current?.id === document.id) show({ ...latest.current, dates });
-                    setNotice(say('document.its-dates-are-saved'));
-                  }}
-                />
-              )}
-              {/* What a revision approved from now is effective for, set where it may be, and what was
-                  effective where and when, asked by every reader (the R15 plan, R15-B, R15-F). */}
-              <ScopeButton
-                mayEdit={document.mayEdit && !document.archived && document.scope !== null}
-                client={client}
-                kind="document"
-                id={document.id}
-                title={document.outline.title}
-                scope={document.scope ?? NO_SCOPE}
-                className={styles['toggle']}
-                onSaved={(scope) => {
-                  if (latest.current?.id === document.id) show({ ...latest.current, scope });
-                  setNotice(say('document.its-scope-is-saved'));
-                }}
-              />
-              <RelationshipsButton
-                client={client}
-                id={document.id}
-                kind="document"
-                title={document.outline.title}
-                className={styles['toggle']}
-              />
-              <ArchiveButton
-                client={client}
-                kind="document"
-                id={document.id}
-                title={document.outline.title}
-                archived={document.archived}
-                mayRetire={document.mayRetire}
-                className={styles['toggle']}
-                onChanged={(archived, said) => {
-                  if (latest.current?.id === document.id) show({ ...latest.current, archived });
-                  setNotice(said);
-                }}
-              />
-              <DeleteButton
-                client={client}
-                kind="document"
-                id={document.id}
-                title={document.outline.title}
-                mayRetire={document.mayRetire}
-                className={styles['toggle']}
-                onDeleted={() => setLoaded({ state: 'deleted' })}
-              />
-              <PlaceHoldButton
-                client={client}
-                target={{ artifact: document.id }}
-                title={document.outline.title}
-                mayHold={document.mayHold}
-                className={styles['toggle']}
-                onPlaced={(said) => {
-                  if (latest.current?.id === document.id) {
-                    show({ ...latest.current, onHold: true });
-                  }
-                  setNotice(said);
-                }}
-              />
-              <ManageAccessLink
-                client={client}
-                target={`artifact:${document.id}`}
-                href={documentAccessLink(document.id)}
-                icon={<Icon name="Manage access" size={14} />}
-              />
-            </span>
-          </div>
+          </StatusLead>
           {/* Before the first save of an approved one, what a save does (WF-F). */}
           {authoring && document.mayEdit && document.standing?.state.approved && (
             <p className={styles['approvedNote']}>
               {say('document.this-is-approved-saving-starts')}
             </p>
-          )}
-          {/* In Authoring, the band a component open in place keeps its strip, toolbar and second line
-            in, on the chrome: there before one opens, so the sheet does not move when it does
-            (ADR-0056, CNT-075), and kept in view as the text scrolls. */}
-          {authoring && principalId !== undefined && (
-            <div ref={setBand} className={styles['band']} data-inplace-band="">
-              {editing === null && <IdleBand />}
-            </div>
           )}
           {document.template && (
             <TemplateLine
@@ -2592,7 +2725,33 @@ export function DocumentPage({
               } as React.CSSProperties
             }
           >
-            {outlinePane.collapsed && <OutlineRail pane={outlinePane} chosen={shown} tabs={tabs} />}
+            {/* The side dock (ADR-0075): the outline pane's toggles above the frequent tools. */}
+            <div className={styles['sideDock']}>
+              <div role="group" aria-label={say('document.outline-pane')}>
+                {tabs.map((each) => (
+                  <NameTip key={each.key} name={each.label}>
+                    <button
+                      type="button"
+                      id={tabIds(each.key).tab}
+                      className={styles['dockToggle']}
+                      aria-label={each.label}
+                      aria-pressed={!outlinePane.collapsed && shown === each.key}
+                      onClick={() => togglePanel(each.key)}
+                    >
+                      <Icon name={each.icon} size={18} />
+                    </button>
+                  </NameTip>
+                ))}
+              </div>
+              {authoring && principalId !== undefined && (
+                <>
+                  <span className={styles['dockRule']} />
+                  <div ref={setBand} data-inplace-band="">
+                    {editing === null && <IdleBand onComment={() => chooseMode('review')} />}
+                  </div>
+                </>
+              )}
+            </div>
             <OutlinePanel
               outline={document.outline}
               requiredSections={document.template?.required ?? []}
@@ -2603,10 +2762,16 @@ export function DocumentPage({
               head={
                 // Hidden to the rail, the pane keeps its tree in the page but not a second toggle.
                 outlinePane.collapsed ? null : (
-                  <OutlineTabs pane={outlinePane} chosen={shown} onChoose={chooseTab} tabs={tabs} />
+                  <OutlineHead
+                    pane={outlinePane}
+                    label={tabs.find((each) => each.key === shown)?.label ?? ''}
+                    {...(shown === 'contents'
+                      ? { filter: sectionFilter, onFilter: setSectionFilter }
+                      : {})}
+                  />
                 )
               }
-              tab={ids}
+              filter={sectionFilter}
               details={{
                 id: dockIds('part').panel,
                 labelledBy: dockIds('part').tab,
@@ -2662,9 +2827,7 @@ export function DocumentPage({
                   <span className={styles['folder']}>
                     <Icon name="Folder" size={14} />
                   </span>
-                  <h2 id="document-title" className={styles['title']}>
-                    {document.outline.title}
-                  </h2>
+                  <span className={styles['title']}>{document.outline.title}</span>
                   <span className={styles['number']}>{document.version.number}</span>
                 </div>
               }
@@ -2771,6 +2934,15 @@ export function DocumentPage({
                     className={styles['tableTab']}
                   >
                     <div ref={setTableHost} />
+                  </div>
+                  {/* What the selection offers, the toolbar's second line once (ADR-0075). */}
+                  <div
+                    id={dockIds('selection').panel}
+                    role="tabpanel"
+                    aria-labelledby={dockIds('selection').tab}
+                    hidden={shownDock !== 'selection'}
+                  >
+                    <div ref={setSelectionHost} />
                   </div>
                   {/* The Part panel, which the outline draws, stands here (`details.host`). */}
                   <div ref={setDetailsHost} />
@@ -3372,6 +3544,8 @@ export function DocumentPage({
           )}
         </article>
       </InPlaceBand.Provider>
+      </InPlaceSettings.Provider>
+      </ActiveEditorContext.Provider>
     </PresentationProvider>
   );
 }

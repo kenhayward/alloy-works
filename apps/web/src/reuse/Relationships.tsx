@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState, useImperativeHandle, type Ref } from 'react';
 import { Modal } from '../layouts/Modal.js';
 import { resultLink } from '../search/links.js';
 import {
@@ -105,12 +105,15 @@ const linkOf = (artifact: GraphArtifact) =>
 
 /** The header's Relationships: an artifact's relationships, drawn and listed (REL-025 to REL-028). */
 export function RelationshipsButton({
+  act,
   client,
   id,
   kind,
   title,
   className,
 }: {
+  /** Set to what opens it, where a menu does and no button is drawn (ADR-0075). */
+  act?: Ref<() => void>;
   client: Client;
   id: string;
   kind: string;
@@ -118,11 +121,14 @@ export function RelationshipsButton({
   className?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
+  useImperativeHandle(act, () => () => setOpen(true), []);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
-        {say('reuse.relationships')}
-      </button>
+      {act === undefined && (
+        <button type="button" className={className} onClick={() => setOpen(true)}>
+          {say('reuse.relationships')}
+        </button>
+      )}
       {open && (
         <RelationshipsDialog
           client={client}

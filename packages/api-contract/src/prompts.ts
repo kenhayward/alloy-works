@@ -6,6 +6,7 @@ import {
   TransitionView,
   WorkflowRevisionView,
   WorkflowStandingView,
+  WorkflowStatesView,
 } from './workflows.js';
 import type { RouteContract } from './contract.js';
 import { FacetCountView, idsFilter, listingQuery, listingTotal, nextCursor } from './listing.js';
@@ -35,6 +36,7 @@ export const PromptView = z.object({
   prompt: promptSchema,
   mayEdit: z.boolean().describe('Whether the caller may cut its next version: edit on it'),
   state: WorkflowStandingView,
+  states: WorkflowStatesView,
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),

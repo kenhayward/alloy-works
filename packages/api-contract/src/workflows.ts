@@ -264,8 +264,14 @@ export const WorkflowRevisionView = z
   .describe('Its latest revision, a version designated as a gate passed; null for revision 0');
 export type WorkflowRevisionView = z.infer<typeof WorkflowRevisionView>;
 
+/** Every state of the workflow version deciding an artifact, for a stepper (ADR-0075). */
+export const WorkflowStatesView = z
+  .array(z.object({ key: z.string(), name: z.string() }))
+  .describe("Every state of the workflow version deciding this, in the workflow's order");
+
 export const TransitionAnswer = z.object({
   state: WorkflowStandingView,
+  states: WorkflowStatesView,
   transitions: z
     .array(TransitionView)
     .describe('The transitions the caller may take from it now; a gate is decided, not taken'),

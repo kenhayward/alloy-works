@@ -6,6 +6,7 @@ import {
   setTableStyle,
   type EditorView,
 } from '@alloy-works/editor';
+import type { StyleItem } from '../shell/commands/menus.js';
 import { usePresentation } from './presentation.js';
 import { words } from '../words/words.js';
 
@@ -149,6 +150,26 @@ export function ParagraphStyle({
       enabled={enabled}
       onChoose={(style) => setParagraphStyle(style)(view.state, view.dispatch)}
     />
+  );
+}
+
+/**
+ * The same choices as rows of a menu: the dock's flyout, Format's submenu and the margin's button
+ * (ADR-0075). None where the selection touches no paragraph an author styles (CNT-094).
+ */
+export function paragraphStyleItems(theme: ResolvedTheme, view: EditorView): readonly StyleItem[] {
+  const paragraphs = paragraphsAt(view.state);
+  if (paragraphs.length === 0) return [];
+  const stored = new Set(paragraphs.map(({ node }) => node.attrs.style as string));
+  return paragraphChoices(theme, [...new Set(paragraphs.map(({ place }) => place))]).map(
+    (choice) => ({
+      value: choice.value,
+      label: choice.label,
+      checked: stored.size === 1 && stored.has(choice.value),
+      run: () => {
+        setParagraphStyle(choice.value)(view.state, view.dispatch);
+      },
+    }),
   );
 }
 

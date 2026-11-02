@@ -21885,6 +21885,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -21975,6 +21976,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -22619,6 +22625,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -22636,6 +22643,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -27450,6 +27462,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -27467,6 +27480,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -38652,6 +38670,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -38811,6 +38830,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -39368,6 +39392,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -39385,6 +39410,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -56288,6 +56318,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -56447,6 +56478,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -56723,6 +56759,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -57102,6 +57143,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -57609,6 +57655,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -57768,6 +57815,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -58044,6 +58096,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -58423,6 +58480,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -59190,6 +59252,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -59349,6 +59412,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -59625,6 +59693,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -60004,6 +60077,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -60843,6 +60921,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -61002,6 +61081,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -61278,6 +61362,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -61657,6 +61746,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -65525,6 +65619,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -65542,6 +65637,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -65847,6 +65947,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -66006,6 +66107,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -66342,6 +66448,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -68215,6 +68326,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -68374,6 +68486,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -68650,6 +68767,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -69029,6 +69151,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -81523,6 +81650,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -87074,6 +87206,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -87145,6 +87278,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -87479,6 +87617,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -87496,6 +87635,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -87748,6 +87892,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -87765,6 +87910,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -88119,6 +88269,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -88190,6 +88341,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -88332,6 +88488,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -88535,6 +88696,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -90913,6 +91079,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -91191,6 +91358,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -91525,6 +91697,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -91542,6 +91715,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -91794,6 +91972,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -91811,6 +91990,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -92520,6 +92704,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -92798,6 +92983,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -93162,6 +93352,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -93587,6 +93782,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -107293,6 +107493,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -107383,6 +107584,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -108645,6 +108851,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -108805,6 +109012,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -109811,6 +110023,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -109882,6 +110095,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -110024,6 +110242,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -110535,6 +110758,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -110813,6 +111037,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -111177,6 +111406,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -111602,6 +111836,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -112344,6 +112583,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -112402,6 +112642,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -112530,6 +112775,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -115454,6 +115704,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -115512,6 +115763,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -115846,6 +116102,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -115863,6 +116120,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -116254,6 +116516,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -116271,6 +116534,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The transitions the caller may take from it now; a gate is decided, not taken */
                         transitions: {
                             key: string;
@@ -116836,6 +117104,7 @@ export interface operations {
                      *         "name": "example",
                      *         "approved": false
                      *       },
+                     *       "states": [],
                      *       "transitions": [],
                      *       "gates": [],
                      *       "revision": {
@@ -116894,6 +117163,11 @@ export interface operations {
                             /** @description Whether it counts as approved: a save starts a new draft */
                             approved: boolean;
                         };
+                        /** @description Every state of the workflow version deciding this, in the workflow's order */
+                        states: {
+                            key: string;
+                            name: string;
+                        }[];
                         /** @description The workflow transitions the caller may take from its state now, in order */
                         transitions: {
                             key: string;
@@ -117022,6 +117296,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;
@@ -117211,6 +117490,11 @@ export interface operations {
                                 /** @description Whether it counts as approved: a save starts a new draft */
                                 approved: boolean;
                             };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
                             /** @description The workflow transitions the caller may take from its state now, in order */
                             transitions: {
                                 key: string;

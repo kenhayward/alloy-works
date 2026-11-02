@@ -75,6 +75,28 @@ export interface Pixels {
 
 const PixelsContext = createContext<((asset: string) => Promise<Pixels | null>) | null>(null);
 
+/** A string as CSS reads it, whatever a theme calls its style. */
+const cssString = (text: string): string =>
+  `"${text.replace(/[\\"]/g, '\\$&').replace(/[\n\r\f]/g, ' ')}"`;
+
+/**
+ * Each style's name, for the labels in a sheet's margin (ADR-0075; CNT-190): generated content on a
+ * paragraph, so it is in no text, no copy and no publication, and takes nothing from the measure. Not in a
+ * list or a cell, whose paragraphs stand away from the margin. A heading says its role.
+ */
+export function marginLabelRules(theme: ResolvedTheme): string {
+  const paragraph = '.aw-labels :not(li, td, th, [data-role]) > p';
+  const styled = [...theme.paragraphStyles.values()].map(
+    (style) =>
+      `${paragraph}[data-style=${cssString(style.id)}]::before { content: ${cssString(style.name)} / ""; }`,
+  );
+  const roles = [1, 2, 3, 4, 5, 6].map(
+    (level) =>
+      `.aw-labels [data-role="heading${level}"]::before { content: "H${level}" / ""; }`,
+  );
+  return [...styled, ...roles, `.aw-labels [data-role="title"]::before { content: ${cssString(theme.paragraphStyles.get('title')?.name ?? 'Title')} / ""; }`].join('\n');
+}
+
 const ZoomContext = createContext<{ zoom: Zoom; setZoom: (zoom: Zoom) => void } | null>(null);
 
 /**
@@ -144,7 +166,12 @@ export function PresentationProvider({
         }
         const projected = projectFontFaces(read.theme, faceUrl);
         // The faces, then the theme's own rules, which name them (STY-058).
-        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme, { capHeight }));
+        setFaces(
+          projected.css +
+            CANVAS_CSS +
+            projectCss(read.theme, { capHeight }) +
+            marginLabelRules(read.theme),
+        );
         setPresentation({
           state: 'ready',
           theme: read.theme,

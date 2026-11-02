@@ -231,13 +231,87 @@ function Menu({
 }
 
 /**
+ * A button opening a menu of the same rows beside it, its corner marked (the dock's flyouts, ADR-0075).
+ * What it holds runs as a menu's does, the focus back on the button first.
+ */
+export function Flyout({
+  label,
+  entries,
+  children,
+  className,
+  disabled = false,
+}: {
+  label: string;
+  entries: readonly MenuEntry[];
+  children: ReactNode;
+  className?: string | undefined;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  const holder = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onPointer = (event: PointerEvent) => {
+      if (!holder.current?.contains(event.target as Node)) setOpen(false);
+    };
+    window.addEventListener('pointerdown', onPointer);
+    return () => window.removeEventListener('pointerdown', onPointer);
+  }, [open]);
+  return (
+    <div ref={holder} className={styles['holder']}>
+      <button
+        ref={button}
+        type="button"
+        className={className}
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-disabled={disabled}
+        data-corner=""
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => {
+          if (!disabled) setOpen((was) => !was);
+        }}
+      >
+        {children}
+      </button>
+      {open && (
+        <Menu
+          label={label}
+          entries={entries}
+          nested
+          onChosen={(item) => {
+            setOpen(false);
+            button.current?.focus();
+            item.run();
+          }}
+          onClose={() => {
+            setOpen(false);
+            button.current?.focus();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
  * The menu bar (ADR-0075, WAI-ARIA's menubar): `F10`, or `Alt` alone, reaches it, and `Alt` and a
  * menu's letter opens that menu; the arrows move along it and within; Enter, Space and Down open;
  * Escape closes and gives the focus back to what had it. Once one is open, pointing at another opens
  * it. Drawn by the renderer, so a tab and a window are the same. On a Mac, Option and a letter type a
  * character, so there `F10` alone is the way in.
  */
-export function MenuBar({ label, menus }: { label: string; menus: readonly MenuSpec[] }) {
+export function MenuBar({
+  label,
+  menus: given,
+}: {
+  label: string;
+  /** A function where what they say must be read as one opens, at each render of the bar. */
+  menus: readonly MenuSpec[] | (() => readonly MenuSpec[]);
+}) {
+  const menus = typeof given === 'function' ? given() : given;
   const bar = useRef<HTMLDivElement>(null);
   const names = useRef<(HTMLButtonElement | null)[]>([]);
   const [open, setOpen] = useState<{ index: number; last?: boolean } | null>(null);
@@ -304,7 +378,9 @@ export function MenuBar({ label, menus }: { label: string; menus: readonly MenuS
       window.removeEventListener('keyup', onUp);
       window.removeEventListener('pointerdown', onPointer);
     };
-  }, [menus, stop]);
+    // The letters are fixed for a bar: read afresh here would add and remove a listener at each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stop, menus.length]);
 
   const along = (from: number, by: 1 | -1) => (from + by + menus.length) % menus.length;
 
