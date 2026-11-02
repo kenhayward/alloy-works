@@ -4,7 +4,7 @@
 # reads `alloy-readings` alone, `source-s3-seeder` everything - and the objects under ./objects, one
 # folder a bucket, uploaded through the filer once it answers. Ready once /tmp/seeded exists.
 set -e
-weed server -dir=/data -s3 -s3.port=8333 \
+weed server -dir=/data -volume.max=200 -master.volumeSizeLimitMB=64 -s3 -s3.port=8333 \
   -s3.config=/srv/s3/identities.json \
   -s3.cert.file=/srv/s3/server.pem -s3.key.file=/srv/s3/server-key.pem &
 server=$!
