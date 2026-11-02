@@ -466,6 +466,55 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     ]);
   });
 
+  it('proposes a new table and a nested list as Markdown, accepted as any proposal is (the new tables change)', async () => {
+    const part = await h.component(h.general, 'Weirs');
+    await h.place(part, { type: 'text', value: 'Old.', marks: [] });
+    const block = (await h.call('ada', 'GET', `/v1/components/${part.id}`)).json<{
+      content: { content: { id: string }[] };
+    }>().content.content[0]!.id;
+    const placed = await h.documentReferencing([part.id]);
+    h.connector.modelFor = turns(
+      [
+        tool('t1', 'propose_edit', {
+          component: part.id,
+          edits: [
+            { replace: block, markdown: '| Site | Level |\n| --- | --- |\n| North | 3.2 m |\n' },
+            { insertAfter: block, markdown: '- Weirs\n  - North\n  - South\n' },
+          ],
+        }),
+        ended('tool_use'),
+      ],
+      [text('Proposed.'), ended()],
+    );
+    const response = await h.call('ada', 'POST', `/v1/documents/${placed.id}/assistant/runs`, {
+      ask: 'Lay it out.',
+    });
+    const proposal = framesOf(response.body).find((frame) => frame.event === 'proposal');
+    expect(proposal, response.body).toBeDefined();
+    const accepted = await h.call(
+      'ada',
+      'POST',
+      `/v1/assistant/proposals/${(proposal!.data as { id: string }).id}/acceptance`,
+    );
+    expect(accepted.statusCode, accepted.body).toBe(200);
+    const blocks = (await h.call('ada', 'GET', `/v1/components/${part.id}`)).json<{
+      content: {
+        content: {
+          id: string;
+          type: string;
+          headerRows: number;
+          rows: unknown[];
+          items: { content: { type: string; items?: unknown[] }[] }[];
+        }[];
+      };
+    }>().content.content;
+    expect(blocks.map((each) => each.type)).toEqual(['table', 'list']);
+    expect(blocks[0]).toMatchObject({ id: block, headerRows: 1 });
+    expect(blocks[0]!.rows).toHaveLength(2);
+    expect(blocks[1]!.items[0]!.content.map((each) => each.type)).toEqual(['paragraph', 'list']);
+    expect(blocks[1]!.items[0]!.content[1]!.items).toHaveLength(2);
+  });
+
   it('GEN-009 makes a proposal that changes nothing until its requester acts on it', async () => {
     const before = await latest(sites.id);
     const { proposal } = await propose('The north weir floods *every* spring.');

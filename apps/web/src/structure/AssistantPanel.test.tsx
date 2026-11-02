@@ -1398,6 +1398,48 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
     });
   });
 
+  it('shows a proposed list nested as it would read, each level under the last (the new tables change)', async () => {
+    const user = userEvent.setup();
+    const paragraphOf = (value: string) => ({
+      type: 'paragraph',
+      content: [{ type: 'text', value }],
+    });
+    panel(
+      vi.fn(
+        running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          [
+            'proposal',
+            {
+              id: PROPOSAL,
+              number: 1,
+              component: SITES,
+              proposed: {
+                content: [
+                  {
+                    type: 'list',
+                    items: [
+                      {
+                        content: [
+                          paragraphOf('Weirs'),
+                          { type: 'list', items: [{ content: [paragraphOf('North')] }] },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+          ended(),
+        ]),
+      ),
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Lay it out.{Enter}');
+    const proposal = await screen.findByRole('article', { name: /Proposal/ });
+    expect(proposal.querySelector('ins')!.textContent).toBe('- Weirs\n  - North');
+  });
+
   it('copies the answer without its citation marks', async () => {
     const user = userEvent.setup();
     panel(vi.fn(answered));
