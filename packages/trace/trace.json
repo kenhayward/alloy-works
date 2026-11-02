@@ -18474,6 +18474,35 @@
       ]
     },
     {
+      "document": "identity.md",
+      "owns": [
+        {
+          "id": "IAM-011",
+          "howItIsMet": "`identity_provider` holds any number of rows; sign-in offers each open one by name; the attempt, the session, the principal, its groups and its invitations name which ([Providers](#providers))"
+        },
+        {
+          "id": "IAM-065",
+          "howItIsMet": "A token naming a key not held is refused where the keys were fetched in the last minute, and the provider's keys are then fetched afresh, so the next sign-in needs no step; a key that still cannot be resolved stays refused. Tested by rotating the stand-in provider's key"
+        },
+        {
+          "id": "IAM-038",
+          "howItIsMet": "`session_settings`: idle timeout and absolute lifetime per environment, within product bounds; a shortening reaches open sessions at once ([Session lifetimes](#session-lifetimes))"
+        },
+        {
+          "id": "IAM-012",
+          "howItIsMet": "`POST /v1/sessions/current/reauthentication`, through the sign-in callbacks; the session records `authenticated_at`, which a route may require to be recent ([Re-authentication](#re-authentication))"
+        },
+        {
+          "id": "IAM-008",
+          "howItIsMet": "SCIM 2.0 `Users` and `Groups` per provider, as a service identity of its own; without SCIM, people are invited and disabled in Administration, documented in the administration guide ([SCIM](#scim))"
+        },
+        {
+          "id": "IAM-032",
+          "howItIsMet": "Access explains any person's permissions on any artifact, space or the environment to an administrator (IAM-029) without a session of theirs; a disabled person's every answer is refused, naming it"
+        }
+      ]
+    },
+    {
       "document": "import.md",
       "owns": [
         {
@@ -21722,31 +21751,31 @@
     {
       "id": "DAT-084",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 310,
+      "line": 324,
       "kind": "title"
     },
     {
       "id": "DAT-091",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 411,
+      "line": 425,
       "kind": "rule"
     },
     {
       "id": "DAT-091",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 403,
+      "line": 417,
       "kind": "title"
     },
     {
       "id": "DAT-102",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 440,
+      "line": 454,
       "kind": "rule"
     },
     {
       "id": "DAT-102",
       "file": "apps/service/src/asserted-acts.test.ts",
-      "line": 436,
+      "line": 450,
       "kind": "title"
     },
     {
@@ -22064,13 +22093,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 737,
+      "line": 738,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 750,
+      "line": 751,
       "kind": "title"
     },
     {
@@ -23490,9 +23519,15 @@
       "kind": "title"
     },
     {
+      "id": "IAM-065",
+      "file": "apps/service/src/oidc.test.ts",
+      "line": 112,
+      "kind": "title"
+    },
+    {
       "id": "IAM-075",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 183,
+      "line": 226,
       "kind": "title"
     },
     {
@@ -24087,6 +24122,12 @@
       "id": "PUB-084",
       "file": "apps/service/src/share-routes.test.ts",
       "line": 285,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-011",
+      "file": "apps/service/src/sign-in-providers.test.ts",
+      "line": 107,
       "kind": "title"
     },
     {
@@ -26942,7 +26983,13 @@
     {
       "id": "COL-063",
       "file": "apps/web/src/shell/Header.test.tsx",
-      "line": 222,
+      "line": 249,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-011",
+      "file": "apps/web/src/shell/Header.test.tsx",
+      "line": 95,
       "kind": "title"
     },
     {
@@ -30015,6 +30062,12 @@
       "id": "IAM-075",
       "file": "packages/db/src/idempotency.test.ts",
       "line": 89,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-011",
+      "file": "packages/db/src/identity-providers-migration.test.ts",
+      "line": 53,
       "kind": "title"
     },
     {

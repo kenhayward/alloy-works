@@ -33,8 +33,9 @@ export function identityUnavailable(): AppError {
 /**
  * Who the caller runs as on this connection version, read in the deciding transaction: the account
  * for a service identity; for an asserted one the principal's email, only where its provider verified
- * it, or its subject, only for a principal of the environment's own organisation provider - a Google
- * principal's subject could be anybody's there (the review, 2026-10-06). Either must be a PostgreSQL
+ * it, or its subject, only for a principal of the environment's one open organisation provider - a
+ * Google principal's subject could be anybody's there (the review, 2026-10-06), and with a second
+ * provider open so could either's (the ID plan, IDa). Either must be a PostgreSQL
  * role name, 1 to 63 bytes with no U+0000, or the act is refused `identity_unavailable` before
  * anything runs.
  */
@@ -61,9 +62,12 @@ export async function actingOn(
     const organisation = await trx
       .selectFrom('identity_provider')
       .select('issuer')
-      .executeTakeFirst();
+      .where('closed_at', 'is', null)
+      .execute();
     role =
-      organisation !== undefined && row?.issuer === organisation.issuer ? row.subject : undefined;
+      organisation.length === 1 && row?.issuer === organisation[0]!.issuer
+        ? row.subject
+        : undefined;
   }
   if (role === undefined || role === null || !assertedRoleSchema.safeParse(role).success) {
     throw identityUnavailable();

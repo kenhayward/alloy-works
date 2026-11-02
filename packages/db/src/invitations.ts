@@ -332,11 +332,18 @@ export async function withdrawInvitation(
 export async function claimInvitation(
   trx: TenantTransaction,
   identity: ClaimingIdentity,
-  route: SignInRoute,
+  /**
+   * The way in: Google, or the organisation's route through a provider (IN-J). An invitation is
+   * claimed through Google only where it allows Google, and through a provider only where it names
+   * that provider; `organisation` alone, with no provider, finds only one naming none.
+   */
+  way: SignInRoute | { readonly route: 'organisation'; readonly providerId: string },
   /** The sign-in request's trace id, for the events the claim records. */
   traceId?: string,
 ): Promise<string | undefined> {
   if (!identity.emailVerified || !identity.email) return undefined;
+  const route: SignInRoute = typeof way === 'string' ? way : way.route;
+  const providerId = typeof way === 'string' ? null : way.providerId;
   const address = invitedAddress(identity.email);
   // Held until the sign-in's transaction ends - past the principal a sign-in that claims nothing
   // makes next, in the same transaction - so an `invite` of this address cannot find nobody signed
@@ -348,6 +355,16 @@ export async function claimInvitation(
     .where('email', '=', address)
     .where('accepted_at', 'is', null)
     .where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', sql<Date>`now()`)]))
+    .where((eb) => {
+      const named = eb
+        .selectFrom('invitation_provider as p')
+        .select('p.provider_id')
+        .whereRef('p.invitation_id', '=', 'invitation.id');
+      if (route === 'google') return eb('through_google', '=', true);
+      return providerId === null
+        ? eb.not(eb.exists(named))
+        : eb.exists(named.where('p.provider_id', '=', providerId));
+    })
     .forUpdate()
     .executeTakeFirst();
   if (!open) return undefined;

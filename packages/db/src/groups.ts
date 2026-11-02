@@ -33,7 +33,14 @@ export interface ListedGroup extends Group {
 }
 
 export type GroupAnswer =
-  { readonly group: Group } | { readonly refused: 'group.name_taken' | 'group.value_taken' };
+  | { readonly group: Group }
+  | {
+      readonly refused:
+        | 'group.name_taken'
+        | 'group.value_taken'
+        | 'group.provider_required'
+        | 'group.provider_unknown';
+    };
 
 /**
  * Makes a group: the environment's own by name, or, given `providerValue`, one standing for that value
@@ -43,15 +50,35 @@ export type GroupAnswer =
 export async function createGroup(
   trx: TenantTransaction,
   name: string,
-  options: { readonly providerValue?: string } = {},
+  options: { readonly providerValue?: string; readonly providerId?: string } = {},
 ): Promise<GroupAnswer> {
   const providerValue = options.providerValue ?? null;
+  // A provider group is the provider's named (IN-I), or the only one open; with several, one is named.
+  let providerId: string | null = null;
+  if (providerValue !== null) {
+    const open = await trx
+      .selectFrom('identity_provider')
+      .select('id')
+      .where('closed_at', 'is', null)
+      .execute();
+    if (options.providerId !== undefined) {
+      if (!open.some((each) => each.id === options.providerId)) {
+        return { refused: 'group.provider_unknown' };
+      }
+      providerId = options.providerId;
+    } else if (open.length > 1) {
+      return { refused: 'group.provider_required' };
+    } else {
+      providerId = open[0]?.id ?? null;
+    }
+  }
   const row = await trx
     .insertInto('access_group')
     .values({
       name,
       source: providerValue === null ? 'tenant' : 'provider',
       provider_value: providerValue,
+      provider_id: providerId,
     })
     .onConflict((conflict) => conflict.doNothing())
     .returning(['id', 'name', 'source', 'provider_value'])
@@ -493,6 +520,11 @@ export async function syncProviderGroups(
   principalId: string,
   values: readonly string[],
   beforeChange?: () => Promise<void>,
+  /**
+   * The provider that asserted `values` (IN-I): only its groups are joined or left, so another
+   * provider asserting the same value joins nothing. Null settles the groups naming no provider.
+   */
+  providerId: string | null = null,
 ): Promise<void> {
   const asserted = [...new Set(values)];
   const differences = async () => {
@@ -503,6 +535,7 @@ export async function syncProviderGroups(
             .selectFrom('access_group')
             .select('id')
             .where('source', '=', 'provider')
+            .where('provider_id', 'is not distinct from', providerId)
             .where('provider_value', 'in', asserted)
             .execute();
     const held = await trx
@@ -511,6 +544,7 @@ export async function syncProviderGroups(
       .select('m.group_id')
       .where('m.principal_id', '=', principalId)
       .where('g.source', '=', 'provider')
+      .where('g.provider_id', 'is not distinct from', providerId)
       .execute();
     const wanted = new Set(standing.map((row) => row.id));
     const holding = new Set(held.map((row) => row.group_id));

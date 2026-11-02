@@ -161,12 +161,20 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
           idTokenExpected: true,
         });
       } catch (error) {
+        if ((error as { code?: unknown }).code === 'OAUTH_KEY_SELECTION_FAILED') {
+          // A token naming a key the kept keys lack, within the minute openid-client trusts them: it is
+          // refused, and the next sign-in through the provider fetches its metadata and keys afresh,
+          // so a rotated key is picked up without a step (IAM-065).
+          discovered.delete(provider.issuer);
+          keys.delete(provider.issuer);
+        } else {
+          keepKeys(provider, config);
+        }
         throw new SignInFailed('The identity provider did not confirm the sign-in.', {
           cause: error,
         });
-      } finally {
-        keepKeys(provider, config);
       }
+      keepKeys(provider, config);
       const claims = tokens.claims();
       if (!claims) throw new SignInFailed('The identity provider returned no identity.');
       return {

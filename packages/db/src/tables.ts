@@ -121,7 +121,10 @@ export interface ProfileTable {
 }
 
 export interface IdentityProviderTable {
-  singleton: Generated<boolean>;
+  id: Generated<string>;
+  /** Shown on the sign-in page (0187); unique. */
+  name: string;
+  /** Unique (0187): one client per issuer. */
   issuer: string;
   client_id: string;
   /**
@@ -133,6 +136,8 @@ export interface IdentityProviderTable {
   sealed_secret: string | null;
   /** The ID token claim carrying the provider's group values (0039): `groups` unless configured. */
   groups_claim: Generated<string>;
+  /** When it was closed (0187): a closed provider signs nobody in. */
+  closed_at: Generated<Date | null>;
 }
 
 export interface SignInRouteTable {
@@ -145,6 +150,8 @@ export interface SignInAttemptTable {
   nonce: string;
   code_verifier: string;
   route: 'organisation' | 'google';
+  /** The provider an organisation's sign-in went to (0187). */
+  provider_id: string | null;
   expires_at: Date;
 }
 
@@ -153,6 +160,8 @@ export interface SessionTable {
   token_hash: string;
   principal_id: string;
   route: 'organisation' | 'google';
+  /** The provider an organisation's sign-in came through (0187). */
+  provider_id: Generated<string | null>;
   created_at: Generated<Date>;
   last_seen_at: Generated<Date>;
   idle_expires_at: Date;
@@ -256,6 +265,14 @@ export interface InvitationTable {
   expires_at: Date | null;
   accepted_at: Date | null;
   accepted_through: 'organisation' | 'google' | null;
+  /** Whether it may be claimed through Google (0187); its providers are `invitation_provider`'s. */
+  through_google: Generated<boolean>;
+}
+
+/** A provider an invitation may be claimed through (0187, IN-J). */
+export interface InvitationProviderTable {
+  invitation_id: string;
+  provider_id: string;
 }
 
 export interface GoogleDomainTable {
@@ -432,6 +449,8 @@ export interface AccessGroupTable {
   name: string;
   source: 'tenant' | 'provider';
   provider_value: string | null;
+  /** The provider whose claim settles it (0187, IN-I); null for a tenant group. */
+  provider_id: Generated<string | null>;
   created_at: Generated<Date>;
 }
 
@@ -1353,6 +1372,7 @@ export interface TenantTables {
   webhook_delivery: WebhookDeliveryTable;
   webhook_attempt: WebhookAttemptTable;
   invitation: InvitationTable;
+  invitation_provider: InvitationProviderTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;
   object_store_credential: ObjectStoreCredentialTable;

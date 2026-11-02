@@ -50,6 +50,16 @@ export interface StandInOptions {
    * For a test that a client refuses such a token.
    */
   readonly signsWithUnpublishedKey?: boolean;
+  /**
+   * The id of the key it signs with, `stand-in` unless named: a provider started again on the same
+   * port under another id is a provider that has rotated its key (IAM-065).
+   */
+  readonly keyId?: string;
+  /**
+   * With `signsWithUnpublishedKey`, the id the published key carries: another than the signing key's
+   * makes a token naming a key the provider does not publish at all.
+   */
+  readonly publishedKeyId?: string;
 }
 
 export interface StandInProvider {
@@ -144,7 +154,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
   const { privateKey } = await generateKeyPair('RS256', { extractable: true });
   const signingKey = {
     ...(await exportJWK(privateKey)),
-    kid: 'stand-in',
+    kid: options.keyId ?? 'stand-in',
     alg: 'RS256',
     use: 'sig',
   };
@@ -152,7 +162,7 @@ export async function startStandInProvider(options: StandInOptions): Promise<Sta
   const published = options.signsWithUnpublishedKey
     ? {
         ...(await exportJWK((await generateKeyPair('RS256', { extractable: true })).publicKey)),
-        kid: 'stand-in',
+        kid: options.publishedKeyId ?? signingKey.kid,
         alg: 'RS256',
         use: 'sig',
       }

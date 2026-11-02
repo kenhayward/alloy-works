@@ -48,6 +48,8 @@ const WIRE_CODES = {
   'invitation.accepted': 'invitation_accepted',
   'group.name_taken': 'group_name_taken',
   'group.value_taken': 'group_value_taken',
+  'group.provider_required': 'group_provider_required',
+  'group.provider_unknown': 'group_provider_unknown',
   'group.from_provider': 'group_from_provider',
   'group.member_missing': 'group_member_missing',
   'group.member_erased': 'group_member_erased',

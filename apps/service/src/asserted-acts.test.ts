@@ -277,6 +277,20 @@ describe('acts on a connection that runs as each person', () => {
     } finally {
       await principal('issuer', issuer.issuer);
     }
+    // With a second provider open, a subject could be either's: nobody is named by one.
+    await queryAs(
+      h.db.adminUrl,
+      `insert into ${h.tenant.schema}.identity_provider (name, issuer, client_id, secret_name)
+       values ('Contractors', 'https://contractors.example.org', 'alloy', 'unused')`,
+    );
+    try {
+      await refused(subjects.document.id, subjects.node);
+    } finally {
+      await queryAs(
+        h.db.adminUrl,
+        `delete from ${h.tenant.schema}.identity_provider where name = 'Contractors'`,
+      );
+    }
     expect(
       (await resolve('grace', subjects.document.id, subjects.node, { sharesOwnView: true }))
         .statusCode,

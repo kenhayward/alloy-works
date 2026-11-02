@@ -34,6 +34,8 @@ export async function createSession(
   principalId: string,
   route: SignInRoute,
   now: Date = new Date(),
+  /** The provider an organisation's sign-in came through (IAM-011), so closing it ends this. */
+  providerId: string | null = null,
 ): Promise<string> {
   const token = randomBytes(32).toString('base64url');
   const session = await trx
@@ -42,6 +44,7 @@ export async function createSession(
       token_hash: hashToken(token),
       principal_id: principalId,
       route,
+      provider_id: providerId,
       last_seen_at: now,
       idle_expires_at: new Date(now.getTime() + SESSION_POLICY.idleMs),
       expires_at: new Date(now.getTime() + SESSION_POLICY.absoluteMs),
