@@ -33,6 +33,9 @@ export function commandsFor(typed: string): readonly Command[] {
   ];
 }
 
+/** The event the Edit menu's Search sends, there being no key to press. */
+export const OPEN_SEARCH = 'aw-open-search';
+
 /**
  * Whether search and commands is open, and Ctrl K (Cmd K on a Mac) opening it from anywhere a field
  * has not taken the key for itself: a component's text keeps Ctrl K for Link, and has handled it
@@ -47,8 +50,13 @@ export function useCommandKey(): readonly [boolean, (open: boolean) => void] {
       event.preventDefault();
       setOpen(true);
     };
+    const onAsked = () => setOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener(OPEN_SEARCH, onAsked);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(OPEN_SEARCH, onAsked);
+    };
   }, []);
   return [open, setOpen];
 }

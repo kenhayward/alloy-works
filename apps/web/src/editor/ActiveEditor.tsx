@@ -16,11 +16,13 @@ export interface ActiveEditorHandle {
  */
 export const ActiveEditorContext = createContext<RefObject<ActiveEditorHandle | null> | null>(null);
 
-/** A component editor's half: what it publishes while it is mounted, kept current every render. */
-export function usePublishActiveEditor(handle: ActiveEditorHandle): void {
+/**
+ * A component editor's half: what it publishes while it is mounted, which it sets on what this returns
+ * every render, past its early returns.
+ */
+export function usePublishActiveEditor(): { current: ActiveEditorHandle } {
   const slot = useContext(ActiveEditorContext);
-  const latest = useRef(handle);
-  latest.current = handle;
+  const latest = useRef<ActiveEditorHandle>({ state: () => undefined, styles: () => [] });
   useEffect(() => {
     if (slot === null) return undefined;
     const published: ActiveEditorHandle = {
@@ -32,6 +34,7 @@ export function usePublishActiveEditor(handle: ActiveEditorHandle): void {
       if (slot.current === published) slot.current = null;
     };
   }, [slot]);
+  return latest;
 }
 
 /** Where a component open in place keeps what its selection offers: a tab of the panels (ADR-0075). */

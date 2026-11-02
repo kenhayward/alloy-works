@@ -2208,6 +2208,19 @@ export function ComponentEditor({
     // Told what changed, not each new callback the page hands down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdsTable, entered]);
+  const activeHandle = usePublishActiveEditor();
+  // Whether the selection stands where the panels' Selection tab has something to say, set past the
+  // returns below, where what it depends on is known, and told once the render is done.
+  const selectionHeldNow = useRef(false);
+  const selectionHeldTold = useRef(false);
+  const onSelectionHeld = useRef(inPlaceSettings?.onHeld);
+  onSelectionHeld.current = inPlaceSettings?.onHeld;
+  useEffect(() => {
+    if (selectionHeldTold.current === selectionHeldNow.current) return;
+    selectionHeldTold.current = selectionHeldNow.current;
+    onSelectionHeld.current?.(selectionHeldNow.current);
+  });
+  useEffect(() => () => onSelectionHeld.current?.(false), []);
   if (loaded.state === 'loading') return <Waiting>{say('editor.opening')}</Waiting>;
   // In place, a component that did not open still needs a way out, the card head being gone.
   const leave = onDone && (
@@ -2915,9 +2928,16 @@ export function ComponentEditor({
     ...(style.value === 'body' ? {} : { content: true }),
     run: style.run,
   }));
-  usePublishActiveEditor({
+  activeHandle.current = {
     styles: () => (mayFormat ? styleItems() : []),
     state: (id) => {
+      if (id === 'save-version') {
+        return {
+          enabled: mayCut && phase === 'editing',
+          run: () =>
+            askFirst(say('editor.save-version'), () => void controls.current?.saveVersion()),
+        };
+      }
       if (id === 'undo' || id === 'redo') {
         const command = id === 'undo' ? undoCommand : redoCommand;
         return {
@@ -2960,7 +2980,7 @@ export function ComponentEditor({
         },
       };
     },
-  });
+  };
   const toolbarPart =
     loaded.state === 'open' ? (
       // Above the surface, which is the order the regions are named in (component-editor.md,
@@ -3056,19 +3076,13 @@ export function ComponentEditor({
       </>
     ) : null;
   // What the selection offers, the second line's panels, in a tab of the panels beside the text (ADR-0075).
-  const selectionHeld =
-    list !== null ||
-    preformatted !== null ||
-    figure !== null ||
-    image !== null ||
-    (valued !== null && valued.place !== 'table');
-  const toldHeld = useRef(inPlaceSettings?.onHeld);
-  toldHeld.current = inPlaceSettings?.onHeld;
-  useEffect(() => {
-    if (!inBand) return undefined;
-    toldHeld.current?.(selectionHeld);
-    return () => toldHeld.current?.(false);
-  }, [inBand, selectionHeld]);
+  selectionHeldNow.current =
+    inBand &&
+    (list !== null ||
+      preformatted !== null ||
+      figure !== null ||
+      image !== null ||
+      (valued !== null && valued.place !== 'table'));
   return (
     <>
       {/* Inert while a dialog stands over it, which is the other half of what that dialog's
@@ -3090,7 +3104,7 @@ export function ComponentEditor({
               bandHost,
             )
           : stripPart}
-        {inBand && inPlaceSettings?.host != null && selectionHeld &&
+        {inBand && inPlaceSettings?.host != null && selectionHeldNow.current &&
           createPortal(
             <div className={styles['settingsLine']} inert={behindDialog}>
               {linePart}

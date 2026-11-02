@@ -77,6 +77,7 @@ import {
 } from '../editor/ActiveEditor.js';
 import { InPlaceBand } from '../editor/InPlaceBand.js';
 import { NameTip } from '../parts/NameTip.js';
+import { OPEN_SEARCH } from '../shell/CommandPalette.js';
 import type { CommandState } from '../shell/commands/menus.js';
 import { StatusLead } from '../shell/Status.js';
 import { DocumentHeader } from './DocumentHeader.js';
@@ -2444,7 +2445,7 @@ export function DocumentPage({
     const never: CommandState = { enabled: false, run: () => undefined };
     switch (id) {
       case 'search':
-        return { enabled: true, run: () => window.dispatchEvent(new CustomEvent('aw-search')) };
+        return { enabled: true, run: () => window.dispatchEvent(new CustomEvent(OPEN_SEARCH)) };
       case 'preview':
         return { enabled: true, run: () => void preview.ask() };
       case 'history':
