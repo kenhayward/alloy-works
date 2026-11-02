@@ -203,6 +203,26 @@ describe('the canvas as a person uses it', () => {
     });
   }
 
+  it('CNT-190 leaves a paragraph holding an image drawn as its theme sets it, its words on the sheet, with labels on', async () => {
+    const client = api();
+    const component = await withAnImage(client, 'A label beside an image');
+    await withPage(async (page) => {
+      const surface = await openComponent(page, component);
+      const line = await surface.getByText(/^Zc1 /).evaluate((element) => {
+        const paragraph = element.closest('p')!;
+        const range = document.createRange();
+        range.selectNodeContents(paragraph);
+        const words = range.getBoundingClientRect();
+        return {
+          at: document.elementFromPoint(words.left + 2, words.bottom - 4) === paragraph,
+          label: getComputedStyle(paragraph, '::before').position,
+        };
+      });
+      expect(line.at, 'its words are what stands there').toBe(true);
+      expect(line.label, 'its pseudo-element is the theme\'s, not a label').not.toBe('absolute');
+    });
+  });
+
   for (const zoom of ['1', '0.5'] as const) {
     it(`draws a chosen image's outline whole, inside what its paragraph shows, at ${Number(zoom) * 100}% (the re-review of issue #331)`, async () => {
       const client = api();

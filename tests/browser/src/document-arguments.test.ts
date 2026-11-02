@@ -180,17 +180,9 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
           timeout: 20_000,
         })
         .toContain('North weir');
-      // Done leads the Formatting toolbar, one tab stop (LG6b, ADR-0056): Tab reaches it, Home goes
-      // along it to Done.
+      // Done stands on the component's frame (ADR-0075): Tab reaches it.
       const done = page.getByRole('button', { name: 'Done editing' });
-      await tabTo(
-        page,
-        page.getByRole('toolbar', { name: 'Formatting' }).locator('button[tabindex="0"]'),
-      );
-      await page.keyboard.press('Home');
-      await expect
-        .poll(() => done.evaluate((element) => element === document.activeElement))
-        .toBe(true);
+      await tabTo(page, done);
       await page.keyboard.press('Enter');
       await surface.waitFor({ state: 'hidden' });
 

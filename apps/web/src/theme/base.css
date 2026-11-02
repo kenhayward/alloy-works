@@ -39,11 +39,14 @@ body {
  * chips under the band, where axe's target-size found them crowded.
  */
 html {
-  scroll-padding-top: calc(var(--header-height) + var(--band-height, 0px));
+  scroll-padding-top: var(--header-height);
 }
 
-/* And under a document's in-place band where it has one (ADR-0056), which stands under the header. */
-html:has([data-inplace-band]) {
+/* What grows above the reader of a document moves no window of the browser's accord (STR-045): the page
+   holds a node it was sent to, and lets go. Found by the browser suite: `html` alone leaves it on. */
+html:has([data-side-dock]),
+html:has([data-side-dock]) body {
+  overflow-anchor: none;
 }
 
 /*
@@ -378,27 +381,3 @@ button.danger {
   color: var(--accent-text);
 }
 
-/* A paragraph's style in the sheet's margin (ADR-0075; CNT-190), its words from `marginLabelRules`: out of
-   the flow, so the measure is untouched, and 10px at every zoom it shows at. */
-.aw-labels :not(li, td, th, [data-role]) > p::before,
-.aw-labels [data-role^='heading']::before,
-.aw-labels [data-role='title']::before {
-  /* Where the line starts, pulled back into the margin: the block stays unpositioned, since an image in
-     it takes its clicks by the order it paints in. */
-  position: absolute;
-  width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px);
-  margin-block-start: 0.2em;
-  margin-inline-start: calc(-1 * var(--sheet-margin) * var(--aw-zoom));
-  overflow: hidden;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 1.5;
-  text-align: end;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: nowrap;
-  user-select: none;
-}

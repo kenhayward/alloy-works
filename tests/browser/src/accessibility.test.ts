@@ -1696,8 +1696,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       };
 
       await page.goto(`${SERVICE}/#/admin/overview`);
-      await arrive({ shows: page.getByRole('link', { name: 'Connections', exact: true }) });
-      await tabTo(page.getByRole('link', { name: 'Connections', exact: true }));
+      const toConnections = page.getByRole('link', { name: /^Connections/ });
+      await arrive({ shows: toConnections });
+      await tabTo(toConnections);
       await page.keyboard.press('Enter');
       const list = page.getByRole('region', { name: 'Connections', exact: true });
       await check('the connections list', {
@@ -1852,10 +1853,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       };
 
       await page.goto(`${SERVICE}/#/components`);
-      await arrive({
-        shows: page.getByRole('link', { name: 'Query definitions', exact: true }),
-      });
-      await tabTo(page.getByRole('link', { name: 'Query definitions', exact: true }));
+      const toDefinitions = page.getByRole('link', { name: /^Query definitions/ });
+      await arrive({ shows: toDefinitions });
+      await tabTo(toDefinitions);
       await page.keyboard.press('Enter');
       const list = page.getByRole('region', { name: 'Query definitions', exact: true });
       await check('the query definitions list', {

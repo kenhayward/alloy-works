@@ -1,5 +1,5 @@
 import type { createApiClient, PresentationView } from '@alloy-works/api-client';
-import { projectCss, projectFontFaces, readTheme, type ResolvedTheme } from '@alloy-works/domain';
+import { lineOpeners, projectCss, projectFontFaces, readTheme, type ResolvedTheme } from '@alloy-works/domain';
 import {
   createContext,
   useCallback,
@@ -85,16 +85,25 @@ const cssString = (text: string): string =>
  * list or a cell, whose paragraphs stand away from the margin. A heading says its role.
  */
 export function marginLabelRules(theme: ResolvedTheme): string {
-  const paragraph = '.aw-labels :not(li, td, th, [data-role]) > p';
-  const styled = [...theme.paragraphStyles.values()].map(
-    (style) =>
-      `${paragraph}[data-style=${cssString(style.id)}]::before { content: ${cssString(style.name)} / ""; }`,
-  );
-  const roles = [1, 2, 3, 4, 5, 6].map(
-    (level) =>
-      `.aw-labels [data-role="heading${level}"]::before { content: "H${level}" / ""; }`,
-  );
-  return [...styled, ...roles, `.aw-labels [data-role="title"]::before { content: ${cssString(theme.paragraphStyles.get('title')?.name ?? 'Title')} / ""; }`].join('\n');
+  // A paragraph whose lines the theme holds open has its pseudo-elements taken (`lineOpeners`): it has
+  // no label, and the button over the current block still names it.
+  const free = `:not(:has(${lineOpeners(theme).join(', ')}))`;
+  const paragraph = `.aw-labels :not(li, td, th, [data-role]) > p${free}`;
+  const role = (name: string) => `.aw-labels [data-role="${name}"]${free}`;
+  const levels = [1, 2, 3, 4, 5, 6].map((level) => `heading${level}`);
+  const every = [paragraph, ...[...levels, 'title'].map(role)];
+  return [
+    // Out of the flow, so the measure is untouched, and 10px at every zoom it shows at.
+    `${every.map((each) => `${each}::before`).join(', ')} { position: absolute; width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px); margin-block-start: 0.2em; margin-inline-start: calc(-1 * var(--sheet-margin) * var(--aw-zoom)); overflow: hidden; color: var(--muted); font-family: var(--mono); font-size: 10px; font-style: normal; font-weight: 400; line-height: 1.5; text-align: end; text-overflow: ellipsis; text-transform: none; white-space: nowrap; user-select: none; pointer-events: none; }`,
+    ...[...theme.paragraphStyles.values()].map(
+      (style) =>
+        `${paragraph}[data-style=${cssString(style.id)}]::before { content: ${cssString(style.name)} / ""; }`,
+    ),
+    ...levels.map(
+      (name) => `${role(name)}::before { content: "H${name.slice(-1)}" / ""; }`,
+    ),
+    `${role('title')}::before { content: ${cssString(theme.paragraphStyles.get('title')?.name ?? 'Title')} / ""; }`,
+  ].join('\n');
 }
 
 const ZoomContext = createContext<{ zoom: Zoom; setZoom: (zoom: Zoom) => void } | null>(null);

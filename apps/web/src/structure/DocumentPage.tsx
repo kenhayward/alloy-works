@@ -2567,7 +2567,7 @@ export function DocumentPage({
               offered.length > 1 ? (
                 <div role="radiogroup" aria-label={say('document.mode')} className={styles['mode']}>
                   {offered.map(({ mode, name }) => (
-                    <NameTip key={mode} name={name}>
+                    <NameTip key={mode} name={name} below>
                       <label data-chosen={modeNow === mode}>
                         <input
                           type="radio"
@@ -2677,6 +2677,7 @@ export function DocumentPage({
             />
             {document.archived && <Chip>{say('document.archived')}</Chip>}
             {document.onHold && <Chip>{say('document.on-hold')}</Chip>}
+            {authoring && editing === null && <span>{say('editor.click-a-component-s-text')}</span>}
           </StatusLead>
           {/* Before the first save of an approved one, what a save does (WF-F). */}
           {authoring && document.mayEdit && document.standing?.state.approved && (
@@ -2721,7 +2722,7 @@ export function DocumentPage({
             }
           >
             {/* The side dock (ADR-0075): the outline pane's toggles above the frequent tools. */}
-            <div className={styles['sideDock']}>
+            <div className={styles['sideDock']} data-side-dock="">
               <div role="group" aria-label={say('document.outline-pane')}>
                 {tabs.map((each) => (
                   <NameTip key={each.key} name={each.label}>

@@ -47,28 +47,29 @@ describe("the labels in a sheet's margin (ADR-0075)", () => {
       ['note', { id: 'note', name: 'Note' }],
       ['odd', { id: 'odd', name: 'Say "odd"' }],
     ]),
+    characterStyles: new Proxy({}, { get: () => ({ properties: {} }) }),
   } as unknown as Parameters<typeof marginLabelRules>[0];
 
   it("CNT-190 says a paragraph's style and a heading's role in generated content, which is in no text and no copy", () => {
     const rules = marginLabelRules(theme);
     expect(rules).toContain('[data-style="note"]::before { content: "Note" / ""; }');
     expect(rules).toContain('[data-style="odd"]::before { content: "Say \\"odd\\"" / ""; }');
-    expect(rules).toContain('[data-role="heading1"]::before { content: "H1" / ""; }');
-    expect(rules).toContain('[data-role="heading6"]::before { content: "H6" / ""; }');
+    expect(rules).toMatch(/\[data-role="heading1"\]:not\(:has\([^{]*::before \{ content: "H1" \/ ""; \}/);
+    expect(rules).toMatch(/\[data-role="heading6"\]:not\(:has\([^{]*::before \{ content: "H6" \/ ""; \}/);
     // Every rule hangs off the class the sheet takes off to turn them off, and a pseudo-element: no rule
     // writes into the document's own elements.
     for (const rule of rules.split('\n'))
-      expect(rule).toMatch(/^\.aw-labels .*::before \{ content:/);
+      expect(rule).toMatch(/^\.aw-labels .*::before \{ /);
     // And not on a paragraph in a list or a cell, which stands away from the margin.
     expect(rules).toContain(':not(li, td, th, [data-role]) > p');
   });
 
   it('CNT-190 stands a label out of the flow, so the measure stays as it was', async () => {
-    const { readFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const css = readFileSync(join(process.cwd(), 'src/theme/base.css'), 'utf8');
-    const rule = /\.aw-labels \[data-role='title'\]::before \{[^}]*\}/.exec(css)![0];
-    expect(rule).toContain('position: absolute');
+    expect(marginLabelRules(theme).split('\n')[0]).toContain('position: absolute');
+  });
+
+  it('CNT-190 labels no paragraph whose lines the theme holds open with its own pseudo-elements', () => {
+    expect(marginLabelRules(theme)).toContain(':not(:has(.aw-inline-image-holder');
   });
 
   it('declares the labels from the theme a page is set in', async () => {
@@ -79,7 +80,7 @@ describe("the labels in a sheet's margin (ADR-0075)", () => {
       </PresentationProvider>,
     );
     await screen.findByText(/^ready/);
-    expect(faces()).toContain('[data-role="heading2"]::before { content: "H2" / ""; }');
+    expect(faces()).toMatch(/\[data-role="heading2"\][^{]*::before \{ content: "H2" \/ ""; \}/);
     expect(faces()).toMatch(/\[data-style="body"\]::before \{ content: "[^"]+" \/ ""; \}/);
   });
 });

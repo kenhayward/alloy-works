@@ -217,6 +217,10 @@ Departures from the handoff and from what is above, each with its reason:
   the Assistant mid-question. The tab is offered, and chosen by the reader.
 - **Pages as you edit** is a View menu item, not a header button.
 - **Label tooltips** only on the current block's button; a pseudo-element takes no title.
+- **No passive label on a paragraph holding an inline image or a mark larger than its text.** The theme
+  uses that paragraph's `::before` and `::after` to hold its lines open (`lineOpeners`), so a label there
+  would clip the line. The button over the current block still names and changes its style. Labelling them
+  too would take a widget in the editor and the read text.
 - **Language and direction chips** stay in the component strip, not the status bar.
 
 ## Order of work

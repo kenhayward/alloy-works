@@ -3124,7 +3124,7 @@ export function ComponentEditor({
           >
             <div className={styles['frameActs']}>
               {leadingActs.map((act) => (
-                <NameTip key={act.label} name={act.label}>
+                <NameTip key={act.label} name={act.label} below>
                   <button
                     type="button"
                     className={styles['frameButton']}

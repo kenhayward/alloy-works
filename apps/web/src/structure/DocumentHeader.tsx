@@ -5,6 +5,7 @@ import { useAdministers } from '../access/ManageAccessLink.js';
 import { Modal } from '../layouts/Modal.js';
 import { useLifecycleActs, type LifecycleAct } from '../lifecycle/Workflow.js';
 import { MenuBar } from '../parts/MenuBar.js';
+import { seededKind } from '../states/Lozenge.js';
 import { HeaderSlot } from '../shell/HeaderSlot.js';
 import { usePageShown } from '../shell/Status.js';
 import { buildMenus, type CommandState, type StyleItem } from '../shell/commands/menus.js';
@@ -32,7 +33,9 @@ function Stepper({
         <li
           key={state.key}
           className={styles['step']}
-          {...(state.key === current.key ? { 'aria-current': 'step' as const } : {})}
+          {...(state.key === current.key
+            ? { 'aria-current': 'step' as const, 'data-kind': seededKind(current.key) }
+            : {})}
           data-content
         >
           <span className={styles['dot']} aria-hidden="true" />

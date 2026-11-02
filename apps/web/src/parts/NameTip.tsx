@@ -13,15 +13,22 @@ export function NameTip({
   keys,
   children,
   className,
+  below = false,
 }: {
   name: string;
   keys?: string | undefined;
+  /** Under its control, for one in a row: beside it, a tip would stand over the next one. */
+  below?: boolean;
   children: ReactNode;
   className?: string | undefined;
 }) {
   const [at, setAt] = useState<CSSProperties | null>(null);
   const show = (anchor: HTMLElement) => {
     const { top, bottom, left, right } = anchor.getBoundingClientRect();
+    if (below) {
+      setAt({ top: bottom + 4, left: (left + right) / 2 });
+      return;
+    }
     const rtl = getComputedStyle(anchor).direction === 'rtl';
     setAt({
       top: (top + bottom) / 2,
@@ -44,7 +51,13 @@ export function NameTip({
     >
       {children}
       {at !== null && (
-        <span className={styles['tip']} style={at} aria-hidden="true" data-name-tip="">
+        <span
+          className={styles['tip']}
+          style={at}
+          aria-hidden="true"
+          data-name-tip=""
+          data-below={below}
+        >
           {name}
           {keys !== undefined && <kbd className={styles['keys']}>{keys}</kbd>}
         </span>

@@ -534,11 +534,14 @@ export function useLifecycleActs(props: TransitionProps): {
         ]
       : [],
   );
-  const firstGate = gates[0];
+  // Onward before back, where the workflow's order says which is which: it may list Return first.
+  const order = (standing.states ?? []).map((state) => state.key);
+  const from = order.indexOf(standing.state.key);
+  const onward = standing.transitions.findIndex((each) => order.indexOf(each.to.key) > from);
   return {
     acts: [...approvals, ...transitions, ...others],
-    primary: approvals[0] ?? transitions[0],
-    progress: firstGate === undefined ? undefined : progressOf(firstGate),
+    primary: approvals[0] ?? transitions[Math.max(onward, 0)],
+    progress: gates.length === 0 ? undefined : gates.map(progressOf).join(', '),
     dialogs,
   };
 }
