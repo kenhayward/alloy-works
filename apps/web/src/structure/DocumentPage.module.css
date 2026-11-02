@@ -64,12 +64,12 @@
   grid-column: 1;
   grid-row: 1 / span 4;
   position: sticky;
-  top: calc(var(--header-height) + var(--band-height, 0px) + var(--space-12));
+  top: calc(var(--header-height) + var(--space-12));
   display: flex;
   flex-direction: column;
   min-width: 0;
   max-height: calc(
-    100vh - var(--header-height) - var(--band-height, 0px) - var(--space-12) -
+    100vh - var(--header-height) - var(--space-12) -
       var(--status-height, 0px) - var(--space-12)
   );
   overflow: hidden;
@@ -150,18 +150,18 @@
  */
 .dockArea {
   position: sticky;
-  top: calc(var(--header-height) + var(--band-height, 0px) + var(--space-12));
+  top: calc(var(--header-height) + var(--space-12));
   grid-column: -2;
   grid-row: 1 / span 4;
   display: flex;
   min-width: 0;
   --dock-most: calc(
-    100vh - var(--header-height) - var(--band-height, 0px) - var(--space-12) -
+    100vh - var(--header-height) - var(--space-12) -
       var(--status-height, 0px) - var(--space-12)
   );
   /* Its room where the page has measured it, so no tab runs under the status bar (issues #868,
      #878). */
-  max-height: min(var(--dock-most), var(--dock-room, var(--dock-most)));
+  height: min(var(--dock-most), var(--dock-room, var(--dock-most)));
   border: 1px solid var(--border);
   border-radius: var(--radius-8);
   background: var(--surface);
@@ -338,18 +338,6 @@
   padding: var(--space-12) var(--space-16) var(--space-24);
 }
 
-/* The band for a component open in place (ADR-0056): its toolbar row and its second line, reserved
- * in Authoring, under the document bar and kept in view under the header as the page scrolls. */
-.band {
-  position: sticky;
-  top: var(--header-height);
-  z-index: 2;
-  /* The toolbar row, the second line and the rule between them: what an open component fills. */
-  min-height: calc(var(--inplace-toolbar) + var(--context-line) + 1px);
-  border-bottom: 1px solid var(--border);
-  background: var(--chrome);
-}
-
 /* The document bar: one line under the header, on the chrome. */
 .bar {
   display: flex;
@@ -387,7 +375,7 @@
   background: var(--sunken);
 }
 
-.mode > label {
+.mode label {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -398,14 +386,14 @@
   cursor: pointer;
 }
 
-.mode > label:has(input:checked) {
+.mode label:has(input:checked) {
   background: var(--surface);
   box-shadow: var(--shadow-rest);
   color: var(--text);
   font-weight: 600;
 }
 
-.mode > label:has(input:focus-visible) {
+.mode label:has(input:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -560,9 +548,14 @@
 
 /* The panel, 1px of rule from the dock: the same surface. */
 .layout > [data-panel] > [data-part='outline'] {
+  height: calc(100vh - var(--header-height) - var(--status-height, 0px) - 2 * var(--space-12));
   margin-inline-start: var(--side-dock);
+  border-color: var(--strong-border);
+  border-inline-start-color: var(--divider-strong);
   border-start-start-radius: 0;
   border-end-start-radius: 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .modeName {

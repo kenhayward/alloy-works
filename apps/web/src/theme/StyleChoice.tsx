@@ -165,6 +165,10 @@ export function paragraphStyleItems(theme: ResolvedTheme, view: EditorView): rea
     (choice) => ({
       value: choice.value,
       label: choice.label,
+      name:
+        choice.value === 'body'
+          ? (theme.paragraphStyles.get(theme.places[paragraphs[0]!.place]!)?.name ?? choice.label)
+          : choice.label,
       checked: stored.size === 1 && stored.has(choice.value),
       run: () => {
         setParagraphStyle(choice.value)(view.state, view.dispatch);

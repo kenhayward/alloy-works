@@ -1,5 +1,8 @@
 /* The title's line, 22px, above the menu bar's 26px (ADR-0075). */
 .titleLine {
+  /* It asks for no width of its own: the menu bar sets how narrow this part goes, and a long title
+     shortens. */
+  contain: inline-size;
   display: flex;
   align-items: baseline;
   gap: var(--space-8);

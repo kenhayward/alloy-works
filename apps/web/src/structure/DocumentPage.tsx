@@ -60,7 +60,6 @@ import {
 } from '../publishing/Preview.js';
 import {
   RANGE_FOLLOW_MS,
-  RangePreviewButton,
   RangePreviewPane,
   useRangePreview,
 } from '../publishing/RangePreview.js';
@@ -603,7 +602,7 @@ function announce(
 }
 
 /** The outline pane of layout C: 300px, dragged between 220 and 520, remembered by this browser. */
-const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 300 };
+const OUTLINE_PANE = { storageKey: 'aw.outline.width', min: 220, max: 520, initial: 264 };
 /** The panels beside the text: dragged as the outline is, and whether they are hidden to a rail. */
 const DOCK_PANE = { storageKey: 'aw.document.panels', min: 280, max: 640, initial: 320 };
 /** The same pane while it offers the Table tab: wider, and its width remembered apart (ADR-0052). */
@@ -2587,12 +2586,7 @@ export function DocumentPage({
               )
             }
             preview={
-              <>
-                <PreviewButton preview={preview} />
-                {editing !== null && (
-                  <RangePreviewButton range={rangePreview} className={styles['toggle']} />
-                )}
-              </>
+              <PreviewButton preview={preview} />
             }
             styles={() => activeEditor.current?.styles() ?? []}
             onKeys={pageKeys}

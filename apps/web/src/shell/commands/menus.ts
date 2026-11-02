@@ -25,6 +25,8 @@ export interface LifecycleItem {
 export interface StyleItem {
   readonly value: string;
   readonly label: string;
+  /** The style's own name, which `label` adds to where it is the place's default. */
+  readonly name?: string;
   readonly checked: boolean;
   readonly run: () => void;
 }

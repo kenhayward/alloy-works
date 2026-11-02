@@ -44,7 +44,6 @@ html {
 
 /* And under a document's in-place band where it has one (ADR-0056), which stands under the header. */
 html:has([data-inplace-band]) {
-  --band-height: calc(var(--inplace-toolbar) + var(--context-line) + 1px);
 }
 
 /*

@@ -1,13 +1,17 @@
-/* The header band: the theme's chrome, 44px, the mark left and the account right. */
 /* A page's own parts: its title and menus at the start; its lifecycle; its mode and Preview. */
 .lead {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   justify-content: center;
-  min-width: 0;
+  min-width: min-content;
 }
 
 .lead:empty {
+  display: none;
+}
+
+.lead:not(:empty) ~ .spacer {
   display: none;
 }
 
@@ -156,7 +160,7 @@ a.chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
-  width: min(540px, 40vw);
+  flex: none;
   height: 32px;
   padding-inline: var(--space-12) var(--space-8);
   border: 1px solid var(--border);

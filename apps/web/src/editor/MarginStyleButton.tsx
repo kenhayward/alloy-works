@@ -13,14 +13,16 @@ import styles from './MarginStyleButton.module.css';
 export function MarginStyleButton({
   view,
   entries,
+  current,
 }: {
   view: EditorView;
   entries: readonly MenuEntry[];
+  /** The current style's name as its label in the margin says it; several where undefined. */
+  current: string | undefined;
 }) {
   const own = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<CSSProperties | null>(null);
   const [first] = paragraphsAt(view.state);
-  const chosen = entries.find((entry) => entry.kind === 'item' && entry.checked === true);
   useLayoutEffect(() => {
     const parent = own.current?.parentElement;
     if (first === undefined || !parent) return setAt(null);
@@ -41,7 +43,7 @@ export function MarginStyleButton({
     );
     return undefined;
   });
-  const name = chosen?.kind === 'item' ? chosen.label : words('theme.several-styles');
+  const name = current ?? words('theme.several-styles');
   return (
     <div
       ref={own}

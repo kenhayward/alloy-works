@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { usePageShown } from './Status.js';
@@ -16,14 +16,14 @@ const HostsContext = createContext<HeaderHosts | null>(null);
 /** The header's places a page may draw in (ADR-0075), around the header and the workspace both. */
 export function HeaderHostsProvider({ children }: { children: ReactNode }) {
   const [hosts, setHosts] = useState<Hosts>({});
-  const value = useMemo<HeaderHosts>(
-    () => ({
-      hosts,
-      set: (name, element) =>
-        setHosts((was) => (was[name] === element ? was : { ...was, [name]: element })),
-    }),
-    [hosts],
+  // Kept the same as the hosts change: the header's refs take it, and a ref that changed lets go of its
+  // element, which would change the hosts again.
+  const set = useCallback<HeaderHosts['set']>(
+    (name, element) =>
+      setHosts((was) => (was[name] === element ? was : { ...was, [name]: element })),
+    [],
   );
+  const value = useMemo<HeaderHosts>(() => ({ hosts, set }), [hosts, set]);
   return <HostsContext.Provider value={value}>{children}</HostsContext.Provider>;
 }
 

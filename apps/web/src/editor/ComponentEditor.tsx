@@ -3154,7 +3154,11 @@ export function ComponentEditor({
           </div>
         )}
         {inBand && editing !== null && styleEntries.length > 0 && (
-          <MarginStyleButton view={editing} entries={styleEntries} />
+          <MarginStyleButton
+            view={editing}
+            entries={styleEntries}
+            current={styleItems().find((style) => style.checked)?.name}
+          />
         )}
         {loaded.state === 'unreadable' && (
           <Notice tone="failed">

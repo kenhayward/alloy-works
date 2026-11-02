@@ -31,6 +31,7 @@ import {
   resolveRendererTarget,
   spellCheckerChoice,
   startsAtConnect,
+  applicationMenu,
   spellingMenu,
   trayMenu,
   updateStep,
@@ -444,6 +445,9 @@ void app.whenReady().then(() => {
     applicationVersion: app.getVersion(),
     iconPath: windowIconPath(app.getAppPath()),
   });
+
+  const nativeMenu = applicationMenu(process.platform, app.isPackaged);
+  Menu.setApplicationMenu(nativeMenu === null ? null : Menu.buildFromTemplate([...nativeMenu]));
 
   createWindow();
   createTray();
