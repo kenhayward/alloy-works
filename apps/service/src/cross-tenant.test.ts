@@ -957,6 +957,7 @@ const VALID_INPUT: Readonly<
   setSessionSettings: { payload: { idleMinutes: 60, absoluteHours: 12 } },
   startReauthentication: { payload: {} },
   createGroup: { payload: { name: 'Elsewhere' } },
+  createRole: { payload: { name: 'Elsewhere', permissions: ['read'] } },
   placeHold: { payload: { target: { space: SESSION }, reason: 'Elsewhere' } },
   releaseHold: { payload: { reason: 'Elsewhere' } },
   setRetention: { payload: { kind: null, space: SESSION, days: 5 } },

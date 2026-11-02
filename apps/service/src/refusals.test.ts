@@ -84,6 +84,10 @@ describe('the rule behind a refusal', () => {
       'invitation.accepted',
       // A group's own guards: a name or value taken, a person not held, and a provider's group,
       // whose members are the sign-ins' (access.md, GP-C) - a design's decision, not IAM-009's.
+      'role.name_taken',
+      'role.empty',
+      'role.unknown_permission',
+      'role.repeated_permission',
       'group.name_taken',
       'group.value_taken',
       // Removing the grant of the last who can sign in (identity.md, IN-B), and a way nothing may claim.

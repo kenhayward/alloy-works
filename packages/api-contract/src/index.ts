@@ -503,6 +503,8 @@ export {
   GrantView,
   PrincipalList,
   PrincipalListQuery,
+  RoleBody,
+  RoleMade,
   RoleList,
   RoleListQuery,
 } from './managing-access.js';

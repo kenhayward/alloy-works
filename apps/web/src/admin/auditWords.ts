@@ -148,6 +148,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'group.made'() {
     return words('admin.group-made');
   },
+  get 'role.made'() {
+    return words('admin.role-made');
+  },
   get 'group.member_added'() {
     return words('admin.added-to-a-group');
   },
@@ -553,6 +556,9 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   },
   get revision() {
     return words('admin.revisions');
+  },
+  get role() {
+    return words('admin.roles');
   },
   get round() {
     return words('admin.review-rounds');

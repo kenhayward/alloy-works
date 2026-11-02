@@ -204,7 +204,9 @@ Six permissions join the closed set; every route below loses `administer` for it
 
 The Administrator starter role, every role holding `administer`, and every token scoped `administer`
 gain all six by migration, so nobody and no automation loses an act on upgrade; a tenant then makes a
-narrower role (IN-H). All six join `externalCap`. **Connecting CT Studio and issuing its token stay
+narrower role (IN-H) in Administration. **A narrower role that keeps `administer` is no boundary yet:**
+whoever holds it can grant themselves Administrator, or join a group that holds it, since nothing yet
+limits a grant to what its maker holds. All six join `externalCap`. **Connecting CT Studio and issuing its token stay
 `administer`'s**: they make a grant of Author and a token that creates and edits, and configuring services
 must not reach content. Somebody holding `configure_services` and `rotate_secrets` can still turn SCIM on
 and push members into a provider's groups, as they could by configuring a provider at all: they are trusted

@@ -480,7 +480,8 @@ export function Administration({
   // still there to take focus back.
   const [spacesRead, setSpacesRead] = useState(0);
   const spaces = useListing<SpaceRow>(loads.spaces, shown === 'spaces', spacesRead);
-  const roles = useListing<RoleRow>(loads.roles, shown === 'roles');
+  const [rolesRead, setRolesRead] = useState(0);
+  const roles = useListing<RoleRow>(loads.roles, shown === 'roles', rolesRead);
 
   useEffect(() => {
     // Spaces are made, renamed and archived by an administrator of the environment (SP-A), and each
@@ -569,7 +570,9 @@ export function Administration({
         {shown === 'themes' && <Themes client={client} />}
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
-        {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'roles' && (
+          <Roles read={roles} client={client} onMade={() => setRolesRead((read) => read + 1)} />
+        )}
         {shown === 'sign-in' && <SignIn client={client} />}
         {shown === 'outside' && <Outside client={client} />}
         {shown === 'holds' && <Holds client={client} />}

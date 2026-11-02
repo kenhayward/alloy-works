@@ -11,6 +11,8 @@ import type {
   PrincipalList,
   PrincipalListQuery,
   RoleList,
+  RoleBody,
+  RoleMade,
   RoleListQuery,
 } from '@alloy-works/api-contract';
 import {
@@ -20,6 +22,7 @@ import {
   listGrants,
   countPrincipals,
   listPrincipals,
+  createRole,
   listRoles,
   readGrant,
   removeGrant,
@@ -102,6 +105,14 @@ const REFUSALS = new Map<
 ]);
 
 /** A refusal where a grant is made or removed, as 409 with the wire's spelling of the store's answer. */
+/** What a role's refusals say; the contract already holds a body to some permissions, each named. */
+const ROLE_REFUSALS = new Map([
+  ['role.name_taken', 'There is already a role with that name.'],
+  ['role.empty', 'A role must hold at least one permission.'],
+  ['role.unknown_permission', 'A role can only hold the permissions the product has.'],
+  ['role.repeated_permission', 'A role holds each permission once.'],
+] as const);
+
 function refuse(
   refusal:
     | GrantRefusal
@@ -143,6 +154,15 @@ export function managingAccessHandlers() {
         items: page.items.map((role) => ({ ...role, permissions: [...role.permissions] })),
         next: cursorAfter(page.after),
       };
+    },
+
+    createRole: async (request: FastifyRequest, { trx }: Authorised): Promise<RoleMade> => {
+      const body = request.body as RoleBody;
+      const answer = await createRole(trx, body.name, body.permissions);
+      if ('refused' in answer) {
+        throw refused(409, answer.refused, ROLE_REFUSALS.get(answer.refused)!);
+      }
+      return { role: { ...answer.role, permissions: [...answer.role.permissions] } };
     },
 
     listPrincipals: async (

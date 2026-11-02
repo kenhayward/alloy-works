@@ -135,6 +135,20 @@ export const RoleList = z.object({
 });
 export type RoleList = z.infer<typeof RoleList>;
 
+export const RoleBody = z.strictObject({
+  name: z.string().trim().min(1).max(80).describe('1 to 80 characters, trimmed; unique here'),
+  permissions: z
+    .array(PermissionName)
+    .min(1)
+    .describe('What it holds, each once. Without read it can only be granted as a denial'),
+});
+export type RoleBody = z.infer<typeof RoleBody>;
+
+export const RoleMade = z.object({
+  role: z.object({ id: z.string(), name: z.string(), permissions: z.array(PermissionName) }),
+});
+export type RoleMade = z.infer<typeof RoleMade>;
+
 export const PrincipalListQuery = ChoosingFor;
 export type PrincipalListQuery = z.infer<typeof PrincipalListQuery>;
 
@@ -235,6 +249,31 @@ export const managingAccessRoutes = {
       404: notFound,
     },
   },
+  createRole: {
+    operationId: 'createRole',
+    method: 'POST',
+    path: '/v1/roles',
+    summary: 'Make a role: a named set of permissions, which does nothing until it is granted',
+    tenantScoped: true,
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { tenant: true },
+      changesAccess: true,
+    },
+    body: RoleBody,
+    responses: {
+      200: { description: 'Made', schema: RoleMade },
+      400: { description: 'No name, no permissions, or one the product lacks', schema: ErrorBody },
+      401: unauthenticated,
+      403: forbidden,
+      409: {
+        description: 'role_name_taken or role_repeated_permission',
+        schema: ErrorBody,
+      },
+    },
+  },
+
   makeGrant: {
     operationId: 'makeGrant',
     method: 'POST',

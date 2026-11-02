@@ -108,6 +108,7 @@ describe('the audit kinds', () => {
       'tool.used',
       // The AU1 plan's additions (AU1-A).
       'group.made',
+      'role.made',
       'group.deleted',
       'settings.changed',
       'sign_in_route.configured',

@@ -9,7 +9,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 /** What the fake answers each path with, given the URL it was asked. */
-type Answers = Record<string, (url: URL) => Response>;
+type Answers = Record<string, (url: URL, body?: unknown) => Response>;
 
 const everything: Answers = {
   '/v1/tenant': () => json(200, { name: 'Development' }),
@@ -61,8 +61,10 @@ function service(answers: Answers) {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const url = new URL(request.url);
     asked.push(url);
-    const answer = answers[url.pathname];
-    return answer ? answer(url) : json(404, {});
+    // By method and path where a test needs them apart, as a listing and its making are.
+    const answer = answers[`${request.method} ${url.pathname}`] ?? answers[url.pathname];
+    if (!answer) return json(404, {});
+    return answer(url, request.method === 'GET' ? undefined : await request.clone().json());
   }) as unknown as typeof fetch;
   return { client: createApiClient({ baseUrl: 'http://admin.test', fetch: fetching }), asked };
 }
@@ -919,6 +921,63 @@ describe("Administration's Overview, Roles and About", () => {
     );
     await userEvent.type(within(page).getByRole('searchbox', { name: 'Find a role' }), 'edit');
     expect(within(grid).getAllByRole('row')).toHaveLength(2);
+  });
+
+  it('makes a role from the permissions ticked, and shows it in the grid', async () => {
+    const made: { name: string; permissions: string[] }[] = [];
+    const held: { id: string; name: string; permissions: string[] }[] = [
+      { id: 'r1', name: 'Reader', permissions: ['read'] },
+    ];
+    const { client } = service({
+      ...everything,
+      '/v1/roles': () => json(200, { items: [...held], next: null }),
+      'POST /v1/roles': (_url, body) => {
+        const asked = body as { name: string; permissions: string[] };
+        made.push(asked);
+        held.push({ id: 'r2', ...asked });
+        return json(200, { role: { id: 'r2', ...asked } });
+      },
+    });
+    render(<Administration client={client} about={null} />);
+    await userEvent.click(section('Roles'));
+    const grid = await screen.findByRole('table', { name: 'Roles' });
+    await userEvent.click(screen.getByRole('button', { name: 'New role' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New role' });
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Make role' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Give the role a name.');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Name' }), ' Proofreader ');
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'read' }));
+    expect(dialog).toHaveTextContent('can only be granted as a denial');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Make role' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Choose at least one');
+    expect(made).toEqual([]);
+
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'comment' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'read' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Make role' }));
+    expect(made).toEqual([{ name: 'Proofreader', permissions: ['read', 'comment'] }]);
+    expect(await within(grid).findByRole('rowheader', { name: 'Proofreader' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByText('Made the role Proofreader.')).toBeInTheDocument();
+  });
+
+  it('says why a role was refused, and keeps what was chosen', async () => {
+    const { client } = service({
+      ...everything,
+      '/v1/roles': () => json(200, { items: [], next: null }),
+      'POST /v1/roles': () =>
+        json(409, { code: 'role_name_taken', message: 'There is already a role with that name.' }),
+    });
+    render(<Administration client={client} about={null} />);
+    await userEvent.click(section('Roles'));
+    await screen.findByRole('table', { name: 'Roles' });
+    await userEvent.click(screen.getByRole('button', { name: 'New role' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New role' });
+    await userEvent.type(within(dialog).getByRole('textbox', { name: 'Name' }), 'Author');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Make role' }));
+    expect(await within(dialog).findByText(/already a role with that name/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('textbox', { name: 'Name' })).toHaveValue('Author');
   });
 
   it('names in About the citation processor, the bundled styles and locales, and their licences, as their terms ask (ADR-0067)', async () => {
