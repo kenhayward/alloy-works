@@ -125,3 +125,15 @@ export async function scrollPaneTo(target: Locator): Promise<void> {
     pane.scrollTop += element.getBoundingClientRect().top - pane.getBoundingClientRect().top;
   });
 }
+
+/** Takes a command from the application's menu bar (ADR-0076). */
+export async function fromMenu(page: Page, menu: string, item: string): Promise<void> {
+  await page.getByRole('menubar').getByRole('menuitem', { name: menu, exact: true }).click();
+  await page
+    .getByRole('menu', { name: menu })
+    .getByRole('menuitem', { name: item, exact: true })
+    .or(page.getByRole('menuitemcheckbox', { name: item, exact: true }))
+    .or(page.getByRole('menuitemradio', { name: item, exact: true }))
+    .first()
+    .click();
+}

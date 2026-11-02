@@ -195,13 +195,29 @@ and `G A` for Admin.
 - `TransitionButtons` splits into `useTransitions` (acts and dialogs) and its views, one for the header
   and one for the menu.
 - `apps/desktop/src/shell.ts`: `applicationMenu(platform, packaged)`, pure and pinned in `shell.test.ts`.
-- Margin labels: `Decoration.node` attributes in the editor (no schema or stored change), as
-  `placeDecorations` does, naming the style through a `styleName(id, place)` the renderer passes in, since
-  `data-style` holds an id and the editor has no theme; the same attribute in `DocumentText`. Drawn as an
-  absolutely placed `::before` with `content: attr(...) / ""`, so they are never copied, published,
-  measured or read inside the textbox. One overlay button for the current block.
+- Margin labels: CSS the theme generates (`marginLabelRules`, with the theme's other rules), a `::before`
+  on `p[data-style=id]` and `[data-role=headingN]` under `.aw-labels`, with `content: "name" / ""`, so they
+  are never copied, published, measured or read inside the textbox, and the editor package changes not at
+  all: decorations were not needed. One overlay button for the current block.
 - Outline pane: 264px is the default and the resizer stays, since nine levels of nesting (STR-007) need
   it. Contents, Baselines and Data become `aria-pressed` toggles in place of `PanelTabs`.
+
+## As built
+
+Departures from the handoff and from what is above, each with its reason:
+
+- **No browser-key spike** (step 2). Automation in Chromium cannot observe what the browser's own UI does
+  with a key, so it would have proved nothing. `F10` reaches the menu bar in any case; Firefox, Safari and
+  Alt behaviour are checked by hand.
+- **Bulleted and Numbered toggle directly**, without the handoff's list-style flyouts: list styles are not
+  built.
+- **Compare versions is History** (the Versions panel), which already compares. **Documentation** is cut:
+  there is no target. The **Direction** submenu is cut: Language is the prompt that sets it.
+- **Selection does not switch the panels by itself**: a selected list would otherwise take the reader from
+  the Assistant mid-question. The tab is offered, and chosen by the reader.
+- **Pages as you edit** is a View menu item, not a header button.
+- **Label tooltips** only on the current block's button; a pseudo-element takes no title.
+- **Language and direction chips** stay in the component strip, not the status bar.
 
 ## Order of work
 

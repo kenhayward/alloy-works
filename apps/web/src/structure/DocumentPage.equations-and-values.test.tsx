@@ -20,6 +20,7 @@ import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 import {
   client,
   outline,
+  outlinePane,
   open,
   section,
   described,
@@ -1248,10 +1249,12 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       review: true,
     });
     await checked();
-    expect(await screen.findByRole('tab', { name: 'Data, 1 revised by hand' })).toBeInTheDocument();
-    // Reading, the tab is the Data tab alone.
+    expect(
+      await screen.findByRole('button', { name: 'Data, 1 revised by hand' }),
+    ).toBeInTheDocument();
+    // Reading, the toggle is the Data panel's alone.
     await userEvent.click(screen.getByRole('radio', { name: 'Reading' }));
-    expect(await screen.findByRole('tab', { name: 'Data' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Data' })).toBeInTheDocument();
   });
 
   it("shows a reader who may not read the definition its value, and none of the definition's SQL or connection", async () => {
@@ -1500,8 +1503,8 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
     };
     const { asked } = openWithValues(options);
     const text = await textRegion();
-    await user.click(await screen.findByRole('tab', { name: 'Data' }));
-    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await user.click(await screen.findByRole('button', { name: 'Data' }));
+    const panel = outlinePane();
     // The revision is shown beside the value held, which the text still shows.
     await within(panel).findByText('Waiting: 1,240.5');
     expect(within(panel).getByText('1,234.5')).toBeInTheDocument();
@@ -1581,7 +1584,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
       state({ ...bound('b1'), mode: 'pinned' }, value, { facts: checks }),
     ]) {
       const { asked } = openWithValues({ content: withValue(bound('b1')), bindings: [binding] });
-      await screen.findByRole('tab', { name: 'Data' });
+      await screen.findByRole('button', { name: 'Data' });
       await act(async () => {
         await new Promise((settle) => setTimeout(settle, 50));
       });
@@ -1615,8 +1618,8 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
         ],
       },
     });
-    await user.click(await screen.findByRole('tab', { name: 'Data' }));
-    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await user.click(await screen.findByRole('button', { name: 'Data' }));
+    const panel = outlinePane();
     await within(panel).findByText('The source could not be reached.');
     expect(within(panel).getByText('Failed', { selector: 'span' })).toBeInTheDocument();
     expect(screen.getByText('A value could not be checked. See the Data tab.')).toBeInTheDocument();
@@ -1652,8 +1655,8 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
         result: { node: RESULTS, binding: 'b1', outcome: 'failed', failure },
       },
     });
-    await user.click(await screen.findByRole('tab', { name: 'Data' }));
-    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await user.click(await screen.findByRole('button', { name: 'Data' }));
+    const panel = outlinePane();
     await within(panel).findByText('Row 1, column photo: the image is not a PNG or a JPEG.');
     expect(asked).toContain(`/v1/datasets/pending/${PENDING}`);
     expect(screen.getByText('A value could not be checked. See the Data tab.')).toBeInTheDocument();
@@ -1662,7 +1665,7 @@ describe('the values a document holds, in its text (the B1 plan, task 5)', () =>
   it('offers the Data tab only where the document holds a binding', async () => {
     openWithValues({ content: plain, bindings: [] });
     await within(await textRegion()).findByText('Nothing bound here.');
-    expect(screen.queryByRole('tab', { name: 'Data' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Data' })).toBeNull();
   });
 
   it('asks for the values only where a text holds a binding', async () => {

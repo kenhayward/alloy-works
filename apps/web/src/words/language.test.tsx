@@ -48,7 +48,7 @@ describe('the interface’s language (the UI plan, UI-E)', () => {
       </InterfaceLanguage>,
     );
     await waitFor(() => expect(document.documentElement.lang).toBe('en-GB'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Interface language' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Ada/ }));
     expect(screen.getByRole('button', { name: 'As my browser says' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -58,7 +58,9 @@ describe('the interface’s language (the UI plan, UI-E)', () => {
     // The whole interface turns, right to left, its words made over.
     await waitFor(() => expect(document.documentElement.dir).toBe('rtl'));
     expect(document.documentElement.lang).toBe('ar-XB');
-    expect(await screen.findByRole('button', { name: /ļåñĝûåĝé/ })).toBeInTheDocument();
+    // The words made over remake the page around them, so the account button is drawn afresh.
+    await userEvent.click(await screen.findByRole('button', { name: /Ada/ }));
+    expect(await screen.findByRole('list', { name: /ļåñĝûåĝé/ })).toBeInTheDocument();
   });
 
   it('LOC-004 opens right to left where the person chose so, before any word is read', async () => {

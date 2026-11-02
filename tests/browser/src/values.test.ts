@@ -297,7 +297,7 @@ describe('a value revised by hand, in Chromium (the RV plan, RV-I)', () => {
       await value.waitFor();
       expect(await value.textContent()).toMatch(/^13\.50/);
       await checkAxe(page, 'a value revised by hand', task.meta, { shows: value });
-      await page.getByRole('tab', { name: 'Data' }).click();
+      await page.getByRole('button', { name: /^Data/ }).click();
       const row = page.locator('li[data-binding="weir"]');
       await row.getByText('Revised by hand: 13.5, by').waitFor();
       await checkAxe(page, 'a value revised by hand in the Data tab', task.meta, { shows: row });

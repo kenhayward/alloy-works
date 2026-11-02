@@ -1005,6 +1005,92 @@ describe("Administration's menu", () => {
     ).toBeInTheDocument();
   });
 
+  it('opens a section whose address is hyphenated, Citation styles', async () => {
+    window.location.hash = '#/admin/citation-styles';
+    const { client } = service({
+      ...everything,
+      '/v1/citation-styles': () => json(200, { items: [] }),
+    });
+    render(<Administration client={client} about={null} />);
+    expect(screen.getByRole('heading', { name: 'Citation styles', level: 1 })).toBeInTheDocument();
+    expect(section('Citation styles')).toHaveAttribute('aria-current', 'page');
+    window.location.hash = '';
+  });
+
+  it('holds the connections in a Data section, listing them as their own page did', async () => {
+    window.location.hash = '#/admin/connections';
+    const READINGS = 'ffffffff-0000-4000-8000-000000000002';
+    const { client } = service({
+      ...everything,
+      '/v1/connections': () =>
+        json(200, {
+          items: [
+            {
+              id: READINGS,
+              name: 'Readings',
+              space: { id: 's1', name: 'General' },
+              type: 'postgres',
+              retired: false,
+              version: { id: 'v1', number: '0.1' },
+              credentialSet: true,
+              lastTest: null,
+            },
+          ],
+          next: null,
+          total: 1,
+          facets: { spaces: [] },
+        }),
+    });
+    render(<Administration client={client} about={null} />);
+    expect(screen.getByRole('heading', { name: 'Connections', level: 1 })).toBeInTheDocument();
+    expect(section('Connections')).toHaveAttribute('aria-current', 'page');
+    expect(
+      within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText(/Data/),
+    ).toBeInTheDocument();
+    // Only one heading names it: the list's own is hidden, inside this page.
+    expect(screen.getAllByRole('heading', { name: 'Connections' })).toHaveLength(1);
+    expect(await screen.findByRole('link', { name: 'Readings' })).toHaveAttribute(
+      'href',
+      `#/connections/${READINGS}`,
+    );
+    window.location.hash = '';
+  });
+
+  it('holds the query definitions in a Data section, listing them as their own page did', async () => {
+    window.location.hash = '#/admin/query-definitions';
+    const DEFINITION = 'ffffffff-0000-4000-8000-000000000003';
+    const { client } = service({
+      ...everything,
+      '/v1/query-definitions': () =>
+        json(200, {
+          items: [
+            {
+              id: DEFINITION,
+              title: 'Site by id',
+              space: { id: 's1', name: 'General' },
+              connection: { id: 'c1', name: 'Readings' },
+              retired: false,
+              version: { id: 'v1', number: '0.1' },
+              changedAt: '2026-09-30T09:00:00.000Z',
+            },
+          ],
+          next: null,
+          total: 1,
+          facets: { spaces: [] },
+        }),
+    });
+    render(<Administration client={client} about={null} />);
+    expect(
+      screen.getByRole('heading', { name: 'Query definitions', level: 1 }),
+    ).toBeInTheDocument();
+    expect(section('Query definitions')).toHaveAttribute('aria-current', 'page');
+    expect(await screen.findByRole('link', { name: 'Site by id' })).toHaveAttribute(
+      'href',
+      `#/query-definitions/${DEFINITION}`,
+    );
+    window.location.hash = '';
+  });
+
   it('opens the section the address names, and Overview for one it does not know', async () => {
     const { client } = service(everything);
     window.location.hash = '#/admin/roles';

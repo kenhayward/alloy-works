@@ -25,6 +25,11 @@ import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 import {
   client,
   outline,
+  outlinePane,
+  dockToggle,
+  fromMenu,
+  openMenuItem,
+  menuSays,
   open,
   section,
   DOCUMENT,
@@ -546,15 +551,14 @@ describe('the address of every node', () => {
         expect(ruleOf(edged), edged).toMatch(/outline: 1px solid/);
       }
       // Show boundaries shows them all, and is kept for this reader.
-      // A toggle button on the document bar (ADR-0056), pressed while they show.
-      const boundaries = screen.getByRole('button', { name: 'Show boundaries' });
+      // A checked item of the View menu (ADR-0075), checked while they show.
       expect(text).not.toHaveAttribute('data-boundaries');
-      expect(boundaries).toHaveAttribute('aria-pressed', 'false');
-      await userEvent.click(boundaries);
+      expect((await menuSays(userEvent, 'View', 'Show boundaries')).checked).toBe(false);
+      await fromMenu(userEvent, 'View', 'Show boundaries');
       expect(text).toHaveAttribute('data-boundaries', 'shown');
-      expect(boundaries).toHaveAttribute('aria-pressed', 'true');
+      expect((await menuSays(userEvent, 'View', 'Show boundaries')).checked).toBe(true);
       expect(window.localStorage.getItem('alloy-works.boundaries')).toBe('shown');
-      await userEvent.click(boundaries);
+      await fromMenu(userEvent, 'View', 'Show boundaries');
       expect(text).not.toHaveAttribute('data-boundaries');
       window.localStorage.removeItem('alloy-works.boundaries');
     });
@@ -1072,7 +1076,7 @@ describe('the address of every node', () => {
       tops.set(SECOND, 600);
       render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} principalId={ADA} />);
       await screen.findByRole('region', { name: "The document's text" });
-      const pane = screen.getByRole('tree', { name: 'Outline' }).closest('[role="tabpanel"]');
+      const pane = screen.getByRole('tree', { name: 'Outline' }).closest('[class*="panel"]');
       if (!(pane instanceof HTMLElement)) throw new Error('The tree is in no pane');
       await waitFor(() =>
         expect(treeItem(/Unpacking/)).toHaveAttribute('aria-current', 'location'),
@@ -1457,22 +1461,18 @@ describe('the address of every node', () => {
     const text = await screen.findByRole('region', { name: "The document's text" });
     expect(await within(text).findByText('Unbox the printer.')).toBeInTheDocument();
     const reads = textsAsked;
-    // The band a component open in place keeps its toolbar in, on the chrome under the document bar
-    // (ADR-0056): there in Authoring before one opens, so the sheet does not move when it does.
+    // The band a component open in place keeps its tools in, on the side dock (ADR-0075): there in
+    // Authoring before one opens, so the sheet does not move when it does.
     const band = document.querySelector<HTMLElement>('[data-inplace-band]')!;
     expect(band).not.toBeNull();
     expect(band.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(band).toHaveTextContent("Click a component's text to edit it.");
     // The toolbar is there, disabled, before one opens, so nothing in the band changes as one does.
     const idle = within(band).getByRole('toolbar', { name: 'Formatting' });
-    const first = (toolbar: HTMLElement) =>
-      within(toolbar)
-        .getAllByRole('button')
-        .slice(0, 3)
-        .map((button) => button.getAttribute('aria-label'));
-    expect(first(idle)).toEqual(['Done editing', 'Save version', 'Saved text']);
     for (const button of within(idle).getAllByRole('button')) {
-      expect(button).toHaveAttribute('aria-disabled', 'true');
+      // But Comment, which needs no component open: it goes to Review (the AP plan).
+      if (button.getAttribute('aria-label') !== 'Comment') {
+        expect(button).toHaveAttribute('aria-disabled', 'true');
+      }
     }
 
     await user.click(within(text).getByText('Unbox the printer.'));
@@ -1483,23 +1483,30 @@ describe('the address of every node', () => {
     expect(
       within(text).getByText('You may read this component but not edit it.'),
     ).toBeInTheDocument();
-    // ...and its toolbar, its second line and Done in the band, none of them on the sheet: Done,
-    // Save version and Saved text first in the toolbar, its language and direction after it, and no
-    // name, which changed the band's width as one component gave way to another.
+    // ...its tools in the band and none of them on the sheet, and no name, which changed the band's
+    // width as one component gave way to another...
     const formatting = within(band).getByRole('toolbar', { name: 'Formatting' });
-    expect(first(formatting)).toEqual(['Done editing', 'Save version', 'Saved text']);
-    expect(within(formatting).getByRole('button', { name: 'Done editing' })).toHaveAttribute(
+    expect(within(band).queryByRole('textbox', { name: 'Title' })).toBeNull();
+    expect(within(text).queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
+    expect(formatting).toBeInTheDocument();
+    // ...and Done, Save version and Saved text first on its frame's line, its language in the Component
+    // menu there, none of which takes the sheet's height (CNT-075).
+    const frame = within(text).getByRole('group', { name: 'Component' });
+    expect(
+      within(frame)
+        .getAllByRole('button')
+        .slice(0, 3)
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(['Done editing', 'Save version', 'Saved text']);
+    expect(within(frame).getByRole('button', { name: 'Done editing' })).toHaveAttribute(
       'aria-disabled',
       'false',
     );
-    expect(within(band).getByRole('button', { name: 'Base language: en-GB' })).toBeInTheDocument();
-    expect(within(band).queryByRole('textbox', { name: 'Title' })).toBeNull();
-    expect(band.querySelector('[data-toolbar-line]')).not.toBeNull();
-    expect(within(text).queryByRole('toolbar', { name: 'Formatting' })).toBeNull();
-    expect(band).not.toHaveTextContent("Click a component's text to edit it.");
+    await user.click(within(frame).getByRole('button', { name: 'Component', expanded: false }));
+    expect(within(frame).getByRole('button', { name: 'Base language: en-GB' })).toBeInTheDocument();
     expect(textsAsked).toBe(reads);
 
-    await user.click(within(band).getByRole('button', { name: 'Done editing' }));
+    await user.click(within(frame).getByRole('button', { name: 'Done editing' }));
     expect(
       within(text).queryByRole('textbox', { name: 'Content of Install the printer' }),
     ).not.toBeInTheDocument();
@@ -1799,39 +1806,40 @@ describe('the address of every node', () => {
     expect(screen.getByRole('separator', { name: 'Resize the outline' })).toBeInTheDocument();
   });
 
-  it('VER-017 offers the document’s baselines in a tab of the outline pane', async () => {
+  it('VER-017 offers the document’s baselines in a panel of the outline pane', async () => {
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
     open(fake.fetch);
     await screen.findByRole('tree', { name: 'Outline' });
-    await userEvent.click(screen.getByRole('tab', { name: 'Baselines' }));
-    const panel = screen.getByRole('tabpanel', { name: 'Baselines' });
+    await userEvent.click(dockToggle('Baselines'));
+    const panel = outlinePane();
+    expect(within(panel).getByRole('heading', { level: 2, name: 'Baselines' })).toBeInTheDocument();
     expect(await within(panel).findByRole('listitem', { name: 'As approved' })).toBeInTheDocument();
-    // The tab chosen is remembered by the browser: back to Contents, for the page that opens next.
-    await userEvent.click(screen.getByRole('tab', { name: 'Contents' }));
+    // The panel chosen is remembered by the browser: back to Contents, for the page that opens next.
+    await userEvent.click(dockToggle('Contents'));
   });
 
-  it('puts the outline in a tabbed panel: back, Contents and the toggle, then the document as its root', async () => {
+  it('puts the outline in a pane the side dock opens: its name, the filter and the toggle, then the document as its root', async () => {
     const fake = service(
       outline([section(INTRODUCTION, 'Introduction', [reference(SCOPE, 'latest')])]),
     );
     open(fake.fetch);
     const tree = await screen.findByRole('tree', { name: 'Outline' });
 
-    const tabs = screen.getByRole('tablist', { name: 'Outline pane' });
-    const contents = within(tabs).getByRole('tab', { name: 'Contents' });
-    expect(contents).toHaveAttribute('aria-selected', 'true');
-    const panel = screen.getByRole('tabpanel', { name: 'Contents' });
+    expect(dockToggle('Contents')).toHaveAttribute('aria-pressed', 'true');
+    expect(dockToggle('Baselines')).toHaveAttribute('aria-pressed', 'false');
+    const panel = outlinePane();
     expect(panel).toContainElement(tree);
+    expect(within(panel).getByRole('heading', { level: 2, name: 'Contents' })).toBeInTheDocument();
+    expect(within(panel).getByRole('searchbox', { name: 'Filter sections' })).toBeInTheDocument();
     expect(
-      within(tabs.parentElement!).getByRole('link', { name: 'Back to documents' }),
-    ).toHaveAttribute('href', '#/documents');
-    expect(
-      within(tabs.parentElement!).getByRole('button', { name: 'Hide the outline pane' }),
+      within(panel).getByRole('button', { name: 'Hide the outline pane' }),
     ).toBeInTheDocument();
 
-    // The document is the tree's root row: its title, the page's heading, and its version number.
+    // The document is the tree's root row: its title as plain words, the page's heading being the
+    // header's, and its version number.
     const title = screen.getByRole('heading', { level: 2, name: 'The dosing report' });
-    expect(panel).toContainElement(title);
+    expect(panel).not.toContainElement(title);
+    expect(within(panel).getByText('The dosing report')).toBeInTheDocument();
     expect(within(panel).getByText('0.1')).toBeInTheDocument();
 
     // The acts are icons, each still named in words, which a pointer's tooltip shows.
@@ -1883,17 +1891,30 @@ describe('the address of every node', () => {
     expect(help.className).toMatch(/hidden/);
   });
 
-  it('hides to a rail holding the toggle and the tab turned on its side', async () => {
+  it('collapses from the toggle of the panel it shows or its own, and opens again from the dock', async () => {
     const user = userEvent.setup();
     const fake = service(outline([section(INTRODUCTION, 'Introduction')]));
     open(fake.fetch);
     await screen.findByRole('tree');
+    const layout = () => outlinePane().closest('[data-collapsed]')!;
+    const head = () => within(outlinePane()).queryByRole('heading', { level: 2, name: 'Contents' });
+
+    await user.click(dockToggle('Contents'));
+    expect(layout()).toHaveAttribute('data-collapsed', 'true');
+    expect(dockToggle('Contents')).toHaveAttribute('aria-pressed', 'false');
+    expect(head()).toBeNull();
+    await user.click(dockToggle('Contents'));
+    expect(layout()).toHaveAttribute('data-collapsed', 'false');
+    expect(dockToggle('Contents')).toHaveAttribute('aria-pressed', 'true');
+    expect(head()).toBeInTheDocument();
+
+    // The pane's own toggle does the same, and a closed pane opens on whichever panel is asked for.
     await user.click(screen.getByRole('button', { name: 'Hide the outline pane' }));
-    const show = screen.getByRole('button', { name: 'Show the outline pane' });
-    expect(show.querySelector('[data-icon]')).toHaveAttribute('data-icon', 'Show pane');
-    expect(show.closest('[data-rail]')).toHaveTextContent('Contents');
-    await user.click(show);
-    expect(screen.getByRole('tab', { name: 'Contents' })).toBeInTheDocument();
+    expect(layout()).toHaveAttribute('data-collapsed', 'true');
+    await user.click(dockToggle('Baselines'));
+    expect(layout()).toHaveAttribute('data-collapsed', 'false');
+    expect(dockToggle('Baselines')).toHaveAttribute('aria-pressed', 'true');
+    await user.click(dockToggle('Contents'));
   });
 
   it('holds the panels beside the text in a pane of their own, chosen from a rail that stays when the pane is hidden (ADR-0074)', async () => {
@@ -2349,12 +2370,46 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
     await screen.findByRole('treeitem', { name: 'Method' });
 
     const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(trail).getByRole('link', { name: 'Documents' })).toHaveAttribute(
+    expect(within(trail).getByRole('link', { name: 'General' })).toHaveAttribute(
       'href',
       '#/documents',
     );
     const mode = screen.getByRole('radiogroup', { name: 'Mode' });
     expect(mode.parentElement).toContainElement(screen.getByRole('button', { name: 'Preview' }));
+  });
+
+  it('CNT-188 lists every key in Keyboard shortcuts from the same registry the menus read', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
+    await screen.findByRole('treeitem', { name: 'Method' });
+
+    const search = await openMenuItem(userEvent, 'Edit', 'Search or run a command');
+    expect(search).toHaveAttribute('aria-keyshortcuts', 'Control+K');
+    expect(search).toHaveTextContent('Ctrl K');
+    await userEvent.keyboard('{Escape}');
+
+    await fromMenu(userEvent, 'Help', 'Keyboard shortcuts');
+    const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const row = within(dialog)
+      .getByRole('rowheader', { name: 'Search or run a command' })
+      .closest('tr')!;
+    expect(row).toHaveTextContent('Ctrl K');
+    expect(within(dialog).getByRole('rowheader', { name: 'Undo' }).closest('tr')).toHaveTextContent(
+      'Ctrl Z',
+    );
+  });
+
+  it('sets the mode from the View menu, in step with the Mode radios', async () => {
+    const fake = service(outline([section(METHOD, 'Method')]));
+    render(<DocumentPage client={client(fake.fetch)} id={DOCUMENT} followMs={0} />);
+    await screen.findByRole('treeitem', { name: 'Method' });
+    expect((await menuSays(userEvent, 'View', 'Reading')).checked).toBe(
+      (screen.getByRole('radio', { name: 'Reading' }) as HTMLInputElement).checked,
+    );
+    await fromMenu(userEvent, 'View', 'Reading');
+    expect(screen.getByRole('radio', { name: 'Reading' })).toBeChecked();
+    expect((await menuSays(userEvent, 'View', 'Reading')).checked).toBe(true);
+    window.localStorage.removeItem('alloy-works.mode');
   });
 
   it('sets the panels beside the text, named in words: the part, the lists, the assistant, versions and publishing', async () => {

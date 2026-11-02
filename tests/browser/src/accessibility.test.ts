@@ -6,7 +6,7 @@ import { api, edit, makeDocument, nodesOf, type Client } from './testing/api.js'
 import { checkAxe, type Arrival, type Sign } from './testing/axe.js';
 import { generalSpace, makeComponent, squarePng, uploadImage } from './testing/component.js';
 import { everyBlock } from './testing/every-block.js';
-import { allowPageNoise, withPage } from './testing/page.js';
+import { allowPageNoise, fromMenu, withPage } from './testing/page.js';
 import { approvedTerm, translatedComponent } from './testing/fixtures.js';
 import { pondSurvey } from './testing/word.js';
 
@@ -1382,7 +1382,8 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         await arrive(arrival);
         await checkAxe(page, state, task.meta, arrival);
       };
-      const chip = (name: string) => page.locator('[data-kind]', { hasText: name }).first();
+      const chip = (name: string) =>
+        page.locator('[aria-current="step"]', { hasText: name }).first();
       await page.goto(`${SERVICE}/#/documents/${document.id}`);
       await check('a document in Draft, Submit offered', {
         shows: [chip('Draft'), page.getByRole('button', { name: 'Submit', exact: true })],
@@ -1393,10 +1394,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
           chip('In review'),
           page.getByText('0 of 1 approval'),
           page.getByRole('button', { name: 'Approve', exact: true }),
-          page.getByRole('button', { name: 'Return', exact: true }),
         ],
       });
-      await page.getByRole('button', { name: 'Return', exact: true }).click();
+      await fromMenu(page, 'Document', 'Return');
       const asking = page.getByRole('dialog', { name: /^Return / });
       await check('the reason Return asks for', {
         shows: [asking.getByRole('heading', { name: /^Return / }), asking.getByLabel('Reason')],
@@ -1512,11 +1512,11 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         ],
       });
 
-      await page.getByRole('button', { name: 'Show boundaries' }).click();
+      await fromMenu(page, 'View', 'Show boundaries');
       await check('boundaries shown', { shows: page.locator('[data-boundaries="shown"]') });
 
       // Its relationships, drawn and listed (the R8 plan, R8-G).
-      await page.getByRole('button', { name: 'Relationships', exact: true }).click();
+      await fromMenu(page, 'Document', 'Relationships');
       const relationships = page.getByRole('dialog', { name: /^Relationships of / });
       await check('the Relationships dialog', {
         shows: relationships.getByRole('img', { name: /^A graph of / }),
@@ -1695,12 +1695,9 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
         throw new Error(`${String(target)} was never reached by Tab`);
       };
 
-      await page.goto(`${SERVICE}/#/components`);
-      await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
-      const toConnections = page
-        .getByRole('navigation', { name: 'Modules' })
-        .getByRole('link', { name: 'Connections' });
-      await tabTo(toConnections);
+      await page.goto(`${SERVICE}/#/admin/overview`);
+      await arrive({ shows: page.getByRole('link', { name: 'Connections', exact: true }) });
+      await tabTo(page.getByRole('link', { name: 'Connections', exact: true }));
       await page.keyboard.press('Enter');
       const list = page.getByRole('region', { name: 'Connections', exact: true });
       await check('the connections list', {
@@ -1855,12 +1852,10 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       };
 
       await page.goto(`${SERVICE}/#/components`);
-      await arrive({ shows: page.getByRole('heading', { name: 'Components', level: 1 }) });
-      await tabTo(
-        page
-          .getByRole('navigation', { name: 'Modules' })
-          .getByRole('link', { name: 'Query definitions' }),
-      );
+      await arrive({
+        shows: page.getByRole('link', { name: 'Query definitions', exact: true }),
+      });
+      await tabTo(page.getByRole('link', { name: 'Query definitions', exact: true }));
       await page.keyboard.press('Enter');
       const list = page.getByRole('region', { name: 'Query definitions', exact: true });
       await check('the query definitions list', {

@@ -4,7 +4,7 @@ import { PINNED_FONT_FILES } from '@alloy-works/fonts';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { capHeight, faceUrl } from './faces.js';
-import { PresentationProvider, usePresentation } from './presentation.js';
+import { marginLabelRules, PresentationProvider, usePresentation } from './presentation.js';
 import { DEFAULT_PRESENTATION } from './presentation.fixture.js';
 
 const DOCUMENT = '0b4fd1a5-9a8e-4a55-9f6e-2f1f33c6d7a1';
@@ -40,6 +40,49 @@ function Shown() {
 }
 
 const faces = () => document.querySelector('style[data-aw-faces]')?.textContent ?? '';
+
+describe("the labels in a sheet's margin (ADR-0075)", () => {
+  const theme = {
+    paragraphStyles: new Map([
+      ['note', { id: 'note', name: 'Note' }],
+      ['odd', { id: 'odd', name: 'Say "odd"' }],
+    ]),
+  } as unknown as Parameters<typeof marginLabelRules>[0];
+
+  it("CNT-190 says a paragraph's style and a heading's role in generated content, which is in no text and no copy", () => {
+    const rules = marginLabelRules(theme);
+    expect(rules).toContain('[data-style="note"]::before { content: "Note" / ""; }');
+    expect(rules).toContain('[data-style="odd"]::before { content: "Say \\"odd\\"" / ""; }');
+    expect(rules).toContain('[data-role="heading1"]::before { content: "H1" / ""; }');
+    expect(rules).toContain('[data-role="heading6"]::before { content: "H6" / ""; }');
+    // Every rule hangs off the class the sheet takes off to turn them off, and a pseudo-element: no rule
+    // writes into the document's own elements.
+    for (const rule of rules.split('\n'))
+      expect(rule).toMatch(/^\.aw-labels .*::before \{ content:/);
+    // And not on a paragraph in a list or a cell, which stands away from the margin.
+    expect(rules).toContain(':not(li, td, th, [data-role]) > p');
+  });
+
+  it('CNT-190 stands a label out of the flow, so the measure stays as it was', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const css = readFileSync(join(process.cwd(), 'src/theme/base.css'), 'utf8');
+    const rule = /\.aw-labels \[data-role='title'\]::before \{[^}]*\}/.exec(css)![0];
+    expect(rule).toContain('position: absolute');
+  });
+
+  it('declares the labels from the theme a page is set in', async () => {
+    const { client } = service({ 'GET /v1/presentation': () => json(200, DEFAULT_PRESENTATION) });
+    render(
+      <PresentationProvider client={client}>
+        <Shown />
+      </PresentationProvider>,
+    );
+    await screen.findByText(/^ready/);
+    expect(faces()).toContain('[data-role="heading2"]::before { content: "H2" / ""; }');
+    expect(faces()).toMatch(/\[data-style="body"\]::before \{ content: "[^"]+" \/ ""; \}/);
+  });
+});
 
 describe("the presentation a page's text is set in", () => {
   it("STY-039 declares every face of the environment's theme from the renderer's own copy of the worker's pinned files", async () => {

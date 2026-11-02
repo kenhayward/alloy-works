@@ -1822,8 +1822,10 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   colours keep their contrast. The desktop window's first paint is the system theme's `--bg`
   (`windowBackground` in `shell.ts`). `colours.test.ts` holds the blocks equal and every text pair
   at 4.5:1.
-- **The shell.** The header band, the 76px module rail (Home; Author, Publish, Data; Admin, a link to
-  Administration's page), the page and the status bar. The workspace keeps one page per module
+- **The shell** ([ADR-0075](decisions/0075-one-header-a-side-dock-and-margin-labels.md)). The header band, in which a page
+  draws through `HeaderSlot` (`lead`, `lifecycle`, `tools`) and a page kept hidden draws nothing; the 56px
+  icon rail (mark and environment; Home; Author, Library, Publish; Admin, a link to Administration's page,
+  whose Data group holds Connections and Query definitions); the page and the status bar. The workspace keeps one page per module
   visited, hidden while another is open, so unsaved work survives a trip elsewhere; Home, the lists
   and Administration are read afresh instead. The rail links each other module to where it was left
   (`useLeftAt`, from the `hashchange`'s `oldURL`). Ctrl K opens search and commands everywhere a
@@ -1867,6 +1869,20 @@ The Ledger ([ADR-0046](decisions/0046-the-ledger-interface.md), built by
   language, and right to left the stylesheets' logical sides, `inlineKey`'s arrow keys and the
   mirrored icons follow it; content keeps its own direction. The service's sentences carry codes the
   renderer words, the English kept for integrators.
+
+- **Commands** ([ADR-0076](decisions/0076-one-registry-of-commands-and-keys.md)). `shell/commands/registry.ts` is
+  the one source of what a command is called and its keys, its editor rows derived from `EDITOR_COMMANDS`;
+  `menus.ts` builds the menus from it, asking each command's state from the page as a menu opens, and
+  `ActiveEditor` carries that from whichever `ComponentEditor` is mounted by a ref, so a keystroke
+  re-renders no menu. Page keys go through `chordListener` in `packages/editor`, ProseMirror's own
+  matcher, so a page key and an editor key cannot disagree on a layout. The desktop shell has no native
+  menu when packaged off a Mac (`applicationMenu`).
+- **The document page.** `DocumentHeader` draws in the header's slots and holds the lifecycle
+  (`useLifecycleActs`). The side dock is the grid's first column, the outline pane extending it; the open
+  component portals its toolbar into the dock's band (`InPlaceBand`) and its second line into the panels'
+  Selection tab (`InPlaceSettings`). Margin labels are CSS generated with the theme's rules
+  (`marginLabelRules`), a `::before` on `p[data-style]` under `.aw-labels`, with empty alternative text,
+  so no editor, stored or published shape changes; a view's `states` gives the stepper its names.
 
 ## The platform bridge
 

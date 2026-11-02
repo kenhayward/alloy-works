@@ -374,7 +374,11 @@ export function Header({
       {who !== undefined && who !== 'nobody' && (
         <Menu
           label={words('shell.account')}
-          named={who.displayName ?? who.email ?? words('shell.signedIn')}
+          named={[
+            who.displayName ?? who.email ?? words('shell.signedIn'),
+            // Said here, since a name given to the button stands in for what it holds (COL-063).
+            ...(unread > 0 ? [`${unread} ${words('shell.unread')}`] : []),
+          ].join(' ')}
           button={
             <>
               <span className={styles['initials']} aria-hidden="true" data-content>

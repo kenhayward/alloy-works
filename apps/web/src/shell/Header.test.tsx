@@ -44,17 +44,28 @@ afterEach(() => {
 });
 
 describe('the header band', () => {
-  it('shows the product, the environment, search and who is signed in', async () => {
+  it("shows the module's name, search and who is signed in, and tells the rail the environment", async () => {
     const searching = vi.fn();
-    render(<Header onSearch={searching} fetch={serviceThat(signedIn)} />);
+    const environment = vi.fn();
+    render(
+      <Header
+        module="Documents"
+        onSearch={searching}
+        onEnvironment={environment}
+        fetch={serviceThat(signedIn)}
+      />,
+    );
 
     const band = screen.getByRole('banner');
-    expect(within(band).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
+    expect(within(band).getByText('Documents')).toBeInTheDocument();
+    // The mark and the environment stand on the rail now (ADR-0075).
+    expect(within(band).queryByRole('link', { name: /Alloy Works/ })).not.toBeInTheDocument();
     await userEvent.click(
       within(band).getByRole('button', { name: 'Search components, documents, or run a command' }),
     );
     expect(searching).toHaveBeenCalledOnce();
-    expect(await within(band).findByText('Development')).toBeInTheDocument();
+    await waitFor(() => expect(environment).toHaveBeenCalledWith('Development'));
+    expect(within(band).queryByText('Development')).not.toBeInTheDocument();
     expect(await within(band).findByRole('button', { name: /Ada Lovelace/ })).toBeInTheDocument();
   });
 
@@ -214,13 +225,6 @@ describe('the header band', () => {
     expect(mayKeepEditing()).toBe(false);
   });
 
-  it('returns to Home from the mark, which opens no menu', () => {
-    render(<Header fetch={serviceThat(signedIn)} />);
-
-    expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveAttribute('href', '#/');
-    expect(screen.queryByRole('button', { name: /Alloy Works/ })).not.toBeInTheDocument();
-  });
-
   it('closes a menu on Escape, returning focus to its button', async () => {
     render(<Header fetch={serviceThat(signedIn)} />);
 
@@ -262,9 +266,10 @@ describe('the header band', () => {
     expect(await screen.findByRole('dialog', { name: 'Inbox' })).toBeInTheDocument();
   });
 
-  it('chooses Light, Dark or Auto from the Theme button, shows which is chosen, and remembers it', async () => {
-    render(<Header fetch={serviceThat(signedIn)} />);
+  it('chooses Light, Dark or Auto from the Theme button while signed out, shows which is chosen, and remembers it', async () => {
+    render(<Header fetch={serviceThat(signedOut)} />);
 
+    await screen.findByRole('link', { name: 'Sign in' });
     await userEvent.click(screen.getByRole('button', { name: 'Theme' }));
     const menu = screen.getByRole('group', { name: 'Theme' });
     expect(within(menu).getByRole('button', { name: 'Auto' })).toHaveAttribute(
@@ -282,13 +287,38 @@ describe('the header band', () => {
     expect(document.documentElement.dataset['theme']).toBe('light');
   });
 
-  it('holds no Theme in the account chip, which the header button holds', async () => {
+  it('holds the theme, the language and the go-to keys in the account menu once signed in, with no Theme button of their own', async () => {
     render(<Header fetch={serviceThat(signedIn)} />);
 
     await userEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
-
+    expect(screen.queryByRole('button', { name: 'Theme' })).not.toBeInTheDocument();
     const account = screen.getByRole('group', { name: 'Account' });
-    expect(within(account).queryByRole('button', { name: /Theme/ })).not.toBeInTheDocument();
+    expect(within(account).getByRole('list', { name: 'Theme' })).toBeInTheDocument();
+    expect(within(account).getByRole('list', { name: 'Interface language' })).toBeInTheDocument();
+
+    // A choice there takes, and closes the menu.
+    await userEvent.click(within(account).getByRole('button', { name: 'Dark' }));
+    expect(document.documentElement.dataset['theme']).toBe('dark');
+    expect(screen.queryByRole('group', { name: 'Account' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Ada Lovelace/ }));
+    expect(screen.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
+
+    // CNT-189's half that is the menu's: the keys turn off here, and stay off, kept on this device.
+    await userEvent.click(screen.getByRole('button', { name: /Ada Lovelace/ }));
+    const goTo = screen.getByRole('button', { name: 'Go-to keys' });
+    expect(goTo).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(goTo);
+    expect(goTo).toHaveAttribute('aria-pressed', 'false');
+    expect(window.localStorage.getItem('alloy-works.go-to-keys')).toBe('off');
+    window.localStorage.removeItem('alloy-works.go-to-keys');
+  });
+
+  it("names the module on the band only where no page draws its own title, and Home's on Home", () => {
+    const { rerender } = render(<Header module={null} fetch={serviceThat(signedOut)} />);
+    expect(within(screen.getByRole('banner')).getByText('Home')).toBeInTheDocument();
+    rerender(<Header module="Administration" fetch={serviceThat(signedOut)} />);
+    expect(within(screen.getByRole('banner')).getByText('Administration')).toBeInTheDocument();
   });
 
   it('takes initials from the name, or the address when there is none', () => {

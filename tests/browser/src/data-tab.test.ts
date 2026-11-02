@@ -125,19 +125,18 @@ describe('the Data tab, in Chromium (the B4 plan, task 4)', () => {
   }) => {
     await withPage(async (page) => {
       await page.goto(`${SERVICE}/#/documents/${document}`);
-      const tab = page.getByRole('tab', { name: 'Data' });
+      const tab = page.getByRole('button', { name: 'Data', exact: true });
       await tab.waitFor();
-      // To the tab strip by the keyboard: Contents holds its one stop, and the arrow moves to Data.
-      const contents = page.getByRole('tab', { name: 'Contents' });
-      await contents.focus();
-      await page.keyboard.press('ArrowRight');
-      expect(await tab.getAttribute('aria-selected')).toBe('true');
+      // Its toggle in the side dock, by the keyboard.
+      await tab.focus();
+      await page.keyboard.press('Enter');
+      expect(await tab.getAttribute('aria-pressed')).toBe('true');
       // The check made on opening finds the definition's new version, and its result waits.
       await row(page)
         .getByText(/^Waiting: /)
         .waitFor();
       await checkAxe(page, 'the Data tab with a revision waiting', task.meta, {
-        shows: [page.getByRole('tabpanel', { name: 'Data' }), row(page)],
+        shows: [row(page)],
       });
       const accept = row(page).getByRole('button', { name: 'Accept' });
       for (let pressed = 0; pressed < 20; pressed++) {

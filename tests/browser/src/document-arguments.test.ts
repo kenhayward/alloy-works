@@ -201,15 +201,15 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
       await period.fill('2024-05-17');
 
       // The Data tab says which parameter changed the value.
-      const tab = page.getByRole('tab', { name: 'Data' });
-      await page.getByRole('tab', { name: 'Contents' }).focus();
-      await page.keyboard.press('ArrowRight');
-      expect(await tab.getAttribute('aria-selected')).toBe('true');
+      const tab = page.getByRole('button', { name: 'Data', exact: true });
+      await tab.focus();
+      await page.keyboard.press('Enter');
+      expect(await tab.getAttribute('aria-pressed')).toBe('true');
       const row = page.locator('li[data-binding]').first();
       await row.getByText("The document's period changed").waitFor({ timeout: 20_000 });
       expect(await row.textContent()).toContain('Changed since resolved');
       await checkAxe(page, 'the Data tab naming a changed parameter', task.meta, {
-        shows: [page.getByRole('tabpanel', { name: 'Data' }), row],
+        shows: [row],
       });
 
       // Resolved again, by the keyboard, it takes the new period.

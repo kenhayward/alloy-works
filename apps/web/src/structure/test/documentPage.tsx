@@ -164,6 +164,8 @@ export interface Standing {
     to: { key: string; name: string };
     reasonRequired: boolean;
   }[];
+  /** The deciding workflow version's states, which the header's stepper draws (ADR-0075). */
+  states?: { key: string; name: string }[];
 }
 
 /** Draft, as a new one is, with Submit offered. */
@@ -697,6 +699,51 @@ export function open(fetch: typeof globalThis.fetch) {
 }
 
 export const item = (name: RegExp | string) => screen.getByRole('treeitem', { name });
+
+/** Whoever clicks: `userEvent` itself, or a test's `userEvent.setup()`. */
+type Clicking = Pick<typeof userEvent, 'click'>;
+
+/**
+ * Opens `menu` on the menu bar and answers its row called `name`, of whichever role: a page's act is a
+ * menu's item now (ADR-0075), so "not offered" reads `aria-disabled` here rather than an absent button.
+ */
+export async function openMenuItem(
+  user: Clicking,
+  menu: string,
+  name: RegExp | string,
+): Promise<HTMLElement> {
+  const bar = screen.getByRole('menubar');
+  await user.click(within(bar).getByRole('menuitem', { name: menu }));
+  const opened = within(bar).getByRole('menu', { name: menu });
+  for (const role of ['menuitem', 'menuitemcheckbox', 'menuitemradio'] as const) {
+    const found = within(opened).queryByRole(role, { name });
+    if (found !== null) return found;
+  }
+  throw new Error(`No item ${String(name)} in the ${menu} menu`);
+}
+
+/** Chooses an item from a menu of the menu bar, by pointer. */
+export async function fromMenu(user: Clicking, menu: string, name: RegExp | string) {
+  await user.click(await openMenuItem(user, menu, name));
+}
+
+/** The row a menu of the bar says of `name` now, and the menu closed again: enabled, checked. */
+export async function menuSays(user: Clicking, menu: string, name: RegExp | string) {
+  const row = await openMenuItem(user, menu, name);
+  const said = {
+    enabled: row.getAttribute('aria-disabled') !== 'true',
+    checked: row.getAttribute('aria-checked') === 'true',
+  };
+  await user.click(within(screen.getByRole('menubar')).getByRole('menuitem', { name: menu }));
+  return said;
+}
+
+/** A toggle of the side dock, by the name of the panel it shows. */
+export const dockToggle = (name: RegExp | string) =>
+  within(screen.getByRole('group', { name: 'Outline pane' })).getByRole('button', { name });
+
+/** The outline pane: its head and whichever panel the dock's toggles have shown there. */
+export const outlinePane = () => document.querySelector<HTMLElement>('[data-part="outline"]')!;
 
 /** Undo stays focusable when there is nothing to undo, so it says so through `aria-disabled`. */
 export const undoable = () =>

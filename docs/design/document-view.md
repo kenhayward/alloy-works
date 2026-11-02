@@ -127,6 +127,12 @@ the page asks nothing more to say it. Beside the text: "Version 0.3 is newer tha
 and **Compare 0.2 with 0.3**, which reads `GET /v1/components/{id}/comparison` and draws its redline
 there, hidden again on **Hide the comparison**.
 
+## The page's layout
+
+[ADR-0075](../decisions/0075-one-header-a-side-dock-and-margin-labels.md) replaced the document bar and the band with one
+header and a side dock; [the handoff](../interface/handoffs/authoring-page/README.md) is the drawing and
+[the plan](../plans/2026-11-02-ap-authoring-page.md) says where the build departs from it.
+
 ## Navigation
 
 **Tracking** (STR-035): as the reader scrolls, the node whose text is at the top of the column is the
@@ -135,7 +141,7 @@ the collapsed rail says where the reader is, as layout C draws it: "4.1 of 46". 
 `IntersectionObserver` over each node's `data-node` element, which the text already carries.
 
 **The outline pane scrolls itself** (issue #336). The window scrolls the text; the outline pane stands
-beside it, sticky between the header band and the status bar, and its tree scrolls inside it.
+beside it, sticky between the header band and the status bar, extending the side dock, and its tree scrolls inside it.
 The current node is kept in view by scrolling the pane alone, never by the tree item's
 `scrollIntoView`, which scrolls the window too: with the pane scrolled by the window, keeping its item
 in view moved the text, which changed the node in view, which moved the window again, and the page

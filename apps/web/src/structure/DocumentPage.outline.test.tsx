@@ -25,6 +25,9 @@ import {
   shownTitle,
   typeTitle,
   clearTitle,
+  fromMenu,
+  menuSays,
+  openMenuItem,
 } from './test/documentPage.js';
 
 // A section's title is a ProseMirror view since equations 3, which scrolls its selection into view.
@@ -601,9 +604,9 @@ describe('the outline panel', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
     expect(screen.getByText('Archived')).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: 'Unarchive' }));
-    expect(await screen.findByRole('button', { name: 'Archive' })).toBeInTheDocument();
-    expect(screen.queryByText('Archived')).toBeNull();
+    await fromMenu(userEvent, 'Document', 'Unarchive');
+    await waitFor(() => expect(screen.queryByText('Archived')).toBeNull());
+    expect((await menuSays(userEvent, 'Document', 'Archive')).enabled).toBe(true);
     expect(fake.sent.map((each) => each.url)).toContain(`/v1/documents/${DOCUMENT}/unarchive`);
   });
 
@@ -611,7 +614,7 @@ describe('the outline panel', () => {
     const fake = service(outline([section(METHOD, 'Method')]), { retires: true });
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await fromMenu(userEvent, 'Document', 'Delete');
     const deleting = await screen.findByRole('dialog', { name: /^Delete / });
     expect(
       await within(deleting).findByText(
@@ -627,7 +630,8 @@ describe('the outline panel', () => {
     const live = service(outline([section(METHOD, 'Method')]));
     const { unmount } = open(live.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
-    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect((await menuSays(userEvent, 'Document', 'Delete')).enabled).toBe(false);
+    expect((await menuSays(userEvent, 'Document', 'Archive')).enabled).toBe(false);
     unmount();
     const gone = service(outline([section(METHOD, 'Method')]));
     gone.refuse(`/v1/documents/${DOCUMENT}`, 410, {
@@ -644,7 +648,7 @@ describe('the outline panel', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
     expect(screen.getByText('On hold')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Place a hold' }));
+    await fromMenu(userEvent, 'Document', 'Place a hold');
     const placing = await screen.findByRole('dialog', { name: /^Place a hold on / });
     await userEvent.type(within(placing).getByRole('textbox', { name: 'Reason' }), 'Matter 7');
     await userEvent.click(within(placing).getByRole('button', { name: 'Place hold' }));
@@ -656,25 +660,84 @@ describe('the outline panel', () => {
     );
   });
 
+  it('filters the sections by Filter sections, keeping the way down to a match, and clears', async () => {
+    const user = userEvent.setup();
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction', [section(SCOPE, 'Scope')]),
+        section(METHOD, 'Method'),
+        section(RESULTS, 'Results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Results/ });
+    const filter = screen.getByRole('searchbox', { name: 'Filter sections' });
+    const rows = () => screen.getAllByRole('treeitem');
+
+    // Case aside, a child's match keeps its parent.
+    await user.type(filter, 'sCOPe');
+    expect(screen.getByRole('treeitem', { name: /Introduction/ })).toBeInTheDocument();
+    expect(screen.getByRole('treeitem', { name: /Scope/ })).toBeInTheDocument();
+    expect(screen.queryByRole('treeitem', { name: /Method/ })).toBeNull();
+    expect(screen.queryByRole('treeitem', { name: /Results/ })).toBeNull();
+    expect(rows()).toHaveLength(2);
+
+    // A parent's own match does not bring children that do not match.
+    await user.clear(filter);
+    await user.type(filter, 'intro');
+    expect(screen.getByRole('treeitem', { name: /Introduction/ })).toBeInTheDocument();
+    expect(screen.queryByRole('treeitem', { name: /Scope/ })).toBeNull();
+
+    // Nothing is sent, for a filter is the reader's view alone.
+    await user.clear(filter);
+    expect(rows()).toHaveLength(4);
+    expect(fake.edits()).toEqual([]);
+  });
+
+  it('keeps one tab stop on the tree, and the arrows on what shows, while a filter hides the node chosen', async () => {
+    const user = userEvent.setup();
+    const fake = service(
+      outline([
+        section(INTRODUCTION, 'Introduction'),
+        section(METHOD, 'Method'),
+        section(RESULTS, 'Results'),
+        section(SCOPE, 'Scoped results'),
+      ]),
+    );
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Scoped results/ });
+    // Introduction, the first, is chosen, and the filter hides it.
+    await user.type(screen.getByRole('searchbox', { name: 'Filter sections' }), 'results');
+    expect(screen.queryByRole('treeitem', { name: /Introduction/ })).toBeNull();
+    const stops = () => screen.getAllByRole('treeitem').filter((each) => each.tabIndex === 0);
+    expect(stops()).toHaveLength(1);
+    expect(stops()[0]).toHaveAccessibleName(/^Results/);
+
+    stops()[0]!.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: /Scoped results/ }));
+  });
+
   it('offers no hold, nor On hold, where the view says neither', async () => {
     const fake = service(outline([section(METHOD, 'Method')]));
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
-    expect(screen.queryByRole('button', { name: 'Place a hold' })).toBeNull();
+    expect((await menuSays(userEvent, 'Document', 'Place a hold')).enabled).toBe(false);
     expect(screen.queryByText('On hold')).toBeNull();
   });
 
   it('offers Manage access on a document only to someone who may administer it', async () => {
     const administering = service(outline([section(METHOD, 'Method')]), { administers: true });
     const { unmount } = open(administering.fetch);
-    expect(await screen.findByRole('link', { name: 'Manage access' })).toHaveAttribute(
-      'href',
-      `#/documents/${DOCUMENT}/access`,
+    await screen.findByRole('treeitem', { name: /Method/ });
+    await waitFor(() =>
+      expect(administering.sent.some((each) => each.url === '/v1/access')).toBe(true),
     );
-    expect(
-      administering.sent.find((each) => each.url === '/v1/access'),
-      'asked about the document',
-    ).toBeDefined();
+    const manage = await openMenuItem(userEvent, 'Document', 'Manage access');
+    await waitFor(() => expect(manage).toHaveAttribute('aria-disabled', 'false'));
+    await userEvent.click(manage);
+    expect(window.location.hash).toBe(`#/documents/${DOCUMENT}/access`);
+    window.location.hash = '';
     unmount();
 
     const reading = service(outline([section(METHOD, 'Method')]), { administers: false });
@@ -682,7 +745,27 @@ describe('the outline panel', () => {
     await screen.findByRole('treeitem', { name: /Method/ });
     await waitFor(() => expect(reading.sent.some((each) => each.url === '/v1/access')).toBe(true));
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(screen.queryByRole('link', { name: 'Manage access' })).toBeNull();
+    expect((await menuSays(userEvent, 'Document', 'Manage access')).enabled).toBe(false);
+  });
+
+  it("opens each of the Document menu's dialogs from its item", async () => {
+    const fake = service(outline([section(METHOD, 'Method')]), { retires: true, mayHold: true });
+    open(fake.fetch);
+    await screen.findByRole('treeitem', { name: /Method/ });
+
+    await fromMenu(userEvent, 'Document', 'Relationships');
+    const relating = await screen.findByRole('dialog', { name: /Relationships/ });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(relating).not.toBeInTheDocument());
+
+    await fromMenu(userEvent, 'Document', 'Effective for');
+    const scoping = await screen.findByRole('dialog', { name: /Effective/ });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(scoping).not.toBeInTheDocument());
+
+    // Nothing is open, so there is nothing to save a version of.
+    expect((await menuSays(userEvent, 'Document', 'Save a version')).enabled).toBe(false);
+    expect((await menuSays(userEvent, 'View', 'Pages as you edit')).enabled).toBe(false);
   });
 
   it('says a document is not there, or not readable, on a 404', async () => {

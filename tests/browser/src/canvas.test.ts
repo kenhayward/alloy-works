@@ -3,7 +3,7 @@ import { describe, expect, inject, it } from 'vitest';
 import { api, edit, makeDocument, nodesOf, type Client, type DocumentView } from './testing/api.js';
 import { SERVICE } from './testing/addresses.js';
 import { makeComponent, png, uploadImage } from './testing/fixtures.js';
-import { withPage } from './testing/page.js';
+import { fromMenu, withPage } from './testing/page.js';
 
 /**
  * **The canvas as a person uses it**, beside what `styles.test.ts` measures (the final review and the
@@ -246,7 +246,7 @@ describe('the canvas as a person uses it', () => {
     await withPage(async (page) => {
       await page.setViewportSize({ width: 700, height: 900 });
       await openDocument(page, placed, 'Reading', '1');
-      await page.getByRole('button', { name: 'Show boundaries' }).click();
+      await fromMenu(page, 'View', 'Show boundaries');
       const open = page.locator('section.aw-canvas [data-label] a', { hasText: 'Open' });
       await open.waitFor();
       // The sheet keeps its width and the desk scrolls sideways to it (ADR-0056).
@@ -295,7 +295,7 @@ describe('the canvas as a person uses it', () => {
   });
 
   for (const zoom of ['1', '0.5'] as const) {
-    it(`opens a component in place across the sheet, the sheet unmoved and its text where the sheet set it, its toolbar in the band, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333, ADR-0056)`, async () => {
+    it(`opens a component in place across the sheet, the sheet unmoved and its text where the sheet set it, its toolbar in the dock, and leaves its text to the pointer, at ${Number(zoom) * 100}% (the final review of issue #333, ADR-0056)`, async () => {
       const client = api();
       const component = await withAnImage(client, `In place at ${zoom}`);
       const placed = await placing(client, `In place at ${zoom}`, component);
@@ -336,10 +336,10 @@ describe('the canvas as a person uses it', () => {
           const toolbar = document.querySelector(
             '[data-inplace-band] [role="toolbar"][aria-label="Formatting"]',
           )!;
-          const tops = new Set(
+          const lefts = new Set(
             [...toolbar.querySelectorAll('button')]
               .filter((each) => each.getBoundingClientRect().width > 0)
-              .map((each) => Math.round(each.getBoundingClientRect().top)),
+              .map((each) => Math.round(each.getBoundingClientRect().left)),
           );
           const box = element.getBoundingClientRect();
           const first = [...element.querySelectorAll('p')].find((each) =>
@@ -353,7 +353,7 @@ describe('the canvas as a person uses it', () => {
             inCard: element.querySelector('[role="toolbar"][aria-label="Formatting"]') !== null,
             text: first.getBoundingClientRect().left,
             viewport: window.innerWidth,
-            rows: tops.size,
+            columns: lefts.size,
           };
         });
         const said = JSON.stringify({ ...shown, read });
@@ -372,11 +372,9 @@ describe('the canvas as a person uses it', () => {
         // toolbar stands in is there before the component opens.
         expect(Math.abs(shown.sheetTop - read.sheetTop), said).toBeLessThan(1);
         expect(Math.abs(shown.textTop - read.textTop), said).toBeLessThan(1);
-        // The Formatting toolbar in the band, not on the sheet, in two rows at most at 1280
-        // pixels at any zoom: the band is the window's width, whatever the sheet's.
+        // The Formatting toolbar in the side dock, not on the sheet, and a column there at any zoom.
         expect(shown.inCard, said).toBe(false);
-        expect(shown.rows, said).toBeGreaterThan(0);
-        expect(shown.rows, said).toBeLessThanOrEqual(2);
+        expect(shown.columns, said).toBe(1);
       });
     });
   }

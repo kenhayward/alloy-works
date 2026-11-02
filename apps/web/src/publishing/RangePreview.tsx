@@ -218,21 +218,6 @@ export function useRangePreview(options: {
   };
 }
 
-/** **Pages as you edit**, a switch in the document bar while an occurrence is open in place. */
-export function RangePreviewButton({
-  range,
-  className,
-}: {
-  readonly range: RangePreviewing;
-  readonly className?: string | undefined;
-}) {
-  return (
-    <button type="button" className={className} aria-pressed={range.on} onClick={range.toggle}>
-      {words('publishing.pages-as-you-edit')}
-    </button>
-  );
-}
-
 /**
  * The pane of the pages as you edit, beside the text: what they are, said on screen (PUB-080), with
  * **Preview** beside it, which makes the tagged PDF; then each page as a picture, its own words saying

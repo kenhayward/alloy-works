@@ -252,6 +252,28 @@ describe('the workspace', () => {
     expect(screen.getByRole('region', { name: 'Administration' })).toBeInTheDocument();
   });
 
+  it.each([
+    ['#/connections', '#/admin/connections', 'Connections'],
+    ['#/query-definitions', '#/admin/query-definitions', 'Query definitions'],
+  ])(
+    'takes %s, an address someone holds, to its section of Administration',
+    async (held, to, name) => {
+      window.location.hash = held;
+      render(<Workspace fetch={serviceThat({ first: { items: [], next: null } })} />);
+      await waitFor(() => expect(window.location.hash).toBe(to));
+      expect(await screen.findByRole('heading', { name, level: 1 })).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: 'Administration' })).toBeInTheDocument();
+    },
+  );
+
+  it('keeps a new query definition at its own address, which moved nowhere', async () => {
+    window.location.hash = '#/query-definitions/new';
+    render(<Workspace fetch={serviceThat({ first: { items: [], next: null } })} />);
+    await screen.findByRole('navigation', { name: 'Breadcrumb' });
+    expect(window.location.hash).toBe('#/query-definitions/new');
+    expect(screen.queryByRole('region', { name: 'Administration' })).not.toBeInTheDocument();
+  });
+
   it('says so when there is nothing to read', async () => {
     render(<Workspace fetch={serviceThat({ first: { items: [], next: null } })} />);
     expect(await screen.findByText('There are no components you may read.')).toBeInTheDocument();

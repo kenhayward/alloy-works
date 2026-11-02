@@ -65,7 +65,8 @@ describe('the command registry', () => {
   it('gives no two commands in a scope one chord, and overlaps scopes only for Link and Search', () => {
     const seen = new Map<string, string[]>();
     for (const each of COMMANDS) {
-      if (each.chord !== undefined) seen.set(each.chord, [...(seen.get(each.chord) ?? []), each.id]);
+      if (each.chord !== undefined)
+        seen.set(each.chord, [...(seen.get(each.chord) ?? []), each.id]);
     }
     const shared = [...seen.values()].filter((ids) => ids.length > 1);
     expect(shared).toEqual([['editor.Link', 'search']]);
@@ -101,12 +102,37 @@ describe('the menus', () => {
     }
   });
 
-  it('CNT-188 say each command\'s keys from the registry, in words and for assistive technology', () => {
+  it("CNT-188 say each command's keys from the registry, in words and for assistive technology", () => {
     const items = buildMenus(allOn).flatMap((menu) => flat(menu.entries));
     const bold = items.find((item) => item.key === 'editor.Strong')!;
     expect(bold.keys).toBe(chordSaid('Mod-b', false));
     expect(bold.ariaKeys).toBe(ariaKeyShortcuts('Mod-b', false));
     expect(items.find((item) => item.key === 'history')!.keys).toBeUndefined();
+  });
+
+  it('CNT-188 name each item by its registered command, wherever the same command stands twice', () => {
+    const items = buildMenus(allOn).flatMap((menu) => flat(menu.entries));
+    for (const item of items.filter((each) => each.key !== 'paragraph-style')) {
+      const command = COMMANDS.find((each) => each.id === item.key);
+      if (command === undefined) continue;
+      expect(item.label).toBe(command.said());
+      expect(item.keys).toBe(command.chord === undefined ? undefined : chordSaid(command.chord));
+      expect(item.ariaKeys).toBe(
+        command.chord === undefined ? undefined : ariaKeyShortcuts(command.chord),
+      );
+    }
+    // Every row of the seven menus is a registered command, but the styles the page gives.
+    expect(
+      items.map((item) => item.key).filter((key) => !COMMANDS.some((each) => each.id === key)),
+    ).toEqual([]);
+    expect(items.filter((item) => item.key === 'history')).toHaveLength(2);
+  });
+
+  it('take the words the page says of a command now, as Unarchive for Archive', () => {
+    const items = buildMenus((id) =>
+      id === 'archive' ? { ...allOn(), said: 'Unarchive' } : allOn(),
+    ).flatMap((menu) => flat(menu.entries));
+    expect(items.find((item) => item.key === 'archive')!.label).toBe('Unarchive');
   });
 
   it('keep what cannot apply, aria-disabled, and never drop it', () => {

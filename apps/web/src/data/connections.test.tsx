@@ -889,7 +889,7 @@ describe('a connection on its own page', () => {
     const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
     expect(within(trail).getByRole('link', { name: 'Connections' })).toHaveAttribute(
       'href',
-      '#/connections',
+      '#/admin/connections',
     );
     expect(screen.getByText(/^Version /, { selector: '[data-tone]' })).toBeInTheDocument();
     expect(
