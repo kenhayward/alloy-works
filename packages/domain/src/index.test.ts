@@ -865,6 +865,7 @@ describe('the domain package', () => {
         'componentAsText',
         'editableProblem',
         'isAssistantTool',
+        'proposeEditProblem',
         'toolInputSchemas',
         // G4: a prompt's shape, its checks and its parameters placed.
         'INSTRUCTIONS_MAX',
