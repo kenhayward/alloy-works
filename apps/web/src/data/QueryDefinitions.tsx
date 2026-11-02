@@ -85,7 +85,15 @@ function asItems(items: readonly unknown[]): Item[] {
  * filtered by space on the service. **New query definition** is offered where the person may edit a
  * space and use some connection (D4-J): a built query needs no `write_sql`.
  */
-export function QueryDefinitions({ client }: { readonly client: Client }) {
+export function QueryDefinitions({
+  client,
+  embedded = false,
+}: {
+  readonly client: Client;
+  /** Inside Administration, whose own heading names it (ADR-0075). */
+  readonly embedded?: boolean;
+}) {
+  const Heading = embedded ? 'h2' : 'h1';
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [spaces, setSpaces] = useState<readonly string[]>([]);
   const places = useDefinitionPlaces(client);
@@ -109,7 +117,9 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="query-definitions-heading">
-        <h1 id="query-definitions-heading">{words('data.query-definitions-2')}</h1>
+        <Heading id="query-definitions-heading" hidden={embedded}>
+            {words('data.query-definitions-2')}
+          </Heading>
         {listing.signedOut ? (
           <Notice tone="signedOut">
             <p>{words('data.you-are-signed-out-sign-7')}</p>
@@ -155,7 +165,9 @@ export function QueryDefinitions({ client }: { readonly client: Client }) {
     <ListLayout filter={filter}>
       <section aria-labelledby="query-definitions-heading">
         <div className={styles['titleRow']}>
-          <h1 id="query-definitions-heading">{words('data.query-definitions-2')}</h1>
+          <Heading id="query-definitions-heading" hidden={embedded}>
+            {words('data.query-definitions-2')}
+          </Heading>
           {places !== null && places.spaces.length > 0 && places.connections.length > 0 && (
             <button
               type="button"

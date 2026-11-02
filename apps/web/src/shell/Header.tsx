@@ -5,17 +5,16 @@ import { ApiTokens } from '../account/ApiTokens.js';
 import { Inbox } from '../account/Inbox.js';
 import { Sessions } from '../account/Sessions.js';
 import { forgetEditing, keepEditingAgain } from '../editor/editing-storage.js';
-import { THEME_CHOICES, useThemeChoice, type ThemeName } from '../theme/themes.js';
+import { THEME_CHOICES, useThemeChoice } from '../theme/themes.js';
+import { useGoToKeysOn } from './commands/useGoToKeys.js';
+import { useHeaderHost } from './HeaderSlot.js';
 import styles from './Header.module.css';
+import type { ModuleName } from './moduleOf.js';
 import { useLanguageChoice } from '../words/language.js';
 import { INTERFACE_LOCALES } from '../words/locales.js';
 import { useWords, type WordKey } from '../words/words.js';
 
-/** The mark for each theme's ground, served beside the page from `public/`; CSS shows the one that fits. */
-export const MARKS: Record<ThemeName, string> = {
-  light: 'mark-light.svg',
-  dark: 'mark-dark.svg',
-};
+export { MARKS } from './marks.js';
 
 const CHOICE_NAMES: Readonly<Record<string, WordKey>> = {
   light: 'shell.theme.light',
@@ -38,6 +37,10 @@ export function initialsOf({ displayName, email }: Person): string {
 }
 
 export interface HeaderProps {
+  /** The module the page is in, named where no page draws its own title; null on Home. */
+  readonly module?: ModuleName | null;
+  /** The environment's name, once read: the rail's to show. */
+  readonly onEnvironment?: (name: string) => void;
   /** Opens search and commands, as Ctrl K does. */
   readonly onSearch?: () => void;
   /** Given in tests; the browser's own otherwise. */
@@ -99,9 +102,33 @@ function Menu({
   );
 }
 
-/** Light, Dark or Auto (ADR-0046), from the header's own button; the choice is kept on this device. */
-function ThemeMenu() {
+/** Light, Dark or Auto (ADR-0046), the choice kept on this device. */
+function ThemeChoices({ close }: { close: () => void }) {
   const [choice, choose] = useThemeChoice();
+  const { words } = useWords();
+  return (
+    <ul className={styles['items']} aria-label={words('shell.theme')}>
+      {THEME_CHOICES.map((each) => (
+        <li key={each}>
+          <button
+            type="button"
+            className={styles['item']}
+            aria-pressed={choice === each}
+            onClick={() => {
+              choose(each);
+              close();
+            }}
+          >
+            {words(CHOICE_NAMES[each]!)}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The theme from a button of its own, for someone with no account menu to hold it. */
+function ThemeMenu() {
   const { words } = useWords();
   return (
     <Menu
@@ -120,25 +147,7 @@ function ThemeMenu() {
         </svg>
       }
     >
-      {(close) => (
-        <ul className={styles['items']}>
-          {THEME_CHOICES.map((each) => (
-            <li key={each}>
-              <button
-                type="button"
-                className={styles['item']}
-                aria-pressed={choice === each}
-                onClick={() => {
-                  choose(each);
-                  close();
-                }}
-              >
-                {words(CHOICE_NAMES[each]!)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {(close) => <ThemeChoices close={close} />}
     </Menu>
   );
 }
@@ -147,7 +156,7 @@ function ThemeMenu() {
  * The interface's language (the UI plan, UI-E; LOC-005), from the header beside the theme: the
  * browser's, or one the person chooses, kept as theirs and never any content's.
  */
-function LanguageMenu() {
+function LanguageChoices({ close }: { close: () => void }) {
   const { chosen, choose } = useLanguageChoice();
   const { words } = useWords();
   const choices: readonly { tag: string | null; name: WordKey }[] = [
@@ -158,57 +167,47 @@ function LanguageMenu() {
     })),
   ];
   return (
-    <Menu
-      label={words('language.label')}
-      named={words('language.label')}
-      button={
-        <svg
-          className={styles['icon']}
-          viewBox="0 0 16 16"
-          width="16"
-          height="16"
-          aria-hidden="true"
-        >
-          <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <path
-            d="M2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.2"
-          />
-        </svg>
-      }
-    >
-      {(close) => (
-        <ul className={styles['items']}>
-          {choices.map((each) => (
-            <li key={each.tag ?? 'browser'}>
-              <button
-                type="button"
-                className={styles['item']}
-                aria-pressed={chosen === each.tag}
-                lang={each.tag ?? undefined}
-                onClick={() => {
-                  void choose(each.tag);
-                  close();
-                }}
-              >
-                {words(each.name)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Menu>
+    <ul className={styles['items']} aria-label={words('language.label')}>
+      {choices.map((each) => (
+        <li key={each.tag ?? 'browser'}>
+          <button
+            type="button"
+            className={styles['item']}
+            aria-pressed={chosen === each.tag}
+            lang={each.tag ?? undefined}
+            onClick={() => {
+              void choose(each.tag);
+              close();
+            }}
+          >
+            {words(each.name)}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Whether `G` then a letter goes anywhere (CNT-189), kept on this device. */
+function GoToKeysChoice() {
+  const [on, set] = useGoToKeysOn();
+  const { words } = useWords();
+  return (
+    <button type="button" className={styles['item']} aria-pressed={on} onClick={() => set(!on)}>
+      {words('shell.go-to-keys')}
+    </button>
   );
 }
 
 /**
- * The band across the top of every screen, in the theme's chrome (ADR-0046): the mark, which goes
- * Home, and the environment; search and commands in the middle; then the Theme button and the
- * account chip, which holds the Inbox, API tokens, Sessions and Sign out, and says how many are unread. The module the page is in is the rail's to say.
+ * The band across the top of every screen, in the theme's chrome, 56px (ADR-0075): the page's title and
+ * menus, or the module's name; the page's lifecycle; search; the page's mode and Preview; and the
+ * account button, which holds the Inbox, API tokens, Sessions, the theme, the language and Sign out, and
+ * says how many are unread.
  */
 export function Header({
+  module = null,
+  onEnvironment,
   onSearch = () => undefined,
   fetch: given,
   onSignedOut = () => window.location.reload(),
@@ -219,7 +218,9 @@ export function Header({
     () => createApiClient({ baseUrl: origin, ...(given ? { fetch: given } : {}) }),
     [origin, given],
   );
-  const [environment, setEnvironment] = useState<string | undefined>();
+  const leadHost = useHeaderHost('lead');
+  const lifecycleHost = useHeaderHost('lifecycle');
+  const toolsHost = useHeaderHost('tools');
   const [who, setWho] = useState<Person | 'nobody' | undefined>();
   // The ways in the environment offers, and the page to come back to once signed in: a shared
   // publication's, so the person it was shared with lands on it (the R17 plan, R17-A).
@@ -259,7 +260,7 @@ export function Header({
       .GET('/v1/tenant')
       .then(({ data }) => {
         if (!current || !data) return;
-        setEnvironment(data.name);
+        onEnvironment?.(data.name);
         if (Array.isArray(data.signIn)) setWays(data.signIn);
         if (Array.isArray(data.providers)) setProviders(data.providers);
       })
@@ -277,7 +278,7 @@ export function Header({
     return () => {
       current = false;
     };
-  }, [client, countUnread]);
+  }, [client, countUnread, onEnvironment]);
 
   /** Whether the service says nobody is signed in: false where it says somebody is, or says nothing. */
   const nobodySignedIn = async () => {
@@ -319,29 +320,14 @@ export function Header({
 
   return (
     <header className={styles['band']} data-app-region>
-      <a className={styles['brand']} href="#/">
-        <img
-          className={`${styles['mark']} ${styles['onLight']}`}
-          src={MARKS.light}
-          alt=""
-          width={18}
-          height={18}
-        />
-        <img
-          className={`${styles['mark']} ${styles['onDark']}`}
-          src={MARKS.dark}
-          alt=""
-          width={18}
-          height={18}
-        />
-        {words('shell.product')}
-      </a>
-      {environment !== undefined && (
-        <span className={styles['environment']} data-content>
-          {environment}
-        </span>
-      )}
+      <div ref={leadHost} className={styles['lead']} />
+      <span className={styles['moduleName']}>
+        {module === null || module === 'Search'
+          ? words('shell.home')
+          : words(`module.${module}` as WordKey)}
+      </span>
       <span className={styles['spacer']} />
+      <div ref={lifecycleHost} className={styles['slot']} />
       <button
         type="button"
         className={styles['search']}
@@ -359,12 +345,10 @@ export function Header({
           <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
           <path d="M10.4 10.4 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" />
         </svg>
-        <span className={styles['searchLabel']}>{words('shell.search')}</span>
         <kbd className={styles['key']}>{words('shell.search.key')}</kbd>
       </button>
-      <span className={styles['spacer']} />
-      <ThemeMenu />
-      {who !== undefined && who !== 'nobody' && <LanguageMenu />}
+      <div ref={toolsHost} className={styles['slot']} />
+      {(who === undefined || who === 'nobody') && <ThemeMenu />}
       {who === 'nobody' && ways.includes('organisation') && providers.length <= 1 && (
         <a className={styles['chip']} href={signInAt('organisation')}>
           {words('shell.signIn')}
@@ -390,16 +374,12 @@ export function Header({
       {who !== undefined && who !== 'nobody' && (
         <Menu
           label={words('shell.account')}
+          named={who.displayName ?? who.email ?? words('shell.signedIn')}
           button={
             <>
               <span className={styles['initials']} aria-hidden="true" data-content>
                 {initialsOf(who)}
               </span>
-              {(who.displayName ?? who.email) ? (
-                <span data-content>{who.displayName ?? who.email}</span>
-              ) : (
-                words('shell.signedIn')
-              )}
               {unread > 0 && (
                 <>
                   {' '}
@@ -451,6 +431,15 @@ export function Header({
                 >
                   {words('shell.sessions')}
                 </button>
+              </li>
+              <li className={styles['choices']}>
+                <ThemeChoices close={close} />
+              </li>
+              <li className={styles['choices']}>
+                <LanguageChoices close={close} />
+              </li>
+              <li className={styles['choices']}>
+                <GoToKeysChoice />
               </li>
               <li>
                 <button

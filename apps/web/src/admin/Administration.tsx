@@ -2,6 +2,8 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { administersAt } from '../access/ManageAccessLink.js';
+import { Connections } from '../data/Connections.js';
+import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { everyPage } from '../paging.js';
 import styles from './Administration.module.css';
 import { About } from './About.js';
@@ -256,21 +258,37 @@ const SECTIONS = [
     },
     group: 'system',
   },
+  // A data source and what asks it (ADR-0075): each list is the reader's own, whatever else they administer.
+  {
+    slug: 'connections',
+    get title() {
+      return words('data.connections');
+    },
+    group: 'data',
+  },
+  {
+    slug: 'query-definitions',
+    get title() {
+      return words('data.query-definitions-2');
+    },
+    group: 'data',
+  },
 ] as const;
 type Section = (typeof SECTIONS)[number]['slug'];
-const GROUPS = ['environment', 'people', 'system'] as const;
+const GROUPS = ['environment', 'people', 'data', 'system'] as const;
 
 /** A group's name, in the menu and the trail. */
 const groupName = (group: (typeof GROUPS)[number]): string =>
   ({
     environment: words('admin.environment'),
     people: words('admin.people-and-access'),
+    data: words('module.group.Data'),
     system: words('admin.system'),
   })[group];
 
 /** The section an address names: Overview for `#/admin` and for anything it does not know. */
 export function sectionOf(hash: string): Section {
-  const slug = /^#\/admin\/([a-z]+)$/.exec(hash)?.[1];
+  const slug = /^#\/admin\/([a-z-]+)$/.exec(hash)?.[1];
   return SECTIONS.find((each) => each.slug === slug)?.slug ?? 'overview';
 }
 
@@ -325,6 +343,16 @@ function useCounts(client: Client): Partial<Record<Section, number>> {
     count('retention', async () => {
       const { data } = await client.GET('/v1/retention');
       return data?.keeps.length;
+    });
+    count('connections', async () => {
+      const { data } = await client.GET('/v1/connections', { params: { query: { limit: '1' } } });
+      return data?.total;
+    });
+    count('query-definitions', async () => {
+      const { data } = await client.GET('/v1/query-definitions', {
+        params: { query: { limit: '1' } },
+      });
+      return data?.total;
     });
     count('citation-styles', async () => {
       const { data } = await client.GET('/v1/citation-styles');
@@ -540,6 +568,8 @@ export function Administration({
         {shown === 'webhooks' && <Webhooks client={client} />}
         {shown === 'ctstudio' && <CtStudio client={client} />}
         {shown === 'extensions' && <Extensions client={client} />}
+        {shown === 'connections' && <Connections client={client} embedded />}
+        {shown === 'query-definitions' && <QueryDefinitions client={client} embedded />}
         {shown === 'about' && <About about={about} />}
       </div>
     </section>

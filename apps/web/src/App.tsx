@@ -9,6 +9,8 @@ import { Connect } from './shell/Connect.js';
 import { Header } from './shell/Header.js';
 import { AboutContext } from './shell/about.js';
 import { moduleOf } from './shell/moduleOf.js';
+import { useGoToKeys } from './shell/commands/useGoToKeys.js';
+import { HeaderHostsProvider } from './shell/HeaderSlot.js';
 import { Rail } from './shell/Rail.js';
 import { RegionKeys } from './shell/regions.js';
 import { StatusProvider } from './shell/Status.js';
@@ -43,6 +45,8 @@ export function App({
   const hash = useHash();
   const [searching, setSearching] = useCommandKey();
   const { words } = useWords();
+  const [environmentName, setEnvironmentName] = useState<string | undefined>();
+  useGoToKeys();
 
   useEffect(() => {
     let current = true;
@@ -88,13 +92,19 @@ export function App({
           </div>
         }
       >
-        <Header onSearch={() => setSearching(true)} />
-        <div className={styles['frame']}>
-          <Rail module={moduleOf(hash)} />
-          <main className={styles['page']} data-app-region>
-            {workspace}
-          </main>
-        </div>
+        <HeaderHostsProvider>
+          <Header
+            module={moduleOf(hash)}
+            onEnvironment={setEnvironmentName}
+            onSearch={() => setSearching(true)}
+          />
+          <div className={styles['frame']}>
+            <Rail module={moduleOf(hash)} environment={environmentName} />
+            <main className={styles['page']} data-app-region>
+              {workspace}
+            </main>
+          </div>
+        </HeaderHostsProvider>
         {searching && <CommandPalette onClose={() => setSearching(false)} />}
         <RegionKeys />
       </AboutContext.Provider>

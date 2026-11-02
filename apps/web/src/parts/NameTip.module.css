@@ -1,0 +1,38 @@
+.anchor {
+  position: relative;
+  display: flex;
+}
+
+/* 28px high, 6px radius, 4px from its control; the inverse of the chrome (ADR-0075). */
+.tip {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: var(--tooltip);
+  padding-inline: var(--space-8);
+  border-radius: 6px;
+  background: var(--tip-bg);
+  box-shadow: var(--shadow-menu);
+  color: var(--tip-text);
+  font-size: var(--size-12);
+  font-weight: 500;
+  white-space: nowrap;
+  translate: 0 -50%;
+}
+
+/* The way across the 4px between it and its control, so the pointer can reach it. */
+.tip::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -4px;
+  width: 4px;
+}
+
+.keys {
+  color: var(--tip-keys);
+  font-family: var(--mono);
+  font-size: var(--size-12);
+}

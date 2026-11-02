@@ -78,7 +78,15 @@
   --part-label: 84px;
   /* The label column of the Table tab's two-column fields. */
   --panel-label: 92px;
-  --header-height: 44px;
+  /* One header on every screen, the rail beside it (ADR-0075). */
+  --header-height: 56px;
+  --nav-rail: 56px;
+  --menubar-item: 24px;
+  --menu: 300px;
+  --submenu: 260px;
+  --side-dock: 44px;
+  --side-dock-panel: 264px;
+  --tooltip: 28px;
 
   /* Administration (ADR-0049): its menu, the side panel, a confirmation, a table's rows, an icon button */
   --pane-admin-menu: 232px;
@@ -133,6 +141,11 @@
 :root,
 [data-theme='light'],
 .aw-canvas {
+  --hover: #eef1f4;
+  --divider-strong: #b4bdc7;
+  --tip-bg: #15202b;
+  --tip-text: #ffffff;
+  --tip-keys: #9aa6b2;
   --bg: #f4f6f8;
   --chrome: #ffffff;
   --surface: #ffffff;
@@ -175,6 +188,11 @@
 
 /* The Dark theme. Only the desk darkens around a page; the page stays paper. */
 [data-theme='dark'] {
+  --hover: #232f3a;
+  --divider-strong: #4a5a69;
+  --tip-bg: #e5eaef;
+  --tip-text: #0d1217;
+  --tip-keys: #56606c;
   --bg: #0d1217;
   --chrome: #11181f;
   --surface: #141c24;

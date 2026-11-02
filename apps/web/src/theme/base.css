@@ -17,6 +17,11 @@
   min-height: 100vh;
 }
 
+/* The module rail stands fixed along the whole window (ADR-0075); everything else beside it. */
+#root:has([data-nav-rail]) {
+  padding-inline-start: var(--nav-rail);
+}
+
 html,
 body {
   margin: 0;

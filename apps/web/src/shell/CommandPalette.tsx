@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './CommandPalette.module.css';
-import { MODULES, moduleWords } from './modules.js';
+import { DATA_PLACES, MODULES, moduleWords } from './modules.js';
 import { words } from '../words/words.js';
 
 /** One thing the palette offers: what it says, and the address it goes to; a place by its name. */
@@ -15,7 +15,7 @@ interface Command {
 /** Each place to go, in the interface's language as it is asked for. */
 const go = (): readonly Command[] => [
   { label: words('shell.go-to-home'), place: words('module.Home'), href: '#/' },
-  ...MODULES.map((each) => ({
+  ...[...MODULES, ...DATA_PLACES].map((each) => ({
     label: words('shell.go-to', { name: moduleWords(each.name) }),
     place: moduleWords(each.name),
     href: each.href,

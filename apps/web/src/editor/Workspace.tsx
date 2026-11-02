@@ -143,6 +143,14 @@ function useHash(): {
  * renderer's relative asset paths (built for the desktop shell's `file://` fallback) are never put
  * under a deep path.
  */
+/** An address that moved: on to where it went, leaving no history entry to come back through. */
+function MovedTo({ address }: { address: string }) {
+  useEffect(() => {
+    window.location.replace(address);
+  }, [address]);
+  return null;
+}
+
 export function Workspace({ fetch: given }: WorkspaceProps) {
   const origin = window.location.origin;
   const client = useMemo(
@@ -489,20 +497,9 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
     const imported = importAddress(hash);
     if (imported !== null) return <ImportPage key={imported} client={client} id={imported} />;
     if (hash === IMPORT_HELP) return <ImportHelp />;
-    if (hash === '#/query-definitions') {
-      return (
-        <>
-          <QueryDefinitions client={client} />
-        </>
-      );
-    }
-    if (hash === '#/connections') {
-      return (
-        <>
-          <Connections client={client} />
-        </>
-      );
-    }
+    // Their lists are Administration's now (ADR-0075); an address someone holds still arrives.
+    if (hash === '#/query-definitions') return <MovedTo address="#/admin/query-definitions" />;
+    if (hash === '#/connections') return <MovedTo address="#/admin/connections" />;
     if (hash === '#/templates') {
       return (
         <>

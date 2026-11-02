@@ -699,7 +699,7 @@ export function ConnectionPage({
     <DetailPage
       trail={
         <>
-          <a href="#/connections">{words('data.connections')}</a>
+          <a href="#/admin/connections">{words('data.connections')}</a>
           {' / '}
           <span data-content>{view.space.name}</span>
         </>
