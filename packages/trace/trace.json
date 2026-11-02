@@ -25128,6 +25128,42 @@
       "kind": "title"
     },
     {
+      "id": "STY-029",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 163,
+      "kind": "title"
+    },
+    {
+      "id": "STY-031",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 149,
+      "kind": "title"
+    },
+    {
+      "id": "STY-034",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 103,
+      "kind": "title"
+    },
+    {
+      "id": "STY-057",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 81,
+      "kind": "title"
+    },
+    {
+      "id": "STY-067",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 103,
+      "kind": "title"
+    },
+    {
+      "id": "STY-069",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 139,
+      "kind": "title"
+    },
+    {
       "id": "LOC-036",
       "file": "apps/web/src/admin/TranslationPolicy.test.tsx",
       "line": 102,
@@ -35336,13 +35372,13 @@
     {
       "id": "CNT-155",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 1359,
+      "line": 1389,
       "kind": "title"
     },
     {
       "id": "CNT-176",
       "file": "tests/browser/src/accessibility.test.ts",
-      "line": 936,
+      "line": 966,
       "kind": "title"
     },
     {
@@ -35408,19 +35444,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 860,
+      "line": 880,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 856,
+      "line": 876,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 856,
+      "line": 876,
       "kind": "title"
     },
     {

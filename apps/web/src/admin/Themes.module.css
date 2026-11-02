@@ -1,0 +1,90 @@
+/*
+ * A paragraph style's form beside its sample (the SY plan, SY-F): the properties a column of compact
+ * rows, each its name, its value and where it comes from, and its one action; the sample beside them,
+ * standing as the form scrolls, so a change shows where it is made.
+ */
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: var(--space-16, 16px);
+  align-items: start;
+  margin-block-start: var(--space-12, 12px);
+}
+
+@media (width < 60rem) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.heading {
+  display: grid;
+  gap: var(--space-8, 8px);
+  margin-block-end: var(--space-8, 8px);
+}
+
+.property {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8, 8px);
+  min-height: 32px;
+  margin: 0;
+  padding: var(--space-4, 4px) 0;
+  border: 0;
+  border-block-end: 1px solid var(--border);
+}
+
+/* Floated, a legend stands in its fieldset's row rather than across its border. */
+.property > legend {
+  float: inline-start;
+  inline-size: 12rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.from {
+  color: var(--muted);
+}
+
+.property button {
+  min-height: 24px;
+  margin-inline-start: auto;
+}
+
+.side {
+  position: sticky;
+  top: calc(var(--header-height, 0px) + var(--space-12, 12px));
+  display: grid;
+  gap: var(--space-8, 8px);
+}
+
+.sample {
+  padding: var(--space-12, 12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8, 8px);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8, 8px);
+}
+
+.reach {
+  max-block-size: 16rem;
+  overflow: auto;
+}
+
+/* A stated value's control kept to a row's width, beside its words and its action. */
+.property input:not([type='checkbox']),
+.property select {
+  max-inline-size: 10rem;
+}
+
+.field {
+  display: grid;
+  gap: var(--space-4, 4px);
+  /* Level with the name above it, whatever the page's own label rules give a later one. */
+  margin: 0;
+}

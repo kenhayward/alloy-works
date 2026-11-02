@@ -811,6 +811,36 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on the document themes, a paragraph style being edited and the reach of a change (the SY plan, SYb)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/admin/themes`);
+      const themes = page.getByRole('table', { name: 'Document themes' });
+      await check('the document themes', { shows: themes });
+      await themes
+        .getByRole('button', { name: /^Open / })
+        .first()
+        .click();
+      const paragraphs = page.getByRole('table', { name: 'Paragraph styles' });
+      await check("a theme's paragraph styles", { shows: paragraphs });
+      await paragraphs.getByRole('button', { name: 'Edit Heading 4' }).click();
+      const form = page.getByRole('form', { name: 'Paragraph style Heading 4' });
+      await check('a paragraph style being edited, its sample beside it', {
+        shows: [form, form.getByTestId('style-sample')],
+      });
+      // Asked, never saved: the stack's theme stays as every other walk expects it.
+      await form.getByRole('button', { name: 'Save style' }).click();
+      const asked = page.getByRole('dialog', { name: 'Save Heading 4?' });
+      await check('the reach of a style change, asked before it is saved', { shows: asked });
+      await asked.getByRole('button', { name: 'Cancel' }).click();
+    });
+  });
+
   it('passes axe on translation: a component’s Translations, a translation’s, the space report and the policy (the TR plan, TRc)', async ({
     task,
   }) => {
