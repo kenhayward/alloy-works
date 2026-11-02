@@ -23,7 +23,9 @@ import {
   createEntry,
   findEntryMatches,
   listModelRoutes,
+  makeCommentProposal,
   makeProposal,
+  startThread,
   makeSuggestion,
   proposalsOfRun,
   readDocument,
@@ -48,6 +50,8 @@ import {
   ASSISTANT_TOOLS,
   CONVERSATION_INSTRUCTIONS,
   CONVERSATION_INSTRUCTIONS_VERSION,
+  commentAnchor,
+  commentPartsSchema,
   CONVERSATION_TOOLS,
   DOCUMENT_CONVERSATION_TOOLS,
   withReferenceSources,
@@ -309,6 +313,71 @@ export function assistantHandlers(
     };
   }
 
+  /**
+   * `propose_comment` (GEN-009): a proposal against the version read, starting no thread until it is
+   * accepted, for whoever may comment on the component.
+   */
+  async function proposeComment(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    run: string,
+    version: string,
+    input: { component: string; text: string; block?: string; quote?: string },
+  ): Promise<ToolAnswer> {
+    try {
+      await authoriseAt(trx, callerOf(request), 'comment', {
+        kind: 'artifact',
+        id: input.component,
+      });
+    } catch {
+      return {
+        ok: false,
+        content: 'You may not comment on this component.',
+        said: { code: 'not_yours_to_comment' },
+      };
+    }
+    const parts = [{ text: input.text }];
+    if (!commentPartsSchema.safeParse(parts).success) {
+      return {
+        ok: false,
+        content: 'A comment is lines of plain words.',
+        said: { code: 'comment_refused' },
+      };
+    }
+    const read = (await versionContents(trx, [version])).get(version);
+    let content: ContentDocument;
+    try {
+      content = parseContentDocument(read?.content);
+    } catch {
+      return {
+        ok: false,
+        content: 'There is no such component.',
+        said: { code: 'no_such_component' },
+      };
+    }
+    const anchor = commentAnchor(content, input);
+    if (anchor === null) {
+      return {
+        ok: false,
+        content: 'That block does not hold those words: quote them exactly, or name no block.',
+        said: { code: 'comment_refused' },
+      };
+    }
+    const proposal = await makeCommentProposal(trx, {
+      run,
+      component: input.component,
+      against: version,
+      comment: { anchor, parts },
+      proposed: { ...content, content: [] } as unknown as ContentDocument,
+    });
+    return {
+      ok: true,
+      content: `Proposal ${proposal.number} made. Nothing is posted until the author accepts it.`,
+      said: { code: 'proposal', number: proposal.number },
+      proposal,
+    };
+  }
+
   /** Each tool, as the requester, in a transaction of its own that decides `read` again (G2-C). */
   function tools(request: FastifyRequest, document: string, principal: string, run: string) {
     const searched = searchesOfRun();
@@ -363,6 +432,16 @@ export function assistantHandlers(
               );
               if (version === undefined) return missing('component');
               return citeReference(trx, request, run, version, input);
+            });
+          }
+          case 'propose_comment': {
+            const input = parsed.data as Parameters<typeof proposeComment>[4];
+            return await inDocument(async (trx) => {
+              const version = (await placed(trx, document, principal))?.readable.get(
+                input.component,
+              );
+              if (version === undefined) return missing('component');
+              return proposeComment(trx, request, run, version, input);
             });
           }
           case 'read_outline':
@@ -827,6 +906,12 @@ export function assistantHandlers(
                 content: `There is no tool ${name}.`,
                 said: { code: 'no_such_tool' },
               };
+            case 'propose_comment': {
+              const input = parsed.data as Parameters<typeof proposeComment>[4];
+              const latest = await readable(trx, input.component);
+              if (!latest) return missing;
+              return proposeComment(trx, request, run, latest.id, input);
+            }
             case 'propose_component':
               return proposeComponent(
                 trx,
@@ -1420,6 +1505,62 @@ export function assistantHandlers(
   }
 
   /**
+   * An act on a proposal to comment (GEN-009): accepted, a thread is started as its requester, where
+   * they may comment now, on the version it was made against; discarded, nothing is. Never kept: a
+   * suggestion is a change of the text.
+   */
+  async function actOnComment(
+    request: FastifyRequest,
+    trx: TenantTransaction,
+    principalId: string,
+    proposal: GenerationProposal,
+    act: 'accepted' | 'kept' | 'discarded',
+  ) {
+    const on = { kind: 'artifact' as const, id: proposal.componentId! };
+    await authoriseAt(trx, callerOf(request), act === 'accepted' ? 'comment' : 'read', on);
+    if (proposal.state !== 'open') {
+      throw new AppError(
+        409,
+        'proposal_resolved',
+        'This proposal has been accepted or discarded already.',
+      );
+    }
+    if (proposal.runOutcome === 'running') {
+      throw new AppError(409, 'run_running', 'The run that made this proposal has not ended yet.');
+    }
+    if (act === 'kept') {
+      throw new AppError(
+        409,
+        'proposal_comment',
+        'A proposal to comment is accepted or discarded: there is no change of the text to suggest.',
+      );
+    }
+    if (act === 'discarded') {
+      await actOnProposal(trx, { proposal, act, by: principalId });
+      return { proposal: { id: proposal.id, state: 'discarded' as const, suggestion: null } };
+    }
+    const started = await startThread(trx, {
+      on: proposal.componentId!,
+      version: proposal.madeAgainst!,
+      anchor: proposal.comment!.anchor,
+      parts: proposal.comment!.parts,
+      author: principalId,
+    });
+    if (started.answer !== 'done') {
+      throw new AppError(409, 'comment_refused', 'The comment could not be posted.');
+    }
+    await actOnProposal(trx, { proposal, act, thread: started.thread, by: principalId });
+    return {
+      proposal: {
+        id: proposal.id,
+        state: 'accepted' as const,
+        suggestion: null,
+        thread: started.thread,
+      },
+    };
+  }
+
+  /**
    * The entry a citation proposal cites, as it is accepted (XR-I; LIB-040): one of the component's
    * space the accepter may read obtained from the same source and identifier, else one matching by
    * DOI or PubMed identifier, never by title, year and author alone; else one made there from the
@@ -1497,6 +1638,7 @@ export function assistantHandlers(
     if (!proposal || proposal.requestedBy !== principalId) throw notFound();
     const caller = callerOf(request);
     if (proposal.creates !== null) return actOnCreation(request, trx, principalId, proposal, act);
+    if (proposal.comment !== null) return actOnComment(request, trx, principalId, proposal, act);
     await authoriseAt(
       trx,
       caller,

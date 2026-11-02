@@ -238,6 +238,13 @@ export const assistantEvents = {
         .describe(
           'A citation proposed of a reference source’s work: the source, its identifier and its title. Its entry is matched or made as it is accepted',
         ),
+      comment: z
+        .object({ text: z.string(), quote: z.string().nullable() })
+        .nullable()
+        .optional()
+        .describe(
+          'A comment proposed on the component: its words, and those it is on, or null for the whole. A thread is started as it is accepted',
+        ),
       proposed: z.record(z.string(), z.unknown()),
     }),
   },

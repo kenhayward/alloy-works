@@ -168,6 +168,7 @@ describe('the domain package', () => {
         'compareResolved',
         // Threads (the TH plan): their anchors and comments.
         'anchorStands',
+        'commentAnchor',
         'commentPartsSchema',
         'mentionsIn',
         'threadAnchorSchema',
@@ -900,7 +901,9 @@ describe('the domain package', () => {
         'GUARDRAIL_SIDES',
         'CONVERSATION_TOOLS',
         'DOCUMENT_CONVERSATION_TOOLS',
+        'PROPOSE_COMMENT',
         'PROPOSE_COMPONENT',
+        'proposeCommentInputSchema',
         'proposeComponentInputSchema',
         'conversationToolInputSchemas',
         'isConversationTool',

@@ -7,6 +7,7 @@ import {
   recordGenerationRun,
   startRun,
   type GenerationProposal,
+  type ProposedComment,
   type StoredModelEndpoint,
   type Tenant,
   type TenantDatabase,
@@ -59,6 +60,8 @@ export function toolSummary(said: ToolSaid): string {
   const fixed: Record<string, string> = {
     not_yours_to_change: 'Not yours to change',
     not_yours_to_make: 'Not yours to make',
+    not_yours_to_comment: 'Not yours to comment on',
+    comment_refused: 'Comment refused',
     no_such_component: 'No such component',
     no_such_type: 'No such type',
     no_such_tool: 'No such tool',
@@ -84,6 +87,13 @@ export function toolSummary(said: ToolSaid): string {
     default:
       return fixed[said.code] ?? said.code;
   }
+}
+
+/** A proposed comment, as the page shows it: its words, and those it is on, if not the whole. */
+function commentFrame(comment: ProposedComment) {
+  const parts = comment.parts as readonly { readonly text: string }[];
+  const anchor = comment.anchor as { readonly quote?: string };
+  return { text: parts.map((part) => part.text).join(''), quote: anchor.quote ?? null };
 }
 
 /** What a tool answers the model, the step it records, and what it did said for the page. */
@@ -383,6 +393,8 @@ export function streamedRun(input: {
                       identifier: answered.proposal.cites.identifier,
                       title: answered.proposal.cites.csl.title ?? null,
                     },
+              comment:
+                answered.proposal.comment === null ? null : commentFrame(answered.proposal.comment),
               proposed: answered.proposal.proposed,
             });
           }

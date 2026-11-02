@@ -153,6 +153,8 @@ export async function generatedReport(
            run.id, run.model, run.endpoint, run.parameters, run.prompt_version, run.context_digest
       from p
       join generation_proposal o on o.component_id = p.artifact_id and o.state = 'discarded'
+        -- A comment discarded was never the content's.
+        and (to_jsonb(o) ->> 'comment') is null
       join generation_run run on run.id = o.run_id
       left join principal m on m.id = run.requested_by
       left join principal ap on ap.id = o.acted_by

@@ -808,10 +808,11 @@ export const auditKindSpecs = {
   ),
   'generation.accepted': kind(
     ['LIF-071', 'GEN-024', 'LOC-041'],
-    // A suggestion accepted, or a component made from a proposal to make one (G5-E).
+    // A suggestion accepted, a component made from a proposal to make one (G5-E), or a comment started.
     z.union([
       z.strictObject({ run: Id, proposal: Id, suggestion: Id }),
       z.strictObject({ run: Id, proposal: Id, created: z.literal(true) }),
+      z.strictObject({ run: Id, proposal: Id, thread: Id }),
     ]),
     PROPOSALS,
   ),

@@ -152,7 +152,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       documentId: document.id,
       ask: 'Summarise it.',
       requestedBy: h.ids.grace,
-      parameters: { instructions: 'conversation-3' },
+      parameters: { instructions: 'conversation-4' },
     });
     expect(framed[0]!.data).toMatchObject({ conversation: id });
     // The assistant's tools, on the document.
@@ -377,6 +377,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
         'read_component',
         'propose_edit',
         'propose_component',
+        'propose_comment',
         'search_references',
         'cite_reference',
         'declined',
@@ -530,6 +531,63 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       const answer = frames.find((frame) => frame.event === 'tool_result')!.data;
       expect(answer).toMatchObject({ ok: false, said: { code: 'arguments_refused' } });
       expect(answer.result).toContain('Take out rows.');
+    } finally {
+      h.connector.modelFor = was;
+    }
+  });
+
+  it('GEN-009 starts no thread from a proposed comment until it is accepted, then as the person, on the words given', async () => {
+    const part = await h.component(h.general, 'Weir history');
+    await h.place(part, { type: 'text', value: 'The weir was built in 1912.', marks: [] });
+    const held = (await h.call('grace', 'GET', `/v1/components/${part.id}`)).json<{
+      version: { id: string };
+      content: { content: { id: string }[] };
+    }>();
+    const block = held.content.content[0]!.id;
+    const threads = async () =>
+      (await h.call('grace', 'GET', `/v1/components/${part.id}/threads`)).json<{
+        threads: { anchor: { kind: string; quote?: string } }[];
+      }>().threads;
+    const id = await start('grace', { document: (await h.documentReferencing([part.id])).id });
+    const was = h.connector.modelFor;
+    let calls = 0;
+    h.connector.modelFor = () => {
+      calls += 1;
+      if (calls > 2) return [text('Done.'), ended];
+      return [
+        {
+          type: 'tool_call',
+          id: `t${calls}`,
+          name: 'propose_comment',
+          input: {
+            component: part.id,
+            text: 'Is this date right?',
+            block,
+            quote: calls === 1 ? 'in 1912' : 'in 1913',
+          },
+        },
+        { ...ended, stop: 'tool_use' },
+      ];
+    };
+    try {
+      const frames = framesOf((await turn('grace', id, { ask: 'Flag the date.' })).body);
+      const proposals = frames.filter((frame) => frame.event === 'proposal');
+      expect(proposals).toHaveLength(1);
+      expect(proposals[0]!.data.comment).toEqual({ text: 'Is this date right?', quote: 'in 1912' });
+      expect(await threads()).toEqual([]);
+      const path = `/v1/assistant/proposals/${String(proposals[0]!.data.id)}`;
+      const kept = await h.call('grace', 'POST', `${path}/keeping`);
+      expect(kept.statusCode).toBe(409);
+      expect(kept.json<{ code: string }>().code).toBe('proposal_comment');
+      const accepted = await h.call('grace', 'POST', `${path}/acceptance`);
+      expect(accepted.statusCode, accepted.body).toBe(200);
+      const after = await threads();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.anchor).toMatchObject({ kind: 'span', quote: 'in 1912' });
+      const head = (await h.call('grace', 'GET', `/v1/components/${part.id}`)).json<{
+        version: { id: string };
+      }>();
+      expect(head.version.id).toBe(held.version.id);
     } finally {
       h.connector.modelFor = was;
     }

@@ -129,7 +129,7 @@
     },
     {
       "name": "Assistant",
-      "description": "Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it."
+      "description": "Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it, and comments, posted as you only if you accept one."
     },
     {
       "name": "Conversations",
@@ -22919,7 +22919,7 @@
       "post": {
         "operationId": "acceptProposal",
         "summary": "Accept a proposal: a suggestion made from it and accepted at once, as you",
-        "description": "Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted.",
+        "description": "Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. A proposal to comment starts a thread instead, as you, on the version it was made against, and needs comment on the component. Recorded as a generation accepted.",
         "tags": [
           "Assistant"
         ],
@@ -22988,6 +22988,10 @@
                         },
                         "component": {
                           "description": "A proposal to make a component, accepted: the component made, at 0.1",
+                          "type": "string"
+                        },
+                        "thread": {
+                          "description": "A proposal to comment, accepted: the thread started on the component",
                           "type": "string"
                         }
                       },
@@ -23185,7 +23189,7 @@
             }
           },
           "409": {
-            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
+            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
             "content": {
               "application/json": {
                 "schema": {
@@ -23342,6 +23346,10 @@
                         },
                         "component": {
                           "description": "A proposal to make a component, accepted: the component made, at 0.1",
+                          "type": "string"
+                        },
+                        "thread": {
+                          "description": "A proposal to comment, accepted: the thread started on the component",
                           "type": "string"
                         }
                       },
@@ -23539,7 +23547,7 @@
             }
           },
           "409": {
-            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
+            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
             "content": {
               "application/json": {
                 "schema": {
@@ -23696,6 +23704,10 @@
                         },
                         "component": {
                           "description": "A proposal to make a component, accepted: the component made, at 0.1",
+                          "type": "string"
+                        },
+                        "thread": {
+                          "description": "A proposal to comment, accepted: the thread started on the component",
                           "type": "string"
                         }
                       },
@@ -23893,7 +23905,7 @@
             }
           },
           "409": {
-            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
+            "description": "`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`",
             "content": {
               "application/json": {
                 "schema": {

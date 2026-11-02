@@ -21976,7 +21976,7 @@
     {
       "id": "ADM-010",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 1025,
+      "line": 1026,
       "kind": "title"
     },
     {
@@ -21994,13 +21994,13 @@
     {
       "id": "GEN-008",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 268,
+      "line": 269,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 518,
+      "line": 519,
       "kind": "title"
     },
     {
@@ -22012,7 +22012,7 @@
     {
       "id": "GEN-011",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 299,
+      "line": 300,
       "kind": "title"
     },
     {
@@ -22024,91 +22024,91 @@
     {
       "id": "GEN-013",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 288,
+      "line": 289,
       "kind": "title"
     },
     {
       "id": "GEN-014",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 268,
+      "line": 269,
       "kind": "title"
     },
     {
       "id": "GEN-016",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 715,
+      "line": 716,
       "kind": "title"
     },
     {
       "id": "GEN-017",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 759,
+      "line": 760,
       "kind": "title"
     },
     {
       "id": "GEN-018",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 759,
+      "line": 760,
       "kind": "title"
     },
     {
       "id": "GEN-019",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 759,
+      "line": 760,
       "kind": "title"
     },
     {
       "id": "GEN-020",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 759,
+      "line": 760,
       "kind": "title"
     },
     {
       "id": "GEN-022",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 593,
+      "line": 594,
       "kind": "title"
     },
     {
       "id": "GEN-024",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 525,
+      "line": 526,
       "kind": "title"
     },
     {
       "id": "GEN-033",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 1025,
+      "line": 1026,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 1025,
+      "line": 1026,
       "kind": "title"
     },
     {
       "id": "GEN-039",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 634,
+      "line": 635,
       "kind": "title"
     },
     {
       "id": "GEN-040",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 593,
+      "line": 594,
       "kind": "title"
     },
     {
       "id": "GEN-041",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 611,
+      "line": 612,
       "kind": "title"
     },
     {
       "id": "GEN-060",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 525,
+      "line": 526,
       "kind": "title"
     },
     {
@@ -22604,6 +22604,12 @@
       "kind": "title"
     },
     {
+      "id": "GEN-009",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 539,
+      "kind": "title"
+    },
+    {
       "id": "GEN-021",
       "file": "apps/service/src/conversation-routes.test.ts",
       "line": 162,
@@ -22636,7 +22642,7 @@
     {
       "id": "GEN-052",
       "file": "apps/service/src/conversation-routes.test.ts",
-      "line": 419,
+      "line": 420,
       "kind": "title"
     },
     {
@@ -27112,7 +27118,7 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 832,
+      "line": 875,
       "kind": "title"
     },
     {
@@ -27142,7 +27148,7 @@
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 777,
+      "line": 820,
       "kind": "title"
     },
     {
@@ -27154,25 +27160,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 893,
+      "line": 936,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 893,
+      "line": 936,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 927,
+      "line": 970,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 646,
+      "line": 689,
       "kind": "title"
     },
     {
@@ -33008,21 +33014,27 @@
       "kind": "title"
     },
     {
+      "id": "GEN-009",
+      "file": "packages/domain/src/generation/assistant.test.ts",
+      "line": 63,
+      "kind": "title"
+    },
+    {
       "id": "GEN-017",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 185,
+      "line": 197,
       "kind": "title"
     },
     {
       "id": "LIB-032",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 153,
+      "line": 165,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 127,
+      "line": 139,
       "kind": "title"
     },
     {
@@ -33196,7 +33208,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1165,
+      "line": 1168,
       "kind": "title"
     },
     {
@@ -34342,13 +34354,13 @@
     {
       "id": "COL-012",
       "file": "packages/domain/src/review/threads.test.ts",
-      "line": 51,
+      "line": 57,
       "kind": "title"
     },
     {
       "id": "COL-016",
       "file": "packages/domain/src/review/threads.test.ts",
-      "line": 51,
+      "line": 57,
       "kind": "title"
     },
     {
