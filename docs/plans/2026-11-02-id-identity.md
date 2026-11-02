@@ -67,6 +67,10 @@ for a fresh sign-in; and the riskiest administrative acts are granted apart from
 
 ## As built
 
+- **IDc**: as designed, with two additions the design now holds: `active: true` re-enables only those SCIM
+  disabled, and a direct `administer` holder is admitted before being pushed, so turning SCIM on cannot
+  lock an environment out. `createGroup` now `changesAccess`, since a provider's group takes what SCIM holds.
+  Neither Entra ID's validator nor Okta's has been run: they need a deployed environment (the design's risk).
 - **IDb**: as designed, with one addition from its security review: making an issuer an administrator's
   to name gave the service a new outbound path, so `oidc-fetch.ts` guards every request to a provider
   (identity.md, "Keys"). An issuer is not probed as it is added: the deciding transaction holds the access

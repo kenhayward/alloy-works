@@ -21,6 +21,7 @@ const settings = (over: Partial<ShownSignIn> = {}): ShownSignIn => ({
       clientId: 'alloy',
       groupsClaim: 'groups',
       closed: false,
+      scim: { on: false, claim: 'sub', lastUsedAt: null },
     },
     {
       id: OTHER,
@@ -29,11 +30,13 @@ const settings = (over: Partial<ShownSignIn> = {}): ShownSignIn => ({
       clientId: 'alloy',
       groupsClaim: 'groups',
       closed: false,
+      scim: { on: false, claim: 'sub', lastUsedAt: null },
     },
   ],
   google: { available: true, open: false, domains: ['example.org'] },
   sessions: { idleMinutes: 60, absoluteHours: 12 },
   redirectUri: 'https://dev.example/v1/sign-in/organisation/callback',
+  scimUrl: 'https://dev.example/scim/v2',
   recentSignIn: true,
   signedInThrough: { route: 'organisation', provider: PROVIDER },
   ...over,
@@ -101,6 +104,56 @@ describe("Administration's Sign-in", () => {
       body: { name: 'Partners', clientSecret: 'kept-sealed' },
     });
     expect(await screen.findByText('Added Partners.')).toBeInTheDocument();
+  });
+
+  it('turns on SCIM naming the claim, shows its address and token once, and asks before ending one', async () => {
+    const on = settings();
+    const shown = {
+      ...on,
+      providers: on.providers.map((each) =>
+        each.id === OTHER
+          ? { ...each, scim: { on: true, claim: 'oid' as const, lastUsedAt: null } }
+          : each,
+      ),
+    };
+    const { client, sent } = service({
+      change: (path) =>
+        path.endsWith('/scim/token')
+          ? json(200, {
+              id: PROVIDER,
+              name: 'SCIM: Contractors',
+              scopes: [],
+              createdAt: '2026-11-02T00:00:00.000Z',
+              expiresAt: '2027-11-01T00:00:00.000Z',
+              lastUsedAt: null,
+              secret: 'awt_shown-once',
+            })
+          : json(200, shown),
+    });
+    render(<SignIn client={client} />);
+    const row = (await screen.findByText('Contractors')).closest('tr')!;
+    await userEvent.click(within(row).getByRole('button', { name: /More/ }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Turn on SCIM' }));
+    expect(screen.getByText(/only people this provider pushes/)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Claim that links people to SCIM'), 'oid');
+    await userEvent.click(screen.getByRole('button', { name: 'Turn on SCIM' }));
+    expect(sent.at(-2)).toMatchObject({
+      method: 'POST',
+      path: `/v1/sign-in-settings/providers/${OTHER}/scim`,
+      body: { claim: 'oid' },
+    });
+    expect(sent.at(-1)?.path).toBe(`/v1/sign-in-settings/providers/${OTHER}/scim/token`);
+    expect(await screen.findByLabelText('Token')).toHaveValue('awt_shown-once');
+    expect(screen.getByLabelText('SCIM address')).toHaveValue('https://dev.example/scim/v2');
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByDisplayValue('awt_shown-once')).not.toBeInTheDocument();
+
+    const sentBefore = sent.length;
+    const after = (await screen.findByText('Contractors')).closest('tr')!;
+    await userEvent.click(within(after).getByRole('button', { name: /More/ }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'New SCIM token' }));
+    expect(screen.getByText('The token it has now stops working at once.')).toBeInTheDocument();
+    expect(sent.length).toBe(sentBefore);
   });
 
   it('never offers to close the provider of its own session', async () => {

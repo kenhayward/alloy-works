@@ -144,6 +144,7 @@ export async function actAs(
 /** Why a sign-in failed, by kind alone: never the provider's words (IAM-013). */
 export type SignInFailure =
   | 'principal_disabled'
+  | 'not_provisioned'
   | 'reauthentication_refused'
   | 'provider_error'
   | 'provider_refused'

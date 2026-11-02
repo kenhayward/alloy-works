@@ -21,6 +21,7 @@ import type { Identity } from './oidc.js';
 
 const account = (subject: string, email: string, extra: Partial<Identity> = {}): Identity => ({
   authTime: null,
+  providerKey: null,
   issuer: 'https://accounts.google.com',
   subject,
   email,

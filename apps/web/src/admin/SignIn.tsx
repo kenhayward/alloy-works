@@ -21,6 +21,11 @@ export interface ShownProvider {
   readonly clientId: string;
   readonly groupsClaim: string;
   readonly closed: boolean;
+  readonly scim: {
+    readonly on: boolean;
+    readonly claim: 'sub' | 'oid';
+    readonly lastUsedAt: string | null;
+  };
 }
 
 export interface ShownSignIn {
@@ -32,6 +37,7 @@ export interface ShownSignIn {
   };
   readonly sessions: { readonly idleMinutes: number; readonly absoluteHours: number };
   readonly redirectUri: string;
+  readonly scimUrl: string;
   readonly recentSignIn: boolean;
   readonly signedInThrough: {
     readonly route: 'organisation' | 'google';
@@ -51,6 +57,115 @@ const THIS_PAGE = 'admin/sign-in';
 const needsSignIn = (error: unknown) =>
   (error as { code?: unknown } | undefined)?.code === 'reauthentication_required';
 
+/** The claim equal to SCIM's `externalId`, which is kept at every sign-in, so chosen as a provider is added. */
+function ScimClaimField({
+  value,
+  onChange,
+}: {
+  value: 'sub' | 'oid';
+  onChange: (claim: 'sub' | 'oid') => void;
+}) {
+  return (
+    <label>
+      {words('admin.signin-scim-claim')}
+      <select value={value} onChange={(event) => onChange(event.target.value as 'sub' | 'oid')}>
+        <option value="sub">{words('admin.signin-scim-claim-sub')}</option>
+        <option value="oid">{words('admin.signin-scim-claim-oid')}</option>
+      </select>
+    </label>
+  );
+}
+
+/** Turning provisioning on: what it changes, and the claim that links people. */
+function ScimOn({
+  provider,
+  send,
+  onClose,
+}: {
+  provider: ShownProvider;
+  send: (claim: 'sub' | 'oid') => Promise<string | null>;
+  onClose: () => void;
+}) {
+  const id = useId();
+  const [claim, setClaim] = useState(provider.scim.claim);
+  const [said, setSaid] = useState('');
+  const [busy, setBusy] = useState(false);
+  const turnOn = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    const refused = await send(claim);
+    setBusy(false);
+    if (refused !== null) setSaid(refused);
+  };
+  return (
+    <Modal labelledBy={id} onClose={onClose}>
+      <form className={styles['dialog']} onSubmit={(event) => void turnOn(event)}>
+        <h2 id={id}>{words('admin.signin-scim-turn-on-of', { name: provider.name })}</h2>
+        <p>{words('admin.signin-scim-sentence')}</p>
+        <ScimClaimField value={claim} onChange={setClaim} />
+        <p role="status">{said}</p>
+        <div className={styles['actions']}>
+          <button type="button" onClick={onClose}>
+            {words('admin.cancel')}
+          </button>
+          <button type="submit" className="primary" disabled={busy}>
+            {words('admin.signin-scim-turn-on')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** A SCIM token, in this dialog's state alone and shown this once, with where the provider sends it. */
+function ScimToken({
+  name,
+  address,
+  secret,
+  onClose,
+}: {
+  name: string;
+  address: string;
+  secret: string;
+  onClose: () => void;
+}) {
+  const id = useId();
+  const [said, setSaid] = useState('');
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(secret);
+      setSaid(words('admin.copied'));
+    } catch {
+      setSaid(words('admin.select-it-and-copy-it-yourself'));
+    }
+  };
+  return (
+    <Modal labelledBy={id} onClose={onClose}>
+      <form className={styles['dialog']} onSubmit={(event) => event.preventDefault()}>
+        <h2 id={id}>{words('admin.signin-scim-give', { name })}</h2>
+        <p className={styles['warning']}>{words('admin.copy-the-token-now-it-is-shown-once')}</p>
+        <label>
+          {words('admin.signin-scim-address')}
+          <input readOnly value={address} spellCheck={false} data-content />
+        </label>
+        <label>
+          {words('admin.token')}
+          <input readOnly value={secret} autoComplete="off" spellCheck={false} />
+        </label>
+        <p role="status">{said}</p>
+        <div className={styles['actions']}>
+          <button type="button" onClick={() => void copy()}>
+            {words('admin.copy-the-token')}
+          </button>
+          <button type="button" className="primary" onClick={onClose}>
+            {words('admin.signin-scim-done')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 /** Adding a provider: what the customer registered, and where it returns. */
 function AddProvider({
   redirectUri,
@@ -67,6 +182,7 @@ function AddProvider({
     clientId: string;
     clientSecret: string;
     groupsClaim?: string;
+    scimClaim: 'sub' | 'oid';
   }) => Promise<string | null>;
   onClose: () => void;
 }) {
@@ -76,6 +192,7 @@ function AddProvider({
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [groupsClaim, setGroupsClaim] = useState('');
+  const [scimClaim, setScimClaim] = useState<'sub' | 'oid'>('sub');
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
   const add = async (event: React.FormEvent) => {
@@ -91,6 +208,7 @@ function AddProvider({
       clientId: clientId.trim(),
       clientSecret,
       ...(groupsClaim.trim() === '' ? {} : { groupsClaim: groupsClaim.trim() }),
+      scimClaim,
     });
     setBusy(false);
     if (refused !== null) setSaid(refused);
@@ -143,6 +261,7 @@ function AddProvider({
             onChange={(event) => setGroupsClaim(event.target.value)}
           />
         </label>
+        <ScimClaimField value={scimClaim} onChange={setScimClaim} />
         {another && <p className={styles['muted']}>{words('admin.signin-another-provider')}</p>}
         <p role="status">{said}</p>
         <div className={styles['actions']}>
@@ -229,6 +348,10 @@ export function SignIn({ client }: { client: Client }) {
   const [renaming, setRenaming] = useState<ShownProvider | null>(null);
   const [replacing, setReplacing] = useState<ShownProvider | null>(null);
   const [closing, setClosing] = useState<ShownProvider | null>(null);
+  const [turningOn, setTurningOn] = useState<ShownProvider | null>(null);
+  const [turningOff, setTurningOff] = useState<ShownProvider | null>(null);
+  const [renewing, setRenewing] = useState<ShownProvider | null>(null);
+  const [token, setToken] = useState<{ name: string; secret: string } | null>(null);
   const [google, setGoogle] = useState({ open: false, domains: '' });
   const [sessions, setSessions] = useState({ idleMinutes: '', absoluteHours: '' });
   const [asking, setAsking] = useState(false);
@@ -288,6 +411,28 @@ export function SignIn({ client }: { client: Client }) {
       );
     }
     return refusal(answer.error, failed);
+  };
+
+  /** Makes a provider's SCIM token and shows it, or says why not. */
+  const makeToken = async (provider: ShownProvider): Promise<string | null> => {
+    try {
+      const { data, error } = await client.POST('/v1/sign-in-settings/providers/{id}/scim/token', {
+        params: { path: { id: provider.id } },
+        body: {},
+      });
+      if (data) {
+        setToken({ name: provider.name, secret: data.secret });
+        return null;
+      }
+      if (needsSignIn(error)) {
+        setRead((was) =>
+          was !== null && typeof was === 'object' ? { ...was, recentSignIn: false } : was,
+        );
+      }
+      return refusal(error, words('admin.signin-scim-could-not-token'));
+    } catch {
+      return words('admin.signin-scim-could-not-token');
+    }
   };
 
   const attempt = async (run: () => Promise<Answer>, failed: string, done: string) => {
@@ -391,13 +536,18 @@ export function SignIn({ client }: { client: Client }) {
               <td data-content>{provider.name}</td>
               <td data-content>{provider.issuer}</td>
               <td>
-                {provider.closed ? (
-                  <Chip>{words('admin.signin-closed')}</Chip>
-                ) : own?.provider === provider.id ? (
-                  <Chip tone="info">{words('admin.signin-your-session')}</Chip>
-                ) : (
-                  <Chip tone="ok">{words('admin.signin-open')}</Chip>
-                )}
+                <span className={styles['chips']}>
+                  {provider.closed ? (
+                    <Chip>{words('admin.signin-closed')}</Chip>
+                  ) : own?.provider === provider.id ? (
+                    <Chip tone="info">{words('admin.signin-your-session')}</Chip>
+                  ) : (
+                    <Chip tone="ok">{words('admin.signin-open')}</Chip>
+                  )}
+                  {provider.scim.on && !provider.closed && (
+                    <Chip tone="info">{words('admin.signin-scim')}</Chip>
+                  )}
+                </span>
               </td>
               <td>
                 {!provider.closed && (
@@ -419,6 +569,24 @@ export function SignIn({ client }: { client: Client }) {
                               label: words('admin.signin-replace-secret'),
                               onSelect: () => setReplacing(provider),
                             },
+                            ...(provider.scim.on
+                              ? [
+                                  {
+                                    label: words('admin.signin-scim-new-token'),
+                                    onSelect: () => setRenewing(provider),
+                                  },
+                                  {
+                                    label: words('admin.signin-scim-turn-off'),
+                                    danger: true,
+                                    onSelect: () => setTurningOff(provider),
+                                  },
+                                ]
+                              : [
+                                  {
+                                    label: words('admin.signin-scim-turn-on'),
+                                    onSelect: () => setTurningOn(provider),
+                                  },
+                                ]),
                             ...(own?.provider === provider.id
                               ? []
                               : [
@@ -562,6 +730,71 @@ export function SignIn({ client }: { client: Client }) {
             if (refused === null) setReplacing(null);
             return refused;
           }}
+        />
+      )}
+      {turningOn !== null && (
+        <ScimOn
+          provider={turningOn}
+          onClose={() => setTurningOn(null)}
+          send={async (claim) => {
+            const refused = await attempt(
+              () =>
+                client.POST('/v1/sign-in-settings/providers/{id}/scim', {
+                  params: { path: { id: turningOn.id } },
+                  body: { claim },
+                }) as Promise<Answer>,
+              words('admin.signin-scim-could-not-on'),
+              words('admin.signin-scim-is-on', { name: turningOn.name }),
+            );
+            if (refused !== null) return refused;
+            const untokened = await makeToken(turningOn);
+            if (untokened !== null) setSaid(untokened);
+            setTurningOn(null);
+            return null;
+          }}
+        />
+      )}
+      {renewing !== null && (
+        <ConfirmDialog
+          question={words('admin.signin-scim-new-token-question', { name: renewing.name })}
+          sentence={words('admin.signin-scim-new-token-sentence')}
+          keep={words('admin.keep-it')}
+          act={words('admin.signin-scim-new-token')}
+          onKeep={() => setRenewing(null)}
+          onAct={async () => {
+            const refused = await makeToken(renewing);
+            if (refused !== null) setSaid(refused);
+            setRenewing(null);
+          }}
+        />
+      )}
+      {turningOff !== null && (
+        <ConfirmDialog
+          question={words('admin.signin-scim-off-question', { name: turningOff.name })}
+          sentence={words('admin.signin-scim-off-sentence')}
+          keep={words('admin.keep-it')}
+          act={words('admin.signin-scim-turn-off')}
+          onKeep={() => setTurningOff(null)}
+          onAct={async () => {
+            const refused = await attempt(
+              () =>
+                client.DELETE('/v1/sign-in-settings/providers/{id}/scim', {
+                  params: { path: { id: turningOff.id } },
+                }) as Promise<Answer>,
+              words('admin.signin-scim-could-not-off'),
+              words('admin.signin-scim-is-off', { name: turningOff.name }),
+            );
+            if (refused !== null) setSaid(refused);
+            setTurningOff(null);
+          }}
+        />
+      )}
+      {token !== null && (
+        <ScimToken
+          name={token.name}
+          address={read.scimUrl}
+          secret={token.secret}
+          onClose={() => setToken(null)}
         />
       )}
       {closing !== null && (

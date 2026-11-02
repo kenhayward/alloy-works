@@ -108,7 +108,8 @@ export function groupHandlers() {
             },
       );
       if ('refused' in answer) throw refuse(answer.refused);
-      return { group: groupView({ ...answer.group, members: [] }) };
+      const made = await readGroup(trx, answer.group.id);
+      return { group: groupView(made ?? { ...answer.group, members: [] }) };
     },
 
     setGroupMembers: async (request: FastifyRequest, { trx }: Authorised): Promise<GroupMade> => {

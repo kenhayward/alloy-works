@@ -286,6 +286,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'sign_in_route.closed'() {
     return words('admin.sign-in-route-closed');
   },
+  get 'scim.provisioned'() {
+    return words('admin.scim-provisioned');
+  },
   get 'sign_in.configured'() {
     return words('admin.sign-in-settings-changed');
   },
@@ -568,6 +571,9 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   },
   get principal() {
     return words('admin.person');
+  },
+  get scim() {
+    return words('admin.signin-scim');
   },
   get sign_in() {
     return words('admin.signin-title');

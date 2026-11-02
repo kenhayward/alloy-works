@@ -215768,7 +215768,7 @@
         },
         "responses": {
           "200": {
-            "description": "Made, with no members yet",
+            "description": "Made, with no members yet, or those SCIM holds for its value",
             "content": {
               "application/json": {
                 "schema": {
@@ -289368,6 +289368,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -289376,7 +289405,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -289426,6 +289456,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -289479,6 +289513,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -289495,6 +289530,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",
@@ -289751,6 +289787,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -289759,7 +289824,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -289809,6 +289875,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -289862,6 +289932,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -289878,6 +289949,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",
@@ -290137,6 +290209,14 @@
                     "minLength": 1,
                     "maxLength": 100,
                     "description": "The ID token claim carrying the provider's group values"
+                  },
+                  "scimClaim": {
+                    "type": "string",
+                    "enum": [
+                      "sub",
+                      "oid"
+                    ],
+                    "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
                   }
                 },
                 "required": [
@@ -290195,6 +290275,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -290203,7 +290312,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -290253,6 +290363,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -290306,6 +290420,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -290322,6 +290437,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",
@@ -290631,6 +290747,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -290639,7 +290784,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -290689,6 +290835,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -290742,6 +290892,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -290758,6 +290909,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",
@@ -291086,6 +291238,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -291094,7 +291275,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -291144,6 +291326,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -291197,6 +291383,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -291213,6 +291400,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",
@@ -291447,6 +291635,1283 @@
         }
       }
     },
+    "/v1/sign-in-settings/providers/{id}/scim": {
+      "delete": {
+        "operationId": "turnScimOff",
+        "summary": "Stop an identity provider provisioning, ending its token",
+        "description": "Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+        "tags": [
+          "Sign-in settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "issuer": {
+                            "type": "string"
+                          },
+                          "clientId": {
+                            "type": "string"
+                          },
+                          "groupsClaim": {
+                            "type": "string"
+                          },
+                          "closed": {
+                            "type": "boolean",
+                            "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "issuer",
+                          "clientId",
+                          "groupsClaim",
+                          "closed",
+                          "scim"
+                        ]
+                      },
+                      "description": "Every provider, the open before the closed. A client secret is never here"
+                    },
+                    "google": {
+                      "type": "object",
+                      "properties": {
+                        "available": {
+                          "type": "boolean",
+                          "description": "Whether this service holds a Google client at all"
+                        },
+                        "open": {
+                          "type": "boolean"
+                        },
+                        "domains": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "available",
+                        "open",
+                        "domains"
+                      ]
+                    },
+                    "sessions": {
+                      "type": "object",
+                      "properties": {
+                        "idleMinutes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "absoluteHours": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "idleMinutes",
+                        "absoluteHours"
+                      ]
+                    },
+                    "redirectUri": {
+                      "type": "string",
+                      "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
+                    },
+                    "recentSignIn": {
+                      "type": "boolean",
+                      "description": "Whether this session authenticated recently enough to change any of this"
+                    },
+                    "signedInThrough": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "route": {
+                              "type": "string",
+                              "enum": [
+                                "organisation",
+                                "google"
+                              ]
+                            },
+                            "provider": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "route",
+                            "provider"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The way in of the session asking, which it may not close; null for a token"
+                    }
+                  },
+                  "required": [
+                    "providers",
+                    "google",
+                    "sessions",
+                    "redirectUri",
+                    "scimUrl",
+                    "recentSignIn",
+                    "signedInThrough"
+                  ]
+                },
+                "example": {
+                  "providers": [],
+                  "google": {
+                    "available": false,
+                    "open": false,
+                    "domains": []
+                  },
+                  "sessions": {
+                    "idleMinutes": -9007199254740991,
+                    "absoluteHours": -9007199254740991
+                  },
+                  "redirectUri": "example",
+                  "scimUrl": "example",
+                  "recentSignIn": false,
+                  "signedInThrough": {
+                    "route": "organisation",
+                    "provider": "00000000-0000-4000-8000-000000000001"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no live session or token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "turnScimOn",
+        "summary": "Have an identity provider provision people and groups by SCIM",
+        "description": "Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds administer outright, and its memberships come from SCIM alone. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+        "tags": [
+          "Sign-in settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claim": {
+                    "type": "string",
+                    "enum": [
+                      "sub",
+                      "oid"
+                    ],
+                    "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                  }
+                },
+                "required": [
+                  "claim"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "claim": "sub"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "On",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "allOf": [
+                              {
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              {
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "issuer": {
+                            "type": "string"
+                          },
+                          "clientId": {
+                            "type": "string"
+                          },
+                          "groupsClaim": {
+                            "type": "string"
+                          },
+                          "closed": {
+                            "type": "boolean",
+                            "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "issuer",
+                          "clientId",
+                          "groupsClaim",
+                          "closed",
+                          "scim"
+                        ]
+                      },
+                      "description": "Every provider, the open before the closed. A client secret is never here"
+                    },
+                    "google": {
+                      "type": "object",
+                      "properties": {
+                        "available": {
+                          "type": "boolean",
+                          "description": "Whether this service holds a Google client at all"
+                        },
+                        "open": {
+                          "type": "boolean"
+                        },
+                        "domains": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "available",
+                        "open",
+                        "domains"
+                      ]
+                    },
+                    "sessions": {
+                      "type": "object",
+                      "properties": {
+                        "idleMinutes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "absoluteHours": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "idleMinutes",
+                        "absoluteHours"
+                      ]
+                    },
+                    "redirectUri": {
+                      "type": "string",
+                      "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
+                    },
+                    "recentSignIn": {
+                      "type": "boolean",
+                      "description": "Whether this session authenticated recently enough to change any of this"
+                    },
+                    "signedInThrough": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "route": {
+                              "type": "string",
+                              "enum": [
+                                "organisation",
+                                "google"
+                              ]
+                            },
+                            "provider": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "route",
+                            "provider"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The way in of the session asking, which it may not close; null for a token"
+                    }
+                  },
+                  "required": [
+                    "providers",
+                    "google",
+                    "sessions",
+                    "redirectUri",
+                    "scimUrl",
+                    "recentSignIn",
+                    "signedInThrough"
+                  ]
+                },
+                "example": {
+                  "providers": [],
+                  "google": {
+                    "available": false,
+                    "open": false,
+                    "domains": []
+                  },
+                  "sessions": {
+                    "idleMinutes": -9007199254740991,
+                    "absoluteHours": -9007199254740991
+                  },
+                  "redirectUri": "example",
+                  "scimUrl": "example",
+                  "recentSignIn": false,
+                  "signedInThrough": {
+                    "route": "organisation",
+                    "provider": "00000000-0000-4000-8000-000000000001"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no live session or token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sign-in-settings/providers/{id}/scim/token": {
+      "post": {
+        "operationId": "issueScimToken",
+        "summary": "Make a provider's SCIM token, shown this once, ending any before it",
+        "description": "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
+        "tags": [
+          "Sign-in settings"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "administer",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The token, shown this once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "What the person called it, to tell their tokens apart"
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "create",
+                          "edit",
+                          "comment",
+                          "suggest",
+                          "approve",
+                          "publish",
+                          "design",
+                          "manage_definitions",
+                          "administer",
+                          "use_connection",
+                          "write_sql",
+                          "retire"
+                        ]
+                      },
+                      "description": "The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "description": "When it stops working; nothing extends a token"
+                    },
+                    "lastUsedAt": {
+                      "description": "When a request last used it, to the minute, or null for never",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "secret": {
+                      "type": "string",
+                      "description": "The token, awt_ and 43 characters, shown this once: only its hash is kept"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "scopes",
+                    "createdAt",
+                    "expiresAt",
+                    "lastUsedAt",
+                    "secret"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "name": "example",
+                  "scopes": [],
+                  "createdAt": "example",
+                  "expiresAt": "example",
+                  "lastUsedAt": "example",
+                  "secret": "example"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "There is no live session or token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "scim_off: it does not provision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/sign-in-settings/providers/{id}/secret": {
       "put": {
         "operationId": "replaceProviderSecret",
@@ -291557,6 +293022,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -291565,7 +293059,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -291615,6 +293110,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -291668,6 +293167,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -291684,6 +293184,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",
@@ -291979,6 +293480,35 @@
                           "closed": {
                             "type": "boolean",
                             "description": "Closed: it signs nobody in"
+                          },
+                          "scim": {
+                            "type": "object",
+                            "properties": {
+                              "on": {
+                                "type": "boolean",
+                                "description": "It provisions: it admits only those it pushed"
+                              },
+                              "claim": {
+                                "type": "string",
+                                "enum": [
+                                  "sub",
+                                  "oid"
+                                ],
+                                "description": "The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)"
+                              },
+                              "lastUsedAt": {
+                                "description": "When its token was last used",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "on",
+                              "claim",
+                              "lastUsedAt"
+                            ]
                           }
                         },
                         "required": [
@@ -291987,7 +293517,8 @@
                           "issuer",
                           "clientId",
                           "groupsClaim",
-                          "closed"
+                          "closed",
+                          "scim"
                         ]
                       },
                       "description": "Every provider, the open before the closed. A client secret is never here"
@@ -292037,6 +293568,10 @@
                     "redirectUri": {
                       "type": "string",
                       "description": "The address to register at each provider"
+                    },
+                    "scimUrl": {
+                      "type": "string",
+                      "description": "The SCIM base address to give a provider that provisions"
                     },
                     "recentSignIn": {
                       "type": "boolean",
@@ -292090,6 +293625,7 @@
                     "google",
                     "sessions",
                     "redirectUri",
+                    "scimUrl",
                     "recentSignIn",
                     "signedInThrough"
                   ]
@@ -292106,6 +293642,7 @@
                     "absoluteHours": -9007199254740991
                   },
                   "redirectUri": "example",
+                  "scimUrl": "example",
                   "recentSignIn": false,
                   "signedInThrough": {
                     "route": "organisation",

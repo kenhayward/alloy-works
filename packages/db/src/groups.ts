@@ -8,6 +8,7 @@ import {
   type ExternalRefusal,
 } from './grants.js';
 import { checkedPage, isPageCursor, paged, type Page, type PageRequest } from './paging.js';
+import { settleProviderGroups } from './scim.js';
 import { scopesStored } from './scopes.js';
 import type { TenantTransaction } from './tables.js';
 
@@ -44,8 +45,8 @@ export type GroupAnswer =
 
 /**
  * Makes a group: the environment's own by name, or, given `providerValue`, one standing for that value
- * of the provider's claim (GP-C). A name, or a value, another group already has is refused. Changes no
- * fact a decision reads - a new group holds nothing and has no members - so takes no lock.
+ * of the provider's claim (GP-C). A name, or a value, another group already has is refused. A new group
+ * holds nothing; a provider group SCIM already holds members for takes them, under the epoch.
  */
 export async function createGroup(
   trx: TenantTransaction,
@@ -87,6 +88,8 @@ export async function createGroup(
     await recordEvent(trx, { kind: 'group.made', subject: { kind: 'group', id: row.id } }, [
       { role: 'subject', text: row.name, refersTo: row.id },
     ]);
+    // A SCIM group held for this value gives it its members at once (identity.md, "Groups").
+    if (providerId !== null) await settleProviderGroups(trx, providerId);
     return { group: groupOf(row) };
   }
   const named = await trx

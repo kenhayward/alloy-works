@@ -109,10 +109,19 @@ export const groupRoutes = {
     summary:
       "Make a group: the environment's own, or one standing for a value the provider asserts",
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    // A provider's group takes the members SCIM holds for it (identity.md, "Groups").
+    access: {
+      check: 'permission',
+      permission: 'administer',
+      target: { tenant: true },
+      changesAccess: true,
+    },
     body: GroupBody,
     responses: {
-      200: { description: 'Made, with no members yet', schema: GroupMade },
+      200: {
+        description: 'Made, with no members yet, or those SCIM holds for its value',
+        schema: GroupMade,
+      },
       401: unauthenticated,
       403: forbidden,
       409: {

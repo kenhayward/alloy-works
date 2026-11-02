@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { RouteContract } from './contract.js';
 import { ErrorBody, LowercaseUuid } from './schemas.js';
+import { TokenIssued } from './tokens.js';
 
 const unauthenticated = { description: 'There is no live session or token', schema: ErrorBody };
 const forbidden = { description: 'administer at the environment is not held', schema: ErrorBody };
@@ -18,6 +19,13 @@ const ClientSecret = z
   .max(2000)
   .describe('The client secret: sealed as it arrives, and never returned');
 
+const ScimClaim = z
+  .enum(['sub', 'oid'])
+  .describe("The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)");
+
+export const ScimOnBody = z.strictObject({ claim: ScimClaim });
+export type ScimOnBody = z.infer<typeof ScimOnBody>;
+
 export const ProviderParams = z.object({ id: LowercaseUuid });
 export type ProviderParams = z.infer<typeof ProviderParams>;
 export const PrincipalParams = z.object({ id: LowercaseUuid });
@@ -32,6 +40,7 @@ export const ProviderBody = z.strictObject({
   clientId: z.string().trim().min(1).max(500).describe("This environment's client at the issuer"),
   clientSecret: ClientSecret,
   groupsClaim: GroupsClaim.optional(),
+  scimClaim: ScimClaim.optional(),
 });
 export type ProviderBody = z.infer<typeof ProviderBody>;
 
@@ -79,6 +88,11 @@ export const SignInSettings = z.object({
         clientId: z.string(),
         groupsClaim: z.string(),
         closed: z.boolean().describe('Closed: it signs nobody in'),
+        scim: z.object({
+          on: z.boolean().describe('It provisions: it admits only those it pushed'),
+          claim: ScimClaim,
+          lastUsedAt: z.string().nullable().describe('When its token was last used'),
+        }),
       }),
     )
     .describe('Every provider, the open before the closed. A client secret is never here'),
@@ -89,6 +103,7 @@ export const SignInSettings = z.object({
   }),
   sessions: z.object({ idleMinutes: z.number().int(), absoluteHours: z.number().int() }),
   redirectUri: z.string().describe('The address to register at each provider'),
+  scimUrl: z.string().describe('The SCIM base address to give a provider that provisions'),
   recentSignIn: z
     .boolean()
     .describe('Whether this session authenticated recently enough to change any of this'),
@@ -199,6 +214,55 @@ export const signInSettingsRoutes = {
       403: reauthentication,
       404: notFoundProvider,
       409: { description: 'last_way_in or provider_own_session', schema: ErrorBody },
+    },
+  },
+  turnScimOn: {
+    operationId: 'turnScimOn',
+    method: 'POST',
+    path: '/v1/sign-in-settings/providers/{id}/scim',
+    summary: 'Have an identity provider provision people and groups by SCIM',
+    tenantScoped: true,
+    access: CHANGING,
+    params: ProviderParams,
+    body: ScimOnBody,
+    responses: {
+      200: { description: 'On', schema: SignInSettings },
+      401: unauthenticated,
+      403: reauthentication,
+      404: notFoundProvider,
+    },
+  },
+  turnScimOff: {
+    operationId: 'turnScimOff',
+    method: 'DELETE',
+    path: '/v1/sign-in-settings/providers/{id}/scim',
+    summary: 'Stop an identity provider provisioning, ending its token',
+    tenantScoped: true,
+    access: CHANGING,
+    params: ProviderParams,
+    responses: {
+      200: { description: 'Off', schema: SignInSettings },
+      401: unauthenticated,
+      403: reauthentication,
+      404: notFoundProvider,
+    },
+  },
+  issueScimToken: {
+    operationId: 'issueScimToken',
+    method: 'POST',
+    path: '/v1/sign-in-settings/providers/{id}/scim/token',
+    summary: "Make a provider's SCIM token, shown this once, ending any before it",
+    tenantScoped: true,
+    access: CHANGING,
+    params: ProviderParams,
+    body: z.strictObject({}),
+    idempotencyKey: false,
+    responses: {
+      200: { description: 'The token, shown this once', schema: TokenIssued },
+      401: unauthenticated,
+      403: reauthentication,
+      404: notFoundProvider,
+      409: { description: 'scim_off: it does not provision', schema: ErrorBody },
     },
   },
   setGoogleSignIn: {

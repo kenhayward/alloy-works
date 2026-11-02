@@ -32,7 +32,9 @@ import {
   enqueueJob,
   findApiToken,
   groupNames,
+  admitProvisioned,
   holdPrincipal,
+  keepProviderKey,
   sessionSettings,
   identifyKnown,
   loadFacts,
@@ -76,6 +78,7 @@ import { queryDefinitionHandlers } from './data/query-definitions.js';
 import type { GoogleSettings } from './config.js';
 import { documentHandlers } from './documents.js';
 import { registerDocs } from './docs.js';
+import { registerScim } from './scim.js';
 import { templateHandlers } from './templates.js';
 import { definitionHandlers } from './definitions.js';
 import { presentationHandlers } from './presentation.js';
@@ -259,6 +262,7 @@ type Success<R extends RouteContract> = R['responses'] extends {
 /** The routes answering a secret once, never kept by a cache on the way (G8-H, WB-G). */
 const ANSWERS_A_SECRET: ReadonlySet<string> = new Set([
   'issueServiceIdentityToken',
+  'issueScimToken',
   'connectCtStudio',
   'issueCtStudioToken',
   'createWebhook',
@@ -396,6 +400,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ttlMs: options.tenantCacheMs ?? 30_000,
   });
   registerDocs(app, (hostname) => tenants.resolve(hostname));
+  registerScim(app, { db, resolve: (hostname) => tenants.resolve(hostname) });
   registerMcp(app, db, (hostname) => tenants.resolve(hostname));
   // CT Studio's delivery bridge (ADR-0071), served only where its signing keys are set.
   const bridgeKeys = (secrets.get('bridge_keys') ?? '')
@@ -466,7 +471,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
     request: FastifyRequest,
     tenant: Tenant,
     providerId: string,
-  ): Promise<(ProviderSettings & { readonly id: string }) | undefined> {
+  ): Promise<
+    (ProviderSettings & { readonly id: string; readonly provisions: boolean }) | undefined
+  > {
     if (!(await permits(tenant, 'organisation'))) return undefined;
     const row = await db.withTenant(tenant, (trx) =>
       trx
@@ -503,6 +510,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       clientId: row.client_id,
       clientSecret,
       groupsClaim: row.groups_claim,
+      scimClaim: row.scim_claim,
+      provisions: row.scim_identity !== null,
     };
   }
 
@@ -617,8 +626,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
     tenant: Tenant,
     principalId: string,
     route: SignInRoute,
-    /** The provider an organisation's sign-in came through, and the group values it asserted. */
-    asserted?: { readonly providerId: string; readonly groups: readonly string[] },
+    /**
+     * The provider an organisation's sign-in came through, and the group values it asserted; null
+     * where it provisions, its memberships coming from SCIM alone (identity.md, "Groups").
+     */
+    asserted?: { readonly providerId: string; readonly groups: readonly string[] | null },
   ): Promise<FastifyReply> {
     let held = 'held' as Awaited<ReturnType<typeof holdPrincipal>>;
     const started = await db
@@ -631,7 +643,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
           held = await holdPrincipal(trx, principalId);
           if (held !== 'held') throw new SignInUnheld();
         };
-        if (asserted === undefined) await hold();
+        if (!asserted?.groups) await hold();
         else await syncProviderGroups(trx, principalId, asserted.groups, hold, asserted.providerId);
         return {
           token: await createSession(
@@ -722,7 +734,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     tenant: Tenant,
     session: { readonly id: string; readonly principalId: string },
     route: SignInRoute,
-    asserted?: { readonly providerId: string; readonly groups: readonly string[] },
+    asserted?: { readonly providerId: string; readonly groups: readonly string[] | null },
   ): Promise<FastifyReply> {
     const token = request.cookies[SESSION_COOKIE];
     await db
@@ -733,7 +745,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         const hold = async () => {
           if ((await holdPrincipal(trx, session.principalId)) !== 'held') throw new SignInUnheld();
         };
-        if (asserted === undefined) await hold();
+        if (!asserted?.groups) await hold();
         else {
           await syncProviderGroups(
             trx,
@@ -964,7 +976,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         const session = await asking(request, tenant, 'organisation', attempt, identity);
         return reauthenticated(request, reply, tenant, session, 'organisation', {
           providerId: provider.id,
-          groups: identity.groups,
+          groups: provider.provisions ? null : identity.groups,
         });
       }
       // Found by issuer and subject, never by email address, which can be reassigned. Only somebody
@@ -972,16 +984,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
       // address the provider verifies; anybody else the provider authenticates is made a principal
       // holding nothing, as before.
       // An erased person is refused before anything of theirs is written (ER-D).
+      // A provider that provisions admits only those it pushed (IN-K): nobody is made or claimed.
       const principal = await db.withTenant(tenant, async (trx) => {
+        if (provider.provisions) return admitProvisioned(trx, provider.id, identity);
+        const keeping = async (id: string) => {
+          await keepProviderKey(trx, id, provider.id, identity.providerKey);
+          return { id };
+        };
         const known = await identifyKnown(trx, identity);
-        if (known) return known;
+        if (known === 'erased') return known;
+        if (known) return keeping(known.id);
         const invited = await claimInvitation(
           trx,
           identity,
           { route: 'organisation', providerId: provider.id },
           request.id,
         );
-        if (invited) return { id: invited };
+        if (invited) return keeping(invited);
         // An upsert still: the same identity's first sign-in in another window may land between the
         // lookup above and this insert. An erased one is never renamed, and answers nothing.
         const made = await trx
@@ -1005,15 +1024,24 @@ export function buildApp(options: AppOptions): FastifyInstance {
           )
           .returning('id')
           .executeTakeFirst();
-        return made ?? 'erased';
+        return made ? keeping(made.id) : 'erased';
       });
       if (principal === 'erased') {
         await recordSignInFailure(db, request, tenant, 'organisation', 'principal_erased');
         throw principalErased();
       }
+      if (principal === 'not_provisioned') {
+        await recordSignInFailure(db, request, tenant, 'organisation', 'not_provisioned');
+        throw new AppError(
+          403,
+          'not_provisioned',
+          'Your organisation has not given this account access to this environment.',
+          'IAM-008',
+        );
+      }
       return signInAs(request, reply, tenant, principal.id, 'organisation', {
         providerId: provider.id,
-        groups: identity.groups,
+        groups: provider.provisions ? null : identity.groups,
       });
     },
 
