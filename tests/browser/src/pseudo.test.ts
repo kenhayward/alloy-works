@@ -432,7 +432,14 @@ const surfaces = (grace: Graces): readonly Surface[] => [
       await documentDrawn(page, language).check();
       // A placed component's own line, Overrides on it, is drawn with the boundaries.
       await page
-        .getByRole('button', { name: say(language, 'document.show-boundaries'), exact: true })
+        .getByRole('menubar')
+        .getByRole('menuitem', { name: say(language, 'menu.view'), exact: true })
+        .click();
+      await page
+        .getByRole('menuitemcheckbox', {
+          name: say(language, 'document.show-boundaries'),
+          exact: true,
+        })
         .click();
       // Named by the component's place in the text, so found by the message's start; pressed by the
       // keyboard, as the longer line beside the text stands under the side panel, out of the pointer's
@@ -629,10 +636,32 @@ const administration = (ada: Adas): readonly Surface[] => [
     address: `#/documents/${ada.document}`,
     regions: ['[role="dialog"]'],
     ready: (page) => page.getByRole('button', { name: 'Submit', exact: true }),
-    open: async (page) => {
+    open: async (page, language) => {
       await page.getByRole('button', { name: 'Submit', exact: true }).click();
-      await page.getByRole('button', { name: 'Return', exact: true }).click();
+      await page.getByRole('button', { name: 'Approve', exact: true }).waitFor();
+      await page
+        .getByRole('menubar')
+        .getByRole('menuitem', { name: say(language, 'menu.document'), exact: true })
+        .click();
+      await page.getByRole('menuitem', { name: 'Return', exact: true }).click();
       return page.getByRole('dialog');
+    },
+  },
+  {
+    name: 'The keyboard shortcuts list',
+    dialog: 'structure/DocumentHeader.tsx',
+    address: `#/documents/${ada.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      await page
+        .getByRole('menubar')
+        .getByRole('menuitem', { name: say(language, 'menu.help'), exact: true })
+        .click();
+      await page
+        .getByRole('menuitem', { name: say(language, 'menu.keyboard-shortcuts'), exact: true })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'menu.keyboard-shortcuts') });
     },
   },
   {
@@ -786,6 +815,8 @@ async function walk(language: Language) {
   // service answers 403, which the browser reports as a failed load: her permissions, not noise.
   allowPageNoise(
     /^console\.error: Failed to load resource: .* 403 \(Forbidden\) \(.*\/v1\/definitions:/,
+    // Administration's counts of what Grace may not read, where her connections now are (ADR-0075).
+    /^console\.error: Failed to load resource: .* 403 \(Forbidden\) \(.*\/v1\/(access|citation-styles|groups|holds|principals|retention|roles)\b/,
   );
   const [grace, ada] = await Promise.all([graces(), adas()]);
   await walkAs(await signInFromNode('grace'), language, surfaces(grace));

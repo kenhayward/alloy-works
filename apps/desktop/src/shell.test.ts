@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  applicationMenu,
   BRIDGE_GLOBAL,
   CONNECT_CHANNEL,
   CONNECT_ROUTE,
@@ -882,5 +883,25 @@ describe('updateStep, what the review found (the DR plan, DR-I)', () => {
       act: null,
     });
     expect(updateTrayItem(told.state, { ...ENGLISH }).enabled).toBe(false);
+  });
+});
+
+describe('the application menu (ADR-0076)', () => {
+  it('has none where the renderer draws its own, so that no key is taken before the page has it', () => {
+    expect(applicationMenu('win32', true)).toBeNull();
+    expect(applicationMenu('linux', true)).toBeNull();
+  });
+
+  it('keeps reload and the developer tools while unpackaged, and nothing else', () => {
+    expect(applicationMenu('win32', false)).toEqual([{ role: 'viewMenu' }]);
+  });
+
+  it('keeps on a Mac what the platform expects of an application, its Edit menu holding the keys of a text field', () => {
+    expect(applicationMenu('darwin', true)).toEqual([{ role: 'appMenu' }, { role: 'editMenu' }]);
+    expect(applicationMenu('darwin', false)).toEqual([
+      { role: 'appMenu' },
+      { role: 'editMenu' },
+      { role: 'viewMenu' },
+    ]);
   });
 });

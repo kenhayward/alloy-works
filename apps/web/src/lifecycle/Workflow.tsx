@@ -51,6 +51,8 @@ export interface Standing {
   readonly transitions: readonly Offered[];
   readonly gates?: readonly Gate[];
   readonly revision?: Revision;
+  /** Every state of the workflow deciding it, in order, for the stepper (ADR-0075); [] where unsaid. */
+  readonly states?: readonly { readonly key: string; readonly name: string }[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -101,6 +103,11 @@ export function standingIn(data: unknown): Standing | undefined {
   return {
     gates: gatesIn(data.gates),
     revision: revisionIn(data.revision),
+    states: Array.isArray(data.states)
+      ? data.states.flatMap((each: unknown) =>
+          named(each) ? [{ key: each.key, name: each.name }] : [],
+        )
+      : [],
     state: {
       key: data.state.key,
       name: data.state.name,
@@ -238,25 +245,7 @@ const progressOf = (gate: Gate) =>
     yours: gate.approvedByCaller ? 'yes' : 'no',
   });
 
-/**
- * A button for each transition the view says the reader may take (WF-F), none otherwise: the move
- * sends the state it was seen in, asks for a reason first where the transition requires one, and says
- * a refusal by the service's own words, reading the state again where it moved meanwhile.
- */
-export function TransitionButtons({
-  client,
-  kind,
-  id,
-  title,
-  standing,
-  versionId,
-  onMoved,
-  onNotice,
-  onStale,
-  className,
-  line,
-  askFirst,
-}: {
+type TransitionProps = {
   client: Client;
   kind: Movable;
   id: string;
@@ -275,7 +264,21 @@ export function TransitionButtons({
    * saving a version asks; approving goes ahead at once where none is given.
    */
   askFirst?: ((act: string, go: () => void) => void) | undefined;
-}) {
+};
+
+/** What taking a transition or deciding a gate needs, and the dialogs that ask for a reason. */
+function useTransitions({
+  client,
+  kind,
+  id,
+  title,
+  standing,
+  versionId,
+  onMoved,
+  onStale,
+  line,
+  askFirst,
+}: TransitionProps) {
   const [busy, setBusy] = useState(false);
   const approving = (act: string, go: () => void) => (askFirst ? askFirst(act, go) : go());
   const [asking, setAsking] = useState<Offered | null>(null);
@@ -337,6 +340,51 @@ export function TransitionButtons({
     return words('lifecycle.was-not-moved', { title, refused: answer.refused });
   };
 
+  const dialogs = (
+    <>
+      {rejecting && (
+        <ReasonDialog
+          heading={words('lifecycle.act-on', { act: rejecting.reject.name, title })}
+          explained={words('lifecycle.it-returns-to', { name: rejecting.reject.to.name })}
+          submit={words('lifecycle.to', {
+            name: rejecting.reject.name,
+            name2: rejecting.reject.to.name,
+          })}
+          act={async (reason) => {
+            const refused = await decideAt(rejecting, reason);
+            if (refused === undefined) setRejecting(null);
+            return refused;
+          }}
+          onClose={() => setRejecting(null)}
+        />
+      )}
+      {asking && (
+        <ReasonDialog
+          heading={words('lifecycle.act-on', { act: asking.name, title })}
+          explained={words('lifecycle.it-moves-to', { name: asking.to.name })}
+          submit={words('lifecycle.to', { name: asking.name, name2: asking.to.name })}
+          act={async (reason) => {
+            const refused = await take(asking, reason);
+            if (refused === undefined) setAsking(null);
+            return refused;
+          }}
+          onClose={() => setAsking(null)}
+        />
+      )}
+    </>
+  );
+  return { busy, approving, decideAt, take, setAsking, setRejecting, dialogs };
+}
+
+/**
+ * A button for each transition the view says the reader may take (WF-F), none otherwise: the move
+ * sends the state it was seen in, asks for a reason first where the transition requires one, and says
+ * a refusal by the service's own words, reading the state again where it moved meanwhile.
+ */
+export function TransitionButtons(props: TransitionProps) {
+  const { standing, onNotice, className } = props;
+  const { busy, approving, decideAt, take, setAsking, setRejecting, dialogs } =
+    useTransitions(props);
   return (
     <>
       {standing.transitions.map((transition) => (
@@ -414,37 +462,88 @@ export function TransitionButtons({
           )}
         </span>
       ))}
-      {rejecting && (
-        <ReasonDialog
-          heading={words('lifecycle.act-on', { act: rejecting.reject.name, title })}
-          explained={words('lifecycle.it-returns-to', { name: rejecting.reject.to.name })}
-          submit={words('lifecycle.to', {
-            name: rejecting.reject.name,
-            name2: rejecting.reject.to.name,
-          })}
-          act={async (reason) => {
-            const refused = await decideAt(rejecting, reason);
-            if (refused === undefined) setRejecting(null);
-            return refused;
-          }}
-          onClose={() => setRejecting(null)}
-        />
-      )}
-      {asking && (
-        <ReasonDialog
-          heading={words('lifecycle.act-on', { act: asking.name, title })}
-          explained={words('lifecycle.it-moves-to', { name: asking.to.name })}
-          submit={words('lifecycle.to', { name: asking.name, name2: asking.to.name })}
-          act={async (reason) => {
-            const refused = await take(asking, reason);
-            if (refused === undefined) setAsking(null);
-            return refused;
-          }}
-          onClose={() => setAsking(null)}
-        />
-      )}
+      {dialogs}
     </>
   );
+}
+
+/** One lifecycle act as the header and the Document menu offer it (ADR-0075); its name the workflow's. */
+export interface LifecycleAct {
+  readonly key: string;
+  readonly label: string;
+  readonly enabled: boolean;
+  readonly run: () => void;
+}
+
+/**
+ * The same acts as data. The one primary is Approve on a gate the caller may decide and has not already
+ * approved, else the first transition, else none; the others stay in the menu, each as a button would act.
+ */
+export function useLifecycleActs(props: TransitionProps): {
+  readonly acts: readonly LifecycleAct[];
+  readonly primary: LifecycleAct | undefined;
+  readonly progress: string | undefined;
+  readonly dialogs: React.ReactNode;
+} {
+  const { standing, onNotice } = props;
+  const { busy, approving, decideAt, take, setAsking, setRejecting, dialogs } =
+    useTransitions(props);
+  const said = (refused: string | undefined) => {
+    if (refused !== undefined) onNotice(refused);
+  };
+  const gates = standing.gates ?? [];
+  const decidable = gates.filter((gate) => gate.mayDecide && !gate.approvedByCaller);
+  const approve = (gate: Gate, publish = false) =>
+    approving(words(publish ? 'lifecycle.approve-and-publish' : 'lifecycle.approve'), () => {
+      void decideAt(gate, undefined, publish).then(said);
+    });
+  const approvals: LifecycleAct[] = decidable.map((gate) => ({
+    key: `approve:${gate.key}`,
+    label: gate.name,
+    enabled: !busy,
+    run: () => approve(gate),
+  }));
+  const transitions: LifecycleAct[] = standing.transitions.map((transition) => ({
+    key: `move:${transition.key}`,
+    label: transition.name,
+    enabled: !busy,
+    run: () => {
+      if (transition.reasonRequired) setAsking(transition);
+      else void take(transition).then(said);
+    },
+  }));
+  const others: LifecycleAct[] = gates.flatMap((gate) =>
+    gate.mayDecide
+      ? [
+          ...(!gate.approvedByCaller && gate.publication === 'permitted' && gate.mayPublish
+            ? [
+                {
+                  key: `publish:${gate.key}`,
+                  label: words('lifecycle.and-publish', { name: gate.name }),
+                  enabled: !busy,
+                  run: () => approve(gate, true),
+                },
+              ]
+            : []),
+          {
+            key: `return:${gate.key}`,
+            label: gate.reject.name,
+            enabled: !busy,
+            run: () => setRejecting(gate),
+          },
+        ]
+      : [],
+  );
+  // Onward before back, where the workflow's order says which is which: it may list Return first.
+  const order = (standing.states ?? []).map((state) => state.key);
+  const from = order.indexOf(standing.state.key);
+  const onward = standing.transitions.findIndex((each) => order.indexOf(each.to.key) > from);
+  return {
+    acts: [...approvals, ...transitions, ...others],
+    primary: approvals[0] ?? transitions[Math.max(onward, 0)],
+    progress: gates.length === 0 ? undefined : gates.map(progressOf).join(', '),
+    dialogs,
+  };
 }
 
 /** The longest reason the service takes. */

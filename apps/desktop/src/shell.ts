@@ -430,6 +430,23 @@ export const INTERFACE_LANGUAGE_CHANNEL = 'alloy-works:interface-language';
 /** The desktop's own words, in one language: `desktopWords` in the renderer's catalogue. */
 export type DesktopWords = Readonly<Record<DesktopWord, string>>;
 
+/**
+ * The native menu bar (ADR-0076): the renderer draws the application's own, so the native one holds only
+ * what it cannot: on a Mac the application and Edit menus the platform expects, which also carry a text
+ * field's keys, and while unpackaged reload and the developer tools. Null removes it.
+ */
+export function applicationMenu(
+  platform: NodeJS.Platform,
+  packaged: boolean,
+): readonly { readonly role: 'appMenu' | 'editMenu' | 'viewMenu' }[] | null {
+  const mac = platform === 'darwin';
+  if (packaged && !mac) return null;
+  return [
+    ...(mac ? [{ role: 'appMenu' as const }, { role: 'editMenu' as const }] : []),
+    ...(packaged ? [] : [{ role: 'viewMenu' as const }]),
+  ];
+}
+
 /** One item of the tray's menu, as main.ts turns it into Electron's. */
 export type TrayMenuItem =
   | { readonly kind: 'show'; readonly label: string }

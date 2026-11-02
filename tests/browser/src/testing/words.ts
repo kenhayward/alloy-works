@@ -53,9 +53,10 @@ export function unlocalised(page: Page, regions: readonly string[]): Promise<Unl
     const missed: string[] = [];
     const clipped: string[] = [];
     const overlaps: string[] = [];
-    // A person's content, a field's value, and a date or time the locale's own data formats.
+    // A person's content, a field's value, a date or time the locale's own data formats, and the
+    // names on a keyboard's keys.
     const content = (node: Node) =>
-      node.parentElement?.closest('[data-content], textarea, time') !== null;
+      node.parentElement?.closest('[data-content], textarea, time, kbd') !== null;
     const LAYER =
       '[role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"], [popover], [role="alertdialog"]';
     type Box = { left: number; top: number; right: number; bottom: number };

@@ -50,7 +50,7 @@ describe('search and commands', () => {
     );
     await userEvent.keyboard('{Enter}');
 
-    expect(window.location.hash).toBe('#/query-definitions');
+    expect(window.location.hash).toBe('#/admin/query-definitions');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

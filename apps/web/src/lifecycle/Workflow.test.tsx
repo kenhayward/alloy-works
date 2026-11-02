@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { RevisionChip, TransitionButtons, type Standing } from './Workflow.js';
+import { RevisionChip, TransitionButtons, useLifecycleActs, type Standing } from './Workflow.js';
 
 const ID = '5d9c6b1e-2f3a-4b5c-8d7e-9f0a1b2c3d4e';
 
@@ -81,6 +81,94 @@ function place(client: ReturnType<typeof createApiClient>, standing = IN_REVIEW)
   return { said, moved, stale: () => stale };
 }
 
+describe('the lifecycle as the header and the Document menu offer it (ADR-0075)', () => {
+  const gate = AT_GATE.gates![0]!;
+  /** What the acts say, as the header's primary and the menu's rows. */
+  function Acts({ standing }: { standing: Standing }) {
+    const { client } = service(() => json(500, {}));
+    const { acts, primary, progress, dialogs } = useLifecycleActs({
+      client,
+      kind: 'document',
+      id: ID,
+      title: 'Dosing guide',
+      standing,
+      versionId: VERSION,
+      onMoved: () => undefined,
+      onNotice: () => undefined,
+      onStale: () => undefined,
+    });
+    return (
+      <>
+        <p data-testid="primary">{primary?.label ?? 'none'}</p>
+        <p data-testid="progress">{progress ?? 'none'}</p>
+        <ul>
+          {acts.map((each) => (
+            <li key={each.key}>
+              <button type="button" onClick={each.run}>
+                {each.key}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {dialogs}
+      </>
+    );
+  }
+  const primary = () => screen.getByTestId('primary').textContent;
+  const acts = () => screen.queryAllByRole('button').map((each) => each.textContent);
+
+  it('leads with Approve on a gate the caller may decide, every other act after it', () => {
+    render(
+      <Acts
+        standing={{
+          ...AT_GATE,
+          gates: [{ ...gate, publication: 'permitted', mayPublish: true }],
+          transitions: IN_REVIEW.transitions,
+        }}
+      />,
+    );
+    expect(primary()).toBe('Approve');
+    expect(acts()).toEqual([
+      'approve:approve',
+      'move:return',
+      'move:approve',
+      'publish:approve',
+      'return:approve',
+    ]);
+    expect(screen.getByTestId('progress')).toHaveTextContent('1 of 2 approvals');
+  });
+
+  it('leads with the first transition once the caller has approved, Return still theirs in the menu', () => {
+    render(
+      <Acts
+        standing={{
+          ...AT_GATE,
+          gates: [{ ...gate, approvedByCaller: true }],
+          transitions: [IN_REVIEW.transitions[1]!],
+        }}
+      />,
+    );
+    expect(primary()).toBe('Approve');
+    expect(acts()).toEqual(['move:approve', 'return:approve']);
+    expect(screen.getByTestId('progress')).toHaveTextContent('1 of 2 approvals, yours among them');
+  });
+
+  it('offers no primary and nothing to decide to whoever may not, saying how far it has got all the same', () => {
+    render(<Acts standing={{ ...AT_GATE, gates: [{ ...gate, mayDecide: false }] }} />);
+    expect(primary()).toBe('none');
+    expect(acts()).toEqual([]);
+    expect(screen.getByTestId('progress')).toHaveTextContent('1 of 2 approvals');
+  });
+
+  it('asks why before a return from the menu, as the button did', async () => {
+    render(<Acts standing={AT_GATE} />);
+    await userEvent.click(screen.getByRole('button', { name: 'return:approve' }));
+    expect(screen.getByRole('dialog', { name: 'Return Dosing guide' })).toHaveTextContent(
+      'It returns to Draft.',
+    );
+  });
+});
+
 describe('moving along a workflow transition (the WF1 plan, WF-F)', () => {
   it('offers only the transitions the view says the reader may take, and moves from the state it saw', async () => {
     const { client, sent } = service(() =>
@@ -105,6 +193,7 @@ describe('moving along a workflow transition (the WF1 plan, WF-F)', () => {
         state: { key: 'approved', name: 'Approved', approved: true },
         transitions: [],
         gates: [],
+        states: [],
         revision: null,
       },
     ]);

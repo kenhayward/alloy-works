@@ -115,14 +115,7 @@ describe('citing in Chromium (the CI plan, CId)', () => {
 
       // Done, from the Formatting toolbar's one stop.
       const done = page.getByRole('button', { name: 'Done editing' });
-      await tabTo(
-        page,
-        page.getByRole('toolbar', { name: 'Formatting' }).locator('button[tabindex="0"]'),
-      );
-      await page.keyboard.press('Home');
-      await expect
-        .poll(() => done.evaluate((element) => element === document.activeElement))
-        .toBe(true);
+      await tabTo(page, done);
       await page.keyboard.press('Enter');
       await surface.waitFor({ state: 'hidden' });
 

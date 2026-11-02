@@ -1,8 +1,6 @@
 import { useState } from 'react';
 
-import { Icon } from '../editor/Icon.js';
 import { kept, keep, PaneToggle, type Pane } from '../layouts/PaneWidth.js';
-import { PanelTabs } from '../parts/PanelTabs.js';
 import styles from './OutlineTabs.module.css';
 import { words } from '../words/words.js';
 
@@ -75,47 +73,38 @@ export function useOutlineTab(storageKey: string): [string, (key: string) => voi
 }
 
 /**
- * The top of the outline pane (interface slice 15): back to the documents, the tabs, and the toggle
- * that hides the pane to a rail. The tabs are WAI-ARIA's pattern - one stop, the arrow keys, Home and
- * End moving between them and choosing as they go - with the panel beneath rendered by the outline.
+ * The top of the outline pane in the side dock (ADR-0075): the panel's name and what hides it, and, on
+ * Contents, a filter over the sections.
  */
-export function OutlineTabs({
+export function OutlineHead({
   pane,
-  chosen,
-  onChoose,
-  tabs: offered = OUTLINE_TABS,
+  label,
+  filter,
+  onFilter,
 }: {
   pane: Pane;
-  chosen: string;
-  onChoose: (key: string) => void;
-  tabs?: readonly OutlineTab[];
+  label: string;
+  /** What the filter holds, where this panel offers one. */
+  filter?: string | undefined;
+  onFilter?: ((text: string) => void) | undefined;
 }) {
   return (
-    <div className={styles['strip']}>
-      <a
-        className={styles['back']}
-        href="#/documents"
-        aria-label={words('document.back-to-documents')}
-        title={words('document.back-to-documents')}
-      >
-        <Icon name="Back" size={15} />
-      </a>
-      <PanelTabs
-        label={words('document.outline-pane')}
-        tabs={offered.map((tab) => ({
-          key: tab.key,
-          label: tab.label,
-          icon: <Icon name={tab.icon} size={14} />,
-        }))}
-        chosen={chosen}
-        onChoose={onChoose}
-        ids={tabIds}
-        className={styles['tabs']}
-        tabClassName={styles['tab']}
-      />
-      <span className={styles['spacer']} />
-      <PaneToggle label={words('document.outline-pane-2')} pane={pane} />
-    </div>
+    <>
+      <div className={styles['panelHead']}>
+        <h2 className={styles['panelName']}>{label}</h2>
+        <PaneToggle label={words('document.outline-pane-2')} pane={pane} />
+      </div>
+      {onFilter !== undefined && (
+        <input
+          type="search"
+          className={styles['filter']}
+          aria-label={words('document.filter-sections')}
+          placeholder={words('document.filter-sections')}
+          value={filter ?? ''}
+          onChange={(event) => onFilter(event.target.value)}
+        />
+      )}
+    </>
   );
 }
 

@@ -815,6 +815,8 @@ describe('the domain package', () => {
         // R16: two lines compared block by block, and one brought back.
         'lineDifferences',
         'bringBack',
+        // AP: which paragraphs a theme opens with its own generated content, so a label leaves them be.
+        'lineOpeners',
         // G1: model endpoints, and the connector's model call and its events.
         'MODEL_PROTOCOLS',
         'ROUTED_PURPOSES',

@@ -3,6 +3,24 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.226.0 - 2026-11-02 (PR #888)
+
+T7's authoring page closed (the AP plan): one header with menus, a side dock, style labels in the margin, an icon rail and one registry of commands.
+
+### Added
+
+- **One header for a document.** Its name, version and who is here, then **Document, Edit, View, Insert, Format, Review and Help** menus, each command named and keyed as it is everywhere else. Its lifecycle as steps with the next act beside them, then its mode and Preview. Dates, Effective for, Relationships, Manage access, holds, Archive and Delete are in the Document menu.
+- **A side dock.** Beside the text it floats the panels (Contents with a filter over its sections, Baselines, Data) above the tools used most. The outline hides to it and comes back from it. What a selection offers stands in the panels' **Selection** tab.
+- **Each paragraph's style in the margin.** Named on the sheet, never in what is copied or published, the current one a button that changes it. View turns the labels off, and below 75% zoom they give way. A paragraph holding an inline image, or a mark larger than its text, has only the button.
+
+### Changed
+
+- **An icon rail.** The module rail is icons named on hover and focus, with the mark and the environment at its head.
+- **Connections and Query definitions moved to Administration**, under **Data**. Their old addresses still lead there.
+- **Theme, language and the go-to keys moved to the account menu.**
+- **Pages as you edit and Show boundaries moved to the View menu.**
+- **No native menu bar in the desktop app**, but for a Mac's, so no key is taken before the page has it. Ctrl S in the text makes no version.
+
 ## 0.225.0 - 2026-11-02 (PR #889)
 
 T7's fourth slice closed (the ID plan): more than one identity provider, Administration's Sign-in, signing in again, disabling people, SCIM and the high-risk permissions; with it, the work merged since 0.224.0.

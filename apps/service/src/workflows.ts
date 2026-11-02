@@ -158,6 +158,7 @@ function standingAnswer(
 ): TransitionAnswer {
   return {
     state: { ...standing.state },
+    states: standing.definition.body.states.map(({ key, name }) => ({ key, name })),
     transitions: transitionsOffered(standing, facts, archived),
     gates: gatesOffered(standing, facts, archived, principalId),
     revision: standing.revision && {

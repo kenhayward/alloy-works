@@ -51410,6 +51410,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -52167,6 +52186,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -52207,6 +52227,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -53227,6 +53248,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -53408,6 +53448,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -53419,6 +53460,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -65324,6 +65366,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -65505,6 +65566,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -65516,6 +65578,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -96562,6 +96625,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -97059,6 +97141,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -97119,6 +97202,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -98081,6 +98165,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -98262,6 +98365,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -98273,6 +98377,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -165946,6 +166051,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -166443,6 +166567,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -166503,6 +166628,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -167008,6 +167134,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -167505,6 +167650,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -168251,6 +168397,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -168748,6 +168913,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -170165,6 +170331,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -170662,6 +170847,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -170722,6 +170908,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -171227,6 +171414,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -171724,6 +171930,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -172470,6 +172677,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -172967,6 +173193,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -175632,6 +175859,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -176129,6 +176375,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -176189,6 +176436,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -176694,6 +176942,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -177191,6 +177458,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -177937,6 +178205,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -178434,6 +178721,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -180684,6 +180972,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -181181,6 +181488,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -181241,6 +181549,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -181746,6 +182055,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -182243,6 +182571,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -182989,6 +183318,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -183486,6 +183834,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -193406,6 +193755,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -193587,6 +193955,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -193598,6 +193967,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -194504,6 +194874,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -195001,6 +195390,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -195061,6 +195451,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -195689,6 +196080,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -196186,6 +196596,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -200990,6 +201401,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -201487,6 +201917,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -201547,6 +201978,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -202052,6 +202484,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -202549,6 +203000,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -203295,6 +203747,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -203792,6 +204263,7 @@
                         "archived",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision",
@@ -236100,6 +236572,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -236286,6 +236777,7 @@
                         "prompt",
                         "mayEdit",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -250872,6 +251364,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -251058,6 +251569,7 @@
                     "prompt",
                     "mayEdit",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -251103,6 +251615,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -251721,6 +252234,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -251902,6 +252434,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -251913,6 +252446,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -252378,6 +252912,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -252559,6 +253112,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -252570,6 +253124,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -253508,6 +254063,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -253694,6 +254268,7 @@
                     "prompt",
                     "mayEdit",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -253739,6 +254314,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -254072,6 +254648,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -254258,6 +254853,7 @@
                         "prompt",
                         "mayEdit",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -254709,6 +255305,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -254895,6 +255510,7 @@
                         "prompt",
                         "mayEdit",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -262459,6 +263075,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -262648,6 +263283,7 @@
                     "mayRun",
                     "mayUse",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -262710,6 +263346,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -263328,6 +263965,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -263509,6 +264165,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -263520,6 +264177,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -263985,6 +264643,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -264166,6 +264843,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -264177,6 +264855,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -267325,6 +268004,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -267514,6 +268212,7 @@
                     "mayRun",
                     "mayUse",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -267576,6 +268275,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -268898,6 +269598,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -269087,6 +269806,7 @@
                         "mayRun",
                         "mayUse",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -270527,6 +271247,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -270716,6 +271455,7 @@
                         "mayRun",
                         "mayUse",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -318374,6 +319114,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -319131,6 +319890,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -319171,6 +319931,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -322817,6 +323578,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -323333,6 +324113,7 @@
                     "archived",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision",
@@ -323394,6 +324175,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -325970,6 +326752,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -326156,6 +326957,7 @@
                     "prompt",
                     "mayEdit",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -326201,6 +327003,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -326534,6 +327337,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -326720,6 +327542,7 @@
                         "prompt",
                         "mayEdit",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -329386,6 +330209,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -329575,6 +330417,7 @@
                     "mayRun",
                     "mayUse",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -329637,6 +330480,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -330959,6 +331803,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -331148,6 +332011,7 @@
                         "mayRun",
                         "mayUse",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -332588,6 +333452,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -332777,6 +333660,7 @@
                         "mayRun",
                         "mayUse",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -334924,6 +335808,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -335113,6 +336016,7 @@
                     "mayEdit",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -335155,6 +336059,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -335424,6 +336329,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -335613,6 +336537,7 @@
                         "mayEdit",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -343200,6 +344125,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -343389,6 +344333,7 @@
                     "mayEdit",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -343431,6 +344376,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -344049,6 +344995,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -344230,6 +345195,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -344241,6 +345207,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -345009,6 +345976,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -345190,6 +346176,7 @@
                   },
                   "required": [
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -345201,6 +346188,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -346517,6 +347505,25 @@
                       ],
                       "description": "Its workflow state now, named by the definition deciding its next move"
                     },
+                    "states": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "name"
+                        ]
+                      },
+                      "description": "Every state of the workflow version deciding this, in the workflow's order"
+                    },
                     "transitions": {
                       "type": "array",
                       "items": {
@@ -346706,6 +347713,7 @@
                     "mayEdit",
                     "mayRetire",
                     "state",
+                    "states",
                     "transitions",
                     "gates",
                     "revision"
@@ -346748,6 +347756,7 @@
                     "name": "example",
                     "approved": false
                   },
+                  "states": [],
                   "transitions": [],
                   "gates": [],
                   "revision": {
@@ -347017,6 +348026,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -347206,6 +348234,7 @@
                         "mayEdit",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"
@@ -347593,6 +348622,25 @@
                           ],
                           "description": "Its workflow state now, named by the definition deciding its next move"
                         },
+                        "states": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "key",
+                              "name"
+                            ]
+                          },
+                          "description": "Every state of the workflow version deciding this, in the workflow's order"
+                        },
                         "transitions": {
                           "type": "array",
                           "items": {
@@ -347782,6 +348830,7 @@
                         "mayEdit",
                         "mayRetire",
                         "state",
+                        "states",
                         "transitions",
                         "gates",
                         "revision"

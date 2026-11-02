@@ -5,6 +5,7 @@ import {
   TransitionView,
   WorkflowRevisionView,
   WorkflowStandingView,
+  WorkflowStatesView,
 } from './workflows.js';
 import { SpaceParams, VersionSummary } from './components.js';
 import { QueryDefinitionUsesView } from './bindings.js';
@@ -67,6 +68,7 @@ export const QueryDefinitionView = z.object({
       'Whether the caller may use its connection: what resolving a binding naming it needs, whatever its query',
     ),
   state: WorkflowStandingView,
+  states: WorkflowStatesView,
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),

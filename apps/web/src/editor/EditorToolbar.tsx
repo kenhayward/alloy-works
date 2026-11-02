@@ -10,7 +10,10 @@ import {
 } from '@alloy-works/editor';
 import { Fragment, type Ref } from 'react';
 
+import { Flyout, type MenuEntry } from '../parts/MenuBar.js';
+import { NameTip } from '../parts/NameTip.js';
 import { Toolbar } from '../parts/Toolbar.js';
+import { ariaKeyShortcuts, chordSaid } from '../shell/commands/registry.js';
 import { Icon } from './Icon.js';
 import styles from './EditorToolbar.module.css';
 
@@ -85,6 +88,15 @@ export interface EditorToolbarProps {
    * view that owns that ring needs to be able to reach it and to ask whether the focus is inside it.
    */
   readonly ref?: Ref<HTMLDivElement>;
+  /**
+   * A row above the surface, or the side dock's column (ADR-0075): the frequent tools as buttons, naming
+   * themselves at once, and the rest in flyouts.
+   */
+  readonly layout?: 'row' | 'dock';
+  /** The paragraph styles offered where the selection stands, for the dock's first flyout. */
+  readonly styleEntries?: readonly MenuEntry[];
+  /** **Comment**, the dock's last, where the page offers it. */
+  readonly onComment?: () => void;
 }
 
 /**
@@ -162,6 +174,20 @@ export interface EditorToolbarProps {
  * focused itself on `mousedown` would collapse the selection the command is about to act on. Keyboard
  * activation is unaffected, because it sends no `mousedown` at all.
  */
+/** Whether a press would do nothing: the question both a button and a menu's item ask (CNT-188). */
+export function commandUnavailable(
+  command: EditorCommand,
+  view: EditorView | null,
+  enabled: boolean,
+  newIdentifier: () => string,
+): boolean {
+  if (!enabled) return true;
+  if (command.kind === 'block') {
+    return view === null || !blockCommand(command.action, newIdentifier)(view.state, undefined);
+  }
+  return command.prompts && !(view !== null && somewhereToPutMark(view.state, command.mark));
+}
+
 /** A component's own act at the toolbar's head: its name, its icon, and what pressing it does. */
 export interface ToolbarAct {
   readonly label: string;
@@ -184,6 +210,9 @@ export function EditorToolbar({
   onInsertImage,
   imagePlaceable = true,
   ref,
+  layout = 'row',
+  styleEntries = [],
+  onComment,
 }: EditorToolbarProps) {
   /**
    * Whether a press would do nothing, which is what `aria-disabled` says. Asked of the command for
@@ -191,13 +220,8 @@ export function EditorToolbar({
    * stands is always available, because a caret is a perfectly good place to store one for the next
    * keystroke, even before the surface exists.
    */
-  const unavailable = (command: EditorCommand): boolean => {
-    if (!enabled) return true;
-    if (command.kind === 'block') {
-      return view === null || !blockCommand(command.action, newIdentifier)(view.state, undefined);
-    }
-    return command.prompts && !(view !== null && somewhereToPutMark(view.state, command.mark));
-  };
+  const unavailable = (command: EditorCommand): boolean =>
+    commandUnavailable(command, view, enabled, newIdentifier);
 
   /** What the button says it is: a dialog, a toggle and what it is toggled to, or neither. */
   const announces = (command: EditorCommand) => {
@@ -219,6 +243,146 @@ export function EditorToolbar({
     // commands, so a shortcut and a button cannot come to mean two different things (CNT-077).
     pressCommand({ view, command, newIdentifier, prompt, onRefused, openDialog });
   };
+
+  if (layout === 'dock') {
+    const named = (label: string) => EDITOR_COMMANDS.find((each) => each.label === label)!;
+    const tool = (label: string) => {
+      const command = named(label);
+      return (
+        <NameTip name={command.said} keys={chordSaid(command.shortcut)}>
+          <button
+            type="button"
+            className={styles['dockButton']}
+            aria-label={command.said}
+            aria-disabled={unavailable(command)}
+            aria-keyshortcuts={ariaKeyShortcuts(command.shortcut)}
+            {...announces(command)}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => press(command)}
+          >
+            <Icon name={label} />
+          </button>
+        </NameTip>
+      );
+    };
+    const row = (label: string): MenuEntry => {
+      const command = named(label);
+      return {
+        kind: 'item',
+        key: label,
+        label: command.said,
+        icon: label,
+        keys: chordSaid(command.shortcut),
+        ariaKeys: ariaKeyShortcuts(command.shortcut),
+        enabled: !unavailable(command),
+        run: () => press(command),
+      };
+    };
+    const own = (
+      key: string,
+      label: string,
+      enabled: boolean,
+      run: (() => void) | undefined,
+    ): MenuEntry[] =>
+      run === undefined ? [] : [{ kind: 'item', key, label, icon: key, enabled, run }];
+    const ready = enabled && view !== null;
+    return (
+      <Toolbar
+        ref={ref}
+        label={words('editor.formatting')}
+        className={styles['dockTools']}
+        orientation="vertical"
+      >
+        <NameTip name={words('menu.paragraph-style')}>
+          <Flyout
+            label={words('menu.paragraph-style')}
+            entries={styleEntries}
+            className={styles['dockButton']}
+            disabled={!ready || styleEntries.length === 0}
+          >
+            <Icon name="Paragraph" />
+          </Flyout>
+        </NameTip>
+        {tool('Strong')}
+        {tool('Emphasis')}
+        {tool('Underline')}
+        <NameTip name={words('editor.more-text-formatting')}>
+          <Flyout
+            label={words('editor.more-text-formatting')}
+            entries={[
+              'Subscript',
+              'Superscript',
+              'Inline code',
+              'Quoted phrase',
+              'Language',
+              'Quotation',
+              'Preformatted text',
+            ].map(row)}
+            className={styles['dockButton']}
+            disabled={!enabled}
+          >
+            <span className={styles['dockLetters']} aria-hidden="true">
+              {words('editor.more-text-formatting-mark')}
+            </span>
+          </Flyout>
+        </NameTip>
+        <Toolbar.Divider className={styles['dockDivider']} />
+        {tool('Link')}
+        {tool('Term')}
+        <Toolbar.Divider className={styles['dockDivider']} />
+        {tool('Bulleted list')}
+        {tool('Numbered list')}
+        <NameTip name={words('menu.insert')}>
+          <Flyout
+            label={words('menu.insert')}
+            entries={[
+              ...['Definition list', 'Table'].map(row),
+              ...own('Figure', words('editor.figure'), ready && figurePlaceable, onInsertFigure),
+              ...own('Image', words('editor.image'), ready && imagePlaceable, onInsertImage),
+              ...[
+                'Symbols',
+                'Equation',
+                'Footnote',
+                'Reference',
+                'Cite',
+                'Index entry',
+                'Variable',
+                'Value',
+                'Condition',
+                'Message form',
+              ].map(row),
+              ...own(
+                'Paste as Markdown',
+                words('editor.paste-as-markdown'),
+                ready,
+                onPasteMarkdown,
+              ),
+            ]}
+            className={styles['dockButton']}
+            disabled={!enabled}
+          >
+            <Icon name="Insert" />
+          </Flyout>
+        </NameTip>
+        {onComment && (
+          <>
+            <Toolbar.Divider className={styles['dockDivider']} />
+            <NameTip name={words('menu.comment')}>
+              <button
+                type="button"
+                className={styles['dockButton']}
+                aria-label={words('menu.comment')}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={onComment}
+              >
+                <Icon name="Threads" />
+              </button>
+            </NameTip>
+          </>
+        )}
+      </Toolbar>
+    );
+  }
 
   return (
     // One tab stop, the arrows, Home and End along it: the shared toolbar's (LG5). The registry's

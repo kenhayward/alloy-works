@@ -3331,6 +3331,33 @@
       "line": 577
     },
     {
+      "id": "CNT-188",
+      "area": "CNT",
+      "statement": "A command's words and keys must come from one source, so that its menu item, its button's tooltip, its `aria-keyshortcuts` and the list of keyboard shortcuts cannot disagree",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 578
+    },
+    {
+      "id": "CNT-189",
+      "area": "CNT",
+      "statement": "Single-key shortcuts must be possible to turn off, and must never act while the focus is in text, a tree, a list that is typed into or a menu",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 579
+    },
+    {
+      "id": "CNT-190",
+      "area": "CNT",
+      "statement": "A paragraph's style shown in the sheet's margin must leave the measure as it was, must be absent from what is copied or published, and must be possible to turn off",
+      "tranche": "T1",
+      "status": "Specified",
+      "document": "CNT-content-and-authoring.md",
+      "line": 580
+    },
+    {
       "id": "COL-001",
       "area": "COL",
       "statement": "A user must be able to see who else is in a document, and roughly where",
@@ -14742,61 +14769,61 @@
       "id": "CNT-N01",
       "statement": "**No typeface, font size or colour _chosen by the author_.** The editor renders the theme's typefaces at the theme's sizes (CNT-097) - what the author cannot do is pick a different one. Narrower than \"no styling\" on purpose - see CNT-035",
       "document": "CNT-content-and-authoring.md",
-      "line": 595
+      "line": 598
     },
     {
       "id": "CNT-N02",
       "statement": "**No page geometry in content.** Page size, margins, running heads and columns belong to the publishing layout. Whether a forced page break is an exception is **CNT-Q07**",
       "document": "CNT-content-and-authoring.md",
-      "line": 596
+      "line": 599
     },
     {
       "id": "CNT-N03",
       "statement": "**No free-form drawing or diagramming.** A figure references a managed asset produced elsewhere",
       "document": "CNT-content-and-authoring.md",
-      "line": 597
+      "line": 600
     },
     {
       "id": "CNT-N04",
       "statement": "**No embedded spreadsheets or live formulas.** Computation belongs in the query layer",
       "document": "CNT-content-and-authoring.md",
-      "line": 598
+      "line": 601
     },
     {
       "id": "CNT-N05",
       "statement": "**No arbitrary HTML or raw markup escape hatch.** It would defeat every guarantee in section 3",
       "document": "CNT-content-and-authoring.md",
-      "line": 599
+      "line": 602
     },
     {
       "id": "CNT-N06",
       "statement": "**No per-author formatting preferences.** Two authors editing one document must produce content that looks the same",
       "document": "CNT-content-and-authoring.md",
-      "line": 600
+      "line": 603
     },
     {
       "id": "CNT-N07",
       "statement": "**No tables or images inside footnotes** (CNT-129, which superseded CNT-040)",
       "document": "CNT-content-and-authoring.md",
-      "line": 601
+      "line": 604
     },
     {
       "id": "CNT-N08",
       "statement": "**No per-document override of a theme's styles.** Where a document needs a different look it uses a different theme, which an administrator configures. Otherwise every document drifts into being its own theme",
       "document": "CNT-content-and-authoring.md",
-      "line": 602
+      "line": 605
     },
     {
       "id": "CNT-N09",
       "statement": "**No headings in component content.** A component carries no heading, because the outline owns structure and its titles (**STR**) - and because a component that knew its own heading level could not be used at two depths. A decision, not an omission",
       "document": "CNT-content-and-authoring.md",
-      "line": 603
+      "line": 606
     },
     {
       "id": "CNT-N10",
       "statement": "**No link to content inside the product expressed as a URL.** An internal target is a cross-reference (CNT-027), which survives a move, a rename and a renumber. A URL to a component would be a second, weaker way of doing the same thing",
       "document": "CNT-content-and-authoring.md",
-      "line": 604
+      "line": 607
     },
     {
       "id": "COL-N01",
@@ -15509,105 +15536,105 @@
       "question": "**What is the canonical equation representation (CNT-043)?** MathML, LaTeX, or a structured form",
       "settledBy": "The publishing engine decision - it constrains what can be rendered to PDF faithfully",
       "document": "CNT-content-and-authoring.md",
-      "line": 610
+      "line": 613
     },
     {
       "id": "CNT-Q02",
       "question": "**Is the three-level vocabulary in section 11 adopted, and what are the interim saves called?**",
       "settledBy": "**Settled.** Adopted as iteration / version / revision in [ADR-0006](../../decisions/0006-iteration-version-revision.md); the scope, the domain package and the spike findings are reconciled",
       "document": "CNT-content-and-authoring.md",
-      "line": 611
+      "line": 614
     },
     {
       "id": "CNT-Q03",
       "question": "**What exactly is the boundary that cuts a version (CNT-070)?**",
       "settledBy": "**Settled.** A positive act only - an explicit save or a deliberate lock release. Never inactivity: a version records that somebody decided something, and time passing is not a decision. Iterations are retained until the next version, so nothing is lost when a lock times out",
       "document": "CNT-content-and-authoring.md",
-      "line": 612
+      "line": 615
     },
     {
       "id": "CNT-Q04",
       "question": "**Does the mark vocabulary need an extension point?** CNT-006 closes it, which may not survive a real customer",
       "settledBy": "The first customer requirement that cannot be expressed with the closed set",
       "document": "CNT-content-and-authoring.md",
-      "line": 613
+      "line": 616
     },
     {
       "id": "CNT-Q05",
       "question": "**How is an authored table's cell identified for a footnote anchor (CNT-037)?**",
       "settledBy": "**Settled.** An authored table is data too: it may declare key columns, and anchoring then works exactly as it does for a bound table (CNT-107). Positional fallback where no key is declared, marked as the weaker form",
       "document": "CNT-content-and-authoring.md",
-      "line": 614
+      "line": 617
     },
     {
       "id": "CNT-Q06",
       "question": "**May a document override the theme's resolution of an image's size (CNT-088)?**",
       "settledBy": "**Settled: no.** Only styles the configuration provides. An administrator adds a style; a document picks one. See CNT-N08",
       "document": "CNT-content-and-authoring.md",
-      "line": 615
+      "line": 618
     },
     {
       "id": "CNT-Q07",
       "question": "**Is a forced page break content or structure?** \"This section starts on a new page\" reads like an outline property; \"keep these two blocks together\" reads like a content one. Recommendation: the first in **STR**, the second here",
       "settledBy": "A decision in **STR**, since the outline is where the first half would live",
       "document": "CNT-content-and-authoring.md",
-      "line": 616
+      "line": 619
     },
     {
       "id": "CNT-Q09",
       "question": "**Do style catalogues need their own capability area?**",
       "settledBy": "**Settled: yes.** Added as `STY`, the eighteenth area, with scope §7.18. Style catalogues span the editor and the publisher and belonged to neither",
       "document": "CNT-content-and-authoring.md",
-      "line": 617
+      "line": 620
     },
     {
       "id": "CNT-Q10",
       "question": "**How do review and authoring interact for a user who may do both?** Note what is _not_ open: suggestions with accept and reject are settled by scope decision 4 and specified in §7.7 and CNT-033. What is open is whether a reviewer who also holds authoring rights may edit directly instead of suggesting, and whether an author may suggest to themselves rather than simply typing",
       "settledBy": "A decision in **COL**, informed by whether review in this market is expected to be a separate pass or a mode anyone can drop into",
       "document": "CNT-content-and-authoring.md",
-      "line": 618
+      "line": 621
     },
     {
       "id": "CNT-Q11",
       "question": "**Which area owns a document being created from a template?**",
       "settledBy": "**Settled: a new one.** Added as `TPL`, the nineteenth area, with scope §7.19 - template authoring, the metadata schema and structure outline definitions nothing else owned, declared parameters, instantiation, divergence, and what happens when a template changes after documents exist",
       "document": "CNT-content-and-authoring.md",
-      "line": 619
+      "line": 622
     },
     {
       "id": "CNT-Q12",
       "question": "**Who owns a component's own metadata - its title, its tags?** **TPL** owns the metadata schema a document declares and **SCH** searches the values, but no area states where a component's own title and values live, or what validates them",
       "settledBy": "**Settled** by [MET](MET-metadata-and-component-types.md). A component is of exactly one component type (MET-011), which assigns the schemas its fields come from, and a component never takes fields from a document that references it (MET-013), so transclusion into documents from different templates changes nothing. CNT-145 adds the type to the attributes every component carries",
       "document": "CNT-content-and-authoring.md",
-      "line": 620
+      "line": 623
     },
     {
       "id": "CNT-Q13",
       "question": "**What is the reference configuration the preview budget is measured on (CNT-151)?** Two seconds on what, rendering what content",
       "settledBy": "The first performance harness, which has to name a machine before it can report a number. A budget with no baseline can be neither confirmed nor refuted",
       "document": "CNT-content-and-authoring.md",
-      "line": 621
+      "line": 624
     },
     {
       "id": "CNT-Q14",
       "question": "**What happens when content carrying a condition arrives in a space whose axis does not exist (CNT-132 to CNT-135)?**",
       "settledBy": "A decision in **REU**, which owns axes. Three candidates - refuse the paste, drop the condition and report it, or create the axis - and the third is how a taxonomy quietly becomes whatever anybody pasted",
       "document": "CNT-content-and-authoring.md",
-      "line": 622
+      "line": 625
     },
     {
       "id": "CNT-Q15",
       "question": "**Should CNT-091 to CNT-093 be superseded by their STY equivalents?** They said what STY-016, STY-017, STY-029 and STY-030 say, and two owners of one rule is how the two drift apart",
       "settledBy": "**Settled: yes.** CNT-091, CNT-092 and CNT-093 are superseded by STY-016, STY-017 and STY-029. This area keeps what content carries - a named style and no absolute dimension (CNT-121, CNT-123) - and **STY** owns how a style resolves. `docs/design/themes.md` claims the STY requirements directly",
       "document": "CNT-content-and-authoring.md",
-      "line": 623
+      "line": 626
     },
     {
       "id": "CNT-Q08",
       "question": "**Is block alignment ever the author's?**",
       "settledBy": "**Settled.** Alignment comes from a named style, chosen from a catalogue - and so do paragraph, table, image and citation appearance generally (CNT-094)",
       "document": "CNT-content-and-authoring.md",
-      "line": 624
+      "line": 627
     },
     {
       "id": "COL-Q01",
@@ -17291,6 +17318,14 @@
           "howItIsMet": "Every command is in a keymap and in the toolbar; the toolbar is a single tab stop with arrow-key movement, and `F6` moves between the regions of the view"
         },
         {
+          "id": "CNT-188",
+          "howItIsMet": "One registry, `apps/web/src/shell/commands`, derives from `EDITOR_COMMANDS` and feeds the menus, the tooltips, `aria-keyshortcuts` and Help's list (ADR-0076)"
+        },
+        {
+          "id": "CNT-189",
+          "howItIsMet": "Go-to keys can be turned off from the account menu, and the one listener ignores them in text, a tree, a list or a menu (ADR-0076)"
+        },
+        {
           "id": "CNT-164",
           "howItIsMet": "Emphasis, strong, underline, subscript, superscript, inline code and a quoted phrase are each applied and removed from the toolbar and by a shortcut in the keymap ([What an author can do with each thing in the model](#what-an-author-can-do-with-each-thing-in-the-model)); nothing on the surface chooses a typeface, a size or a colour, and the model has no member to hold one (content-model.md, CNT-008)"
         },
@@ -18071,6 +18106,10 @@
         {
           "id": "CNT-154",
           "howItIsMet": "The page is in **Reading** or **Authoring**, said by a switch in its header that shows the mode it is in ([Modes](#modes))"
+        },
+        {
+          "id": "CNT-190",
+          "howItIsMet": "A label is generated content on a paragraph, placed in the margin and outside the measure; never in the text, a copy or a publication; View turns it off (ADR-0075)"
         },
         {
           "id": "IAM-080",
@@ -21667,25 +21706,25 @@
     {
       "id": "ADM-051",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 324,
+      "line": 325,
       "kind": "title"
     },
     {
       "id": "ADM-053",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 402,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 183,
+      "line": 184,
       "kind": "title"
     },
     {
       "id": "LOC-005",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 272,
+      "line": 273,
       "kind": "title"
     },
     {
@@ -24787,103 +24826,103 @@
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 876,
+      "line": 881,
       "kind": "rule"
     },
     {
       "id": "LIF-004",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 839,
+      "line": 844,
       "kind": "title"
     },
     {
       "id": "LIF-008",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 307,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 327,
+      "line": 332,
       "kind": "rule"
     },
     {
       "id": "LIF-010",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 307,
+      "line": 312,
       "kind": "title"
     },
     {
       "id": "LIF-015",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 786,
+      "line": 791,
       "kind": "title"
     },
     {
       "id": "LIF-016",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 786,
+      "line": 791,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 786,
+      "line": 791,
       "kind": "title"
     },
     {
       "id": "LIF-042",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 430,
+      "line": 435,
       "kind": "title"
     },
     {
       "id": "LIF-043",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 430,
+      "line": 435,
       "kind": "title"
     },
     {
       "id": "LIF-044",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 543,
+      "line": 548,
       "kind": "title"
     },
     {
       "id": "LIF-045",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 699,
+      "line": 704,
       "kind": "title"
     },
     {
       "id": "LIF-046",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 543,
+      "line": 548,
       "kind": "title"
     },
     {
       "id": "LIF-047",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 430,
+      "line": 435,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 350,
+      "line": 355,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 399,
+      "line": 404,
       "kind": "title"
     },
     {
       "id": "LIF-052",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 399,
+      "line": 404,
       "kind": "title"
     },
     {
@@ -24895,7 +24934,7 @@
     {
       "id": "LIF-061",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 282,
+      "line": 287,
       "kind": "rule"
     },
     {
@@ -24907,7 +24946,7 @@
     {
       "id": "VER-059",
       "file": "apps/service/src/workflow-routes.test.ts",
-      "line": 350,
+      "line": 355,
       "kind": "title"
     },
     {
@@ -24931,7 +24970,7 @@
     {
       "id": "LOC-044",
       "file": "apps/web/src/App.test.tsx",
-      "line": 132,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -25015,7 +25054,7 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1692,
+      "line": 1778,
       "kind": "title"
     },
     {
@@ -25027,7 +25066,7 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1834,
+      "line": 1920,
       "kind": "title"
     },
     {
@@ -26299,25 +26338,25 @@
     {
       "id": "LIF-005",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 210,
+      "line": 208,
       "kind": "title"
     },
     {
       "id": "LIF-017",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 177,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 177,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "SCH-070",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 133,
+      "line": 131,
       "kind": "title"
     },
     {
@@ -26539,31 +26578,31 @@
     {
       "id": "LIF-009",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 173,
+      "line": 262,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 273,
+      "line": 362,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 230,
+      "line": 319,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 113,
+      "line": 202,
       "kind": "title"
     },
     {
       "id": "VER-015",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 298,
+      "line": 387,
       "kind": "title"
     },
     {
@@ -26600,6 +26639,18 @@
       "id": "MET-021",
       "file": "apps/web/src/metadata/FieldsForm.test.tsx",
       "line": 54,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-077",
+      "file": "apps/web/src/parts/MenuBar.test.tsx",
+      "line": 65,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-188",
+      "file": "apps/web/src/parts/MenuBar.test.tsx",
+      "line": 56,
       "kind": "title"
     },
     {
@@ -26725,13 +26776,13 @@
     {
       "id": "CNT-186",
       "file": "apps/web/src/publishing/RangePreview.test.tsx",
-      "line": 141,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "PUB-080",
       "file": "apps/web/src/publishing/RangePreview.test.tsx",
-      "line": 118,
+      "line": 120,
       "kind": "title"
     },
     {
@@ -27025,13 +27076,31 @@
     {
       "id": "COL-063",
       "file": "apps/web/src/shell/Header.test.tsx",
-      "line": 249,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "IAM-011",
       "file": "apps/web/src/shell/Header.test.tsx",
-      "line": 95,
+      "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-077",
+      "file": "apps/web/src/shell/commands/commands.test.ts",
+      "line": 98,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-188",
+      "file": "apps/web/src/shell/commands/commands.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-189",
+      "file": "apps/web/src/shell/commands/useGoToKeys.test.tsx",
+      "line": 99,
       "kind": "title"
     },
     {
@@ -27241,151 +27310,157 @@
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 504,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 524,
+      "line": 529,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1511,
+      "line": 1515,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1668,
+      "line": 1672,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 621,
+      "line": 625,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2559,
+      "line": 2611,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 621,
+      "line": 625,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 652,
+      "line": 656,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 833,
+      "line": 837,
       "kind": "title"
     },
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 885,
+      "line": 889,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
       "kind": "title"
     },
     {
       "id": "CNT-163",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-188",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 2378,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2057,
+      "line": 2075,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 637,
+      "line": 641,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 912,
+      "line": 916,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 824,
+      "line": 828,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1044,
+      "line": 1048,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2262,
+      "line": 2280,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2097,
+      "line": 2115,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 335,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1093,
+      "line": 1097,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 381,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1802,
+      "line": 1806,
       "kind": "title"
     },
     {
@@ -27409,55 +27484,55 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 468,
+      "line": 469,
       "kind": "title"
     },
     {
       "id": "DAT-024",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1124,
+      "line": 1125,
       "kind": "title"
     },
     {
       "id": "DAT-027",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 989,
+      "line": 990,
       "kind": "title"
     },
     {
       "id": "DAT-041",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1047,
+      "line": 1048,
       "kind": "title"
     },
     {
       "id": "DAT-047",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1014,
+      "line": 1015,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1480,
+      "line": 1483,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1411,
+      "line": 1414,
       "kind": "title"
     },
     {
       "id": "DAT-115",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1204,
+      "line": 1205,
       "kind": "title"
     },
     {
       "id": "DAT-122",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1231,
+      "line": 1232,
       "kind": "title"
     },
     {
@@ -27481,43 +27556,43 @@
     {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 596,
+      "line": 599,
       "kind": "title"
     },
     {
       "id": "LIF-024",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 610,
+      "line": 613,
       "kind": "title"
     },
     {
       "id": "LOC-004",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 1163,
+      "line": 1246,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 530,
+      "line": 533,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 34,
+      "line": 37,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 417,
+      "line": 420,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 721,
+      "line": 804,
       "kind": "title"
     },
     {
@@ -27607,7 +27682,7 @@
     {
       "id": "LIF-061",
       "file": "apps/web/src/structure/DocumentPage.workflow.test.tsx",
-      "line": 63,
+      "line": 144,
       "kind": "title"
     },
     {
@@ -27881,9 +27956,21 @@
       "kind": "title"
     },
     {
+      "id": "CNT-190",
+      "file": "apps/web/src/theme/presentation.test.tsx",
+      "line": 53,
+      "kind": "title"
+    },
+    {
       "id": "STY-039",
       "file": "apps/web/src/theme/presentation.test.tsx",
-      "line": 45,
+      "line": 93,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-190",
+      "file": "apps/web/src/theme/styleLabels.test.tsx",
+      "line": 52,
       "kind": "title"
     },
     {
@@ -27949,7 +28036,7 @@
     {
       "id": "LOC-004",
       "file": "apps/web/src/words/language.test.tsx",
-      "line": 64,
+      "line": 66,
       "kind": "title"
     },
     {
@@ -33103,7 +33190,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1162,
+      "line": 1164,
       "kind": "title"
     },
     {
@@ -35627,6 +35714,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-190",
+      "file": "tests/browser/src/canvas.test.ts",
+      "line": 206,
+      "kind": "title"
+    },
+    {
       "id": "CNT-138",
       "file": "tests/browser/src/forced-colors.test.ts",
       "line": 47,
@@ -35647,13 +35740,13 @@
     {
       "id": "STR-035",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 327,
+      "line": 321,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 362,
+      "line": 356,
       "kind": "title"
     },
     {
@@ -35671,19 +35764,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 881,
+      "line": 912,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 877,
+      "line": 908,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 877,
+      "line": 908,
       "kind": "title"
     },
     {

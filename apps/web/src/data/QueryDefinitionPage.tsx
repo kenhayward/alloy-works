@@ -1494,7 +1494,7 @@ export function QueryDefinitionPage({
     <DetailPage
       trail={
         <>
-          <a href="#/query-definitions">{words('data.query-definitions-2')}</a>
+          <a href="#/admin/query-definitions">{words('data.query-definitions-2')}</a>
           {shown !== null && (
             <>
               {' / '}

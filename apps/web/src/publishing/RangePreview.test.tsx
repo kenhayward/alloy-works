@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RangePreviewButton, RangePreviewPane, useRangePreview } from './RangePreview.js';
+import { RangePreviewPane, useRangePreview } from './RangePreview.js';
 
 const DOCUMENT = '11111111-1111-4111-8111-111111111111';
 const VERSION = '22222222-2222-4222-8222-222222222222';
@@ -86,7 +86,9 @@ function Harness({
   });
   return (
     <>
-      <RangePreviewButton range={range} />
+      <button type="button" aria-pressed={range.on} onClick={range.toggle}>
+        Pages as you edit
+      </button>
       <button
         type="button"
         onClick={() =>

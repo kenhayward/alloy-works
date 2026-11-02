@@ -9,8 +9,11 @@ import {
   client,
   COMPONENTS,
   DOCUMENT,
+  DRAFT,
+  fromMenu,
   INTRODUCTION,
   item,
+  menuSays,
   METHOD,
   open,
   outline,
@@ -45,19 +48,97 @@ const sentTo = (fake: ReturnType<typeof service>, path: string) =>
   fake.sent.filter((each) => each.url === path).map((each) => each.body);
 
 describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
-  it('shows the document’s state beside Archived, and moves it by a transition from the header', async () => {
+  it('shows the document’s state on the stepper, and moves it by the primary transition in the header', async () => {
     const fake = service(outline([section(METHOD, 'Method')]), { moves: { submit: IN_REVIEW } });
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
-    expect(screen.getByText('Draft')).toHaveAttribute('data-kind', 'draft');
+    expect(screen.getByText('Draft')).toHaveAttribute('aria-current', 'step');
 
     await userEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    expect(await screen.findByText('In review')).toHaveAttribute('data-kind', 'inReview');
+    expect(await screen.findByText('In review')).toHaveAttribute('aria-current', 'step');
     expect(screen.queryByRole('button', { name: 'Submit' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
+    // Its first transition is the one primary, and every other is the Document menu's.
+    expect(screen.getByRole('button', { name: 'Return' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
+    expect((await menuSays(userEvent, 'Document', 'Approve')).enabled).toBe(true);
     expect(sentTo(fake, `/v1/documents/${DOCUMENT}/transitions`)).toEqual([
       { transition: 'submit', from: 'draft' },
     ]);
+  });
+
+  describe('the stepper (ADR-0075)', () => {
+    const steps = () =>
+      within(screen.getByRole('list', { name: 'Where it stands' }))
+        .getAllByRole('listitem')
+        .map((each) => [each.textContent, each.getAttribute('aria-current')]);
+    const named = (...names: string[]) =>
+      names.map((name) => ({ key: name.toLowerCase().replace(' ', '_'), name }));
+
+    it("shows the workflow's states in its own words, marking the current step", async () => {
+      const fake = service(outline([section(METHOD, 'Method')]), {
+        standing: { ...DRAFT, states: named('Draft', 'In review', 'Approved') },
+      });
+      open(fake.fetch);
+      await screen.findByRole('treeitem', { name: /Method/ });
+      expect(steps()).toEqual([
+        ['Draft', 'step'],
+        ['In review', null],
+        ['Approved', null],
+      ]);
+    });
+
+    it('falls back to the current state alone past five states, or with none known', async () => {
+      const six = service(outline([section(METHOD, 'Method')]), {
+        standing: { ...DRAFT, states: named('Draft', 'One', 'Two', 'Three', 'Four', 'Five') },
+      });
+      const { unmount } = open(six.fetch);
+      await screen.findByRole('treeitem', { name: /Method/ });
+      expect(steps()).toEqual([['Draft', 'step']]);
+      unmount();
+
+      const five = service(outline([section(METHOD, 'Method')]), {
+        standing: { ...DRAFT, states: named('Draft', 'One', 'Two', 'Three', 'Four') },
+      });
+      const again = open(five.fetch);
+      await screen.findByRole('treeitem', { name: /Method/ });
+      expect(steps()).toHaveLength(5);
+      again.unmount();
+
+      const none = service(outline([section(METHOD, 'Method')]));
+      open(none.fetch);
+      await screen.findByRole('treeitem', { name: /Method/ });
+      expect(steps()).toEqual([['Draft', 'step']]);
+    });
+
+    it('says how far a gate has got on it, and leads with Approve for whoever may decide', async () => {
+      const fake = service(outline([section(METHOD, 'Method')]), {
+        standing: {
+          ...IN_REVIEW,
+          gates: [
+            {
+              key: 'sign_off',
+              name: 'Sign off',
+              to: { key: 'approved', name: 'Approved' },
+              reject: { name: 'Send back', to: { key: 'draft', name: 'Draft' } },
+              publication: 'none',
+              mayPublish: false,
+              count: 1,
+              required: 2,
+              approvedByCaller: false,
+              mayDecide: true,
+            },
+          ],
+        } as Standing,
+      });
+      open(fake.fetch);
+      await screen.findByRole('treeitem', { name: /Method/ });
+      expect(
+        within(screen.getByRole('list', { name: 'Where it stands' })).getByText('1 of 2 approvals'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Sign off' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Return' })).toBeNull();
+      expect((await menuSays(userEvent, 'Document', 'Send back')).enabled).toBe(true);
+    });
   });
 
   it('LIF-061 asks for a reason before a transition that requires one', async () => {
@@ -73,7 +154,11 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
     open(fake.fetch);
     await screen.findByRole('treeitem', { name: /Method/ });
     await userEvent.click(screen.getByRole('button', { name: 'Return' }));
-    const dialog = screen.getByRole('dialog', { name: 'Return The dosing report' });
+    let dialog = screen.getByRole('dialog', { name: 'Return The dosing report' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    // As it does from the Document menu, where the act is the same.
+    await fromMenu(userEvent, 'Document', 'Return');
+    dialog = screen.getByRole('dialog', { name: 'Return The dosing report' });
     await userEvent.type(within(dialog).getByLabelText('Reason'), 'Name the dose.');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Return to Draft' }));
     expect(await screen.findByText('Draft')).toBeInTheDocument();
@@ -128,7 +213,7 @@ describe('workflow on a document’s own page (the WF1 plan, WF-G)', () => {
       }
     });
     await waitFor(() => expect(screen.getByText('In review')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
+    expect((await menuSays(userEvent, 'Document', 'Approve')).enabled).toBe(true);
   });
 
   it('keeps another person’s outline change when the state it moved to answers first', async () => {

@@ -575,6 +575,9 @@ next. A greyed-out box does not.
 | **CNT-139** | CNT-078 must be verified by an automated accessibility suite run in continuous integration over the editor, and by a recorded manual audit against the WCAG 2.2 AA criteria before each release, the result kept as evidence. Conformance asserted without both is not conformance | T1      | Superseded by CNT-176 |
 | **CNT-176** | CNT-078 must be verified by an automated accessibility suite run in continuous integration over the editor in a real browser                                                                                                                                                       | T1      | Specified             |
 | **CNT-177** | Before each release, the editor must be audited by a person against the WCAG 2.2 AA criteria, and the result kept as evidence with the release. Conformance asserted without both this and CNT-176 is not conformance                                                              | T1      | Specified             |
+| **CNT-188** | A command's words and keys must come from one source, so that its menu item, its button's tooltip, its `aria-keyshortcuts` and the list of keyboard shortcuts cannot disagree                                                                                                      | T1      | Specified             |
+| **CNT-189** | Single-key shortcuts must be possible to turn off, and must never act while the focus is in text, a tree, a list that is typed into or a menu                                                                                                                                      | T1      | Specified             |
+| **CNT-190** | A paragraph's style shown in the sheet's margin must leave the measure as it was, must be absent from what is copied or published, and must be possible to turn off                                                                                                                | T1      | Specified             |
 
 **Review was right that this section was thin, and right about where.** Four requirements covered an
 entire editor while footnotes had seven. The three added are the ones whose absence would have
@@ -1072,3 +1075,17 @@ rewording to what was built.
 | Counts       | Before                                      | After                                       |
 | ------------ | ------------------------------------------- | ------------------------------------------- |
 | Requirements | 186, of which 37 superseded and 1 withdrawn | 187, of which 38 superseded and 1 withdrawn |
+
+### From the authoring page's redesign, 2026-11-02
+
+Not a review. [The AP plan](../../plans/2026-11-02-ap-authoring-page.md) folded five rows of chrome into one header, a dock and margin labels; Ken took its decisions, D8 among them.
+
+| What was found                                                                                              | Change            |
+| ----------------------------------------------------------------------------------------------------------- | ----------------- |
+| Menus, tooltips and the shortcuts list can each state a command's keys, and nothing held them to one source | **CNT-188** added |
+| Go-to keys are single printable keys, which WCAG 2.1.4 lets stand only if they can be turned off            | **CNT-189** added |
+| Style labels in the margin must not reach the measure STY-080 holds, or the text                            | **CNT-190** added |
+
+| Counts       | Before                                      | After                                       |
+| ------------ | ------------------------------------------- | ------------------------------------------- |
+| Requirements | 187, of which 38 superseded and 1 withdrawn | 190, of which 38 superseded and 1 withdrawn |

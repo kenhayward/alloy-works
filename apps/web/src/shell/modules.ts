@@ -18,7 +18,7 @@ export interface Module {
 }
 
 export interface ModuleGroup {
-  readonly group: 'Author' | 'Publish' | 'Data';
+  readonly group: 'Author' | 'Library' | 'Publish';
   readonly modules: readonly Module[];
 }
 
@@ -43,6 +43,11 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         name: 'Prompts',
         href: '#/prompts',
       },
+    ],
+  },
+  {
+    group: 'Library',
+    modules: [
       {
         name: 'Bibliography',
         href: '#/bibliography',
@@ -55,31 +60,27 @@ export const MODULE_GROUPS: readonly ModuleGroup[] = [
         name: 'Images',
         href: '#/images',
       },
-      {
-        name: 'Conversations',
-        href: '#/conversations',
-      },
     ],
   },
   {
     group: 'Publish',
     modules: [
       {
+        name: 'Conversations',
+        href: '#/conversations',
+      },
+      {
         name: 'Publications',
         href: '#/publications',
-      },
-    ],
-  },
-  {
-    group: 'Data',
-    modules: [
-      { name: 'Connections', href: '#/connections' },
-      {
-        name: 'Query definitions',
-        href: '#/query-definitions',
       },
     ],
   },
 ];
 
 export const MODULES: readonly Module[] = MODULE_GROUPS.flatMap((group) => group.modules);
+
+/** Places in Administration's Data group (ADR-0075), which search and commands still goes to by name. */
+export const DATA_PLACES: readonly Module[] = [
+  { name: 'Connections', href: '#/admin/connections' },
+  { name: 'Query definitions', href: '#/admin/query-definitions' },
+];

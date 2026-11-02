@@ -72,7 +72,7 @@
 /* Hidden to a rail, a pane still stands beside the text as the page scrolls, as it does open. */
 .rail {
   position: sticky;
-  top: calc(var(--header-height) + var(--band-height, 0px) + var(--space-12));
+  top: calc(var(--header-height) + var(--space-12));
   align-self: start;
   grid-column: 1;
   grid-row: 1 / span 3;
@@ -97,4 +97,26 @@
 
 .railLabel[data-chosen='true'] {
   color: var(--accent);
+}
+
+/* The panel's head in the side dock (ADR-0075): its name and what closes it, and the filter under them. */
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+}
+
+.panelName {
+  flex: 1;
+  margin: 0;
+  font-size: var(--size-14);
+  font-weight: 600;
+}
+
+.filter {
+  display: block;
+  width: calc(100% - 2 * var(--space-12));
+  margin-inline: var(--space-12);
+  margin-block-end: var(--space-8);
 }

@@ -1,0 +1,26 @@
+.holder {
+  position: absolute;
+  z-index: 1;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px);
+  height: 18px;
+  min-height: 0;
+  padding-inline: var(--space-4);
+  border: 0;
+  border-radius: var(--radius-4);
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

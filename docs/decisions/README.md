@@ -68,6 +68,8 @@ exist.
 | [0072](0072-the-desktop-app-asks-which-environment.md)                            | The desktop app asks which environment to connect to                          | Accepted           |
 | [0073](0073-desktop-releases-live-in-a-public-releases-repository.md)             | Desktop releases live in a public releases repository                         | Accepted           |
 | [0074](0074-panels-are-chosen-from-an-icon-rail.md)                               | A document's panels are chosen from an icon rail                              | Accepted           |
+| [0075](0075-one-header-a-side-dock-and-margin-labels.md)                          | One header, a side dock and style labels in the margin                        | Accepted           |
+| [0076](0076-one-registry-of-commands-and-keys.md)                                 | One registry of commands and keys                                             | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

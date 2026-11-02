@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './CommandPalette.module.css';
-import { MODULES, moduleWords } from './modules.js';
+import { DATA_PLACES, MODULES, moduleWords } from './modules.js';
 import { words } from '../words/words.js';
 
 /** One thing the palette offers: what it says, and the address it goes to; a place by its name. */
@@ -15,7 +15,7 @@ interface Command {
 /** Each place to go, in the interface's language as it is asked for. */
 const go = (): readonly Command[] => [
   { label: words('shell.go-to-home'), place: words('module.Home'), href: '#/' },
-  ...MODULES.map((each) => ({
+  ...[...MODULES, ...DATA_PLACES].map((each) => ({
     label: words('shell.go-to', { name: moduleWords(each.name) }),
     place: moduleWords(each.name),
     href: each.href,
@@ -33,6 +33,9 @@ export function commandsFor(typed: string): readonly Command[] {
   ];
 }
 
+/** The event the Edit menu's Search sends, there being no key to press. */
+export const OPEN_SEARCH = 'aw-open-search';
+
 /**
  * Whether search and commands is open, and Ctrl K (Cmd K on a Mac) opening it from anywhere a field
  * has not taken the key for itself: a component's text keeps Ctrl K for Link, and has handled it
@@ -47,8 +50,13 @@ export function useCommandKey(): readonly [boolean, (open: boolean) => void] {
       event.preventDefault();
       setOpen(true);
     };
+    const onAsked = () => setOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener(OPEN_SEARCH, onAsked);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener(OPEN_SEARCH, onAsked);
+    };
   }, []);
   return [open, setOpen];
 }

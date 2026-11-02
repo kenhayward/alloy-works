@@ -1,5 +1,11 @@
 import type { createApiClient, PresentationView } from '@alloy-works/api-client';
-import { projectCss, projectFontFaces, readTheme, type ResolvedTheme } from '@alloy-works/domain';
+import {
+  lineOpeners,
+  projectCss,
+  projectFontFaces,
+  readTheme,
+  type ResolvedTheme,
+} from '@alloy-works/domain';
 import {
   createContext,
   useCallback,
@@ -75,6 +81,38 @@ export interface Pixels {
 
 const PixelsContext = createContext<((asset: string) => Promise<Pixels | null>) | null>(null);
 
+/** A string as CSS reads it, whatever a theme calls its style. */
+const cssString = (text: string): string =>
+  `"${text.replace(/[\\"]/g, '\\$&').replace(/[\n\r\f]/g, ' ')}"`;
+
+/**
+ * Each style's name, for the labels in a sheet's margin (ADR-0075; CNT-190): generated content on a
+ * paragraph, so it is in no text, no copy and no publication, and takes nothing from the measure. Not in a
+ * list or a cell, whose paragraphs stand away from the margin. A heading says its role.
+ */
+export function marginLabelRules(theme: ResolvedTheme): string {
+  // A paragraph whose lines the theme holds open has its pseudo-elements taken (`lineOpeners`): it has
+  // no label, and the button over the current block still names it.
+  const free = `:not(:has(${lineOpeners(theme).join(', ')}))`;
+  // Text's alone: a table note and the like stand away from the margin, and hold their markers there.
+  const paragraph = `.aw-labels :not(li, td, th, [data-role]) > p[data-place="text"]${free}`;
+  const role = (name: string) => `.aw-labels [data-role="${name}"]${free}`;
+  const levels = [1, 2, 3, 4, 5, 6].map((level) => `heading${level}`);
+  const every = [paragraph, ...[...levels, 'title'].map(role)];
+  return [
+    // Out of the flow, so the measure is untouched, and 10px at every zoom it shows at.
+    `${every.map((each) => `${each}::before`).join(', ')} { position: absolute; inset-block-start: 0.2em; inset-inline-end: calc(100% + 8px); width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px); overflow: hidden; color: var(--muted); font-family: var(--mono); font-size: 10px; font-style: normal; font-weight: 400; line-height: 1.5; text-align: end; text-overflow: ellipsis; text-transform: none; white-space: nowrap; user-select: none; pointer-events: none; }`,
+    // What the label stands against, wherever the text is aligned, and scrolling with the sheet.
+    `${every.join(', ')} { position: relative; }`,
+    ...[...theme.paragraphStyles.values()].map(
+      (style) =>
+        `${paragraph}[data-style=${cssString(style.id)}]::before { content: ${cssString(style.name)} / ""; }`,
+    ),
+    ...levels.map((name) => `${role(name)}::before { content: "H${name.slice(-1)}" / ""; }`),
+    `${role('title')}::before { content: ${cssString(theme.paragraphStyles.get('title')?.name ?? 'Title')} / ""; }`,
+  ].join('\n');
+}
+
 const ZoomContext = createContext<{ zoom: Zoom; setZoom: (zoom: Zoom) => void } | null>(null);
 
 /**
@@ -144,7 +182,12 @@ export function PresentationProvider({
         }
         const projected = projectFontFaces(read.theme, faceUrl);
         // The faces, then the theme's own rules, which name them (STY-058).
-        setFaces(projected.css + CANVAS_CSS + projectCss(read.theme, { capHeight }));
+        setFaces(
+          projected.css +
+            CANVAS_CSS +
+            projectCss(read.theme, { capHeight }) +
+            marginLabelRules(read.theme),
+        );
         setPresentation({
           state: 'ready',
           theme: read.theme,

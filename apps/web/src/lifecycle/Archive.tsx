@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useState } from 'react';
+import { useState, useImperativeHandle, type Ref } from 'react';
 import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -47,6 +47,7 @@ export function archivalSaid(title: string, archived: boolean | undefined, asked
  * now is, and what to say.
  */
 export function ArchiveButton({
+  act,
   client,
   kind,
   id,
@@ -56,6 +57,8 @@ export function ArchiveButton({
   onChanged,
   className,
 }: {
+  /** Set to what does it, where a menu does and no button is drawn (ADR-0075). */
+  act?: Ref<() => void>;
   client: Client;
   kind: Archivable;
   id: string;
@@ -66,19 +69,16 @@ export function ArchiveButton({
   className?: string | undefined;
 }) {
   const [busy, setBusy] = useState(false);
-  if (!mayRetire) return null;
+  const change = async () => {
+    setBusy(true);
+    const now = await setArchived(client, kind, id, !archived);
+    setBusy(false);
+    onChanged(now ?? archived, archivalSaid(title, now, !archived));
+  };
+  useImperativeHandle(act, () => () => void change());
+  if (!mayRetire || act !== undefined) return null;
   return (
-    <button
-      type="button"
-      className={className}
-      disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        const now = await setArchived(client, kind, id, !archived);
-        setBusy(false);
-        onChanged(now ?? archived, archivalSaid(title, now, !archived));
-      }}
-    >
+    <button type="button" className={className} disabled={busy} onClick={() => void change()}>
       {archived ? words('lifecycle.unarchive') : words('lifecycle.archive')}
     </button>
   );

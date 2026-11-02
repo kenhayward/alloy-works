@@ -3,7 +3,7 @@ import { SERVICE } from './testing/addresses.js';
 import { api, edit, makeDocument } from './testing/api.js';
 import { checkAxe } from './testing/axe.js';
 import { makeComponent } from './testing/component.js';
-import { withPage } from './testing/page.js';
+import { fromMenu, withPage } from './testing/page.js';
 
 /**
  * The panes beside a document's text in the pinned Chromium: the outline on the left and the panels
@@ -82,11 +82,7 @@ describe("the panes beside a document's text, in Chromium", () => {
       const scrolled = await tops();
       expect(scrolled.panels).toBe(scrolled.outline);
       const header = await page.evaluate(() =>
-        Math.round(
-          // Under the header, or under the in-place band where Authoring keeps one (ADR-0056).
-          (document.querySelector('[data-inplace-band]') ??
-            document.querySelector('header'))!.getBoundingClientRect().bottom,
-        ),
+        Math.round(document.querySelector('header')!.getBoundingClientRect().bottom),
       );
       expect(scrolled.outline).toBeGreaterThanOrEqual(header);
       expect(scrolled.outline - header).toBeLessThanOrEqual(16);
@@ -101,6 +97,64 @@ describe("the panes beside a document's text, in Chromium", () => {
       });
       await show.click();
       await panels.getByRole('heading', { level: 2 }).waitFor();
+    });
+  });
+
+  it('keeps a dock flyout inside the window, its rows reachable, and gives the focus back to the text', async () => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto(`${SERVICE}/#/documents/${report}`);
+      await page.getByRole('radio', { name: 'Authoring' }).check();
+      await page.getByText('Paragraph 2.', { exact: false }).first().click();
+      const surface = page.getByRole('textbox', { name: /^Content of / });
+      await surface.waitFor();
+      const dock = page.locator('[data-inplace-band]');
+      await dock.getByRole('button', { name: 'Insert' }).click();
+      const menu = page.getByRole('menu', { name: 'Insert' });
+      await menu.waitFor();
+      const box = await menu.evaluate((element) => {
+        const { top, bottom, left, right } = element.getBoundingClientRect();
+        return {
+          top,
+          bottom,
+          left,
+          right,
+          scrolls:
+            element.scrollHeight <= element.clientHeight ||
+            getComputedStyle(element).overflowY === 'auto',
+        };
+      });
+      expect(box.top).toBeGreaterThanOrEqual(0);
+      expect(box.bottom).toBeLessThanOrEqual(720);
+      expect(box.right).toBeLessThanOrEqual(1280);
+      expect(box.scrolls).toBe(true);
+      // What the tip would have said stands aside for the menu it names.
+      expect(await page.locator('[data-name-tip]:visible').count()).toBe(0);
+      await page.keyboard.press('Escape');
+      await expect
+        .poll(() => surface.evaluate((element) => element === document.activeElement))
+        .toBe(true);
+    });
+  });
+
+  it('dims the whole window behind a dialog the Document menu opens, and takes no menu key behind it', async () => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto(`${SERVICE}/#/documents/${report}`);
+      await page.getByRole('tree', { name: 'Outline' }).waitFor();
+      await fromMenu(page, 'Document', 'Relationships');
+      const dialog = page.getByRole('dialog', { name: /^Relationships of / });
+      await dialog.waitFor();
+      const scrim = await dialog.evaluate((element) => {
+        const { top, left, right, bottom } = element.parentElement!.getBoundingClientRect();
+        return { top, left, right, bottom };
+      });
+      expect(scrim).toEqual({ top: 0, left: 0, right: 1280, bottom: 720 });
+      await page.keyboard.press('F10');
+      expect(await page.getByRole('menu').count()).toBe(0);
+      expect(
+        await page.evaluate(() => document.activeElement?.closest('[role="menubar"]') !== null),
+      ).toBe(false);
     });
   });
 });

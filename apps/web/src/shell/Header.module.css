@@ -1,13 +1,58 @@
-/* The header band: the theme's chrome, 44px, the mark left and the account right. */
+/* A page's own parts: its title and menus at the start; its lifecycle; its mode and Preview. */
+.lead {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: min-content;
+}
+
+.lead:empty {
+  display: none;
+}
+
+.lead:not(:empty) ~ .spacer {
+  display: none;
+}
+
+.slot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.slot:empty {
+  display: none;
+}
+
+/* The module's name, where no page draws its own title. */
+.moduleName {
+  font-size: var(--size-16);
+  font-weight: 600;
+}
+
+.lead:not(:empty) + .moduleName {
+  display: none;
+}
+
+/* Theme, language and go-to keys, ruled off in the account menu. */
+.choices {
+  margin-block-start: var(--space-4);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--border);
+}
+
 .band {
   position: sticky;
   top: 0;
   z-index: var(--z-popover);
   display: flex;
   align-items: center;
-  gap: var(--space-12);
-  height: var(--header-height);
-  padding-inline: var(--space-24);
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  min-height: var(--header-size);
+  padding-inline: var(--space-16);
   border-bottom: 1px solid var(--border);
   background: var(--chrome);
   color: var(--text);
@@ -116,7 +161,7 @@ a.chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-8);
-  width: min(540px, 40vw);
+  flex: none;
   height: 32px;
   padding-inline: var(--space-12) var(--space-8);
   border: 1px solid var(--border);

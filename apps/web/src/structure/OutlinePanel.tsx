@@ -285,6 +285,8 @@ export interface OutlinePanelProps {
   readonly tab?: { readonly tab: string; readonly panel: string };
   /** Another tab's content, shown in the panel in place of the outline (the Data tab, BI-H). */
   readonly instead?: ReactNode;
+  /** What the pane's filter holds; every node where none. */
+  readonly filter?: string;
   /**
    * The chosen part's settings as the Part panel beside the text (the LG plan, LG6c): its id, the tab
    * that names it, and whether another panel is shown in its place.
@@ -514,6 +516,7 @@ export function OutlinePanel({
   tab,
   instead,
   details,
+  filter,
   root = null,
   scheme,
   editable,
@@ -930,10 +933,12 @@ export function OutlinePanel({
   }, [current, highlighted, nodes, collapsed]);
 
   const onTreeKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    if (current === null || event.ctrlKey || event.metaKey) return;
-    const order = visibleOrder(nodes, collapsed);
-    const index = order.indexOf(current);
-    const place = placeOf(nodes, current);
+    // The node the focus stands on: a filter may have hidden the one chosen.
+    const at = tabStop;
+    if (at === null || event.ctrlKey || event.metaKey) return;
+    const order = shownOrder();
+    const index = order.indexOf(at);
+    const place = placeOf(nodes, at);
     // Promote, demote, expand and collapse go with the interface's direction (UI-G).
     const key = inlineKey(event.key);
     if (event.altKey) {
@@ -949,10 +954,10 @@ export function OutlinePanel({
       // Always taken, so Alt+Left never reaches the browser as Back while the tree has focus.
       event.preventDefault();
       if (!may) return;
-      const move = keyMove(nodes, current, direction);
-      if (move !== null) void send(move, current);
-      else if (leavesTheTopLevel(nodes, current, direction)) onNotice(TOP_LEVEL_ONLY());
-      else if (breaksFrontFirst(nodes, current, direction)) onNotice(FRONT_FIRST());
+      const move = keyMove(nodes, at, direction);
+      if (move !== null) void send(move, at);
+      else if (leavesTheTopLevel(nodes, at, direction)) onNotice(TOP_LEVEL_ONLY());
+      else if (breaksFrontFirst(nodes, at, direction)) onNotice(FRONT_FIRST());
       return;
     }
     switch (key) {
@@ -969,13 +974,13 @@ export function OutlinePanel({
       // WAI-ARIA's tree: Right expands a collapsed section and otherwise goes to its first child;
       // Left collapses an expanded one and otherwise goes to its parent.
       case 'ArrowRight': {
-        const child = place?.node.children[0];
-        if (child && collapsed.has(current)) toggle(current);
+        const child = (place?.node.children as readonly OutlineViewNode[] | undefined)?.find(kept);
+        if (child && collapsed.has(at)) toggle(at);
         else if (child) choose(child.id, true);
         break;
       }
       case 'ArrowLeft':
-        if (place && place.node.children.length > 0 && !collapsed.has(current)) toggle(current);
+        if (place && place.node.children.length > 0 && !collapsed.has(at)) toggle(at);
         else if (place?.parent) choose(place.parent.id, true);
         break;
       case 'Home': {
@@ -992,7 +997,7 @@ export function OutlinePanel({
         if (may) openAdding('section');
         break;
       case 'Delete':
-        if (may) setConfirming(current);
+        if (may) setConfirming(at);
         break;
       default:
         return;
@@ -1049,7 +1054,21 @@ export function OutlinePanel({
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
   };
 
-  const renderNodes = (list: readonly OutlineViewNode[], level: number) =>
+  // What the pane's filter leaves: a node whose title holds it, and the way down to one.
+  const kept = (node: OutlineViewNode): boolean =>
+    filter === undefined ||
+    filter.trim() === '' ||
+    nodeName(node, names).toLowerCase().includes(filter.trim().toLowerCase()) ||
+    ('children' in node && (node.children as readonly OutlineViewNode[]).some(kept));
+  const shownOrder = () =>
+    visibleOrder(nodes, collapsed).filter((id) => {
+      const at = placeOf(nodes, id);
+      return at !== undefined && kept(at.node as OutlineViewNode);
+    });
+  // The tree's one tab stop: the node chosen, or the first that shows where a filter hides that one.
+  const tabStop: string | null =
+    current !== null && shownOrder().includes(current) ? current : (shownOrder()[0] ?? null);
+  const renderNodes = (all: readonly OutlineViewNode[], level: number, list = all.filter(kept)) =>
     list.map((node, index) => {
       const labelId = `${prefix}-${node.id}`;
       const numberId = `${labelId}-number`;
@@ -1078,7 +1097,7 @@ export function OutlinePanel({
               .filter((each) => each !== null)
               .join(' ') || undefined
           }
-          tabIndex={node.id === current ? 0 : -1}
+          tabIndex={node.id === tabStop ? 0 : -1}
           data-node={node.id}
           draggable={may}
           ref={(element) => {

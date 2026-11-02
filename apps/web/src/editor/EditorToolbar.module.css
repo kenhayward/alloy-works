@@ -80,3 +80,62 @@
   margin-inline: var(--space-4);
   background: var(--border);
 }
+
+/* The side dock's tools (ADR-0075): 34px buttons on a 36px pitch, dividers 9px. */
+.dockTools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.dockButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+}
+
+.dockButton:hover:not([aria-disabled='true']) {
+  background: var(--hover);
+}
+
+.dockButton[aria-pressed='true'] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+
+.dockButton[aria-disabled='true'] {
+  color: var(--muted);
+}
+
+/* A flyout's mark, in the button's corner. */
+.dockButton[data-corner]::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 4px;
+  inset-inline-end: 4px;
+  width: 0;
+  height: 0;
+  border-block-end: 4px solid currentcolor;
+  border-inline-start: 4px solid transparent;
+}
+
+.dockLetters {
+  font-size: var(--size-14);
+  font-weight: 500;
+}
+
+.dockDivider {
+  width: 24px;
+  height: 1px;
+  margin-block: 4px;
+  background: var(--border);
+}

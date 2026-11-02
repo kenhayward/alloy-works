@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useImperativeHandle, type Ref } from 'react';
 
 import { Modal } from '../layouts/Modal.js';
 import styles from './Delete.module.css';
@@ -218,6 +218,7 @@ export function DeleteDialog({
  * retire it, beside Archive (DL-H); the route decides again.
  */
 export function DeleteButton({
+  act,
   client,
   kind,
   id,
@@ -226,6 +227,8 @@ export function DeleteButton({
   onDeleted,
   className,
 }: {
+  /** Set to what opens it, where a menu does and no button is drawn (ADR-0075). */
+  act?: Ref<() => void>;
   client: Client;
   kind: Deletable;
   id: string;
@@ -235,12 +238,15 @@ export function DeleteButton({
   className?: string | undefined;
 }) {
   const [asking, setAsking] = useState(false);
+  useImperativeHandle(act, () => () => setAsking(true), []);
   if (!mayRetire) return null;
   return (
     <>
-      <button type="button" className={className} onClick={() => setAsking(true)}>
-        {words('lifecycle.delete-2')}
-      </button>
+      {act === undefined && (
+        <button type="button" className={className} onClick={() => setAsking(true)}>
+          {words('lifecycle.delete-2')}
+        </button>
+      )}
       {asking && (
         <DeleteDialog
           client={client}

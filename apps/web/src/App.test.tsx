@@ -60,10 +60,11 @@ describe('App', () => {
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
     const band = screen.getByRole('banner');
-    expect(within(band).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
-    // The band names no module: the rail beside the page marks the one it is in.
-    expect(within(band).queryByText('Components')).not.toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Modules' })).toBeInTheDocument();
+    const rail = screen.getByRole('navigation', { name: 'Modules' });
+    // The mark stands on the rail now, which also marks the module; the band names it (ADR-0075).
+    expect(within(rail).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
+    expect(within(band).queryByRole('link', { name: /Alloy Works/ })).not.toBeInTheDocument();
+    expect(within(band).getByText('Home')).toBeInTheDocument();
     const main = screen.getByRole('main');
     expect(within(main).getByText('the workspace')).toBeInTheDocument();
     expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
@@ -79,14 +80,17 @@ describe('App', () => {
     );
     const rail = screen.getByRole('navigation', { name: 'Modules' });
 
+    const search = screen.getByRole('button', {
+      name: 'Search components, documents, or run a command',
+    });
     await userEvent.keyboard('{F6}');
-    expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveFocus();
+    expect(search).toHaveFocus();
     await userEvent.keyboard('{F6}');
     expect(within(rail).getByRole('link', { name: 'Home' })).toHaveFocus();
     await userEvent.keyboard('{F6}');
     expect(screen.getByRole('button', { name: 'In the page' })).toHaveFocus();
     await userEvent.keyboard('{F6}');
-    expect(screen.getByRole('link', { name: /Alloy Works/ })).toHaveFocus();
+    expect(search).toHaveFocus();
     await userEvent.keyboard('{Shift>}{F6}{/Shift}');
     expect(screen.getByRole('button', { name: 'In the page' })).toHaveFocus();
   });

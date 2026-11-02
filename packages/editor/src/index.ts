@@ -294,3 +294,5 @@ export {
   type EditorSaying,
   type EditorWordKey,
 } from './words.js';
+export { chordListener } from './chords.js';
+export { redo as redoCommand, undo as undoCommand } from 'prosemirror-history';

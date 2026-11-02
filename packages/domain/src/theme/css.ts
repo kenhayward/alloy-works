@@ -711,6 +711,19 @@ function imageRules(): string[] {
 }
 
 /**
+ * What can open a paragraph's first or last line: an image in it, a mark larger than its text. A paragraph
+ * holding one has its `::before` and `::after` taken to hold its lines, which nothing else may then use.
+ */
+export function lineOpeners(theme: ResolvedTheme): string[] {
+  return [
+    '.aw-inline-image-holder',
+    ...STYLED_MARKS.filter((mark) => (theme.characterStyles[mark].properties.scale ?? 1) > 1).map(
+      (mark) => `.aw-mark-${mark}`,
+    ),
+  ].map((each) => `${each}:not(.aw-footnote-text *)`);
+}
+
+/**
  * **A paragraph holding what can open its first or last line** (issue #331) - an image in a line, a
  * mark larger than its text - begins and ends with a line of its own text, which the browser trims
  * instead: it trims a block's first line to its cap height and its last to its baseline, and with them
@@ -738,12 +751,7 @@ function growerRules(
   selectors: readonly string[],
   cap: number,
 ): string[] {
-  const growers = [
-    '.aw-inline-image-holder',
-    ...STYLED_MARKS.filter((mark) => (theme.characterStyles[mark].properties.scale ?? 1) > 1).map(
-      (mark) => `.aw-mark-${mark}`,
-    ),
-  ].map((each) => `${each}:not(.aw-footnote-text *)`);
+  const growers = lineOpeners(theme);
   const at = selectors
     .filter(
       (each) =>

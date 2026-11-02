@@ -97,10 +97,18 @@ import {
   type Selection,
   storedBoundTable,
   whereBlockIs,
+  redoCommand,
+  undoCommand,
 } from '@alloy-works/editor';
 import '@alloy-works/editor/style.css';
 import styles from './ComponentEditor.module.css';
 import { InPlaceBand } from './InPlaceBand.js';
+import { InPlaceSettings, usePublishActiveEditor } from './ActiveEditor.js';
+import type { MenuEntry } from '../parts/MenuBar.js';
+import { NameTip } from '../parts/NameTip.js';
+import { paragraphStyleItems } from '../theme/StyleChoice.js';
+import { Icon } from './Icon.js';
+import { MarginStyleButton } from './MarginStyleButton.js';
 import {
   lazy,
   Suspense,
@@ -117,7 +125,7 @@ import { createPortal } from 'react-dom';
 
 import { positionAtTextOffset } from './caret.js';
 import { ComponentHeader } from './ComponentHeader.js';
-import { EditorToolbar } from './EditorToolbar.js';
+import { commandUnavailable, EditorToolbar, type ToolbarAct } from './EditorToolbar.js';
 import { FigureDialog } from './FigureDialog.js';
 import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
@@ -163,7 +171,13 @@ import { TablePanel } from './TablePanel.js';
 import { ValuePanel } from './ValuePanel.js';
 import type { BindingState } from '../structure/bindingContexts.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
-import { askAndApply, pressCommand, type AskForValue, type MarkCommand } from './press.js';
+import {
+  askAndApply,
+  pressCommand,
+  type AskForValue,
+  type MarkCommand,
+  type OpenDialog,
+} from './press.js';
 import { referenceChoicesIn, type ReferenceChoices } from './referenceChoices.js';
 import { ReferenceDialog } from './ReferenceDialog.js';
 import { ValueDialog, type DocumentOffer } from './ValueDialog.js';
@@ -668,6 +682,9 @@ export function ComponentEditor({
   // slice 15); a component opened in place in a document shares it with the document's own notices.
   const status = useStatus();
   const bandHost = useContext(InPlaceBand);
+  const inPlaceSettings = useContext(InPlaceSettings);
+  const presentationNow = usePresentation();
+  const [componentMenuOpen, setComponentMenuOpen] = useState(false);
   useEffect(() => {
     if (notice !== null) status?.say(notice);
   }, [status, notice]);
@@ -707,6 +724,7 @@ export function ComponentEditor({
   const tableRegion = useRef<HTMLDivElement | null>(null);
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
+  const frameRegion = useRef<HTMLDivElement | null>(null);
   const valueRegion = useRef<HTMLElement | null>(null);
   // The Bound table panel's, while the cursor stands in a bound table (TB2-F).
   const boundTableRegion = useRef<HTMLDivElement | null>(null);
@@ -2104,6 +2122,7 @@ export function ComponentEditor({
   const moveRegion = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'F6' || event.altKey || event.ctrlKey || event.metaKey) return;
     const ring = [
+      frameRegion.current,
       headerRegion.current,
       toolbarRegion.current,
       listRegion.current,
@@ -2189,6 +2208,19 @@ export function ComponentEditor({
     // Told what changed, not each new callback the page hands down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdsTable, entered]);
+  const activeHandle = usePublishActiveEditor();
+  // Whether the selection stands where the panels' Selection tab has something to say, set past the
+  // returns below, where what it depends on is known, and told once the render is done.
+  const selectionHeldNow = useRef(false);
+  const selectionHeldTold = useRef(false);
+  const onSelectionHeld = useRef(inPlaceSettings?.onHeld);
+  onSelectionHeld.current = inPlaceSettings?.onHeld;
+  useEffect(() => {
+    if (selectionHeldTold.current === selectionHeldNow.current) return;
+    selectionHeldTold.current = selectionHeldNow.current;
+    onSelectionHeld.current?.(selectionHeldNow.current);
+  });
+  useEffect(() => () => onSelectionHeld.current?.(false), []);
   if (loaded.state === 'loading') return <Waiting>{say('editor.opening')}</Waiting>;
   // In place, a component that did not open still needs a way out, the card head being gone.
   const leave = onDone && (
@@ -2823,93 +2855,168 @@ export function ComponentEditor({
       )}
     </div>
   );
-  const toolsPart =
+  const leadingActs: readonly ToolbarAct[] = drafting
+    ? [
+        {
+          label: say('editor.send-suggestion'),
+          icon: 'Review',
+          disabled: sending,
+          onPress: () => void sendDraft(),
+        },
+        {
+          label: say('editor.discard-suggestion'),
+          icon: 'Close',
+          disabled: sending,
+          onPress: () => {
+            forgetDraft(componentId, principalId);
+            draftRef.current?.onDiscard();
+          },
+        },
+      ]
+    : [
+        {
+          label: say('editor.done-editing'),
+          icon: 'Done editing',
+          disabled: doneDisabled,
+          // Done cuts a version where anything changed (CNT-070), so it asks first too.
+          onPress: () =>
+            session && (session.dirty || session.savedAt !== null)
+              ? askFirst(say('editor.done-editing'), () => void done())
+              : void done(),
+        },
+        {
+          label: say('editor.save-version'),
+          icon: 'Save version',
+          disabled: !mayCut || phase !== 'editing',
+          onPress: () =>
+            askFirst(say('editor.save-version'), () => void controls.current?.saveVersion()),
+        },
+        {
+          label: say('editor.saved-text'),
+          icon: 'Saved text',
+          disabled: !mayCut || phase !== 'editing',
+          onPress: recover,
+        },
+      ];
+  const onCommandRefused = (command: MarkCommand) => {
+    if (editing) askAgain(editing, command, whyRefused(editing, command));
+  };
+  const openCommandDialog: OpenDialog = (action, view) =>
+    surface !== null &&
+    ((action === 'reference' && openReference(surface, view)) ||
+      (action === 'equation' && openEquation(view)) ||
+      (action === 'symbol' && openSymbols(view)) ||
+      (action === 'value' && openValue(view)) ||
+      (action === 'variable' && openVariables(view)) ||
+      (action === 'cite' && openCitation(view)) ||
+      (action === 'indexEntry' && openIndexEntry(view)) ||
+      (action === 'condition' && openConditions(view)));
+  const styleItems = () =>
+    presentationNow?.state === 'ready' && editing !== null
+      ? paragraphStyleItems(presentationNow.theme, editing)
+      : [];
+  const styleEntries: readonly MenuEntry[] = styleItems().map((style) => ({
+    kind: 'item',
+    key: style.value,
+    label: style.label,
+    role: 'menuitemradio',
+    checked: style.checked,
+    enabled: mayFormat,
+    ...(style.value === 'body' ? {} : { content: true }),
+    run: style.run,
+  }));
+  activeHandle.current = {
+    styles: () => (mayFormat ? styleItems() : []),
+    state: (id) => {
+      if (id === 'save-version') {
+        return {
+          enabled: mayCut && phase === 'editing',
+          run: () =>
+            askFirst(say('editor.save-version'), () => void controls.current?.saveVersion()),
+        };
+      }
+      if (id === 'undo' || id === 'redo') {
+        const command = id === 'undo' ? undoCommand : redoCommand;
+        return {
+          enabled: editing !== null && command(editing.state),
+          run: () => {
+            if (editing) command(editing.state, editing.dispatch);
+          },
+        };
+      }
+      const ready = mayFormat && editing !== null;
+      if (id === 'editor.Figure') {
+        return {
+          enabled: ready && mayPlaceFigure && (!drafting || draft.mayUpload),
+          run: () => setFigureDialog('Figure'),
+        };
+      }
+      if (id === 'editor.Image') {
+        return {
+          enabled: ready && mayPlaceImage && (!drafting || draft.mayUpload),
+          run: () => setFigureDialog('Image'),
+        };
+      }
+      if (id === 'editor.Paste as Markdown') {
+        return { enabled: ready, run: () => void pasteMarkdown() };
+      }
+      const command = EDITOR_COMMANDS.find((each) => `editor.${each.label}` === id);
+      if (command === undefined) return undefined;
+      return {
+        enabled: !commandUnavailable(command, editing, mayFormat, newBlockIdentifier),
+        run: () => {
+          if (editing === null) return;
+          pressCommand({
+            view: editing,
+            command,
+            newIdentifier: newBlockIdentifier,
+            prompt: askFor,
+            onRefused: onCommandRefused,
+            openDialog: openCommandDialog,
+          });
+        },
+      };
+    },
+  };
+  const toolbarPart =
+    loaded.state === 'open' ? (
+      // Above the surface, which is the order the regions are named in (component-editor.md,
+      // "Accessibility"), and shown to a reader too - disabled, rather than absent, so what the
+      // editor can do with the text is visible before the lock is.
+      <EditorToolbar
+        {...(inBand
+          ? {
+              layout: 'dock' as const,
+              styleEntries,
+              ...(inPlaceSettings?.onComment === undefined
+                ? {}
+                : { onComment: inPlaceSettings.onComment }),
+            }
+          : { leading: leadingActs })}
+        onPasteMarkdown={() => void pasteMarkdown()}
+        onInsertFigure={() => setFigureDialog('Figure')}
+        figurePlaceable={mayPlaceFigure && (!drafting || draft.mayUpload)}
+        onInsertImage={() => setFigureDialog('Image')}
+        imagePlaceable={mayPlaceImage && (!drafting || draft.mayUpload)}
+        ref={toolbarRegion}
+        view={editing}
+        enabled={mayFormat}
+        newIdentifier={newBlockIdentifier}
+        prompt={askFor}
+        onRefused={onCommandRefused}
+        openDialog={openCommandDialog}
+      />
+    ) : null;
+  const linePart =
     loaded.state === 'open' ? (
       <>
-        {/* Above the surface, which is the order the regions are named in
-      (component-editor.md, "Accessibility"), and shown to a reader too - disabled, rather
-      than absent, so what the editor can do with the text is visible before the lock is. */}
-        <EditorToolbar
-          leading={
-            drafting
-              ? [
-                  {
-                    label: say('editor.send-suggestion'),
-                    icon: 'Review',
-                    disabled: sending,
-                    onPress: () => void sendDraft(),
-                  },
-                  {
-                    label: say('editor.discard-suggestion'),
-                    icon: 'Close',
-                    disabled: sending,
-                    onPress: () => {
-                      forgetDraft(componentId, principalId);
-                      draftRef.current?.onDiscard();
-                    },
-                  },
-                ]
-              : [
-                  {
-                    label: say('editor.done-editing'),
-                    icon: 'Done editing',
-                    disabled: doneDisabled,
-                    // Done cuts a version where anything changed (CNT-070), so it asks first too.
-                    onPress: () =>
-                      session && (session.dirty || session.savedAt !== null)
-                        ? askFirst(say('editor.done-editing'), () => void done())
-                        : void done(),
-                  },
-                  {
-                    label: say('editor.save-version'),
-                    icon: 'Save version',
-                    disabled: !mayCut || phase !== 'editing',
-                    onPress: () =>
-                      askFirst(
-                        say('editor.save-version'),
-                        () => void controls.current?.saveVersion(),
-                      ),
-                  },
-                  {
-                    label: say('editor.saved-text'),
-                    icon: 'Saved text',
-                    disabled: !mayCut || phase !== 'editing',
-                    onPress: recover,
-                  },
-                ]
-          }
-          onPasteMarkdown={() => void pasteMarkdown()}
-          onInsertFigure={() => setFigureDialog('Figure')}
-          figurePlaceable={mayPlaceFigure && (!drafting || draft.mayUpload)}
-          onInsertImage={() => setFigureDialog('Image')}
-          imagePlaceable={mayPlaceImage && (!drafting || draft.mayUpload)}
-          ref={toolbarRegion}
-          view={editing}
-          enabled={mayFormat}
-          newIdentifier={newBlockIdentifier}
-          prompt={askFor}
-          onRefused={(command) =>
-            editing && askAgain(editing, command, whyRefused(editing, command))
-          }
-          openDialog={(action, view) =>
-            surface !== null &&
-            ((action === 'reference' && openReference(surface, view)) ||
-              (action === 'equation' && openEquation(view)) ||
-              (action === 'symbol' && openSymbols(view)) ||
-              (action === 'value' && openValue(view)) ||
-              (action === 'variable' && openVariables(view)) ||
-              (action === 'cite' && openCitation(view)) ||
-              (action === 'indexEntry' && openIndexEntry(view)) ||
-              (action === 'condition' && openConditions(view)))
-          }
-        />
         {/* The toolbar's second line (ADR-0053): there whenever the text is open, so nothing
         under it moves as options come and go, holding what the selection offers. */}
         <div className={styles['toolbarLine']} data-toolbar-line="">
           {/* The style of the paragraphs the selection touches, from the theme's catalogue: the
           only way a paragraph's alignment, indents and spacing change (CNT-094). Of the
           footnote's own text while one is open, as the toolbar's buttons are. */}
-          {editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
+          {!inBand && editing !== null && <ParagraphStyle view={editing} enabled={mayFormat} />}
           {/* While the cursor stands in a list: Nest and Lift, and a numbered list's start and
           numbering. A bulleted list's are its own; its kind is the toolbar's buttons. */}
           {surface !== null && list !== null && (
@@ -2965,6 +3072,14 @@ export function ComponentEditor({
         </div>
       </>
     ) : null;
+  // What the selection offers, the second line's panels, in a tab of the panels beside the text (ADR-0075).
+  selectionHeldNow.current =
+    inBand &&
+    (list !== null ||
+      preformatted !== null ||
+      figure !== null ||
+      image !== null ||
+      (valued !== null && valued.place !== 'table'));
   return (
     <>
       {/* Inert while a dialog stands over it, which is the other half of what that dialog's
@@ -2980,15 +3095,65 @@ export function ComponentEditor({
       >
         {/* Open in place on a document's sheet, the strip, the toolbar and its second line stand in
             the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
-        {inBand
-          ? createPortal(
-              <div className={styles['band']} inert={behindDialog}>
+        {inBand ? createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost) : stripPart}
+        {inBand &&
+          inPlaceSettings?.host != null &&
+          selectionHeldNow.current &&
+          createPortal(
+            <div className={styles['settingsLine']} inert={behindDialog}>
+              {linePart}
+            </div>,
+            inPlaceSettings.host,
+          )}
+        {/* The component's own acts, on its frame's line and taking no height of the sheet's, so the
+            sheet does not move as one opens (ADR-0075, CNT-075). */}
+        {inBand && (
+          <div
+            ref={frameRegion}
+            className={styles['frameBar']}
+            role="group"
+            aria-label={say('document.component-menu')}
+            tabIndex={-1}
+            data-region-entry
+          >
+            <div className={styles['frameActs']}>
+              {leadingActs.map((act) => (
+                <NameTip key={act.label} name={act.label} below>
+                  <button
+                    type="button"
+                    className={styles['frameButton']}
+                    aria-label={act.label}
+                    aria-disabled={act.disabled}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (!act.disabled) act.onPress();
+                    }}
+                  >
+                    <Icon name={act.icon} />
+                  </button>
+                </NameTip>
+              ))}
+              <button
+                type="button"
+                className={styles['frameMenu']}
+                aria-expanded={componentMenuOpen}
+                onClick={() => setComponentMenuOpen((was) => !was)}
+              >
+                {say('document.component-menu')}
+              </button>
+              <div className={styles['frameStrip']} hidden={!componentMenuOpen}>
                 {stripPart}
-                {toolsPart}
-              </div>,
-              bandHost,
-            )
-          : stripPart}
+              </div>
+            </div>
+          </div>
+        )}
+        {inBand && editing !== null && styleEntries.length > 0 && (
+          <MarginStyleButton
+            view={editing}
+            entries={styleEntries}
+            current={styleItems().find((style) => style.checked)?.name}
+          />
+        )}
         {loaded.state === 'unreadable' && (
           <Notice tone="failed">
             <p>{say('editor.this-component-could-not-be')}</p>
@@ -3005,7 +3170,8 @@ export function ComponentEditor({
         )}
         {loaded.state === 'open' && (
           <>
-            {!inBand && toolsPart}
+            {!inBand && toolbarPart}
+            {!inBand && linePart}
             {!shown.mayEdit && (
               <Notice tone="readOnly">
                 <p>{say('editor.you-may-read-this-component')}</p>

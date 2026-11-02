@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -13,6 +13,7 @@ import {
   INTRODUCTION,
   json,
   outline,
+  outlinePane,
   PRINTER,
   referenceTo,
   RESULTS,
@@ -285,8 +286,8 @@ describe("a document's bound table", () => {
       'No row has the key site S9 nowClosed',
     ]);
     expect(beneath[1]).toHaveClass('aw-binding-failed');
-    await user.click(await screen.findByRole('tab', { name: 'Data' }));
-    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await user.click(await screen.findByRole('button', { name: 'Data' }));
+    const panel = outlinePane();
     const row = panel.querySelector('[data-binding="b1"]')!;
     expect(row.querySelector('[data-state]')).toHaveAttribute('data-state', 'failed');
     expect(row).toHaveTextContent(
@@ -316,6 +317,25 @@ describe("a document's bound table", () => {
     await user.keyboard('{ArrowLeft}');
     expect(edge).toHaveAttribute('aria-valuenow', '450');
     expect(edge.closest('[data-dock-collapsed]')).toHaveStyle({ '--dock-panel': '450px' });
+  });
+
+  it('takes Ctrl S from the browser while a component is open in place, and cuts no version by it (ADR-0076)', async () => {
+    const user = userEvent.setup();
+    const { asked } = opened(3, true);
+    const text = await textRegion();
+    await within(text).findByRole('rowheader', { name: 'S0' });
+    // Nothing open: the key is still the browser's own.
+    expect(fireEvent.keyDown(window, { key: 's', ctrlKey: true })).toBe(true);
+    await user.click(within(text).getByText('Readings by site'));
+    const surface = await within(text).findByRole('textbox', {
+      name: 'Content of Install the printer',
+    });
+    // fireEvent answers false where a listener called preventDefault.
+    expect(fireEvent.keyDown(surface, { key: 's', ctrlKey: true })).toBe(false);
+    await act(async () => {
+      await new Promise((settle) => setTimeout(settle, 20));
+    });
+    expect(asked.filter((each) => each.endsWith('/versions'))).toEqual([]);
   });
 
   it('reads the rows again with the note added in the editor open in place, its letter drawn once its session has saved it (TB3.3)', async () => {
@@ -357,8 +377,8 @@ describe("a document's bound table", () => {
       ),
     );
     expect(text.querySelector('[data-bound-table-body]')).toHaveClass('aw-binding-failed');
-    await user.click(await screen.findByRole('tab', { name: 'Data' }));
-    const panel = screen.getByRole('tabpanel', { name: 'Data' });
+    await user.click(await screen.findByRole('button', { name: 'Data' }));
+    const panel = outlinePane();
     const row = panel.querySelector('[data-binding="b1"]')!;
     expect(row).toHaveTextContent('A table of 2,001 rows');
     expect(row.querySelector('[data-state]')).toHaveAttribute('data-state', 'failed');

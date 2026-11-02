@@ -1,5 +1,5 @@
 import type { createApiClient } from '@alloy-works/api-client';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, useImperativeHandle, type Ref } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
 import { Modal } from '../layouts/Modal.js';
@@ -96,6 +96,7 @@ const offsetOf = (local: Date) => {
  * of the environment's people; saved as one act, a refusal said in the service's words.
  */
 export function DatesButton({
+  act,
   client,
   kind,
   id,
@@ -104,6 +105,8 @@ export function DatesButton({
   onSaved,
   className,
 }: {
+  /** Set to what opens it, where a menu does and no button is drawn (ADR-0075). */
+  act?: Ref<() => void>;
   client: Client;
   kind: 'component' | 'document';
   id: string;
@@ -113,11 +116,14 @@ export function DatesButton({
   className?: string | undefined;
 }) {
   const [open, setOpen] = useState(false);
+  useImperativeHandle(act, () => () => setOpen(true), []);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
-        {words('lifecycle.dates')}
-      </button>
+      {act === undefined && (
+        <button type="button" className={className} onClick={() => setOpen(true)}>
+          {words('lifecycle.dates')}
+        </button>
+      )}
       {open && (
         <DatesDialog
           client={client}

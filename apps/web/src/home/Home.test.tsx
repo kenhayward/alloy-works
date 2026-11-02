@@ -87,22 +87,20 @@ describe('Home', () => {
       within(group('Author'))
         .getAllByRole('link')
         .map((each) => each.getAttribute('href')),
-    ).toEqual([
-      '#/components',
-      '#/documents',
-      '#/templates',
-      '#/prompts',
-      '#/bibliography',
-      '#/terms',
-      '#/images',
-      '#/conversations',
-    ]);
-    expect(within(group('Publish')).getAllByRole('link')).toHaveLength(1);
+    ).toEqual(['#/components', '#/documents', '#/templates', '#/prompts']);
     expect(
-      within(group('Data'))
+      within(group('Library'))
         .getAllByRole('link')
         .map((each) => each.getAttribute('href')),
-    ).toEqual(['#/connections', '#/query-definitions']);
+    ).toEqual(['#/bibliography', '#/terms', '#/images']);
+    expect(
+      within(group('Publish'))
+        .getAllByRole('link')
+        .map((each) => each.getAttribute('href')),
+    ).toEqual(['#/conversations', '#/publications']);
+    // Connections and Query definitions are Administration's now (ADR-0075).
+    expect(screen.queryByRole('region', { name: 'Data' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Connections/ })).not.toBeInTheDocument();
 
     const components = screen.getByRole('link', { name: /^Components/ });
     expect(await within(components).findByText('412')).toBeInTheDocument();

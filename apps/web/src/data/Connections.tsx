@@ -227,7 +227,15 @@ function asItems(items: readonly unknown[]): Item[] {
  * filtered by space on the service. **New connection** is offered where the person may administer a
  * space.
  */
-export function Connections({ client }: { readonly client: Client }) {
+export function Connections({
+  client,
+  embedded = false,
+}: {
+  readonly client: Client;
+  /** Inside Administration, whose own heading names it (ADR-0075). */
+  readonly embedded?: boolean;
+}) {
+  const Heading = embedded ? 'h2' : 'h1';
   const [sort, setSort] = useState<SortOption>(SORTS[0]!);
   const [spaces, setSpaces] = useState<readonly string[]>([]);
   const [creating, setCreating] = useState(false);
@@ -252,7 +260,9 @@ export function Connections({ client }: { readonly client: Client }) {
     if (listing.failed === undefined) return null;
     return (
       <section aria-labelledby="connections-heading">
-        <h1 id="connections-heading">{words('data.connections')}</h1>
+        <Heading id="connections-heading" hidden={embedded}>
+          {words('data.connections')}
+        </Heading>
         {listing.signedOut ? (
           <Notice tone="signedOut">
             <p>{words('data.you-are-signed-out-sign-4')}</p>
@@ -298,7 +308,9 @@ export function Connections({ client }: { readonly client: Client }) {
     <ListLayout filter={filter}>
       <section aria-labelledby="connections-heading">
         <div className={styles['titleRow']}>
-          <h1 id="connections-heading">{words('data.connections')}</h1>
+          <Heading id="connections-heading" hidden={embedded}>
+            {words('data.connections')}
+          </Heading>
           {administered !== null && administered.length > 0 && (
             <button type="button" className="primary" onClick={() => setCreating(true)}>
               {words('data.new-connection')}

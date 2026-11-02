@@ -9,6 +9,7 @@ import {
   TransitionView,
   WorkflowRevisionView,
   WorkflowStandingView,
+  WorkflowStatesView,
 } from './workflows.js';
 
 export const TermParams = z.object({ id: LowercaseUuid });
@@ -34,6 +35,7 @@ export const TermView = z.object({
   mayEdit: z.boolean().describe('Whether the caller may cut its next version: edit on it'),
   mayRetire: z.boolean().describe('Whether the caller may archive it: retire on it'),
   state: WorkflowStandingView,
+  states: WorkflowStatesView,
   transitions: z
     .array(TransitionView)
     .describe('The workflow transitions the caller may take from its state now, in order'),

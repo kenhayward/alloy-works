@@ -80,6 +80,9 @@ const PATHS: Record<string, readonly string[]> = {
   // The outline pane and the status bar (interface slice 15).
   Back: ['M13 8H3.4M7 3.8 3 8l4 4.2'],
   Contents: ['M2.5 4h11M2.5 8h11M2.5 12h7'],
+  // A pilcrow: the paragraph's style (ADR-0075).
+  Paragraph: ['M12 2.5H7a3 3 0 0 0 0 6h2', 'M9 2.5v11M12 2.5v11'],
+  Insert: ['M8 3v10M3 8h10'],
   'Hide pane': ['M9.5 4 5.5 8l4 4'],
   'Show pane': ['M6.5 4l4 4-4 4'],
   'Add section': ['M2.5 3.6h11M2.5 7.2h6.5M2.5 10.8h4', 'M12 9.2v5.2M9.4 11.8h5.2'],

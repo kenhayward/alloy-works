@@ -54,6 +54,10 @@ const SEEDED: Readonly<Record<string, LozengeKind>> = {
   approved: 'approved',
 };
 
+/** The lozenge the seed draws a state's key as; undefined for one a tenant declared. */
+export const seededKind = (key: string): LozengeKind | undefined =>
+  Object.hasOwn(SEEDED, key) ? SEEDED[key] : undefined;
+
 /**
  * A workflow state, by the name its workflow gives it (LIF-005): the seed's in their own tones, any
  * other a tenant declares a neutral fact.
@@ -63,7 +67,7 @@ export function StateLozenge({
 }: {
   state: { readonly key: string; readonly name: string };
 }) {
-  const kind = Object.hasOwn(SEEDED, state.key) ? SEEDED[state.key] : undefined;
+  const kind = seededKind(state.key);
   return kind === undefined ? (
     <Chip data-kind="state" data-content="">
       {state.name}

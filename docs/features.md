@@ -39,17 +39,15 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and loaded unchanged by the Electron shell in `apps/desktop`. There is no per-delivery fork of the
   UI, and the running app names which delivery and runtime it is on.
 
-- **An interface in Light, Dark or Auto.** Every screen sits beside a labelled module rail - Home;
-  Components, Documents and Templates; Publications; Connections and Query definitions; and Admin,
-  which opens Administration. A module left half way through - a component, a document, a connection or
+- **An interface in Light, Dark or Auto.** Every screen sits beside a module rail of icons, each named as the pointer or focus reaches it - the
+  mark and the environment; Home; the modules to author, the library and publishing; and Admin, which
+  opens Administration, where Connections and Query definitions now live under **Data**. A module left half way through - a component, a document, a connection or
   a query definition open, a search typed - is as it was on returning to it by the rail, unsaved work
-  and scroll and all; its list is read afresh. Every screen is under a header band in the theme's colours with:
-  - the mark, which goes to Home, where every module is listed in its group with how many there are;
-  - the environment's name;
+  and scroll and all; its list is read afresh. The rail's mark goes to Home, where every module is listed in its group with how many there are. Every screen is under a header band in the theme's colours with:
   - **search and commands**, which Ctrl K opens too, going to a module or searching for what is typed;
-  - **Theme**, choosing Light, Dark or Auto, which follows the system; remembered in this browser,
-    and Auto until chosen;
-  - an account chip that signs out, or offers Sign in to somebody signed out. Signing in always
+  - an account chip whose menu holds **Theme** (Light, Dark or Auto, which follows the system; remembered
+    in this browser, and Auto until chosen), the interface's language and the go-to keys, and signs out; or
+    Theme and Sign in for somebody signed out. Signing in always
     asks the provider which account to use, so signing out and back in can switch person.
 
   Controls, tables and messages are drawn in the chosen theme from the Ledger tokens in
@@ -64,8 +62,19 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   no filter by language or date yet, though Search finds across it; templates have a list of their own,
   **Templates**, beside the others, each with its space, version and when it changed, filtered by space -
   a template is still made and changed through the API. Messages have one look per state: could not be loaded, signed out, read only, refused, someone else
-  editing, empty and waiting, and the save state carries a coloured dot. No screen has
-  the Ledger layout (`docs/interface/handoffs/ledger/`) yet: the module rail and the new shell come next.
+  editing, empty and waiting, and the save state carries a coloured dot.
+
+- **A document's page, one header and a side dock.** A document draws its name, version and who is here in
+  the header, with **Document, Edit, View, Insert, Format, Review and Help** menus under them, each
+  command named and keyed as it is everywhere else, its lifecycle as steps with the next act beside them,
+  its mode and Preview. Beside the text a dock floats the panels (Contents with a filter over its sections,
+  Baselines, Data) above the tools used most: paragraph style, Strong, Emphasis, Underline, more text
+  formatting, Link, Term, lists, Insert and Comment. The outline hides to the dock and comes back from
+  it. Each paragraph's style is named in the sheet's margin, never in what is copied or published, the
+  current one a button that changes it; View turns the labels off, and below 75% zoom they give way. What
+  a selection offers, a list's start or a figure's options, stands in the panels' **Selection** tab. An open
+  component's own acts sit on its frame. In the desktop app the native menu bar is gone but for a Mac's,
+  so no key is taken before the page has it, and Ctrl S in the text makes no version.
 
 - **A platform bridge.** The single seam between the renderer and its host. In a browser it answers
   locally; in the desktop shell it answers over enumerated IPC channels from a sandboxed preload.
@@ -892,7 +901,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   definitions that component's version was written against, not today's. The publication's page names
   the component, the field and what is wrong. A version can always be cut, filled in or not.
 
-- **Connections to your own data.** **Connections**, beside Templates, lists the connections you may
+- **Connections to your own data.** **Connections**, under **Data** in Administration, lists the connections you may
   read, by space, with whether each has its password and how its last test went. Somebody who may
   administer a space makes one there with **New connection**: a name, a description, and a PostgreSQL
   database's host, port, database, account and TLS, an HTTP API's base URL and the header its
@@ -935,7 +944,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   stops it at the database within two seconds, records nothing and says why, and closes your live
   updates. [The administrator's guide](guides/asserted-identity-on-postgresql.md) says how to set the
   database up, and what it trusts.
-- **Query definitions.** **Query definitions**, beside Connections, lists the query definitions you may
+- **Query definitions.** **Query definitions**, under **Data** in Administration, lists the query definitions you may
   read, by space, each with its connection. Somebody who may edit in a space and use a connection
   writes one there with **New query definition**, a tab for each step - **Details**, **Query**,
   **Columns**, **Rows**, **Sample** and, once saved, **Used by** - under a strip saying what it runs against, how many of its columns are confirmed and what uses it, with **Save version** at the top, held until every column is confirmed, and **Retire** under **More actions**; the tab is in the address. Details is the connection, a title and a description;
@@ -2082,8 +2091,8 @@ window.` and offers **Recover here** instead. Either starts editing, taking the 
   long as it stays open, and a download link lasts five minutes from when the publication's page was
   opened. In the desktop app, downloading has not been checked.
 
-- **Pages as you edit.** While a component is open in place in a document, **Pages as you edit** on
-  the document bar shows the pages of that part of the document and a page either side, beside the
+- **Pages as you edit.** While a component is open in place in a document, **Pages as you edit** in
+  the View menu shows the pages of that part of the document and a page either side, beside the
   text, drawn again from each save within a few seconds on a 300-page document. They are pictures of
   the pages, untagged, and the pane says so, as does each page to assistive technology, naming
   **Preview**, beside them, which makes the tagged PDF. They show your own saves alone, and are kept

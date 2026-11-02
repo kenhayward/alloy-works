@@ -1174,7 +1174,7 @@ describe('the query definition page', () => {
     const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
     expect(within(trail).getByRole('link', { name: 'Query definitions' })).toHaveAttribute(
       'href',
-      '#/query-definitions',
+      '#/admin/query-definitions',
     );
     expect(screen.getByText(/^Version /, { selector: '[data-tone]' })).toBeInTheDocument();
     const runsAgainst = within(screen.getByRole('group', { name: 'State' })).getAllByRole(
