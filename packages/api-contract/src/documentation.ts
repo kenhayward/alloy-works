@@ -1320,7 +1320,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getAssistantUsage:
     'Returns how many runs of the assistant you made this calendar month, UTC, and what they cost, by currency.',
   acceptProposal:
-    'Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted.',
+    'Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted. Answers with the version made; a document pinning the component keeps its pin until it is changed.',
   keepProposal:
     'Keeps a proposal from your run as a suggestion, marked generated, for review beside the component, where it is accepted or rejected as any suggestion is. Needs suggest on the component.',
   discardProposal:

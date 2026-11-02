@@ -182,7 +182,9 @@ function service() {
       return json(200, { runs: 3, costs: [{ currency: 'USD', cost: '0.001800' }] });
     }
     if (path === `/v1/assistant/proposals/${PROPOSAL}/acceptance`) {
-      return json(200, { proposal: { id: PROPOSAL, state: 'accepted', suggestion: 'x' } });
+      return json(200, {
+        proposal: { id: PROPOSAL, state: 'accepted', suggestion: 'x', version: 'v2' },
+      });
     }
     if (path === `/v1/assistant/proposals/${PROPOSAL}/discarding`) {
       return json(200, { proposal: { id: PROPOSAL, state: 'discarded', suggestion: null } });
@@ -589,7 +591,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
     await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
     await within(proposal).findByText('Accepted: it is a new version of the part.');
-    expect(onAccepted).toHaveBeenCalledExactlyOnceWith(SITES);
+    expect(onAccepted).toHaveBeenCalledExactlyOnceWith(SITES, 'v2');
   });
 
   it('shows a proposed table by its caption and rows, never as a bare kind (the TE change)', async () => {
