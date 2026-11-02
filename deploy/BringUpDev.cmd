@@ -6,6 +6,8 @@ rem
 rem   deploy\BringUpDev.cmd
 rem
 rem It works from anywhere, since it moves to the repo root itself. It stops at the first problem.
+rem ALLOY_SIGN_IN=keycloak, in the environment or deploy\.env, signs people in through Keycloak in place
+rem of the stand-in (deploy/compose.keycloak.yaml).
 setlocal EnableExtensions
 
 pushd "%~dp0.." || (echo Could not find the repo root beside deploy\. & exit /b 1)
@@ -50,6 +52,11 @@ if not "%MINE%"=="yes" (
   goto :end
 )
 echo Network address %ALLOY_LAN_ADDRESS% (%ADDRESS_FROM%)
+
+if not defined ALLOY_SIGN_IN if exist deploy\.env (
+  for /f "tokens=1,* delims==" %%a in ('findstr /b /c:"ALLOY_SIGN_IN=" deploy\.env') do set "ALLOY_SIGN_IN=%%b"
+)
+if /i "%ALLOY_SIGN_IN%"=="keycloak" call :keycloak
 
 rem The build installs the bridge contract from GitHub Packages, with a token that can read packages:
 rem NODE_AUTH_TOKEN from the environment or deploy\.env (compose reads that itself), else the GitHub
@@ -123,8 +130,21 @@ echo organisation's provider. Trust https://%ALLOY_LAN_ADDRESS%:%LAN_IDP_PORT%/l
 echo accept the warning at each of ports %LAN_SERVICE_PORT%, %LAN_IDP_PORT% and %LAN_STORE_PORT% once.
 echo The firewall must let those ports in. The connector can reach this machine and your network.
 echo See deploy\compose.lan.yaml.
+if /i "%ALLOY_SIGN_IN%"=="keycloak" echo Keycloak signs people in; its console is at https://%ALLOY_LAN_ADDRESS%:%LAN_IDP_PORT%/admin. See deploy\README.md.
 set "RESULT=0"
 goto :end
+
+rem In its own routine, so each line sees what the one before it set.
+:keycloak
+if not defined LAN_IDP_PORT if exist deploy\.env (
+  for /f "tokens=1,* delims==" %%a in ('findstr /b /c:"LAN_IDP_PORT=" deploy\.env') do set "LAN_IDP_PORT=%%b"
+)
+if not defined LAN_IDP_PORT set "LAN_IDP_PORT=9443"
+set "COMPOSE=%COMPOSE% -f deploy\compose.keycloak.yaml"
+set "ALLOY_IDP_UPSTREAM=keycloak"
+set "KEYCLOAK_PUBLIC_URL=https://%ALLOY_LAN_ADDRESS%:%LAN_IDP_PORT%"
+echo Signing in through Keycloak at %KEYCLOAK_PUBLIC_URL%
+exit /b 0
 
 :fail
 echo.

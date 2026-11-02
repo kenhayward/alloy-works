@@ -165,6 +165,33 @@ own. Use `http://<your machine's LAN address>:<port>` for a store on this machin
 which the guard always refuses. Never with the suites: `connector-isolation.test.ts` asserts the
 isolation this gives up.
 
+### Keycloak in place of the stand-in: `compose.keycloak.yaml`
+
+**`deploy/compose.keycloak.yaml`**, for development only, signs people in through a real provider you
+can add people and groups to. The stand-in does not run, and Google is not offered, since the stand-in
+played it. Name no services on `up`: naming them leaves a stand-in already running, holding the port.
+
+```bash
+docker compose -f deploy/compose.yaml -f deploy/compose.keycloak.yaml up -d --build --wait
+```
+
+For other machines too, set `ALLOY_SIGN_IN=keycloak` in `deploy/.env` and run `deploy\BringUpDev.cmd`,
+which adds `compose.lan.yaml` and tells Keycloak its address. By hand, that is `ALLOY_IDP_UPSTREAM=keycloak`
+and `KEYCLOAK_PUBLIC_URL=https://<address>:9443` beside the three files.
+
+It answers on the provider's port and name, and its realm (`deploy/keycloak/alloy-realm.json`, with their
+development password) holds the stand-in's people and client, so an existing stack moves without losing
+anybody: the setup points the environment's provider at it and carries Ada's and Grace's grants across.
+Drop the file to move back. People, once added, live in the `keycloak-data` volume; a realm file changed
+later needs that volume removed.
+
+**Adding somebody:** the console is at `http://idp.localhost:9090/admin` (`admin`, and
+`KEYCLOAK_ADMIN_PASSWORD`, else the default in the file), realm `alloy`. Under **Users**, add them with an
+email, **Email verified** on, and a password under **Credentials**. Invite that address in Administration,
+as a claim needs it verified. **Groups** reach the service in the ID token's `groups` claim. Every sign-in
+asks who is signing in, since signing out of Alloy Works does not end Keycloak's session
+(`deploy/keycloak/configure.sh`, which also sets where a sign-in may return, at every start).
+
 ### A source to connect to: the `sources` profile
 
 `source-postgres` is a PostgreSQL of a tenant's own for development and CI, pinned by digest, TLS on

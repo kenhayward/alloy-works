@@ -20,7 +20,7 @@ https://{$ALLOY_LAN_ADDRESS}:{$LAN_IDP_PORT} {
 		rewrite * /root.crt
 		file_server
 	}
-	reverse_proxy stand-in-idp:{$IDP_PORT}
+	reverse_proxy {$IDP_UPSTREAM:stand-in-idp}:{$IDP_PORT}
 }
 
 https://{$ALLOY_LAN_ADDRESS}:{$LAN_STORE_PORT} {

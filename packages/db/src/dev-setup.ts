@@ -12,7 +12,7 @@ import { migrate } from './migrate.js';
 import { tenantNames } from './names.js';
 import { addHostnames, createTenant } from './provision.js';
 import { sealingKey } from '@alloy-works/sealing';
-import { configureOrganisationSignIn, permitGoogleSignIn } from './sign-in.js';
+import { closeSignInRoute, configureOrganisationSignIn, permitGoogleSignIn } from './sign-in.js';
 import { createTenantDatabase } from './tenant-database.js';
 import { TEST_PASSWORDS } from './testing/database.js';
 
@@ -135,5 +135,10 @@ await serviceDb.close();
 // Manage access come in by it; Alice, whom nobody invited, is refused.
 const development = tenantNames('acmedev');
 const developmentTenant = { id: 'acmedev', schema: development.schema, role: development.role };
-await permitGoogleSignIn(adminUrl, developmentTenant);
+// Unless the stand-in is not running (deploy/compose.keycloak.yaml): then Google would answer nothing.
+if (process.env.DEV_GOOGLE_ROUTE === 'closed') {
+  await closeSignInRoute(adminUrl, developmentTenant, 'google');
+} else {
+  await permitGoogleSignIn(adminUrl, developmentTenant);
+}
 console.log(`Ready: database ${database}, service login aw_service / ${TEST_PASSWORDS.service}`);
