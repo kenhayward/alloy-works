@@ -111,7 +111,7 @@ describe('the committed trace.json', () => {
     // 1625, from 1624 (2026-10-31): LIB-065, superseding LIB-001 - a vocabulary is a definition (VO).
     // 1627, from 1625 (2026-11-01): AST-052 and AST-053, superseding AST-025 and AST-043 (AL).
     // 1628, from 1627 (2026-11-01): STY-086, superseding STY-066 (SY).
-    expect(model.requirements).toHaveLength(1628);
+    expect(model.requirements).toHaveLength(1631);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -1037,7 +1037,7 @@ describe('the citations in the committed model', () => {
     // 2393 (2026-11-01): SYc - themes of their own, STY-072 and STY-026.
     // 2399 (2026-11-02): SYd - the character form and the styles offered to authors, STY-033.
     // 2409 (2026-11-02): SYe - catalogues exported and imported, STY-043, STY-044, STY-071, STY-073.
-    expect(model.citations).toHaveLength(2419);
+    expect(model.citations).toHaveLength(2428);
   });
 
   it('cites no identifier the corpus does not hold', () => {
@@ -1184,6 +1184,6 @@ describe('scanning the repository for test files', () => {
     // 155, from 154 (2026-11-01): structure/AnswerMarkdown.test.tsx, citing nothing (issue #857).
     // 156, from 155 (2026-11-01): parts/MenuButton.test.tsx, citing nothing (the DQ plan).
     // 157, from 156 (2026-11-01): admin/Themes.test.tsx, citing STY-029, STY-031, STY-034, STY-057, STY-067 and STY-069 (SYb).
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(158);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(162);
   });
 });
