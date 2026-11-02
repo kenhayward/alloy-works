@@ -227,6 +227,11 @@ export const documentationGroups = [
       { name: 'Groups', description: 'Manage group membership and provider-backed groups.' },
       { name: 'Sessions', description: 'See and end your own sessions.' },
       { name: 'Invitations', description: 'Invite people before their first sign-in.' },
+      {
+        name: 'Sign-in settings',
+        description:
+          'Identity providers, the Google route, session lifetimes and disabling a person.',
+      },
       { name: 'Roles and grants', description: 'Inspect permissions and manage grants.' },
     ],
   },

@@ -85,6 +85,7 @@ describe('what each route checks', () => {
     expect(sessionAlone).toEqual(
       [
         'acceptProposal',
+        'startReauthentication',
         'beatPresence',
         'createToken',
         'discardProposal',
