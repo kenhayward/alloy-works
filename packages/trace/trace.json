@@ -18810,6 +18810,19 @@
       ]
     },
     {
+      "document": "moving.md",
+      "owns": [
+        {
+          "id": "IAM-015",
+          "howItIsMet": "`POST /v1/artifacts/{id}/move` moves a component, document, template or image within a tenant; the chain changes with `space_id`, and grants on the artifact itself end, so no old permission is carried (MV-B)."
+        },
+        {
+          "id": "IAM-028",
+          "howItIsMet": "The next decision reads the new chain; a test holds a person's answer before and after, both ways, and a direct allow and a direct deny each ending."
+        }
+      ]
+    },
+    {
       "document": "publishing.md",
       "owns": [
         {
