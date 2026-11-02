@@ -470,6 +470,34 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* A list a command showed: the closing cross above it, its names kept whole. */
+.listed {
+  display: grid;
+  gap: var(--space-4, 4px);
+}
+
+.listedClose {
+  justify-self: end;
+}
+
+.listed table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-14);
+}
+
+.listed th,
+.listed td {
+  padding: var(--space-4, 4px) var(--space-8);
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.listed td:first-child {
+  white-space: nowrap;
+}
+
 /* Your words alone, at the end of the line in the accent, as a chat shows them (issue #864). */
 .asked {
   justify-self: end;

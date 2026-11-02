@@ -53,6 +53,9 @@
         "text": {
           "$ref": "#/components/messages/assistant_text"
         },
+        "progress": {
+          "$ref": "#/components/messages/assistant_progress"
+        },
         "tool_call": {
           "$ref": "#/components/messages/assistant_tool_call"
         },
@@ -124,6 +127,9 @@
         },
         {
           "$ref": "#/channels/assistantRun/messages/text"
+        },
+        {
+          "$ref": "#/channels/assistantRun/messages/progress"
         },
         {
           "$ref": "#/channels/assistantRun/messages/tool_call"
@@ -671,7 +677,7 @@
               "type": "string"
             },
             "tokens": {
-              "description": "How many tokens of the reply have arrived so far, this piece among them: counted as the pieces the provider streamed, about a token each",
+              "description": "How many tokens of the reply have arrived so far, this piece among them, its thinking and tool calls too: counted as the pieces the provider streamed, about a token each",
               "type": "integer",
               "minimum": 0,
               "maximum": 9007199254740991
@@ -679,6 +685,27 @@
           },
           "required": [
             "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "assistant_progress": {
+        "name": "progress",
+        "summary": "More of the reply arrived that is not yet its words: the model thinking, writing a tool call, or an answer held for its guardrails. Counted, and what it says never sent",
+        "contentType": "application/json",
+        "payload": {
+          "$schema": "https://json-schema.org/draft/2020-12/schema",
+          "type": "object",
+          "properties": {
+            "tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991,
+              "description": "How many tokens of the reply have arrived so far, counted as `text` counts them"
+            }
+          },
+          "required": [
+            "tokens"
           ],
           "additionalProperties": false
         }

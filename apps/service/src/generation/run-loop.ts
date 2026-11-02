@@ -277,7 +277,12 @@ export function streamedRun(input: {
             if (event.type === 'text') {
               text += event.text;
               received += 1;
-              if (!holding) send('text', { text: event.text, tokens: received });
+              // A reply held for its guardrails still counts as it comes.
+              if (holding) send('progress', { tokens: received });
+              else send('text', { text: event.text, tokens: received });
+            } else if (event.type === 'progress') {
+              received += 1;
+              send('progress', { tokens: received });
             } else if (event.type === 'tool_call') {
               calledFor.push({ id: event.id, name: event.name, input: event.input });
             }

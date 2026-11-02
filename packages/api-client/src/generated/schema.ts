@@ -34351,6 +34351,8 @@ export interface operations {
                             model: string;
                             /** @description The most tokens its model takes in one call: what a turn is measured against */
                             contextWindow: number;
+                            /** @description Whether its model calls tools: one that does not answers from what it is given */
+                            supportsTools: boolean;
                             /** @description `outside` where it sits outside the data boundary */
                             boundary: string;
                             /** @description The one a turn naming none runs on */

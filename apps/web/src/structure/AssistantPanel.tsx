@@ -12,6 +12,7 @@ import { Popup } from '../parts/Popup.js';
 import { Segmented } from '../parts/Segmented.js';
 import { Toolbar } from '../parts/Toolbar.js';
 import { formats, words, wordsWith } from '../words/words.js';
+import { commandRows, readCommand, toolRows, type ChatCommand } from './chatCommands.js';
 import { failedWords, proposedNothingWords, stepWords, type StepSaid } from './runWords.js';
 
 type Client = ReturnType<typeof createApiClient>;
@@ -184,6 +185,7 @@ interface OfferedEndpoint {
   readonly name: string;
   /** The most tokens its model takes in one call: what a turn is measured against. */
   readonly contextWindow: number;
+  readonly supportsTools: boolean;
   readonly boundary: string;
   readonly isDefault: boolean;
 }
@@ -294,7 +296,10 @@ export function AssistantPanel({
   const addButton = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const askedNow = useRef<HTMLParagraphElement>(null);
+  // Whether the conversation keeps to its newest, until the person scrolls back from it.
+  const following = useRef(true);
+  // A list a command showed in the conversation, never part of it: gone with the next ask.
+  const [listed, setListed] = useState<'commands' | 'tools' | null>(null);
   // What the assistant is given with an ask on a document: the component open, or every one.
   const [scope, setScope] = useState<'component' | 'document'>('component');
   // The part asked about, held from when the box is entered until the ask is sent, so the cursor
@@ -314,17 +319,14 @@ export function AssistantPanel({
     element.style.height = 'auto';
     element.style.height = `${element.scrollHeight}px`;
   }, [ask]);
-  // A turn asked brought into view, its words whole at the top of the conversation with the answer
-  // coming under them, a follow-up too: the conversation scrolled alone, never the page around it
-  // (issues #864, #871). Where the bubble is not drawn, a prompt run's, its foot.
-  useEffect(() => {
+  // The newest of the conversation kept in view as it comes: the ask, the earlier turn moving above
+  // it as its run begins, each piece of the answer and each step. The conversation scrolled alone,
+  // never the page around it (issue #864), and left be once the person scrolls back from its foot.
+  useLayoutEffect(() => {
     const element = scroller.current;
-    if (!element || !(running || asked !== null)) return;
-    const bubble = askedNow.current;
-    element.scrollTo?.({
-      top: bubble ? bubble.offsetTop - 12 : element.scrollHeight,
-    });
-  }, [running, asked]);
+    if (!element || !following.current || !(running || asked !== null || listed !== null)) return;
+    element.scrollTo?.({ top: element.scrollHeight });
+  }, [running, asked, current, answer, steps, proposals, notices, ended, turns, listed]);
   const asking = held ?? component;
   const given = asking === null ? 'document' : scope;
   // The reply's tokens so far, while it streams.
@@ -464,24 +466,26 @@ export function AssistantPanel({
     setEnded(null);
     setTray([]);
     setPending([]);
+    setListed(null);
     if (id !== null) void readTurns(id).catch(() => undefined);
   };
 
-  /** The open conversation named, or kept or let go, by its owner (the DQ plan). */
+  /** The open conversation named, or kept or let go, by its owner (the DQ plan); whether it was. */
   const change = async (body: { title?: string; kept?: boolean }) => {
-    if (conversation === null) return;
+    if (conversation === null) return false;
     const id = conversation;
     const { data, error } = await client.PATCH('/v1/conversations/{id}', {
       params: { path: { id } },
       body,
     });
-    if (openNow.current !== id) return;
+    if (openNow.current !== id) return false;
     if (!data) {
       setSaid(refusalWords(error, words('document.the-conversation-could-not-be-changed')));
-      return;
+      return false;
     }
     setOpened({ title: data.title, kept: data.kept });
     await readConversations().catch(() => undefined);
+    return true;
   };
 
   const submit = async (event: FormEvent) => {
@@ -489,9 +493,39 @@ export function AssistantPanel({
     await send(ask);
   };
 
-  /** An ask sent as a turn of the conversation open, or of a new one. */
+  /** A command from the box: nothing of it reaches the model. */
+  const command = async (name: ChatCommand) => {
+    setAsk('');
+    setSaid('');
+    if (name === 'commands' || name === 'tools') {
+      following.current = true;
+      setListed(name);
+    } else if (running) {
+      setSaid(words('document.command-waits', { command: `/${name}` }));
+    } else if (name === 'clear') {
+      open(null);
+    } else if (conversation === null) {
+      setSaid(words('document.nothing-to-save'));
+    } else if (opened?.kept) {
+      setSaid(words('document.already-saved'));
+    } else if (await change({ kept: true })) {
+      setSaid(words('document.saved'));
+    }
+  };
+
+  /** An ask sent as a turn of the conversation open, or of a new one; or a command. */
   const send = async (text: string) => {
-    if (text.trim() === '' || running) return;
+    if (text.trim() === '') return;
+    const read = readCommand(text);
+    if (read !== null) {
+      if ('known' in read) await command(read.known);
+      // The words left, to correct.
+      else setSaid(words('document.no-such-command', { command: read.unknown }));
+      return;
+    }
+    if (running) return;
+    following.current = true;
+    setListed(null);
     // A first ask starts a conversation of this document's, named by its words (G5-A).
     let id = conversation;
     if (id === null) {
@@ -535,6 +569,7 @@ export function AssistantPanel({
   const run = async (url: string, body: Record<string, unknown>) => {
     const controller = new AbortController();
     stop.current = controller;
+    following.current = true;
     setRunning(true);
     setAnswer('');
     setSteps([]);
@@ -566,6 +601,9 @@ export function AssistantPanel({
               lastToken.current = seen;
             }
             setAnswer((was) => was + String(frame.text));
+            if (typeof frame.tokens === 'number') setReceived(frame.tokens);
+            break;
+          case 'progress':
             if (typeof frame.tokens === 'number') setReceived(frame.tokens);
             break;
           case 'tool_call':
@@ -870,7 +908,14 @@ export function AssistantPanel({
           </Popup>
         )}
       </div>
-      <div ref={scroller} className={styles['scroll']}>
+      <div
+        ref={scroller}
+        className={styles['scroll']}
+        onScroll={(event) => {
+          const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
+          following.current = scrollHeight - scrollTop - clientHeight < 48;
+        }}
+      >
         {/* The name while it is written; never the title over the turns, which says the first ask
         again (issue #871). */}
         {naming !== null && (
@@ -926,7 +971,7 @@ export function AssistantPanel({
         {(asked !== null || running || answer !== '' || ended !== null || proposals.length > 0) && (
           <article aria-label={words('document.this-turn')} className={styles['turn']}>
             {asked !== null && (
-              <p ref={askedNow} className={styles['asked']}>
+              <p className={styles['asked']}>
                 <span className={styles['hidden']}>{words('document.you')} </span> {asked}
               </p>
             )}
@@ -1146,6 +1191,47 @@ export function AssistantPanel({
               {words('document.run-afresh')}
             </button>
           </p>
+        )}
+        {listed !== null && (
+          <section className={styles['listed']}>
+            <IconButton
+              label={words('document.close-list', {
+                name: words(listed === 'tools' ? 'document.tools' : 'document.commands'),
+              })}
+              className={styles['listedClose']}
+              onClick={() => setListed(null)}
+            >
+              <Icon name="Close" size={12} />
+            </IconButton>
+            {listed === 'tools' && endpointNow?.supportsTools === false ? (
+              <p className={styles['muted']}>
+                {words('document.no-tools', { name: endpointNow.name })}
+              </p>
+            ) : (
+              <table
+                aria-label={words(listed === 'tools' ? 'document.tools' : 'document.commands')}
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">{words('document.list-name')}</th>
+                    <th scope="col">{words('document.list-effect')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(listed === 'tools' ? toolRows(document !== null) : commandRows()).map(
+                    ([name, effect]) => (
+                      <tr key={name}>
+                        <td>
+                          <code>{name}</code>
+                        </td>
+                        <td>{effect}</td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            )}
+          </section>
         )}
       </div>
       <div className={styles['composer']}>

@@ -144,6 +144,9 @@ const usage = z.strictObject({
 /** One line of a model call's answer; the last is `ended` or `failed`. */
 export const modelEventSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('text'), text: z.string() }),
+  // A piece of the reply that is not its words, thinking or a tool call being written: counted, so
+  // a person sees it coming, and what it says never leaves the connector.
+  z.strictObject({ type: z.literal('progress') }),
   z.strictObject({
     type: z.literal('tool_call'),
     id: toolUseBlock.shape.id,
