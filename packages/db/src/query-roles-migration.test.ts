@@ -123,7 +123,10 @@ describe('migration 0058, which starts every environment with Query builder and 
     // Another made its own Query writer, holding less.
     const own = await beforeRoles('Own');
     await service.withTenant(own, (trx) =>
-      trx.insertInto('role').values({ name: 'Query writer', permissions: ['read'] }).execute(),
+      trx
+        .insertInto('role')
+        .values({ name: 'Query writer', permissions: ['read'] })
+        .execute(),
     );
     const made = await queryRoles(own);
 
