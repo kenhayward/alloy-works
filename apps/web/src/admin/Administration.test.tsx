@@ -1239,13 +1239,14 @@ describe('Access from Administration', () => {
     expect(
       within(dialog).queryByRole('button', { name: 'Manage access to the whole environment' }),
     ).toBeNull();
-    // Asked once of the environment and once of each space, and not again on coming back.
+    // Asked twice of the environment, for administer and configuring services, once of each space,
+    // and not again on coming back.
     expect(
       asked
         .filter((url) => url.pathname === '/v1/access')
         .map((url) => url.searchParams.get('target'))
         .sort(),
-    ).toEqual(['space:s1', 'space:s2', 'tenant']);
+    ).toEqual(['space:s1', 'space:s2', 'tenant', 'tenant']);
   });
 
   it('keeps focus in Administration once a grant removed takes its Remove button with it', async () => {

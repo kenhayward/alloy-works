@@ -12,13 +12,17 @@ type Client = ReturnType<typeof createApiClient>;
  * included. A convenience for what is offered alone, never a check: the access routes enforce
  * permission again, server-side. Shared by `ManageAccessLink` and Administration's Access buttons.
  */
-export async function administersAt(client: Client, target: string): Promise<boolean> {
+export async function administersAt(
+  client: Client,
+  target: string,
+  permission = 'administer',
+): Promise<boolean> {
   try {
     const { data } = await client.GET('/v1/access', { params: { query: { target } } });
     // The client's response body is `any` (packages/api-client's generated types never reach the
     // renderer), so it is checked rather than trusted before a field of it is read.
     if (!isAccessAnswers(data)) return false;
-    const answer = data.permissions.find((each) => each.permission === 'administer');
+    const answer = data.permissions.find((each) => each.permission === permission);
     return answer?.allowed === true;
   } catch {
     return false;

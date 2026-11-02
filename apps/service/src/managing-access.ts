@@ -73,7 +73,7 @@ const REFUSALS = new Map<
   ],
   [
     'grant.administer_denied_at_tenant',
-    'A role that includes administer cannot be denied across the whole environment.',
+    'A role that includes administer or configure services cannot be denied across the whole environment.',
   ],
   ['grant.role_missing', 'There is no such role in this environment.'],
   ['grant.role_fixed', 'That role is granted only by sharing a publication.'],

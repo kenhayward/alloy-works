@@ -56,12 +56,12 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 const forbidden = {
-  description: 'The caller may not administer this environment',
+  description: '`export_environment` is not held at this environment',
   schema: ErrorBody,
 } as const;
-const ADMINISTER = {
+const EXPORTS = {
   check: 'permission',
-  permission: 'administer',
+  permission: 'export_environment',
   target: { tenant: true },
 } as const;
 
@@ -72,7 +72,7 @@ export const exportRoutes = {
     path: '/v1/exports',
     summary: "Export the environment's content as it stands now, as a job",
     tenantScoped: true,
-    access: ADMINISTER,
+    access: EXPORTS,
     responses: {
       200: { description: 'Asked for: queued, and written by a job', schema: TenantExportMade },
       401: unauthenticated,
@@ -85,7 +85,7 @@ export const exportRoutes = {
     path: '/v1/exports',
     summary: "The environment's exports, the newest first, a page at a time",
     tenantScoped: true,
-    access: ADMINISTER,
+    access: EXPORTS,
     query: TenantExportQuery,
     responses: {
       200: { description: 'A page of exports', schema: TenantExportList },
@@ -100,7 +100,7 @@ export const exportRoutes = {
     path: '/v1/exports/{id}',
     summary: 'An export of the environment: whether it is ready, and what it holds',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: EXPORTS,
     params: TenantExportParams,
     responses: {
       200: { description: 'The export', schema: TenantExportMade },
@@ -115,7 +115,7 @@ export const exportRoutes = {
     path: '/v1/exports/{id}/download',
     summary: 'A link to download an export of the environment; each one handed out is recorded',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: EXPORTS,
     params: TenantExportParams,
     responses: {
       200: { description: 'A link to the export', schema: TenantExportDownload },

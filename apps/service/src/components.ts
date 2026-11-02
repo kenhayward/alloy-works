@@ -54,7 +54,7 @@ import {
   type EffectiveField,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { administersTenant, notFound, scopesOf, type Authorised } from './access.js';
+import { administersTenant, holdsAtTenant, notFound, scopesOf, type Authorised } from './access.js';
 import { AppError } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -430,7 +430,7 @@ export function componentHandlers(
         onHold:
           (decide('retire', facts).allowed || administersTenant(facts)) &&
           (await isHeld(trx, answer.version.artifactId)),
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         lock: null,
         // Nothing has been saved of a component made a moment ago.
         unsaved: null,
@@ -581,7 +581,7 @@ export function componentHandlers(
         // confidential.
         onHold:
           (decide('retire', facts).allowed || administersTenant(facts)) && (await isHeld(trx, id)),
-        mayHold: administersTenant(facts),
+        mayHold: holdsAtTenant(facts),
         lock: lock ? lockView(lock, principalId) : null,
         unsaved: unsaved === null ? null : { savedAt: unsaved.toISOString() },
         sequence,

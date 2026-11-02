@@ -1,6 +1,7 @@
 import {
   bootstrapCluster,
   createTenant,
+  erasePerson,
   migrate,
   type Tenant,
   type TenantDatabase,
@@ -26,7 +27,7 @@ const OTHER = 'scim.other.alloy.test';
 const CALLBACK = `http://${HOST}/v1/sign-in/organisation/callback`;
 const SCIM_TYPE = 'application/scim+json';
 
-const USERS = ['ada', 'grace', 'hedy', 'mary', 'joan', 'ivy', 'alan'].map((id) => ({
+const USERS = ['ada', 'grace', 'hedy', 'mary', 'joan', 'ivy', 'alan', 'kay', 'lin'].map((id) => ({
   id,
   name: id,
   email: `${id}@acme.example`,
@@ -468,6 +469,49 @@ describe('SCIM', () => {
     expect(events.length).toBeGreaterThan(0);
     expect(events.every((each) => each.actor_kind === 'token')).toBe(true);
     expect(JSON.stringify(events)).not.toContain('@acme.example');
+  });
+
+  it("an administrator's disabling of somebody SCIM disabled stands when the provider says active", async () => {
+    const kay = await push('kay', { active: false });
+    expect(kay.active).toBe(false);
+    const disabled = await app.inject({
+      method: 'POST',
+      url: `/v1/principals/${kay.id}/disablement`,
+      headers: { host: HOST, cookie: admin.cookie },
+    });
+    expect(disabled.statusCode, disabled.body).toBe(200);
+    const replay = await scim('PUT', `/Users/${kay.id}`, {
+      externalId: 'kay',
+      userName: 'kay@acme.example',
+      active: true,
+    });
+    expect(replay.json()).toMatchObject({ active: false });
+  });
+
+  it('an erased person leaves what SCIM holds, so its next push neither refuses nor restores them', async () => {
+    const lin = await push('lin');
+    const ivy = (
+      await scim('GET', `/Users?filter=${encodeURIComponent('externalId eq "ivy"')}`)
+    ).json<{ Resources: { id: string }[] }>().Resources[0]!;
+    const held = await scim('POST', '/Groups', {
+      displayName: 'Reviewers',
+      externalId: 'g-erased',
+      members: [{ value: lin.id }],
+    });
+    const group = held.json<{ id: string }>().id;
+    await tenantDb.withTenant(tenant, (trx) => erasePerson(trx, lin.id, admin.id), {
+      actorKind: 'person',
+      actor: admin.id,
+      traceId: 'erasing',
+    });
+    const next = await scim('PATCH', `/Groups/${group}`, {
+      Operations: [{ op: 'add', path: 'members', value: [{ value: ivy.id }] }],
+    });
+    expect(next.statusCode, next.body).toBe(200);
+    expect(next.json<{ members: { value: string }[] }>().members.map((each) => each.value)).toEqual(
+      [ivy.id],
+    );
+    expect((await scim('DELETE', `/Groups/${group}`)).statusCode).toBe(204);
   });
 
   it('says a body that is no JSON, and a key somebody else holds, in its own shape', async () => {

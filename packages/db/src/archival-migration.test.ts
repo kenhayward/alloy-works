@@ -77,7 +77,20 @@ describe('migration 0083, which gives Administrator the retire permission', () =
     expect(await roles()).toEqual(
       edited.map((role) =>
         role.name === 'Administrator'
-          ? { ...role, permissions: [...role.permissions, 'retire'] }
+          ? {
+              ...role,
+              // And 0190's six, which come after 0083 and reach every role holding administer.
+              permissions: [
+                ...role.permissions,
+                'retire',
+                'export_environment',
+                'export_audit',
+                'hold',
+                'rotate_secrets',
+                'configure_services',
+                'configure_webhooks',
+              ],
+            }
           : role,
       ),
     );

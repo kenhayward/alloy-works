@@ -31,7 +31,7 @@ export async function disablePrincipal(
 ): Promise<DisablementAnswer> {
   const held = await trx
     .selectFrom('principal')
-    .select(['kind', 'disabled_at'])
+    .select(['kind', 'disabled_at', 'disabled_by'])
     .select(erasedIn().as('erased'))
     .where('id', '=', id)
     .forUpdate()
@@ -39,7 +39,19 @@ export async function disablePrincipal(
   if (!held) return { refused: 'principal.missing' };
   if (held.kind === 'service') return { refused: 'principal.service' };
   if (held.erased) return { refused: 'principal.erased' };
-  if (held.disabled_at !== null) return { sessions: [], tokens: [] };
+  if (held.disabled_at !== null) {
+    // An administrator's disablement of somebody SCIM disabled is theirs now, so a provider saying
+    // active again does not undo it. Nothing else ended: all of it did when SCIM disabled them.
+    if (by === 'person' && held.disabled_by === 'scim') {
+      await trx.updateTable('principal').set({ disabled_by: by }).where('id', '=', id).execute();
+      await recordEvent(
+        trx,
+        { kind: 'principal.disabled', subject: { kind: 'principal', id }, detail: { by } },
+        labels(await principalLabel(trx, 'subject', id)),
+      );
+    }
+    return { sessions: [], tokens: [] };
+  }
   if (by === 'person' && !(await wayInRemains(trx, { disabling: id }))) {
     return { refused: 'principal.last_way_in' };
   }

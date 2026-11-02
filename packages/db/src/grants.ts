@@ -160,11 +160,12 @@ export async function grant(trx: TenantTransaction, input: NewGrant): Promise<Gr
     return { refused: 'grant.allow_without_read' };
   }
   // A denial of administer at the tenant cannot be undone by anybody it reaches, and the lock-out
-  // guard counts only allows; so it is refused outright (access.md, "Roles").
+  // guard counts only allows; so it is refused outright (access.md, "Roles"). So too of configuring
+  // services, which the guard over the ways in counts (identity.md, "Lockout").
   if (
     input.effect === 'deny' &&
     input.level.kind === 'tenant' &&
-    role.permissions.includes('administer')
+    (role.permissions.includes('administer') || role.permissions.includes('configure_services'))
   ) {
     return { refused: 'grant.administer_denied_at_tenant' };
   }
@@ -424,7 +425,7 @@ export async function removeGrant(trx: TenantTransaction, id: string): Promise<R
     return { refused: 'grant.last_administrator' };
   }
   // Nor the last held by anybody who can still sign in (identity.md, "Lockout"; IN-B).
-  if (administering.includes(id) && !(await wayInRemains(trx, { removingGrant: id }))) {
+  if (!(await wayInRemains(trx, { removingGrant: id }))) {
     return { refused: 'grant.last_way_in' };
   }
   const removed = storedOf(row);

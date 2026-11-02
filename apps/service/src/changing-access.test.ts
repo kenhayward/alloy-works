@@ -199,9 +199,15 @@ describe('a route that changes access', () => {
     ]);
     // A share is a publisher's release of what they published (the R17 plan, R17-C).
     const sharing = ['revokePublicationShare', 'sharePublication'];
+    // What was split out of administer (identity.md, "High-risk permissions").
+    const configuring = ['closeProvider', 'disconnectCtStudio', 'setGoogleSignIn'];
     for (const route of declaring) {
       expect(route.access, route.operationId).toMatchObject({
-        permission: sharing.includes(route.operationId) ? 'publish' : 'administer',
+        permission: sharing.includes(route.operationId)
+          ? 'publish'
+          : configuring.includes(route.operationId)
+            ? 'configure_services'
+            : 'administer',
       });
     }
   });

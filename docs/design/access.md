@@ -137,6 +137,12 @@ service's checks are code and a permission no check reads would be a promise wit
 to run anything against it, and `write_sql`, to save a query definition whose fetch is SQL against it.
 They are not built; adding them migrates `role_permissions_closed` and `api_token_scopes_closed`.
 
+**Six more are `administer` split apart** ([identity.md](identity.md), "High-risk permissions"; IN-H):
+`export_environment`, `export_audit`, `hold`, `rotate_secrets`, `configure_services` and
+`configure_webhooks`, decided at their level or above as `administer` is, and out of an external
+principal's reach. The ways-in guard counts `configure_services`; the last-administrator count still
+counts `administer`.
+
 **`retire`** arrived with archival (0083, ADR-0060), in both closed sets, so a token may be scoped to
 it; Administrator holds it. [lifecycle.md](lifecycle.md) is the detail.
 
@@ -176,19 +182,19 @@ denies `read` too, as it denies everything the role holds.
 A **role** is `id`, a `name` unique in the tenant, and its permissions - at least one, each once. A
 tenant starts with eleven, which are ordinary rows it may rename, change or remove:
 
-| Role                | Permissions                                    |
-| ------------------- | ---------------------------------------------- |
-| Reader              | `read`                                         |
-| Reviewer            | `read`, `comment`, `suggest`                   |
-| Author              | `read`, `create`, `edit`, `comment`, `suggest` |
-| Approver            | `read`, `comment`, `approve`                   |
-| Designer            | `read`, `design`                               |
-| Definitions manager | `read`, `manage_definitions`                   |
-| Administrator       | `read`, `administer`, `retire`                 |
-| Editing             | `edit` - for denials; it cannot be allowed     |
-| Publisher           | `read`, `publish`                              |
-| Query builder       | `read`, `use_connection`                       |
-| Query writer        | `read`, `use_connection`, `write_sql`          |
+| Role                | Permissions                                       |
+| ------------------- | ------------------------------------------------- |
+| Reader              | `read`                                            |
+| Reviewer            | `read`, `comment`, `suggest`                      |
+| Author              | `read`, `create`, `edit`, `comment`, `suggest`    |
+| Approver            | `read`, `comment`, `approve`                      |
+| Designer            | `read`, `design`                                  |
+| Definitions manager | `read`, `manage_definitions`                      |
+| Administrator       | `read`, `administer`, `retire`, and the six below |
+| Editing             | `edit` - for denials; it cannot be allowed        |
+| Publisher           | `read`, `publish`                                 |
+| Query builder       | `read`, `use_connection`                          |
+| Query writer        | `read`, `use_connection`, `write_sql`             |
 
 Editing is a starter role rather than one each tenant makes, because "read-only here" is the first
 denial anybody reaches for, and a role a tenant must think to create before it can do that is a role

@@ -197,14 +197,15 @@ export type ExplainQuery = z.infer<typeof ExplainQuery>;
 export const AccessExplanation = z.object({
   principal: z.string(),
   target: z.string(),
+  disabled: z.boolean().describe('Disabled: every permission is refused, whatever the grants say'),
   permissions: z.array(
     z.object({
       permission: PermissionName,
       allowed: z.boolean(),
       reason: z
-        .enum(['allowed', 'denied', 'not_granted', 'capped', 'scoped'])
+        .enum(['allowed', 'denied', 'not_granted', 'capped', 'scoped', 'disabled'])
         .describe(
-          'capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it',
+          'disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it',
         ),
       level: z
         .string()
