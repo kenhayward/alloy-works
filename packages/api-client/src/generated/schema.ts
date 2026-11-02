@@ -2779,6 +2779,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/documents/{id}/language": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change a document's language, and optionally its components'
+         * @description Changes the language a document is written in, and with `components` each component it references, as one transaction. A component the caller may not edit, one being edited, one the document pins behind its latest, and one already translated into that language are left as they were and counted. Supply the version that was read.
+         */
+        post: operations["setDocumentLanguage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/documents/{id}/numbering": {
         parameters: {
             query?: never;
@@ -55581,6 +55601,1161 @@ export interface operations {
             };
         };
     };
+    setDocumentLanguage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "openedFrom": "00000000-0000-4000-8000-000000000001",
+                 *       "language": "en",
+                 *       "components": false
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The latest version, as it was read */
+                    openedFrom: string & (unknown & unknown);
+                    /** @description The language to change it to */
+                    language: string;
+                    /** @description True to change each component it references too, each as a new version */
+                    components: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Changed, or nothing to change: the document at its latest version, and how many components changed or were left and why */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "document": {
+                     *         "id": "example",
+                     *         "space": {
+                     *           "id": "example",
+                     *           "name": "example"
+                     *         },
+                     *         "version": {
+                     *           "id": "example",
+                     *           "number": "example",
+                     *           "author": "example",
+                     *           "createdAt": "example",
+                     *           "note": "example"
+                     *         },
+                     *         "outline": {},
+                     *         "values": {},
+                     *         "parameters": {},
+                     *         "fields": {
+                     *           "document": [],
+                     *           "section": []
+                     *         },
+                     *         "schemas": [],
+                     *         "template": {
+                     *           "id": "example",
+                     *           "name": "example",
+                     *           "version": {
+                     *             "id": "example",
+                     *             "number": "example"
+                     *           },
+                     *           "newest": {
+                     *             "id": "example",
+                     *             "number": "example"
+                     *           },
+                     *           "required": [],
+                     *           "departures": {
+                     *             "added": [],
+                     *             "missing": []
+                     *           }
+                     *         },
+                     *         "mayEdit": false,
+                     *         "archived": false,
+                     *         "mayRetire": false,
+                     *         "state": {
+                     *           "key": "example",
+                     *           "name": "example",
+                     *           "approved": false
+                     *         },
+                     *         "states": [],
+                     *         "transitions": [],
+                     *         "gates": [],
+                     *         "revision": {
+                     *           "number": 1,
+                     *           "versionId": "00000000-0000-4000-8000-000000000001",
+                     *           "at": "2026-01-01T00:00:00.000Z"
+                     *         },
+                     *         "dates": {
+                     *           "effectiveAt": "2026-01-01T00:00:00.000Z",
+                     *           "reviewBy": "2026-01-01",
+                     *           "owner": {
+                     *             "id": "00000000-0000-4000-8000-000000000001",
+                     *             "name": "example"
+                     *           },
+                     *           "pastReview": false,
+                     *           "effectiveFrom": "2026-01-01T00:00:00.000Z"
+                     *         },
+                     *         "scope": {
+                     *           "scope": [],
+                     *           "pending": []
+                     *         },
+                     *         "onHold": false,
+                     *         "mayHold": false,
+                     *         "mayPublish": false,
+                     *         "mayComment": false,
+                     *         "maySuggest": false,
+                     *         "mayReview": false,
+                     *         "layout": {
+                     *           "id": "example",
+                     *           "version": {
+                     *             "id": "example",
+                     *             "number": "example"
+                     *           },
+                     *           "language": "en",
+                     *           "languages": [],
+                     *           "scheme": {},
+                     *           "words": {},
+                     *           "formats": []
+                     *         }
+                     *       },
+                     *       "components": {
+                     *         "changed": [],
+                     *         "skipped": {
+                     *           "notPermitted": -9007199254740991,
+                     *           "locked": -9007199254740991,
+                     *           "pinnedBehind": -9007199254740991,
+                     *           "translated": -9007199254740991,
+                     *           "missing": -9007199254740991
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        document: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        components: {
+                            /** @description The components given a new version in the language */
+                            changed: string[];
+                            /** @description Components left as they were, by why; counts, as some may be unreadable */
+                            skipped: {
+                                /** @description The caller may not edit it, or it is archived */
+                                notPermitted: number;
+                                /** @description Somebody is editing it */
+                                locked: number;
+                                /** @description The document is pinned to an older version of it */
+                                pinnedBehind: number;
+                                /** @description It has a translation into that language */
+                                translated: number;
+                                /** @description It has been deleted */
+                                missing: number;
+                            };
+                        };
+                    };
+                };
+            };
+            /** @description outline_invalid: a title is translated into that language; or invalid_request: a body this route does not accept */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description The caller may read the document but may not edit it */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such document in this environment, or none the caller may read */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description version_precondition: the outline has changed since it was read; artifact_archived: it is archived */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                        /** @description profile_invalid: each axis, or `axis.value`, the environment does not declare */
+                        unknown?: string[];
+                        /** @description version_precondition: the document as it now stands */
+                        current?: {
+                            id: string;
+                            space: {
+                                id: string;
+                                name: string;
+                            };
+                            version: {
+                                id: string;
+                                /** @description `revision.version`, as `0.2` */
+                                number: string;
+                                /** @description The principal who cut it; null for a starter definition */
+                                author: string | null;
+                                createdAt: string;
+                                note: string | null;
+                            };
+                            /** @description The latest version's outline document (structure.md), as the caller is shown it: a reference to a component the caller may not read carries `component: null`, and a pinned one `mode.version: null`; everything else is as stored. Empty when the stored outline does not read */
+                            outline: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's own field values, by field identifier: empty for a document with no template */
+                            values: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The latest version's parameter values, by name (templates.md, "Recorded on the document"): empty for a document with none */
+                            parameters: {
+                                [key: string]: unknown;
+                            };
+                            /** @description The fields the document's template applies to the document and to each of its sections, at the current definitions; none for a document made blank, or whose template no longer resolves */
+                            fields: {
+                                document: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                                section: {
+                                    id: string;
+                                    name: string;
+                                    dataType: string;
+                                    /** @enum {string} */
+                                    multiplicity: "one" | "many";
+                                    maxValues?: number;
+                                    validation: {
+                                        [key: string]: unknown;
+                                    };
+                                    required: boolean;
+                                    /** @description Every schema that makes it required, by identifier */
+                                    requiredBy: string[];
+                                    fixed: boolean;
+                                    /** @description Every schema that fixes it, by identifier */
+                                    fixedBy: string[];
+                                    /** @description Absent where no schema gives one */
+                                    default?: unknown;
+                                }[];
+                            };
+                            /** @description The schemas behind those fields, by name, for naming which require or fix one */
+                            schemas: {
+                                id: string;
+                                name: string;
+                            }[];
+                            /** @description The template, and the version of it, the document was made from (TPL-025), named as that version names it. Null for a document made blank, or from a template the caller may not read */
+                            template: {
+                                id: string;
+                                name: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The template’s newest version, where it is newer than the one the document is bound to (TPL-033) */
+                                newest: {
+                                    id: string;
+                                    number: string;
+                                } | null;
+                                /** @description The keys of the starting sections it requires: a section from one is removed only with a reason (TPL-029) */
+                                required: string[];
+                                /** @description How the document departs from its template (TPL-028) */
+                                departures: {
+                                    /** @description Each section the document has that its template does not */
+                                    added: {
+                                        node: string;
+                                        title: string;
+                                    }[];
+                                    /** @description Each starting section none of its sections came from */
+                                    missing: {
+                                        key: string;
+                                        title: string;
+                                        required: boolean;
+                                        /** @description Why a required one was removed, as its remover said */
+                                        reason: string | null;
+                                    }[];
+                                };
+                            } | null;
+                            /** @description Whether the caller may restructure the outline */
+                            mayEdit: boolean;
+                            /** @description Archived: left out of ordinary listings and search, and still read, referenced and published */
+                            archived: boolean;
+                            /** @description Whether the caller may archive and unarchive it */
+                            mayRetire: boolean;
+                            /** @description Its workflow state now, named by the definition deciding its next move */
+                            state: {
+                                key: string;
+                                name: string;
+                                /** @description Whether it counts as approved: a save starts a new draft */
+                                approved: boolean;
+                            };
+                            /** @description Every state of the workflow version deciding this, in the workflow's order */
+                            states: {
+                                key: string;
+                                name: string;
+                            }[];
+                            /** @description The workflow transitions the caller may take from its state now, in order */
+                            transitions: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                reasonRequired: boolean;
+                            }[];
+                            /** @description Each gate from its state, decided by its approvers */
+                            gates: {
+                                key: string;
+                                name: string;
+                                /** @description The state it moves to once passed */
+                                to: {
+                                    key: string;
+                                    name: string;
+                                };
+                                /** @description What a rejection is called, and the state it returns to */
+                                reject: {
+                                    name: string;
+                                    /** @description Its workflow state now, named by the definition deciding its next move */
+                                    to: {
+                                        key: string;
+                                        name: string;
+                                    };
+                                };
+                                /**
+                                 * @description Whether passing it may (permitted) or must (required) request an approved publication of its baseline
+                                 * @enum {string}
+                                 */
+                                publication: "none" | "permitted" | "required";
+                                /** @description Where it permits one, whether the caller may ask for it as they approve */
+                                mayPublish: boolean;
+                                /** @description Approvals this round on the current version */
+                                count: number;
+                                /** @description Approvals it needs, each by a distinct person */
+                                required: number;
+                                /** @description Whether the caller has approved it this round */
+                                approvedByCaller: boolean;
+                                /** @description Whether the caller may approve or reject it now */
+                                mayDecide: boolean;
+                            }[];
+                            /** @description Its latest revision, a version designated as a gate passed; null for revision 0 */
+                            revision: {
+                                number: number;
+                                /** Format: uuid */
+                                versionId: string;
+                                /** Format: date-time */
+                                at: string;
+                            } | null;
+                            /** @description Its effective and review-by dates, and its review's owner */
+                            dates: {
+                                /** @description When a revision approved from now takes effect, with the offset it was set in */
+                                effectiveAt: string | null;
+                                /** @description The day it is to be reviewed by */
+                                reviewBy: string | null;
+                                /** @description Who is prompted to review it */
+                                owner: {
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string | null;
+                                } | null;
+                                /** @description Whether its review-by day has passed */
+                                pastReview: boolean;
+                                /** @description Where its latest revision is approved to take effect later, when: references take the one before until then */
+                                effectiveFrom: string | null;
+                            };
+                            /** @description The scope a revision approved from now is effective for, and what waits on acceptance */
+                            scope: {
+                                /** @description The condition axis values a revision approved from now is effective for; none is everywhere */
+                                scope: {
+                                    axis: string;
+                                    value: string;
+                                    /** @description Who must accept a revision before it takes effect in this scope */
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    } | null;
+                                }[];
+                                /** @description Each scope value whose newest revision waits on its party: the revision before stays effective there until it is accepted */
+                                pending: {
+                                    revision: number;
+                                    axis: string;
+                                    value: string;
+                                    party: {
+                                        /** @enum {string} */
+                                        kind: "principal" | "group";
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string | null;
+                                    };
+                                    /** @description Whether the caller is the party, or one of the group */
+                                    mayAccept: boolean;
+                                }[];
+                            };
+                            /** @description Under a legal hold, its own or its space's; false for a caller who may neither retire it nor administer the environment */
+                            onHold: boolean;
+                            /** @description Whether the caller may place a legal hold: an environment administrator */
+                            mayHold: boolean;
+                            /** @description Whether the caller may publish the document */
+                            mayPublish: boolean;
+                            /** @description Whether the caller may start and answer threads on the document */
+                            mayComment: boolean;
+                            /** @description Whether the caller may suggest changes to the document’s components where they may */
+                            maySuggest: boolean;
+                            /** @description Whether Review is offered the caller: they may comment on or suggest to the document */
+                            mayReview: boolean;
+                            /** @description The document's layout at its latest version - its template's, or the environment's for a document made blank - which is the version a publish requested now would be made under (publishing.md, "The layout"; templates.md) */
+                            layout: {
+                                id: string;
+                                version: {
+                                    id: string;
+                                    number: string;
+                                };
+                                /** @description The language of the words below: those serving the document's own language */
+                                language: string;
+                                /** @description Every language a publish may be made in, as a language range: its own words first, then each further language it gives them in (the TR plan, TRb) */
+                                languages: string[];
+                                /** @description The numbering scheme this document is numbered and published with */
+                                scheme: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The layout's own words - the contents' title, the draft notice, and, both or neither, what a relative cross-reference prints for above and below (cross-references 2, ruling R9), and `continued`, the words a continued table's label adds after its label, which a layout read at schema 3 or before has none of (themes 2, ruling R2), and `preview`, the notice and sentence a preview says in place of the draft's, which a layout read at schema 5 or before has none of (the preview, PV-D) */
+                                words: {
+                                    [key: string]: unknown;
+                                };
+                                /** @description The formats this layout makes, `pdf` first, then `docx` where it declares a Word page and `html` where it declares HTML: what a publish may ask for (Word 1, ruling R14; HT-D) */
+                                formats: string[];
+                            };
+                        };
+                        /** @description outline_invalid: why the operation does not apply */
+                        reason?: string;
+                        /** @description values_invalid: each value that does not fit its field, in MET-022's shape */
+                        failures?: {
+                            code: string;
+                            field: string;
+                            rule: string;
+                            schemas: string[];
+                            detail: string;
+                        }[];
+                        /** @description values_unresolved: what the document's template names that does not resolve now */
+                        unresolved?: {
+                            /** @enum {string} */
+                            reference: "theme" | "layout" | "library" | "schema" | "field" | "requires" | "conflict" | "component" | "query";
+                            id: string;
+                            /** @description component and query: the key of the required component it concerns */
+                            key?: string;
+                            /**
+                             * @description component: one the caller may not read or that is none, a pin to a version not its own, or no approved revision to follow
+                             * @enum {string}
+                             */
+                            why?: "missing" | "foreign" | "unapproved";
+                            field?: string;
+                            /** @enum {string} */
+                            level?: "document" | "section";
+                            schemas?: string[];
+                        }[];
+                        /** @description parameter_unused: each parameter that seeds no field, feeds no variable and supplies no argument (TPL-068); parameter_variable: each that feeds a variable not declared, of a type it does not take, or that another parameter feeds too (TPL-069); parameter_field: each that seeds a field the document level does not hold, a fixed one, or one that does not take its type; parameter_unknown: each value for a parameter the template does not declare; parameter_fixed: each that may not change and was changed (TPL-021) */
+                        parameters?: {
+                            parameter: string;
+                            /** @description The field it seeds, where that is what is refused */
+                            field?: string;
+                            message?: string;
+                        }[];
+                        /** @description parameter_invalid: each parameter missing a required value or given an invalid one, with the rule it breaks and the value (TPL-018, TPL-045) */
+                        problems?: {
+                            parameter: string;
+                            rule: string;
+                            value: string;
+                            /** @description The field it seeds, where the rule is that field's and not the parameter's */
+                            field?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getNumbering: {
         parameters: {
             query?: never;
@@ -103804,6 +104979,8 @@ export interface operations {
                             name: string;
                             /** @description Archived: nothing new is made in it, and what it holds is unchanged */
                             archived: boolean;
+                            /** @description The language new documents and CT Studio deliveries here take; null where it names none */
+                            language: string | null;
                             /** @description Whether the caller may create a component in this space; never in one archived */
                             mayCreate: boolean;
                         }[];
@@ -103916,7 +105093,8 @@ export interface operations {
                      *       "name": "example",
                      *       "archived": false,
                      *       "archivedAt": "example",
-                     *       "archivedBy": "example"
+                     *       "archivedBy": "example",
+                     *       "language": "en"
                      *     }
                      */
                     "application/json": {
@@ -103927,6 +105105,8 @@ export interface operations {
                         archivedAt: string | null;
                         /** @description The principal who archived it; null while it is not archived */
                         archivedBy: string | null;
+                        /** @description The language new documents and CT Studio deliveries here take; null where it names none */
+                        language: string | null;
                     };
                 };
             };
@@ -104058,6 +105238,8 @@ export interface operations {
                     name?: string;
                     /** @description true archives it, false restores it; either again changes nothing */
                     archived?: boolean;
+                    /** @description The language new documents and CT Studio deliveries here take; null where it names none */
+                    language?: string | null;
                 };
             };
         };
@@ -104078,7 +105260,8 @@ export interface operations {
                      *       "name": "example",
                      *       "archived": false,
                      *       "archivedAt": "example",
-                     *       "archivedBy": "example"
+                     *       "archivedBy": "example",
+                     *       "language": "en"
                      *     }
                      */
                     "application/json": {
@@ -104089,6 +105272,8 @@ export interface operations {
                         archivedAt: string | null;
                         /** @description The principal who archived it; null while it is not archived */
                         archivedBy: string | null;
+                        /** @description The language new documents and CT Studio deliveries here take; null where it names none */
+                        language: string | null;
                     };
                 };
             };

@@ -9,6 +9,8 @@ import type {
   DocumentParametersView,
   DocumentValuesBody,
   DocumentView,
+  DocumentLanguageAnswer,
+  DocumentLanguageBody,
   OutlineOperationBody,
   SpaceParams,
   PlacementBody,
@@ -27,6 +29,7 @@ import {
   documentTemplate,
   waivedKeys,
   editOutline,
+  setDocumentLanguage,
   isArchived,
   isHeld,
   listReadableDocuments,
@@ -1093,6 +1096,57 @@ export function documentHandlers(
         })),
         next: versionCursor(history.next),
       };
+    },
+
+    setDocumentLanguage: async (
+      request: FastifyRequest,
+      { trx, principalId, facts }: Authorised,
+    ): Promise<DocumentLanguageAnswer> => {
+      const { id } = request.params as DocumentParams;
+      const body = request.body as DocumentLanguageBody;
+      const viewer = {
+        trx,
+        principalId,
+        mayEdit: decide('edit', facts).allowed,
+        mayPublish: decide('publish', facts).allowed,
+        mayRetire: decide('retire', facts).allowed,
+        mayHold: holdsAtTenant(facts),
+        facts,
+        mayComment: decide('comment', facts).allowed,
+        mayReview: decide('comment', facts).allowed || decide('suggest', facts).allowed,
+        maySuggest: decide('suggest', facts).allowed,
+      };
+      const document = await readDocument(trx, id);
+      if (!document) throw notFound();
+      const answer = await setDocumentLanguage(trx, {
+        artifactId: id,
+        openedFrom: body.openedFrom,
+        author: principalId,
+        scopes: facts.scopes,
+        language: body.language,
+        components: body.components,
+      });
+      switch (answer.answer) {
+        case 'changed':
+        case 'unchanged':
+          return {
+            document: await documentView(viewer, document, answer.version),
+            components: { changed: [...answer.changed], skipped: answer.skipped },
+          };
+        case 'version.precondition':
+          throw stale(await documentView(viewer, document, answer.current));
+        case 'artifact.missing':
+          throw stale(await latestView(viewer, id));
+        case 'artifact.archived':
+          throw refused(409, 'artifact.archived', 'It is archived, and changes nothing now.');
+        case 'outline.invalid':
+          throw refused(
+            400,
+            'outline.invalid',
+            'This change does not apply to the outline as it stands.',
+            { reason: answer.reason },
+          );
+      }
     },
 
     editOutline: async (

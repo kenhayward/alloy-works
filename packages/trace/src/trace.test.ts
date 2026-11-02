@@ -1185,6 +1185,6 @@ describe('scanning the repository for test files', () => {
     // 155, from 154 (2026-11-01): structure/AnswerMarkdown.test.tsx, citing nothing (issue #857).
     // 156, from 155 (2026-11-01): parts/MenuButton.test.tsx, citing nothing (the DQ plan).
     // 157, from 156 (2026-11-01): admin/Themes.test.tsx, citing STY-029, STY-031, STY-034, STY-057, STY-067 and STY-069 (SYb).
-    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(162);
+    expect(files.filter((file) => file.endsWith('.tsx'))).toHaveLength(163);
   });
 });

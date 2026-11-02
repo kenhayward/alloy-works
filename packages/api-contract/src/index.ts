@@ -37,6 +37,8 @@ export {
   DocumentParametersView,
   DocumentValuesBody,
   DocumentView,
+  DocumentLanguageAnswer,
+  DocumentLanguageBody,
   OutlineOperationBody,
   PlacementBody,
   PlacementQuery,

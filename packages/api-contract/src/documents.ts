@@ -1,4 +1,5 @@
 import {
+  contentDocumentSchema,
   TRANSLATION_STATUSES,
   outlineMatterSchema,
   outlineOperationSchema,
@@ -706,6 +707,32 @@ const notFound = {
 } as const;
 
 /** Creating, finding, opening and restructuring documents (structure.md, "Routes"). */
+export const DocumentLanguageBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe('The latest version, as it was read'),
+  language: contentDocumentSchema.shape.language.describe('The language to change it to'),
+  components: z
+    .boolean()
+    .describe('True to change each component it references too, each as a new version'),
+});
+export type DocumentLanguageBody = z.infer<typeof DocumentLanguageBody>;
+
+export const DocumentLanguageAnswer = z.object({
+  document: DocumentView,
+  components: z.object({
+    changed: z.array(z.string()).describe('The components given a new version in the language'),
+    skipped: z
+      .object({
+        notPermitted: z.number().int().describe('The caller may not edit it, or it is archived'),
+        locked: z.number().int().describe('Somebody is editing it'),
+        pinnedBehind: z.number().int().describe('The document is pinned to an older version of it'),
+        translated: z.number().int().describe('It has a translation into that language'),
+        missing: z.number().int().describe('It has been deleted'),
+      })
+      .describe('Components left as they were, by why; counts, as some may be unreadable'),
+  }),
+});
+export type DocumentLanguageAnswer = z.infer<typeof DocumentLanguageAnswer>;
+
 export const documentRoutes = {
   listDocuments: {
     operationId: 'listDocuments',
@@ -1056,6 +1083,39 @@ export const documentRoutes = {
       409: {
         description:
           "version_precondition: the outline has changed since it was read; source_moved: the section's document has a newer version than the report read",
+        schema: OutlineRefusal,
+      },
+    },
+  },
+  setDocumentLanguage: {
+    operationId: 'setDocumentLanguage',
+    method: 'POST',
+    path: '/v1/documents/{id}/language',
+    summary: "Change a document's language, and optionally its components'",
+    tenantScoped: true,
+    access: { check: 'permission', permission: 'edit', target: { artifact: 'id' } },
+    params: DocumentParams,
+    body: DocumentLanguageBody,
+    responses: {
+      200: {
+        description:
+          'Changed, or nothing to change: the document at its latest version, and how many components changed or were left and why',
+        schema: DocumentLanguageAnswer,
+      },
+      400: {
+        description:
+          'outline_invalid: a title is translated into that language; or invalid_request: a body this route does not accept',
+        schema: OutlineRefusal,
+      },
+      401: unauthenticated,
+      403: {
+        description: 'The caller may read the document but may not edit it',
+        schema: ErrorBody,
+      },
+      404: notFound,
+      409: {
+        description:
+          'version_precondition: the outline has changed since it was read; artifact_archived: it is archived',
         schema: OutlineRefusal,
       },
     },

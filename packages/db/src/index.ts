@@ -438,6 +438,7 @@ export {
   listSpacesFor,
   readSpace,
   renameSpace,
+  setSpaceLanguage,
   restoreSpace,
   SpaceArchived,
   SpaceRefused,
@@ -855,6 +856,11 @@ export {
   type ValuesRefused,
   type StoredDocument,
 } from './documents.js';
+export {
+  setDocumentLanguage,
+  type DocumentLanguageAnswer,
+  type LanguageSkips,
+} from './document-language.js';
 export {
   bindingQuestion,
   createTemplate,

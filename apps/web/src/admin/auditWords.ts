@@ -310,6 +310,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'space.made'() {
     return words('admin.space-made');
   },
+  get 'space.language_changed'() {
+    return words('admin.space-language-changed');
+  },
   get 'space.renamed'() {
     return words('admin.space-renamed');
   },

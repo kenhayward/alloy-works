@@ -250,6 +250,7 @@ const OTHER_TENANT_IDS: Readonly<
   createDocument: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  setDocumentLanguage: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   recordDocumentValues: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getDocumentParameters: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   recordDocumentParameters: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
@@ -857,6 +858,9 @@ const VALID_INPUT: Readonly<
     },
   },
   createAssetUpload: { payload: { alternative: null } },
+  setDocumentLanguage: {
+    payload: { openedFrom: SESSION, language: 'fr-FR', components: false },
+  },
   editOutline: {
     payload: {
       openedFrom: SESSION,

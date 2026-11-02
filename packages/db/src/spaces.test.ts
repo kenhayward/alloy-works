@@ -149,13 +149,13 @@ describe('spaces and artifacts', () => {
     const listed = (scopes: readonly Permission[] | undefined) =>
       service.withTenant(production, (trx) => listSpacesFor(trx, ada, scopes));
     expect((await listed(undefined)).items).toEqual([
-      { id: general.id, name: 'Editorial', archived: false, mayCreate: true },
-      { id: quality.id, name: 'Review', archived: false, mayCreate: false },
+      { id: general.id, name: 'Editorial', archived: false, language: null, mayCreate: true },
+      { id: quality.id, name: 'Review', archived: false, language: null, mayCreate: false },
     ]);
     // Through a token that may not create, the same spaces are listed and none may be created in.
     expect((await listed(['edit'])).items).toEqual([
-      { id: general.id, name: 'Editorial', archived: false, mayCreate: false },
-      { id: quality.id, name: 'Review', archived: false, mayCreate: false },
+      { id: general.id, name: 'Editorial', archived: false, language: null, mayCreate: false },
+      { id: quality.id, name: 'Review', archived: false, language: null, mayCreate: false },
     ]);
 
     // A real principal in `development`, holding a real grant there - not `ada`'s id reused under

@@ -1,10 +1,11 @@
-import { CONTENT_LANGUAGES, contentDocumentSchema, declaredLanguageOf } from '@alloy-works/domain';
+import { contentDocumentSchema, declaredLanguageOf } from '@alloy-works/domain';
 import { titleAccepted, type ComponentHeader as Header } from '@alloy-works/editor';
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 import styles from './ComponentHeader.module.css';
 import { DirectionSelect } from './DirectionSelect.js';
-import { useWords, words } from '../words/words.js';
+import { DeclaredLanguages } from '../parts/DeclaredLanguages.js';
+import { words } from '../words/words.js';
 
 /** The same tag rule the model applies (see `NewComponent.tsx`, which reuses it for the same reason). */
 const language = contentDocumentSchema.shape.language;
@@ -37,38 +38,6 @@ export interface ComponentHeaderProps {
    * names no component (ADR-0056), where the chips alone are shown. The heading stays either way.
    */
   readonly titled?: boolean;
-}
-
-/**
- * The declared content languages (the TE plan, TE-E; LOC-044), each named in the interface's language
- * where its data names it, for the language field to offer. A tag is still typed.
- */
-function DeclaredLanguages({ id }: { readonly id: string }) {
-  const { language } = useWords();
-  const named = useMemo(() => {
-    let names: Intl.DisplayNames | undefined;
-    try {
-      names = new Intl.DisplayNames([language.formats], { type: 'language' });
-    } catch {
-      names = undefined;
-    }
-    return CONTENT_LANGUAGES.map((each) => {
-      let name: string | undefined;
-      try {
-        name = names?.of(each.tag);
-      } catch {
-        name = undefined;
-      }
-      return { tag: each.tag, name: name ?? each.tag };
-    });
-  }, [language.formats]);
-  return (
-    <datalist id={id}>
-      {named.map((each) => (
-        <option key={each.tag} value={each.tag} label={each.name} />
-      ))}
-    </datalist>
-  );
 }
 
 /** A direction as a chip's name says it. */

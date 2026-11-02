@@ -112,6 +112,40 @@ describe('New component', () => {
     });
   });
 
+  it("starts in the chosen space's default language until the author types their own", async () => {
+    const { fetch } = service({
+      '/v1/spaces': {
+        items: [
+          { ...SPACES.items[0], language: 'fr-CA' },
+          { ...SPACES.items[2], language: 'de-DE' },
+          {
+            id: 'aaaaaaaa-0000-4000-8000-000000000004',
+            name: 'Plain',
+            mayCreate: true,
+            language: null,
+          },
+        ],
+        next: null,
+      },
+      [`/v1/spaces/${SPACES.items[0]!.id}/component-types`]: TYPES,
+      [`/v1/spaces/${SPACES.items[2]!.id}/component-types`]: TYPES,
+      '/v1/spaces/aaaaaaaa-0000-4000-8000-000000000004/component-types': TYPES,
+    });
+    render(<NewComponent client={client(fetch)} onCreated={vi.fn()} />);
+
+    const where = await screen.findByLabelText('Where');
+    await waitFor(() => expect(screen.getByLabelText('Language')).toHaveValue('fr-CA'));
+    await userEvent.selectOptions(where, 'Regulatory');
+    expect(screen.getByLabelText('Language')).toHaveValue('de-DE');
+    await userEvent.selectOptions(where, 'Plain');
+    expect(screen.getByLabelText('Language')).toHaveValue('en-GB');
+
+    await userEvent.clear(screen.getByLabelText('Language'));
+    await userEvent.type(screen.getByLabelText('Language'), 'es');
+    await userEvent.selectOptions(where, 'General');
+    expect(screen.getByLabelText('Language')).toHaveValue('es');
+  });
+
   it('offers no archived space, which the listing never says may be created in (SP-E)', async () => {
     // The loader New document shares: an archived space is listed, marked, and not offered.
     const { fetch } = service({

@@ -2,7 +2,7 @@ import type { createApiClient } from '@alloy-works/api-client';
 import { contentDocumentSchema } from '@alloy-works/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useCreatableSpaces } from '../spaces.js';
+import { useCreatableSpaces, useLanguageField } from '../spaces.js';
 import { DirectionSelect } from './DirectionSelect.js';
 import { everyPage } from '../paging.js';
 import { words } from '../words/words.js';
@@ -71,7 +71,7 @@ export function NewComponent({ client, onCreated }: NewComponentProps) {
   const [typesProblem, setTypesProblem] = useState<'signedOut' | 'failed' | null>(null);
   const [componentType, setComponentType] = useState<string>('');
   const [title, setTitle] = useState('');
-  const [languageTag, setLanguageTag] = useState('en-GB');
+  const [languageTag, setLanguageTag] = useLanguageField(spaces, where);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);

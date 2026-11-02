@@ -37,6 +37,7 @@ export {
   outlineChangesRefused,
   outlineOperationSchema,
   repointsBetween,
+  withLanguage,
 } from './operations.js';
 export type {
   OutlineApplied,

@@ -265,6 +265,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0190_high_risk_permissions',
       '0191_role_made',
       '0192_comment_proposals',
+      '0193_space_language',
     ]);
 
     // The component and its version are as they were.
@@ -521,6 +522,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0190_high_risk_permissions',
       '0191_role_made',
       '0192_comment_proposals',
+      '0193_space_language',
     ]);
 
     const { rows } = await queryAs(

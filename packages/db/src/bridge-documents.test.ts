@@ -10,7 +10,7 @@ import {
 } from '@alloy-works/domain';
 import * as bridge from '@alloy-works/domain/bridge';
 import type { Block, DecomposedDocument, Inline } from '@kenhayward/bridge-contract';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { bootstrapCluster } from './bootstrap.js';
 import {
   writeDocumentDelivery,
@@ -36,7 +36,7 @@ import { migrate } from './migrate.js';
 import { createTenant, type Tenant } from './provision.js';
 import { findRole } from './roles.js';
 import { createServiceIdentity } from './service-identities.js';
-import { archiveSpace, createSpace } from './spaces.js';
+import { archiveSpace, createSpace, setSpaceLanguage } from './spaces.js';
 import type { TenantTransaction } from './tables.js';
 import { createTemplate, documentTemplate } from './templates.js';
 import type { TenantDatabase } from './tenant-database.js';
@@ -353,6 +353,127 @@ describe('a document delivery', () => {
       expect(version).toMatchObject({ note: NOTE, author: identity });
     }
     expect(receipt.components.some((each) => each.kind === 'asset')).toBe(true);
+  });
+
+  describe("a space's default language", () => {
+    const languageOf = async (id: string) => {
+      const content = (await latest(id))!.content as { language: string; direction: string };
+      return `${content.language} ${content.direction}`;
+    };
+    const defaulting = (language: string | null) =>
+      as((trx) => setSpaceLanguage(trx, space, language));
+    afterEach(() => defaulting(null));
+
+    it('is what a new delivery writes throughout: the document, its components and new assets', async () => {
+      // A space of its own: an asset the space already holds is reused, in whatever it was written in.
+      const elsewhere = await as(async (trx) => {
+        const made = await createSpace(trx, 'Delivered in French');
+        await setSpaceLanguage(trx, made.id, 'fr-FR');
+        return made.id;
+      });
+      const receipt = written(await deliver({ spaceId: elsewhere }));
+      expect(await languageOf(receipt.persistentId)).toBe('fr-FR ltr');
+      expect(await languageOf(entry(receipt, 'component', 's1').id)).toBe('fr-FR ltr');
+      const asset = receipt.components.find((each) => each.kind === 'asset');
+      expect(asset).toBeDefined();
+      expect(await latest(asset!.id)).toMatchObject({
+        content: { alternative: { language: 'fr-FR' } },
+      });
+    });
+
+    it('leaves a delivery und where the space names none', async () => {
+      const receipt = written(await deliver());
+      expect(await languageOf(receipt.persistentId)).toBe('und ltr');
+      expect(await languageOf(entry(receipt, 'component', 's1').id)).toBe('und ltr');
+    });
+
+    it('repairs an und document on its next delivery, keeping its translations current', async () => {
+      const receipt = written(await deliver());
+      await defaulting('en-GB');
+      const again = written(await deliver({ update: updateOf(receipt) }));
+      expect(await languageOf(again.persistentId)).toBe('en-GB ltr');
+      const component = entry(again, 'component', 's1');
+      expect(await languageOf(component.id)).toBe('en-GB ltr');
+      const declared = await as((trx) =>
+        trx
+          .selectFrom('source_change')
+          .select('retranslate')
+          .where('version_id', '=', component.version)
+          .execute(),
+      );
+      expect(declared).toEqual([{ retranslate: false }]);
+    });
+
+    it('writes nothing for a delivery that changes nothing once it is in the language', async () => {
+      await defaulting('en-GB');
+      const receipt = written(await deliver());
+      const again = written(await deliver({ update: updateOf(receipt) }));
+      expect(entry(again, 'map', null).version).toBe(entry(receipt, 'map', null).version);
+      expect(entry(again, 'component', 's1').version).toBe(
+        entry(receipt, 'component', 's1').version,
+      );
+    });
+
+    it('does not count a person changing the language as an edit, and keeps what they chose', async () => {
+      await defaulting('en-GB');
+      const receipt = written(await deliver());
+      const component = entry(receipt, 'component', 's1');
+      const moved = await edit(component.id, (current) => ({
+        ...(current.content as object),
+        language: 'ar',
+        direction: 'rtl',
+      }));
+      await edit(receipt.persistentId, (current) => {
+        const text = JSON.stringify({ ...(current.content as OutlineDocument), language: 'ar' });
+        return JSON.parse(text.replaceAll(component.version, moved.id)) as OutlineDocument;
+      });
+
+      const again = written(await deliver({ update: updateOf(receipt) }));
+      expect(await languageOf(component.id)).toBe('ar rtl');
+      expect((await latest(again.persistentId))!.content).toMatchObject({ language: 'ar' });
+      expect(entry(again, 'component', 's1').version).toBe(moved.id);
+    });
+
+    it('API-069 still refuses a version changing more than the language', async () => {
+      const receipt = written(await deliver());
+      const component = entry(receipt, 'component', 's1');
+      const edited = await edit(component.id, (current) => ({
+        ...(current.content as object),
+        language: 'ar',
+        title: 'Edited as well',
+      }));
+      expect(await deliver({ update: updateOf(receipt) })).toMatchObject({
+        answer: 'refused',
+        error: {
+          code: 'changed_in_target',
+          details: { changed: [{ id: component.id, actual: edited.id }] },
+        },
+      });
+    });
+
+    it('API-069 still refuses an outline moving a pin to a version that changes more', async () => {
+      const receipt = written(await deliver());
+      const component = entry(receipt, 'component', 's1');
+      const edited = await edit(component.id, (current) => ({
+        ...(current.content as object),
+        title: 'Edited in Alloy Works',
+      }));
+      const repinned = await edit(receipt.persistentId, (current) =>
+        JSON.parse(JSON.stringify(current.content).replaceAll(component.version, edited.id)),
+      );
+      const refusal = await deliver({ update: updateOf(receipt) });
+      expect(refusal).toMatchObject({
+        answer: 'refused',
+        error: {
+          code: 'changed_in_target',
+          details: {
+            changed: expect.arrayContaining([
+              expect.objectContaining({ id: receipt.persistentId, actual: repinned.id }),
+            ]),
+          },
+        },
+      });
+    });
   });
 
   it('API-069 an update with a moved component version is refused, changing nothing', async () => {

@@ -167,6 +167,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   administrator tells the person to sign in. Nothing creates or changes a role or marks somebody who has
   already signed in as from outside the organisation, and no page shows a template on its own, so its access is reached from its row in Templates.
 
+- **Languages.** A space can name a default language, from **More actions** on its row in **Spaces**: New
+  document and New component there start in it, and CT Studio's deliveries take it. A template holds no
+  language, so a document made from one starts in the space's too. **Language**, in the Document menu and as an
+  icon beside Preview, changes a document's language, typed or chosen from the declared list, and if asked each
+  component it references too, as new versions. A component that cannot change is left and counted: one you may
+  not edit, one being edited, one pinned behind its latest, and one already translated into that language. A title
+  translated into the language refuses the change until that translation is cleared.
 - **Spaces.** An administrator of the whole environment makes a space, renames one, and archives or
   restores one, from Administration's **Spaces** - a table of each space's status and your access,
   found by name and shown all, active or archived, Access and Rename on each row as icons and Archive

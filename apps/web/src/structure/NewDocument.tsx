@@ -3,7 +3,7 @@ import { hasText, outlineDocumentSchema, type TemplateParameter } from '@alloy-w
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { DirectionSelect } from '../editor/DirectionSelect.js';
-import { useCreatableSpaces } from '../spaces.js';
+import { useCreatableSpaces, useLanguageField } from '../spaces.js';
 import { everyPage } from '../paging.js';
 import {
   declarationsIn,
@@ -125,7 +125,7 @@ export function NewDocument({ client, onCreated }: NewDocumentProps) {
     reload: loadSpaces,
   } = useCreatableSpaces(client);
   const [title, setTitle] = useState('');
-  const [languageTag, setLanguageTag] = useState('en-GB');
+  const [languageTag, setLanguageTag] = useLanguageField(spaces, where);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const templates = useTemplates(client);
   // The empty string is Blank: a document made from nothing sends no template.
