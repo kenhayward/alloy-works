@@ -13,6 +13,8 @@ export interface ProviderSettings {
    * provider's configuration names it. Absent for Google, which asserts none.
    */
   readonly groupsClaim?: string;
+  /** The ID token claim equal to SCIM's `externalId` (IN-E). Absent for Google. */
+  readonly scimClaim?: string;
 }
 
 export interface SignInStart {
@@ -36,6 +38,8 @@ export interface Identity {
    * where it is not a list; a member that is not a string is dropped (GP-B).
    */
   readonly groups: readonly string[];
+  /** The value of the provider's SCIM claim, which links them to what SCIM pushes (IN-E). */
+  readonly providerKey: string | null;
   /** When the person authenticated at the provider, in seconds, where it says (IAM-012). */
   readonly authTime: number | null;
 }
@@ -200,6 +204,10 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         hostedDomain: typeof claims.hd === 'string' ? claims.hd : null,
         // From the ID token alone, under the basic scopes: no scope is ever asked for groups (IAM-044).
         groups: provider.groupsClaim === undefined ? [] : groupValues(claims[provider.groupsClaim]),
+        providerKey:
+          provider.scimClaim !== undefined && typeof claims[provider.scimClaim] === 'string'
+            ? (claims[provider.scimClaim] as string)
+            : null,
         authTime: typeof claims.auth_time === 'number' ? claims.auth_time : null,
       };
     },

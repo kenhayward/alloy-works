@@ -164,7 +164,13 @@ is never the link (IN-E). **A provider that provisions admits only those it push
 no pushed principal is refused, `not_provisioned`, rather than made.
 
 **Active false or delete** disables the person (below). Delete keeps the principal, disabled, so
-authorship and the audit still name them; erasure stays ER's act (IN-G). Active true enables them.
+authorship and the audit still name them; erasure stays ER's act (IN-G). Active true enables only those
+SCIM disabled, since a provider replays what it holds and must not undo an administrator's disablement.
+Pushing somebody deleted brings them back.
+
+**So that turning SCIM on locks nobody out** before the first push, somebody already known by issuer and
+subject who holds `administer` at the environment by a direct, unexpiring grant is admitted though not
+pushed (IN-B). Their memberships still come from SCIM alone.
 
 **Groups**: a SCIM group matches its provider's group whose value equals its `externalId`, else its
 `displayName`. For a provider that provisions, memberships come from SCIM alone, applied on receipt,
@@ -180,8 +186,8 @@ does, so their stream stops within two seconds. A disabled principal is refused 
 answers every question about them as refused, naming the disablement.
 
 **The manual path**: Administration's **People** gains Disable and Enable for any user principal,
-`administer` at the environment; the administration guide documents inviting and disabling as the path
-without SCIM.
+`administer` at the environment; the [administration guide](../guides/people-and-scim.md) documents
+inviting and disabling as the path without SCIM.
 
 ## High-risk permissions
 

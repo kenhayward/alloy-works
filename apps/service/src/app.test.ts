@@ -103,7 +103,9 @@ describe('the service', () => {
           // The MCP surface, outside the contract (ADR-0065): JSON-RPC, never a REST route.
           route.url !== '/mcp' &&
           // CT Studio's delivery bridge, outside the contract too (ADR-0071): the bridge's own shapes.
-          !route.url.startsWith('/bridge'),
+          !route.url.startsWith('/bridge') &&
+          // SCIM, outside the contract too (identity.md); scim.test.ts holds its paths.
+          !route.url.startsWith('/scim/'),
       )
       .map((route) => key(route.method, route.url));
     expect(served.sort()).toEqual(declared.sort());

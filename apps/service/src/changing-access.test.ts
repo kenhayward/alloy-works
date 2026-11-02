@@ -182,6 +182,7 @@ describe('a route that changes access', () => {
     expect(declaring.map((route) => route.operationId).sort()).toEqual([
       'closeProvider',
       'connectCtStudio',
+      'createGroup',
       'deleteGroup',
       'disablePerson',
       'disconnectCtStudio',

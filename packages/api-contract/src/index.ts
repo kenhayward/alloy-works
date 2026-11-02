@@ -536,6 +536,7 @@ export {
   ProviderChangeBody,
   ProviderParams,
   ProviderSecretBody,
+  ScimOnBody,
   SessionSettingsBody,
   SignInSettings,
   signInSettingsRoutes,

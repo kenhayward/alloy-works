@@ -261,6 +261,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0186_model_run_limits',
       '0187_identity_providers',
       '0188_sign_in_settings',
+      '0189_scim',
     ]);
 
     // The component and its version are as they were.
@@ -513,6 +514,7 @@ describe('migration 0016, which makes a document an artifact', () => {
       '0186_model_run_limits',
       '0187_identity_providers',
       '0188_sign_in_settings',
+      '0189_scim',
     ]);
 
     const { rows } = await queryAs(

@@ -6211,6 +6211,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sign-in-settings/providers/{id}/scim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Have an identity provider provision people and groups by SCIM
+         * @description Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds administer outright, and its memberships come from SCIM alone. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         */
+        post: operations["turnScimOn"];
+        /**
+         * Stop an identity provider provisioning, ending its token
+         * @description Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         */
+        delete: operations["turnScimOff"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/providers/{id}/scim/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a provider's SCIM token, shown this once, ending any before it
+         * @description Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the token.
+         */
+        post: operations["issueScimToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sign-in-settings/providers/{id}/secret": {
         parameters: {
             query?: never;
@@ -73990,7 +74034,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Made, with no members yet */
+            /** @description Made, with no members yet, or those SCIM holds for its value */
             200: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -101009,6 +101053,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -101026,6 +101071,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -101039,6 +101095,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */
@@ -101164,6 +101222,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -101181,6 +101240,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -101194,6 +101264,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */
@@ -101321,6 +101393,11 @@ export interface operations {
                     clientSecret: string;
                     /** @description The ID token claim carrying the provider's group values */
                     groupsClaim?: string;
+                    /**
+                     * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                     * @enum {string}
+                     */
+                    scimClaim?: "sub" | "oid";
                 };
             };
         };
@@ -101346,6 +101423,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -101363,6 +101441,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -101376,6 +101465,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */
@@ -101522,6 +101613,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -101539,6 +101631,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -101552,6 +101655,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */
@@ -101704,6 +101809,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -101721,6 +101827,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -101734,6 +101851,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */
@@ -101847,6 +101966,529 @@ export interface operations {
             };
         };
     };
+    turnScimOn: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "claim": "sub"
+                 *     }
+                 */
+                "application/json": {
+                    /**
+                     * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                     * @enum {string}
+                     */
+                    claim: "sub" | "oid";
+                };
+            };
+        };
+        responses: {
+            /** @description On */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "scimUrl": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such provider */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    turnScimOff: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Off */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "scimUrl": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such provider */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    issueScimToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description The token, shown this once */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "name": "example",
+                     *       "scopes": [],
+                     *       "createdAt": "example",
+                     *       "expiresAt": "example",
+                     *       "lastUsedAt": "example",
+                     *       "secret": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @description What the person called it, to tell their tokens apart */
+                        name: string;
+                        /** @description The permissions it may use, of those its creator holds; reading is never masked, so none reads and does nothing else */
+                        scopes: ("create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire")[];
+                        createdAt: string;
+                        /** @description When it stops working; nothing extends a token */
+                        expiresAt: string;
+                        /** @description When a request last used it, to the minute, or null for never */
+                        lastUsedAt: string | null;
+                        /** @description The token, awt_ and 43 characters, shown this once: only its hash is kept */
+                        secret: string;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such provider */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description scim_off: it does not provision */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     replaceProviderSecret: {
         parameters: {
             query?: never;
@@ -101894,6 +102536,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -101911,6 +102554,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -101924,6 +102578,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */
@@ -102069,6 +102725,7 @@ export interface operations {
                      *         "absoluteHours": -9007199254740991
                      *       },
                      *       "redirectUri": "example",
+                     *       "scimUrl": "example",
                      *       "recentSignIn": false,
                      *       "signedInThrough": {
                      *         "route": "organisation",
@@ -102086,6 +102743,17 @@ export interface operations {
                             groupsClaim: string;
                             /** @description Closed: it signs nobody in */
                             closed: boolean;
+                            scim: {
+                                /** @description It provisions: it admits only those it pushed */
+                                on: boolean;
+                                /**
+                                 * @description The ID token claim equal to SCIM's externalId: sub (Okta) or oid (Entra ID)
+                                 * @enum {string}
+                                 */
+                                claim: "sub" | "oid";
+                                /** @description When its token was last used */
+                                lastUsedAt: string | null;
+                            };
                         }[];
                         google: {
                             /** @description Whether this service holds a Google client at all */
@@ -102099,6 +102767,8 @@ export interface operations {
                         };
                         /** @description The address to register at each provider */
                         redirectUri: string;
+                        /** @description The SCIM base address to give a provider that provisions */
+                        scimUrl: string;
                         /** @description Whether this session authenticated recently enough to change any of this */
                         recentSignIn: boolean;
                         /** @description The way in of the session asking, which it may not close; null for a token */

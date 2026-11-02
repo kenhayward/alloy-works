@@ -1,5 +1,7 @@
 import type {
   GoogleSettingsBody,
+  ScimOnBody,
+  TokenIssued,
   PrincipalParams,
   ProviderBody,
   ProviderChangeBody,
@@ -15,7 +17,11 @@ import {
   disablePrincipal,
   enablePrincipal,
   googleRoute,
+  listApiTokens,
   listProviders,
+  revokeApiToken,
+  turnScimOff,
+  turnScimOn,
   notifyTenant,
   sealProviderSecret,
   sealSecret,
@@ -31,9 +37,14 @@ import type { FastifyRequest } from 'fastify';
 import type { Authorised } from './access.js';
 import type { Credential } from './app.js';
 import { AppError } from './errors.js';
+import { SCIM_ROOT } from './scim.js';
+import { issueChecked, newTokenSecret, tokenView } from './tokens.js';
 
 /** How long a sign-in stays recent enough to change how people sign in (IN-D). */
 export const RECENT_SIGN_IN_SECONDS = 600;
+
+/** How long a SCIM token lasts: a year, the most any token may. */
+const SCIM_TOKEN_DAYS = 364;
 
 const secondsSince = (at: Date) => (Date.now() - at.getTime()) / 1000;
 
@@ -122,6 +133,11 @@ export function signInSettingsHandlers(options: {
         clientId: provider.clientId,
         groupsClaim: provider.groupsClaim,
         closed: provider.closedAt !== null,
+        scim: {
+          on: provider.scimIdentity !== null,
+          claim: provider.scimClaim,
+          lastUsedAt: provider.scimLastUsedAt && provider.scimLastUsedAt.toISOString(),
+        },
       })),
       google: {
         available: options.googleAvailable,
@@ -130,6 +146,7 @@ export function signInSettingsHandlers(options: {
       },
       sessions: await sessionSettings(trx),
       redirectUri: `${request.protocol}://${request.host}${options.callbackPath}`,
+      scimUrl: `${request.protocol}://${request.host}${SCIM_ROOT}`,
       recentSignIn: recent(credential, RECENT_SIGN_IN_SECONDS),
       signedInThrough:
         session === null
@@ -151,6 +168,7 @@ export function signInSettingsHandlers(options: {
         clientId: body.clientId,
         sealedSecret: sealed(request, body.clientSecret),
         ...(body.groupsClaim === undefined ? {} : { groupsClaim: body.groupsClaim }),
+        ...(body.scimClaim === undefined ? {} : { scimClaim: body.scimClaim }),
       });
       if ('refused' in added) throw refused(added.refused);
       return read(request, trx);
@@ -207,6 +225,56 @@ export function signInSettingsHandlers(options: {
     setSessionSettings: async (request: FastifyRequest, { trx }: Authorised) => {
       await setSessionSettings(trx, request.body as SessionSettingsBody);
       return read(request, trx);
+    },
+
+    turnScimOn: async (request: FastifyRequest, { trx, principalId }: Authorised) => {
+      const { id } = request.params as ProviderParams;
+      const { claim } = request.body as ScimOnBody;
+      const answer = await turnScimOn(trx, id, claim, principalId);
+      if (answer === 'provider.missing') throw refused(answer);
+      return read(request, trx);
+    },
+
+    turnScimOff: async (request: FastifyRequest, { trx }: Authorised) => {
+      const { id } = request.params as ProviderParams;
+      const answer = await turnScimOff(trx, id);
+      if (answer === 'provider.missing') throw refused(answer);
+      await sayEnded(trx, { sessions: [], tokens: answer.tokens });
+      return read(request, trx);
+    },
+
+    // A token replaces those before it, so one that leaked ends as the new one is made.
+    issueScimToken: async (request: FastifyRequest, { trx }: Authorised): Promise<TokenIssued> => {
+      const { id } = request.params as ProviderParams;
+      const provider = await trx
+        .selectFrom('identity_provider')
+        .select(['name', 'scim_identity'])
+        .where('id', '=', id)
+        .where('closed_at', 'is', null)
+        .executeTakeFirst();
+      if (!provider) throw refused('provider.missing');
+      if (provider.scim_identity === null) {
+        throw new AppError(409, 'scim_off', 'Turn SCIM on for this provider first.');
+      }
+      const held = await listApiTokens(trx, provider.scim_identity, { limit: 100 });
+      for (const token of held.items) {
+        await revokeApiToken(trx, provider.scim_identity, token.id);
+        await notifyTenant(trx, { kind: 'credential_ended', token: token.id });
+      }
+      const secret = newTokenSecret();
+      const expiresAt = new Date(Date.now() + SCIM_TOKEN_DAYS * 24 * 60 * 60 * 1000);
+      const issued = await issueChecked(
+        trx,
+        provider.scim_identity,
+        {
+          name: `SCIM: ${provider.name}`.slice(0, 80),
+          scopes: [],
+          expiresAt: expiresAt.toISOString(),
+        },
+        expiresAt,
+        secret,
+      );
+      return { ...tokenView(issued), secret };
     },
 
     disablePerson: async (request: FastifyRequest, { trx, principalId }: Authorised) => {

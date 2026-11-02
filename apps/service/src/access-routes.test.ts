@@ -1736,6 +1736,17 @@ describe('routes that check a permission', () => {
       status: 403,
       payload: { idleMinutes: 60, absoluteHours: 12 },
     }),
+    turnScimOn: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}/scim`,
+      status: 403,
+      payload: { claim: 'sub' },
+    }),
+    turnScimOff: () => ({ url: `/v1/sign-in-settings/providers/${MISSING}/scim`, status: 403 }),
+    issueScimToken: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}/scim/token`,
+      status: 403,
+      payload: {},
+    }),
     disablePerson: () => ({ url: `/v1/principals/${MISSING}/disablement`, status: 403 }),
     enablePerson: () => ({ url: `/v1/principals/${MISSING}/disablement`, status: 403 }),
     invite: () => ({

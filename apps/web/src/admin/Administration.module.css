@@ -129,6 +129,12 @@
   outline: none;
 }
 
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
 .dialog {
   display: flex;
   flex-direction: column;

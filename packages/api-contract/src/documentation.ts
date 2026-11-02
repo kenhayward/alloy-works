@@ -667,6 +667,9 @@ const operationTags = {
     'changeProvider',
     'replaceProviderSecret',
     'closeProvider',
+    'turnScimOn',
+    'turnScimOff',
+    'issueScimToken',
     'setGoogleSignIn',
     'setSessionSettings',
     'disablePerson',
@@ -1563,6 +1566,12 @@ const descriptions: Readonly<Record<string, string>> = {
     "Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the secret.",
   closeProvider:
     "Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+  turnScimOn:
+    'Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds administer outright, and its memberships come from SCIM alone. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+  turnScimOff:
+    'Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+  issueScimToken:
+    "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
   setGoogleSignIn:
     "Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
   setSessionSettings:

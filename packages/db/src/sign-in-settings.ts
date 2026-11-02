@@ -65,6 +65,9 @@ export async function setSessionSettings(
   return settings;
 }
 
+/** An id nobody holds, where a provider has no SCIM identity to match. */
+const NOBODY = '00000000-0000-0000-0000-000000000000';
+
 /** A provider as Administration's Sign-in shows it: its client secret is never read back. */
 export interface ListedProvider {
   readonly id: string;
@@ -73,6 +76,10 @@ export interface ListedProvider {
   readonly clientId: string;
   readonly groupsClaim: string;
   readonly closedAt: Date | null;
+  readonly scimClaim: 'sub' | 'oid';
+  /** Its service identity where it provisions, and when that last used a token. */
+  readonly scimIdentity: string | null;
+  readonly scimLastUsedAt: Date | null;
 }
 
 /** Every provider, the closed ones after the open, each by name. */
@@ -80,6 +87,14 @@ export async function listProviders(trx: TenantTransaction): Promise<ListedProvi
   const rows = await trx
     .selectFrom('identity_provider')
     .select(['id', 'name', 'issuer', 'client_id', 'groups_claim', 'closed_at'])
+    .select(['scim_claim', 'scim_identity'])
+    .select((eb) =>
+      eb
+        .selectFrom('api_token as t')
+        .select((inner) => inner.fn.max('t.last_used_at').as('used'))
+        .whereRef('t.principal_id', '=', 'identity_provider.scim_identity')
+        .as('scim_last_used_at'),
+    )
     .orderBy(sql`closed_at is not null`)
     .orderBy('name')
     .execute();
@@ -90,6 +105,9 @@ export async function listProviders(trx: TenantTransaction): Promise<ListedProvi
     clientId: row.client_id,
     groupsClaim: row.groups_claim,
     closedAt: row.closed_at,
+    scimClaim: row.scim_claim,
+    scimIdentity: row.scim_identity,
+    scimLastUsedAt: row.scim_last_used_at,
   }));
 }
 
@@ -121,6 +139,7 @@ export async function addProvider(
     readonly clientId: string;
     readonly sealedSecret: string;
     readonly groupsClaim?: string;
+    readonly scimClaim?: 'sub' | 'oid';
   },
 ): Promise<{ readonly id: string } | { readonly refused: ProviderRefusal }> {
   const held = await trx
@@ -139,6 +158,7 @@ export async function addProvider(
     secret_name: null,
     closed_at: null,
     ...(provider.groupsClaim === undefined ? {} : { groups_claim: provider.groupsClaim }),
+    ...(provider.scimClaim === undefined ? {} : { scim_claim: provider.scimClaim }),
   };
   const row = held
     ? await trx
@@ -261,7 +281,7 @@ export async function closeProviderAsked(
 ): Promise<Ended | { readonly refused: ProviderRefusal }> {
   const provider = await trx
     .selectFrom('identity_provider')
-    .select(['issuer', 'closed_at'])
+    .select(['issuer', 'closed_at', 'scim_identity'])
     .where('id', '=', id)
     .forUpdate()
     .executeTakeFirst();
@@ -292,7 +312,13 @@ export async function closeProviderAsked(
       .selectFrom('api_token as t')
       .innerJoin('principal as p', 'p.id', 't.principal_id')
       .select(['t.id', 't.name', 't.principal_id'])
-      .where('p.issuer', '=', provider.issuer)
+      .where((eb) =>
+        eb.or([
+          eb('p.issuer', '=', provider.issuer),
+          // And its SCIM identity's, which provisions for it no more (identity.md, "Providers").
+          eb('t.principal_id', '=', provider.scim_identity ?? NOBODY),
+        ]),
+      )
       .orderBy('t.id')
       .forUpdate('t')
       .execute(),

@@ -54,6 +54,7 @@ describe('the OpenID Connect client', () => {
       name: 'Ada',
       hostedDomain: null,
       groups: [],
+      providerKey: null,
       // Only said where it was asked for, as a re-authentication asks (IAM-012).
       authTime: null,
     });

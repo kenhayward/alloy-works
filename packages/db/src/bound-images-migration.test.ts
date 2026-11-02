@@ -299,6 +299,7 @@ describe('migration 0052, which widens dataset_take to an image', () => {
       '0186_model_run_limits',
       '0187_identity_providers',
       '0188_sign_in_settings',
+      '0189_scim',
     ]);
     const kept = await queryAs(
       db.adminUrl,

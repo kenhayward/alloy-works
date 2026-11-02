@@ -54,6 +54,8 @@ export const signInFailures = [
   'handoff_other_browser',
   'principal_erased',
   'principal_disabled',
+  // A provider that provisions, and a subject it never pushed (IN-K).
+  'not_provisioned',
   // A re-authentication by somebody else, or not made since it was asked for (IAM-012).
   'reauthentication_refused',
 ] as const;
@@ -262,10 +264,21 @@ export const auditKindSpecs = {
         'google_closed',
         'google_domains',
         'sessions',
+        'scim_on',
+        'scim_off',
       ]),
       provider: Id.optional(),
     }),
     'packages/db/src/sign-in-settings.ts',
+  ),
+  // What a provider's push changed, by resource: never a value or a token (the ID plan, IDc).
+  'scim.provisioned': kind(
+    ['IAM-008'],
+    z.strictObject({
+      resource: z.enum(['user', 'group']),
+      act: z.enum(['created', 'replaced', 'patched', 'deleted']),
+    }),
+    'packages/db/src/scim.ts',
   ),
   'principal.disabled': kind(
     ['IAM-008'],

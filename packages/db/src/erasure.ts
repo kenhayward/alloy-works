@@ -199,6 +199,8 @@ export async function erasePerson(
       display_name: ERASED_NAME,
       email: null,
       email_verified: false,
+      // SCIM's name for them goes with their address; their key, like their subject, stays to refuse.
+      scim_user_name: null,
       erased_at: sql<Date>`now()`,
     })
     .where('id', '=', person)

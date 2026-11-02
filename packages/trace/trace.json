@@ -21721,13 +21721,13 @@
     {
       "id": "API-062",
       "file": "apps/service/src/app.test.ts",
-      "line": 112,
+      "line": 114,
       "kind": "title"
     },
     {
       "id": "IAM-053",
       "file": "apps/service/src/app.test.ts",
-      "line": 189,
+      "line": 191,
       "kind": "title"
     },
     {
@@ -22093,13 +22093,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 753,
+      "line": 768,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 766,
+      "line": 781,
       "kind": "title"
     },
     {
@@ -22639,7 +22639,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2295,
+      "line": 2300,
       "kind": "title"
     },
     {
@@ -23047,7 +23047,7 @@
     {
       "id": "IAM-054",
       "file": "apps/service/src/google.test.ts",
-      "line": 34,
+      "line": 35,
       "kind": "title"
     },
     {
@@ -23521,19 +23521,19 @@
     {
       "id": "IAM-044",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 62,
+      "line": 63,
       "kind": "title"
     },
     {
       "id": "IAM-065",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 114,
+      "line": 115,
       "kind": "title"
     },
     {
       "id": "IAM-075",
       "file": "apps/service/src/oidc.test.ts",
-      "line": 228,
+      "line": 229,
       "kind": "title"
     },
     {
@@ -23996,6 +23996,18 @@
       "id": "COL-058",
       "file": "apps/service/src/rounds-routes.test.ts",
       "line": 288,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-003",
+      "file": "apps/service/src/scim.test.ts",
+      "line": 226,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-008",
+      "file": "apps/service/src/scim.test.ts",
+      "line": 246,
       "kind": "title"
     },
     {
@@ -28975,7 +28987,7 @@
     {
       "id": "API-012",
       "file": "packages/api-contract/src/openapi.test.ts",
-      "line": 199,
+      "line": 200,
       "kind": "title"
     },
     {
@@ -32035,13 +32047,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 281,
+      "line": 283,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 258,
+      "line": 260,
       "kind": "title"
     },
     {
