@@ -131,13 +131,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   nor Okta's validator has been run against it yet. [Inviting, disabling and SCIM](guides/people-and-scim.md) says how. Six high-risk acts are
   permissions of their own, apart from administer: exporting the environment, exporting the audit,
   holds, rotating secrets, configuring services (Sign-in among them) and configuring webhooks.
-  Administrators keep them all, and a narrower role may hold one. Explaining a disabled person's access
+  Administrators keep them all, and a role made in Administration may hold any of them. A role that keeps administer can still grant itself the rest, so a boundary needs a role without it. Explaining a disabled person's access
   refuses every permission and says why.
 
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
   denial, on the whole environment, one space, or one item. Every environment starts with eleven roles -
   among them Publisher, the only one that may publish, and Query builder and Query writer, the only
-  ones that may use a connection - and a space called General. An environment's first administrator is invited, by address, by whoever sets
+  ones that may use a connection - and a space called General. An administrator can make more roles, from any of the permissions, under Roles in Administration; they cannot yet be changed or removed there. An environment's first administrator is invited, by address, by whoever sets
   it up, and is Administrator from the first sign-in that proves that address; in development, Ada
   administers both environments from hers and holds every permission across each, so every part of
   the product can be tried. **Access is everywhere**: on any component, document or

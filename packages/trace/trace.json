@@ -22132,13 +22132,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 768,
+      "line": 769,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 781,
+      "line": 782,
       "kind": "title"
     },
     {
@@ -22646,6 +22646,12 @@
       "kind": "title"
     },
     {
+      "id": "IAM-021",
+      "file": "apps/service/src/creating-roles.test.ts",
+      "line": 103,
+      "kind": "title"
+    },
+    {
       "id": "API-008",
       "file": "apps/service/src/creation-bindings.test.ts",
       "line": 131,
@@ -22678,7 +22684,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2300,
+      "line": 2301,
       "kind": "title"
     },
     {
@@ -25054,25 +25060,25 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1778,
+      "line": 1837,
       "kind": "title"
     },
     {
       "id": "API-074",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 110,
+      "line": 112,
       "kind": "title"
     },
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1920,
+      "line": 1979,
       "kind": "title"
     },
     {
       "id": "VER-038",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 611,
+      "line": 613,
       "kind": "title"
     },
     {
@@ -32140,13 +32146,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 283,
+      "line": 284,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 260,
+      "line": 261,
       "kind": "title"
     },
     {

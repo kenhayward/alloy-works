@@ -1699,6 +1699,11 @@ describe('routes that check a permission', () => {
     extendGrant: () => ({ url: `/v1/grants/${graceAuthors}/extension`, status: 404, payload: {} }),
     listExternalAccess: () => ({ url: '/v1/access/external', status: 403 }),
     listRoles: () => ({ url: '/v1/roles?level=tenant', status: 403 }),
+    createRole: () => ({
+      url: '/v1/roles',
+      status: 403,
+      payload: { name: 'Mine', permissions: ['read'] },
+    }),
     listPrincipals: () => ({ url: `/v1/principals?level=space:${clinical}`, status: 404 }),
     listInvitations: () => ({ url: '/v1/invitations', status: 403 }),
     getSignInSettings: () => ({ url: '/v1/sign-in-settings', status: 403 }),

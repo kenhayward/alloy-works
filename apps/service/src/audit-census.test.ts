@@ -319,6 +319,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listGrants: read,
   listCohorts: read,
   listRoles: read,
+  createRole: writes('role.made'),
   listPrincipals: read,
   makeGrant: writes('access.granted'),
   removeGrant: writes('access.revoked'),

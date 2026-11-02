@@ -1,4 +1,5 @@
 import { checkRole, type Permission, type RoleProblem } from '@alloy-works/domain';
+import { recordEvent } from './audit.js';
 import type { TenantTransaction } from './tables.js';
 
 export interface Role {
@@ -28,7 +29,17 @@ export async function createRole(
     .onConflict((conflict) => conflict.column('name').doNothing())
     .returning(['id', 'name', 'permissions'])
     .executeTakeFirst();
-  return row ? { role: row } : { refused: 'role.name_taken' };
+  if (!row) return { refused: 'role.name_taken' };
+  await recordEvent(
+    trx,
+    {
+      kind: 'role.made',
+      subject: { kind: 'role', id: row.id },
+      detail: { permissions: [...row.permissions] },
+    },
+    [{ role: 'subject', text: row.name, refersTo: row.id }],
+  );
+  return { role: row };
 }
 
 /** The tenant's role of that name, exactly as written. */

@@ -222,6 +222,12 @@ export const auditKindSpecs = {
   'access.granted': kind(['ADM-002', 'LIF-067', 'IAM-050'], Grant, 'packages/db/src/grants.ts'),
   'access.revoked': kind(['ADM-002', 'LIF-067'], Grant, 'packages/db/src/grants.ts'),
   'group.made': kind(['ADM-002', 'LIF-067'], empty, 'packages/db/src/groups.ts'),
+  // What it holds as it is made: a later reader cannot ask the role, which may have changed.
+  'role.made': kind(
+    ['ADM-002', 'LIF-067'],
+    z.strictObject({ permissions: z.array(z.string()) }),
+    'packages/db/src/roles.ts',
+  ),
   'group.deleted': kind(['ADM-002', 'LIF-067'], empty, 'packages/db/src/groups.ts'),
   'group.member_added': kind(['ADM-002', 'LIF-067'], Membership, 'packages/db/src/groups.ts'),
   'group.member_removed': kind(['ADM-002', 'LIF-067'], Membership, 'packages/db/src/groups.ts'),

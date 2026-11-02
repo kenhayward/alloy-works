@@ -680,6 +680,7 @@ const operationTags = {
     'getAccess',
     'explainAccess',
     'listRoles',
+    'createRole',
     'listGrants',
     'makeGrant',
     'extendGrant',
@@ -1585,6 +1586,8 @@ const descriptions: Readonly<Record<string, string>> = {
   withdrawInvitation:
     'Withdraws an unaccepted invitation and removes the principal and grants created for it.',
   listRoles: 'Lists roles available to grants and the permissions each role holds.',
+  createRole:
+    "Makes a role in this environment from the permissions named. It changes nobody's access until it is granted. A role without read can only be granted as a denial. Audited, with what it holds.",
   listGrants: 'Lists access grants at one level using an opaque cursor.',
   makeGrant:
     'Grants or denies a role to a person or group at the selected level. The resulting access decision takes effect on the next request.',

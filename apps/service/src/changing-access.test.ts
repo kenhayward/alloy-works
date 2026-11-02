@@ -183,6 +183,7 @@ describe('a route that changes access', () => {
       'closeProvider',
       'connectCtStudio',
       'createGroup',
+      'createRole',
       'deleteGroup',
       'disablePerson',
       'disconnectCtStudio',

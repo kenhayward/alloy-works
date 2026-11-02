@@ -341,6 +341,8 @@ describe('migration 0027, which lets a publication hold one output per format', 
       '0188_sign_in_settings',
       '0189_scim',
       '0190_high_risk_permissions',
+      '0191_role_made',
+      '0191_role_made',
     ]);
     const { rows } = await queryAs(
       db.adminUrl,

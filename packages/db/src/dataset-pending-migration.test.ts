@@ -280,6 +280,8 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0188_sign_in_settings',
       '0189_scim',
       '0190_high_risk_permissions',
+      '0191_role_made',
+      '0191_role_made',
     ]);
     const kept = await queryAs(
       db.adminUrl,
