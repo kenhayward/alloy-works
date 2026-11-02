@@ -566,6 +566,12 @@ export const FAMILY_WORDS: Readonly<Record<string, string>> = {
   get service_identity() {
     return words('admin.service-identities');
   },
+  get principal() {
+    return words('admin.person');
+  },
+  get sign_in() {
+    return words('admin.signin-title');
+  },
   get sign_in_route() {
     return words('admin.sign-in-routes');
   },

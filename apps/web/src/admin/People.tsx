@@ -640,7 +640,7 @@ function InvitePeople({
           </label>
         </div>
         {offered.length > 1 && (
-          <fieldset>
+          <fieldset className={styles['ways']}>
             <legend>{say('admin.invite-ways')}</legend>
             {offered.map((way) => (
               <div key={way.id} className={styles['check']}>
