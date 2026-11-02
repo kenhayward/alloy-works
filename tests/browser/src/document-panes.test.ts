@@ -158,4 +158,53 @@ describe("the panes beside a document's text, in Chromium", () => {
       ).toBe(false);
     });
   });
+
+  it('shows the text only between the top and the bottom of the panes, from the first of the sheet to the last', async () => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(`${SERVICE}/#/documents/${report}`);
+      await page.getByRole('tree', { name: 'Outline' }).waitFor();
+      await page.getByText('Paragraph 2.', { exact: false }).first().waitFor();
+      const read = () =>
+        page.evaluate(() => {
+          const pane = document.querySelector("[data-part='outline']")!.getBoundingClientRect();
+          const sheet = document.querySelector('.aw-sheet')!.getBoundingClientRect();
+          const middle = (sheet.left + sheet.right) / 2;
+          const inText = (y: number) =>
+            document.elementFromPoint(middle, y)?.closest('.aw-desk') !== null;
+          return {
+            paneTop: pane.top,
+            paneBottom: pane.bottom,
+            sheetTop: sheet.top,
+            sheetBottom: sheet.bottom,
+            textAbove: inText(pane.top - 6),
+            textBelow: inText(pane.bottom + 6),
+          };
+        });
+      const start = await read();
+      expect(start.sheetTop).toBe(start.paneTop);
+
+      await page.mouse.move(700, 500);
+      /** The window scrolled by `distance`, once it has settled. */
+      const scrolledBy = async (distance: number) => {
+        await page.mouse.wheel(0, distance);
+        await expect
+          .poll(async () => {
+            const before = await page.evaluate(() => window.scrollY);
+            await page.waitForTimeout(100);
+            return before === (await page.evaluate(() => window.scrollY));
+          })
+          .toBe(true);
+        return read();
+      };
+      const between = await scrolledBy(300);
+      expect(between.sheetTop).toBeLessThan(between.paneTop);
+      expect(between.sheetBottom).toBeGreaterThan(between.paneBottom);
+      expect(between.textAbove).toBe(false);
+      expect(between.textBelow).toBe(false);
+
+      const end = await scrolledBy(20000);
+      expect(end.sheetBottom).toBe(end.paneBottom);
+    });
+  });
 });
