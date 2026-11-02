@@ -1,14 +1,21 @@
 import { createApiClient } from '@alloy-works/api-client';
 import { PLACES } from '@alloy-works/domain';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
 import { Themes } from './Themes.js';
 
 const THEME = '4ae73bd5-48cb-422a-a4f8-2183f0f72866';
 const COPY = '0b6a1c52-8f43-4c1e-9d7a-5a2f1e3c4d01';
+
+/** The character catalogue as an export gives it. */
+const DOCUMENT = {
+  format: 'alloy-works.catalogue',
+  version: 1,
+  catalogue: { kind: 'character', styles: [] },
+};
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -64,6 +71,9 @@ function service(refuse?: { status: number; code: string; message: string }) {
     }
     if (request.method === 'PUT' && path === `/v1/themes/${THEME}/name`) {
       return json(200, { ...view, name: body!['name'], version: { id: 'tv2', number: '0.12' } });
+    }
+    if (request.method === 'GET' && path === `/v1/themes/${THEME}/catalogues/character`) {
+      return json(200, DOCUMENT);
     }
     if (request.method === 'POST' && path === `/v1/themes/${COPY}/default`) {
       return json(200, { ...view, id: COPY, name: 'Field manual', isDefault: true });
@@ -326,5 +336,88 @@ describe("Administration's Document themes (the SY plan, SY-F)", () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       'The offered styles saved: Default 0.12',
     );
+  });
+
+  it('STY-043 exports a catalogue as a file, and imports one into the theme as its next version', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    const saved: Blob[] = [];
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      saved.push(blob);
+      return 'blob:catalogue';
+    });
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    const catalogues = await screen.findByRole('group', { name: 'Catalogues' });
+    await user.selectOptions(
+      within(catalogues).getByRole('combobox', { name: 'Kind' }),
+      'Character',
+    );
+    await user.click(within(catalogues).getByRole('button', { name: 'Export' }));
+    await waitFor(() => expect(click).toHaveBeenCalled());
+    expect(JSON.parse(await saved[0]!.text())).toEqual(DOCUMENT);
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('default-character.json');
+    click.mockRestore();
+
+    const file = new File([JSON.stringify(DOCUMENT)], 'house.json', { type: 'application/json' });
+    await user.upload(within(catalogues).getByLabelText('Import a catalogue'), file);
+    await waitFor(() =>
+      expect(sent.some((each) => each.path === `/v1/themes/${THEME}/catalogues/character`)).toBe(
+        true,
+      ),
+    );
+    const put = sent.find(
+      (each) => each.method === 'PUT' && each.path === `/v1/themes/${THEME}/catalogues/character`,
+    )!;
+    expect(put.body).toEqual({ openedFrom: 'tv1', document: DOCUMENT });
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Character catalogue imported: Default 0.12',
+    );
+  });
+
+  it('STY-044 says every refusal of an import, and imports nothing', async () => {
+    const user = userEvent.setup();
+    const { client } = service({
+      status: 400,
+      code: 'style_refused',
+      message: 'The theme would not read with the change.',
+      refusals: [
+        {
+          code: 'catalogue_malformed',
+          message: 'The catalogue does not read, at base: Unrecognized key: "kerning"',
+        },
+        {
+          code: 'typeface_missing',
+          message: 'The style lead is set in garamond, which the theme does not declare',
+        },
+      ],
+    } as never);
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    const catalogues = await screen.findByRole('group', { name: 'Catalogues' });
+    const file = new File([JSON.stringify(DOCUMENT)], 'house.json', { type: 'application/json' });
+    await user.upload(within(catalogues).getByLabelText('Import a catalogue'), file);
+    const said = await within(catalogues).findByRole('alert');
+    expect(said).toHaveTextContent('Unrecognized key: "kerning"');
+    expect(said).toHaveTextContent('garamond');
+  });
+
+  it('STY-044 refuses a file that is not JSON before anything is sent', async () => {
+    const user = userEvent.setup();
+    const { client, sent } = service();
+    render(<Themes client={client} />);
+    const themes = await screen.findByRole('table', { name: 'Document themes' });
+    await user.click(within(themes).getByRole('button', { name: 'Open Default' }));
+    const catalogues = await screen.findByRole('group', { name: 'Catalogues' });
+    const file = new File(['not json'], 'house.json', { type: 'application/json' });
+    await user.upload(within(catalogues).getByLabelText('Import a catalogue'), file);
+    expect(await within(catalogues).findByRole('alert')).toHaveTextContent(
+      'house.json is not a catalogue document: it does not read as JSON.',
+    );
+    expect(sent.some((each) => each.path.includes('/catalogues/'))).toBe(false);
   });
 });

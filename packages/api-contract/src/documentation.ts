@@ -544,6 +544,8 @@ const operationTags = {
   Themes: [
     'listThemes',
     'getTheme',
+    'exportThemeCatalogue',
+    'importThemeCatalogue',
     'createTheme',
     'renameTheme',
     'allowThemeStyles',
@@ -1162,6 +1164,10 @@ const descriptions: Readonly<Record<string, string>> = {
     "Lists the environment's themes by name, each at its latest version, the one a document with no template is set in marked. Anyone signed in may read them.",
   getTheme:
     'Returns a theme at its latest version as stored, naming its catalogues by version, with each of those catalogue versions as stored: the paragraph, character, table and image styles among them. Anyone signed in may read it.',
+  exportThemeCatalogue:
+    "Returns one of a theme's catalogues as a document naming its format and version, at the schema it reads at now, for another theme or environment to import. Anyone signed in may read it.",
+  importThemeCatalogue:
+    "Replaces one of a theme's catalogues by an exported document, as the catalogue's and the theme's next versions. Everything the document holds that this cannot represent is refused, each by where it is, and so is anything the theme could not hold: a typeface it does not declare, a style a place names that the catalogue drops, a parent it lacks. A style it drops that components use keeps it out. Nothing is written when anything is refused. `openedFrom` must be the theme's latest version. Needs manage definitions at the environment.",
   createTheme:
     "Makes a theme by copying another under a new name: each of its catalogues is copied into one of the new theme's own, so a style changed in either theme never reaches the other. The copy starts at 0.1. Needs manage definitions at the environment.",
   renameTheme:

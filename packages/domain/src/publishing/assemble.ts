@@ -44,7 +44,7 @@ import {
   type NumberFormat,
   type NumberingScheme,
 } from '../structure/scheme.js';
-import type { ResolvedParagraphStyle, ResolvedTheme } from '../theme/read.js';
+import { allowsStyle, type ResolvedParagraphStyle, type ResolvedTheme } from '../theme/read.js';
 import type { ImageStyle, Place, Role, Typeface } from '../theme/schema.js';
 import { projectTypst } from '../theme/typst.js';
 import { listsNotInWord } from '../word/lists.js';
@@ -483,10 +483,6 @@ export type Assembled<
  * `style_missing`.
  */
 const BODY = 'body';
-
-/** Whether a theme allows authors a style of a kind: every style, where it names none (STY-033). */
-const allows = (allowed: readonly string[] | null, id: string) =>
-  allowed === null || allowed.includes(id);
 
 /**
  * The one family template 1 sets everything in, the pinned serif: what the glyph check asks of a
@@ -1473,7 +1469,7 @@ export function assemble(given: AssembleInput): Assembled {
       failures.push(failure('compose', 'style_missing', node, block, stored));
     } else if (!applies) {
       failures.push(failure('compose', 'style_not_applicable', node, block, id));
-    } else if (stored !== BODY && !allows(theme.allowed.paragraph, id)) {
+    } else if (stored !== BODY && !allowsStyle(theme.allowed, 'paragraph', id)) {
       failures.push(failure('compose', 'style_not_allowed', node, block, id));
     }
     const setIn = style !== undefined && applies ? style : placeStyle(place);
@@ -1847,7 +1843,7 @@ export function assemble(given: AssembleInput): Assembled {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
         } else if (!tableStyle.appliesTo.includes('table')) {
           failures.push(failure('compose', 'style_not_applicable', node, block.id, block.style));
-        } else if (!allows(theme!.allowed.table, block.style)) {
+        } else if (!allowsStyle(theme!.allowed, 'table', block.style)) {
           failures.push(failure('compose', 'style_not_allowed', node, block.id, block.style));
         } else if (tableStyle.breaks.continuationLabel && layout.words.continued === undefined) {
           // The label is set on the PDF's pages alone: Word repeats no such label (Word 1, R2).
@@ -2042,7 +2038,7 @@ export function assemble(given: AssembleInput): Assembled {
           failures.push(
             failure('compose', 'style_not_applicable', node, block.id, block.imageStyle),
           );
-        } else if (!allows(theme!.allowed.image, block.imageStyle)) {
+        } else if (!allowsStyle(theme!.allowed, 'image', block.imageStyle)) {
           failures.push(failure('compose', 'style_not_allowed', node, block.id, block.imageStyle));
         }
         // CNT-017's caption: a caption of no words names nothing (ruling R5), as a table's does not.
@@ -2479,7 +2475,7 @@ export function assemble(given: AssembleInput): Assembled {
       failOnce(failure('compose', 'style_not_applicable', node, block, image.imageStyle));
       return null;
     }
-    if (!allows(theme!.allowed.image, image.imageStyle)) {
+    if (!allowsStyle(theme!.allowed, 'image', image.imageStyle)) {
       failOnce(failure('compose', 'style_not_allowed', node, block, image.imageStyle));
       return null;
     }

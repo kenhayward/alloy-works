@@ -20,6 +20,8 @@ describe('the styles an author is offered (the SY plan, SY-H)', () => {
     expect(values(paragraphChoices(narrowed, ['text']))).toEqual(['body', 'lead']);
     expect(values(tableChoices(narrowed))).toEqual(['table']);
     expect(values(imageChoices(narrowed, 'figure'))).toEqual(['figure']);
+    // What content carries by default is offered however narrow the list, as a publish accepts it.
+    expect(values(tableChoices(themed({ table: [] })))).toEqual(['table']);
     // A kind the theme does not narrow offers every style of it.
     expect(values(tableChoices(themed({ paragraph: ['lead'] })))).toEqual(
       values(tableChoices(themed())),
