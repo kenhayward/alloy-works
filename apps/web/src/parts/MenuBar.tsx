@@ -1,9 +1,11 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type CSSProperties,
 } from 'react';
 
 import { Icon } from '../editor/Icon.js';
@@ -62,6 +64,9 @@ function Lettered({ label, letter }: { label: string; letter: string }): ReactNo
   );
 }
 
+/** A dialog over the page, behind which no key of the bar's acts. */
+const modalOpen = () => document.querySelector('[aria-modal="true"]') !== null;
+
 const focusables = (menu: HTMLElement): HTMLElement[] =>
   [...menu.children].flatMap((child) => {
     const row = child.matches('[role^="menuitem"]')
@@ -92,6 +97,35 @@ function Menu({
 }) {
   const own = useRef<HTMLDivElement>(null);
   const [opened, setOpened] = useState<string | null>(null);
+  const [at, setAt] = useState<CSSProperties>({ visibility: 'hidden' });
+
+  // Fixed to the window, placed from what opened it, so a sticky dock or a scrolled menu clips none of
+  // it; held inside the window, its rows scrolling where it is too tall (WCAG 1.4.10).
+  useLayoutEffect(() => {
+    const menu = own.current;
+    const anchor = menu?.parentElement;
+    if (!menu || !anchor) return;
+    const room = 8;
+    const box = anchor.getBoundingClientRect();
+    const rtl = getComputedStyle(menu).direction === 'rtl';
+    const { offsetWidth: width, scrollHeight: height } = menu;
+    const most = Math.max(window.innerHeight - 2 * room, 0);
+    const wanted = nested ? box.top - 7 : box.bottom + 4;
+    const top = Math.max(
+      room,
+      Math.min(wanted, window.innerHeight - room - Math.min(height, most)),
+    );
+    const beside = rtl ? box.left - width - 2 : box.right + 2;
+    const flipped = rtl ? box.right + 2 : box.left - width - 2;
+    const under = rtl ? box.right - width : box.left;
+    const fits = (left: number) => left >= 0 && left + width <= window.innerWidth;
+    const left = nested ? (fits(beside) || !fits(flipped) ? beside : flipped) : under;
+    setAt({
+      top,
+      left: Math.max(room, Math.min(left, window.innerWidth - room - width)),
+      maxHeight: most,
+    });
+  }, [nested]);
 
   useEffect(() => {
     const rows = own.current === null ? [] : focusables(own.current);
@@ -117,6 +151,10 @@ function Menu({
       event.preventDefault();
       event.stopPropagation();
       onClose();
+    } else if (key === 'Tab') {
+      // Out of every menu open, the focus given back: a submenu's parent hears it as it bubbles.
+      event.preventDefault();
+      onClose();
     } else if (key === 'ArrowLeft') {
       event.preventDefault();
       event.stopPropagation();
@@ -137,6 +175,7 @@ function Menu({
       role="menu"
       aria-label={label}
       className={nested ? `${styles['menu']} ${styles['nested']}` : styles['menu']}
+      style={at}
       onKeyDown={onKeyDown}
     >
       {entries.map((entry) => {
@@ -230,7 +269,8 @@ function Menu({
 
 /**
  * A button opening a menu of the same rows beside it, its corner marked (the dock's flyouts, ADR-0075).
- * What it holds runs as a menu's does, the focus back on the button first.
+ * What it holds runs as a menu's does, the focus back first on what had it, the text as a rule, so that
+ * typing goes on where it was.
  */
 export function Flyout({
   label,
@@ -248,6 +288,12 @@ export function Flyout({
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const holder = useRef<HTMLDivElement>(null);
+  const before = useRef<HTMLElement | null>(null);
+  const giveBack = () => {
+    const was = before.current;
+    before.current = null;
+    (was?.isConnected === true ? was : button.current)?.focus();
+  };
   useEffect(() => {
     if (!open) return undefined;
     const onPointer = (event: PointerEvent) => {
@@ -269,7 +315,9 @@ export function Flyout({
         data-corner=""
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => {
-          if (!disabled) setOpen((was) => !was);
+          if (disabled) return;
+          if (!open) before.current = document.activeElement as HTMLElement | null;
+          setOpen((was) => !was);
         }}
       >
         {children}
@@ -281,12 +329,12 @@ export function Flyout({
           nested
           onChosen={(item) => {
             setOpen(false);
-            button.current?.focus();
+            giveBack();
             item.run();
           }}
           onClose={() => {
             setOpen(false);
-            button.current?.focus();
+            giveBack();
           }}
         />
       )}
@@ -340,7 +388,7 @@ export function MenuBar({
     let altAlone = false;
     const onDown = (event: KeyboardEvent) => {
       altAlone = event.key === 'Alt' && !isApple();
-      if (event.defaultPrevented) return;
+      if (event.defaultPrevented || modalOpen()) return;
       if (event.key === 'F10' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         rememberFocus();
@@ -357,7 +405,7 @@ export function MenuBar({
       setOpen({ index: at });
     };
     const onUp = (event: KeyboardEvent) => {
-      if (event.key !== 'Alt' || !altAlone) return;
+      if (event.key !== 'Alt' || !altAlone || modalOpen()) return;
       altAlone = false;
       event.preventDefault();
       rememberFocus();

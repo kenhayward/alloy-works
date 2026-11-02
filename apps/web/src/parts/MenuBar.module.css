@@ -37,9 +37,8 @@
 }
 
 .menu {
-  position: absolute;
-  top: calc(100% + var(--space-4));
-  inset-inline-start: 0;
+  position: fixed;
+  overflow-y: auto;
   z-index: var(--z-dropdown);
   width: var(--menu);
   padding: 6px;
@@ -51,8 +50,6 @@
 }
 
 .nested {
-  top: -7px;
-  inset-inline-start: calc(100% + 2px);
   width: var(--submenu);
 }
 

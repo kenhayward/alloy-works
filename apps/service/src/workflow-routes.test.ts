@@ -250,6 +250,11 @@ describe('workflow over HTTP (the WF1 plan, Task 1)', () => {
     };
     expect(submitted.json<TransitionAnswer>()).toEqual({
       state: { key: 'in_review', name: 'In review', approved: false },
+      states: [
+        { key: 'draft', name: 'Draft' },
+        { key: 'in_review', name: 'In review' },
+        { key: 'approved', name: 'Approved' },
+      ],
       transitions: [],
       gates: [{ ...gate, mayDecide: false }],
       revision: null,

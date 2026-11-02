@@ -101,7 +101,9 @@ export function marginLabelRules(theme: ResolvedTheme): string {
   const every = [paragraph, ...[...levels, 'title'].map(role)];
   return [
     // Out of the flow, so the measure is untouched, and 10px at every zoom it shows at.
-    `${every.map((each) => `${each}::before`).join(', ')} { position: absolute; width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px); margin-block-start: 0.2em; margin-inline-start: calc(-1 * var(--sheet-margin) * var(--aw-zoom)); overflow: hidden; color: var(--muted); font-family: var(--mono); font-size: 10px; font-style: normal; font-weight: 400; line-height: 1.5; text-align: end; text-overflow: ellipsis; text-transform: none; white-space: nowrap; user-select: none; pointer-events: none; }`,
+    `${every.map((each) => `${each}::before`).join(', ')} { position: absolute; inset-block-start: 0.2em; inset-inline-end: calc(100% + 8px); width: calc(var(--sheet-margin) * var(--aw-zoom) - 8px); overflow: hidden; color: var(--muted); font-family: var(--mono); font-size: 10px; font-style: normal; font-weight: 400; line-height: 1.5; text-align: end; text-overflow: ellipsis; text-transform: none; white-space: nowrap; user-select: none; pointer-events: none; }`,
+    // What the label stands against, wherever the text is aligned, and scrolling with the sheet.
+    `${every.join(', ')} { position: relative; }`,
     ...[...theme.paragraphStyles.values()].map(
       (style) =>
         `${paragraph}[data-style=${cssString(style.id)}]::before { content: ${cssString(style.name)} / ""; }`,

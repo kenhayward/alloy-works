@@ -23,6 +23,8 @@ export function MarginStyleButton({
   const own = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState<CSSProperties | null>(null);
   const [first] = paragraphsAt(view.state);
+  // Every render, on purpose: it sets the state only where the place has moved.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     const parent = own.current?.parentElement;
     if (first === undefined || !parent) return setAt(null);

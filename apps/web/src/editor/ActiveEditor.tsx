@@ -41,6 +41,6 @@ export function usePublishActiveEditor(): { current: ActiveEditorHandle } {
 export const InPlaceSettings = createContext<{
   readonly host: HTMLElement | null;
   readonly onHeld: (held: boolean) => void;
-  /** The dock's **Comment**: to Review, on this component. */
+  /** The dock's **Comment**: to Review, to write a thread. */
   readonly onComment?: () => void;
 } | null>(null);

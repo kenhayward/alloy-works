@@ -37,12 +37,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { ArchiveButton } from '../lifecycle/Archive.js';
-import {
-  readStanding,
-  standingIn,
-  RevisionChip,
-  type Standing,
-} from '../lifecycle/Workflow.js';
+import { readStanding, standingIn, RevisionChip, type Standing } from '../lifecycle/Workflow.js';
 import { DeleteButton } from '../lifecycle/Delete.js';
 import { PlaceHoldButton } from '../lifecycle/Hold.js';
 import { everyPage } from '../paging.js';
@@ -2040,10 +2035,21 @@ export function DocumentPage({
   const [dock, setDockState] = useState<DockPanel>(keptDock);
   const setDock = (next: DockPanel) => {
     setDockState(next);
-    keep(DOCK_KEY, next);
+    // Offered only while a selection stands, so nothing to come back to.
+    if (next !== 'selection') keep(DOCK_KEY, next);
   };
   // What a selection offers takes the panels while it stands, unless they are in the middle of the
   // Assistant, as the toolbar's second line once came at once; it hands them back as it was (ADR-0075).
+  const composing = useRef(false);
+  useEffect(() => {
+    if (!composing.current) return;
+    const words = window.document
+      .getElementById(dockIds('threads').panel)
+      ?.querySelector('textarea');
+    if (!words) return;
+    composing.current = false;
+    words.focus();
+  });
   const beforeSelection = useRef<DockPanel | null>(null);
   useEffect(() => {
     if (selectionHeld) {
@@ -2409,6 +2415,14 @@ export function DocumentPage({
     outlinePane.setCollapsed(false);
   };
   const assistantOpen = !dockPane.collapsed && shownDock === 'assistant';
+  // To Review, its threads shown and the new thread's words taking the keys.
+  const comment = () => {
+    chooseMode('review');
+    setDock('threads');
+    dockPane.setCollapsed(false);
+    composing.current = true;
+  };
+  const assistantOffered = dockTabs.some((each) => each.key === 'assistant');
   const toggleAssistant = () => {
     if (assistantOpen) {
       dockPane.setCollapsed(true);
@@ -2419,6 +2433,7 @@ export function DocumentPage({
   };
   const pageKeys = {
     'Mod-j': () => {
+      if (!assistantOffered) return false;
       toggleAssistant();
       return true;
     },
@@ -2488,13 +2503,13 @@ export function DocumentPage({
       case 'panel.data':
         return panelState('data');
       case 'assistant':
-        return { enabled: true, checked: assistantOpen, run: toggleAssistant };
+        return { enabled: assistantOffered, checked: assistantOpen, run: toggleAssistant };
       case 'boundaries':
         return { enabled: true, checked: boundaries, run: () => showBoundaries(!boundaries) };
       case 'pages':
         return { enabled: editing !== null, checked: rangePreview.on, run: rangePreview.toggle };
       case 'comment':
-        return { enabled: mayReview, run: () => chooseMode('review') };
+        return { enabled: mayReview, run: comment };
       case 'manage-styles':
         return {
           enabled: true,
@@ -2524,7 +2539,7 @@ export function DocumentPage({
           value={{
             host: selectionHost,
             onHeld: setSelectionHeld,
-            onComment: () => chooseMode('review'),
+            onComment: comment,
           }}
         >
           <InPlaceBand.Provider value={band}>
@@ -2755,7 +2770,7 @@ export function DocumentPage({
                     <>
                       <span className={styles['dockRule']} />
                       <div ref={setBand} data-inplace-band="">
-                        {editing === null && <IdleBand onComment={() => chooseMode('review')} />}
+                        {editing === null && <IdleBand onComment={comment} />}
                       </div>
                     </>
                   )}
@@ -2926,8 +2941,11 @@ export function DocumentPage({
                         {dockTabs.find((each) => each.key === shownDock)?.label}
                       </h2>
                     )}
-                    {/* A stop of its own, for the keyboard to scroll what has no control to tab to. */}
-                    <div className={styles['dockBody']} tabIndex={0}>
+                    {/* A stop while it shows what a selection offers, which may hold no control to tab to. */}
+                    <div
+                      className={styles['dockBody']}
+                      {...(shownDock === 'selection' ? { tabIndex: 0 } : {})}
+                    >
                       {/* A value's provenance, a modal over the page (the B1 plan, B1-M; DAT-041). */}
                       {provenanceState?.held && (
                         <ProvenancePanel

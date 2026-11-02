@@ -222,6 +222,8 @@ Departures from the handoff and from what is above, each with its reason:
   would clip the line. The button over the current block still names and changes its style. Labelling them
   too would take a widget in the editor and the read text.
 - **Language and direction chips** stay in the component strip, not the status bar.
+- **Comment from Authoring** goes to Review with the new thread's words focused, but not yet carrying the
+  text selected in the editor: choose the text again in Review, where a selection is the target.
 
 ## Order of work
 

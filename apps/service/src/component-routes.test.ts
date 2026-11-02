@@ -269,6 +269,11 @@ describe('finding and opening components through the service', () => {
         sequence: null,
         // Made a moment ago, so in its workflow's initial state; its author may submit it.
         state: { key: 'draft', name: 'Draft', approved: false },
+        states: [
+          { key: 'draft', name: 'Draft' },
+          { key: 'in_review', name: 'In review' },
+          { key: 'approved', name: 'Approved' },
+        ],
         transitions: [
           {
             key: 'submit',

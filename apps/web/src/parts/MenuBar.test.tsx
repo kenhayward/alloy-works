@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { MenuBar, type MenuSpec } from './MenuBar.js';
+import { Flyout, MenuBar, type MenuSpec } from './MenuBar.js';
 
 const menus = (run: (key: string) => void): readonly MenuSpec[] => [
   {
@@ -143,5 +143,68 @@ describe('the menu bar', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: 'View' }));
     await userEvent.click(screen.getByRole('button', { name: 'elsewhere' }));
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('a flyout gives the focus back to what had it once a row is chosen, so typing goes on', async () => {
+    const user = userEvent.setup();
+    const run = vi.fn();
+    render(
+      <>
+        <textarea aria-label="Text" />
+        <Flyout
+          label="Style"
+          entries={[{ kind: 'item', key: 'lead', label: 'Lead', enabled: true, run }]}
+        >
+          S
+        </Flyout>
+      </>,
+    );
+    screen.getByRole('textbox', { name: 'Text' }).focus();
+    await user.click(screen.getByRole('button', { name: 'Style' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Lead' }));
+    expect(run).toHaveBeenCalledOnce();
+    expect(screen.getByRole('textbox', { name: 'Text' })).toHaveFocus();
+  });
+
+  it('takes no key while a dialog stands over the page', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <div role="dialog" aria-modal="true" aria-label="Over" />
+        <MenuBar
+          label="Menus"
+          menus={[{ key: 'd', label: 'Document', letter: 'D', entries: [] }]}
+        />
+      </>,
+    );
+    await user.keyboard('{F10}');
+    expect(screen.getByRole('menuitem', { name: 'Document' })).not.toHaveFocus();
+  });
+
+  it('closes on Tab, the focus given back', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <textarea aria-label="Text" />
+        <MenuBar
+          label="Menus"
+          menus={[
+            {
+              key: 'd',
+              label: 'Document',
+              letter: 'D',
+              entries: [
+                { kind: 'item', key: 'x', label: 'Save', enabled: true, run: () => undefined },
+              ],
+            },
+          ]}
+        />
+      </>,
+    );
+    screen.getByRole('textbox', { name: 'Text' }).focus();
+    await user.click(screen.getByRole('menuitem', { name: 'Document' }));
+    await user.tab();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Text' })).toHaveFocus();
   });
 });

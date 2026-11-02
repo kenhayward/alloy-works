@@ -45,3 +45,8 @@
   inset-block: -4px 100%;
   inset-inline: 0;
 }
+
+/* The menu a control opens stands where its tip would. */
+.anchor:has([role='menu']) > .tip {
+  display: none;
+}

@@ -323,7 +323,7 @@
   background: var(--desk);
 }
 
-.page[data-desk-page] > :not(.bar, .band, .layout) {
+.page[data-desk-page] > :not(.layout, :has(> [aria-modal='true'])) {
   margin: var(--space-12) var(--space-24) 0;
 }
 
@@ -512,6 +512,9 @@
   border-radius: var(--radius-8);
   background: var(--surface);
   box-shadow: var(--shadow-raised);
+  /* In a short window its tools scroll rather than run under the status bar. */
+  overflow: hidden auto;
+  scrollbar-width: none;
 }
 
 .dockToggle {

@@ -147,6 +147,7 @@ export function DocumentHeader({
       'Mod-Alt--': zoomBy(-1),
     });
     const onKey = (event: KeyboardEvent) => {
+      if (document.querySelector('[aria-modal="true"]') !== null) return;
       if (!event.defaultPrevented && listen(event)) event.preventDefault();
     };
     window.addEventListener('keydown', onKey);
