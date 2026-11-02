@@ -28,12 +28,11 @@ deploy\BringUpDev.cmd
 
 Anybody on the network can then reach the stack and its development keys, so use a network you trust.
 
-| What               | On this machine                                                         | With `BringUpDev.cmd`, from any machine                              |
-| ------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Development        | `http://dev.acme.localhost:8088`                                        | `https://<address>:8443`                                             |
-| Production         | `http://acme.localhost:8088`                                            | not offered                                                          |
-| Keycloak's console | `http://idp.localhost:9090/admin`                                       | `https://<address>:9443/admin`                                       |
-| End a sign-in      | `http://idp.localhost:9090/realms/alloy/protocol/openid-connect/logout` | `https://<address>:9443/realms/alloy/protocol/openid-connect/logout` |
+| What               | On this machine                   | With `BringUpDev.cmd`, from any machine |
+| ------------------ | --------------------------------- | --------------------------------------- |
+| Development        | `http://dev.acme.localhost:8088`  | `https://<address>:8443`                |
+| Production         | `http://acme.localhost:8088`      | not offered                             |
+| Keycloak's console | `http://idp.localhost:9090/admin` | `https://<address>:9443/admin`          |
 
 `BringUpDev.cmd` prints `<address>`. A laptop first trusts
 `https://<address>:9443/lan-proxy/root.crt`, or accepts each port's warning once.
@@ -118,13 +117,13 @@ limits with roles that do not hold it.
 
 ## 4. Sign in as somebody else
 
-**Signing out of Alloy Works does not end the Keycloak session**, and Keycloak then refuses a different person
-in that browser: "You are already authenticated as different user" ([#900](https://github.com/kenhayward/alloy-works/issues/900)).
-Do one of these:
+Sign out of Alloy Works, then sign in as the next person.
 
-- Use a private window, or another browser profile, for each person. This also shows two people side by side.
-- After signing out, open the **End a sign-in** address from the table above, press **Logout**, then sign in
-  from the application again.
+Keycloak keeps its own session for 15 seconds after a sign-in, and signing out of Alloy Works does not end it.
+Within those 15 seconds Keycloak refuses anybody else: "You are already authenticated as different user". Wait
+a moment, return to the application and sign in again.
+
+To see two people side by side, use a private window or another browser profile for each.
 
 ## Starting again
 

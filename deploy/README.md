@@ -186,10 +186,10 @@ Drop the file to move back. People, once added, live in the `keycloak-data` volu
 later needs that volume removed.
 
 **Adding somebody, and giving them access:** [the guide](../docs/guides/keycloak-and-people.md). **Groups**
-reach the service in the ID token's `groups` claim. Every sign-in shows the login form
-(`deploy/keycloak/configure.sh`, which also sets where a sign-in may return, at every start), but signing
-out of Alloy Works does not end Keycloak's session, so a second person in the same browser is refused
-until it is ended ([#900](https://github.com/kenhayward/alloy-works/issues/900)).
+reach the service in the ID token's `groups` claim. Every sign-in shows the login form, and
+Keycloak's own session lasts 15 seconds, since signing out of Alloy Works does not end it and Keycloak
+refuses anybody else while it runs (`deploy/keycloak/configure.sh`, which also sets where a sign-in may
+return, at every start).
 
 ### A source to connect to: the `sources` profile
 
