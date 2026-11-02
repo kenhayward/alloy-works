@@ -33184,7 +33184,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1161,
+      "line": 1163,
       "kind": "title"
     },
     {
@@ -35758,19 +35758,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 895,
+      "line": 912,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 891,
+      "line": 908,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 891,
+      "line": 908,
       "kind": "title"
     },
     {

@@ -38,8 +38,8 @@ function sources(directory = renderer): string[] {
 
 const text = new Map(sources().map((file) => [file, readFileSync(join(renderer, file), 'utf8')]));
 
-/** Draws `role="dialog"` itself. */
-const drawsOne = (source: string) => /role="dialog"/.test(source);
+/** Draws `role="dialog"` itself: an attribute, not a selector asking whether one is open. */
+const drawsOne = (source: string) => /(?<!\[)role="dialog"/.test(source);
 
 /**
  * A wrapper is a shared part (`layouts/`, `parts/`) that draws a dialog for its callers, `Modal` and

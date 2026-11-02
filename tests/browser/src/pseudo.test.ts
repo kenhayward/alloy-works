@@ -648,6 +648,23 @@ const administration = (ada: Adas): readonly Surface[] => [
     },
   },
   {
+    name: 'The keyboard shortcuts list',
+    dialog: 'structure/DocumentHeader.tsx',
+    address: `#/documents/${ada.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      await page
+        .getByRole('menubar')
+        .getByRole('menuitem', { name: say(language, 'menu.help'), exact: true })
+        .click();
+      await page
+        .getByRole('menuitem', { name: say(language, 'menu.keyboard-shortcuts'), exact: true })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'menu.keyboard-shortcuts') });
+    },
+  },
+  {
     name: 'The translated titles dialog',
     dialog: 'translation/TranslatedTitles.tsx',
     address: `#/documents/${ada.document}`,
