@@ -9,6 +9,7 @@ import {
   type TenantTransaction,
 } from '@alloy-works/db';
 import {
+  administrativePermissions,
   decide,
   parseLevel,
   type AccessFacts,
@@ -235,12 +236,27 @@ export async function beforeDeciding(
  * would. Tries the target's own walk first, then each level above it in turn, and returns the first
  * that allows; the target's own result otherwise, since that is the refusal closest to what was asked.
  */
-export function administerOrAbove(facts: AccessFacts): Decision {
+export function administerOrAbove(
+  facts: AccessFacts,
+  permission: Permission = 'administer',
+): Decision {
   for (let start = 0; start < facts.chain.length; start += 1) {
-    const decision = decide('administer', { ...facts, chain: facts.chain.slice(start) });
+    const decision = decide(permission, { ...facts, chain: facts.chain.slice(start) });
     if (decision.allowed) return decision;
   }
-  return decide('administer', facts);
+  return decide(permission, facts);
+}
+
+/** A permission as a route would decide it: an administrative one at its level or above. */
+export function decideAsARoute(permission: Permission, facts: AccessFacts): Decision {
+  return administrativePermissions.includes(permission)
+    ? administerOrAbove(facts, permission)
+    : decide(permission, facts);
+}
+
+/** Whether the principal may place a hold: at the tenant itself, its own walk, as a hold is decided. */
+export function holdsAtTenant(facts: AccessFacts): boolean {
+  return decide('hold', { ...facts, chain: facts.chain.slice(-1) }).allowed;
 }
 
 /**
@@ -313,8 +329,8 @@ export async function authorise(
       : unreadable
         ? hiddenBy(facts, target)
         : refusedBy(forbidden(check.permission), decision, facts, target, false);
-  if (check.permission === 'administer') {
-    const decision = administerOrAbove(facts);
+  if (administrativePermissions.includes(check.permission)) {
+    const decision = administerOrAbove(facts, check.permission);
     if (decision.allowed) return { trx, principalId, target, facts, decision };
     throw refused(decision, target.kind !== 'tenant' && !decide('read', facts).allowed);
   }

@@ -74,7 +74,7 @@ export interface ShownRole {
 export interface ExplainedPermission {
   readonly permission: string;
   readonly allowed: boolean;
-  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped';
+  readonly reason: 'allowed' | 'denied' | 'not_granted' | 'capped' | 'scoped' | 'disabled';
   readonly level: string | null;
   readonly checked: readonly string[];
   readonly grants: readonly {
@@ -276,7 +276,8 @@ export function isExplainedPermission(value: unknown): value is ExplainedPermiss
     value.reason !== 'denied' &&
     value.reason !== 'not_granted' &&
     value.reason !== 'capped' &&
-    value.reason !== 'scoped'
+    value.reason !== 'scoped' &&
+    value.reason !== 'disabled'
   ) {
     return false;
   }
@@ -380,6 +381,8 @@ export function explainAnswer(
       });
     case 'capped':
       return words('access.refused-someone-from-outside-the');
+    case 'disabled':
+      return words('access.refused-disabled');
     case 'scoped':
       return words('access.not-allowed-by-this-token', { grants, place: where(answer.level!) });
     default:

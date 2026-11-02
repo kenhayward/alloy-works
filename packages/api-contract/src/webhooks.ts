@@ -102,16 +102,16 @@ const unauthenticated = {
 } as const;
 const notAdministering = {
   description:
-    'forbidden: the caller may not administer this environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token',
+    'forbidden: the caller does not hold the permission this needs at the environment; or token_not_allowed: webhooks are managed with a signed-in session, never a token',
   schema: ErrorBody,
 } as const;
 const missing = {
   description: 'No such subscription in this environment',
   schema: ErrorBody,
 } as const;
-const ADMINISTER = {
+const CONFIGURE = {
   check: 'permission',
-  permission: 'administer',
+  permission: 'configure_webhooks',
   target: { tenant: true },
   credential: 'session',
 } as const;
@@ -123,7 +123,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks',
     summary: "The environment's webhook subscriptions, a page at a time, never their secrets",
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     query: WebhookListQuery,
     responses: {
       200: { description: 'A page of subscriptions', schema: WebhookList },
@@ -141,7 +141,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks',
     summary: 'Subscribe a service identity’s endpoint to events, answering its signing secret once',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     body: CreateWebhookBody,
     idempotencyKey: false,
     responses: {
@@ -161,7 +161,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}',
     summary: 'A webhook subscription, never its secret',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: WebhookParams,
     responses: {
       200: { description: 'The subscription', schema: WebhookRead },
@@ -176,7 +176,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}',
     summary: 'Change a subscription’s URL, description or event types',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: WebhookParams,
     body: ChangeWebhookBody,
     idempotencyKey: false,
@@ -197,7 +197,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}/secret',
     summary: 'Rotate a subscription’s signing secret; the old one signs beside it for 24 hours',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: { ...CONFIGURE, permission: 'rotate_secrets' },
     params: WebhookParams,
     idempotencyKey: false,
     responses: {
@@ -213,7 +213,7 @@ export const webhookRoutes = {
     path: '/v1/webhooks/{id}',
     summary: 'Remove a subscription, and every delivery waiting for it',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: WebhookParams,
     responses: {
       200: { description: 'Removed', schema: WebhookRemoved },
@@ -284,7 +284,7 @@ export const webhookDeliveryRoutes = {
     path: '/v1/webhooks/{id}/deliveries',
     summary: 'A subscription’s deliveries, newest first, kept 30 days',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: WebhookParams,
     query: WebhookListQuery,
     responses: {
@@ -304,7 +304,7 @@ export const webhookDeliveryRoutes = {
     path: '/v1/webhooks/{id}/deliveries/{delivery}',
     summary: 'One delivery: what was sent, and what came back at each attempt',
     tenantScoped: true,
-    access: ADMINISTER,
+    access: CONFIGURE,
     params: DeliveryParams,
     responses: {
       200: { description: 'The delivery', schema: DeliveryView },

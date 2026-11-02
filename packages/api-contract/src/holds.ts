@@ -70,9 +70,9 @@ export const HoldList = z.object({
 });
 export type HoldList = z.infer<typeof HoldList>;
 
-const administer = {
+const holding = {
   check: 'permission',
-  permission: 'administer',
+  permission: 'hold',
   target: { tenant: true },
 } as const;
 
@@ -81,7 +81,7 @@ const unauthenticated = {
   schema: ErrorBody,
 } as const;
 const forbidden = {
-  description: 'The caller may not administer this environment',
+  description: '`hold` is not held at this environment',
   schema: ErrorBody,
 } as const;
 
@@ -93,7 +93,7 @@ export const holdRoutes = {
     path: '/v1/holds',
     summary: 'Place a legal hold on an artifact or a space',
     tenantScoped: true,
-    access: administer,
+    access: holding,
     body: HoldBody,
     responses: {
       200: { description: 'Placed, and in force', schema: HoldView },
@@ -112,7 +112,7 @@ export const holdRoutes = {
     path: '/v1/holds/{id}/release',
     summary: 'Release a legal hold',
     tenantScoped: true,
-    access: administer,
+    access: holding,
     params: HoldParams,
     body: ReleaseHoldBody,
     responses: {
@@ -130,7 +130,7 @@ export const holdRoutes = {
     path: '/v1/holds',
     summary: 'Every legal hold, in force or released, newest first',
     tenantScoped: true,
-    access: administer,
+    access: holding,
     query: PageQuery,
     responses: {
       200: { description: 'A page of holds', schema: HoldList },

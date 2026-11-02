@@ -392,6 +392,16 @@ export function Administration({
    * Access finds its button already there to take focus.
    */
   const [administers, setAdministers] = useState<ReadonlyMap<string, boolean>>(new Map());
+  const [configuresServices, setConfiguresServices] = useState(false);
+  useEffect(() => {
+    let current = true;
+    void administersAt(client, 'tenant', 'configure_services').then((answer) => {
+      if (current) setConfiguresServices(answer);
+    });
+    return () => {
+      current = false;
+    };
+  }, [client]);
   const askedAdminister = useRef(new Set<string>());
   const live = useRef(true);
   useEffect(() => {
@@ -450,6 +460,7 @@ export function Administration({
     askAdminister('tenant');
   }, [askAdminister]);
   const mayChangeSpaces = administers.get('tenant') === true;
+  const configures = configuresServices === true;
   useEffect(() => {
     if (spaces === null || typeof spaces !== 'object') return;
     for (const space of spaces.rows) askAdminister(`space:${space.id}`);
@@ -544,7 +555,7 @@ export function Administration({
         {shown === 'guardrails' && <Guardrails client={client} />}
         {shown === 'citation-styles' && <CitationStyles client={client} />}
         {shown === 'reference-sources' && (
-          <ReferenceSources client={client} mayChange={administers.get('tenant') === true} />
+          <ReferenceSources client={client} mayChange={configures} />
         )}
         {shown === 'spending' && <ModelSpending client={client} />}
         {shown === 'webhooks' && <Webhooks client={client} />}

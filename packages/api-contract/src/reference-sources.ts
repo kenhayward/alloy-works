@@ -144,13 +144,16 @@ export const referenceSourceRoutes = {
     path: '/v1/reference-sources',
     summary: 'Switch a reference source on or off for this environment',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'configure_services', target: { tenant: true } },
     body: ReferenceSourceBody,
     responses: {
       200: { description: 'The source, as switched', schema: ReferenceSourceView },
       400: { description: 'No such source', schema: ErrorBody },
       401: unauthenticated,
-      403: { description: 'The caller may not administer this environment', schema: ErrorBody },
+      403: {
+        description: '`configure_services` is not held at this environment',
+        schema: ErrorBody,
+      },
       404: { description: 'No such reference extension installed here', schema: ErrorBody },
     },
   },

@@ -44,7 +44,7 @@ for a fresh sign-in; and the riskiest administrative acts are granted apart from
 - IAM-008 provisions a person by SCIM who then signs in and is bound by the named claim, never by email.
 - IAM-008 provisions a person who signed in before SCIM was on as that principal, not a second.
 - IAM-008 a provider that provisions refuses a subject it never pushed.
-- IAM-070 an Administrator and an `administer` token keep every act after the migration; a role without `export_audit` cannot export the audit.
+- Not cited, since no design claims IAM-070: an Administrator and an `administer` token keep every act after the migration; a role without `export_audit` cannot export the audit.
 - IAM-032 explains another person's permissions to an administrator without a session of theirs, and a disabled person's as refused.
 - Not cited (IAM-010 and IAM-056 are unclaimed): a person set inactive by SCIM is refused at once and their stream ends within two seconds; a group removed by SCIM applies on receipt; disabling the last person who can configure sign-in is refused.
 
@@ -67,6 +67,13 @@ for a fresh sign-in; and the riskiest administrative acts are granted apart from
 
 ## As built
 
+- **IDd**: as designed. Beyond the table: `administer`'s "at its level or above" went with the six, so a
+  denial below does not newly refuse anybody; the ways-in guard and SCIM's lockout exception now count
+  `configure_services`, and a denial of a role holding it at the environment is refused as one of
+  `administer` is; the SCIM token is `rotate_secrets`, so somebody with `configure_services` alone turns
+  SCIM on and is refused its token. **A gap left**: only Sign-in, Connections and Reference sources ask the
+  service about the new permissions before offering an act. Other pages refuse a narrower role when asked,
+  and the Audit page lists by `administer`, so a role with `export_audit` alone exports through the API.
 - **IDc**: as designed, with two additions the design now holds: `active: true` re-enables only those SCIM
   disabled, and a direct `administer` holder is admitted before being pushed, so turning SCIM on cannot
   lock an environment out. `createGroup` now `changesAccess`, since a provider's group takes what SCIM holds.

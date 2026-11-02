@@ -53,7 +53,6 @@ import {
 } from '@alloy-works/db';
 import {
   CONTENT_LANGUAGES_CLDR,
-  decide,
   formatLevel,
   permissions,
   type Decision,
@@ -62,13 +61,7 @@ import {
 import type { ObjectStores } from '@alloy-works/objects';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
-import {
-  administerOrAbove,
-  authorise,
-  beforeDeciding,
-  notFound,
-  type Authorised,
-} from './access.js';
+import { decideAsARoute, authorise, beforeDeciding, notFound, type Authorised } from './access.js';
 import { assetHandlers, type BinaryBody } from './assets.js';
 import { actAs, contextOf, recordRefusal, recordSignInFailure } from './audit.js';
 import { componentHandlers } from './components.js';
@@ -1402,10 +1395,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         permission,
         // administer by "at its level or above" (final review, item 3): the same rule a route
         // checking it would use, so this answers exactly what such a route would decide here.
-        allowed: (permission === 'administer'
-          ? administerOrAbove(facts)
-          : decide(permission, facts)
-        ).allowed,
+        allowed: decideAsARoute(permission, facts).allowed,
       })),
     }),
 
@@ -1413,12 +1403,16 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const { principal } = request.query as ExplainQuery;
       const facts = await loadFacts(trx, principal, target);
       if (!facts) throw notFound();
+      const held = await trx
+        .selectFrom('principal')
+        .select('disabled_at')
+        .where('id', '=', principal)
+        .executeTakeFirst();
+      const disabled = held?.disabled_at != null;
       // administer by "at its level or above" (final review, item B): the same rule GET /v1/access
       // and the route helper use, so this explains the decision that actually governs the permission,
       // not a plain nearest-level walk that could show a denial "or above" already overrides.
-      const decisions = permissions.map((permission) =>
-        permission === 'administer' ? administerOrAbove(facts) : decide(permission, facts),
-      );
+      const decisions = permissions.map((permission) => decideAsARoute(permission, facts));
       // Every group a deciding grant came through, named in one read under the same lock.
       const names = await groupNames(
         trx,
@@ -1429,7 +1423,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
       return {
         principal,
         target: formatLevel(target),
-        permissions: decisions.map((decision) => explained(decision, names)),
+        // A disabled person holds nothing, whatever the grants say, and the answer names why
+        // (identity.md, "Disabled people"); what the grants say stays, for enabling them.
+        disabled,
+        permissions: decisions.map((decision) => ({
+          ...explained(decision, names),
+          ...(disabled ? { allowed: false, reason: 'disabled' as const } : {}),
+        })),
       };
     },
   };

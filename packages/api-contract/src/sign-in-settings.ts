@@ -4,7 +4,10 @@ import { ErrorBody, LowercaseUuid } from './schemas.js';
 import { TokenIssued } from './tokens.js';
 
 const unauthenticated = { description: 'There is no live session or token', schema: ErrorBody };
-const forbidden = { description: 'administer at the environment is not held', schema: ErrorBody };
+const forbidden = {
+  description: 'The permission this needs is not held at the environment',
+  schema: ErrorBody,
+};
 
 const ProviderName = z.string().trim().min(1).max(80).describe('Shown on the sign-in page');
 const GroupsClaim = z
@@ -123,13 +126,13 @@ export type PersonDisablement = z.infer<typeof PersonDisablement>;
 const notFoundProvider = { description: 'There is no such provider', schema: ErrorBody };
 const reauthentication = {
   description:
-    'forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token',
+    'forbidden: the permission this needs is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token',
   schema: ErrorBody,
 };
 /** Every change here needs a sign-in in the last ten minutes (identity.md, IN-D). */
 const CHANGING = {
   check: 'permission',
-  permission: 'administer',
+  permission: 'configure_services',
   target: { tenant: true },
   recentSignIn: 600,
 } as const;
@@ -143,7 +146,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings',
     summary: 'How people sign in to this environment: its providers, Google and session lifetimes',
     tenantScoped: true,
-    access: { check: 'permission', permission: 'administer', target: { tenant: true } },
+    access: { check: 'permission', permission: 'configure_services', target: { tenant: true } },
     responses: {
       200: { description: 'What is configured, never a secret', schema: SignInSettings },
       401: unauthenticated,
@@ -189,7 +192,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/secret',
     summary: "Replace an open identity provider's client secret",
     tenantScoped: true,
-    access: CHANGING,
+    access: { ...CHANGING, permission: 'rotate_secrets' },
     params: ProviderParams,
     body: ProviderSecretBody,
     idempotencyKey: false,
@@ -253,7 +256,7 @@ export const signInSettingsRoutes = {
     path: '/v1/sign-in-settings/providers/{id}/scim/token',
     summary: "Make a provider's SCIM token, shown this once, ending any before it",
     tenantScoped: true,
-    access: CHANGING,
+    access: { ...CHANGING, permission: 'rotate_secrets' },
     params: ProviderParams,
     body: z.strictObject({}),
     idempotencyKey: false,

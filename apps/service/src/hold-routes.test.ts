@@ -310,7 +310,7 @@ describe('legal holds over HTTP (the AH plan, Task 2)', () => {
     );
   });
 
-  it('refuses a token not scoped to administer', async () => {
+  it('refuses a token not scoped to hold', async () => {
     const held = await made('component', 'Token procedure');
     const issue = async (scopes: string[]) =>
       (
@@ -330,7 +330,7 @@ describe('legal holds over HTTP (the AH plan, Task 2)', () => {
       bearer(editing),
     );
     expect(refused.statusCode, refused.body).toBe(403);
-    const administering = await issue(['administer']);
+    const administering = await issue(['administer', 'hold']);
     const allowed = await call(
       'POST',
       '/v1/holds',

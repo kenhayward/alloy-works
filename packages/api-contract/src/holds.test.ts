@@ -3,11 +3,11 @@ import { HoldBody, ReleaseHoldBody } from './holds.js';
 import { routes } from './routes.js';
 
 describe('legal holds in the contract (the AH plan, AH-F and AH-G)', () => {
-  it('places, releases and lists holds by administer at the tenant', () => {
+  it('places, releases and lists holds by hold at the tenant', () => {
     const paths = [routes.placeHold, routes.releaseHold, routes.listHolds].map((route) => {
       expect(route.access).toEqual({
         check: 'permission',
-        permission: 'administer',
+        permission: 'hold',
         target: { tenant: true },
       });
       return `${route.method} ${route.path}`;
