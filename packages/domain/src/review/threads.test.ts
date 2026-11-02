@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import type { BlockNode, ContentDocument } from '../content/model/index.js';
 import { OUTLINE_SCHEMA_VERSION, type OutlineDocument } from '../structure/outline.js';
-import { anchorStands, commentPartsSchema, mentionsIn, threadAnchorSchema } from './threads.js';
+import {
+  anchorStands,
+  commentAnchor,
+  commentPartsSchema,
+  mentionsIn,
+  threadAnchorSchema,
+} from './threads.js';
 
 const text = (value: string) => ({ type: 'text' as const, value, marks: [] });
 const para = (id: string, value: string): BlockNode => ({
@@ -73,6 +79,19 @@ describe('a thread’s anchor and its text', () => {
     expect(anchorStands({ kind: 'component' }, { content: docOf() })).toBe(true);
     expect(anchorStands({ kind: 'node', node: 's'.repeat(26) }, { outline })).toBe(true);
     expect(anchorStands({ kind: 'node', node: 'x'.repeat(26) }, { outline })).toBe(false);
+  });
+
+  it('stands a proposed comment on a block’s words, on the whole with no block, and nowhere else', () => {
+    const content = docOf(para('p1', 'Set the tray, then wait.'));
+    expect(commentAnchor(content, {})).toEqual({ kind: 'component' });
+    expect(commentAnchor(content, { block: 'p1', quote: 'the tray' })).toEqual({
+      kind: 'span',
+      block: 'p1',
+      quote: 'the tray',
+      before: 'Set ',
+    });
+    expect(commentAnchor(content, { block: 'p1', quote: 'the lid' })).toBeNull();
+    expect(commentAnchor(content, { block: 'p9', quote: 'the tray' })).toBeNull();
   });
 
   it('holds an anchor’s quote to 500 characters and its context to 200', () => {

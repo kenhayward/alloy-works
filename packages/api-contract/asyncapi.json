@@ -899,6 +899,33 @@
                 }
               ]
             },
+            "comment": {
+              "description": "A comment proposed on the component: its words, and those it is on, or null for the whole. A thread is started as it is accepted",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "quote": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "quote"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "proposed": {
               "type": "object",
               "propertyNames": {

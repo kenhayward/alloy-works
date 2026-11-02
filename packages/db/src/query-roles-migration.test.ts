@@ -266,6 +266,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0189_scim',
       '0190_high_risk_permissions',
       '0191_role_made',
+      '0192_comment_proposals',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -402,6 +403,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0189_scim',
       '0190_high_risk_permissions',
       '0191_role_made',
+      '0192_comment_proposals',
     ]);
 
     expect(await queryRoles(development)).toEqual([

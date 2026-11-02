@@ -239,6 +239,7 @@ every turn ends `turns_spent`, not `timeout`. The tools (GEN-007):
 | `read_values`       | The document's bound values, as the page shows them                                                                                                                              |
 | `propose_edit`      | A whole-component draft against the version it read: a proposal, never a write; a table's cell, or its rows, too (never a bound table's); a new table or nested list as Markdown |
 | `search_references` | A reference source searched with the person's terms (reference-sources.md, XRc)                                                                                                  |
+| `propose_comment`   | A comment on a component, or on words in a block: a proposal (GEN-009); its thread started, as the person, on acceptance                                                         |
 | `cite_reference`    | A citation of a source's work proposed; its entry matched or made on acceptance                                                                                                  |
 
 **Citations** (GEN-011): the model is asked to cite as `[component#block]`; the service keeps a

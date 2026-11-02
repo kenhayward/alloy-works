@@ -69,6 +69,26 @@ export function mentionsIn(parts: CommentParts): string[] {
 }
 
 /**
+ * Where a comment proposed for a component would stand: on the words given in a block, or, naming no
+ * block, on the whole component. Null where the block does not hold them.
+ */
+export function commentAnchor(
+  content: ContentDocument,
+  on: { readonly block?: string | undefined; readonly quote?: string | undefined },
+): ThreadAnchor | null {
+  if (on.block === undefined || on.quote === undefined) return { kind: 'component' };
+  const text = unitTexts(content).get(on.block)?.text;
+  const at = text?.indexOf(on.quote) ?? -1;
+  if (text === undefined || at < 0) return null;
+  return {
+    kind: 'span',
+    block: on.block,
+    quote: on.quote,
+    before: text.slice(Math.max(0, at - 200), at),
+  };
+}
+
+/**
  * Whether an anchor still stands on what a thread is on (COL-016, COL-017): a span's block holds its
  * quoted text, a cell's first block stands in its table, a node is in the outline. The text is
  * `unitTexts`'s, the comparison's one account of a block's text, which suggestions will anchor by too.

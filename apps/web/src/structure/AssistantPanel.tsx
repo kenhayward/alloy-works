@@ -37,6 +37,8 @@ interface Proposal {
   readonly creates: { readonly title: string } | null;
   /** A citation of a source's work (XR-I): its entry found or made only as it is accepted. */
   readonly cites: Cites | null;
+  /** A comment on the part: a thread started only as it is accepted. */
+  readonly comment: { readonly text: string; readonly quote: string | null } | null;
   readonly proposed: { readonly content?: readonly unknown[] };
   readonly state: 'open' | 'accepted' | 'kept' | 'discarded';
   readonly said?: string;
@@ -85,6 +87,9 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   },
   get search_references() {
     return words('document.searched-a-reference-source');
+  },
+  get propose_comment() {
+    return words('document.proposed-a-comment');
   },
   get cite_reference() {
     return words('document.proposed-a-citation');
@@ -653,6 +658,10 @@ export function AssistantPanel({
                   typeof frame.cites === 'object' && frame.cites !== null
                     ? (frame.cites as Cites)
                     : null,
+                comment:
+                  typeof frame.comment === 'object' && frame.comment !== null
+                    ? (frame.comment as NonNullable<Proposal['comment']>)
+                    : null,
                 proposed: frame.proposed as Proposal['proposed'],
                 state: 'open',
               },
@@ -712,7 +721,9 @@ export function AssistantPanel({
                   data.proposal.state === 'accepted'
                     ? each.creates !== null
                       ? words('document.accepted-the-part-is-made')
-                      : words('document.accepted-it-is-a-new')
+                      : each.comment !== null
+                        ? words('document.accepted-the-comment-is-posted')
+                        : words('document.accepted-it-is-a-new')
                     : data.proposal.state === 'kept'
                       ? words('document.kept-as-a-suggestion-marked')
                       : words('document.discarded'),
@@ -725,7 +736,14 @@ export function AssistantPanel({
               },
       ),
     );
-    if (data?.proposal.state !== 'accepted' || proposal.component === null) return;
+    // A comment changes no text: there is no new version for the page to show.
+    if (
+      data?.proposal.state !== 'accepted' ||
+      proposal.component === null ||
+      proposal.comment !== null
+    ) {
+      return;
+    }
     const left = await onAccepted?.(proposal.component, data.proposal.version);
     if (left === undefined || left === 'follows') return;
     const said =
@@ -1102,13 +1120,28 @@ export function AssistantPanel({
                     what:
                       proposal.creates !== null
                         ? words('document.a-new-part', { title: proposal.creates.title })
-                        : ((proposal.component === null ? undefined : nameOf(proposal.component)) ??
-                          words('document.a-part-2')),
+                        : proposal.comment !== null
+                          ? words('document.a-comment-on', {
+                              part:
+                                (proposal.component === null
+                                  ? undefined
+                                  : nameOf(proposal.component)) ?? words('document.a-part-2'),
+                            })
+                          : ((proposal.component === null
+                              ? undefined
+                              : nameOf(proposal.component)) ?? words('document.a-part-2')),
                   })}
                 </h3>
                 <pre className={styles['proposed']}>
-                  <ins>{proposedText(proposal.proposed, proposal.cites)}</ins>
+                  <ins>
+                    {proposal.comment?.text ?? proposedText(proposal.proposed, proposal.cites)}
+                  </ins>
                 </pre>
+                {proposal.comment !== null && proposal.comment.quote !== null && (
+                  <p className={styles['muted']}>
+                    {words('document.comment-is-on-words', { quote: proposal.comment.quote })}
+                  </p>
+                )}
                 {proposal.component !== null && (
                   <button
                     type="button"
@@ -1139,11 +1172,13 @@ export function AssistantPanel({
                     >
                       {words('document.accept')}
                     </button>
-                    {proposal.creates === null && proposal.cites === null && (
-                      <button type="button" onClick={() => void act(proposal, 'keeping')}>
-                        {words('document.keep-as-suggestion')}
-                      </button>
-                    )}
+                    {proposal.creates === null &&
+                      proposal.cites === null &&
+                      proposal.comment === null && (
+                        <button type="button" onClick={() => void act(proposal, 'keeping')}>
+                          {words('document.keep-as-suggestion')}
+                        </button>
+                      )}
                     <button type="button" onClick={() => void act(proposal, 'discarding')}>
                       {words('document.discard')}
                     </button>

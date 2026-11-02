@@ -410,12 +410,14 @@ export {
 } from './model-endpoints.js';
 export {
   actOnProposal,
+  makeCommentProposal,
   makeCreationProposal,
   makeProposal,
   proposalsOfRun,
   readProposal,
   type GenerationProposal,
   type ProposalState,
+  type ProposedComment,
   type ProposedComponent,
 } from './generation-proposals.js';
 export {

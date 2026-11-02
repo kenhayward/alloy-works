@@ -128,7 +128,7 @@ export const documentationGroups = [
       {
         name: 'Assistant',
         description:
-          'Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it.',
+          'Ask the assistant about the open document: it reads what you may read of it, shows each call it makes and what came back, cites what it read, and proposes edits that change nothing until you accept one, keep it as a suggestion or discard it, and comments, posted as you only if you accept one.',
       },
       {
         name: 'Conversations',
@@ -1320,7 +1320,7 @@ const descriptions: Readonly<Record<string, string>> = {
   getAssistantUsage:
     'Returns how many runs of the assistant you made this calendar month, UTC, and what they cost, by currency.',
   acceptProposal:
-    'Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted. Answers with the version made; a document pinning the component keeps its pin until it is changed.',
+    'Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. A proposal to comment starts a thread instead, as you, on the version it was made against, and needs comment on the component. Recorded as a generation accepted. Answers with the version made; a document pinning the component keeps its pin until it is changed.',
   keepProposal:
     'Keeps a proposal from your run as a suggestion, marked generated, for review beside the component, where it is accepted or rejected as any suggestion is. Needs suggest on the component.',
   discardProposal:

@@ -24,6 +24,8 @@ export interface GenerationProposal {
   readonly creates: ProposedComponent | null;
   /** A citation's source record (XR-I): its entry matched or made only as it is accepted. */
   readonly cites: CitedSource | null;
+  /** A comment's place and words: a thread started only as it is accepted; null for any other. */
+  readonly comment: ProposedComment | null;
   readonly proposed: ContentDocument;
   readonly state: ProposalState;
   readonly suggestionId: string | null;
@@ -45,6 +47,7 @@ interface Row {
   made_against: string | null;
   creates?: ProposedComponent | null;
   cites?: CitedSource | null;
+  comment?: ProposedComment | null;
   proposed: ContentDocument;
   state: ProposalState;
   suggestion_id: string | null;
@@ -64,6 +67,7 @@ const proposalOf = (row: Row): GenerationProposal => ({
   madeAgainst: row.made_against,
   creates: row.creates ?? null,
   cites: row.cites ?? null,
+  comment: row.comment ?? null,
   proposed: row.proposed,
   state: row.state,
   suggestionId: row.suggestion_id,
@@ -102,6 +106,33 @@ export async function makeCreationProposal(
     values (${input.run},
       (select coalesce(max(number), 0) + 1 from generation_proposal where run_id = ${input.run}),
       ${JSON.stringify(input.creates)}::jsonb, ${JSON.stringify(input.proposed)}::jsonb)
+    returning id`.execute(trx);
+  return (await readProposal(trx, rows[0]!.id))!;
+}
+
+/** Where a proposed comment would stand, and its words, as a thread is started from them. */
+export interface ProposedComment {
+  readonly anchor: unknown;
+  readonly parts: unknown;
+}
+
+/** A proposal to comment on a component, against the version read: `proposed` holds no blocks. */
+export async function makeCommentProposal(
+  trx: TenantTransaction,
+  input: {
+    readonly run: string;
+    readonly component: string;
+    readonly against: string;
+    readonly comment: ProposedComment;
+    readonly proposed: ContentDocument;
+  },
+): Promise<GenerationProposal> {
+  const { rows } = await sql<{ id: string }>`insert into generation_proposal
+      (run_id, number, component_id, made_against, proposed, comment)
+    values (${input.run},
+      (select coalesce(max(number), 0) + 1 from generation_proposal where run_id = ${input.run}),
+      ${input.component}, ${input.against}, ${JSON.stringify(input.proposed)}::jsonb,
+      ${JSON.stringify(input.comment)}::jsonb)
     returning id`.execute(trx);
   return (await readProposal(trx, rows[0]!.id))!;
 }
@@ -182,6 +213,8 @@ export async function actOnProposal(
     readonly suggestion?: string;
     /** A creation accepted: the component it made, at its first version (G5-E). */
     readonly made?: { readonly component: string; readonly version: string };
+    /** A comment accepted: the thread it started. */
+    readonly thread?: string;
     readonly by: string;
   },
 ): Promise<void> {
@@ -197,6 +230,8 @@ export async function actOnProposal(
       { created: true },
       input.made,
     );
+  } else if (input.act === 'accepted' && input.thread !== undefined) {
+    await generationEvent(trx, 'generation.accepted', input.proposal, { thread: input.thread });
   } else if (input.act === 'accepted') {
     await generationEvent(trx, 'generation.accepted', input.proposal, {
       suggestion: input.suggestion!,

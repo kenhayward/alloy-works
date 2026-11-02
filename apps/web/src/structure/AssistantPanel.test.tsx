@@ -552,6 +552,49 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(within(proposal).queryByRole('button', { name: 'Discard' })).toBeNull();
   });
 
+  it('GEN-009 shows a proposed comment, posting nothing until it is accepted, and offers it no keeping', async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    const onAccepted = vi.fn();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        onAccepted={onAccepted}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          [
+            'proposal',
+            {
+              id: PROPOSAL,
+              number: 1,
+              component: SITES,
+              against: 'v1',
+              comment: { text: 'Is this date right?', quote: 'in 1912' },
+              proposed: { content: [] },
+            },
+          ],
+          ended(),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Flag the date.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(within(proposal).getByText('Proposal 1: a comment on Sites')).toBeVisible();
+    expect(within(proposal).getByText('Is this date right?')).toBeVisible();
+    expect(within(proposal).getByText('On the words: in 1912')).toBeVisible();
+    expect(within(proposal).queryByRole('button', { name: 'Keep as suggestion' })).toBeNull();
+    expect(asked.some((each) => each.includes('/proposals/'))).toBe(false);
+    await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
+    await within(proposal).findByText('Accepted: the comment is posted, as yours.');
+    expect(onAccepted).not.toHaveBeenCalled();
+  });
+
   it('tells the page which part an accepted proposal changed (issue #876)', async () => {
     const user = userEvent.setup();
     const { client } = service();
@@ -1260,6 +1303,7 @@ describe('the assistant as ledger turns (the DP plan, Task 5)', () => {
       expect(rows.map((row) => within(row).getAllByRole('cell')[0]!.textContent)).toEqual(
         DOCUMENT_CONVERSATION_TOOLS.map((tool) => tool.name),
       );
+      expect(within(table).getByRole('cell', { name: 'propose_comment' })).toBeVisible();
       for (const row of rows) {
         expect(within(row).getAllByRole('cell')[1]!.textContent).not.toBe('');
       }

@@ -240,6 +240,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     );
     expect(sent.call.tools?.map((each) => each.name).sort()).toEqual([
       'cite_reference',
+      'propose_comment',
       'propose_edit',
       'read_component',
       'read_outline',

@@ -38,6 +38,10 @@ export const ProposalActed = z.object({
       .string()
       .optional()
       .describe('A proposed edit, accepted: the version of the component it made'),
+    thread: z
+      .string()
+      .optional()
+      .describe('A proposal to comment, accepted: the thread started on the component'),
   }),
 });
 export type ProposalActed = z.infer<typeof ProposalActed>;
@@ -138,7 +142,7 @@ const actOn = (operationId: string, path: string, summary: string, needs: string
       404: proposalMissing,
       409: {
         description:
-          '`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`',
+          '`proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid`',
         schema: ErrorBody,
       },
     },

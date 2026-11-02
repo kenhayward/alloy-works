@@ -54,9 +54,21 @@ describe("the assistant's terms", () => {
       'search_document',
       'read_values',
       'propose_edit',
+      'propose_comment',
       'search_references',
       'cite_reference',
     ]);
+  });
+
+  it('GEN-009 offers propose_comment on a whole component, or on a block and its words together', () => {
+    const { propose_comment: schema } = toolInputSchemas;
+    const component = 'c'.repeat(26);
+    expect(schema.safeParse({ component, text: 'Check this.' }).success).toBe(true);
+    expect(schema.safeParse({ component, text: 'Check.', block: 'b1', quote: 'x' }).success).toBe(
+      true,
+    );
+    expect(schema.safeParse({ component, text: 'Check.', block: 'b1' }).success).toBe(false);
+    expect(schema.safeParse({ component, text: '  ' }).success).toBe(false);
   });
 
   it('offers propose_edit the very forms of edit it enforces, each whole and none mixed (issue #890)', () => {

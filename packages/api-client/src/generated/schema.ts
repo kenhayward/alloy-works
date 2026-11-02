@@ -374,7 +374,7 @@ export interface paths {
         put?: never;
         /**
          * Accept a proposal: a suggestion made from it and accepted at once, as you
-         * @description Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. Recorded as a generation accepted. Answers with the version made; a document pinning the component keeps its pin until it is changed.
+         * @description Accepts a proposal from your run: a suggestion is made from it, marked generated, and accepted at once, as you, so the lock, a change since and the save’s checks refuse it as they refuse any acceptance. Needs edit on the component. A proposal to comment starts a thread instead, as you, on the version it was made against, and needs comment on the component. Recorded as a generation accepted. Answers with the version made; a document pinning the component keeps its pin until it is changed.
          */
         post: operations["acceptProposal"];
         delete?: never;
@@ -13584,6 +13584,8 @@ export interface operations {
                             component?: string;
                             /** @description A proposed edit, accepted: the version of the component it made */
                             version?: string;
+                            /** @description A proposal to comment, accepted: the thread started on the component */
+                            thread?: string;
                         };
                     };
                 };
@@ -13668,7 +13670,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13752,6 +13754,8 @@ export interface operations {
                             component?: string;
                             /** @description A proposed edit, accepted: the version of the component it made */
                             version?: string;
+                            /** @description A proposal to comment, accepted: the thread started on the component */
+                            thread?: string;
                         };
                     };
                 };
@@ -13836,7 +13840,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -13920,6 +13924,8 @@ export interface operations {
                             component?: string;
                             /** @description A proposed edit, accepted: the version of the component it made */
                             version?: string;
+                            /** @description A proposal to comment, accepted: the thread started on the component */
+                            thread?: string;
                         };
                     };
                 };
@@ -14004,7 +14010,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
