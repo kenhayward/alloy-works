@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.225.0 - 2026-11-02 (PR #PRNUMBER)
+## 0.225.0 - 2026-11-02 (PR #888)
 
 T7's authoring page closed (the AP plan): one header with menus, a side dock, style labels in the margin, an icon rail and one registry of commands. Also folds the fragments of the slices merged since 0.224.0.
 
