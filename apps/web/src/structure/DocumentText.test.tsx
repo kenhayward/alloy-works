@@ -91,6 +91,22 @@ describe("the document's text", () => {
     expect(within(text).getAllByRole('link')).toHaveLength(1);
   });
 
+  it('marks a part the assistant just changed, and says so on its label (issue #876)', () => {
+    render(
+      <DocumentText
+        outline={outline}
+        scheme={defaultLayout.scheme}
+        names={new Map([[PRINTER, 'Install the printer']])}
+        changed={new Set([PRINTER_NODE])}
+      />,
+    );
+    const text = screen.getByRole('region', { name: "The document's text" });
+    const changed = text.querySelector(`[data-node="${PRINTER_NODE}"]`)!;
+    expect(changed).toHaveAttribute('data-changed', 'true');
+    expect(within(changed as HTMLElement).getByText('Changed')).toBeInTheDocument();
+    expect(text.querySelectorAll('[data-changed]')).toHaveLength(1);
+  });
+
   it("says the divergent line a reference's version is on", () => {
     render(
       <DocumentText

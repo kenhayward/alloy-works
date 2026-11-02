@@ -272,6 +272,16 @@
   background: var(--accent-weak);
 }
 
+/* A part an accepted assistant edit just changed (issue #876): a green rule down its left edge, at
+ * its boundary's offset. */
+.reference[data-changed='true'] > .component::before {
+  position: absolute;
+  inset: calc(-1 * var(--space-8)) auto calc(-1 * var(--space-8)) calc(-1 * var(--space-8));
+  width: 3px;
+  background: var(--ok);
+  content: '';
+}
+
 /* Who else is in this component now (the PL plan, PL2), beside who holds it. */
 .here {
   color: var(--muted);
