@@ -290,6 +290,21 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
     expect((await patch(composed.id, {})).statusCode).toBe(400);
   });
 
+  it('keeps a default language for a space, cleared with null, and refuses what is not a tag', async () => {
+    const made = await make('Default language');
+    expect(made).toMatchObject({ language: null });
+
+    const set = await patch(made.id, { language: 'en-GB' });
+    expect(set.statusCode, set.body).toBe(200);
+    expect(set.json()).toMatchObject({ id: made.id, name: 'Default language', language: 'en-GB' });
+    expect((await listed()).find((each) => each.id === made.id)).toMatchObject({
+      language: 'en-GB',
+    });
+
+    expect((await patch(made.id, { language: 'english' })).statusCode).toBe(400);
+    expect((await patch(made.id, { language: null })).json()).toMatchObject({ language: null });
+  });
+
   it('lists an archived space marked and never to create in, and leaves it out when asked', async () => {
     const shelved = await make('Shelved');
     expect((await patch(shelved.id, { archived: true })).statusCode).toBe(200);
@@ -298,6 +313,7 @@ describe('spaces: made, renamed, archived and restored (the SP1 plan)', () => {
       name: 'Shelved',
       archived: true,
       mayCreate: false,
+      language: null,
     });
     expect((await listed()).find((each) => each.id === general)).toMatchObject({
       archived: false,

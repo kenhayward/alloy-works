@@ -41,13 +41,15 @@ import { resolveForDocument, resolvedFrom } from './documents.js';
 import { readLocks } from './editing.js';
 import { indexTemplateOf } from './reference-index.js';
 import { checkSpaceLive, SpaceArchived } from './spaces.js';
+import { declareSourceChange } from './translation.js';
 import type { TenantTransaction } from './tables.js';
 import { documentRules, refusedParameters } from './templates.js';
 import {
   createArtifact,
   latestVersion,
-  lockArtifact,
+  lockAll,
   readVersion,
+  substanceOf,
   recordVersion,
   type StoredVersion,
 } from './versions.js';
@@ -143,13 +145,27 @@ function sectionIds(document: DecomposedDocument): string[] {
 }
 
 /**
- * Takes the lock every version of these artifacts is cut under (`lockArtifact`), in id order, so two
- * deliveries naming the same artifacts never wait on each other the other way round.
+ * Whether what a delivery left differs from `current`, its latest, only in language, which is no edit a
+ * delivery would write over (L5): a person may change a delivered document's language. Components and
+ * the map alone; a version unreadable, or another artifact's, has changed. A pin moved is held to the
+ * same, so a map cannot bring a component's real edit in with it.
  */
-async function lockAll(trx: TenantTransaction, ids: readonly string[]): Promise<void> {
-  for (const id of [...new Set(ids)].sort()) {
-    await lockArtifact(trx, id);
+async function languageAlone(
+  trx: TenantTransaction,
+  delivered: string,
+  current: StoredVersion | null,
+): Promise<boolean> {
+  if (current === null || (current.kind !== 'component' && current.kind !== 'document'))
+    return false;
+  const was = await readVersion(trx, delivered);
+  if (!was || was.artifactId !== current.artifactId) return false;
+  const moved = bridge.apartFromLanguage(substanceOf(was), substanceOf(current));
+  if (moved === null) return false;
+  for (const { from, to } of moved) {
+    const pinned = await readVersion(trx, to);
+    if (!pinned || !(await languageAlone(trx, from, pinned))) return false;
   }
+  return true;
 }
 
 /** The version an artifact is at now, or null when it is gone or was never made. */
@@ -394,6 +410,7 @@ async function assetsFor(
   trx: TenantTransaction,
   input: DocumentDelivery,
   images: readonly CheckedImage[],
+  language: string,
 ): Promise<Map<string, { readonly artifactId: string; readonly versionId: string }>> {
   // Every object held before the first is stored, in hash order, so two deliveries sharing images
   // never wait on each other the other way round.
@@ -413,7 +430,7 @@ async function assetsFor(
     }
     const alternative = assetAlternativeSchema.safeParse({
       text: image.alternative ?? '',
-      language: 'und',
+      language,
     });
     const upload = await createAssetUpload(trx, {
       spaceId: input.spaceId,
@@ -514,7 +531,7 @@ export async function writeDocumentDelivery(
 
   const space = await trx
     .selectFrom('space')
-    .select('id')
+    .select(['id', sql<string | null>`to_jsonb(space) ->> 'default_language'`.as('language')])
     .where('id', '=', input.spaceId)
     .executeTakeFirst();
   if (!space) return refused(bridgeError('not_found', 'This environment holds no such space'));
@@ -547,8 +564,11 @@ export async function writeDocumentDelivery(
     }
     const changed: { id: string; expected: string; actual: string | null }[] = [];
     for (const each of expected) {
-      const actual = (await currentOf(trx, each.id))?.id ?? null;
-      if (actual !== each.version) changed.push({ id: each.id, expected: each.version, actual });
+      const current = await currentOf(trx, each.id);
+      const actual = current?.id ?? null;
+      if (actual !== each.version && !(await languageAlone(trx, each.version, current))) {
+        changed.push({ id: each.id, expected: each.version, actual });
+      }
     }
     // The document's map and every component this delivery writes that CT Studio did not send back
     // are held to the version their last delivery left them at, so an edit made since is refused
@@ -559,10 +579,12 @@ export async function writeDocumentDelivery(
     for (const component of [persistentId, ...componentIds]) {
       if (named.has(component) && !(component === persistentId && !delivered.has(component)))
         continue;
-      const actual = (await currentOf(trx, component))?.id;
-      if (actual === undefined) continue;
+      const current = await currentOf(trx, component);
+      if (current === null) continue;
       const was = delivered.get(component) ?? 'not delivered';
-      if (actual !== was) changed.push({ id: component, expected: was, actual });
+      if (current.id !== was && !(await languageAlone(trx, was, current))) {
+        changed.push({ id: component, expected: was, actual: current.id });
+      }
     }
     if (changed.length > 0) {
       return refused(
@@ -629,7 +651,10 @@ export async function writeDocumentDelivery(
   const invalid = modelRefusal(trial, standInPins);
   if (invalid) return invalid;
 
-  const assets = await assetsFor(trx, input, images);
+  const spokenIn = (version: StoredVersion | null) =>
+    version && (version.content as bridge.LanguageKept);
+  const inLanguage = bridge.languageKept(spokenIn(existing), space.language);
+  const assets = await assetsFor(trx, input, images, inLanguage.language);
   const assetVersions = new Map([...assets].map(([image, asset]) => [image, asset.versionId]));
   const final = mapped(input, persistentId, assetVersions);
   if (isRefused(final)) throw new Error('A mapping that held with stand-in assets refused');
@@ -641,32 +666,50 @@ export async function writeDocumentDelivery(
       if (!componentType) throw new Error(`Component ${component.artifactId} was not to be made`);
       pins.set(
         component.artifactId,
-        await firstComponent(trx, input, componentType, component.artifactId, component.content),
+        await firstComponent(trx, input, componentType, component.artifactId, {
+          ...component.content,
+          ...inLanguage,
+        }),
       );
       continue;
     }
+    const substance = {
+      kind: 'component' as const,
+      content: {
+        ...component.content,
+        ...bridge.languageKept(spokenIn(current), inLanguage.language),
+      },
+      values: current.values,
+      notCarried: current.notCarried,
+      definitions: current.definitions,
+    };
     const answer = await recordVersion(trx, {
       artifactId: component.artifactId,
       openedFrom: current.id,
       author: input.author,
       note: input.note,
-      substance: {
-        kind: 'component',
-        content: component.content,
-        values: current.values,
-        notCarried: current.notCarried,
-        definitions: current.definitions,
-      },
+      substance,
     });
-    if (answer.answer === 'recorded') pins.set(component.artifactId, answer.version);
-    else if (answer.answer === 'version.unchanged') pins.set(component.artifactId, answer.current);
+    if (answer.answer === 'recorded') {
+      pins.set(component.artifactId, answer.version);
+      // Only its language moved, as a space's default repairs `und`: nothing to translate again.
+      if (bridge.apartFromLanguage(substanceOf(current), substance)?.length === 0) {
+        await declareSourceChange(trx, {
+          artifactId: component.artifactId,
+          version: answer.version.id,
+          retranslate: false,
+          by: input.author,
+        });
+      }
+    } else if (answer.answer === 'version.unchanged')
+      pins.set(component.artifactId, answer.current);
     else
       throw new Error(`Component ${component.artifactId} under its lock answered ${answer.answer}`);
   }
 
   const { values } = metadata;
   const versionIds = new Map([...pins].map(([id, version]) => [id, version.id]));
-  const drawn = final.outline(versionIds);
+  const drawn = { ...final.outline(versionIds), ...inLanguage };
   let written: StoredVersion;
   if (existing) {
     const before = existing.content as OutlineDocument;

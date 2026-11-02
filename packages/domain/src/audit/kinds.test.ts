@@ -28,6 +28,7 @@ describe('the audit kinds', () => {
       'token.revoked',
       'space.made',
       'space.renamed',
+      'space.language_changed',
       'space.archived',
       'space.restored',
       'content.version_cut',

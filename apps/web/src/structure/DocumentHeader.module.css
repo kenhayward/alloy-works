@@ -123,6 +123,11 @@
   white-space: nowrap;
 }
 
+/* The base rule for a button's hover would otherwise win, leaving its words unreadable. */
+.primary:hover:not(:disabled) {
+  background: var(--accent);
+}
+
 .keys {
   width: 100%;
 }

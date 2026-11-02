@@ -407,6 +407,26 @@ const surfaces = (grace: Graces): readonly Surface[] => [
   ),
   // Her document, the component placed in it.
   {
+    name: 'The Language dialog',
+    dialog: 'structure/DocumentLanguage.tsx',
+    address: `#/documents/${grace.document}`,
+    regions: ['[role="dialog"]'],
+    ready: documentDrawn,
+    open: async (page, language) => {
+      await documentDrawn(page, language).check();
+      await page
+        .getByRole('button', {
+          name: say(language, 'document.language-is', { language: 'en-GB' }),
+          exact: true,
+        })
+        .first()
+        .click();
+      return page.getByRole('dialog', {
+        name: say(language, 'document.language-of-this-document'),
+      });
+    },
+  },
+  {
     name: 'The Place from a document dialog',
     dialog: 'structure/PlaceSection.tsx',
     address: `#/documents/${grace.document}`,

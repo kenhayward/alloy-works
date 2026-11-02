@@ -909,6 +909,11 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { document: MISSING, node: 'n1' },
     }),
+    setDocumentLanguage: () => ({
+      url: `/v1/documents/${report}/language`,
+      status: 404,
+      payload: { openedFrom: MISSING, language: 'fr-FR', components: true },
+    }),
     editOutline: () => ({
       url: `/v1/documents/${report}/outline`,
       status: 404,

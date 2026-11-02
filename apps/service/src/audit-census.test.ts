@@ -170,7 +170,12 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listComponents: read,
   listSpaces: read,
   createSpace: writes('space.made'),
-  updateSpace: writes('space.renamed', 'space.archived', 'space.restored'),
+  updateSpace: writes(
+    'space.renamed',
+    'space.language_changed',
+    'space.archived',
+    'space.restored',
+  ),
   listComponentTypes: read,
   createComponent: writes('content.version_cut'),
   getComponent: read,
@@ -186,6 +191,12 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   recordDocumentParameters: writes('content.version_cut', 'workflow.transitioned'),
   recordDocumentProfile: writes('content.version_cut', 'workflow.transitioned'),
   recordDocumentFallback: writes('content.version_cut', 'workflow.transitioned'),
+  setDocumentLanguage: writes(
+    'content.version_cut',
+    'reference.repointed',
+    'translation.declared',
+    'workflow.transitioned',
+  ),
   editOutline: writes(
     'content.version_cut',
     'reference.repointed',

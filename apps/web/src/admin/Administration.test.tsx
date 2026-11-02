@@ -1804,7 +1804,15 @@ function spacesService(administers: readonly string[] = ['tenant', 'space:s1', '
     if (changing) {
       const space = spaces.find((each) => each.id === changing[1]);
       if (!space) return json(404, { code: 'not_found', message: 'x', traceId: 't' });
-      const { name, archived } = body as { name?: string; archived?: boolean };
+      const { name, archived, language } = body as {
+        name?: string;
+        archived?: boolean;
+        language?: string | null;
+      };
+      if (language !== undefined) {
+        Object.assign(space, { language });
+        return json(200, { ...viewOf(space), language });
+      }
       if (archived === true && spaces.filter((each) => !each.archived).length <= 1) {
         return json(409, {
           code: 'space_last',
@@ -1833,6 +1841,45 @@ describe('Spaces in Administration', () => {
   };
   const row = (table: HTMLElement, name: string) =>
     within(table).getByRole('row', { name: new RegExp(`^${name}`) });
+
+  it('sets and clears a space default language from its row, refusing what is not a tag', async () => {
+    const { client, sent } = spacesService();
+    const { table } = await openSpaces(client);
+    const open = async () => {
+      await userEvent.click(
+        await within(table).findByRole('button', { name: 'More actions for General' }),
+      );
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Default language' }));
+      return screen.getByRole('dialog', { name: 'Default language of General' });
+    };
+
+    let dialog = await open();
+    const field = within(dialog).getByRole('combobox', { name: 'Language' });
+    expect(field).toHaveValue('');
+    await userEvent.type(field, 'english');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent(
+      'A language tag looks like en-GB.',
+    );
+    expect(sent).toEqual([]);
+    await userEvent.clear(field);
+    await userEvent.type(field, 'en-GB');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('New work in General now starts in en-GB.')).toBeInTheDocument();
+
+    dialog = await open();
+    expect(within(dialog).getByRole('combobox', { name: 'Language' })).toHaveValue('en-GB');
+    await userEvent.clear(within(dialog).getByRole('combobox', { name: 'Language' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText('General no longer has a default language.'),
+    ).toBeInTheDocument();
+
+    expect(sent).toEqual([
+      { method: 'PATCH', path: '/v1/spaces/s1', body: { language: 'en-GB' } },
+      { method: 'PATCH', path: '/v1/spaces/s1', body: { language: null } },
+    ]);
+  });
 
   it('ADM-049 lets an administrator make, rename, archive and restore a space from Spaces', async () => {
     const { client, sent } = spacesService();

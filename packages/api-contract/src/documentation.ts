@@ -337,6 +337,7 @@ const operationTags = {
     'getDocument',
     'createDocument',
     'editOutline',
+    'setDocumentLanguage',
     'previewPlacement',
     'placeSection',
     'getDocumentTexts',
@@ -970,6 +971,8 @@ const descriptions: Readonly<Record<string, string>> = {
     "Reports what placing another document's section here would pull in, placing nothing: how many references it makes, one per occurrence of a component in the section and its subsections, each component the caller may read once with its blocks and characters at its latest version and whether it has an approved revision, and how many the caller may not read. Send the source version it names back to place. Needs edit on this document and read on the other.",
   placeSection:
     "Places another document's section here as one act: a new section, titled as the caller says, holding one reference per occurrence the report counted, in order, each in the mode asked; pinned takes each component's latest version now. Nothing is shared with the found section and no value is copied. Refused where the section's document has moved since the report, where it places a component the caller may not reference, or where this document's template allows no section to be added. One version. Needs edit on this document and read on the other.",
+  setDocumentLanguage:
+    'Changes the language a document is written in, and with `components` each component it references, as one transaction. A component the caller may not edit, one being edited, one the document pins behind its latest, and one already translated into that language are left as they were and counted. Supply the version that was read.',
   editOutline:
     'Applies one outline operation and records one new document version. Supply the version that was read to avoid overwriting concurrent work.',
   getDocumentTexts:

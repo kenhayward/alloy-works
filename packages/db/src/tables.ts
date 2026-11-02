@@ -375,6 +375,8 @@ export interface SpaceTable {
   id: Generated<string>;
   name: string;
   created_at: Generated<Date>;
+  /** What new documents and deliveries here take; none where null (0192). */
+  default_language: ColumnType<string | null, undefined, string | null>;
   /** Both null while the space is live, both set once archived (0059; the SP1 plan, SP-C). */
   archived_at: ColumnType<Date | null, undefined, Date | null>;
   archived_by: ColumnType<string | null, undefined, string | null>;

@@ -282,6 +282,7 @@ describe('a route that changes access', () => {
       'getDocument',
       'getNumbering',
       'editOutline',
+      'setDocumentLanguage',
     ] as const) {
       expect(routes[name].access, name).not.toHaveProperty('changesAccess');
     }

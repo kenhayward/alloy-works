@@ -900,6 +900,16 @@ export async function lockArtifact(trx: TenantTransaction, artifactId: string): 
 }
 
 /**
+ * Takes the lock every version of these artifacts is cut under (`lockArtifact`), in id order, so two
+ * acts naming the same artifacts never wait on each other the other way round.
+ */
+export async function lockAll(trx: TenantTransaction, ids: readonly string[]): Promise<void> {
+  for (const id of [...new Set(ids)].sort()) {
+    await lockArtifact(trx, id);
+  }
+}
+
+/**
  * `recordVersion` for a theme or a catalogue version its own writer has read whole, in themes.ts, and
  * nowhere else: the package does not export it, so those writers stay the only way one is recorded.
  */

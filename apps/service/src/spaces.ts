@@ -10,6 +10,7 @@ import {
   readSpace,
   renameSpace,
   restoreSpace,
+  setSpaceLanguage,
   type SpaceState,
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
@@ -23,6 +24,7 @@ function spaceView(space: SpaceState): SpaceView {
     archived: space.archivedAt !== null,
     archivedAt: space.archivedAt?.toISOString() ?? null,
     archivedBy: space.archivedBy,
+    language: space.language,
   };
 }
 
@@ -53,6 +55,7 @@ export function spaceHandlers() {
       let space = await readSpace(trx, id);
       if (!space) throw notFound();
       if (body.name !== undefined) space = await renameSpace(trx, id, normalised(body.name));
+      if (body.language !== undefined) space = await setSpaceLanguage(trx, id, body.language);
       if (body.archived === true) space = await archiveSpace(trx, id, principalId);
       if (body.archived === false) space = await restoreSpace(trx, id);
       if (!space) throw notFound();

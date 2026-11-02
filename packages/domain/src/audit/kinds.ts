@@ -323,6 +323,11 @@ export const auditKindSpecs = {
   ),
   'space.made': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'space.renamed': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
+  'space.language_changed': kind(
+    ['ADM-002', 'ADM-049', 'LIF-067'],
+    z.strictObject({ from: z.string().nullable(), to: z.string().nullable() }),
+    'packages/db/src/spaces.ts',
+  ),
   'space.archived': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'space.restored': kind(['ADM-002', 'ADM-049', 'LIF-067'], empty, 'packages/db/src/spaces.ts'),
   'settings.changed': kind(

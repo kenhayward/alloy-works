@@ -233,6 +233,7 @@ export function CtStudioSettings({
   if (!loaded) return <p role="status">{say('admin.loading')}</p>;
   return (
     <div className={styles['settings']}>
+      <p className={styles['muted']}>{say('admin.ct-studio-language')}</p>
       <label className={styles['filter']}>
         {say('admin.component-type-of-delivered-components')}
         <select value={componentType} onChange={(change) => setComponentType(change.target.value)}>

@@ -60,6 +60,7 @@ export const COMMANDS: readonly AppCommand[] = [
   page('history', 'menu.history', 'Versions'),
   page('dates', 'menu.dates'),
   page('scope', 'menu.effective-for'),
+  page('language', 'document.language', 'Language'),
   page('relationships', 'reuse.relationships'),
   page('access', 'access.manage-access', 'Manage access'),
   page('hold', 'menu.place-a-hold'),
