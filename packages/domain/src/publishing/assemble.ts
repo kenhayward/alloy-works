@@ -484,6 +484,10 @@ export type Assembled<
  */
 const BODY = 'body';
 
+/** Whether a theme allows authors a style of a kind: every style, where it names none (STY-033). */
+const allows = (allowed: readonly string[] | null, id: string) =>
+  allowed === null || allowed.includes(id);
+
 /**
  * The one family template 1 sets everything in, the pinned serif: what the glyph check asks of a
  * request made before layouts, which has no theme to name a face. Frozen, as template 1 is.
@@ -1469,6 +1473,8 @@ export function assemble(given: AssembleInput): Assembled {
       failures.push(failure('compose', 'style_missing', node, block, stored));
     } else if (!applies) {
       failures.push(failure('compose', 'style_not_applicable', node, block, id));
+    } else if (stored !== BODY && !allows(theme.allowed.paragraph, id)) {
+      failures.push(failure('compose', 'style_not_allowed', node, block, id));
     }
     const setIn = style !== undefined && applies ? style : placeStyle(place);
     return { id, families: [chainOf(setIn)], size: setIn.properties.size };
@@ -1841,6 +1847,8 @@ export function assemble(given: AssembleInput): Assembled {
           failures.push(failure('compose', 'style_missing', node, block.id, block.style));
         } else if (!tableStyle.appliesTo.includes('table')) {
           failures.push(failure('compose', 'style_not_applicable', node, block.id, block.style));
+        } else if (!allows(theme!.allowed.table, block.style)) {
+          failures.push(failure('compose', 'style_not_allowed', node, block.id, block.style));
         } else if (tableStyle.breaks.continuationLabel && layout.words.continued === undefined) {
           // The label is set on the PDF's pages alone: Word repeats no such label (Word 1, R2).
           failures.push(
@@ -2034,6 +2042,8 @@ export function assemble(given: AssembleInput): Assembled {
           failures.push(
             failure('compose', 'style_not_applicable', node, block.id, block.imageStyle),
           );
+        } else if (!allows(theme!.allowed.image, block.imageStyle)) {
+          failures.push(failure('compose', 'style_not_allowed', node, block.id, block.imageStyle));
         }
         // CNT-017's caption: a caption of no words names nothing (ruling R5), as a table's does not.
         const words = block.caption.map((inline) => (inline.type === 'text' ? inline.value : ''));
@@ -2467,6 +2477,10 @@ export function assemble(given: AssembleInput): Assembled {
     }
     if (!style.appliesTo.includes('inlineImage')) {
       failOnce(failure('compose', 'style_not_applicable', node, block, image.imageStyle));
+      return null;
+    }
+    if (!allows(theme!.allowed.image, image.imageStyle)) {
+      failOnce(failure('compose', 'style_not_allowed', node, block, image.imageStyle));
       return null;
     }
     const asset = input.assets.get(image.asset);

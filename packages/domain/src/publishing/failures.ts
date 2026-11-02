@@ -26,6 +26,9 @@ export const publishFailureCodes = [
   'block_not_publishable',
   'inline_not_publishable',
   'style_missing',
+  // A style the theme does not allow authors (the SY plan, SY-H; STY-033), naming the block and the
+  // style, as `style_missing` does: a place's or a role's default is never refused so.
+  'style_not_allowed',
   'language_not_publishable',
   'glyph_missing',
   'character_disallowed',

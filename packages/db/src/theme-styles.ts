@@ -334,3 +334,105 @@ export async function duplicateTheme(
   });
   return { answer: 'created', theme: await themeLatest(trx, made.artifactId) };
 }
+
+/** A theme renamed (STY-072; SY-G): its next version, every catalogue bound as it was. */
+export async function renameTheme(
+  trx: TenantTransaction,
+  input: {
+    readonly themeId: string;
+    readonly openedFrom: string;
+    readonly name: string;
+    readonly author: string;
+  },
+): Promise<StyleChangeAnswer> {
+  const theme = await latestVersion(trx, input.themeId);
+  if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
+  const current = await themeLatest(trx, input.themeId);
+  const answer = await addThemeVersion(trx, {
+    artifactId: input.themeId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    theme: { ...current.content, name: input.name.trim() },
+  });
+  switch (answer.answer) {
+    case 'recorded':
+      return { answer: 'recorded', theme: await themeLatest(trx, input.themeId) };
+    case 'version.precondition':
+      return { answer: 'version.precondition', current: answer.current.id };
+    case 'version.unchanged':
+    case 'artifact.missing':
+      return { answer: answer.answer };
+    case 'refused':
+      return answer;
+  }
+}
+
+/**
+ * **The styles a theme allows authors** (STY-033; SY-H), by kind, as its next version: a kind absent
+ * allows every style its catalogue holds, and the reader refuses one the catalogue does not contain.
+ * What a narrowing drops is shown first through `styleImpact`, a style at a time.
+ */
+export async function allowStyles(
+  trx: TenantTransaction,
+  input: {
+    readonly themeId: string;
+    readonly openedFrom: string;
+    readonly allowed: NonNullable<Theme['allowed']>;
+    readonly author: string;
+  },
+): Promise<StyleChangeAnswer> {
+  const theme = await latestVersion(trx, input.themeId);
+  if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
+  const current = await themeLatest(trx, input.themeId);
+  const rest: Theme = { ...current.content };
+  delete rest.allowed;
+  const answer = await addThemeVersion(trx, {
+    artifactId: input.themeId,
+    openedFrom: input.openedFrom,
+    author: input.author,
+    theme: Object.keys(input.allowed).length === 0 ? rest : { ...rest, allowed: input.allowed },
+  });
+  switch (answer.answer) {
+    case 'recorded':
+      return { answer: 'recorded', theme: await themeLatest(trx, input.themeId) };
+    case 'version.precondition':
+      return { answer: 'version.precondition', current: answer.current.id };
+    case 'version.unchanged':
+    case 'artifact.missing':
+      return { answer: answer.answer };
+    case 'refused':
+      return answer;
+  }
+}
+
+/**
+ * **The environment's theme declared** (STY-072; SY-G): what a document with no template is set in
+ * from now, at once, as a style change reaches its documents; audited `theme.declared`, naming the one
+ * declared before it.
+ */
+export async function declareTheme(
+  trx: TenantTransaction,
+  input: { readonly themeId: string },
+): Promise<{ readonly answer: 'declared' | 'version.unchanged' | 'artifact.missing' }> {
+  const theme = await latestVersion(trx, input.themeId);
+  if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
+  const was = await trx.selectFrom('theme_default').select('theme_id').executeTakeFirstOrThrow();
+  if (was.theme_id === input.themeId) return { answer: 'version.unchanged' };
+  await trx
+    .updateTable('theme_default')
+    .set({ theme_id: input.themeId, set_at: sql<Date>`now()` })
+    .execute();
+  const { name } = theme.content as { readonly name: string };
+  await recordEvent(
+    trx,
+    {
+      kind: 'theme.declared',
+      subject: { kind: 'theme', id: input.themeId, version: theme.id },
+      detail: { from: was.theme_id },
+    },
+    [labelled('theme', name, input.themeId)].filter(
+      (label): label is NonNullable<typeof label> => label !== undefined,
+    ),
+  );
+  return { answer: 'declared' };
+}

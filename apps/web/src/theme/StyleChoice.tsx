@@ -15,11 +15,16 @@ export interface Choice {
   readonly label: string;
 }
 
+/** Whether the theme allows authors a style of a kind: every one, where it names none (STY-033). */
+const allows = (allowed: readonly string[] | null, id: string) =>
+  allowed === null || allowed.includes(id);
+
 /**
  * The paragraph styles offered where these paragraphs stand (themes.md, ET-G; CNT-094): the places'
  * default first, stored as `body` so a paragraph moved elsewhere takes the default there (TH-E), then
- * every style that applies in every one of the places (STY-006), in the catalogue's order. A style
- * only a role takes - a heading, a caption - is never offered: the template sets those.
+ * every style the theme allows authors (SY-H) that applies in every one of the places (STY-006), in the
+ * catalogue's order. A style only a role takes - a heading, a caption - is never offered: the template
+ * sets those.
  */
 export function paragraphChoices(theme: ResolvedTheme, places: readonly Place[]): Choice[] {
   const defaults = new Set(places.map((place) => theme.places[place]));
@@ -35,6 +40,7 @@ export function paragraphChoices(theme: ResolvedTheme, places: readonly Place[])
   for (const style of theme.paragraphStyles.values()) {
     if (style.id === 'body') continue;
     if (defaults.size === 1 && defaults.has(style.id)) continue;
+    if (!allows(theme.allowed.paragraph, style.id)) continue;
     if (places.every((place) => style.appliesTo.includes(place))) {
       choices.push({ value: style.id, label: style.name });
     }
@@ -45,14 +51,14 @@ export function paragraphChoices(theme: ResolvedTheme, places: readonly Place[])
 /** The table styles offered for a table (CNT-094: a table is a block), in the catalogue's order. */
 export function tableChoices(theme: ResolvedTheme): Choice[] {
   return [...theme.tableStyles.values()]
-    .filter((style) => style.appliesTo.includes('table'))
+    .filter((style) => style.appliesTo.includes('table') && allows(theme.allowed.table, style.id))
     .map((style) => ({ value: style.id, label: style.name }));
 }
 
 /** The image styles offered for a figure or an image in a line (CNT-121), in the catalogue's order. */
 export function imageChoices(theme: ResolvedTheme, target: 'figure' | 'inlineImage'): Choice[] {
   return [...theme.imageStyles.values()]
-    .filter((style) => style.appliesTo.includes(target))
+    .filter((style) => style.appliesTo.includes(target) && allows(theme.allowed.image, style.id))
     .map((style) => ({ value: style.id, label: style.name }));
 }
 

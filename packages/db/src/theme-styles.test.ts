@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   blockIdentifierFrom,
+  TEMPLATE_SCHEMA_VERSION,
   type ContentDocument,
   type OutlineDocument,
   type ParagraphStyle,
@@ -24,7 +25,17 @@ import {
   type TestDatabase,
   testTenantDatabase,
 } from './testing/database.js';
-import { duplicateTheme, listThemes, saveStyle, styleImpact } from './theme-styles.js';
+import {
+  declareTheme,
+  duplicateTheme,
+  listThemes,
+  renameTheme,
+  allowStyles,
+  saveStyle,
+  styleImpact,
+} from './theme-styles.js';
+import { createTemplate, documentThemeId, recordTemplateVersion } from './templates.js';
+import { DEFAULT_LAYOUT_ID } from './layouts.js';
 import { DEFAULT_THEME_ID, themeLatest } from './themes.js';
 import { recordVersion, substanceOf } from './versions.js';
 
@@ -358,7 +369,7 @@ describe('styles saved, deleted and weighed (the SY plan, SY-C, SY-D)', () => {
     expect(impact.documents.map((each) => each.title)).toEqual(['Pump checks', 'Unrelated']);
   });
 
-  it('adds a theme by duplicating one, its catalogues its own, so a style changed in the copy leaves the original alone', async () => {
+  it('STY-072 adds a theme by duplicating one, its catalogues its own, so a style changed in the copy leaves the original alone', async () => {
     const { as, people, latest } = await environment();
     const original = await latest();
     const made = await as((trx) =>
@@ -393,6 +404,130 @@ describe('styles saved, deleted and weighed (the SY plan, SY-C, SY-D)', () => {
       duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: ' ', author: people.ada }),
     );
     expect(unnamed).toMatchObject({ answer: 'refused', refusals: [{ code: 'theme_malformed' }] });
+  });
+
+  it('STY-033 narrows the styles a theme allows authors as its next version, refusing one its catalogue lacks', async () => {
+    const { as, people } = await environment();
+    const made = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: 'Field manual', author: people.ada }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const id = made.theme.artifactId;
+    const narrowed = await as((trx) =>
+      allowStyles(trx, {
+        themeId: id,
+        openedFrom: made.theme.versionId,
+        allowed: { paragraph: ['lead'], table: ['table'] },
+        author: people.ada,
+      }),
+    );
+    if (narrowed.answer !== 'recorded') throw new Error(narrowed.answer);
+    expect(narrowed.theme.content.allowed).toEqual({ paragraph: ['lead'], table: ['table'] });
+
+    const refused = await as((trx) =>
+      allowStyles(trx, {
+        themeId: id,
+        openedFrom: narrowed.theme.versionId,
+        allowed: { paragraph: ['nowhere'] },
+        author: people.ada,
+      }),
+    );
+    expect(refused).toMatchObject({ answer: 'refused', refusals: [{ code: 'style_missing' }] });
+
+    // Every style allowed again: the theme names no list.
+    const widened = await as((trx) =>
+      allowStyles(trx, {
+        themeId: id,
+        openedFrom: narrowed.theme.versionId,
+        allowed: {},
+        author: people.ada,
+      }),
+    );
+    if (widened.answer !== 'recorded') throw new Error(widened.answer);
+    expect(widened.theme.content).not.toHaveProperty('allowed');
+  });
+
+  it('STY-072 renames a theme as its next version, and declares it the environment’s, audited', async () => {
+    const { as, people, general, placed } = await environment();
+    const made = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: 'Field manual', author: people.ada }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const id = made.theme.artifactId;
+    const renamed = await as((trx) =>
+      renameTheme(trx, {
+        themeId: id,
+        openedFrom: made.theme.versionId,
+        name: 'Site manual',
+        author: people.ada,
+      }),
+    );
+    expect(renamed).toMatchObject({ answer: 'recorded', theme: { number: '0.2' } });
+    const document = await placed(general, 'Pump checks', [paragraph('body')]);
+    await as((trx) => declareTheme(trx, { themeId: id }));
+    // A document with no template is set in the declared theme at once.
+    expect(await as((trx) => documentThemeId(trx, document))).toBe(id);
+    expect((await as(listThemes)).find((each) => each.isDefault)?.name).toBe('Site manual');
+    const events = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select(['detail', 'subject'])
+        .where('kind', '=', 'theme.declared')
+        .execute(),
+    );
+    expect(events).toEqual([{ subject: id, detail: { from: DEFAULT_THEME_ID } }]);
+    expect(await as((trx) => declareTheme(trx, { themeId: general }))).toEqual({
+      answer: 'artifact.missing',
+    });
+  });
+
+  it('STY-026 audits a template moved to another theme, from and to', async () => {
+    const { as, people, general } = await environment();
+    const made = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: 'Field manual', author: people.ada }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const definition = (theme: string) => ({
+      schemaVersion: TEMPLATE_SCHEMA_VERSION,
+      name: 'Site report',
+      theme,
+      layout: DEFAULT_LAYOUT_ID,
+      schemas: [],
+      outline: { sections: [] },
+      changes: { add: true, remove: true, reorder: true },
+      parameters: [],
+    });
+    const template = await as((trx) =>
+      createTemplate(trx, {
+        spaceId: general,
+        definition: definition(DEFAULT_THEME_ID),
+        author: people.ada,
+      }),
+    );
+    if (template.answer !== 'created') throw new Error(template.answer);
+    const moved = await as((trx) =>
+      recordTemplateVersion(trx, {
+        templateId: template.template.id,
+        openedFrom: template.template.version.id,
+        definition: definition(made.theme.artifactId),
+        author: people.ada,
+      }),
+    );
+    expect(moved.answer).toBe('recorded');
+    const events = await as((trx) =>
+      trx
+        .selectFrom('audit_event')
+        .select(['detail', 'subject', 'subject_kind'])
+        .where('kind', '=', 'theme.moved')
+        .execute(),
+    );
+    expect(events).toEqual([
+      {
+        subject_kind: 'template',
+        subject: template.template.id,
+        detail: { from: DEFAULT_THEME_ID, to: made.theme.artifactId },
+      },
+    ]);
   });
 
   it('lists the environment’s themes, each at its latest version, the declared one marked', async () => {

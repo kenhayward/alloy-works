@@ -777,6 +777,19 @@ export const themeSchema = z
         typeof styleIdSchema
       >,
     ),
+    /**
+     * The styles authors may choose, by kind (the SY plan, SY-H; STY-033): a kind absent allows every
+     * style its catalogue holds. A place's and a role's default are always allowed, since an author
+     * chooses neither. Optional, so every theme before it reads as it did.
+     */
+    allowed: z
+      .strictObject({
+        paragraph: z.array(styleIdSchema),
+        table: z.array(styleIdSchema),
+        image: z.array(styleIdSchema),
+      })
+      .partial()
+      .optional(),
   })
   .refine(storableEverywhere, 'holds a character that cannot be stored');
 

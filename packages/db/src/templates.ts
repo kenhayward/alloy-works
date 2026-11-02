@@ -19,6 +19,7 @@ import {
   type UnresolvedReference,
 } from '@alloy-works/domain';
 import { sql } from 'kysely';
+import { recordEvent } from './audit.js';
 import { loadReadableSet } from './access-facts.js';
 import { currentDefinition } from './creation.js';
 import { readableArtifacts } from './readable-artifacts.js';
@@ -265,6 +266,15 @@ export async function recordTemplateVersion(
   });
   switch (answer.answer) {
     case 'recorded':
+      // A template moved to another theme by its own edit (STY-026; the SY plan, SY-G).
+      if (current.definition.theme !== definition.theme) {
+        await recordEvent(trx, {
+          kind: 'theme.moved',
+          subject: { kind: 'template', id: input.templateId, version: answer.version.id },
+          space: current.space.id,
+          detail: { from: current.definition.theme, to: definition.theme },
+        });
+      }
       return { answer: 'recorded', template: await storedTemplate(trx, answer.version) };
     case 'version.unchanged':
       return { answer: 'version.unchanged', template: await storedTemplate(trx, answer.current) };
@@ -552,7 +562,6 @@ export async function documentRules(
   };
 }
 
-/** The theme a document is published under, as `documentLayout` reads its layout (STY-025). */
 /** The theme a document is set in, by identifier alone: `documentTheme`'s choice, nothing read. */
 export async function documentThemeId(trx: TenantTransaction, documentId: string): Promise<string> {
   const bound = await boundBy(trx, documentId);
@@ -562,6 +571,7 @@ export async function documentThemeId(trx: TenantTransaction, documentId: string
   return declared.theme_id;
 }
 
+/** The theme a document is published under, as `documentLayout` reads its layout (STY-025). */
 export async function documentTheme(
   trx: TenantTransaction,
   documentId: string,

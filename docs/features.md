@@ -290,8 +290,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   the theme reader would refuse, low contrast among it, is said as the style is set. **Save style**
   first lists the documents the change reaches, through the styles based on it; saving reaches them
   all at once, audited with the properties changed, and a baseline keeps its version. A style a
-  component uses is not deleted (`/v1/themes`). Character, table and image styles change through the
-  API for now.
+  component uses is not deleted (`/v1/themes`). A theme is duplicated under a name, renamed and made
+  the environment's default there, and a template moved to another theme is audited. A character
+  style is a form of its own, each property set there or left to the text it stands in. **Offered to
+  authors** narrows, by kind, the paragraph, table and image styles an author may choose: the editor
+  offers only those, a publish refuses another, and the documents using a style it drops are listed
+  before it is saved. Table and image styles change through the API for
+  now.
 - **Citation styles.** Administration's **Citation styles** lists the CSL styles a theme may name:
   CSE (name-year), Vancouver (NLM) and Harvard (Cite Them Right) are given, and **CSL file** uploads
   any other, refused unless it is a CSL 1.0.2 style with both forms that renders. Each upload is

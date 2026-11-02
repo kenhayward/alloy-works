@@ -9,12 +9,13 @@
 what a change will touch before saving it, makes a theme of their own, limits the styles authors may
 choose, and moves a catalogue between environments, all without a release.
 
-| PR  | Holds                                                                                                                                                             |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SYa | This plan, the design; where a style's values come from; the theme routes: read, a style saved or deleted, its impact                                             |
-| SYb | Administration's **Themes**: a theme's catalogues, each style a form with a sample, the impact asked before a save                                                |
-| SYc | A theme duplicated, renamed and declared; a template moved to another theme, audited; the styles a theme allows authors; character, table and image styles' forms |
-| SYd | A catalogue exported and imported, the round trip tested; the walks; the review; the close                                                                        |
+| PR  | Holds                                                                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------- |
+| SYa | This plan, the design; where a style's values come from; the theme routes: read, a style saved or deleted, its impact |
+| SYb | Administration's **Themes**: a theme's catalogues, each style a form with a sample, the impact asked before a save    |
+| SYc | A theme duplicated, renamed and declared; a template moved to another theme, audited                                  |
+| SYd | Character, table and image styles' forms; the styles a theme allows authors                                           |
+| SYe | A catalogue exported and imported, the round trip tested; the walks; the review; the close                            |
 
 ## Decisions
 
@@ -44,3 +45,8 @@ choose, and moves a catalogue between environments, all without a release.
   vocabulary's refresh is, so one the caller may not manage is not found; `duplicateTheme` (SY-B) was
   built there, for the cross-tenant harness to address a theme of the other environment's own.
 - **SYb**: paragraph styles' forms; character, table and image styles' forms move to SYc.
+- **SYc**: themes duplicated, renamed and declared, and a template's move audited (SY-G); a template's
+  documents are not yet listed before its move. Shipped in one PR with SYd.
+- **SYd**: the character style's form and the styles offered to authors (SY-H) for paragraph, table and
+  image styles; character styles are a mark's, never chosen, so not narrowed. Table and image styles'
+  forms are a gap: they change through the API.
