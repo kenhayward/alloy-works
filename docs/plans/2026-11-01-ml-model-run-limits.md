@@ -24,7 +24,7 @@ columns) and a contract change, so this plan; one final review.
 
 ## Review Focus
 
-1. **An endpoint made before 0185:** its run takes 40 and 100.
+1. **An endpoint made before 0186:** its run takes 40 and 100.
 2. **Bounds:** 0, 101 turns and 501 calls refused by the schema, the route and the form alike.
 3. **A change of one setting** leaves the others as they were (`changeModelEndpoint`'s `changed`).
 4. **The run reads the endpoint it runs on,** the one chosen for the turn, not the default.
@@ -34,7 +34,7 @@ columns) and a contract change, so this plan; one final review.
 ### Task 1: the settings, stored
 
 **Files:** `packages/domain/src/generation/endpoint.ts` and test;
-`packages/db/migrations/tenant/0185_model_run_limits.sql`; `packages/db/src/model-endpoints.ts` and a
+`packages/db/migrations/tenant/0186_model_run_limits.sql`; `packages/db/src/model-endpoints.ts` and a
 migration test; every pinned migration list in `packages/db/src`; `packages/api-contract/src/
 model-endpoints.ts`; `openapi.json` and the client regenerated.
 

@@ -364,6 +364,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'tenant.invited'() {
     return words('admin.environment-opened');
   },
+  get 'theme.declared'() {
+    return words('admin.theme-made-the-default');
+  },
   get 'theme.moved'() {
     return words('admin.moved-to-another-theme-version');
   },

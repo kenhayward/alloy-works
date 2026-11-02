@@ -58,7 +58,7 @@ interface EndpointRow {
   timeout_seconds?: number | null;
   supports_tools?: boolean;
   supports_images?: boolean;
-  /** Absent from a schema before 0185. */
+  /** Absent from a schema before 0186. */
   turns_per_run?: number | null;
   tool_calls_per_run?: number | null;
   made_at: Date;
@@ -196,7 +196,7 @@ const SETTING_MEMBERS = [
   'toolCallsPerRun',
 ] as const;
 
-/** 0182's settings and 0185's, and their columns. */
+/** 0182's settings and 0186's, and their columns. */
 const CAPABILITIES = [
   ['kind', 'kind'],
   ['timeoutSeconds', 'timeout_seconds'],

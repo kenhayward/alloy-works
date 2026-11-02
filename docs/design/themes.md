@@ -64,6 +64,7 @@ conformance suite.
 | **STY-034** | The impact of a style change is the set of documents whose pinned or floating theme version would resolve differently, listed before the change is saved                                                                                                                                                                                                                                            |
 | **STY-057** | `explainStyle` gives each property's value and the style stating it, walked by the reader's own `ancestry` ([Styles changed without a release](#styles-changed-without-a-release))                                                                                                                                                                                                                  |
 | **STY-067** | The documents a style change would reach are listable before it is saved (`styleImpact`), so a new theme version is a decision with its reach shown                                                                                                                                                                                                                                                 |
+| **STY-072** | A theme is duplicated, renamed and declared the environment's default by `manage_definitions`, with no release ([Styles changed without a release](#styles-changed-without-a-release))                                                                                                                                                                                                              |
 | **STY-086** | A draft follows its template's theme at its latest, a style change's reach listed first; a baseline keeps the version it pinned (STY-028)                                                                                                                                                                                                                                                           |
 | **STY-035** | One resolver, in `packages/domain`, used by the editor and the publisher alike; the projections never resolve anything                                                                                                                                                                                                                                                                              |
 | **STY-058** | The CSS projection is generic over the property set (STY-030), so it renders every declared paragraph and character property at the theme's values rather than a chosen few; the pagination-bound properties are the only omission, marked as such in the set and shown by preview instead of approximated (STY-037)                                                                                |
@@ -1136,8 +1137,27 @@ anything is written; then the catalogue's next version, the theme's next version
 style (`styleUseCount`), whoever may read them. Routes: `GET /v1/themes`, `GET /v1/themes/{id}`, `PUT`
 and `DELETE /v1/themes/{id}/styles/{kind}/{style}` with the theme version opened from, and `POST
 /v1/themes/{id}/impact`; writes and the impact need `manage_definitions`, decided at the theme, so one
-the caller may not manage is not found. `duplicateTheme` copies a theme with catalogues of its own
-(SY-B); its route is SYc's.
+the caller may not manage is not found.
+
+**A theme of their own** (SY-G, STY-072): `POST /v1/themes` duplicates one under a name, with
+catalogues of its own (`duplicateTheme`, SY-B), so its styles change apart; `PUT /v1/themes/{id}/name`
+renames it as its next version; `POST /v1/themes/{id}/default` declares it the environment's, for the
+documents made from no template, recorded as `theme.declared` from the one before. Making one needs
+`manage_definitions` at the environment; the rest are decided at the theme. A template saved with
+another theme records `theme.moved`, from and to (STY-026).
+
+**The styles offered to authors** (SY-H, STY-033): a theme's optional `allowed` names, by kind, the
+paragraph, table and image styles an author may choose; a kind absent offers every style, and a place's
+or a role's default is always allowed, since an author chooses neither. Character styles are not
+narrowed: each is a mark's, never chosen. The reader refuses a name its catalogue lacks; the editor's
+choices (`paragraphChoices`, `tableChoices`, `imageChoices`) offer only those allowed; a publish refuses
+another as `style_not_allowed`, naming the block and the style. `PUT /v1/themes/{id}/allowed` records
+it as the theme's next version; the page lists the documents using what a narrowing drops first,
+through `styleImpact` a style at a time.
+
+**The forms**: a paragraph style's and a character style's. Table and image styles change through
+`PUT /v1/themes/{id}/styles/{kind}/{style}` for now: their rules, bands and placements want a form of
+their own.
 
 **Its reach** (`styleImpact`, STY-034, STY-067): the documents set in the theme, by their template or
 the environment's default, whose components' latest versions use the style or one based on it. A

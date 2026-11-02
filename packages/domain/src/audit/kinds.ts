@@ -865,7 +865,18 @@ export const auditKindSpecs = {
   'library.changed': kind(['LIB-056'], empty, LATER),
   'line.merged': kind(['LIF-045'], empty, LATER),
   'component.type_changed': kind(['MET-014'], empty, LATER),
-  'theme.moved': kind(['STY-026', 'STY-066'], empty, LATER),
+  // A template moved to another theme by its own edit, its subject (the SY plan, SY-G): from and to.
+  'theme.moved': kind(
+    ['STY-026'],
+    z.strictObject({ from: Id, to: Id }),
+    'packages/db/src/templates.ts',
+  ),
+  // A theme declared the environment's, its subject (SY-G): the one declared before it.
+  'theme.declared': kind(
+    ['STY-072'],
+    z.strictObject({ from: Id }),
+    'packages/db/src/theme-styles.ts',
+  ),
   // A style added, changed or deleted in a theme, its subject (the SY plan, SY-C): the catalogue's
   // kind, the style and the properties that changed, by name.
   'style.changed': kind(

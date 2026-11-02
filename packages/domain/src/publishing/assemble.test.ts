@@ -5026,6 +5026,33 @@ describe('the theme a publication is set from (themes 1)', () => {
     ]);
   });
 
+  it('STY-033 fails style_not_allowed for a style the theme does not allow authors, each place default always allowed', () => {
+    const narrowed = themed((inputs) => {
+      addStyle(inputs, 'warning', ['text']);
+      addStyle(inputs, 'aside', ['text']);
+      const [first] = inputs.catalogues.table.styles;
+      inputs.catalogues.table.styles.push({ ...first!, id: 'grid', name: 'Grid' });
+      inputs.theme.allowed = { paragraph: ['aside'], table: ['table'], image: ['figure'] };
+    });
+    const assembled = assemble(
+      under(
+        narrowed,
+        paragraph('p0', text('In the place default.')),
+        styled('p1', 'aside', text('Allowed.')),
+        styled('p2', 'warning', text('Not allowed.')),
+        table('t1', { style: 'grid' }),
+        table('t2'),
+        figure('f1'),
+        paragraph('p3', text('A logo '), image()),
+      ),
+    );
+    expect(failuresOf(assembled)).toEqual([
+      failed('style_not_allowed', 'p2', 'warning'),
+      failed('style_not_allowed', 't1', 'grid'),
+      failed('style_not_allowed', 'p3', 'inline'),
+    ]);
+  });
+
   it('fails style_not_applicable for a style used where it does not apply, naming the block and the style', () => {
     const assembled = assemble(
       under(

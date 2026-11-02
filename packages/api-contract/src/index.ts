@@ -254,7 +254,10 @@ export {
 } from './vocabularies.js';
 export { LicenceList, LicenceParams, LicenceView, licenceRoutes } from './licences.js';
 export {
+  CreateThemeBody,
   DeleteStyleQuery,
+  RenameThemeBody,
+  AllowStylesBody,
   SaveStyleBody,
   STYLE_KINDS,
   StyleImpactBody,

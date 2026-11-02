@@ -142,6 +142,7 @@ describe('the audit kinds', () => {
       'revision.effective',
       'component.type_changed',
       'theme.moved',
+      'theme.declared',
       'style.changed',
       // The TR plan's (TR-C, TR-D): a source change declared, and a translation marked current.
       'translation.declared',

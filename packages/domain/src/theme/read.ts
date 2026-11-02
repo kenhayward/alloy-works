@@ -196,7 +196,16 @@ export interface ResolvedTheme {
    * names none, as every theme before the default's 0.10.
    */
   readonly termExpansion: TermExpansion;
+  /**
+   * The styles authors may choose, by kind, each in the order the theme lists them, or null where it
+   * allows every one (SY-H; STY-033). A place's and a role's default are always allowed.
+   */
+  readonly allowed: Readonly<Record<AllowedKind, readonly string[] | null>>;
 }
+
+/** The kinds of style an author chooses, and a theme may narrow (STY-033). */
+export const ALLOWED_KINDS = ['paragraph', 'table', 'image'] as const;
+export type AllowedKind = (typeof ALLOWED_KINDS)[number];
 
 export type CatalogueReadOutcome =
   { ok: true; catalogue: Catalogue } | { ok: false; refusals: ThemeRefusal[] };
@@ -606,6 +615,25 @@ export function readTheme(
     ),
   );
 
+  // Each style the theme allows authors one its catalogue holds (STY-033, STY-027).
+  const held: Record<AllowedKind, ReadonlyMap<string, unknown> | undefined> = {
+    paragraph: paragraph?.kind === 'paragraph' ? paragraph.styles : undefined,
+    table: table?.kind === 'table' ? table.styles : undefined,
+    image: examined.image?.kind === 'image' ? examined.image.styles : undefined,
+  };
+  for (const kind of ALLOWED_KINDS) {
+    const styles = held[kind];
+    if (styles === undefined) continue;
+    for (const id of stated.allowed?.[kind] ?? []) {
+      if (!styles.has(id)) {
+        refusals.push({
+          code: 'style_missing',
+          message: `The theme allows authors the ${kind} style ${id}, which the ${kind} catalogue does not contain`,
+        });
+      }
+    }
+  }
+
   if (refusals.length > 0 || maths === undefined) return { ok: false, refusals };
   const image = examined.image;
   return {
@@ -633,6 +661,9 @@ export function readTheme(
       citationStyle: (examined.citation?.kind === 'citation' && examined.citation.style) || null,
       valueCatalogue: value?.kind === VALUE_CATALOGUE_KIND ? value.catalogue : null,
       termExpansion: term?.kind === TERM_CATALOGUE_KIND ? term.expand : 'firstUse',
+      allowed: Object.fromEntries(
+        ALLOWED_KINDS.map((kind) => [kind, stated.allowed?.[kind] ?? null]),
+      ) as Record<AllowedKind, readonly string[] | null>,
     },
   };
 }

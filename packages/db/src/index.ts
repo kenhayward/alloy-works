@@ -40,8 +40,11 @@ export {
   type ThemeStoreRefusalCode,
 } from './themes.js';
 export {
+  declareTheme,
   duplicateTheme,
   listThemes,
+  renameTheme,
+  allowStyles,
   saveStyle,
   styleImpact,
   type DuplicateAnswer,

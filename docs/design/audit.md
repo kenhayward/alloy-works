@@ -160,13 +160,14 @@ A closed list in `packages/domain/src/audit/kinds.ts`, each naming the requireme
 | `review.lapsed`                                                                                | a review date passing unmet, by the system, `{ kind, reviewBy, action, to? }`                                                                                                                                        | LIF-059          |
 | `import.accepted`, `.abandoned`                                                                | an import accepted into a document, its subject, `{ import, components }`; or abandoned, `{ swept }` ([import.md](import.md))                                                                                        | LIF-067          |
 | `translation.declared`, `.marked_current`                                                      | whether a main-line version needs retranslating, `{ version, retranslate }`; or a language line's head recorded against a newer source, `{ line, language, version, translates }` ([translation.md](translation.md)) | LOC-031, LOC-013 |
+| `style.changed`                                                                                | a style added, changed or deleted in a theme, its subject, `{ catalogue, style, change, properties }` ([themes.md](themes.md))                                                                                       | STY-032          |
+| `theme.declared`, `theme.moved`                                                                | a theme declared the environment's, its subject, `{ from }`; or a template moved to another theme, its subject, `{ from, to }` ([themes.md](themes.md))                                                              | STY-072, STY-026 |
 
 **Declared now, emitted by the design that builds the act:** `baseline.made`, `baseline.superseded`, `content.restored`, `reference.repointed` (CNT-161),
 `lock.taken` (COL-009), `suggestion.accepted`, `suggestion.rejected` (COL-024), `binding.revised` (DAT-058), `relationship.*`, `asset.replaced`, `asset.relicensed`, and those the AU1 review
 added so that every requirement saying its act is audited names a kind (LIF-063): `secret.accessed`,
 `tenant.closed`, `extension.changed`, `organisation.changed`, `import.restored`,
-`library.changed`, `line.merged`, `component.type_changed`, `theme.moved`,
-`style.changed`,
+`library.changed`, `line.merged`, `component.type_changed`,
 `publication.shared_accessed`, `support.*`, `channel.changed`. A design emitting one
 cites it in its tests.
 

@@ -1463,6 +1463,25 @@ describe('routes that check a permission', () => {
     }),
     listDefinitions: () => ({ url: '/v1/definitions', status: 403 }),
     // Decided at the theme, as a vocabulary's refresh is: one the caller may not manage is not found.
+    createTheme: () => ({
+      url: '/v1/themes',
+      status: 403,
+      payload: { from: '4ae73bd5-48cb-422a-a4f8-2183f0f72866', name: 'Probe' },
+    }),
+    renameTheme: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/name`,
+      status: 404,
+      payload: { openedFrom: MISSING, name: 'Probe' },
+    }),
+    allowThemeStyles: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/allowed`,
+      status: 404,
+      payload: { openedFrom: MISSING, allowed: {} },
+    }),
+    declareTheme: () => ({
+      url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/default`,
+      status: 404,
+    }),
     saveThemeStyle: () => ({
       url: `/v1/themes/4ae73bd5-48cb-422a-a4f8-2183f0f72866/styles/paragraph/body`,
       status: 404,

@@ -138,7 +138,7 @@ model alone, every other purpose and every conversation to an LLM (`endpoint_kin
 240 s, a run's own time left still bounding each turn; and `supports_tools` and `supports_images`. A
 model that calls no tools is sent none and answers from what its turn was given; nothing sends images
 yet, so `supports_images` gates nothing until something does. Its `turns_per_run` (1 to 100) and
-`tool_calls_per_run` (1 to 500), 0185, bound an assistant run on it (`runLimitsOf`), 40 and 100 where
+`tool_calls_per_run` (1 to 500), 0186, bound an assistant run on it (`runLimitsOf`), 40 and 100 where
 null.
 
 ## The run

@@ -811,6 +811,56 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
+  it('passes axe on the document themes, a paragraph and a character style being edited, the reach of a change, a theme duplicated and the styles offered (the SY plan, SYb to SYd)', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      const check = async (state: string, arrival: Arrival) => {
+        await arrive(arrival);
+        await checkAxe(page, state, task.meta, arrival);
+      };
+      await page.goto(`${SERVICE}/#/admin/themes`);
+      const themes = page.getByRole('table', { name: 'Document themes' });
+      await check('the document themes', { shows: themes });
+      await themes
+        .getByRole('button', { name: /^Open / })
+        .first()
+        .click();
+      const paragraphs = page.getByRole('table', { name: 'Paragraph styles' });
+      await check("a theme's paragraph styles", { shows: paragraphs });
+      await paragraphs.getByRole('button', { name: 'Edit Heading 4' }).click();
+      const form = page.getByRole('form', { name: 'Paragraph style Heading 4' });
+      await check('a paragraph style being edited, its sample beside it', {
+        shows: [form, form.getByTestId('style-sample')],
+      });
+      // Asked, never saved: the stack's theme stays as every other walk expects it.
+      await form.getByRole('button', { name: 'Save style' }).click();
+      const asked = page.getByRole('dialog', { name: 'Save Heading 4?' });
+      await check('the reach of a style change, asked before it is saved', { shows: asked });
+      await asked.getByRole('button', { name: 'Cancel' }).click();
+      // SYc: a theme's name asked before it is duplicated; cancelled, so no theme is made.
+      await page.getByRole('button', { name: 'Duplicate', exact: true }).click();
+      const naming = page.getByRole('dialog', { name: /^Duplicate / });
+      await check('a theme duplicated, its name asked', { shows: naming });
+      await naming.getByRole('button', { name: 'Cancel' }).click();
+      // SYd: a character style's form, and the styles offered to authors narrowed, neither saved.
+      await page
+        .getByRole('table', { name: 'Character styles' })
+        .getByRole('button', { name: 'Edit Inline code' })
+        .click();
+      const character = page.getByRole('form', { name: 'Character style Inline code' });
+      await check('a character style being edited, its sample beside it', {
+        shows: [character, character.getByTestId('style-sample')],
+      });
+      await character.getByRole('button', { name: 'Cancel' }).click();
+      const offered = page.getByRole('group', { name: 'Paragraph styles offered' });
+      await offered.getByRole('radio', { name: 'Only these' }).click();
+      await check('the styles offered to authors, narrowed', {
+        shows: offered.getByRole('checkbox').first(),
+      });
+    });
+  });
+
   it('passes axe on translation: a component’s Translations, a translation’s, the space report and the policy (the TR plan, TRc)', async ({
     task,
   }) => {
