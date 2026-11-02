@@ -506,6 +506,26 @@ export function buildApp(options: AppOptions): FastifyInstance {
     };
   }
 
+  /**
+   * Starts at one of the organisation's providers. One that cannot be reached, or whose address is
+   * refused, is logged by the fact alone and answered as a way in that is closed, since nobody signing
+   * in can do anything about it.
+   */
+  async function startAt(
+    request: FastifyRequest,
+    tenant: Tenant,
+    provider: ProviderSettings,
+    redirectUri: string,
+    asked?: { readonly reauthenticate: boolean },
+  ): Promise<SignInStart> {
+    try {
+      return await oidc.start(provider, redirectUri, asked);
+    } catch {
+      warnOnce(request, tenant, "one of the organisation's identity providers cannot be reached");
+      throw routeClosed();
+    }
+  }
+
   function googleProvider(google: GoogleSettings): ProviderSettings {
     return { issuer: google.issuer, clientId: google.clientId, clientSecret: secret('google') };
   }
@@ -900,7 +920,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const chosen = asked ?? open[0]?.id;
       const provider = chosen && (await organisationProvider(request, tenant, chosen));
       if (!provider) throw routeClosed();
-      const start = await oidc.start(
+      const start = await startAt(
+        request,
+        tenant,
         provider,
         `${request.protocol}://${request.host}${CALLBACK_PATH}`,
       );
@@ -1134,7 +1156,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
       if (credential.route === 'organisation') {
         const provider = providerId && (await organisationProvider(request, tenant, providerId));
         if (!provider) throw routeClosed();
-        const start = await oidc.start(
+        const start = await startAt(
+          request,
+          tenant,
           provider,
           `${request.protocol}://${request.host}${CALLBACK_PATH}`,
           { reauthenticate: true },

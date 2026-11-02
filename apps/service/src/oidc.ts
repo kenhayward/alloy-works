@@ -1,4 +1,5 @@
 import * as client from 'openid-client';
+import { guardedProviderFetch } from './oidc-fetch.js';
 
 /** Exactly these, and nothing sensitive (IAM-044): what keeps Google's route out of app review. */
 export const SCOPES = 'openid email profile';
@@ -96,6 +97,9 @@ export interface OidcClient {
  * they do not hold.
  */
 export function createOidcClient(options: { readonly allowInsecureIssuers: boolean }): OidcClient {
+  // An issuer is an administrator's to name, so no provider's address is taken on trust; the setting
+  // that allows the stand-in over plain HTTP allows its address too (development and tests alone).
+  const guarded = options.allowInsecureIssuers ? undefined : guardedProviderFetch();
   const discovered = new Map<string, Promise<client.ServerMetadata>>();
   const keys = new Map<string, client.ExportedJWKSCache>();
 
@@ -110,6 +114,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
       found = client
         .discovery(issuer, provider.clientId, undefined, undefined, {
           execute: options.allowInsecureIssuers ? [client.allowInsecureRequests] : [],
+          ...(guarded === undefined ? {} : { [client.customFetch]: guarded }),
         })
         .then((config) => config.serverMetadata());
       found.catch(() => discovered.delete(provider.issuer));
@@ -125,6 +130,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
       provider.clientSecret,
     );
     if (options.allowInsecureIssuers) client.allowInsecureRequests(config);
+    if (guarded !== undefined) config[client.customFetch] = guarded;
     client.enableNonRepudiationChecks(config);
     const known = keys.get(provider.issuer);
     if (known) client.setJwksCache(config, known);

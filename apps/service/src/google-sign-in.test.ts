@@ -429,4 +429,79 @@ describe('signing in with a Google account', () => {
     expect(log).not.toMatch(/[?&](code|state)=/);
     expect(log).not.toContain('__Host-aw_session=');
   });
+
+  describe('re-authentication', () => {
+    /** As far as Google's hand-off of a re-authentication asked for by `cookie`. */
+    async function askAgain(cookie: string, user: string) {
+      const asked = await app.inject({
+        method: 'POST',
+        url: '/v1/sessions/current/reauthentication',
+        headers: { host: DEV, cookie },
+        payload: { to: 'admin/sign-in' },
+      });
+      expect(asked.statusCode).toBe(200);
+      const url = asked.json<{ url: string }>().url;
+      const attempt = asked.cookies.find((c) => c.name === '__Host-aw_signin')!;
+      const back = await completeAtStandIn(url, user, idp.issuer);
+      return {
+        url,
+        attempt: `${attempt.name}=${attempt.value}`,
+        handedOff: await callback(back),
+      };
+    }
+
+    const held = (cookie: string) =>
+      tenantDb.withTenant(dev, (trx) =>
+        trx
+          .selectFrom('session')
+          .select(['id', 'authenticated_at'])
+          .where('token_hash', '=', hashToken(cookie.split('=')[1]!))
+          .executeTakeFirstOrThrow(),
+      );
+
+    const age = (cookie: string) =>
+      tenantDb.withTenant(dev, (trx) =>
+        trx
+          .updateTable('session')
+          .set({ authenticated_at: new Date(Date.now() - 3_600_000) })
+          .where('token_hash', '=', hashToken(cookie.split('=')[1]!))
+          .execute(),
+      );
+
+    it('IAM-012 a Google re-authentication marks the asking session and makes no other', async () => {
+      const cookie = await signInWithGoogle(DEV, 'ada');
+      await age(cookie);
+      const before = await held(cookie);
+      const { url, attempt, handedOff } = await askAgain(cookie, 'ada');
+      expect(new URL(url).searchParams.get('max_age')).toBe('0');
+      expect(handedOff.statusCode).toBe(302);
+      const next = new URL(handedOff.headers.location!);
+      const done = await complete(next, `${cookie}; ${attempt}`);
+      expect(done.statusCode).toBe(302);
+      expect(done.cookies.find((c) => c.name === '__Host-aw_session')).toBeUndefined();
+      const after = await held(cookie);
+      expect(after.id).toBe(before.id);
+      expect(after.authenticated_at.getTime()).toBeGreaterThan(before.authenticated_at.getTime());
+    });
+
+    it('IAM-012 a Google re-authentication by another account hands off nothing', async () => {
+      const cookie = await signInWithGoogle(DEV, 'ada');
+      await age(cookie);
+      const before = await held(cookie);
+      const { handedOff } = await askAgain(cookie, 'second-ada');
+      expect(handedOff.statusCode).toBe(401);
+      expect((await held(cookie)).authenticated_at).toEqual(before.authenticated_at);
+    });
+
+    it('IAM-012 the hand-off of a re-authentication is redeemed only in the session asking', async () => {
+      const cookie = await signInWithGoogle(DEV, 'ada');
+      await age(cookie);
+      const before = await held(cookie);
+      const { attempt, handedOff } = await askAgain(cookie, 'ada');
+      const next = new URL(handedOff.headers.location!);
+      const done = await complete(next, attempt);
+      expect(done.statusCode).toBe(401);
+      expect((await held(cookie)).authenticated_at).toEqual(before.authenticated_at);
+    });
+  });
 });

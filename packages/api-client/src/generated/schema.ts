@@ -4274,7 +4274,7 @@ export interface paths {
         put?: never;
         /**
          * Invite an address, so the person can be granted access before they first sign in
-         * @description Invites an address so access can be granted before the person first signs in.
+         * @description Invites an address so access can be granted before the person first signs in. `through` names the ways in that may claim it; every way open now where absent.
          */
         post: operations["invite"];
         delete?: never;
@@ -4922,6 +4922,30 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/principals/{id}/disablement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable a person: their sessions and tokens end at once, and they sign in no more
+         * @description Disables a person: their sessions and tokens end at once, a stream of theirs within two seconds, and they are refused at sign-in until enabled. Refused `last_way_in` where nobody could then sign in and configure sign-in, and for the caller themselves. Disabling somebody disabled changes nothing. Needs administer at the environment. Audited.
+         */
+        post: operations["disablePerson"];
+        /**
+         * Enable a person disabled; what ended stays ended
+         * @description Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment. Audited.
+         */
+        delete: operations["enablePerson"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5927,6 +5951,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sessions/current/reauthentication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for this session to be signed in again, and say where to send the browser
+         * @description Asks for this session to be signed in again and answers where to send the browser: the way in it came by, with the provider told to authenticate the person afresh. It comes back through the sign-in callbacks and is accepted only for the same person, authenticated since this was asked; a route needing a recent sign-in then accepts the session. A session only, never a token.
+         */
+        post: operations["startReauthentication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/data": {
         parameters: {
             query?: never;
@@ -6060,6 +6104,146 @@ export interface paths {
          */
         get: operations["getTranslationSettingsHistory"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How people sign in to this environment: its providers, Google and session lifetimes
+         * @description How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs administer at the environment; a token may read it, but no token may change it.
+         */
+        get: operations["getSignInSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Open or close the Google route, and set the Workspace domains it admits
+         * @description Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         */
+        put: operations["setGoogleSignIn"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add an identity provider, or open one of the same issuer closed before
+         * @description Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.
+         */
+        post: operations["addProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/providers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rename an identity provider, or change the claim its groups come in
+         * @description Renames an identity provider, or changes the claim its groups come in. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         */
+        put: operations["changeProvider"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/providers/{id}/closure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close an identity provider, ending its sessions and its people’s tokens
+         * @description Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         */
+        post: operations["closeProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/providers/{id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace an open identity provider's client secret
+         * @description Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the secret.
+         */
+        put: operations["replaceProviderSecret"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/sign-in-settings/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set how long a session lasts; a shortening reaches open sessions at once
+         * @description Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs administer at the environment and a sign-in in the last ten minutes. Audited.
+         */
+        put: operations["setSessionSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -79402,6 +79586,13 @@ export interface operations {
                     email: string;
                     /** @description true: from outside the organisation, and held to the external rules. false if absent */
                     external?: boolean;
+                    /** @description The ways in that may claim it, at least one. Every way open now if absent */
+                    through?: {
+                        /** @description Whether Google may claim it */
+                        google: boolean;
+                        /** @description The identity providers that may claim it, each open */
+                        providers: (string & (unknown & unknown))[];
+                    };
                 };
             };
         };
@@ -79503,7 +79694,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description invitation_signed_in or invitation_kind_differs */
+            /** @description invitation_signed_in, invitation_kind_differs or invitation_way_unknown */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -85025,6 +85216,8 @@ export interface operations {
                             kind: "user" | "service" | "external";
                             /** @description Invited by address, and not yet signed in */
                             invited: boolean;
+                            /** @description Disabled: they sign in no more until enabled */
+                            disabled: boolean;
                             /** @description Erased: named "Erased person", their address gone, and never signed in again */
                             erased: boolean;
                         }[];
@@ -85097,6 +85290,286 @@ export interface operations {
             };
             /** @description No such level or grant in this environment, or none the caller may see */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    disablePerson: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disabled, or disabled already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "disabled": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        disabled: boolean;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description administer at the environment is not held */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such person */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description last_way_in, principal_own_account, principal_service or principal_erased */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    enablePerson: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enabled, or enabled already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "00000000-0000-4000-8000-000000000001",
+                     *       "disabled": false
+                     *     }
+                     */
+                    "application/json": {
+                        id: string & (unknown & unknown);
+                        disabled: boolean;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description administer at the environment is not held */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such person */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description principal_service or principal_erased */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -99059,6 +99532,127 @@ export interface operations {
             };
         };
     };
+    startReauthentication: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /** @description The page to come back to, as its address after `#/` names it */
+                    to?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Where to send the browser */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "url": "example"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Where to send the browser: the way in this session came by */
+                        url: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description token_not_allowed: this takes a signed-in session, never a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description This environment does not permit signing in this way */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getDataSettings: {
         parameters: {
             query?: never;
@@ -100341,6 +100935,1202 @@ export interface operations {
                 };
             };
             /** @description The caller may not administer this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getSignInSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What is configured, never a secret */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description administer at the environment is not held */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setGoogleSignIn: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "open": false,
+                 *       "domains": []
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Whether people may sign in with Google */
+                    open: boolean;
+                    /** @description The Workspace domains admitted without an invitation; invited addresses always are */
+                    domains: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Set */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description last_way_in, provider_own_session or google_unavailable */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    addProvider: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example",
+                 *       "issuer": "https://example.com/",
+                 *       "clientId": "example",
+                 *       "clientSecret": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Shown on the sign-in page */
+                    name: string;
+                    /**
+                     * Format: uri
+                     * @description The OpenID Connect issuer, as its tokens name it
+                     */
+                    issuer: string;
+                    /** @description This environment's client at the issuer */
+                    clientId: string;
+                    /** @description The client secret: sealed as it arrives, and never returned */
+                    clientSecret: string;
+                    /** @description The ID token claim carrying the provider's group values */
+                    groupsClaim?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Added */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description provider_name_taken or provider_issuer_taken */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    changeProvider: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description Shown on the sign-in page */
+                    name: string;
+                    /** @description The ID token claim carrying the provider's group values */
+                    groupsClaim?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Changed */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such provider */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description provider_name_taken */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    closeProvider: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closed, or closed already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such provider */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description last_way_in or provider_own_session */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    replaceProviderSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "clientSecret": "example"
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The client secret: sealed as it arrives, and never returned */
+                    clientSecret: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Replaced */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such provider */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    setSessionSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "idleMinutes": 5,
+                 *       "absoluteHours": 1
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The minutes a session lasts unused, from 5 to 1,440 */
+                    idleMinutes: number;
+                    /** @description The hours a session lasts at most, from 1 to 720 */
+                    absoluteHours: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Set */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "providers": [],
+                     *       "google": {
+                     *         "available": false,
+                     *         "open": false,
+                     *         "domains": []
+                     *       },
+                     *       "sessions": {
+                     *         "idleMinutes": -9007199254740991,
+                     *         "absoluteHours": -9007199254740991
+                     *       },
+                     *       "redirectUri": "example",
+                     *       "recentSignIn": false,
+                     *       "signedInThrough": {
+                     *         "route": "organisation",
+                     *         "provider": "00000000-0000-4000-8000-000000000001"
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Every provider, the open before the closed. A client secret is never here */
+                        providers: {
+                            id: string & (unknown & unknown);
+                            name: string;
+                            issuer: string;
+                            clientId: string;
+                            groupsClaim: string;
+                            /** @description Closed: it signs nobody in */
+                            closed: boolean;
+                        }[];
+                        google: {
+                            /** @description Whether this service holds a Google client at all */
+                            available: boolean;
+                            open: boolean;
+                            domains: string[];
+                        };
+                        sessions: {
+                            idleMinutes: number;
+                            absoluteHours: number;
+                        };
+                        /** @description The address to register at each provider */
+                        redirectUri: string;
+                        /** @description Whether this session authenticated recently enough to change any of this */
+                        recentSignIn: boolean;
+                        /** @description The way in of the session asking, which it may not close; null for a token */
+                        signedInThrough: {
+                            /** @enum {string} */
+                            route: "organisation" | "google";
+                            provider: (string & (unknown & unknown)) | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description There is no live session or token */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description forbidden: `administer` is not held; or reauthentication_required: the session last authenticated too long ago, or this is a token */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
