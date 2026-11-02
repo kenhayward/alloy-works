@@ -1,5 +1,11 @@
 import type { createApiClient, PresentationView } from '@alloy-works/api-client';
-import { lineOpeners, projectCss, projectFontFaces, readTheme, type ResolvedTheme } from '@alloy-works/domain';
+import {
+  lineOpeners,
+  projectCss,
+  projectFontFaces,
+  readTheme,
+  type ResolvedTheme,
+} from '@alloy-works/domain';
 import {
   createContext,
   useCallback,
@@ -100,9 +106,7 @@ export function marginLabelRules(theme: ResolvedTheme): string {
       (style) =>
         `${paragraph}[data-style=${cssString(style.id)}]::before { content: ${cssString(style.name)} / ""; }`,
     ),
-    ...levels.map(
-      (name) => `${role(name)}::before { content: "H${name.slice(-1)}" / ""; }`,
-    ),
+    ...levels.map((name) => `${role(name)}::before { content: "H${name.slice(-1)}" / ""; }`),
     `${role('title')}::before { content: ${cssString(theme.paragraphStyles.get('title')?.name ?? 'Title')} / ""; }`,
   ].join('\n');
 }

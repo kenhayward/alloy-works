@@ -178,9 +178,7 @@ function Menu({
                   nested
                   onClose={() => {
                     setOpened(null);
-                    own.current
-                      ?.querySelector<HTMLElement>(`[aria-expanded="true"]`)
-                      ?.focus();
+                    own.current?.querySelector<HTMLElement>(`[aria-expanded="true"]`)?.focus();
                   }}
                 />
               )}
@@ -351,9 +349,7 @@ export function MenuBar({
       }
       if (!event.altKey || event.ctrlKey || event.metaKey || isApple()) return;
       if (event.getModifierState('AltGraph')) return;
-      const at = menus.findIndex(
-        (each) => each.letter.toLowerCase() === event.key.toLowerCase(),
-      );
+      const at = menus.findIndex((each) => each.letter.toLowerCase() === event.key.toLowerCase());
       if (at < 0) return;
       event.preventDefault();
       rememberFocus();

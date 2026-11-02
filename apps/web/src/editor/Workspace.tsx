@@ -4,7 +4,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { AccessPanel } from '../access/AccessPanel.js';
 import { Administration } from '../admin/Administration.js';
 import { ConnectionPage } from '../data/ConnectionPage.js';
-import { Connections } from '../data/Connections.js';
 import {
   connectionAddress,
   connectionLink,
@@ -15,7 +14,6 @@ import { CohortList } from '../structure/CohortList.js';
 import { CohortPage } from '../structure/CohortPage.js';
 import { cohortAddress } from '../structure/links.js';
 import { QueryDefinitionPage } from '../data/QueryDefinitionPage.js';
-import { QueryDefinitions } from '../data/QueryDefinitions.js';
 import { Conversations, CONVERSATIONS } from '../conversations/Conversations.js';
 import { LibraryPage, PromptLibraries } from '../prompts/Libraries.js';
 import { LIBRARIES, libraryAddress, promptAddress, PROMPTS } from '../prompts/links.js';

@@ -40,11 +40,7 @@ type Row = string | { readonly toggle: string } | { readonly radio: string };
 
 const ed = (label: string): string => editorCommandId(label);
 
-const item = (
-  row: Row,
-  stateOf: (id: string) => CommandState,
-  danger = false,
-): MenuCommandItem => {
+const item = (row: Row, stateOf: (id: string) => CommandState, danger = false): MenuCommandItem => {
   const id = typeof row === 'string' ? row : 'toggle' in row ? row.toggle : row.radio;
   const command = commandOf(id);
   const state = stateOf(id);
@@ -69,9 +65,7 @@ const item = (
 };
 
 /** Groups of rows, a divider between each. */
-const grouped = (
-  groups: readonly (readonly MenuEntry[])[],
-): readonly MenuEntry[] =>
+const grouped = (groups: readonly (readonly MenuEntry[])[]): readonly MenuEntry[] =>
   groups
     .filter((group) => group.length > 0)
     .flatMap((group, index) =>
@@ -108,19 +102,17 @@ export function buildMenus(
     label: words('menu.paragraph-style'),
     enabled: styles.length > 0,
     entries: grouped([
-      styles.map(
-        (style): MenuEntry => ({
-          kind: 'item',
-          key: `style.${style.value}`,
-          label: style.label,
-          role: 'menuitemradio',
-          checked: style.checked,
-          enabled: true,
-          // A style's name is the theme's; only the default is the interface's.
-          content: style.value !== 'body',
-          run: style.run,
-        }),
-      ),
+      styles.map((style): MenuEntry => ({
+        kind: 'item',
+        key: `style.${style.value}`,
+        label: style.label,
+        role: 'menuitemradio',
+        checked: style.checked,
+        enabled: true,
+        // A style's name is the theme's; only the default is the interface's.
+        content: style.value !== 'body',
+        run: style.run,
+      })),
       rows('manage-styles'),
     ]),
   };
@@ -183,11 +175,7 @@ export function buildMenus(
       ],
       rows(ed('Term'), ed('Language')),
     ]),
-    menu('review', 'menu.review', 'R', [
-      rows('comment'),
-      rows('history'),
-      rows('assistant'),
-    ]),
+    menu('review', 'menu.review', 'R', [rows('comment'), rows('history'), rows('assistant')]),
     menu('help', 'menu.help', 'H', [rows('shortcuts', 'whats-new')]),
   ];
 }

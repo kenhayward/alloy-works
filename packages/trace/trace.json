@@ -21706,25 +21706,25 @@
     {
       "id": "ADM-051",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 324,
+      "line": 325,
       "kind": "title"
     },
     {
       "id": "ADM-053",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 402,
+      "line": 403,
       "kind": "title"
     },
     {
       "id": "CNT-178",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 183,
+      "line": 184,
       "kind": "title"
     },
     {
       "id": "LOC-005",
       "file": "apps/desktop/src/shell.test.ts",
-      "line": 272,
+      "line": 273,
       "kind": "title"
     },
     {
@@ -24964,7 +24964,7 @@
     {
       "id": "LOC-044",
       "file": "apps/web/src/App.test.tsx",
-      "line": 132,
+      "line": 136,
       "kind": "title"
     },
     {
@@ -25048,7 +25048,7 @@
     {
       "id": "ADM-049",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1691,
+      "line": 1777,
       "kind": "title"
     },
     {
@@ -25060,7 +25060,7 @@
     {
       "id": "LIF-022",
       "file": "apps/web/src/admin/Administration.test.tsx",
-      "line": 1833,
+      "line": 1919,
       "kind": "title"
     },
     {
@@ -26332,25 +26332,25 @@
     {
       "id": "LIF-005",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 210,
+      "line": 208,
       "kind": "title"
     },
     {
       "id": "LIF-017",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 177,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "LIF-059",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 177,
+      "line": 175,
       "kind": "title"
     },
     {
       "id": "SCH-070",
       "file": "apps/web/src/home/Home.test.tsx",
-      "line": 133,
+      "line": 131,
       "kind": "title"
     },
     {
@@ -26572,31 +26572,31 @@
     {
       "id": "LIF-009",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 173,
+      "line": 262,
       "kind": "title"
     },
     {
       "id": "LIF-050",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 273,
+      "line": 362,
       "kind": "title"
     },
     {
       "id": "LIF-051",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 230,
+      "line": 319,
       "kind": "title"
     },
     {
       "id": "LIF-061",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 113,
+      "line": 202,
       "kind": "title"
     },
     {
       "id": "VER-015",
       "file": "apps/web/src/lifecycle/Workflow.test.tsx",
-      "line": 298,
+      "line": 387,
       "kind": "title"
     },
     {
@@ -26633,6 +26633,18 @@
       "id": "MET-021",
       "file": "apps/web/src/metadata/FieldsForm.test.tsx",
       "line": 54,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-077",
+      "file": "apps/web/src/parts/MenuBar.test.tsx",
+      "line": 65,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-188",
+      "file": "apps/web/src/parts/MenuBar.test.tsx",
+      "line": 56,
       "kind": "title"
     },
     {
@@ -26758,13 +26770,13 @@
     {
       "id": "CNT-186",
       "file": "apps/web/src/publishing/RangePreview.test.tsx",
-      "line": 141,
+      "line": 143,
       "kind": "title"
     },
     {
       "id": "PUB-080",
       "file": "apps/web/src/publishing/RangePreview.test.tsx",
-      "line": 118,
+      "line": 120,
       "kind": "title"
     },
     {
@@ -27058,13 +27070,31 @@
     {
       "id": "COL-063",
       "file": "apps/web/src/shell/Header.test.tsx",
-      "line": 249,
+      "line": 253,
       "kind": "title"
     },
     {
       "id": "IAM-011",
       "file": "apps/web/src/shell/Header.test.tsx",
-      "line": 95,
+      "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-077",
+      "file": "apps/web/src/shell/commands/commands.test.ts",
+      "line": 98,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-188",
+      "file": "apps/web/src/shell/commands/commands.test.ts",
+      "line": 105,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-189",
+      "file": "apps/web/src/shell/commands/useGoToKeys.test.tsx",
+      "line": 99,
       "kind": "title"
     },
     {
@@ -27274,151 +27304,157 @@
     {
       "id": "CNT-072",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 504,
+      "line": 509,
       "kind": "title"
     },
     {
       "id": "CNT-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 524,
+      "line": 529,
       "kind": "title"
     },
     {
       "id": "CNT-074",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1511,
+      "line": 1515,
       "kind": "title"
     },
     {
       "id": "CNT-075",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1668,
+      "line": 1672,
       "kind": "title"
     },
     {
       "id": "CNT-105",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 621,
+      "line": 625,
       "kind": "title"
     },
     {
       "id": "CNT-150",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2559,
+      "line": 2611,
       "kind": "title"
     },
     {
       "id": "CNT-154",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 621,
+      "line": 625,
       "kind": "title"
     },
     {
       "id": "CNT-156",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 652,
+      "line": 656,
       "kind": "title"
     },
     {
       "id": "CNT-158",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 833,
+      "line": 837,
       "kind": "title"
     },
     {
       "id": "CNT-159",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 885,
+      "line": 889,
       "kind": "title"
     },
     {
       "id": "CNT-162",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
       "kind": "title"
     },
     {
       "id": "CNT-163",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-188",
+      "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
+      "line": 2378,
       "kind": "title"
     },
     {
       "id": "IAM-073",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2057,
+      "line": 2075,
       "kind": "title"
     },
     {
       "id": "IAM-080",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 637,
+      "line": 641,
       "kind": "title"
     },
     {
       "id": "LIF-018",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
       "kind": "title"
     },
     {
       "id": "LIF-041",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 912,
+      "line": 916,
       "kind": "title"
     },
     {
       "id": "LOC-016",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 824,
+      "line": 828,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 806,
+      "line": 810,
       "kind": "title"
     },
     {
       "id": "STR-035",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1044,
+      "line": 1048,
       "kind": "title"
     },
     {
       "id": "STR-036",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2262,
+      "line": 2280,
       "kind": "title"
     },
     {
       "id": "STR-037",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 2097,
+      "line": 2115,
       "kind": "title"
     },
     {
       "id": "STR-044",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 335,
+      "line": 340,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1093,
+      "line": 1097,
       "kind": "title"
     },
     {
       "id": "STR-046",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 381,
+      "line": 386,
       "kind": "title"
     },
     {
       "id": "VER-017",
       "file": "apps/web/src/structure/DocumentPage.addresses-and-lists.test.tsx",
-      "line": 1802,
+      "line": 1806,
       "kind": "title"
     },
     {
@@ -27442,55 +27478,55 @@
     {
       "id": "CNT-046",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 468,
+      "line": 469,
       "kind": "title"
     },
     {
       "id": "DAT-024",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1124,
+      "line": 1125,
       "kind": "title"
     },
     {
       "id": "DAT-027",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 989,
+      "line": 990,
       "kind": "title"
     },
     {
       "id": "DAT-041",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1047,
+      "line": 1048,
       "kind": "title"
     },
     {
       "id": "DAT-047",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1014,
+      "line": 1015,
       "kind": "title"
     },
     {
       "id": "DAT-082",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1480,
+      "line": 1483,
       "kind": "title"
     },
     {
       "id": "DAT-098",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1411,
+      "line": 1414,
       "kind": "title"
     },
     {
       "id": "DAT-115",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1204,
+      "line": 1205,
       "kind": "title"
     },
     {
       "id": "DAT-122",
       "file": "apps/web/src/structure/DocumentPage.equations-and-values.test.tsx",
-      "line": 1231,
+      "line": 1232,
       "kind": "title"
     },
     {
@@ -27514,43 +27550,43 @@
     {
       "id": "LIF-020",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 596,
+      "line": 599,
       "kind": "title"
     },
     {
       "id": "LIF-024",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 610,
+      "line": 613,
       "kind": "title"
     },
     {
       "id": "LOC-004",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 1163,
+      "line": 1246,
       "kind": "title"
     },
     {
       "id": "REU-050",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 530,
+      "line": 533,
       "kind": "title"
     },
     {
       "id": "STR-008",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 34,
+      "line": 37,
       "kind": "title"
     },
     {
       "id": "STR-059",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 417,
+      "line": 420,
       "kind": "title"
     },
     {
       "id": "STR-065",
       "file": "apps/web/src/structure/DocumentPage.outline.test.tsx",
-      "line": 721,
+      "line": 804,
       "kind": "title"
     },
     {
@@ -27640,7 +27676,7 @@
     {
       "id": "LIF-061",
       "file": "apps/web/src/structure/DocumentPage.workflow.test.tsx",
-      "line": 63,
+      "line": 144,
       "kind": "title"
     },
     {
@@ -27914,9 +27950,21 @@
       "kind": "title"
     },
     {
+      "id": "CNT-190",
+      "file": "apps/web/src/theme/presentation.test.tsx",
+      "line": 53,
+      "kind": "title"
+    },
+    {
       "id": "STY-039",
       "file": "apps/web/src/theme/presentation.test.tsx",
-      "line": 45,
+      "line": 92,
+      "kind": "title"
+    },
+    {
+      "id": "CNT-190",
+      "file": "apps/web/src/theme/styleLabels.test.tsx",
+      "line": 52,
       "kind": "title"
     },
     {
@@ -27982,7 +28030,7 @@
     {
       "id": "LOC-004",
       "file": "apps/web/src/words/language.test.tsx",
-      "line": 64,
+      "line": 66,
       "kind": "title"
     },
     {
@@ -35660,6 +35708,12 @@
       "kind": "title"
     },
     {
+      "id": "CNT-190",
+      "file": "tests/browser/src/canvas.test.ts",
+      "line": 206,
+      "kind": "title"
+    },
+    {
       "id": "CNT-138",
       "file": "tests/browser/src/forced-colors.test.ts",
       "line": 47,
@@ -35680,13 +35734,13 @@
     {
       "id": "STR-035",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 327,
+      "line": 321,
       "kind": "title"
     },
     {
       "id": "STR-045",
       "file": "tests/browser/src/navigation.test.ts",
-      "line": 362,
+      "line": 356,
       "kind": "title"
     },
     {
@@ -35704,19 +35758,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 881,
+      "line": 895,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 877,
+      "line": 891,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 877,
+      "line": 891,
       "kind": "title"
     },
     {

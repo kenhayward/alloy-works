@@ -63,10 +63,10 @@ Edit, Review and Help are not drawn; their items are in **Menus and shortcuts** 
    - a stronger divider;
    - the frequent tools: Paragraph style (`¶`), Bold, Italic, Underline, More text formatting (`Aa`),
      Link, Mark as term, Bulleted list, Numbered list, Insert (`+`), Comment.
-   A small corner mark means the button opens a flyout. Names and keys show **instantly** on hover
-   and focus, as on the rail. An open panel **extends the dock** by 264px (the same surface, a 1px
-   rule between them), and the sheet stays centred in what is left (canvas decision 6). The panel
-   keeps the outline pane's content; only its frame changes.
+     A small corner mark means the button opens a flyout. Names and keys show **instantly** on hover
+     and focus, as on the rail. An open panel **extends the dock** by 264px (the same surface, a 1px
+     rule between them), and the sheet stays centred in what is left (canvas decision 6). The panel
+     keeps the outline pane's content; only its frame changes.
 6. **The lifecycle in the header**: the document's states as a stepper, the current one in `--warn`
    with a filled dot, the rest muted, and the next action as the one primary button ("Submit for
    review"). The drawn states are placeholders: use the domain's states and the action the user may
@@ -86,15 +86,15 @@ Edit, Review and Help are not drawn; their items are in **Menus and shortcuts** 
 `Ctrl` is `Cmd` and `Alt` is `Option` on macOS. Blank means no shortcut. **Check every one** before
 the registry is written (see Open questions).
 
-| Menu     | Items (shortcut)                                                                                                                                                                                                                                                                                                                                                                                                        |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Document | Submit for review (Ctrl Shift Enter), Preview (Ctrl Alt P) / Save a version (Ctrl S), History (Ctrl Alt H), Compare versions / Dates, Effective for, Relationships, Manage access / Place a hold, Archive / Delete (`--danger`)                                                                                                                                                                                         |
-| Edit     | Undo (Ctrl Z), Redo (Ctrl Y) / Cut (Ctrl X), Copy (Ctrl C), Paste (Ctrl V), Paste as plain text (Ctrl Shift V) / Find (Ctrl F), Find and replace (Ctrl H) / Search or run a command (Ctrl K)                                                                                                                                                                                                                           |
-| View     | Reading (Ctrl Shift 1), Review (Ctrl Shift 2), Authoring (Ctrl Shift 3) / Contents (Ctrl Alt C), Baselines (Ctrl Alt B), Assistant (Ctrl J) / Show boundaries (Ctrl Shift B), Style labels in the margin (Ctrl Shift L), Pages as you edit / Zoom in (Ctrl Alt =), Zoom out (Ctrl Alt -), Fit to width / Focus (F11)                                                                                                   |
-| Insert   | Table (Ctrl Alt T), Figure (Ctrl Alt F), Image (Ctrl Alt I), Caption / Equation (Ctrl Alt E), Footnote (Ctrl Alt N), Cross-reference (Ctrl Alt R), Variable (Ctrl Alt V), Symbol / Link (Ctrl Alt K), Comment (Ctrl Alt M)                                                                                                                                                                                              |
+| Menu     | Items (shortcut)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Document | Submit for review (Ctrl Shift Enter), Preview (Ctrl Alt P) / Save a version (Ctrl S), History (Ctrl Alt H), Compare versions / Dates, Effective for, Relationships, Manage access / Place a hold, Archive / Delete (`--danger`)                                                                                                                                                                                                                                 |
+| Edit     | Undo (Ctrl Z), Redo (Ctrl Y) / Cut (Ctrl X), Copy (Ctrl C), Paste (Ctrl V), Paste as plain text (Ctrl Shift V) / Find (Ctrl F), Find and replace (Ctrl H) / Search or run a command (Ctrl K)                                                                                                                                                                                                                                                                    |
+| View     | Reading (Ctrl Shift 1), Review (Ctrl Shift 2), Authoring (Ctrl Shift 3) / Contents (Ctrl Alt C), Baselines (Ctrl Alt B), Assistant (Ctrl J) / Show boundaries (Ctrl Shift B), Style labels in the margin (Ctrl Shift L), Pages as you edit / Zoom in (Ctrl Alt =), Zoom out (Ctrl Alt -), Fit to width / Focus (F11)                                                                                                                                            |
+| Insert   | Table (Ctrl Alt T), Figure (Ctrl Alt F), Image (Ctrl Alt I), Caption / Equation (Ctrl Alt E), Footnote (Ctrl Alt N), Cross-reference (Ctrl Alt R), Variable (Ctrl Alt V), Symbol / Link (Ctrl Alt K), Comment (Ctrl Alt M)                                                                                                                                                                                                                                      |
 | Format   | Bold (Ctrl B), Italic (Ctrl I), Underline (Ctrl U), Subscript (Ctrl =), Superscript (Ctrl Shift =), Code (Ctrl \`), Quotation / Paragraph style ▸ [Body (default) (Ctrl Alt 0), Title, Heading 1 to 3 (Ctrl Alt 1 to 3), Definition, Caption / Manage styles], Bulleted list (Ctrl Shift 8), Numbered list (Ctrl Shift 7), Increase indent (Tab), Decrease indent (Shift Tab) / Mark as term (Ctrl Alt G), Language ▸, Direction ▸ / Clear formatting (Ctrl \\) |
-| Review   | Comment (Ctrl Alt M), Check document (Ctrl Alt X) / History (Ctrl Alt H), Compare versions / Ask the assistant (Ctrl J)                                                                                                                                                                                                                                                                                                |
-| Help     | Keyboard shortcuts (Ctrl /), Documentation, What is new                                                                                                                                                                                                                                                                                                                                                                 |
+| Review   | Comment (Ctrl Alt M), Check document (Ctrl Alt X) / History (Ctrl Alt H), Compare versions / Ask the assistant (Ctrl J)                                                                                                                                                                                                                                                                                                                                         |
+| Help     | Keyboard shortcuts (Ctrl /), Documentation, What is new                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 `/` separates groups. The paragraph styles listed are the drawing's; the submenu lists the
 document's theme's styles. Rail go-to keys: Home `G H`, Components `G C`, Documents `G D`, Templates
@@ -119,13 +119,13 @@ Publications `G U`; not while focus is in the text.
 
 New colour tokens (in `tokens.css`, both themes):
 
-| Token              | Light     | Dark      | Used for                                    |
-| ------------------ | --------- | --------- | ------------------------------------------- |
-| `--hover`          | `#eef1f4` | `#232f3a` | hovered and open menu names, rail entries   |
-| `--divider-strong` | `#b4bdc7` | `#4a5a69` | the dock's rule between panels and tools    |
-| `--tip-bg`         | `#15202b` | `#e5eaef` | tooltips, inverse of the chrome             |
-| `--tip-text`       | `#ffffff` | `#0d1217` | tooltip words                               |
-| `--tip-keys`       | `#9aa6b2` | `#56606c` | tooltip shortcut                            |
+| Token              | Light     | Dark      | Used for                                  |
+| ------------------ | --------- | --------- | ----------------------------------------- |
+| `--hover`          | `#eef1f4` | `#232f3a` | hovered and open menu names, rail entries |
+| `--divider-strong` | `#b4bdc7` | `#4a5a69` | the dock's rule between panels and tools  |
+| `--tip-bg`         | `#15202b` | `#e5eaef` | tooltips, inverse of the chrome           |
+| `--tip-text`       | `#ffffff` | `#0d1217` | tooltip words                             |
+| `--tip-keys`       | `#9aa6b2` | `#56606c` | tooltip shortcut                          |
 
 Everything else is an existing token: menus `--surface`, `--strong-border`, `--shadow-modal`; dock
 `--surface`, `--strong-border`, `--shadow-raised`; current items `--accent-weak` and `--accent-text`;

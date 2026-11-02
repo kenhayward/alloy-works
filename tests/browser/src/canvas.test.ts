@@ -219,7 +219,7 @@ describe('the canvas as a person uses it', () => {
         };
       });
       expect(line.at, 'its words are what stands there').toBe(true);
-      expect(line.label, 'its pseudo-element is the theme\'s, not a label').not.toBe('absolute');
+      expect(line.label, "its pseudo-element is the theme's, not a label").not.toBe('absolute');
     });
   });
 

@@ -118,8 +118,8 @@ export function QueryDefinitions({
     return (
       <section aria-labelledby="query-definitions-heading">
         <Heading id="query-definitions-heading" hidden={embedded}>
-            {words('data.query-definitions-2')}
-          </Heading>
+          {words('data.query-definitions-2')}
+        </Heading>
         {listing.signedOut ? (
           <Notice tone="signedOut">
             <p>{words('data.you-are-signed-out-sign-7')}</p>

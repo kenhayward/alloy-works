@@ -82,9 +82,7 @@ describe("the panes beside a document's text, in Chromium", () => {
       const scrolled = await tops();
       expect(scrolled.panels).toBe(scrolled.outline);
       const header = await page.evaluate(() =>
-        Math.round(
-          document.querySelector('header')!.getBoundingClientRect().bottom,
-        ),
+        Math.round(document.querySelector('header')!.getBoundingClientRect().bottom),
       );
       expect(scrolled.outline).toBeGreaterThanOrEqual(header);
       expect(scrolled.outline - header).toBeLessThanOrEqual(16);

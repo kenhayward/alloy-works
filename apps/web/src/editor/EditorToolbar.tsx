@@ -284,9 +284,7 @@ export function EditorToolbar({
       enabled: boolean,
       run: (() => void) | undefined,
     ): MenuEntry[] =>
-      run === undefined
-        ? []
-        : [{ kind: 'item', key, label, icon: key, enabled, run }];
+      run === undefined ? [] : [{ kind: 'item', key, label, icon: key, enabled, run }];
     const ready = enabled && view !== null;
     return (
       <Toolbar
@@ -324,7 +322,7 @@ export function EditorToolbar({
             disabled={!enabled}
           >
             <span className={styles['dockLetters']} aria-hidden="true">
-              Aa
+              {words('editor.more-text-formatting-mark')}
             </span>
           </Flyout>
         </NameTip>

@@ -35,19 +35,23 @@ const page = (
 export const editorCommandId = (label: string): string => `editor.${label}`;
 
 export const COMMANDS: readonly AppCommand[] = [
-  ...EDITOR_COMMANDS.map(
-    (command): AppCommand => ({
-      id: editorCommandId(command.label),
-      scope: 'editor',
-      icon: command.label,
-      chord: command.shortcut,
-      said: () => command.said,
-    }),
-  ),
+  ...EDITOR_COMMANDS.map((command): AppCommand => ({
+    id: editorCommandId(command.label),
+    scope: 'editor',
+    icon: command.label,
+    chord: command.shortcut,
+    said: () => command.said,
+  })),
   // Not rows of the editor's registry: the page's, opening a dialog or reading the clipboard.
   page('editor.Figure', 'editor.figure', 'Figure', undefined, 'editor'),
   page('editor.Image', 'editor.image', 'Image', undefined, 'editor'),
-  page('editor.Paste as Markdown', 'editor.paste-as-markdown', 'Paste as Markdown', undefined, 'editor'),
+  page(
+    'editor.Paste as Markdown',
+    'editor.paste-as-markdown',
+    'Paste as Markdown',
+    undefined,
+    'editor',
+  ),
   page('undo', 'menu.undo', undefined, 'Mod-z', 'editor'),
   page('redo', 'menu.redo', undefined, 'Mod-y', 'editor'),
   page('search', 'menu.search', undefined, 'Mod-k', 'global'),

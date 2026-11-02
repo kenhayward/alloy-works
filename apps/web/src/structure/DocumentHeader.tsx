@@ -3,7 +3,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 
 import { useAdministers } from '../access/ManageAccessLink.js';
 import { Modal } from '../layouts/Modal.js';
-import { useLifecycleActs, type LifecycleAct } from '../lifecycle/Workflow.js';
+import { useLifecycleActs } from '../lifecycle/Workflow.js';
 import { MenuBar } from '../parts/MenuBar.js';
 import { seededKind } from '../states/Lozenge.js';
 import { HeaderSlot } from '../shell/HeaderSlot.js';

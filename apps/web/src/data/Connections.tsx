@@ -261,8 +261,8 @@ export function Connections({
     return (
       <section aria-labelledby="connections-heading">
         <Heading id="connections-heading" hidden={embedded}>
-            {words('data.connections')}
-          </Heading>
+          {words('data.connections')}
+        </Heading>
         {listing.signedOut ? (
           <Notice tone="signedOut">
             <p>{words('data.you-are-signed-out-sign-4')}</p>

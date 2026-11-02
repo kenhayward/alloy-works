@@ -66,7 +66,12 @@ export function Rail({ module, environment }: RailProps) {
   );
 
   return (
-    <nav className={styles['rail']} aria-label={words('shell.modules')} data-app-region data-nav-rail>
+    <nav
+      className={styles['rail']}
+      aria-label={words('shell.modules')}
+      data-app-region
+      data-nav-rail
+    >
       <NameTip name={words('shell.product')}>
         <a className={styles['brand']} href="#/" aria-label={words('shell.product')}>
           <img

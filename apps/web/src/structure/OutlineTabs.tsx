@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-import { Icon } from '../editor/Icon.js';
 import { kept, keep, PaneToggle, type Pane } from '../layouts/PaneWidth.js';
 import styles from './OutlineTabs.module.css';
 import { words } from '../words/words.js';

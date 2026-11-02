@@ -54,12 +54,15 @@ describe("the labels in a sheet's margin (ADR-0075)", () => {
     const rules = marginLabelRules(theme);
     expect(rules).toContain('[data-style="note"]::before { content: "Note" / ""; }');
     expect(rules).toContain('[data-style="odd"]::before { content: "Say \\"odd\\"" / ""; }');
-    expect(rules).toMatch(/\[data-role="heading1"\]:not\(:has\([^{]*::before \{ content: "H1" \/ ""; \}/);
-    expect(rules).toMatch(/\[data-role="heading6"\]:not\(:has\([^{]*::before \{ content: "H6" \/ ""; \}/);
+    expect(rules).toMatch(
+      /\[data-role="heading1"\]:not\(:has\([^{]*::before \{ content: "H1" \/ ""; \}/,
+    );
+    expect(rules).toMatch(
+      /\[data-role="heading6"\]:not\(:has\([^{]*::before \{ content: "H6" \/ ""; \}/,
+    );
     // Every rule hangs off the class the sheet takes off to turn them off, and a pseudo-element: no rule
     // writes into the document's own elements.
-    for (const rule of rules.split('\n'))
-      expect(rule).toMatch(/^\.aw-labels .*::before \{ /);
+    for (const rule of rules.split('\n')) expect(rule).toMatch(/^\.aw-labels .*::before \{ /);
     // And not on a paragraph in a list or a cell, which stands away from the margin.
     expect(rules).toContain(':not(li, td, th, [data-role]) > p');
   });

@@ -2889,10 +2889,7 @@ export function ComponentEditor({
           icon: 'Save version',
           disabled: !mayCut || phase !== 'editing',
           onPress: () =>
-            askFirst(
-              say('editor.save-version'),
-              () => void controls.current?.saveVersion(),
-            ),
+            askFirst(say('editor.save-version'), () => void controls.current?.saveVersion()),
         },
         {
           label: say('editor.saved-text'),
@@ -2987,28 +2984,28 @@ export function ComponentEditor({
       // "Accessibility"), and shown to a reader too - disabled, rather than absent, so what the
       // editor can do with the text is visible before the lock is.
       <EditorToolbar
-          {...(inBand
-            ? {
-                layout: 'dock' as const,
-                styleEntries,
-                ...(inPlaceSettings?.onComment === undefined
-                  ? {}
-                  : { onComment: inPlaceSettings.onComment }),
-              }
-            : { leading: leadingActs })}
-          onPasteMarkdown={() => void pasteMarkdown()}
-          onInsertFigure={() => setFigureDialog('Figure')}
-          figurePlaceable={mayPlaceFigure && (!drafting || draft.mayUpload)}
-          onInsertImage={() => setFigureDialog('Image')}
-          imagePlaceable={mayPlaceImage && (!drafting || draft.mayUpload)}
-          ref={toolbarRegion}
-          view={editing}
-          enabled={mayFormat}
-          newIdentifier={newBlockIdentifier}
-          prompt={askFor}
-          onRefused={onCommandRefused}
-          openDialog={openCommandDialog}
-        />
+        {...(inBand
+          ? {
+              layout: 'dock' as const,
+              styleEntries,
+              ...(inPlaceSettings?.onComment === undefined
+                ? {}
+                : { onComment: inPlaceSettings.onComment }),
+            }
+          : { leading: leadingActs })}
+        onPasteMarkdown={() => void pasteMarkdown()}
+        onInsertFigure={() => setFigureDialog('Figure')}
+        figurePlaceable={mayPlaceFigure && (!drafting || draft.mayUpload)}
+        onInsertImage={() => setFigureDialog('Image')}
+        imagePlaceable={mayPlaceImage && (!drafting || draft.mayUpload)}
+        ref={toolbarRegion}
+        view={editing}
+        enabled={mayFormat}
+        newIdentifier={newBlockIdentifier}
+        prompt={askFor}
+        onRefused={onCommandRefused}
+        openDialog={openCommandDialog}
+      />
     ) : null;
   const linePart =
     loaded.state === 'open' ? (
@@ -3098,13 +3095,10 @@ export function ComponentEditor({
       >
         {/* Open in place on a document's sheet, the strip, the toolbar and its second line stand in
             the band the document keeps on the chrome above the desk (ADR-0056); here otherwise. */}
-        {inBand
-          ? createPortal(
-              <div inert={behindDialog}>{toolbarPart}</div>,
-              bandHost,
-            )
-          : stripPart}
-        {inBand && inPlaceSettings?.host != null && selectionHeldNow.current &&
+        {inBand ? createPortal(<div inert={behindDialog}>{toolbarPart}</div>, bandHost) : stripPart}
+        {inBand &&
+          inPlaceSettings?.host != null &&
+          selectionHeldNow.current &&
           createPortal(
             <div className={styles['settingsLine']} inert={behindDialog}>
               {linePart}
