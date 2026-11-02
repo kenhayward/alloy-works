@@ -14,6 +14,41 @@ export const ThemeStyleParams = z.object({
 });
 export type ThemeStyleParams = z.infer<typeof ThemeStyleParams>;
 
+/** Every kind of catalogue a theme binds, the value and term catalogues among them. */
+export const CATALOGUE_DOCUMENT_KINDS = [
+  'paragraph',
+  'character',
+  'table',
+  'image',
+  'admonition',
+  'citation',
+  'value',
+  'term',
+] as const;
+
+export const ThemeCatalogueParams = z.object({
+  id: LowercaseUuid,
+  kind: z.enum(CATALOGUE_DOCUMENT_KINDS),
+});
+export type ThemeCatalogueParams = z.infer<typeof ThemeCatalogueParams>;
+
+export const CatalogueDocumentView = z.object({
+  format: z.literal('alloy-works.catalogue'),
+  version: z.literal(1),
+  catalogue: z
+    .record(z.string(), z.unknown())
+    .describe('The catalogue as its schema states it, at the schema version it reads at now'),
+});
+export type CatalogueDocumentView = z.infer<typeof CatalogueDocumentView>;
+
+export const ImportCatalogueBody = z.strictObject({
+  openedFrom: LowercaseUuid.describe('The theme version the import was made from'),
+  document: z
+    .record(z.string(), z.unknown())
+    .describe('A catalogue document as an export gives it'),
+});
+export type ImportCatalogueBody = z.infer<typeof ImportCatalogueBody>;
+
 const VersionNumber = z.object({ id: z.string(), number: z.string() });
 
 export const ThemeSummary = z.object({
@@ -168,6 +203,31 @@ export const themeRoutes = {
       401: unauthenticated,
       404: notFound,
     },
+  },
+  exportThemeCatalogue: {
+    operationId: 'exportThemeCatalogue',
+    method: 'GET',
+    path: '/v1/themes/{id}/catalogues/{kind}',
+    summary: "A theme's catalogue of a kind, as a document to import elsewhere",
+    tenantScoped: true,
+    access: { check: 'session' },
+    params: ThemeCatalogueParams,
+    responses: {
+      200: { description: 'The catalogue document', schema: CatalogueDocumentView },
+      401: unauthenticated,
+      404: notFound,
+    },
+  },
+  importThemeCatalogue: {
+    operationId: 'importThemeCatalogue',
+    method: 'PUT',
+    path: '/v1/themes/{id}/catalogues/{kind}',
+    summary: "Replace a theme's catalogue of a kind by an imported document, as its next version",
+    tenantScoped: true,
+    access: managed,
+    params: ThemeCatalogueParams,
+    body: ImportCatalogueBody,
+    responses: changed,
   },
   createTheme: {
     operationId: 'createTheme',

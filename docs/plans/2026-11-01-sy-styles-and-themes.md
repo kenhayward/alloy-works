@@ -50,3 +50,6 @@ choose, and moves a catalogue between environments, all without a release.
 - **SYd**: the character style's form and the styles offered to authors (SY-H) for paragraph, table and
   image styles; character styles are a mark's, never chosen, so not narrowed. Table and image styles'
   forms are a gap: they change through the API.
+- **SYe**: catalogues exported and imported (SY-I), every kind a theme binds; the round trip tested in
+  the domain and the store. The close: 0.224.0, baseline 0.224.0. STY-086 is designed and not yet
+  cited by a test, so the baseline leaves it out.

@@ -31,6 +31,8 @@ import {
   listThemes,
   renameTheme,
   allowStyles,
+  exportThemeCatalogue,
+  importCatalogue,
   saveStyle,
   styleImpact,
 } from './theme-styles.js';
@@ -404,6 +406,66 @@ describe('styles saved, deleted and weighed (the SY plan, SY-C, SY-D)', () => {
       duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: ' ', author: people.ada }),
     );
     expect(unnamed).toMatchObject({ answer: 'refused', refusals: [{ code: 'theme_malformed' }] });
+  });
+
+  it('STY-043 STY-073 STY-071 moves a catalogue between themes by export and import, refusing one the destination cannot hold', async () => {
+    const { as, people } = await environment();
+    const made = await as((trx) =>
+      duplicateTheme(trx, { themeId: DEFAULT_THEME_ID, name: 'Field manual', author: people.ada }),
+    );
+    if (made.answer !== 'created') throw new Error(made.answer);
+    const id = made.theme.artifactId;
+    const exported = await as((trx) =>
+      exportThemeCatalogue(trx, { themeId: DEFAULT_THEME_ID, kind: 'paragraph' }),
+    );
+    const document = structuredClone(exported) as unknown as {
+      catalogue: { styles: { id: string; name: string }[] };
+    };
+    document.catalogue.styles.find((each) => each.id === 'lead')!.name = 'Opening';
+    const imported = await as((trx) =>
+      importCatalogue(trx, {
+        themeId: id,
+        kind: 'paragraph',
+        openedFrom: made.theme.versionId,
+        document: JSON.parse(JSON.stringify(document)),
+        author: people.ada,
+      }),
+    );
+    if (imported.answer !== 'recorded') throw new Error(imported.answer);
+    // The round trip: what was imported is what exports again (STY-073).
+    expect(
+      await as((trx) => exportThemeCatalogue(trx, { themeId: id, kind: 'paragraph' })),
+    ).toEqual(document);
+
+    // A typeface the destination does not declare is said at import, not at publish (STY-071).
+    const foreign = structuredClone(document) as unknown as {
+      catalogue: { styles: { id: string; properties: Record<string, unknown> }[] };
+    };
+    foreign.catalogue.styles.find((each) => each.id === 'lead')!.properties['typeface'] =
+      'garamond';
+    const refused = await as((trx) =>
+      importCatalogue(trx, {
+        themeId: id,
+        kind: 'paragraph',
+        openedFrom: imported.theme.versionId,
+        document: foreign,
+        author: people.ada,
+      }),
+    );
+    expect(refused).toMatchObject({ answer: 'refused', refusals: [{ code: 'typeface_missing' }] });
+    const wrongKind = await as((trx) =>
+      importCatalogue(trx, {
+        themeId: id,
+        kind: 'table',
+        openedFrom: imported.theme.versionId,
+        document,
+        author: people.ada,
+      }),
+    );
+    expect(wrongKind).toMatchObject({
+      answer: 'refused',
+      refusals: [{ code: 'catalogue_wrong_kind' }],
+    });
   });
 
   it('STY-033 narrows the styles a theme allows authors as its next version, refusing one its catalogue lacks', async () => {

@@ -3,6 +3,19 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.224.0 - 2026-11-02 (PR #PRNUM)
+
+T7's third slice closed (the SY plan): styles and themes changed without a release, a theme's own, the styles offered to authors and catalogues moved; with it, the work merged since 0.223.0.
+
+### Added
+
+- **Styles changed without a release, through the API.** Whoever manages definitions can add, change and delete a theme's paragraph, character, table and image styles; every document set in the theme follows at once, and each change is audited with the properties it changed.
+- **A style change's reach, before it is saved.** The documents a change would reach are listed, through the styles based on it, and a style in use cannot be deleted.
+- **Document themes in Administration.** A theme's paragraph styles open as a form showing each value and the style it comes from, beside a sample set as the editor sets text; saving first lists the documents the change reaches.
+- **Themes of their own.** Administration's Document themes duplicates a theme under a new name, renames it and makes it the environment's default, without a release. Moving a template to another theme is recorded in the audit log.
+- **Character styles and the styles offered to authors.** Document themes edits a character style, each property set there or left to the text around it, beside a sample. A theme can offer authors only some of its paragraph, table and image styles: the editor offers only those, a publish refuses another, and the documents using a style it drops are listed before it is saved.
+- **Catalogues moved between themes.** Document themes exports any of a theme's catalogues as a file, and imports one as its next version. Anything the file holds that cannot be represented, and anything the theme lacks, such as a typeface, is said at import, and nothing is imported.
+
 ## 0.223.0 - 2026-11-01 (PR #875)
 
 T7's second slice closed (the AL plan): an image's licence and rights, its derivatives, the Images page and replacement; with it, the work merged since 0.222.0.

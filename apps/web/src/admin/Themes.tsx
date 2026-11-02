@@ -10,9 +10,10 @@ import {
   type ResolvedParagraphProperties,
   type ThemeRefusal,
 } from '@alloy-works/domain';
-import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 
 import { refusal } from '../account/TokenTable.js';
+import { saveText } from '../terms/shape.js';
 import { Modal } from '../layouts/Modal.js';
 import { ConfirmDialog } from '../parts/ConfirmDialog.js';
 import { capHeight, faceUrl } from '../theme/faces.js';
@@ -466,6 +467,7 @@ function ThemeStyles({
         onSaved={saved}
         onSaid={onSaid}
       />
+      <CatalogueMoves client={client} theme={theme} onSaved={saved} />
     </section>
   );
 }
@@ -925,6 +927,125 @@ function OfferedStyles({
         />
       )}
     </section>
+  );
+}
+
+/** Every kind of catalogue a theme may bind, in the order the page offers them. */
+const CATALOGUE_KINDS = [
+  'paragraph',
+  'character',
+  'table',
+  'image',
+  'admonition',
+  'citation',
+  'value',
+  'term',
+] as const;
+type MovedKind = (typeof CATALOGUE_KINDS)[number];
+
+/** The refusals a 400 names, each a sentence; else the one message the error carries. */
+function refusalsOf(error: unknown, fallback: string): string[] {
+  const named = (error as { refusals?: readonly { message: string }[] } | undefined)?.refusals;
+  return named !== undefined && named.length > 0
+    ? named.map((each) => each.message)
+    : [refusal(error, fallback)];
+}
+
+/**
+ * **A catalogue moved by export and import** (the SY plan, SY-I; STY-043): one of the theme's
+ * catalogues saved as a document, and a document imported as its next version, every refusal said
+ * (STY-044) and nothing imported while there is one.
+ */
+function CatalogueMoves({
+  client,
+  theme,
+  onSaved,
+}: {
+  client: Client;
+  theme: ThemeView;
+  onSaved: (theme: ThemeView, message: string) => void;
+}) {
+  const named = useId();
+  const kinds = CATALOGUE_KINDS.filter((kind) => theme.content.catalogues[kind] !== undefined);
+  const [kind, setKind] = useState<MovedKind>('paragraph');
+  const [refused, setRefused] = useState<readonly string[]>([]);
+  const kindName = words(`admin.catalogue-kind-${kind}` as WordKey);
+
+  const exported = async () => {
+    setRefused([]);
+    const { data, error } = await client.GET('/v1/themes/{id}/catalogues/{kind}', {
+      params: { path: { id: theme.id, kind } },
+    });
+    if (!data) return setRefused([refusal(error, words('admin.catalogue-could-not-be-exported'))]);
+    const slug = theme.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    saveText(`${slug || 'theme'}-${kind}.json`, JSON.stringify(data, null, 2), 'application/json');
+  };
+  const imported = async (change: ChangeEvent<HTMLInputElement>) => {
+    const file = change.target.files?.[0];
+    change.target.value = '';
+    if (!file) return;
+    setRefused([]);
+    let document: Record<string, unknown>;
+    try {
+      document = JSON.parse(await file.text()) as Record<string, unknown>;
+    } catch {
+      return setRefused([words('admin.catalogue-not-json', { name: file.name })]);
+    }
+    const { data, error } = await client.PUT('/v1/themes/{id}/catalogues/{kind}', {
+      params: { path: { id: theme.id, kind } },
+      body: { openedFrom: theme.version.id, document },
+    });
+    if (!data) {
+      return setRefused(refusalsOf(error, words('admin.catalogue-could-not-be-imported')));
+    }
+    onSaved(
+      data as unknown as ThemeView,
+      words('admin.catalogue-imported', {
+        kind: kindName,
+        theme: data.name,
+        number: data.version.number,
+      }),
+    );
+  };
+
+  return (
+    <fieldset className={own['offered']} aria-labelledby={named}>
+      <legend id={named}>{words('admin.catalogues')}</legend>
+      <p className={own['wide']}>{words('admin.catalogues-lead')}</p>
+      <label className={own['field']}>
+        {words('admin.catalogue-kind')}
+        <select value={kind} onChange={(change) => setKind(change.target.value as MovedKind)}>
+          {kinds.map((each) => (
+            <option key={each} value={each}>
+              {words(`admin.catalogue-kind-${each}` as WordKey)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className={own['actions']}>
+        <button type="button" onClick={() => void exported()}>
+          {words('admin.catalogue-export')}
+        </button>
+        <label className={own['field']}>
+          {words('admin.catalogue-import')}
+          <input
+            type="file"
+            accept=".json,application/json"
+            onChange={(change) => void imported(change)}
+          />
+        </label>
+      </div>
+      {refused.length > 0 && (
+        <ul role="alert" className={own['wide']}>
+          {refused.map((each) => (
+            <li key={each}>{each}</li>
+          ))}
+        </ul>
+      )}
+    </fieldset>
   );
 }
 

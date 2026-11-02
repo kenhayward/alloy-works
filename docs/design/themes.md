@@ -76,6 +76,8 @@ conformance suite.
 | **STY-042** | The PDF projection refuses a face whose licence forbids embedding                                                                                                                                                                                                                                                                                                                                   |
 | **STY-043** | A catalogue serialises as its schema's JSON, which is the export format                                                                                                                                                                                                                                                                                                                             |
 | **STY-044** | Import validates against the schema and reports every rejected property by name                                                                                                                                                                                                                                                                                                                     |
+| **STY-071** | An import is read with the destination theme before anything is written, so a typeface, a parent or a place's style it lacks is refused then ([Styles changed without a release](#styles-changed-without-a-release))                                                                                                                                                                                |
+| **STY-073** | An export re-imports as the catalogue it was, at the schema it reads at now, round-tripped by a test in the domain and in the store                                                                                                                                                                                                                                                                 |
 | **STY-045** | The product's own typefaces are shipped as typeface artifacts carrying their open licence                                                                                                                                                                                                                                                                                                           |
 | **STY-046** | A tenant's uploaded face is a typeface artifact in that tenant's schema, so it cannot be served to anyone else                                                                                                                                                                                                                                                                                      |
 | **STY-047** | A typeface artifact is the font files themselves, versioned; the baseline pins the files                                                                                                                                                                                                                                                                                                            |
@@ -1154,6 +1156,14 @@ choices (`paragraphChoices`, `tableChoices`, `imageChoices`) offer only those al
 another as `style_not_allowed`, naming the block and the style. `PUT /v1/themes/{id}/allowed` records
 it as the theme's next version; the page lists the documents using what a narrowing drops first,
 through `styleImpact` a style at a time.
+
+**A catalogue moved** (SY-I; STY-043, STY-044, STY-071, STY-073): `exportCatalogue` writes a
+catalogue as a document naming its format, `alloy-works.catalogue`, and version, at the schema it
+reads at now; `readCatalogueDocument` reads one back by `readCatalogue`, every refusal at once and
+each by where it is, so nothing it cannot hold is dropped. `importCatalogue` reads the theme with it
+before anything is written, so what the destination lacks is said at import, and a style it drops
+that components use keeps it out (STY-031). Routes: `GET` and `PUT /v1/themes/{id}/catalogues/{kind}`,
+every kind a theme binds, the value and term catalogues among them.
 
 **The forms**: a paragraph style's and a character style's. Table and image styles change through
 `PUT /v1/themes/{id}/styles/{kind}/{style}` for now: their rules, bands and placements want a form of

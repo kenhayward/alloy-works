@@ -371,6 +371,11 @@ describe('the domain package', () => {
         'projectCss',
         // The SY plan, SY-E: where each value of a paragraph style comes from.
         'explainStyle',
+        // The SY plan, SY-I: a catalogue as a document, exported and imported.
+        'CATALOGUE_DOCUMENT_FORMAT',
+        'CATALOGUE_DOCUMENT_VERSION',
+        'exportCatalogue',
+        'readCatalogueDocument',
         // W8.2: the canvas as the theme's rules name it, which the editor's stylesheet test reads.
         'CANVAS',
         // W8.1 (themes.md, "The theme in the editor"): the faces a theme names, declared for the
