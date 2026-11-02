@@ -55,6 +55,9 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'authentication.signed_in'() {
     return words('admin.signed-in');
   },
+  get 'authentication.reauthenticated'() {
+    return words('admin.signed-in-again');
+  },
   get 'authentication.signed_out'() {
     return words('admin.signed-out');
   },
@@ -282,6 +285,15 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   },
   get 'sign_in_route.closed'() {
     return words('admin.sign-in-route-closed');
+  },
+  get 'sign_in.configured'() {
+    return words('admin.sign-in-settings-changed');
+  },
+  get 'principal.disabled'() {
+    return words('admin.person-was-disabled');
+  },
+  get 'principal.enabled'() {
+    return words('admin.person-was-enabled');
   },
   get 'sign_in_route.configured'() {
     return words('admin.sign-in-route-set-up');
