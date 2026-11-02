@@ -1,4 +1,5 @@
 import { createApiClient } from '@alloy-works/api-client';
+import { PLACES } from '@alloy-works/domain';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -283,9 +284,10 @@ describe("Administration's Document themes (the SY plan, SY-F)", () => {
       mark: 'inlineCode',
       properties: { typeface: 'mono', scale: 0.8, bold: true },
     });
-    expect(
-      sent.find((each) => each.path === `/v1/themes/${THEME}/impact`)!.body,
-    ).toEqual({ kind: 'character', style: 'inline-code' });
+    expect(sent.find((each) => each.path === `/v1/themes/${THEME}/impact`)!.body).toEqual({
+      kind: 'character',
+      style: 'inline-code',
+    });
   });
 
   it('STY-033 narrows the styles offered to authors, listing first the documents using what it drops', async () => {
@@ -310,12 +312,19 @@ describe("Administration's Document themes (the SY plan, SY-F)", () => {
     const put = sent.find((each) => each.path === `/v1/themes/${THEME}/allowed`)!;
     const paragraphs = (
       view.catalogues.find((each) => (each.content as { kind: string }).kind === 'paragraph')!
-        .content as { styles: { id: string }[] }
-    ).styles.map((each) => each.id);
+        .content as { styles: { id: string; appliesTo: string[] }[] }
+    ).styles
+      // The styles an author chooses: a heading's, a caption's, are the template's.
+      .filter((each) =>
+        each.appliesTo.some((target) => (PLACES as readonly string[]).includes(target)),
+      )
+      .map((each) => each.id);
     expect(put.body).toEqual({
       openedFrom: 'tv1',
       allowed: { paragraph: paragraphs.filter((id) => id !== 'quotation') },
     });
-    expect(await screen.findByRole('status')).toHaveTextContent('The offered styles saved: Default 0.12');
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'The offered styles saved: Default 0.12',
+    );
   });
 });

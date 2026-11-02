@@ -384,7 +384,8 @@ export async function allowStyles(
   const theme = await latestVersion(trx, input.themeId);
   if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
   const current = await themeLatest(trx, input.themeId);
-  const { allowed: _, ...rest } = current.content;
+  const rest: Theme = { ...current.content };
+  delete rest.allowed;
   const answer = await addThemeVersion(trx, {
     artifactId: input.themeId,
     openedFrom: input.openedFrom,

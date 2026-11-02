@@ -1035,7 +1035,8 @@ describe('the citations in the committed model', () => {
     // 2383 (2026-11-01): SYa - where a style's values come from, styles saved, deleted and weighed, STY-029, STY-031, STY-032, STY-034, STY-056, STY-057, STY-067.
     // 2389 (2026-11-01): SYb - the Document themes page, STY-029, STY-031, STY-034, STY-057, STY-067, STY-069.
     // 2393 (2026-11-01): SYc - themes of their own, STY-072 and STY-026.
-    expect(model.citations).toHaveLength(2393);
+    // 2399 (2026-11-02): SYd - the character form and the styles offered to authors, STY-033.
+    expect(model.citations).toHaveLength(2399);
   });
 
   it('cites no identifier the corpus does not hold', () => {

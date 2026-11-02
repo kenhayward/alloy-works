@@ -1,6 +1,7 @@
 import type { createApiClient } from '@alloy-works/api-client';
 import {
   explainStyle,
+  PLACES,
   projectCss,
   projectFontFaces,
   readTheme,
@@ -45,14 +46,7 @@ interface CharacterCatalogue {
 
 type Key = keyof ResolvedParagraphProperties;
 type Control =
-  | 'number'
-  | 'fraction'
-  | 'check'
-  | 'colour'
-  | 'fill'
-  | 'typeface'
-  | 'alignment'
-  | 'position';
+  'number' | 'fraction' | 'check' | 'colour' | 'fill' | 'typeface' | 'alignment' | 'position';
 
 /** Every paragraph property, in the order the form sets them, with its control and its name. */
 const PROPERTIES: readonly (readonly [Key, Control, WordKey])[] = [
@@ -465,7 +459,13 @@ function ThemeStyles({
           onSaid={onSaid}
         />
       )}
-      <OfferedStyles key={theme.version.id} client={client} theme={theme} onSaved={saved} onSaid={onSaid} />
+      <OfferedStyles
+        key={theme.version.id}
+        client={client}
+        theme={theme}
+        onSaved={saved}
+        onSaid={onSaid}
+      />
     </section>
   );
 }
@@ -798,11 +798,16 @@ function OfferedStyles({
   onSaid: (message: string) => void;
 }) {
   const named = useId();
+  // A paragraph style only a role takes is the template's to set, never an author's to choose.
   const listed = (kind: OfferedKind) =>
     (
       theme.catalogues.find((each) => each.versionId === theme.content.catalogues[kind])!
-        .content as { styles: readonly { id: string; name: string }[] }
-    ).styles;
+        .content as { styles: readonly { id: string; name: string; appliesTo: string[] }[] }
+    ).styles.filter(
+      (style) =>
+        kind !== 'paragraph' ||
+        style.appliesTo.some((target) => (PLACES as readonly string[]).includes(target)),
+    );
   const stated = (theme.content['allowed'] as Offered | undefined) ?? {};
   const [offered, setOffered] = useState<Offered>(stated);
   const [impact, setImpact] = useState<Impact | null>(null);
@@ -871,7 +876,12 @@ function OfferedStyles({
                 type="radio"
                 name={`${named}-${kind}`}
                 checked={only !== undefined}
-                onChange={() => offer(kind, listed(kind).map((each) => each.id))}
+                onChange={() =>
+                  offer(
+                    kind,
+                    listed(kind).map((each) => each.id),
+                  )
+                }
               />
               {words('admin.offered-only')}
             </label>
@@ -976,9 +986,9 @@ function CharacterForm({
   const paragraphs = theme.content.catalogues['paragraph']!;
   const { base } = theme.catalogues.find((each) => each.versionId === paragraphs)!
     .content as ParagraphCatalogue;
-  const faces = (
-    (theme.content['typefaces'] as readonly { id: string }[] | undefined) ?? []
-  ).map((each) => each.id);
+  const faces = ((theme.content['typefaces'] as readonly { id: string }[] | undefined) ?? []).map(
+    (each) => each.id,
+  );
   const place = (key: CharacterKey, value: string | boolean | undefined) => {
     const properties: Record<string, unknown> = { ...style.properties };
     if (value === undefined) delete properties[key];

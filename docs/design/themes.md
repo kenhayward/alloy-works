@@ -1146,6 +1146,19 @@ documents made from no template, recorded as `theme.declared` from the one befor
 `manage_definitions` at the environment; the rest are decided at the theme. A template saved with
 another theme records `theme.moved`, from and to (STY-026).
 
+**The styles offered to authors** (SY-H, STY-033): a theme's optional `allowed` names, by kind, the
+paragraph, table and image styles an author may choose; a kind absent offers every style, and a place's
+or a role's default is always allowed, since an author chooses neither. Character styles are not
+narrowed: each is a mark's, never chosen. The reader refuses a name its catalogue lacks; the editor's
+choices (`paragraphChoices`, `tableChoices`, `imageChoices`) offer only those allowed; a publish refuses
+another as `style_not_allowed`, naming the block and the style. `PUT /v1/themes/{id}/allowed` records
+it as the theme's next version; the page lists the documents using what a narrowing drops first,
+through `styleImpact` a style at a time.
+
+**The forms**: a paragraph style's and a character style's. Table and image styles change through
+`PUT /v1/themes/{id}/styles/{kind}/{style}` for now: their rules, bands and placements want a form of
+their own.
+
 **Its reach** (`styleImpact`, STY-034, STY-067): the documents set in the theme, by their template or
 the environment's default, whose components' latest versions use the style or one based on it. A
 paragraph style a place or role defaults to, and a character style, reach every document in the theme,

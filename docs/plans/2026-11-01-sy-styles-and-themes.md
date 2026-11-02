@@ -46,5 +46,7 @@ choose, and moves a catalogue between environments, all without a release.
   built there, for the cross-tenant harness to address a theme of the other environment's own.
 - **SYb**: paragraph styles' forms; character, table and image styles' forms move to SYc.
 - **SYc**: themes duplicated, renamed and declared, and a template's move audited (SY-G); a template's
-  documents are not yet listed before its move. The other kinds' forms and allowed styles (SY-H) move
-  to SYd; export and import, the walks, the review and the close to SYe.
+  documents are not yet listed before its move. Shipped in one PR with SYd.
+- **SYd**: the character style's form and the styles offered to authors (SY-H) for paragraph, table and
+  image styles; character styles are a mark's, never chosen, so not narrowed. Table and image styles'
+  forms are a gap: they change through the API.

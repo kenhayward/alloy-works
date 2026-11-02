@@ -811,7 +811,7 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
     });
   });
 
-  it('passes axe on the document themes, a paragraph style being edited, the reach of a change and a theme duplicated (the SY plan, SYb, SYc)', async ({
+  it('passes axe on the document themes, a paragraph and a character style being edited, the reach of a change, a theme duplicated and the styles offered (the SY plan, SYb to SYd)', async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -843,6 +843,21 @@ describe('accessibility in a browser, against WCAG 2.2 AA', () => {
       const naming = page.getByRole('dialog', { name: /^Duplicate / });
       await check('a theme duplicated, its name asked', { shows: naming });
       await naming.getByRole('button', { name: 'Cancel' }).click();
+      // SYd: a character style's form, and the styles offered to authors narrowed, neither saved.
+      await page
+        .getByRole('table', { name: 'Character styles' })
+        .getByRole('button', { name: 'Edit Inline code' })
+        .click();
+      const character = page.getByRole('form', { name: 'Character style Inline code' });
+      await check('a character style being edited, its sample beside it', {
+        shows: [character, character.getByTestId('style-sample')],
+      });
+      await character.getByRole('button', { name: 'Cancel' }).click();
+      const offered = page.getByRole('group', { name: 'Paragraph styles offered' });
+      await offered.getByRole('radio', { name: 'Only these' }).click();
+      await check('the styles offered to authors, narrowed', {
+        shows: offered.getByRole('checkbox').first(),
+      });
     });
   });
 
