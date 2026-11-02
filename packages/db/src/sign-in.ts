@@ -176,7 +176,9 @@ export async function closeProvider(
     await revokeTokens(
       client,
       schema,
-      `p.issuer = (select issuer from ${schema}.identity_provider where id = $1)`,
+      // And its SCIM identity's, which provisions for it no more.
+      `p.issuer = (select issuer from ${schema}.identity_provider where id = $1)
+       or p.id = (select scim_identity from ${schema}.identity_provider where id = $1)`,
       [providerId],
     );
     await client.query(`delete from ${schema}.sign_in_attempt where provider_id = $1`, [

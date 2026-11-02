@@ -1701,6 +1701,54 @@ describe('routes that check a permission', () => {
     listRoles: () => ({ url: '/v1/roles?level=tenant', status: 403 }),
     listPrincipals: () => ({ url: `/v1/principals?level=space:${clinical}`, status: 404 }),
     listInvitations: () => ({ url: '/v1/invitations', status: 403 }),
+    getSignInSettings: () => ({ url: '/v1/sign-in-settings', status: 403 }),
+    addProvider: () => ({
+      url: '/v1/sign-in-settings/providers',
+      status: 403,
+      payload: {
+        name: 'Elsewhere',
+        issuer: 'https://idp.example',
+        clientId: 'alloy',
+        clientSecret: 'never-kept',
+      },
+    }),
+    changeProvider: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}`,
+      status: 403,
+      payload: { name: 'Elsewhere' },
+    }),
+    replaceProviderSecret: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}/secret`,
+      status: 403,
+      payload: { clientSecret: 'never-kept' },
+    }),
+    closeProvider: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}/closure`,
+      status: 403,
+    }),
+    setGoogleSignIn: () => ({
+      url: '/v1/sign-in-settings/google',
+      status: 403,
+      payload: { open: false, domains: [] },
+    }),
+    setSessionSettings: () => ({
+      url: '/v1/sign-in-settings/sessions',
+      status: 403,
+      payload: { idleMinutes: 60, absoluteHours: 12 },
+    }),
+    turnScimOn: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}/scim`,
+      status: 403,
+      payload: { claim: 'sub' },
+    }),
+    turnScimOff: () => ({ url: `/v1/sign-in-settings/providers/${MISSING}/scim`, status: 403 }),
+    issueScimToken: () => ({
+      url: `/v1/sign-in-settings/providers/${MISSING}/scim/token`,
+      status: 403,
+      payload: {},
+    }),
+    disablePerson: () => ({ url: `/v1/principals/${MISSING}/disablement`, status: 403 }),
+    enablePerson: () => ({ url: `/v1/principals/${MISSING}/disablement`, status: 403 }),
     invite: () => ({
       url: '/v1/invitations',
       status: 403,

@@ -171,6 +171,19 @@ export async function issueChecked(
       'IAM-034',
     );
   }
+  const holder = await trx
+    .selectFrom('principal')
+    .select('disabled_at')
+    .where('id', '=', principalId)
+    .executeTakeFirst();
+  if (holder?.disabled_at != null) {
+    throw new AppError(
+      403,
+      'principal_disabled',
+      'This account has been disabled, so it is issued no token.',
+      'IAM-008',
+    );
+  }
   return issueApiToken(trx, {
     principalId,
     name: body.name,

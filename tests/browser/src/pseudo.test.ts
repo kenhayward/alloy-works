@@ -511,6 +511,7 @@ const administration = (ada: Adas): readonly Surface[] => [
     ['Administration, its people', '#/admin/people', 'admin.people'],
     ['Administration, its groups', '#/admin/groups', 'admin.groups'],
     ['Administration, its roles', '#/admin/roles', 'admin.roles'],
+    ['Administration, how people sign in', '#/admin/sign-in', 'admin.signin-title'],
     // The policy and its history (the TE plan, TE-D).
     ['Administration, its translation policy', '#/admin/translation', 'admin.translation'],
     // Connecting CT Studio (API-074).

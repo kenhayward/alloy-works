@@ -6,6 +6,7 @@ describe("the audit log's filters", () => {
     expect(auditFilterProblem({ kind: 'space.renamed' })).toBeNull();
     expect(auditFilterProblem({ kind: 'space.' })).toBeNull();
     expect(kindsMatching('authentication.')).toEqual([
+      'authentication.reauthenticated',
       'authentication.sign_in_failed',
       'authentication.signed_in',
       'authentication.signed_out',

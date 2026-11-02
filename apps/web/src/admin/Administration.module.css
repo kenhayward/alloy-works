@@ -129,6 +129,12 @@
   outline: none;
 }
 
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
 .dialog {
   display: flex;
   flex-direction: column;
@@ -441,6 +447,18 @@
   display: flex;
   align-items: center;
   gap: var(--space-8);
+}
+
+/* An invitation's ways in, one to a line, far enough apart to be pointed at. */
+.ways {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ways label {
+  min-height: 32px;
 }
 
 /* Groups (AD6): where a group's members come from, and their faces. */

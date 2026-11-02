@@ -127,6 +127,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getAbout: read,
   startOrganisationSignIn: { none: 'attempt' },
   finishOrganisationSignIn: writes(
+    'authentication.reauthenticated',
     'authentication.signed_in',
     'authentication.sign_in_failed',
     'invitation.accepted',
@@ -141,7 +142,24 @@ const ROUTES: Readonly<Record<string, Entry>> = {
     'invitation.accepted',
     'tenant.administrator_claimed',
   ),
-  completeGoogleSignIn: writes('authentication.signed_in', 'authentication.sign_in_failed'),
+  completeGoogleSignIn: writes(
+    'authentication.signed_in',
+    'authentication.sign_in_failed',
+    'authentication.reauthenticated',
+  ),
+  startReauthentication: { none: 'attempt' },
+  getSignInSettings: read,
+  addProvider: writes('sign_in.configured'),
+  changeProvider: writes('sign_in.configured'),
+  replaceProviderSecret: writes('sign_in.configured'),
+  closeProvider: writes('sign_in.configured', 'authentication.signed_out', 'token.revoked'),
+  setGoogleSignIn: writes('sign_in.configured', 'authentication.signed_out', 'token.revoked'),
+  setSessionSettings: writes('sign_in.configured'),
+  turnScimOn: writes('sign_in.configured', 'service_identity.created'),
+  turnScimOff: writes('sign_in.configured', 'service_identity.disabled', 'token.revoked'),
+  issueScimToken: writes('token.issued', 'token.revoked'),
+  disablePerson: writes('principal.disabled', 'authentication.signed_out', 'token.revoked'),
+  enablePerson: writes('principal.enabled'),
   openStream: read,
   signOut: writes('authentication.signed_out'),
   getMe: read,
@@ -615,6 +633,18 @@ const ROUTES: Readonly<Record<string, Entry>> = {
 
 /** The writers that are not routes, by where they are found and their name. */
 const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
+  /** SCIM, served outside the contract (apps/service/src/scim.ts). */
+  scim: {
+    provision: writes(
+      'scim.provisioned',
+      'principal.disabled',
+      'principal.enabled',
+      'authentication.signed_out',
+      'token.revoked',
+      'group.member_added',
+      'group.member_removed',
+    ),
+  },
   /** The worker's jobs, by the kind each handles (apps/worker/src/main.ts). */
   jobs: {
     sample_pdf: { none: 'derived' },

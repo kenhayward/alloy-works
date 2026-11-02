@@ -37,6 +37,7 @@ describe('erasure in the contract (the ER plan, ER-C)', () => {
             kind: 'user',
             invited: false,
             erased: true,
+            disabled: false,
           },
         ],
         next: null,

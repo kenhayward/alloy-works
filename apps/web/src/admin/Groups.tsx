@@ -67,6 +67,21 @@ function NewGroup({
   const [value, setValue] = useState('');
   const [said, setSaid] = useState('');
   const [busy, setBusy] = useState(false);
+  // A value means something only at one provider (IN-I): with several open, whose is asked.
+  const [providers, setProviders] = useState<readonly { id: string; name: string }[]>([]);
+  const [provider, setProvider] = useState('');
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/tenant')
+      .then(({ data }) => {
+        if (current && data) setProviders(data.providers ?? []);
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
 
   const make = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -79,7 +94,11 @@ function NewGroup({
     try {
       const providerValue = value.trim();
       const { data, error } = await client.POST('/v1/groups', {
-        body: { name: trimmed, ...(providerValue === '' ? {} : { providerValue }) },
+        body: {
+          name: trimmed,
+          ...(providerValue === '' ? {} : { providerValue }),
+          ...(providerValue === '' || provider === '' ? {} : { provider }),
+        },
       });
       if (data) onMade(trimmed);
       else setSaid(refusal(error, words('admin.the-group-could-not-be')));
@@ -102,6 +121,19 @@ function NewGroup({
           {words('admin.value-from-the-organisation-s')}
           <input value={value} maxLength={256} onChange={(event) => setValue(event.target.value)} />
         </label>
+        {providers.length > 1 && value.trim() !== '' && (
+          <label>
+            {words('admin.group-provider')}
+            <select value={provider} onChange={(event) => setProvider(event.target.value)}>
+              <option value="">{words('admin.group-provider-choose')}</option>
+              {providers.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <p className={styles['muted']}>{words('admin.leave-the-value-empty-for')}</p>
         <p role="status">{said}</p>
         <div className={styles['actions']}>

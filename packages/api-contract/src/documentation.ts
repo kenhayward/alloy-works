@@ -227,6 +227,11 @@ export const documentationGroups = [
       { name: 'Groups', description: 'Manage group membership and provider-backed groups.' },
       { name: 'Sessions', description: 'See and end your own sessions.' },
       { name: 'Invitations', description: 'Invite people before their first sign-in.' },
+      {
+        name: 'Sign-in settings',
+        description:
+          'Identity providers, the Google route, session lifetimes and disabling a person.',
+      },
       { name: 'Roles and grants', description: 'Inspect permissions and manage grants.' },
     ],
   },
@@ -656,6 +661,21 @@ const operationTags = {
   'People and principals': ['listPeople', 'listPrincipals', 'getErasure', 'erasePrincipal'],
   Groups: ['listGroups', 'createGroup', 'deleteGroup', 'setGroupMembers'],
   Invitations: ['listInvitations', 'invite', 'withdrawInvitation'],
+  'Sign-in settings': [
+    'getSignInSettings',
+    'addProvider',
+    'changeProvider',
+    'replaceProviderSecret',
+    'closeProvider',
+    'turnScimOn',
+    'turnScimOff',
+    'issueScimToken',
+    'setGoogleSignIn',
+    'setSessionSettings',
+    'disablePerson',
+    'enablePerson',
+    'startReauthentication',
+  ],
   'Roles and grants': [
     'getAccess',
     'explainAccess',
@@ -1534,7 +1554,34 @@ const descriptions: Readonly<Record<string, string>> = {
   setGroupMembers:
     'Replaces the members of a local group with the given set. Provider-backed membership is managed at sign-in instead.',
   listInvitations: 'Lists waiting and accepted invitations in stable cursor pages.',
-  invite: 'Invites an address so access can be granted before the person first signs in.',
+  invite:
+    'Invites an address so access can be granted before the person first signs in. `through` names the ways in that may claim it; every way open now where absent.',
+  getSignInSettings:
+    'How people sign in to this environment: every identity provider, the Google route and the session lifetimes, with the redirect address to register at each provider. A client secret is never returned. Needs administer at the environment; a token may read it, but no token may change it.',
+  addProvider:
+    'Adds an OpenID Connect identity provider, offered by name on the sign-in page, or opens one of the same issuer closed before. Its secret is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, naming the provider and never its secret.',
+  changeProvider:
+    'Renames an identity provider, or changes the claim its groups come in. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+  replaceProviderSecret:
+    "Replaces an open identity provider's client secret, which is sealed as it arrives and never returned. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the secret.",
+  closeProvider:
+    "Closes an identity provider: nobody signs in through it again, and its sessions and its people's tokens end at once. Refused `last_way_in` where nobody could then sign in and configure sign-in, and `provider_own_session` for the provider of the asker's own session. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+  turnScimOn:
+    'Has an identity provider provision people and groups by SCIM 2.0, through a service identity of its own holding nothing, linked by the claim named. From then on it admits only those it pushed, and somebody already known who holds administer outright, and its memberships come from SCIM alone. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+  turnScimOff:
+    'Stops an identity provider provisioning: its service identity is disabled and its token ends. Those it pushed stay, and sign in as anybody of the provider does. Needs administer at the environment and a sign-in in the last ten minutes. Audited.',
+  issueScimToken:
+    "Makes the bearer token a provider's SCIM client presents, answered this once and ending any before it. Needs administer at the environment and a sign-in in the last ten minutes. Audited, never with the token.",
+  setGoogleSignIn:
+    "Opens or closes the Google route and sets the Workspace domains it admits. Closing ends its sessions and its people's tokens, and is refused as closing a provider is. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+  setSessionSettings:
+    "Sets the environment's idle timeout and absolute session lifetime. A shortening reaches every open session at once, the asker's own included; a lengthening reaches only new sessions. Needs administer at the environment and a sign-in in the last ten minutes. Audited.",
+  disablePerson:
+    'Disables a person: their sessions and tokens end at once, a stream of theirs within two seconds, and they are refused at sign-in until enabled. Refused `last_way_in` where nobody could then sign in and configure sign-in, and for the caller themselves. Disabling somebody disabled changes nothing. Needs administer at the environment. Audited.',
+  enablePerson:
+    'Enables a person disabled, so they may sign in again. What ended stays ended. Enabling somebody enabled changes nothing. Needs administer at the environment. Audited.',
+  startReauthentication:
+    'Asks for this session to be signed in again and answers where to send the browser: the way in it came by, with the provider told to authenticate the person afresh. It comes back through the sign-in callbacks and is accepted only for the same person, authenticated since this was asked; a route needing a recent sign-in then accepts the session. A session only, never a token.',
   withdrawInvitation:
     'Withdraws an unaccepted invitation and removes the principal and grants created for it.',
   listRoles: 'Lists roles available to grants and the permissions each role holds.',

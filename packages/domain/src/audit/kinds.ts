@@ -53,6 +53,11 @@ export const signInFailures = [
   'handoff_expired',
   'handoff_other_browser',
   'principal_erased',
+  'principal_disabled',
+  // A provider that provisions, and a subject it never pushed (IN-K).
+  'not_provisioned',
+  // A re-authentication by somebody else, or not made since it was asked for (IAM-012).
+  'reauthentication_refused',
 ] as const;
 const Permission = z.enum(permissions);
 const empty = z.strictObject({});
@@ -179,6 +184,11 @@ export const auditKindSpecs = {
     z.strictObject({ route: SignInRoute, session: Id }),
     SESSIONS,
   ),
+  'authentication.reauthenticated': kind(
+    ['IAM-012'],
+    z.strictObject({ route: SignInRoute, session: Id }),
+    SESSIONS,
+  ),
   'authentication.sign_in_failed': kind(
     ['IAM-013', 'LIF-067'],
     z.strictObject({
@@ -201,6 +211,7 @@ export const auditKindSpecs = {
         'provider_closed',
         'ended_by_holder',
         'erased',
+        'disabled',
       ]),
       session: Id,
       expiredAt: z.iso.datetime({ offset: true }).optional(),
@@ -239,6 +250,45 @@ export const auditKindSpecs = {
     ['IAM-060'],
     z.strictObject({ principal: Id }),
     'packages/db/src/invitations.ts',
+  ),
+  // A change in Administration's Sign-in, naming what changed and never a secret (identity.md).
+  'sign_in.configured': kind(
+    ['IAM-011', 'IAM-038'],
+    z.strictObject({
+      change: z.enum([
+        'provider_added',
+        'provider_renamed',
+        'provider_secret_replaced',
+        'provider_closed',
+        'google_opened',
+        'google_closed',
+        'google_domains',
+        'sessions',
+        'scim_on',
+        'scim_off',
+      ]),
+      provider: Id.optional(),
+    }),
+    'packages/db/src/sign-in-settings.ts',
+  ),
+  // What a provider's push changed, by resource: never a value or a token (the ID plan, IDc).
+  'scim.provisioned': kind(
+    ['IAM-008'],
+    z.strictObject({
+      resource: z.enum(['user', 'group']),
+      act: z.enum(['created', 'replaced', 'patched', 'deleted']),
+    }),
+    'packages/db/src/scim.ts',
+  ),
+  'principal.disabled': kind(
+    ['IAM-008'],
+    z.strictObject({ by: z.enum(['person', 'scim']) }),
+    'packages/db/src/disablement.ts',
+  ),
+  'principal.enabled': kind(
+    ['IAM-008'],
+    z.strictObject({ by: z.enum(['person', 'scim']) }),
+    'packages/db/src/disablement.ts',
   ),
   'sign_in_route.configured': kind(
     ['IAM-043'],

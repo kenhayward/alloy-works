@@ -112,6 +112,11 @@ describe('the audit kinds', () => {
       'settings.changed',
       'sign_in_route.configured',
       'sign_in_route.closed',
+      'sign_in.configured',
+      'authentication.reauthenticated',
+      'principal.disabled',
+      'principal.enabled',
+      'scim.provisioned',
       'tenant.invited',
       'relationship.made',
       'relationship.changed',
@@ -171,6 +176,11 @@ describe('the audit kinds', () => {
   it('takes the detail each kind emitted now describes', () => {
     const examples: Partial<Record<(typeof auditKinds)[number], unknown>> = {
       'authentication.signed_in': { route: 'organisation', session: ID },
+      'authentication.reauthenticated': { route: 'google', session: ID },
+      'sign_in.configured': { change: 'provider_added', provider: ID },
+      'principal.disabled': { by: 'person' },
+      'principal.enabled': { by: 'scim' },
+      'scim.provisioned': { resource: 'user', act: 'patched' },
       'import.accepted': { import: ID, components: 3 },
       'import.abandoned': { swept: true },
       'translation.declared': { version: ID, retranslate: false },

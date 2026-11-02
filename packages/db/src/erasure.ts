@@ -199,6 +199,8 @@ export async function erasePerson(
       display_name: ERASED_NAME,
       email: null,
       email_verified: false,
+      // SCIM's name for them goes with their address; their key, like their subject, stays to refuse.
+      scim_user_name: null,
       erased_at: sql<Date>`now()`,
     })
     .where('id', '=', person)
@@ -274,12 +276,15 @@ async function endAccess(trx: TenantTransaction, person: string): Promise<void> 
 export async function holdPrincipal(
   trx: TenantTransaction,
   person: string,
-): Promise<'held' | 'erased' | 'missing'> {
+): Promise<'held' | 'erased' | 'disabled' | 'missing'> {
   const row = await trx
     .selectFrom('principal')
+    .select('disabled_at')
     .select(erasedIn().as('erased'))
     .where('id', '=', person)
     .forShare()
     .executeTakeFirst();
-  return !row ? 'missing' : row.erased ? 'erased' : 'held';
+  if (!row) return 'missing';
+  if (row.erased) return 'erased';
+  return row.disabled_at === null ? 'held' : 'disabled';
 }

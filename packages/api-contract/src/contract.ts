@@ -72,6 +72,11 @@ export type RouteAccess =
        * deletion, and 404 to anyone else (the DL plan, DL-B).
        */
       readonly readsDeleted?: true;
+      /**
+       * The seconds since its person last authenticated that the session may be, or the route answers
+       * `403 reauthentication_required`, as it does any token (identity.md, "Re-authentication"; IAM-012).
+       */
+      readonly recentSignIn?: number;
     };
 
 /**

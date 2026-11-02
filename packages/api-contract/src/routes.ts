@@ -66,6 +66,7 @@ import { documentRoutes } from './documents.js';
 import { editingRoutes } from './editing.js';
 import { groupRoutes } from './groups.js';
 import { invitationRoutes } from './invitations.js';
+import { signInSettingsRoutes } from './sign-in-settings.js';
 import { managingAccessRoutes } from './managing-access.js';
 import { publishingRoutes } from './publishing.js';
 import { templateRoutes } from './templates.js';
@@ -87,6 +88,8 @@ import {
   Sample,
   SampleParams,
   SignInCallback,
+  ReauthenticationBody,
+  ReauthenticationStarted,
   SignInStartQuery,
   TenantProfile,
   About,
@@ -274,6 +277,21 @@ const ownRoutes = {
       403: tokenNotAllowed,
     },
   },
+  startReauthentication: {
+    operationId: 'startReauthentication',
+    method: 'POST',
+    path: '/v1/sessions/current/reauthentication',
+    summary: 'Ask for this session to be signed in again, and say where to send the browser',
+    tenantScoped: true,
+    access: { check: 'session', credential: 'session' },
+    body: ReauthenticationBody,
+    responses: {
+      200: { description: 'Where to send the browser', schema: ReauthenticationStarted },
+      401: unauthenticated,
+      403: tokenNotAllowed,
+      404: routeClosed,
+    },
+  },
   getMe: {
     operationId: 'getMe',
     method: 'GET',
@@ -374,6 +392,7 @@ type Routes = typeof ownRoutes &
   typeof editingRoutes &
   typeof managingAccessRoutes &
   typeof invitationRoutes &
+  typeof signInSettingsRoutes &
   typeof groupRoutes &
   typeof assetRoutes &
   typeof templateRoutes &
@@ -455,6 +474,7 @@ export const routes: Routes = {
   ...editingRoutes,
   ...managingAccessRoutes,
   ...invitationRoutes,
+  ...signInSettingsRoutes,
   ...groupRoutes,
   ...assetRoutes,
   ...templateRoutes,

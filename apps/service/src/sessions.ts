@@ -3,14 +3,13 @@ import {
   labels,
   principalLabel,
   recordEvent,
+  sessionSettings,
   type SignInRoute,
   type TenantTransaction,
 } from '@alloy-works/db';
 
-/** Twelve hours at most, an hour idle; per-tenant settings (IAM-038) are T2. */
+/** An environment sets a session's lifetimes (IAM-038; `sessionSettings`); this is the service's own. */
 export const SESSION_POLICY = {
-  absoluteMs: 12 * 60 * 60 * 1000,
-  idleMs: 60 * 60 * 1000,
   /** How long a session goes unrecorded between uses, so every request is not also a write. */
   touchAfterMs: 60 * 1000,
 } as const;
@@ -20,6 +19,8 @@ export interface SessionPrincipal {
   readonly email: string | null;
   readonly displayName: string | null;
 }
+
+const MINUTE_MS = 60 * 1000;
 
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -38,6 +39,7 @@ export async function createSession(
   providerId: string | null = null,
 ): Promise<string> {
   const token = randomBytes(32).toString('base64url');
+  const lifetimes = await sessionSettings(trx);
   const session = await trx
     .insertInto('session')
     .values({
@@ -45,9 +47,10 @@ export async function createSession(
       principal_id: principalId,
       route,
       provider_id: providerId,
+      authenticated_at: now,
       last_seen_at: now,
-      idle_expires_at: new Date(now.getTime() + SESSION_POLICY.idleMs),
-      expires_at: new Date(now.getTime() + SESSION_POLICY.absoluteMs),
+      idle_expires_at: new Date(now.getTime() + lifetimes.idleMinutes * MINUTE_MS),
+      expires_at: new Date(now.getTime() + lifetimes.absoluteHours * 60 * MINUTE_MS),
     })
     .returning('id')
     .executeTakeFirstOrThrow();
@@ -69,6 +72,10 @@ export interface HeldSession {
   /** The session's row, which a sign-out names to every replica (the D7 plan, D7-I). */
   readonly id: string;
   readonly route: SignInRoute;
+  /** The provider it came through, null for Google (IAM-011). */
+  readonly providerId: string | null;
+  /** When its person last authenticated (IAM-012). */
+  readonly authenticatedAt: Date;
 }
 
 /** The principal a token belongs to, if its session is alive; using it keeps it alive. */
@@ -92,6 +99,8 @@ export async function sessionHeld(
     .select([
       's.id',
       's.route',
+      's.provider_id',
+      's.authenticated_at',
       's.last_seen_at',
       's.expires_at',
       'p.id as principal_id',
@@ -104,8 +113,9 @@ export async function sessionHeld(
     .executeTakeFirst();
   if (!row) return undefined;
   if (now.getTime() - row.last_seen_at.getTime() > SESSION_POLICY.touchAfterMs) {
+    const { idleMinutes } = await sessionSettings(trx);
     const idle = new Date(
-      Math.min(now.getTime() + SESSION_POLICY.idleMs, row.expires_at.getTime()),
+      Math.min(now.getTime() + idleMinutes * MINUTE_MS, row.expires_at.getTime()),
     );
     await trx
       .updateTable('session')
@@ -117,7 +127,34 @@ export async function sessionHeld(
     principal: { principalId: row.principal_id, email: row.email, displayName: row.display_name },
     id: row.id,
     route: row.route as SignInRoute,
+    providerId: row.provider_id,
+    authenticatedAt: row.authenticated_at,
   };
+}
+
+/**
+ * Marks a session authenticated afresh (IAM-012), its holder having just signed in again, and records
+ * it as the transaction's context has it: the session's own holder.
+ */
+export async function markReauthenticated(
+  trx: TenantTransaction,
+  session: { readonly id: string; readonly principalId: string; readonly route: SignInRoute },
+  at: Date = new Date(),
+): Promise<void> {
+  await trx
+    .updateTable('session')
+    .set({ authenticated_at: at })
+    .where('id', '=', session.id)
+    .execute();
+  await recordEvent(
+    trx,
+    {
+      kind: 'authentication.reauthenticated',
+      subject: { kind: 'principal', id: session.principalId },
+      detail: { route: session.route, session: session.id },
+    },
+    labels(await principalLabel(trx, 'subject', session.principalId)),
+  );
 }
 
 /**

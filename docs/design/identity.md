@@ -83,9 +83,17 @@ within that minute has that token refused, since the code is already spent, and 
 forgets the provider's keys, so the next sign-in fetches them. A key that still cannot be resolved is
 refused every time. A refusal is recorded as any refused sign-in is, `provider_refused`.
 
+**Where a provider is reached** (IN-A moved an issuer from an operator to an administrator, and what it
+publishes names more addresses): every request to a provider, discovery, token and keys, goes through
+`oidc-fetch.ts`, which requires HTTPS, refuses a name with any address that is loopback, private,
+link-local or an IPv6 spelling carrying an IPv4 address, dials the one address it checked, and follows
+no redirect. `ALLOW_INSECURE_ISSUERS`, development's setting for the stand-in, turns it off. An issuer
+is not probed as it is added, since the request deciding it holds the access epoch: one that cannot be
+reached is answered as a closed way in, and logged by the fact alone.
+
 ## Administration's Sign-in
 
-One page, `configure_services` at the environment:
+One page, `configure_services` at the environment (`administer` until IDd splits it out):
 
 - **Providers**: add (name, issuer, client id, secret, groups claim, SCIM claim), rename, replace the
   secret (`rotate_secrets`, write-only, never returned), close. The redirect URI to register is shown,
@@ -105,7 +113,9 @@ An act is refused, `last_way_in`, when afterwards no enabled person could both s
 way in and hold `configure_services` at the environment (IN-B). The acts checked: closing a provider or
 the Google route, disabling a person by hand, and the grant and role changes the last-administrator
 guard already checks for `administer` ([access.md](access.md)), which now checks this as well. Closing
-the provider of the asker's own session is refused as well.
+the provider of the asker's own session is refused as well. It counts as that guard counts: a direct,
+unexpiring allow, never a group's, since a membership can go at any sign-in. An environment with no such
+way in today has none to lose, and nothing is refused for it.
 
 A SCIM deprovision is never refused, since a provider retries what it is refused: one that disables the
 last such person leaves the environment to an operator's `pnpm` command, which enables a named person.
@@ -154,7 +164,13 @@ is never the link (IN-E). **A provider that provisions admits only those it push
 no pushed principal is refused, `not_provisioned`, rather than made.
 
 **Active false or delete** disables the person (below). Delete keeps the principal, disabled, so
-authorship and the audit still name them; erasure stays ER's act (IN-G). Active true enables them.
+authorship and the audit still name them; erasure stays ER's act (IN-G). Active true enables only those
+SCIM disabled, since a provider replays what it holds and must not undo an administrator's disablement.
+Pushing somebody deleted brings them back.
+
+**So that turning SCIM on locks nobody out** before the first push, somebody already known by issuer and
+subject who holds `administer` at the environment by a direct, unexpiring grant is admitted though not
+pushed (IN-B). Their memberships still come from SCIM alone.
 
 **Groups**: a SCIM group matches its provider's group whose value equals its `externalId`, else its
 `displayName`. For a provider that provisions, memberships come from SCIM alone, applied on receipt,
@@ -170,8 +186,8 @@ does, so their stream stops within two seconds. A disabled principal is refused 
 answers every question about them as refused, naming the disablement.
 
 **The manual path**: Administration's **People** gains Disable and Enable for any user principal,
-`administer` at the environment; the administration guide documents inviting and disabling as the path
-without SCIM.
+`administer` at the environment; the [administration guide](../guides/people-and-scim.md) documents
+inviting and disabling as the path without SCIM.
 
 ## High-risk permissions
 

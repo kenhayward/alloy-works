@@ -31,6 +31,7 @@ import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
+import { SignIn } from './SignIn.js';
 import { Spaces } from './Spaces.js';
 import { Vocabularies } from './Vocabularies.js';
 import { Licences } from './Licences.js';
@@ -203,6 +204,14 @@ const SECTIONS = [
     slug: 'roles',
     get title() {
       return words('admin.roles');
+    },
+    group: 'people',
+  },
+  // How people sign in: providers, Google and session lifetimes (identity.md; the ID plan, IDb).
+  {
+    slug: 'sign-in',
+    get title() {
+      return words('admin.signin-title');
     },
     group: 'people',
   },
@@ -550,6 +559,7 @@ export function Administration({
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'sign-in' && <SignIn client={client} />}
         {shown === 'outside' && <Outside client={client} />}
         {shown === 'holds' && <Holds client={client} />}
         {shown === 'retention' && <Retention client={client} />}

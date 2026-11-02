@@ -86,6 +86,9 @@ describe('the rule behind a refusal', () => {
       // whose members are the sign-ins' (access.md, GP-C) - a design's decision, not IAM-009's.
       'group.name_taken',
       'group.value_taken',
+      // Removing the grant of the last who can sign in (identity.md, IN-B), and a way nothing may claim.
+      'grant.last_way_in',
+      'invitation.way_unknown',
       // Which provider a provider's group reads, asked for or unknown (identity.md, IN-I).
       'group.provider_required',
       'group.provider_unknown',

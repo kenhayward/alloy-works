@@ -46,4 +46,14 @@ describe("Administration's People in a browser", () => {
       await page.keyboard.press('Escape');
     });
   });
+
+  it('passes axe on Sign-in', async ({ task }) => {
+    await withPage(async (page) => {
+      await page.goto(`${SERVICE}/#/admin/sign-in`);
+      const administration = page.getByRole('region', { name: 'Administration' });
+      const providers = administration.getByRole('table', { name: 'Identity providers' });
+      await providers.getByRole('row').nth(1).waitFor();
+      await checkAxe(page, 'Administration, Sign-in', task.meta, { shows: providers });
+    });
+  });
 });

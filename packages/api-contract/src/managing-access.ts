@@ -146,6 +146,7 @@ export const PrincipalList = z.object({
         .enum(['user', 'service', 'external'])
         .describe('external: from outside the organisation, and held to the external rules'),
       invited: z.boolean().describe('Invited by address, and not yet signed in'),
+      disabled: z.boolean().describe('Disabled: they sign in no more until enabled'),
       erased: z
         .boolean()
         .describe('Erased: named "Erased person", their address gone, and never signed in again'),

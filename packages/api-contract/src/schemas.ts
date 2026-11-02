@@ -74,6 +74,21 @@ export const SignInStartQuery = z.object({
   ),
 });
 export type SignInStartQuery = z.infer<typeof SignInStartQuery>;
+
+export const ReauthenticationBody = z.strictObject({
+  to: z
+    .string()
+    .max(200)
+    .regex(SIGN_IN_RETURN)
+    .optional()
+    .describe('The page to come back to, as its address after `#/` names it'),
+});
+export type ReauthenticationBody = z.infer<typeof ReauthenticationBody>;
+
+export const ReauthenticationStarted = z.object({
+  url: z.string().describe('Where to send the browser: the way in this session came by'),
+});
+export type ReauthenticationStarted = z.infer<typeof ReauthenticationStarted>;
 export type TenantProfile = z.infer<typeof TenantProfile>;
 
 /** What the service runs on, for About, to a signed-in person only (the TE plan, TE-F; LOC-044). */

@@ -112,6 +112,15 @@ export interface PrincipalTable {
   erased_at: ColumnType<Date | null, never, Date | null>;
   /** Their interface language (0166; UI-E), null for their browser's; absent before 0166. */
   interface_language: ColumnType<string | null, never, string | null>;
+  /** When they were disabled (0188), and whether by a person or by SCIM. */
+  disabled_at: ColumnType<Date | null, never, Date | null>;
+  disabled_by: ColumnType<'person' | 'scim' | null, never, 'person' | 'scim' | null>;
+  /** Their provider and the value of its SCIM claim (0189; IN-E). */
+  provider_id: ColumnType<string | null, never, string | null>;
+  provider_key: ColumnType<string | null, never, string | null>;
+  /** SCIM's `userName`, and when a provider pushed them; null again once it deletes them (0189). */
+  scim_user_name: ColumnType<string | null, never, string | null>;
+  provisioned_at: ColumnType<Date | null, never, Date | null>;
 }
 
 export interface ProfileTable {
@@ -136,6 +145,9 @@ export interface IdentityProviderTable {
   sealed_secret: string | null;
   /** The ID token claim carrying the provider's group values (0039): `groups` unless configured. */
   groups_claim: Generated<string>;
+  /** The claim equal to SCIM's `externalId` (0189; IN-E), and its service identity where it provisions. */
+  scim_claim: Generated<'sub' | 'oid'>;
+  scim_identity: string | null;
   /** When it was closed (0187): a closed provider signs nobody in. */
   closed_at: Generated<Date | null>;
 }
@@ -152,6 +164,9 @@ export interface SignInAttemptTable {
   route: 'organisation' | 'google';
   /** The provider an organisation's sign-in went to (0187). */
   provider_id: string | null;
+  /** The session asking, where this is a re-authentication rather than a sign-in (0188). */
+  session_id: string | null;
+  created_at: Generated<Date>;
   expires_at: Date;
 }
 
@@ -163,6 +178,8 @@ export interface SessionTable {
   /** The provider an organisation's sign-in came through (0187). */
   provider_id: Generated<string | null>;
   created_at: Generated<Date>;
+  /** When its person last authenticated (0188): a route may require it to be recent (IAM-012). */
+  authenticated_at: Generated<Date>;
   last_seen_at: Generated<Date>;
   idle_expires_at: Date;
   expires_at: Date;
@@ -283,7 +300,30 @@ export interface SignInHandoffTable {
   code_hash: string;
   principal_id: string;
   attempt_hash: string;
+  /** The session a Google re-authentication marks, rather than a session to make (0188). */
+  session_id: string | null;
   expires_at: Date;
+}
+
+/** A SCIM group, held whether or not a group here stands for it (0189). */
+export interface ScimGroupTable {
+  id: Generated<string>;
+  provider_id: string;
+  display_name: string;
+  external_id: string | null;
+  created_at: Generated<Date>;
+}
+
+export interface ScimGroupMemberTable {
+  scim_group_id: string;
+  principal_id: string;
+}
+
+/** An environment's session lifetimes (0188; IAM-038): one row. */
+export interface SessionSettingsTable {
+  singleton: Generated<boolean>;
+  idle_minutes: number;
+  absolute_hours: number;
 }
 
 export interface ObjectStoreCredentialTable {
@@ -1375,6 +1415,9 @@ export interface TenantTables {
   invitation_provider: InvitationProviderTable;
   google_domain: GoogleDomainTable;
   sign_in_handoff: SignInHandoffTable;
+  session_settings: SessionSettingsTable;
+  scim_group: ScimGroupTable;
+  scim_group_member: ScimGroupMemberTable;
   object_store_credential: ObjectStoreCredentialTable;
   sample: SampleTable;
   audit_export: AuditExportTable;

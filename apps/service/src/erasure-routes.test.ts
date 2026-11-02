@@ -249,7 +249,13 @@ describe('erasure over HTTP (the ER plan, Task 1)', () => {
       id: 'req-stale',
       tenant,
       principal: { principalId: ids.grace, email: 'grace@example.com', displayName: 'Grace' },
-      credential: { kind: 'session', id: 'session-stale', route: 'organisation' },
+      credential: {
+        kind: 'session',
+        id: 'session-stale',
+        route: 'organisation',
+        providerId: null,
+        authenticatedAt: new Date(),
+      },
       log: { error: () => undefined },
     } as unknown as FastifyRequest;
     await recordRefusal(

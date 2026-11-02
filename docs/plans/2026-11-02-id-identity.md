@@ -67,6 +67,18 @@ for a fresh sign-in; and the riskiest administrative acts are granted apart from
 
 ## As built
 
+- **IDc**: as designed, with two additions the design now holds: `active: true` re-enables only those SCIM
+  disabled, and a direct `administer` holder is admitted before being pushed, so turning SCIM on cannot
+  lock an environment out. `createGroup` now `changesAccess`, since a provider's group takes what SCIM holds.
+  Neither Entra ID's validator nor Okta's has been run: they need a deployed environment (the design's risk).
+- **IDb**: as designed, with one addition from its security review: making an issuer an administrator's
+  to name gave the service a new outbound path, so `oidc-fetch.ts` guards every request to a provider
+  (identity.md, "Keys"). An issuer is not probed as it is added: the deciding transaction holds the access
+  epoch. Building the page found `#/admin/<slug>` matched no hyphen, so Citation styles and Reference
+  sources had always opened Overview (#884). **Google's `max_age=0` is not yet settled**: the code asks and
+  refuses an answer without a recent `auth_time`, which fails safe, but only Ken can sign in with a real
+  account; until then an administrator on a Google session may be unable to change Sign-in, and can use a
+  provider's session or an operator's command.
 - **IDa**: providers as rows, configured by an operator until IDb. Pre-flight's other seams, found
   building: a connection naming people by subject now refuses once a second provider is open
   (`actingOn` read the first row it found); closing a route revokes its people's tokens too. The rotation

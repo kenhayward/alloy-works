@@ -1,4 +1,5 @@
 import * as client from 'openid-client';
+import { guardedProviderFetch } from './oidc-fetch.js';
 
 /** Exactly these, and nothing sensitive (IAM-044): what keeps Google's route out of app review. */
 export const SCOPES = 'openid email profile';
@@ -12,6 +13,8 @@ export interface ProviderSettings {
    * provider's configuration names it. Absent for Google, which asserts none.
    */
   readonly groupsClaim?: string;
+  /** The ID token claim equal to SCIM's `externalId` (IN-E). Absent for Google. */
+  readonly scimClaim?: string;
 }
 
 export interface SignInStart {
@@ -35,6 +38,10 @@ export interface Identity {
    * where it is not a list; a member that is not a string is dropped (GP-B).
    */
   readonly groups: readonly string[];
+  /** The value of the provider's SCIM claim, which links them to what SCIM pushes (IN-E). */
+  readonly providerKey: string | null;
+  /** When the person authenticated at the provider, in seconds, where it says (IAM-012). */
+  readonly authTime: number | null;
 }
 
 /**
@@ -63,7 +70,11 @@ export interface OidcClient {
   start(
     provider: ProviderSettings,
     redirectUri: string,
-    options?: { readonly state?: string },
+    options?: {
+      readonly state?: string;
+      /** Asks the provider to authenticate the person again, whoever it holds signed in (IAM-012). */
+      readonly reauthenticate?: boolean;
+    },
   ): Promise<SignInStart>;
   finish(
     provider: ProviderSettings,
@@ -90,6 +101,9 @@ export interface OidcClient {
  * they do not hold.
  */
 export function createOidcClient(options: { readonly allowInsecureIssuers: boolean }): OidcClient {
+  // An issuer is an administrator's to name, so no provider's address is taken on trust; the setting
+  // that allows the stand-in over plain HTTP allows its address too (development and tests alone).
+  const guarded = options.allowInsecureIssuers ? undefined : guardedProviderFetch();
   const discovered = new Map<string, Promise<client.ServerMetadata>>();
   const keys = new Map<string, client.ExportedJWKSCache>();
 
@@ -104,6 +118,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
       found = client
         .discovery(issuer, provider.clientId, undefined, undefined, {
           execute: options.allowInsecureIssuers ? [client.allowInsecureRequests] : [],
+          ...(guarded === undefined ? {} : { [client.customFetch]: guarded }),
         })
         .then((config) => config.serverMetadata());
       found.catch(() => discovered.delete(provider.issuer));
@@ -119,6 +134,7 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
       provider.clientSecret,
     );
     if (options.allowInsecureIssuers) client.allowInsecureRequests(config);
+    if (guarded !== undefined) config[client.customFetch] = guarded;
     client.enableNonRepudiationChecks(config);
     const known = keys.get(provider.issuer);
     if (known) client.setJwksCache(config, known);
@@ -141,7 +157,9 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         redirect_uri: redirectUri,
         scope: SCOPES,
         // Without it a provider still signed in skips straight back to whoever signed out.
-        prompt: 'select_account',
+        ...(options?.reauthenticate
+          ? { prompt: 'login', max_age: '0' }
+          : { prompt: 'select_account' }),
         code_challenge: await client.calculatePKCECodeChallenge(codeVerifier),
         code_challenge_method: 'S256',
         state,
@@ -186,6 +204,11 @@ export function createOidcClient(options: { readonly allowInsecureIssuers: boole
         hostedDomain: typeof claims.hd === 'string' ? claims.hd : null,
         // From the ID token alone, under the basic scopes: no scope is ever asked for groups (IAM-044).
         groups: provider.groupsClaim === undefined ? [] : groupValues(claims[provider.groupsClaim]),
+        providerKey:
+          provider.scimClaim !== undefined && typeof claims[provider.scimClaim] === 'string'
+            ? (claims[provider.scimClaim] as string)
+            : null,
+        authTime: typeof claims.auth_time === 'number' ? claims.auth_time : null,
       };
     },
   };

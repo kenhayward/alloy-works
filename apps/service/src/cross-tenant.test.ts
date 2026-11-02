@@ -181,6 +181,45 @@ const aTemplate = () => ({
  * B. A route with parameters must have an entry here, or the harness fails - the case this table
  * exists for is the one a filter would forget (IAM-004).
  */
+/** A provider of that environment's own, which no other environment's request may reach. */
+async function providerIdIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+  return db.withTenant(tenant, async (trx) => {
+    const held = await trx.selectFrom('identity_provider').select('id').executeTakeFirst();
+    if (held) return held.id;
+    const made = await trx
+      .insertInto('identity_provider')
+      .values({
+        name: 'Theirs',
+        issuer: 'https://theirs.example',
+        client_id: 'alloy',
+        sealed_secret: 'sealed',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return made.id;
+  });
+}
+
+/** A person of that environment's own. */
+async function personIdIn(tenant: Tenant, db: TenantDatabase): Promise<string> {
+  return db.withTenant(tenant, async (trx) => {
+    const made = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://theirs.example',
+        subject: 'somebody',
+        email: null,
+        display_name: null,
+      })
+      .onConflict((conflict) =>
+        conflict.columns(['issuer', 'subject']).doUpdateSet({ email: null }),
+      )
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return made.id;
+  });
+}
+
 const OTHER_TENANT_IDS: Readonly<
   Record<string, (tenant: Tenant, db: TenantDatabase) => Promise<Record<string, string>>>
 > = {
@@ -499,6 +538,14 @@ const OTHER_TENANT_IDS: Readonly<
   }),
   discardAssetDerivatives: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   withdrawInvitation: async (tenant, db) => ({ id: await invitationIdIn(tenant, db) }),
+  changeProvider: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
+  replaceProviderSecret: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
+  closeProvider: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
+  turnScimOn: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
+  turnScimOff: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
+  issueScimToken: async (tenant, db) => ({ id: await providerIdIn(tenant, db) }),
+  disablePerson: async (tenant, db) => ({ id: await personIdIn(tenant, db) }),
+  enablePerson: async (tenant, db) => ({ id: await personIdIn(tenant, db) }),
   setGroupMembers: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   deleteGroup: async (tenant, db) => ({ id: await groupIdIn(tenant, db) }),
   releaseHold: async (tenant, db) => ({ id: await holdIdIn(tenant, db) }),
@@ -894,6 +941,21 @@ const VALID_INPUT: Readonly<
   restoreDocumentVersion: { payload: { latest: SESSION } },
   discardUnsaved: { payload: { upTo: '2026-10-10T17:18:43.000Z' } },
   invite: { payload: { email: 'ivy@example.com' } },
+  addProvider: {
+    payload: {
+      name: 'Elsewhere',
+      issuer: 'https://elsewhere.example',
+      clientId: 'alloy',
+      clientSecret: 'never-kept',
+    },
+  },
+  changeProvider: { payload: { name: 'Elsewhere' } },
+  replaceProviderSecret: { payload: { clientSecret: 'never-kept' } },
+  turnScimOn: { payload: { claim: 'sub' } },
+  issueScimToken: { payload: {} },
+  setGoogleSignIn: { payload: { open: false, domains: [] } },
+  setSessionSettings: { payload: { idleMinutes: 60, absoluteHours: 12 } },
+  startReauthentication: { payload: {} },
   createGroup: { payload: { name: 'Elsewhere' } },
   placeHold: { payload: { target: { space: SESSION }, reason: 'Elsewhere' } },
   releaseHold: { payload: { reason: 'Elsewhere' } },
