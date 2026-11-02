@@ -34,6 +34,10 @@ export const ProposalActed = z.object({
       .string()
       .optional()
       .describe('A proposal to make a component, accepted: the component made, at 0.1'),
+    version: z
+      .string()
+      .optional()
+      .describe('A proposed edit, accepted: the version of the component it made'),
   }),
 });
 export type ProposalActed = z.infer<typeof ProposalActed>;
