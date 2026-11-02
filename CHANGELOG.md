@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.224.0 - 2026-11-02 (PR #PRNUM)
+## 0.224.0 - 2026-11-02 (PR #882)
 
 T7's third slice closed (the SY plan): styles and themes changed without a release, a theme's own, the styles offered to authors and catalogues moved; with it, the work merged since 0.223.0.
 
