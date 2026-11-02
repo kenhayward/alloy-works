@@ -152,7 +152,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       documentId: document.id,
       ask: 'Summarise it.',
       requestedBy: h.ids.grace,
-      parameters: { instructions: 'conversation-2' },
+      parameters: { instructions: 'conversation-3' },
     });
     expect(framed[0]!.data).toMatchObject({ conversation: id });
     // The assistant's tools, on the document.

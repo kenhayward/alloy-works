@@ -651,7 +651,9 @@ describe("the assistant's terms", () => {
     expect(editableProblem(defined)).toBe(
       'It holds a definedTerm mark, which a proposal cannot write.',
     );
-    expect(editableProblem(table)).toBe('It is a table, which a proposal cannot write.');
+    expect(editableProblem(table)).toBe(
+      'It is a table: change it with cell, or with table and rows.',
+    );
     // A message form, named in words (the MF plan, MF-D).
     const counted = {
       type: 'paragraph',
@@ -669,6 +671,128 @@ describe("the assistant's terms", () => {
     expect(outcome).toEqual({
       ok: false,
       problem: 'Block p1 cannot be replaced. It holds a footnote, which a proposal cannot write.',
+    });
+  });
+
+  describe('a new table, and a list nested, written as Markdown', () => {
+    const cellOf = (id: string, value: string) => ({
+      content: [{ ...paragraph(id, value) }],
+      colspan: 1,
+      rowspan: 1,
+    });
+    const tableOf = (id = 'made') =>
+      ({
+        type: 'table',
+        id,
+        caption: [],
+        headerRows: 1,
+        headerColumns: 0,
+        rows: [{ cells: [cellOf('c1', 'Site')] }, { cells: [cellOf('c2', 'North')] }],
+      }) as unknown as BlockNode;
+    const itemOf = (...content: unknown[]) => ({ content });
+    const nested = (id = 'made') =>
+      ({
+        type: 'list',
+        id,
+        ordered: false,
+        items: [
+          itemOf(paragraph('i1', 'Weirs'), {
+            type: 'list',
+            id: 'l2',
+            ordered: false,
+            items: [itemOf(paragraph('i2', 'North'))],
+          }),
+        ],
+      }) as unknown as BlockNode;
+    const reading = (block: BlockNode) => () => [block];
+
+    it('inserts a new table, and replaces a paragraph with one under the same identifier', () => {
+      const original = document(paragraph('p1', 'Old.'));
+      expect(
+        applyEdits(original, [{ insertAfter: 'p1', markdown: '| Site |' }], reading(tableOf())),
+      ).toEqual({
+        ok: true,
+        content: { ...original, content: [paragraph('p1', 'Old.'), tableOf()] },
+      });
+      expect(
+        applyEdits(original, [{ replace: 'p1', markdown: '| Site |' }], reading(tableOf())),
+      ).toEqual({ ok: true, content: { ...original, content: [tableOf('p1')] } });
+    });
+
+    it('refuses a new table with a cell, caption or note of what a proposal cannot write', () => {
+      const footnote = { type: 'footnote', id: 'f1', content: [] };
+      const holding = (over: Record<string, unknown>) =>
+        ({ ...(tableOf() as object), ...over }) as BlockNode;
+      const inCell = holding({
+        rows: [{ cells: [{ content: [{ type: 'list', id: 'l1', items: [] }] }] }],
+      });
+      const original = document(paragraph('p1', 'Old.'));
+      for (const made of [
+        inCell,
+        holding({ caption: [footnote] }),
+        holding({ note: [footnote] }),
+      ]) {
+        const outcome = applyEdits(original, [{ insertAfter: null, markdown: 'x' }], reading(made));
+        expect(outcome.ok).toBe(false);
+      }
+    });
+
+    it('edits an existing table only by its cells or rows, and says so', () => {
+      const original = document(tableOf('t1'));
+      expect(applyEdits(original, [{ replace: 't1', markdown: 'New.' }], read)).toEqual({
+        ok: false,
+        problem:
+          'Block t1 cannot be replaced. It is a table: change it with cell, or with table and rows.',
+      });
+    });
+
+    it('writes a list nested, and replaces one, refusing what it holds that Markdown cannot say', () => {
+      const original = document(paragraph('p1', 'Old.'), nested('l1'));
+      expect(editableProblem(nested())).toBeUndefined();
+      const replaced = applyEdits(
+        original,
+        [{ replace: 'p1', markdown: '- a' }],
+        reading(nested()),
+      );
+      expect(replaced.ok && replaced.content.content[0]).toEqual(nested('p1'));
+      const again = applyEdits(original, [{ replace: 'l1', markdown: '- a' }], reading(nested()));
+      expect(again.ok && again.content.content[1]).toEqual(nested('l1'));
+      const quoted = {
+        ...(nested() as object),
+        items: [itemOf({ type: 'blockquote', id: 'q1', content: [] })],
+      } as BlockNode;
+      expect(editableProblem(quoted)).toBe(
+        'It holds a blockquote inside a list, which a proposal cannot write.',
+      );
+    });
+
+    it("keeps a replaced block's index markers, from deep in a list and into a table's first cell", () => {
+      const marker = { type: 'indexMarker', id: 'x1', entry: 'weirs' };
+      const marked = (id: string) =>
+        ({
+          type: 'list',
+          id,
+          ordered: false,
+          items: [
+            itemOf(paragraph('i1', 'Weirs'), {
+              type: 'list',
+              id: 'l2',
+              ordered: false,
+              items: [itemOf({ ...paragraph('i2', 'North'), content: [marker] })],
+            }),
+          ],
+        }) as unknown as BlockNode;
+      const outcome = applyEdits(
+        document(marked('l1')),
+        [{ replace: 'l1', markdown: '| Site |' }],
+        reading(tableOf()),
+      );
+      expect(JSON.stringify(outcome.ok && outcome.content)).toContain('"indexMarker"');
+      expect(
+        outcome.ok &&
+          (outcome.content.content[0] as Extract<BlockNode, { type: 'table' }>).rows[0]!.cells[0]!
+            .content[0],
+      ).toMatchObject({ content: [{ value: 'Site' }, marker] });
     });
   });
 

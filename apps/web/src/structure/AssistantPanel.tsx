@@ -105,6 +105,13 @@ function stepLine(step: Step) {
   return said === undefined ? tool : wordsWith('assistant.step-said', { said }, { tool });
 }
 
+/** A block of a proposal, as far as its text is read. */
+interface ListLike {
+  readonly type?: string;
+  readonly content?: unknown;
+  readonly items?: readonly { readonly content?: readonly ListLike[] }[];
+}
+
 /**
  * A proposal's text, a block a line, as it would read: paragraphs and list items, a proposed
  * citation by its source's title.
@@ -124,19 +131,20 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
           })
           .join('')
       : '';
+  // A list's items a line each, a list within one indented under it.
+  const listLines = (list: ListLike, indent: string): string[] =>
+    (list.items ?? []).flatMap((item) =>
+      (item.content ?? []).flatMap((child) =>
+        child.type === 'list'
+          ? listLines(child, `${indent}  `)
+          : [`${indent}- ${inline(child.content)}`],
+      ),
+    );
   return (proposed.content ?? [])
     .map((block) => {
-      const each = block as { type?: string; content?: unknown; items?: { content?: unknown[] }[] };
+      const each = block as ListLike;
       if (each.type === 'paragraph') return inline(each.content);
-      if (each.type === 'list') {
-        return (each.items ?? [])
-          .map((item) =>
-            (item.content ?? [])
-              .map((child) => `- ${inline((child as { content?: unknown }).content)}`)
-              .join('\n'),
-          )
-          .join('\n');
-      }
+      if (each.type === 'list') return listLines(each, '').join('\n');
       // A table by its caption and rows, a cell's paragraphs run together (the TE change).
       if (each.type === 'table') {
         const table = block as {
