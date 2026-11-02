@@ -270,7 +270,7 @@
 
 .preview {
   position: sticky;
-  top: var(--space-12);
+  top: calc(var(--header-height) + var(--space-12));
   grid-column: 4;
   grid-row: 1 / span 4;
 }
@@ -323,7 +323,9 @@
   background: var(--desk);
 }
 
-.page[data-desk-page] > :not(.layout, :has(> [aria-modal='true'])) {
+/* Empty, a live region waiting to speak holds no place: its margin alone would stand the panes lower
+   than where they stick, and they would shift as the page began to scroll. */
+.page[data-desk-page] > :not(.layout, :empty, :has(> [aria-modal='true'])) {
   margin: var(--space-12) var(--space-24) 0;
 }
 
@@ -332,8 +334,10 @@
   padding-top: 0;
 }
 
+/* As far below the panes as above them, the gap they keep from the status bar: any more, and the
+   document's end would push them up under the header as it came into view. */
 .page[data-desk-page] > .layout {
-  padding: var(--space-12) var(--space-16) var(--space-24);
+  padding: var(--space-12) var(--space-16);
 }
 
 /* The document bar: one line under the header, on the chrome. */
