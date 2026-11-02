@@ -595,6 +595,14 @@ const administration = (ada: Adas): readonly Surface[] => [
     (language) => say(language, 'admin.new-group'),
   ),
   byButton(
+    'The New role dialog',
+    'admin/Roles.tsx',
+    '#/admin/roles',
+    heading('admin.roles'),
+    'admin.new-role',
+    (language) => say(language, 'admin.new-role'),
+  ),
+  byButton(
     'The New secret dialog',
     'admin/Webhooks.tsx',
     '#/admin/webhooks',
