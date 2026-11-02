@@ -29,6 +29,7 @@ import { Retention } from './Retention.js';
 import { useListing } from './listing.js';
 import type { SpaceRow } from './SpaceDialogs.js';
 import { Roles, type RoleRow } from './Roles.js';
+import { SignIn } from './SignIn.js';
 import { Spaces } from './Spaces.js';
 import { Vocabularies } from './Vocabularies.js';
 import { Licences } from './Licences.js';
@@ -204,6 +205,14 @@ const SECTIONS = [
     },
     group: 'people',
   },
+  // How people sign in: providers, Google and session lifetimes (identity.md; the ID plan, IDb).
+  {
+    slug: 'sign-in',
+    get title() {
+      return words('admin.signin-title');
+    },
+    group: 'people',
+  },
   // Everybody from outside and what each can reach (IAM-051; the R13 plan, R13-F).
   {
     slug: 'outside',
@@ -270,7 +279,7 @@ const groupName = (group: (typeof GROUPS)[number]): string =>
 
 /** The section an address names: Overview for `#/admin` and for anything it does not know. */
 export function sectionOf(hash: string): Section {
-  const slug = /^#\/admin\/([a-z]+)$/.exec(hash)?.[1];
+  const slug = /^#\/admin\/([a-z-]+)$/.exec(hash)?.[1];
   return SECTIONS.find((each) => each.slug === slug)?.slug ?? 'overview';
 }
 
@@ -522,6 +531,7 @@ export function Administration({
         {shown === 'people' && <People client={client} />}
         {shown === 'groups' && <Groups client={client} />}
         {shown === 'roles' && <Roles read={roles} />}
+        {shown === 'sign-in' && <SignIn client={client} />}
         {shown === 'outside' && <Outside client={client} />}
         {shown === 'holds' && <Holds client={client} />}
         {shown === 'retention' && <Retention client={client} />}

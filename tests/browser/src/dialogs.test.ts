@@ -14,6 +14,7 @@ const renderer = join(here, '../../../apps/web/src');
 
 /** The dialogs the walk cannot open, each with its reason. Kept few: walk what can be made. */
 const EXEMPT: Readonly<Record<string, string>> = {
+  'admin/SignIn.tsx': 'needs a sign-in in the last ten minutes, which the walk outlasts',
   'admin/Extensions.tsx': 'needs an extension installed from a source',
   'data/ProvenancePanel.tsx': 'needs a value resolved from a data source',
   'editor/ComponentEditor.tsx':

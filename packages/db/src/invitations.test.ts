@@ -179,6 +179,7 @@ describe('inviting somebody by address, before they sign in', () => {
       kind: 'user',
       invited: true,
       erased: false,
+      disabled: false,
     });
 
     expect(await granting(production, 'Author', invited.principalId, ada)).toHaveProperty(

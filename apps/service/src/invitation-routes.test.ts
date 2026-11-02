@@ -173,6 +173,7 @@ describe('inviting people through the service', () => {
       kind: 'user',
       invited: true,
       erased: false,
+      disabled: false,
     });
     const given = await call('ada', 'POST', '/v1/grants', {
       role: author,

@@ -87,6 +87,7 @@ const longDay = (iso: string) =>
  */
 function status(person: ShownPerson, service?: ShownService) {
   if (person.erased === true) return <Chip>{say('admin.erased')}</Chip>;
+  if (person.disabled === true) return <Chip>{say('admin.disabled')}</Chip>;
   if (person.invited) return <Chip tone="warn">{say('admin.invited')}</Chip>;
   if (service?.disabledAt) return <Chip>{say('admin.disabled')}</Chip>;
   return (
@@ -528,6 +529,9 @@ function NewService({
   );
 }
 
+/** Google among an invitation's ways in, which has no provider's id. */
+const GOOGLE_WAY = 'google';
+
 /** Invite somebody by address, as Access does, from People's own page action. */
 function InvitePeople({
   client,
@@ -543,6 +547,33 @@ function InvitePeople({
   const [outside, setOutside] = useState(false);
   const [said, setSaid] = useState('');
   const [sending, setSending] = useState(false);
+  // The ways in that may claim it (IN-J), offered where there is more than one: every one unless changed.
+  const [ways, setWays] = useState<{
+    readonly google: boolean;
+    readonly providers: readonly { readonly id: string; readonly name: string }[];
+  }>({ google: false, providers: [] });
+  const [left, setLeft] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    let current = true;
+    client
+      .GET('/v1/tenant')
+      .then(({ data }) => {
+        if (current && data) {
+          setWays({
+            google: data.signIn?.includes('google') ?? false,
+            providers: data.providers ?? [],
+          });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [client]);
+  const offered = [
+    ...ways.providers,
+    ...(ways.google ? [{ id: GOOGLE_WAY, name: say('admin.invite-ways-google') }] : []),
+  ];
   const invite = async () => {
     if (address.trim() === '') {
       setSaid(say('admin.give-the-address-to-invite'));
@@ -551,7 +582,20 @@ function InvitePeople({
     setSending(true);
     try {
       const { data, error, response } = await client.POST('/v1/invitations', {
-        body: { email: address.trim(), ...(outside ? { external: true } : {}) },
+        body: {
+          email: address.trim(),
+          ...(outside ? { external: true } : {}),
+          ...(left.size === 0
+            ? {}
+            : {
+                through: {
+                  google: ways.google && !left.has(GOOGLE_WAY),
+                  providers: ways.providers
+                    .map((each) => each.id)
+                    .filter((each) => !left.has(each)),
+                },
+              }),
+        },
       });
       if (data) {
         onDone(
@@ -595,6 +639,28 @@ function InvitePeople({
             {say('admin.from-outside-the-organisation')}
           </label>
         </div>
+        {offered.length > 1 && (
+          <fieldset className={styles['ways']}>
+            <legend>{say('admin.invite-ways')}</legend>
+            {offered.map((way) => (
+              <div key={way.id} className={styles['check']}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!left.has(way.id)}
+                    onChange={(event) => {
+                      const next = new Set(left);
+                      if (event.target.checked) next.delete(way.id);
+                      else next.add(way.id);
+                      setLeft(next);
+                    }}
+                  />
+                  <span data-content>{way.name}</span>
+                </label>
+              </div>
+            ))}
+          </fieldset>
+        )}
         <p role="status">{said}</p>
         <button type="button" onClick={onClose}>
           {say('admin.cancel')}
@@ -621,6 +687,7 @@ export function People({ client }: { client: Client }) {
   const services = useServices(client, generation);
   const [making, setMaking] = useState(false);
   const [disabling, setDisabling] = useState<ShownPerson | null>(null);
+  const [disablingPerson, setDisablingPerson] = useState<ShownPerson | null>(null);
   const [loadInvitations] = useState(
     () => () =>
       everyPage<InvitationRow>((cursor) =>
@@ -693,6 +760,39 @@ export function People({ client }: { client: Client }) {
       setSaid(say('admin.the-service-identity-could-not-2'));
     }
     setDisabling(null);
+    setGeneration((count) => count + 1);
+  };
+
+  const disablePerson = async (person: ShownPerson) => {
+    try {
+      const { data, error } = await client.POST('/v1/principals/{id}/disablement', {
+        params: { path: { id: person.id } },
+      });
+      setSaid(
+        data
+          ? say('admin.person-disabled', { name: nameOf(person) })
+          : refusal(error, say('admin.person-could-not-disable')),
+      );
+    } catch {
+      setSaid(say('admin.person-could-not-disable'));
+    }
+    setDisablingPerson(null);
+    setGeneration((count) => count + 1);
+  };
+
+  const enablePerson = async (person: ShownPerson) => {
+    try {
+      const { data, error } = await client.DELETE('/v1/principals/{id}/disablement', {
+        params: { path: { id: person.id } },
+      });
+      setSaid(
+        data
+          ? say('admin.person-enabled', { name: nameOf(person) })
+          : refusal(error, say('admin.person-could-not-enable')),
+      );
+    } catch {
+      setSaid(say('admin.person-could-not-enable'));
+    }
     setGeneration((count) => count + 1);
   };
 
@@ -861,6 +961,24 @@ export function People({ client }: { client: Client }) {
                                         danger: true,
                                         onSelect: () => setDisabling(person),
                                       },
+                                    ]
+                                  : []),
+                                // A person's own disablement, beside a service's above; never oneself.
+                                ...(person.kind !== 'service' &&
+                                person.erased !== true &&
+                                person.id !== me &&
+                                me !== null
+                                  ? [
+                                      person.disabled === true
+                                        ? {
+                                            label: say('admin.enable'),
+                                            onSelect: () => void enablePerson(person),
+                                          }
+                                        : {
+                                            label: say('admin.disable'),
+                                            danger: true,
+                                            onSelect: () => setDisablingPerson(person),
+                                          },
                                     ]
                                   : []),
                                 ...(erasable(person)
@@ -1068,6 +1186,16 @@ export function People({ client }: { client: Client }) {
           act={say('admin.disable')}
           onKeep={() => setDisabling(null)}
           onAct={() => disable(disabling)}
+        />
+      )}
+      {disablingPerson !== null && (
+        <ConfirmDialog
+          question={say('admin.person-disable-question', { name: nameOf(disablingPerson) })}
+          sentence={say('admin.person-disable-sentence')}
+          keep={say('admin.keep-it')}
+          act={say('admin.disable')}
+          onKeep={() => setDisablingPerson(null)}
+          onAct={() => disablePerson(disablingPerson)}
         />
       )}
       {withdrawing !== null && (

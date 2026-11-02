@@ -377,6 +377,7 @@ describe('making, listing and removing grants through the service', () => {
           kind: 'user',
           invited: false,
           erased: false,
+          disabled: false,
         },
         {
           id: ids.alice,
@@ -385,6 +386,7 @@ describe('making, listing and removing grants through the service', () => {
           kind: 'user',
           invited: false,
           erased: false,
+          disabled: false,
         },
       ]),
     );

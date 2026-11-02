@@ -105,6 +105,19 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   another format or publishes it yet: the editor writes paragraphs of formatted text and lists of
   them, and publishing takes those and refuses the rest.
 
+- **Sign-in.** Administration's **Sign-in** holds how people get in: any number of identity providers,
+  each offered by name on the sign-in page with its own secret and groups, added, renamed and closed
+  there, with the redirect address to register shown; the Google route and the Workspace domains it
+  admits; and how long a session lasts unused and at most. Changing any of it needs a sign-in in the
+  last ten minutes, asked for as the page opens, and is audited, never with a secret. A shorter lifetime
+  reaches every open session at once. Closing a way in ends its sessions and its people's API tokens,
+  and is refused for the way in of the asker's own session, or where nobody who can sign in could then
+  configure sign-in. Administration's **People** disables and enables a person: they are signed out and
+  lose their tokens at once, a stream of theirs within two seconds, and cannot sign in until enabled. A
+  provider is reached only over HTTPS at a public address, outside development. Whether Google honours
+  signing in again has not been confirmed with a real account (IDb's plan names it); SCIM, and the
+  high-risk permissions apart from administer, are not built yet.
+
 - **Access.** Who may do what is decided through roles, granted to a person or a group as an allow or a
   denial, on the whole environment, one space, or one item. Every environment starts with eleven roles -
   among them Publisher, the only one that may publish, and Query builder and Query writer, the only
@@ -119,10 +132,12 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   denial, or a group where the administrator administers the whole environment, removes a grant, and
   shows what a chosen person may do there and why: every permission with its answer, the level that
   decided it and the grants that did, a group by its name. Removing the last grant that lets anyone
-  administer the whole environment is refused. An
+  administer the whole environment is refused, as is removing the last grant held by anybody who can
+  still sign in. An
   administrator of the whole environment also invites an address there: the person is offered to give
   access to straight away, and has what they were given from the first time they sign in with that
-  address, through either sign-in route, as long as their provider has verified it. An invitation
+  address, through the ways in the invitation names - every way open as it is made, unless the
+  administrator chooses fewer - as long as their provider has verified it. An invitation
   waits fourteen days, is renewed by inviting the address again, and can be withdrawn, with everything
   given to it, until it is accepted. Whether the person is from outside the organisation is chosen when
   inviting them, and cannot be changed afterwards yet. Somebody who has already signed in is given access directly, and

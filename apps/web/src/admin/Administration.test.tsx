@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Administration } from './Administration.js';
+import { Administration, sectionOf } from './Administration.js';
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -224,7 +224,7 @@ const administering =
 /** The service as People meets it: people a page at a time, invitations, tokens, and why. */
 const NOW = '2026-10-21T09:00:00.000Z';
 
-function peopleService() {
+function peopleService(tenant: Record<string, unknown> = { name: 'Development' }) {
   const people: {
     id: string;
     name: string | null;
@@ -232,6 +232,7 @@ function peopleService() {
     kind: string;
     invited: boolean;
     erased?: boolean;
+    disabled?: boolean;
   }[] = [
     { id: 'p1', name: 'Ada', email: 'ada@example.test', kind: 'user', invited: false },
     { id: 'p2', name: 'Marta', email: 'marta@partner.test', kind: 'external', invited: false },
@@ -287,7 +288,15 @@ function peopleService() {
     const body = text === '' ? undefined : JSON.parse(text);
     if (request.method !== 'GET') sent.push({ method: request.method, path: url.pathname, body });
     const route = `${request.method} ${url.pathname}`;
-    if (route === 'GET /v1/tenant') return json(200, { name: 'Development' });
+    if (route === 'GET /v1/tenant') return json(200, tenant);
+    if (route === 'POST /v1/principals/p2/disablement') {
+      people[1] = { ...people[1]!, disabled: true };
+      return json(200, { id: 'p2', disabled: true });
+    }
+    if (route === 'DELETE /v1/principals/p2/disablement') {
+      people[1] = { ...people[1]!, disabled: false };
+      return json(200, { id: 'p2', disabled: false });
+    }
     if (route === 'GET /v1/principals') {
       const limit = Number(url.searchParams.get('limit') ?? '100');
       const from = Number(url.searchParams.get('cursor') ?? '0');
@@ -637,6 +646,60 @@ describe('People in Administration', () => {
     expect(screen.queryByRole('menuitem', { name: 'Erase' })).toBeNull();
   });
 
+  it('disables a person only after asking, shows them Disabled, and enables them again', async () => {
+    const { client, sent } = peopleService();
+    const { table, page } = await openPeople(client);
+    const more = (who: RegExp, name: string) =>
+      userEvent.click(
+        within(row(table, who)).getByRole('button', { name: `More actions for ${name}` }),
+      );
+    // Never oneself; a service has its own, which is a service's.
+    await more(/^Ada /, 'Ada');
+    expect(screen.queryByRole('menuitem', { name: 'Disable' })).toBeNull();
+    await userEvent.keyboard('{Escape}');
+
+    await more(/Marta/, 'Marta');
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Disable' }));
+    const asking = await screen.findByRole('dialog', { name: 'Disable Marta?' });
+    expect(asking).toHaveTextContent('cannot sign in until they are enabled');
+    await userEvent.click(within(asking).getByRole('button', { name: 'Disable' }));
+    expect(await within(page).findByText(/^Disabled Marta/)).toBeInTheDocument();
+    expect(sent).toEqual([
+      { method: 'POST', path: '/v1/principals/p2/disablement', body: undefined },
+    ]);
+    const disabled = await within(table).findByRole('row', { name: /Marta.*Disabled/ });
+    await userEvent.click(within(disabled).getByRole('button', { name: 'More actions for Marta' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Enable' }));
+    expect(await within(page).findByText(/^Enabled Marta/)).toBeInTheDocument();
+    expect(sent.at(-1)).toEqual({
+      method: 'DELETE',
+      path: '/v1/principals/p2/disablement',
+      body: undefined,
+    });
+  });
+
+  it('asks who may claim an invitation only where there is more than one way in, and names those left', async () => {
+    const { client, sent } = peopleService({
+      name: 'Development',
+      signIn: ['organisation', 'google'],
+      providers: [
+        { id: 'a1111111-1111-4111-8111-111111111111', name: 'Staff' },
+        { id: 'b1111111-1111-4111-8111-111111111111', name: 'Contractors' },
+      ],
+    });
+    await openPeople(client);
+    await userEvent.click(screen.getByRole('button', { name: 'Invite people' }));
+    const asking = await screen.findByRole('dialog', { name: 'Invite people' });
+    await userEvent.type(within(asking).getByLabelText('Address'), 'ivy@example.test');
+    await userEvent.click(await within(asking).findByRole('checkbox', { name: 'Contractors' }));
+    await userEvent.click(within(asking).getByRole('button', { name: 'Invite' }));
+    await screen.findByText(/ivy@example\.test/);
+    expect(sent.at(-1)!.body).toEqual({
+      email: 'ivy@example.test',
+      through: { google: true, providers: ['a1111111-1111-4111-8111-111111111111'] },
+    });
+  });
+
   it('says a grant must go before a person is erased, and offers nothing to erase', async () => {
     const { client, sent, erasure } = peopleService();
     erasure.granted = 2;
@@ -908,6 +971,20 @@ describe("Administration's Overview, Roles and About", () => {
   });
 });
 
+describe('the section an address names', () => {
+  it('opens a section whose name has a hyphen in it', () => {
+    expect(sectionOf('#/admin/citation-styles')).toBe('citation-styles');
+    expect(sectionOf('#/admin/reference-sources')).toBe('reference-sources');
+    expect(sectionOf('#/admin/sign-in')).toBe('sign-in');
+  });
+
+  it('opens Overview for an address it does not know', () => {
+    expect(sectionOf('#/admin')).toBe('overview');
+    expect(sectionOf('#/admin/nothing-here')).toBe('overview');
+    expect(sectionOf('#/admin/people/more')).toBe('overview');
+  });
+});
+
 describe("Administration's menu", () => {
   it('counts each section from its listing, and leaves a count out where the reader may not see it', async () => {
     const { client } = service({
@@ -925,7 +1002,13 @@ describe("Administration's menu", () => {
       within(screen.getByRole('list', { name: 'People and access' }))
         .getAllByRole('link')
         .map((link) => link.getAttribute('href')),
-    ).toEqual(['#/admin/people', '#/admin/groups', '#/admin/roles', '#/admin/outside']);
+    ).toEqual([
+      '#/admin/people',
+      '#/admin/groups',
+      '#/admin/roles',
+      '#/admin/sign-in',
+      '#/admin/outside',
+    ]);
     expect(
       within(screen.getByRole('list', { name: 'System' }))
         .getAllByRole('link')

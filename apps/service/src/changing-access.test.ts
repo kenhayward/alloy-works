@@ -174,14 +174,16 @@ const answers = (responses: LightMyRequestResponse[]) =>
 describe('a route that changes access', () => {
   const env = freshEnvironment();
 
-  it("is declared by exactly the routes that make and remove grants, withdraw an invitation, set a group's members or delete it, and erase a person, each checking administer, and those sharing a publication, checking publish", () => {
+  it("is declared by exactly the routes that make and remove grants, withdraw an invitation, set a group's members or delete it, erase or disable a person and close a way in, each checking administer, and those sharing a publication, checking publish", () => {
     const declaring = allRoutes.filter(
       (route) => route.access.check === 'permission' && route.access.changesAccess === true,
     );
     // Connecting CT Studio and issuing its token grant its identity Author (API-074).
     expect(declaring.map((route) => route.operationId).sort()).toEqual([
+      'closeProvider',
       'connectCtStudio',
       'deleteGroup',
+      'disablePerson',
       'disconnectCtStudio',
       'erasePrincipal',
       'extendGrant',
@@ -189,6 +191,7 @@ describe('a route that changes access', () => {
       'makeGrant',
       'removeGrant',
       'revokePublicationShare',
+      'setGoogleSignIn',
       'setGroupMembers',
       'sharePublication',
       'withdrawInvitation',

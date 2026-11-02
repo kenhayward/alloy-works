@@ -275,6 +275,7 @@ describe('listing grants, roles and people, for managing access', () => {
           kind: 'user',
           invited: false,
           erased: false,
+          disabled: false,
         },
         {
           id: grace,
@@ -283,6 +284,7 @@ describe('listing grants, roles and people, for managing access', () => {
           kind: 'user',
           invited: false,
           erased: false,
+          disabled: false,
         },
       ].sort((a, b) => a.id.localeCompare(b.id)),
     );

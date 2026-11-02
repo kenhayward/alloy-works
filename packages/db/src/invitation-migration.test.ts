@@ -19,9 +19,11 @@ describe('migration 0014, over invitations made before it', () => {
     before = await mkdtemp(join(tmpdir(), 'aw-before-0014-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
-      // And not 0187, which names an invitation by the id 0014 gives it.
+      // And not 0187 or 0188, which rely on the invitation 0014 makes.
       filter: (source) =>
-        !source.endsWith('0014_invitations.sql') && !source.endsWith('0187_identity_providers.sql'),
+        !source.endsWith('0014_invitations.sql') &&
+        !source.endsWith('0187_identity_providers.sql') &&
+        !source.endsWith('0188_sign_in_settings.sql'),
     });
   });
 
@@ -54,6 +56,7 @@ describe('migration 0014, over invitations made before it', () => {
     expect((await migrate(db.migratorUrl)).tenants[id]).toEqual([
       '0014_invitations',
       '0187_identity_providers',
+      '0188_sign_in_settings',
     ]);
 
     const { rows } = await queryAs(

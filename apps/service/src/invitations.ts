@@ -14,6 +14,7 @@ import {
   withdrawInvitation,
   type InvitationRefusal,
   type StoredInvitation,
+  narrowInvitation,
 } from '@alloy-works/db';
 import type { FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
@@ -37,7 +38,14 @@ export function invitationView(stored: StoredInvitation, now: Date): InvitationV
   };
 }
 
-const REFUSALS = new Map<InvitationRefusal | 'invitation.accepted', string>([
+const REFUSALS = new Map<
+  InvitationRefusal | 'invitation.accepted' | 'invitation.way_unknown',
+  string
+>([
+  [
+    'invitation.way_unknown',
+    'A way in that may claim it must be named, and each one named must be open.',
+  ],
   [
     'invitation.signed_in',
     'Somebody with that address has already signed in. Choose them and give them access directly.',
@@ -52,7 +60,9 @@ const REFUSALS = new Map<InvitationRefusal | 'invitation.accepted', string>([
   ],
 ]);
 
-function refuse(refusal: InvitationRefusal | 'invitation.accepted'): AppError {
+function refuse(
+  refusal: InvitationRefusal | 'invitation.accepted' | 'invitation.way_unknown',
+): AppError {
   return refused(409, refusal, REFUSALS.get(refusal)!);
 }
 
@@ -95,6 +105,14 @@ export function invitationHandlers() {
         invitedBy: principalId,
       });
       if ('refused' in answer) throw refuse(answer.refused);
+      if (body.through !== undefined) {
+        const ways = body.through;
+        const narrowed =
+          ways.google || ways.providers.length > 0
+            ? await narrowInvitation(trx, answer.invited.id, ways)
+            : 'invitation.way_unknown';
+        if (narrowed !== 'narrowed') throw refuse(narrowed);
+      }
       return {
         invitation: invitationView(answer.invited, await transactionNow(trx)),
         renewed: answer.renewed,

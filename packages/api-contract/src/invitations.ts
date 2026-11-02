@@ -47,6 +47,16 @@ export const InvitationBody = z.strictObject({
     .describe(
       'true: from outside the organisation, and held to the external rules. false if absent',
     ),
+  through: z
+    .strictObject({
+      google: z.boolean().describe('Whether Google may claim it'),
+      providers: z
+        .array(LowercaseUuid)
+        .max(100)
+        .describe('The identity providers that may claim it, each open'),
+    })
+    .optional()
+    .describe('The ways in that may claim it, at least one. Every way open now if absent'),
 });
 export type InvitationBody = z.infer<typeof InvitationBody>;
 
@@ -111,7 +121,10 @@ export const invitationRoutes = {
       200: { description: 'Invited, or the waiting invitation renewed', schema: InvitationMade },
       401: unauthenticated,
       403: forbidden,
-      409: { description: 'invitation_signed_in or invitation_kind_differs', schema: ErrorBody },
+      409: {
+        description: 'invitation_signed_in, invitation_kind_differs or invitation_way_unknown',
+        schema: ErrorBody,
+      },
     },
   },
   withdrawInvitation: {
