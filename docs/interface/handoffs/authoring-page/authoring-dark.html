@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en"><head><style>
+    .sc-placeholder{background:color-mix(in srgb,currentColor 8%,transparent);
+      border:1px solid color-mix(in srgb,currentColor 50%,transparent);
+      border-radius:2px;box-sizing:border-box;overflow:hidden}
+    @keyframes sc-shine{0%{background-position:100% 50%}100%{background-position:0% 50%}}
+    html.sc-dc-streaming .sc-placeholder,
+    html.sc-dc-streaming .sc-interp.sc-missing{position:relative;
+      background:color-mix(in srgb,currentColor 5%,transparent);
+      border-color:transparent}
+    html.sc-dc-streaming .sc-placeholder::before,
+    html.sc-dc-streaming .sc-interp.sc-missing::before{content:'';
+      position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(90deg,rgba(217,119,87,0) 25%,rgba(247,225,211,.95) 37%,rgba(217,119,87,0) 63%);
+      background-size:400% 100%;animation:sc-shine 1.4s ease infinite}
+    html.sc-dc-streaming .sc-placeholder:nth-child(n+9 of .sc-placeholder)::before,
+    html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n+9 of .sc-interp.sc-missing)::before{animation:none;
+      background:color-mix(in srgb,currentColor 8%,transparent)}
+    .sc-placeholder-error{padding:4px 8px;font:11px/1.4 ui-monospace,monospace;
+      color:color-mix(in srgb,currentColor 70%,transparent);word-break:break-word}
+    .sc-interp.sc-missing{display:inline-block;width:2em;height:1em;overflow:hidden;
+      vertical-align:text-bottom;background:rgba(255,255,255,.3);border:1px solid rgba(0,0,0,.5);
+      border-radius:2px;box-sizing:border-box;color:transparent;
+      user-select:none}
+    .sc-interp.sc-unresolved{font-family:ui-monospace,monospace;font-size:.85em;
+      color:color-mix(in srgb,currentColor 50%,transparent);
+      background:color-mix(in srgb,currentColor 10%,transparent);border-radius:3px;
+      padding:0 3px}
+    .sc-host.sc-has-error{position:relative}
+    .sc-logic-error{position:absolute;top:8px;left:8px;z-index:2147483647;max-width:60ch;
+      padding:6px 10px;background:#b00020;color:#fff;font:12px/1.4 ui-monospace,monospace;
+      border-radius:4px;white-space:pre-wrap;pointer-events:none}
+    /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+    @media print {
+      @page { margin: 0.5cm; }
+      figure, table { break-inside: avoid; }
+      #dc-root, #dc-root > .sc-host { height: auto; }
+      *, *::before, *::after {
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        animation-delay: -99s !important; animation-duration: .001s !important;
+        animation-iteration-count: 1 !important; animation-fill-mode: both !important;
+        animation-play-state: running !important; transition-duration: 0s !important;
+      }
+    }
+  </style>
+<meta charset="utf-8">
+<title>Authoring page: authoring, dark</title>
+<style>x-dc{display:none!important}</style>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet" data-dc-tpl="1"><style data-dc-tpl="2">
+body{margin:0}
+</style><style data-dc-tpl="2">
+body{margin:0}
+</style></head>
+<body>
+<div id="dc-root"><div class="sc-host" data-sc-name="v-authoring-dark"><div data-dc-tpl="3" style="width: 100%; height: 900px; background: rgb(13, 18, 23);">
+  <div class="sc-host" data-sc-name="Main" data-dc-tpl="4"><div data-dc-tpl="3" style="width: 100%; height: 900px; display: flex; background: rgb(13, 18, 23); color: rgb(229, 234, 239); font-family: &quot;IBM Plex Sans&quot;, system-ui, sans-serif; font-size: 13px; overflow: hidden;">
+
+  <nav data-dc-tpl="4" aria-label="Main" style="position: relative; z-index: 30; flex: 0 0 auto; width: 56px; height: 900px; box-sizing: border-box; padding-bottom: 8px; display: flex; flex-direction: column; align-items: center; background: rgb(17, 24, 31); border-right: 1px solid rgb(35, 47, 58);">
+    <div data-dc-tpl="5" style="height: 52px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;">
+      <a data-dc-tpl="6" href="#" aria-label="Alloy Works" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: rgb(229, 234, 239);">
+        <svg data-dc-tpl="7" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="8" d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5zM12 12l8.2-4.75M12 12v9.5M12 12L3.8 7.25"></path></svg>
+      </a>
+    </div>
+    <span data-dc-tpl="9" title="Development environment" style="flex: 0 0 auto; height: 18px; margin-bottom: 10px; padding: 0px 6px; display: flex; align-items: center; border: 1px solid rgb(52, 66, 79); border-radius: 999px; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; color: rgb(154, 166, 178);">DEV</span>
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Home" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M3 10.5 12 3l9 7.5M5 9v12h14V9M10 21v-6h4v6"></path></svg>
+          
+        </a>
+      
+    
+      <span data-dc-tpl="12" aria-hidden="true" style="display: block; flex: 0 0 auto; width: 24px; height: 1px; margin: 6px 0px; background: rgb(35, 47, 58);"></span>
+      
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Components" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M4 3h6v7H4zM14 3h6v7h-6zM4 14h6v7H4zM14 14h6v7h-6z"></path></svg>
+          
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Documents" aria-current="page" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: rgb(19, 47, 57); color: rgb(143, 208, 224);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M14 3H6v18h12V7zM14 3v4h4M9 12h6M9 16h6"></path></svg>
+          <span data-dc-tpl="20" aria-hidden="true" style="position: absolute; left: -8px; top: 10px; width: 3px; height: 20px; border-radius: 0px 3px 3px 0px; background: rgb(95, 182, 204);"></span>
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Templates" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M3 3h18v18H3zM3 9h18M9 9v12"></path></svg>
+          
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Prompts" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 8h8M8 12h5"></path></svg>
+          
+        </a>
+      
+    
+      <span data-dc-tpl="12" aria-hidden="true" style="display: block; flex: 0 0 auto; width: 24px; height: 1px; margin: 6px 0px; background: rgb(35, 47, 58);"></span>
+      
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Bibliography" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M4 4v16M8 8v12M12 6v14M16 6l4 14"></path></svg>
+          
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Terms" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10M9 8h5"></path></svg>
+          
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Images" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M3 3h18v18H3zM21 15l-5-5L5 21M10.5 8.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"></path></svg>
+          
+        </a>
+      
+    
+      <span data-dc-tpl="12" aria-hidden="true" style="display: block; flex: 0 0 auto; width: 24px; height: 1px; margin: 6px 0px; background: rgb(35, 47, 58);"></span>
+      
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Conversations" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2zM18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"></path></svg>
+          
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Publications" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M6 3h9l4 4v14H6zM15 3v4h4M9 13l2 2 4-4"></path></svg>
+          
+        </a>
+      
+    
+      
+      <span data-dc-tpl="14" style="flex: 1 1 0px;"></span>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Connectors" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"></path></svg>
+          
+        </a>
+      
+    
+      
+      
+      
+        <a data-dc-tpl="16" href="#" aria-label="Settings" aria-current="false" style="position: relative; flex: 0 0 auto; width: 40px; height: 40px; margin: 2px 0px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: transparent; color: rgb(154, 166, 178);">
+          <svg data-dc-tpl="17" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="18" d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"></path></svg>
+          
+        </a>
+      
+    
+    
+  </nav>
+
+  <div data-dc-tpl="27" style="flex: 1 1 0px; min-width: 0px; height: 900px; display: flex; flex-direction: column;">
+
+    <header data-dc-tpl="28" style="position: relative; z-index: 40; flex: 0 0 auto; height: 56px; box-sizing: border-box; padding: 0px 12px 0px 16px; display: flex; align-items: center; gap: 12px; background: rgb(17, 24, 31); border-bottom: 1px solid rgb(35, 47, 58);">
+      <div data-dc-tpl="29" style="flex: 1 1 auto; min-width: 0px; display: flex; flex-direction: column; justify-content: center; gap: 1px;">
+        <div data-dc-tpl="30" style="min-width: 0px; height: 22px; display: flex; align-items: center; gap: 8px;">
+          <a data-dc-tpl="31" href="#" style="flex: 0 0 auto; font-size: 12px; text-decoration: none; color: rgb(154, 166, 178);">Clinical</a>
+          <span data-dc-tpl="32" aria-hidden="true" style="color: rgb(52, 66, 79);">/</span>
+          <h1 data-dc-tpl="33" style="margin: 0px; min-width: 0px; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">De Novo classification request for Essilor® Stellest®</h1>
+          <span data-dc-tpl="34" style="flex: 0 0 auto; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 11px; color: rgb(154, 166, 178);">v0.1</span>
+        </div>
+        <div data-dc-tpl="35" role="menubar" aria-label="Menu" style="height: 26px; margin-left: -8px; display: flex; align-items: center;">
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+D" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">D</span></span><span class="sc-interp">ocument</span></button>
+              
+            </div>
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+E" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">E</span></span><span class="sc-interp">dit</span></button>
+              
+            </div>
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+V" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">V</span></span><span class="sc-interp">iew</span></button>
+              
+            </div>
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+I" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">I</span></span><span class="sc-interp">nsert</span></button>
+              
+            </div>
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+F" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">F</span></span><span class="sc-interp">ormat</span></button>
+              
+            </div>
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+R" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">R</span></span><span class="sc-interp">eview</span></button>
+              
+            </div>
+          
+            <div data-dc-tpl="37" style="position: relative;">
+              <button data-dc-tpl="38" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-keyshortcuts="Alt+H" style="height: 24px; padding: 0px 8px; border: 0px; border-radius: 5px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><span data-dc-tpl="39" style="text-decoration: underline rgb(93, 107, 120); text-underline-offset: 3px;"><span class="sc-interp">H</span></span><span class="sc-interp">elp</span></button>
+              
+            </div>
+          
+        </div>
+      </div>
+
+      <ol data-dc-tpl="72" aria-label="Lifecycle" style="flex: 0 0 auto; margin: 0px; padding: 0px 4px 0px 10px; height: 32px; list-style: none; display: flex; align-items: center; gap: 6px; border: 1px solid rgb(35, 47, 58); border-radius: 999px; background: rgb(15, 22, 29);">
+        <li data-dc-tpl="73" aria-current="step" style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgb(242, 167, 100);"><span data-dc-tpl="74" style="width: 8px; height: 8px; border-radius: 50%; background: rgb(242, 167, 100);"></span>Draft</li>
+        <li data-dc-tpl="75" aria-hidden="true" style="width: 14px; height: 1px; background: rgb(52, 66, 79);"></li>
+        <li data-dc-tpl="76" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(154, 166, 178);"><span data-dc-tpl="77" style="width: 6px; height: 6px; border-radius: 50%; border: 1px solid rgb(154, 166, 178);"></span>In review</li>
+        <li data-dc-tpl="78" aria-hidden="true" style="width: 14px; height: 1px; background: rgb(52, 66, 79);"></li>
+        <li data-dc-tpl="79" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(154, 166, 178);"><span data-dc-tpl="80" style="width: 6px; height: 6px; border-radius: 50%; border: 1px solid rgb(154, 166, 178);"></span>Approved</li>
+        <li data-dc-tpl="81" aria-hidden="true" style="width: 14px; height: 1px; background: rgb(52, 66, 79);"></li>
+        <li data-dc-tpl="82" style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(154, 166, 178);"><span data-dc-tpl="83" style="width: 6px; height: 6px; border-radius: 50%; border: 1px solid rgb(154, 166, 178);"></span>Effective</li>
+        <li data-dc-tpl="84" style="margin-left: 6px;">
+          <button data-dc-tpl="85" type="button" aria-keyshortcuts="Control+Shift+Enter" title="Submit for review (Ctrl Shift Enter)" style="height: 24px; display: flex; align-items: center; gap: 6px; padding: 0px 10px; border: 0px; border-radius: 999px; background: rgb(95, 182, 204); color: rgb(4, 34, 43); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">Submit for review<svg data-dc-tpl="86" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="87" d="M9 6l6 6-6 6"></path></svg></button>
+        </li>
+      </ol>
+
+      <button data-dc-tpl="88" type="button" aria-label="Search or run a command" aria-keyshortcuts="Control+K" style="flex: 0 0 auto; height: 32px; display: flex; align-items: center; gap: 6px; padding: 0px 8px; border: 1px solid rgb(35, 47, 58); border-radius: 8px; background: rgb(15, 22, 29); color: rgb(154, 166, 178); font-family: inherit; cursor: pointer;"><svg data-dc-tpl="89" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="90" d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"></path></svg><kbd data-dc-tpl="91" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 11px;">Ctrl K</kbd></button>
+      <div data-dc-tpl="92" role="group" aria-label="Mode" style="flex: 0 0 auto; display: flex; gap: 2px; padding: 2px; border: 1px solid rgb(35, 47, 58); border-radius: 8px; background: rgb(15, 22, 29);">
+        <button data-dc-tpl="93" type="button" aria-pressed="false" aria-label="Reading" title="Reading (Ctrl Shift 1)" style="width: 30px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="94" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="95" d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path></svg></button>
+        <button data-dc-tpl="96" type="button" aria-pressed="false" aria-label="Review" title="Review (Ctrl Shift 2)" style="width: 30px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="97" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="98" d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg></button>
+        <button data-dc-tpl="99" type="button" aria-pressed="true" title="Authoring (Ctrl Shift 3)" style="height: 28px; display: flex; align-items: center; gap: 6px; padding: 0px 10px; border: 0px; border-radius: 6px; background: rgb(19, 47, 57); color: rgb(143, 208, 224); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;"><svg data-dc-tpl="100" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="101" d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg>Authoring</button>
+      </div>
+      <button data-dc-tpl="102" type="button" title="Preview (Ctrl Alt P)" style="flex: 0 0 auto; height: 32px; display: flex; align-items: center; gap: 6px; padding: 0px 12px; border: 1px solid rgb(52, 66, 79); border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; cursor: pointer;"><svg data-dc-tpl="103" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="104" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0"></path></svg>Preview</button>
+      <button data-dc-tpl="105" type="button" aria-label="Ada: account, theme and language" style="flex: 0 0 auto; width: 32px; height: 32px; border: 0px; border-radius: 50%; background: rgb(19, 47, 57); color: rgb(143, 208, 224); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">A</button>
+    </header>
+
+    <div data-dc-tpl="106" style="flex: 1 1 0px; min-height: 0px; display: flex; background: rgb(7, 10, 13);">
+      <main data-dc-tpl="107" style="position: relative; flex: 1 1 0px; min-width: 0px; overflow: hidden;">
+
+        <div data-dc-tpl="108" style="position: absolute; left: 12px; top: 12px; bottom: 12px; z-index: 20; display: flex; align-items: flex-start;">
+          <div data-dc-tpl="109" style="display: flex; align-self: stretch; border: 1px solid rgb(52, 66, 79); border-radius: 12px; background: rgb(20, 28, 36); box-shadow: rgba(0, 0, 0, 0.45) 0px 6px 18px;">
+            <div data-dc-tpl="110" role="toolbar" aria-orientation="vertical" aria-label="Panels and formatting" style="position: relative; flex: 0 0 auto; width: 44px; box-sizing: border-box; padding-top: 6px; display: flex; flex-direction: column; align-items: center;">
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Contents" aria-pressed="true" aria-keyshortcuts="Ctrl Alt C" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: rgb(19, 47, 57); color: rgb(143, 208, 224); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Baselines" aria-pressed="false" aria-keyshortcuts="Ctrl Alt B" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M4 22V4M4 4h11l-2 4 2 4H4"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                <div data-dc-tpl="113" aria-hidden="true" style="height: 9px; display: flex; align-items: center;"><span data-dc-tpl="114" style="width: 22px; height: 1px; background: rgb(74, 90, 105);"></span></div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Paragraph style" aria-pressed="false" aria-keyshortcuts="Ctrl Alt 0 to 3" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      
+                      <span data-dc-tpl="122" aria-hidden="true" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 13px; font-weight: 500;"><span class="sc-interp">¶</span></span>
+                    </button>
+                    <span data-dc-tpl="124" aria-hidden="true" style="position: absolute; right: 2px; bottom: 3px; width: 0px; height: 0px; border-left: 4px solid transparent; border-bottom: 4px solid rgb(154, 166, 178);"></span>
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Bold" aria-pressed="false" aria-keyshortcuts="Ctrl B" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Italic" aria-pressed="false" aria-keyshortcuts="Ctrl I" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M19 4h-9M14 20H5M15 4 9 20"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Underline" aria-pressed="false" aria-keyshortcuts="Ctrl U" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="More text formatting" aria-pressed="false" aria-keyshortcuts="" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      
+                      <span data-dc-tpl="122" aria-hidden="true" style="font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 13px; font-weight: 500;"><span class="sc-interp">Aa</span></span>
+                    </button>
+                    <span data-dc-tpl="124" aria-hidden="true" style="position: absolute; right: 2px; bottom: 3px; width: 0px; height: 0px; border-left: 4px solid transparent; border-bottom: 4px solid rgb(154, 166, 178);"></span>
+                  </div>
+                
+              
+                <div data-dc-tpl="113" aria-hidden="true" style="height: 9px; display: flex; align-items: center;"><span data-dc-tpl="114" style="width: 22px; height: 1px; background: rgb(52, 66, 79);"></span></div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Link" aria-pressed="false" aria-keyshortcuts="Ctrl Alt K" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Mark as term" aria-pressed="false" aria-keyshortcuts="Ctrl Alt G" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M3 3h8l10 10-8 8L3 11zM7.5 7.5h.01"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+                <div data-dc-tpl="113" aria-hidden="true" style="height: 9px; display: flex; align-items: center;"><span data-dc-tpl="114" style="width: 22px; height: 1px; background: rgb(52, 66, 79);"></span></div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Bulleted list" aria-pressed="false" aria-keyshortcuts="Ctrl Shift 8" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path></svg>
+                      
+                    </button>
+                    <span data-dc-tpl="124" aria-hidden="true" style="position: absolute; right: 2px; bottom: 3px; width: 0px; height: 0px; border-left: 4px solid transparent; border-bottom: 4px solid rgb(154, 166, 178);"></span>
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Numbered list" aria-pressed="false" aria-keyshortcuts="Ctrl Shift 7" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M10 6h10M10 12h10M10 18h10M4 4h1v4M4 8h2M4 14.5a1 1 0 0 1 2 0c0 1-2 2-2 3.5h2"></path></svg>
+                      
+                    </button>
+                    <span data-dc-tpl="124" aria-hidden="true" style="position: absolute; right: 2px; bottom: 3px; width: 0px; height: 0px; border-left: 4px solid transparent; border-bottom: 4px solid rgb(154, 166, 178);"></span>
+                  </div>
+                
+              
+                <div data-dc-tpl="113" aria-hidden="true" style="height: 9px; display: flex; align-items: center;"><span data-dc-tpl="114" style="width: 22px; height: 1px; background: rgb(52, 66, 79);"></span></div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Insert" aria-pressed="false" aria-keyshortcuts="or type /" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M12 5v14M5 12h14"></path></svg>
+                      
+                    </button>
+                    <span data-dc-tpl="124" aria-hidden="true" style="position: absolute; right: 2px; bottom: 3px; width: 0px; height: 0px; border-left: 4px solid transparent; border-bottom: 4px solid rgb(154, 166, 178);"></span>
+                  </div>
+                
+              
+                
+                
+                  <div data-dc-tpl="116" style="position: relative; height: 36px; display: flex; align-items: center;">
+                    <button data-dc-tpl="117" type="button" aria-label="Comment" aria-pressed="false" aria-keyshortcuts="Ctrl Alt M" style="width: 34px; height: 34px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; cursor: pointer;">
+                      <svg data-dc-tpl="119" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="120" d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>
+                      
+                    </button>
+                    
+                  </div>
+                
+              
+              
+            </div>
+
+            
+              <section data-dc-tpl="132" aria-label="Contents" style="width: 264px; box-sizing: border-box; display: flex; flex-direction: column; border-left: 1px solid rgb(35, 47, 58);">
+                <div data-dc-tpl="133" style="height: 48px; flex: 0 0 auto; box-sizing: border-box; padding: 0px 8px 0px 14px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgb(35, 47, 58);">
+                  <h2 data-dc-tpl="134" style="flex: 1 1 0%; margin: 0px; font-size: 13px; font-weight: 600;"><span class="sc-interp">Contents</span></h2>
+                  <button data-dc-tpl="135" type="button" aria-label="Close panel" style="width: 28px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="136" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="137" d="M15 6l-6 6 6 6"></path></svg></button>
+                </div>
+                <div data-dc-tpl="138" style="padding: 10px 10px 6px;">
+                  <label data-dc-tpl="139" style="display: flex; align-items: center; gap: 8px; height: 30px; box-sizing: border-box; padding: 0px 8px; border: 1px solid rgb(35, 47, 58); border-radius: 8px; background: rgb(15, 22, 29); color: rgb(154, 166, 178);">
+                    <svg data-dc-tpl="140" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="141" d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"></path></svg>
+                    <span data-dc-tpl="142" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px);">Filter</span>
+                    <input data-dc-tpl="143" type="text" placeholder="Filter sections" style="flex: 1 1 0%; min-width: 0px; border: 0px; outline: none; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 12px;">
+                  </label>
+                </div>
+                
+                  <ol data-dc-tpl="145" style="margin: 0px; padding: 4px 6px; list-style: none; display: flex; flex-direction: column; gap: 1px;">
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="false" style="height: 30px; box-sizing: border-box; padding: 0px 8px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: transparent; color: rgb(229, 234, 239); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">De Novo classification request</span></span>
+                        
+                      </a></li>
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="location" style="height: 30px; box-sizing: border-box; padding: 0px 8px 0px 20px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: rgb(19, 47, 57); color: rgb(143, 208, 224); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Regulatory information</span></span>
+                        <span data-dc-tpl="151" style="flex: 0 0 auto; padding: 0px 5px; border-radius: 4px; background: rgb(19, 47, 57); color: rgb(143, 208, 224); font-size: 10px; font-weight: 600; line-height: 16px;"><span class="sc-interp">1</span></span>
+                      </a></li>
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="false" style="height: 30px; box-sizing: border-box; padding: 0px 8px 0px 20px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: transparent; color: rgb(229, 234, 239); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">New regulation number</span></span>
+                        
+                      </a></li>
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="false" style="height: 30px; box-sizing: border-box; padding: 0px 8px 0px 20px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: transparent; color: rgb(229, 234, 239); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Classification</span></span>
+                        
+                      </a></li>
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="false" style="height: 30px; box-sizing: border-box; padding: 0px 8px 0px 20px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: transparent; color: rgb(229, 234, 239); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Product code</span></span>
+                        
+                      </a></li>
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="false" style="height: 30px; box-sizing: border-box; padding: 0px 8px 0px 20px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: transparent; color: rgb(229, 234, 239); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Indications for use</span></span>
+                        
+                      </a></li>
+                    
+                      <li data-dc-tpl="147"><a data-dc-tpl="148" href="#" aria-current="false" style="height: 30px; box-sizing: border-box; padding: 0px 8px 0px 20px; display: flex; align-items: center; gap: 8px; border-radius: 6px; background: transparent; color: rgb(229, 234, 239); font-size: 12px; text-decoration: none;">
+                        <span data-dc-tpl="149" style="flex: 1 1 0%; min-width: 0px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span class="sc-interp">Device description</span></span>
+                        
+                      </a></li>
+                    
+                  </ol>
+                  <div data-dc-tpl="152" style="padding: 6px 14px; font-size: 11px; color: rgb(154, 166, 178);">Scroll for more sections</div>
+                
+                
+              </section>
+            
+          </div>
+        </div>
+
+        <div data-dc-tpl="155" style="display: flex; justify-content: center; padding-top: 24px; padding-left: 300px;">
+          <article data-dc-tpl="156" style="position: relative; flex: 0 0 auto; width: 728px; height: 1180px; box-sizing: border-box; padding: 56px 69px; background: rgb(255, 255, 255); color: rgb(26, 26, 26); font-family: &quot;Times New Roman&quot;, Times, serif; font-size: 13px; line-height: 1.45; box-shadow: rgba(0, 0, 0, 0.6) 0px 1px 2px, rgba(0, 0, 0, 0.55) 0px 14px 40px;">
+            <div data-dc-tpl="157" style="position: relative; margin-bottom: 18px;">
+              <span data-dc-tpl="159" style="position: absolute; right: 100%; top: 4px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">Title</span>
+              <h2 data-dc-tpl="160" style="margin: 0px; font-size: 19px; line-height: 1.4; font-weight: 700;">DE NOVO CLASSIFICATION REQUEST FOR ESSILOR® STELLEST®</h2>
+            </div>
+            <div data-dc-tpl="161" style="position: relative; margin-bottom: 10px;">
+              <span data-dc-tpl="163" style="position: absolute; right: 100%; top: 3px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H1</span>
+              <h3 data-dc-tpl="164" style="margin: 0px; font-size: 17px; font-weight: 700;">REGULATORY INFORMATION</h3>
+            </div>
+            <section data-dc-tpl="165" aria-label="Component: Regulatory information" style="position: relative; margin: 0px -10px 14px; padding: 8px 10px 6px; border: 1px solid rgb(95, 182, 204); border-radius: 3px;">
+              <span data-dc-tpl="167" style="position: absolute; left: 8px; top: -9px; padding: 0px 6px; border-radius: 3px; background: rgb(228, 241, 245); color: rgb(22, 90, 114); font-family: &quot;IBM Plex Sans&quot;, sans-serif; font-size: 10px; line-height: 16px; font-weight: 600;">Component · Regulatory information</span>
+              <div data-dc-tpl="168" style="position: relative; margin-bottom: 6px;">
+                <span data-dc-tpl="170" style="position: absolute; right: 100%; top: 1px; width: 54px; margin-right: 18px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H2</span>
+                <h4 data-dc-tpl="171" style="margin: 0px; font-size: 14px; font-weight: 700;">REGULATORY INFORMATION</h4>
+              </div>
+              <div data-dc-tpl="172" style="position: relative; margin-bottom: 6px;">
+                <button data-dc-tpl="174" type="button" aria-label="Paragraph style: Body. Change" style="position: absolute; right: 100%; top: 1px; width: 58px; height: 18px; margin-right: 14px; padding: 0px 4px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; border: 0px; border-radius: 4px; background: rgb(228, 241, 245); color: rgb(22, 90, 114); font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; font-weight: 500; cursor: pointer;">Body<svg data-dc-tpl="175" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="176" d="M6 9l6 6 6-6"></path></svg></button>
+                <p data-dc-tpl="177" style="margin: 0px;"><b data-dc-tpl="178">Executive Summary.</b> FDA grants the De Novo request for the Essilor® Stellest® spectacle lens and classifies prescription spectacle lenses to reduce the progression of myopia as a Class II device under new regulation 21 CFR 886.5845 (product code QUR). The device is indicated for correction of myopia with or without astigmatism and for slowing myopia progression in children aged 6–12 years with spherical equivalent refraction of −0.75 D to −4.50 D and astigmatism up to 1.50 D. A pivotal 24-month randomized controlled trial (FIN-3101, n=159) demonstrated a 71% reduction in myopia progression (spherical equivalent refraction) and a 53% reduction in axial elongation compared to single-vision control lenses. The probable benefits of the device outweigh its probable risks, which can be mitigated by general controls and the special controls identified herein.</p>
+              </div>
+              <div data-dc-tpl="179" style="position: relative; margin-bottom: 6px;">
+                <span data-dc-tpl="181" style="position: absolute; right: 100%; top: 1px; width: 54px; margin-right: 18px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">Body</span>
+                <p data-dc-tpl="182" style="margin: 0px;">FDA identifies this generic type of device as:</p>
+              </div>
+              <div data-dc-tpl="183" style="position: relative;">
+                <span data-dc-tpl="185" style="position: absolute; right: 100%; top: 1px; width: 56px; margin-right: 12px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 9px; line-height: 16px; color: rgb(86, 96, 108);">Definition</span>
+                <p data-dc-tpl="186" style="margin: 0px;"><b data-dc-tpl="187">Prescription spectacle lenses to reduce the progression of myopia.</b> Prescription spectacle lenses to reduce the progression of myopia consist of spectacle lenses with additional physical optical design lens elements. In addition to optical correction of myopic refractive error, these lenses are intended to be used by patients who have myopia to reduce the rate of myopia progression. The lenses are mounted within a spectacle frame classified under § 886.5842.</p>
+              </div>
+            </section>
+            <div data-dc-tpl="188" style="position: relative; margin-bottom: 12px;">
+              <span data-dc-tpl="190" style="position: absolute; right: 100%; top: 3px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H1</span>
+              <h3 data-dc-tpl="191" style="margin: 0px; font-size: 17px; font-weight: 700;">NEW REGULATION NUMBER: 21 CFR 886.5845</h3>
+            </div>
+            <div data-dc-tpl="192" style="position: relative; margin-bottom: 12px;">
+              <span data-dc-tpl="194" style="position: absolute; right: 100%; top: 3px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H1</span>
+              <h3 data-dc-tpl="195" style="margin: 0px; font-size: 17px; font-weight: 700;">CLASSIFICATION: Class II</h3>
+            </div>
+            <div data-dc-tpl="196" style="position: relative; margin-bottom: 12px;">
+              <span data-dc-tpl="198" style="position: absolute; right: 100%; top: 3px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H1</span>
+              <h3 data-dc-tpl="199" style="margin: 0px; font-size: 17px; font-weight: 700;">PRODUCT CODE: QUR</h3>
+            </div>
+            <div data-dc-tpl="200" style="position: relative; margin-bottom: 8px;">
+              <span data-dc-tpl="202" style="position: absolute; right: 100%; top: 3px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H1</span>
+              <h3 data-dc-tpl="203" style="margin: 0px; font-size: 17px; font-weight: 700;">INDICATIONS FOR USE</h3>
+            </div>
+            <div data-dc-tpl="204" style="position: relative; margin-bottom: 16px;">
+              <span data-dc-tpl="206" style="position: absolute; right: 100%; top: 1px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">Body</span>
+              <p data-dc-tpl="207" style="margin: 0px;">The device is indicated for correction of myopia with or without astigmatism and for slowing myopia progression in children aged 6–12 years with spherical equivalent refraction of −0.75 D to −4.50 D and astigmatism up to 1.50 D.</p>
+            </div>
+            <div data-dc-tpl="208" style="position: relative; margin-bottom: 10px;">
+              <span data-dc-tpl="210" style="position: absolute; right: 100%; top: 3px; width: 54px; margin-right: 8px; text-align: right; font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 10px; line-height: 16px; color: rgb(86, 96, 108);">H1</span>
+              <h3 data-dc-tpl="211" style="margin: 0px; font-size: 17px; font-weight: 700;">DEVICE DESCRIPTION</h3>
+            </div>
+            <div data-dc-tpl="212" aria-hidden="true" style="display: flex; flex-direction: column; gap: 9px;">
+              <span data-dc-tpl="213" style="height: 9px; width: 100%; border-radius: 2px; background: rgb(238, 241, 244);"></span>
+              <span data-dc-tpl="214" style="height: 9px; width: 96%; border-radius: 2px; background: rgb(238, 241, 244);"></span>
+              <span data-dc-tpl="215" style="height: 9px; width: 99%; border-radius: 2px; background: rgb(238, 241, 244);"></span>
+              <span data-dc-tpl="216" style="height: 9px; width: 62%; border-radius: 2px; background: rgb(238, 241, 244);"></span>
+            </div>
+          </article>
+        </div>
+      </main>
+
+      <aside data-dc-tpl="217" aria-label="Assistant" style="flex: 0 1 412px; min-width: 0px; box-sizing: border-box; padding: 12px 12px 12px 0px;">
+        <div data-dc-tpl="218" style="width: 400px; max-width: 100%; height: 788px; box-sizing: border-box; display: flex; border: 1px solid rgb(35, 47, 58); border-radius: 12px; background: rgb(17, 24, 31); overflow: hidden;">
+          <div data-dc-tpl="219" style="flex: 1 1 0px; min-width: 0px; display: flex; flex-direction: column;">
+            <div data-dc-tpl="220" style="flex: 0 0 auto; height: 52px; box-sizing: border-box; padding: 0px 8px 0px 16px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid rgb(35, 47, 58);">
+              <h2 data-dc-tpl="221" style="margin: 0px; font-size: 15px; font-weight: 600;">Assistant</h2>
+              <button data-dc-tpl="222" type="button" style="height: 30px; display: flex; align-items: center; gap: 4px; margin-left: 4px; padding: 0px 8px; border: 1px solid rgb(35, 47, 58); border-radius: 8px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">Geforce<svg data-dc-tpl="223" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="224" d="M6 9l6 6 6-6"></path></svg></button>
+              <span data-dc-tpl="225" style="flex: 1 1 0%;"></span>
+              <button data-dc-tpl="226" type="button" aria-label="Past conversations" style="width: 28px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="227" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="228" d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"></path></svg></button>
+              <button data-dc-tpl="229" type="button" aria-label="Rename" style="width: 28px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="230" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="231" d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg></button>
+              <button data-dc-tpl="232" type="button" aria-label="Pin" style="width: 28px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="233" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="234" d="M12 17v5M9 3h6l-1 6 4 4H6l4-4z"></path></svg></button>
+              <button data-dc-tpl="235" type="button" aria-label="New conversation" style="width: 28px; height: 28px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="236" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="237" d="M12 5v14M5 12h14"></path></svg></button>
+            </div>
+            <div data-dc-tpl="238" style="flex: 1 1 0px;"></div>
+            <div data-dc-tpl="239" style="flex: 0 0 auto; padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgb(35, 47, 58);">
+              <div data-dc-tpl="240" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <button data-dc-tpl="241" type="button" aria-pressed="false" style="height: 30px; padding: 0px 12px; border: 1px solid rgb(35, 47, 58); border-radius: 999px; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 12px; cursor: pointer;">Document</button>
+                <button data-dc-tpl="242" type="button" aria-pressed="true" style="height: 30px; padding: 0px 12px; border: 1px solid rgb(95, 182, 204); border-radius: 999px; background: rgb(19, 47, 57); color: rgb(143, 208, 224); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">Component</button>
+                <button data-dc-tpl="243" type="button" style="height: 30px; padding: 0px 12px; border: 1px dashed rgb(52, 66, 79); border-radius: 999px; background: transparent; color: rgb(154, 166, 178); font-family: inherit; font-size: 12px; cursor: pointer;">+ Add a part</button>
+              </div>
+              <div data-dc-tpl="244" style="box-sizing: border-box; padding: 10px 10px 8px 12px; border: 1px solid rgb(52, 66, 79); border-radius: 10px; background: rgb(15, 22, 29);">
+                <label data-dc-tpl="245" style="display: block;">
+                  <span data-dc-tpl="246" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px);">Ask the assistant</span>
+                  <textarea data-dc-tpl="247" rows="2" placeholder="Ask about this document" style="width: 100%; box-sizing: border-box; padding: 0px; border: 0px; outline: none; resize: none; background: transparent; color: rgb(229, 234, 239); font-family: inherit; font-size: 13px; line-height: 1.5;"></textarea>
+                </label>
+                <div data-dc-tpl="248" style="display: flex; align-items: center; gap: 8px;">
+                  <span data-dc-tpl="249" style="flex: 1 1 0%; font-size: 11px; color: rgb(154, 166, 178);">Enter asks, Shift and Enter for a new line</span>
+                  <button data-dc-tpl="250" type="button" aria-label="Ask" style="width: 32px; height: 32px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: rgb(95, 182, 204); color: rgb(4, 34, 43); cursor: pointer;"><svg data-dc-tpl="251" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="252" d="M12 19V5M5 12l7-7 7 7"></path></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-dc-tpl="253" role="tablist" aria-orientation="vertical" aria-label="Side panels" style="flex: 0 0 auto; width: 48px; box-sizing: border-box; padding: 10px 0px; display: flex; flex-direction: column; align-items: center; gap: 6px; border-left: 1px solid rgb(35, 47, 58);">
+            <button data-dc-tpl="254" type="button" aria-label="Collapse panel" style="width: 32px; height: 32px; padding: 0px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 6px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="255" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="256" d="M9 6l6 6-6 6"></path></svg></button>
+            <button data-dc-tpl="257" type="button" role="tab" aria-selected="false" aria-label="Layers" style="width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="258" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="259" d="M12 2 2 7l10 5 10-5zM2 12l10 5 10-5M2 17l10 5 10-5"></path></svg></button>
+            <button data-dc-tpl="260" type="button" role="tab" aria-selected="false" aria-label="Outline" style="width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="261" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="262" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></button>
+            <button data-dc-tpl="263" type="button" role="tab" aria-selected="true" aria-label="Assistant" style="position: relative; width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: rgb(19, 47, 57); color: rgb(143, 208, 224); cursor: pointer;"><svg data-dc-tpl="264" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="265" d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 17l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"></path></svg><span data-dc-tpl="266" aria-hidden="true" style="position: absolute; right: -6px; top: 8px; width: 3px; height: 20px; border-radius: 3px 0px 0px 3px; background: rgb(95, 182, 204);"></span></button>
+            <button data-dc-tpl="267" type="button" role="tab" aria-selected="false" aria-label="History" style="width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="268" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="269" d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"></path></svg></button>
+            <button data-dc-tpl="270" type="button" role="tab" aria-selected="false" aria-label="Publish" style="width: 36px; height: 36px; padding: 0px; display: flex; align-items: center; justify-content: center; border: 0px; border-radius: 8px; background: transparent; color: rgb(154, 166, 178); cursor: pointer;"><svg data-dc-tpl="271" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path data-dc-tpl="272" d="M22 2l-7 20-4-9-9-4zM22 2 11 13"></path></svg></button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer data-dc-tpl="273" style="flex: 0 0 auto; height: 32px; box-sizing: border-box; padding: 0px 16px; display: flex; align-items: center; gap: 16px; background: rgb(17, 24, 31); border-top: 1px solid rgb(35, 47, 58); font-size: 12px; color: rgb(154, 166, 178);">
+      <span data-dc-tpl="274" style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: rgb(18, 48, 31); color: rgb(92, 207, 147); font-weight: 500;"><span data-dc-tpl="275" style="width: 6px; height: 6px; border-radius: 50%; background: rgb(92, 207, 147);"></span>Saved</span>
+      <button data-dc-tpl="276" type="button" title="Language of the text" style="height: 22px; padding: 0px 8px; border: 1px solid rgb(35, 47, 58); border-radius: 999px; background: transparent; color: rgb(154, 166, 178); font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 11px; cursor: pointer;">und</button>
+      <button data-dc-tpl="277" type="button" title="Direction" style="height: 22px; padding: 0px 8px; border: 1px solid rgb(35, 47, 58); border-radius: 999px; background: transparent; color: rgb(154, 166, 178); font-family: &quot;IBM Plex Mono&quot;, monospace; font-size: 11px; cursor: pointer;">LTR</button>
+      <span data-dc-tpl="278" style="flex: 1 1 0%;"></span>
+      <span data-dc-tpl="279">35 sections · 24 components</span>
+      <span data-dc-tpl="280">Version 0.1 in Clinical</span>
+      <span data-dc-tpl="281" style="display: flex; align-items: center; gap: 8px;">
+        <button data-dc-tpl="282" type="button" aria-label="Zoom out" style="width: 24px; height: 24px; padding: 0px; border: 0px; border-radius: 4px; background: transparent; color: rgb(154, 166, 178); font-size: 16px; cursor: pointer;">−</button>
+        <label data-dc-tpl="283" style="display: flex; align-items: center;"><span data-dc-tpl="284" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px);">Zoom</span><input data-dc-tpl="285" type="range" min="25" max="200" value="75" style="width: 110px; accent-color: rgb(95, 182, 204);"></label>
+        <button data-dc-tpl="286" type="button" aria-label="Zoom in" style="width: 24px; height: 24px; padding: 0px; border: 0px; border-radius: 4px; background: transparent; color: rgb(154, 166, 178); font-size: 16px; cursor: pointer;">+</button>
+        <span data-dc-tpl="287" style="min-width: 34px; color: rgb(229, 234, 239); font-family: &quot;IBM Plex Mono&quot;, monospace;">75%</span>
+      </span>
+    </footer>
+  </div></div></div></div></div></div>
+
+
+
+</body></html>
