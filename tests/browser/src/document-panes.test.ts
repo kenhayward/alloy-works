@@ -38,7 +38,7 @@ describe("the panes beside a document's text, in Chromium", () => {
     report = made.id;
   });
 
-  it('starts both panes at one height, keeps them under the header as the text scrolls, and hides the right to its rail', async ({
+  it('starts both panes at one height, holds them still as the text scrolls, and hides the right to its rail', async ({
     task,
   }) => {
     await withPage(async (page) => {
@@ -66,26 +66,27 @@ describe("the panes beside a document's text, in Chromium", () => {
         shows: [outline, panels],
       });
 
-      // Scrolled, the text moves and each pane stays under the header, at the same height.
+      // Scrolled any distance, to the document's end and back, the text moves and the panes do not.
       await page.mouse.move(700, 500);
-      await page.mouse.wheel(0, 1200);
-      // Until the scroll has settled, not merely begun: measured mid-scroll, the band above the
-      // panes has not yet reached the header, and every distance below is a moment's.
-      await expect
-        .poll(async () => {
-          const before = await tops();
-          await page.waitForTimeout(100);
-          const after = await tops();
-          return after.outline < start.outline && after.outline === before.outline;
-        })
-        .toBe(true);
-      const scrolled = await tops();
-      expect(scrolled.panels).toBe(scrolled.outline);
+      /** Where the panes stand once a turn of the wheel has settled. */
+      const scrolledBy = async (distance: number) => {
+        await page.mouse.wheel(0, distance);
+        await expect
+          .poll(async () => {
+            const before = await page.evaluate(() => window.scrollY);
+            await page.waitForTimeout(100);
+            return before === (await page.evaluate(() => window.scrollY));
+          })
+          .toBe(true);
+        return tops();
+      };
+      for (const distance of [6, 6, 1200, 20000, -20000]) {
+        expect(await scrolledBy(distance)).toEqual(start);
+      }
       const header = await page.evaluate(() =>
         Math.round(document.querySelector('header')!.getBoundingClientRect().bottom),
       );
-      expect(scrolled.outline).toBeGreaterThanOrEqual(header);
-      expect(scrolled.outline - header).toBeLessThanOrEqual(16);
+      expect(start.outline - header).toBe(12);
 
       // Hidden, the right pane leaves its rail, which shows it again (ADR-0074).
       const rail = page.getByRole('navigation', { name: 'Document panels' });
