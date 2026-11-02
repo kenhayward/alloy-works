@@ -45,6 +45,8 @@ export {
   listThemes,
   renameTheme,
   allowStyles,
+  exportThemeCatalogue,
+  importCatalogue,
   saveStyle,
   styleImpact,
   type DuplicateAnswer,

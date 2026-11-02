@@ -139,6 +139,14 @@ export {
 } from './default.js';
 
 export { explainStyle } from './explain.js';
+export { allowsStyle } from './read.js';
+export {
+  CATALOGUE_DOCUMENT_FORMAT,
+  CATALOGUE_DOCUMENT_VERSION,
+  exportCatalogue,
+  readCatalogueDocument,
+} from './document.js';
+export type { CatalogueDocument } from './document.js';
 export type { ExplainOutcome, ExplainedProperties, ExplainedProperty } from './explain.js';
 
 export { projectTypst, projectTypst12 } from './typst.js';

@@ -1,5 +1,8 @@
 import type {
   AllowStylesBody,
+  CatalogueDocumentView,
+  ImportCatalogueBody,
+  ThemeCatalogueParams,
   CreateThemeBody,
   DeleteStyleQuery,
   RenameThemeBody,
@@ -13,6 +16,8 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   allowStyles,
+  exportThemeCatalogue,
+  importCatalogue,
   declareTheme,
   duplicateTheme,
   latestVersion,
@@ -166,6 +171,36 @@ export function themeHandlers(
         trx,
         id,
         await renameTheme(trx, { themeId: id, openedFrom, name, author: principalId }),
+      );
+    },
+
+    exportThemeCatalogue: async (request: FastifyRequest): Promise<CatalogueDocumentView> => {
+      const { id, kind } = request.params as ThemeCatalogueParams;
+      const document = await read(
+        request,
+        async (trx) => (await exportThemeCatalogue(trx, { themeId: id, kind })) ?? undefined,
+        undefined,
+      );
+      if (!document) throw notFound();
+      return document as unknown as CatalogueDocumentView;
+    },
+
+    importThemeCatalogue: async (
+      request: FastifyRequest,
+      { trx, principalId }: Authorised,
+    ): Promise<ThemeView> => {
+      const { id, kind } = request.params as ThemeCatalogueParams;
+      const { openedFrom, document } = request.body as ImportCatalogueBody;
+      return answered(
+        trx,
+        id,
+        await importCatalogue(trx, {
+          themeId: id,
+          kind,
+          openedFrom,
+          document,
+          author: principalId,
+        }),
       );
     },
 

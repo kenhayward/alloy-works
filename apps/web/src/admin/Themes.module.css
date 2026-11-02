@@ -123,3 +123,8 @@
   gap: var(--space-8, 8px) var(--space-16, 16px);
   flex-basis: 100%;
 }
+
+.wide {
+  flex-basis: 100%;
+  margin: 0;
+}

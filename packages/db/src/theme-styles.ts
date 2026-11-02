@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import {
+  exportCatalogue,
   readCatalogue,
+  readCatalogueDocument,
   readTheme,
+  type CatalogueDocument,
   type CharacterStyle,
   type ImageStyle,
   type ParagraphStyle,
@@ -143,47 +146,9 @@ export async function saveStyle(
           : styles.map((each) => (each.id === change.styleId ? change.style! : each)),
   };
 
-  // Read the theme as it would be, under a name no version holds, before anything is written.
-  const unwritten = randomUUID();
-  const proposed: Theme = {
-    ...current.content,
-    catalogues: { ...current.content.catalogues, [change.kind]: unwritten },
-  };
-  const read = readTheme(proposed, new Map([...current.catalogues, [unwritten, next]]));
-  if (!read.ok) return { answer: 'refused', refusals: read.refusals };
-
-  const catalogueVersion = await trx
-    .selectFrom('artifact_version')
-    .select('artifact_id')
-    .where('id', '=', boundVersion)
-    .executeTakeFirstOrThrow();
-  const catalogueLatest = await latestVersion(trx, catalogueVersion.artifact_id);
-  const recordedCatalogue = await addCatalogueVersion(trx, {
-    artifactId: catalogueVersion.artifact_id,
-    openedFrom: catalogueLatest!.id,
-    author: change.author,
-    catalogue: next as Parameters<typeof addCatalogueVersion>[1]['catalogue'],
-  });
-  if (recordedCatalogue.answer === 'refused') return recordedCatalogue;
-  if (recordedCatalogue.answer === 'version.unchanged') return { answer: 'version.unchanged' };
-  if (recordedCatalogue.answer !== 'recorded') {
-    throw new Error(
-      `The catalogue ${catalogueVersion.artifact_id} answered ${recordedCatalogue.answer}`,
-    );
-  }
-  const recordedTheme = await addThemeVersion(trx, {
-    artifactId: change.themeId,
-    openedFrom: current.versionId,
-    author: change.author,
-    theme: {
-      ...current.content,
-      catalogues: { ...current.content.catalogues, [change.kind]: recordedCatalogue.version.id },
-    },
-  });
-  if (recordedTheme.answer !== 'recorded') {
-    // Read above with the same catalogue, under the theme's lock: anything else is a broken store.
-    throw new Error(`The theme ${change.themeId} answered ${recordedTheme.answer}`);
-  }
+  const written = await writeCatalogue(trx, current, change.kind, next, change.author);
+  if (written.answer !== 'written') return written;
+  const recordedTheme = written;
   await recordEvent(
     trx,
     {
@@ -201,6 +166,141 @@ export async function saveStyle(
     ),
   );
   return { answer: 'recorded', theme: await themeLatest(trx, change.themeId) };
+}
+
+type CatalogueKind = keyof Theme['catalogues'];
+
+/**
+ * A theme's catalogue of `kind` replaced by `next`, under the theme's lock: the theme is read with it
+ * under a name no version holds before anything is written, so every refusal the reader makes - a
+ * typeface the theme lacks, a place given a style it does not hold (STY-071) - comes first; then the
+ * catalogue's next version and the theme's next version naming it.
+ */
+async function writeCatalogue(
+  trx: TenantTransaction,
+  current: StoredTheme,
+  kind: CatalogueKind,
+  next: unknown,
+  author: string,
+): Promise<
+  | { readonly answer: 'written'; readonly version: { readonly id: string } }
+  | { readonly answer: 'version.unchanged' }
+  | { readonly answer: 'refused'; readonly refusals: readonly ThemeStoreRefusal[] }
+> {
+  const boundVersion = current.content.catalogues[kind]!;
+  const unwritten = randomUUID();
+  const proposed: Theme = {
+    ...current.content,
+    catalogues: { ...current.content.catalogues, [kind]: unwritten },
+  };
+  const read = readTheme(proposed, new Map([...current.catalogues, [unwritten, next]]));
+  if (!read.ok) return { answer: 'refused', refusals: read.refusals };
+
+  const catalogueVersion = await trx
+    .selectFrom('artifact_version')
+    .select('artifact_id')
+    .where('id', '=', boundVersion)
+    .executeTakeFirstOrThrow();
+  const catalogueLatest = await latestVersion(trx, catalogueVersion.artifact_id);
+  const recordedCatalogue = await addCatalogueVersion(trx, {
+    artifactId: catalogueVersion.artifact_id,
+    openedFrom: catalogueLatest!.id,
+    author,
+    catalogue: next as Parameters<typeof addCatalogueVersion>[1]['catalogue'],
+  });
+  if (recordedCatalogue.answer === 'refused') return recordedCatalogue;
+  if (recordedCatalogue.answer === 'version.unchanged') return { answer: 'version.unchanged' };
+  if (recordedCatalogue.answer !== 'recorded') {
+    throw new Error(
+      `The catalogue ${catalogueVersion.artifact_id} answered ${recordedCatalogue.answer}`,
+    );
+  }
+  const recordedTheme = await addThemeVersion(trx, {
+    artifactId: current.artifactId,
+    openedFrom: current.versionId,
+    author,
+    theme: {
+      ...current.content,
+      catalogues: { ...current.content.catalogues, [kind]: recordedCatalogue.version.id },
+    },
+  });
+  if (recordedTheme.answer !== 'recorded') {
+    // Read above with the same catalogue, under the theme's lock: anything else is a broken store.
+    throw new Error(`The theme ${current.artifactId} answered ${recordedTheme.answer}`);
+  }
+  return { answer: 'written', version: recordedTheme.version };
+}
+
+/**
+ * **A theme's catalogue as a document** (the SY plan, SY-I; STY-043), at the schema it reads at now,
+ * or null where the theme is not one or binds no catalogue of `kind`.
+ */
+export async function exportThemeCatalogue(
+  trx: TenantTransaction,
+  target: { readonly themeId: string; readonly kind: CatalogueKind },
+): Promise<CatalogueDocument | null> {
+  const theme = await latestVersion(trx, target.themeId);
+  if (theme?.kind !== 'theme') return null;
+  const current = await themeLatest(trx, target.themeId);
+  const bound = current.content.catalogues[target.kind];
+  return bound === undefined ? null : exportCatalogue(current.catalogues.get(bound));
+}
+
+/**
+ * **A catalogue imported into a theme** (the SY plan, SY-I; STY-043, STY-044, STY-071) as its
+ * catalogue of `kind`'s next version: the document read with every refusal at once, each by where it
+ * is; then the theme read with it, so a typeface, a parent or a place's style it lacks is said now
+ * rather than at publish; and a style it drops that a component uses keeps it out (STY-031).
+ */
+export async function importCatalogue(
+  trx: TenantTransaction,
+  input: {
+    readonly themeId: string;
+    readonly kind: CatalogueKind;
+    readonly openedFrom: string;
+    readonly document: unknown;
+    readonly author: string;
+  },
+): Promise<StyleChangeAnswer> {
+  const theme = await latestVersion(trx, input.themeId);
+  if (theme?.kind !== 'theme') return { answer: 'artifact.missing' };
+  await lockArtifact(trx, input.themeId);
+  const current = await themeLatest(trx, input.themeId);
+  if (current.versionId !== input.openedFrom) {
+    return { answer: 'version.precondition', current: current.versionId };
+  }
+  const bound = current.content.catalogues[input.kind];
+  if (bound === undefined) {
+    return refused(
+      'catalogue_missing',
+      `The theme binds no ${input.kind} catalogue to import into`,
+    );
+  }
+  const read = readCatalogueDocument(input.document);
+  if (!read.ok) return { answer: 'refused', refusals: read.refusals };
+  if (read.catalogue.kind !== input.kind) {
+    return refused(
+      'catalogue_wrong_kind',
+      `The document holds a ${read.catalogue.kind} catalogue, and this is the theme's ${input.kind} one`,
+    );
+  }
+  if (input.kind === 'paragraph' || input.kind === 'table' || input.kind === 'image') {
+    const before = readCatalogue(current.catalogues.get(bound));
+    const kept = new Set(
+      'styles' in read.catalogue ? read.catalogue.styles.map((each) => each.id) : [],
+    );
+    let components = 0;
+    if (before.ok && 'styles' in before.catalogue) {
+      for (const style of before.catalogue.styles) {
+        if (kept.has(style.id)) continue;
+        components += await styleUseCount(trx, { kind: input.kind, key: style.id });
+      }
+    }
+    if (components > 0) return { answer: 'style_in_use', components };
+  }
+  const written = await writeCatalogue(trx, current, input.kind, read.catalogue, input.author);
+  if (written.answer !== 'written') return written;
+  return { answer: 'recorded', theme: await themeLatest(trx, input.themeId) };
 }
 
 /**

@@ -20757,6 +20757,14 @@
           "howItIsMet": "Import validates against the schema and reports every rejected property by name"
         },
         {
+          "id": "STY-071",
+          "howItIsMet": "An import is read with the destination theme before anything is written, so a typeface, a parent or a place's style it lacks is refused then ([Styles changed without a release](#styles-changed-without-a-release))"
+        },
+        {
+          "id": "STY-073",
+          "howItIsMet": "An export re-imports as the catalogue it was, at the schema it reads at now, round-tripped by a test in the domain and in the store"
+        },
+        {
           "id": "STY-045",
           "howItIsMet": "The product's own typefaces are shipped as typeface artifacts carrying their open licence"
         },
@@ -22056,13 +22064,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 735,
+      "line": 737,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 748,
+      "line": 750,
       "kind": "title"
     },
     {
@@ -22602,7 +22610,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2229,
+      "line": 2238,
       "kind": "title"
     },
     {
@@ -24442,6 +24450,18 @@
       "kind": "title"
     },
     {
+      "id": "STY-043",
+      "file": "apps/service/src/theme-routes.test.ts",
+      "line": 275,
+      "kind": "title"
+    },
+    {
+      "id": "STY-044",
+      "file": "apps/service/src/theme-routes.test.ts",
+      "line": 275,
+      "kind": "title"
+    },
+    {
       "id": "STY-072",
       "file": "apps/service/src/theme-routes.test.ts",
       "line": 223,
@@ -25080,13 +25100,13 @@
     {
       "id": "GEN-028",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 332,
+      "line": 297,
       "kind": "title"
     },
     {
       "id": "GEN-029",
       "file": "apps/web/src/admin/Models.test.tsx",
-      "line": 290,
+      "line": 255,
       "kind": "title"
     },
     {
@@ -25146,49 +25166,61 @@
     {
       "id": "STY-029",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 178,
+      "line": 188,
       "kind": "title"
     },
     {
       "id": "STY-031",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 164,
+      "line": 174,
       "kind": "title"
     },
     {
       "id": "STY-033",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 293,
+      "line": 303,
       "kind": "title"
     },
     {
       "id": "STY-034",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 118,
+      "line": 128,
+      "kind": "title"
+    },
+    {
+      "id": "STY-043",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 341,
+      "kind": "title"
+    },
+    {
+      "id": "STY-044",
+      "file": "apps/web/src/admin/Themes.test.tsx",
+      "line": 381,
       "kind": "title"
     },
     {
       "id": "STY-057",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 96,
+      "line": 106,
       "kind": "title"
     },
     {
       "id": "STY-067",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 118,
+      "line": 128,
       "kind": "title"
     },
     {
       "id": "STY-069",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 154,
+      "line": 164,
       "kind": "title"
     },
     {
       "id": "STY-072",
       "file": "apps/web/src/admin/Themes.test.tsx",
-      "line": 206,
+      "line": 216,
       "kind": "title"
     },
     {
@@ -26916,13 +26948,13 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 787,
+      "line": 770,
       "kind": "title"
     },
     {
       "id": "GEN-009",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 501,
+      "line": 484,
       "kind": "title"
     },
     {
@@ -26934,19 +26966,19 @@
     {
       "id": "GEN-011",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 422,
+      "line": 405,
       "kind": "title"
     },
     {
       "id": "GEN-021",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 464,
+      "line": 447,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 732,
+      "line": 715,
       "kind": "title"
     },
     {
@@ -26958,25 +26990,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 848,
+      "line": 831,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 848,
+      "line": 831,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 882,
+      "line": 865,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 601,
+      "line": 584,
       "kind": "title"
     },
     {
@@ -30312,19 +30344,19 @@
     {
       "id": "GEN-027",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 103,
+      "line": 102,
       "kind": "title"
     },
     {
       "id": "GEN-028",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 215,
+      "line": 187,
       "kind": "title"
     },
     {
       "id": "IAM-076",
       "file": "packages/db/src/model-endpoints.test.ts",
-      "line": 155,
+      "line": 127,
       "kind": "title"
     },
     {
@@ -31272,49 +31304,67 @@
     {
       "id": "STY-026",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 484,
+      "line": 546,
       "kind": "title"
     },
     {
       "id": "STY-029",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 187,
+      "line": 189,
       "kind": "title"
     },
     {
       "id": "STY-031",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 256,
+      "line": 258,
       "kind": "title"
     },
     {
       "id": "STY-032",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 209,
+      "line": 211,
       "kind": "title"
     },
     {
       "id": "STY-033",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 409,
+      "line": 471,
       "kind": "title"
     },
     {
       "id": "STY-034",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 315,
+      "line": 317,
+      "kind": "title"
+    },
+    {
+      "id": "STY-043",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 411,
       "kind": "title"
     },
     {
       "id": "STY-067",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 358,
+      "line": 360,
+      "kind": "title"
+    },
+    {
+      "id": "STY-071",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 411,
       "kind": "title"
     },
     {
       "id": "STY-072",
       "file": "packages/db/src/theme-styles.test.ts",
-      "line": 372,
+      "line": 374,
+      "kind": "title"
+    },
+    {
+      "id": "STY-073",
+      "file": "packages/db/src/theme-styles.test.ts",
+      "line": 411,
       "kind": "title"
     },
     {
@@ -32790,13 +32840,13 @@
     {
       "id": "GEN-031",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 45,
+      "line": 42,
       "kind": "title"
     },
     {
       "id": "GEN-036",
       "file": "packages/domain/src/generation/endpoint.test.ts",
-      "line": 133,
+      "line": 105,
       "kind": "title"
     },
     {
@@ -32958,7 +33008,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1154,
+      "line": 1158,
       "kind": "title"
     },
     {
@@ -33414,19 +33464,19 @@
     {
       "id": "LOC-037",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7428,
+      "line": 7437,
       "kind": "title"
     },
     {
       "id": "PUB-004",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7287,
+      "line": 7296,
       "kind": "title"
     },
     {
       "id": "PUB-005",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6996,
+      "line": 7005,
       "kind": "title"
     },
     {
@@ -33456,25 +33506,25 @@
     {
       "id": "PUB-089",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7308,
+      "line": 7317,
       "kind": "title"
     },
     {
       "id": "PUB-103",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 6279,
+      "line": 6288,
       "kind": "title"
     },
     {
       "id": "REU-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7379,
+      "line": 7388,
       "kind": "title"
     },
     {
       "id": "REU-019",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7322,
+      "line": 7331,
       "kind": "title"
     },
     {
@@ -33498,7 +33548,7 @@
     {
       "id": "REU-038",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7379,
+      "line": 7388,
       "kind": "title"
     },
     {
@@ -33576,19 +33626,19 @@
     {
       "id": "STY-015",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5486,
+      "line": 5495,
       "kind": "title"
     },
     {
       "id": "STY-016",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5486,
+      "line": 5495,
       "kind": "title"
     },
     {
       "id": "STY-017",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 5510,
+      "line": 5519,
       "kind": "title"
     },
     {
@@ -33612,7 +33662,7 @@
     {
       "id": "TAB-053",
       "file": "packages/domain/src/publishing/assemble.test.ts",
-      "line": 7213,
+      "line": 7222,
       "kind": "title"
     },
     {
@@ -34579,6 +34629,24 @@
       "id": "TAB-053",
       "file": "packages/domain/src/theme/default.test.ts",
       "line": 434,
+      "kind": "title"
+    },
+    {
+      "id": "STY-043",
+      "file": "packages/domain/src/theme/document.test.ts",
+      "line": 11,
+      "kind": "title"
+    },
+    {
+      "id": "STY-044",
+      "file": "packages/domain/src/theme/document.test.ts",
+      "line": 20,
+      "kind": "title"
+    },
+    {
+      "id": "STY-073",
+      "file": "packages/domain/src/theme/document.test.ts",
+      "line": 11,
       "kind": "title"
     },
     {

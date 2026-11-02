@@ -271,4 +271,35 @@ describe('themes through the service (the SY plan, SY-C)', () => {
     expect(refused.statusCode).toBe(400);
     expect(refused.json()).toMatchObject({ code: 'style_refused' });
   });
+
+  it('STY-043 STY-044 exports a catalogue and imports it into another theme, refusing what it cannot represent', async () => {
+    const exported = await call(
+      'ada',
+      'GET',
+      `/v1/themes/${DEFAULT_THEME_ID}/catalogues/character`,
+    );
+    expect(exported.statusCode, exported.body).toBe(200);
+    const document = exported.json<{ format: string; catalogue: Record<string, unknown> }>();
+    expect(document.format).toBe('alloy-works.catalogue');
+    const made = await call('grace', 'POST', '/v1/themes', {
+      from: DEFAULT_THEME_ID,
+      name: 'Imported',
+    });
+    const theme = made.json<{ id: string; version: { id: string } }>();
+    const imported = await call('grace', 'PUT', `/v1/themes/${theme.id}/catalogues/character`, {
+      openedFrom: theme.version.id,
+      document,
+    });
+    expect(imported.statusCode, imported.body).toBe(200);
+    const view = imported.json<{ version: { id: string } }>();
+    const refused = await call('grace', 'PUT', `/v1/themes/${theme.id}/catalogues/character`, {
+      openedFrom: view.version.id,
+      document: { ...document, catalogue: { ...document.catalogue, flourish: true } },
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toMatchObject({
+      code: 'style_refused',
+      refusals: [{ message: expect.stringContaining('flourish') }],
+    });
+  });
 });

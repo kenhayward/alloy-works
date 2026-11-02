@@ -207,6 +207,27 @@ export interface ResolvedTheme {
 export const ALLOWED_KINDS = ['paragraph', 'table', 'image'] as const;
 export type AllowedKind = (typeof ALLOWED_KINDS)[number];
 
+/** The identifiers content carries where no style is chosen, which no `allowed` takes away. */
+const CARRIED: Readonly<Record<AllowedKind, readonly string[]>> = {
+  paragraph: [],
+  table: ['table'],
+  image: ['figure', 'inline'],
+};
+
+/**
+ * Whether a theme allows authors a style of a kind (STY-033): every one where it names none, and the
+ * identifiers content carries by default always, as a place's default is. One rule, so the editor
+ * offers what a publish accepts.
+ */
+export function allowsStyle(
+  allowed: ResolvedTheme['allowed'],
+  kind: AllowedKind,
+  id: string,
+): boolean {
+  const named = allowed[kind];
+  return named === null || named.includes(id) || CARRIED[kind].includes(id);
+}
+
 export type CatalogueReadOutcome =
   { ok: true; catalogue: Catalogue } | { ok: false; refusals: ThemeRefusal[] };
 

@@ -628,6 +628,14 @@ const OTHER_TENANT_IDS: Readonly<
   getStyleImpact: async (tenant, db) => ({ id: await themeIdIn(tenant, db) }),
   renameTheme: async (tenant, db) => ({ id: await themeIdIn(tenant, db) }),
   allowThemeStyles: async (tenant, db) => ({ id: await themeIdIn(tenant, db) }),
+  exportThemeCatalogue: async (tenant, db) => ({
+    id: await themeIdIn(tenant, db),
+    kind: 'paragraph',
+  }),
+  importThemeCatalogue: async (tenant, db) => ({
+    id: await themeIdIn(tenant, db),
+    kind: 'paragraph',
+  }),
   declareTheme: async (tenant, db) => ({ id: await themeIdIn(tenant, db) }),
   revokeToken: async (tenant, db) => ({ id: (await tokenIn(tenant, db)).token }),
   endSession: async (tenant, db) => ({ id: await sessionIn(tenant, db) }),
@@ -752,6 +760,7 @@ const VALID_INPUT: Readonly<
   createTheme: { payload: { from: SESSION, name: 'Probe' } },
   renameTheme: { payload: { openedFrom: SESSION, name: 'Probe' } },
   allowThemeStyles: { payload: { openedFrom: SESSION, allowed: {} } },
+  importThemeCatalogue: { payload: { openedFrom: SESSION, document: {} } },
   recordTermVersion: { payload: { openedFrom: SESSION, term: aTerm } },
   transitionTerm: { payload: { transition: 'deprecate', from: 'approved', reason: 'Probe' } },
   decideTermGate: {
