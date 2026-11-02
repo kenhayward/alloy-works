@@ -1119,6 +1119,7 @@
   "document.a-new-part": "a new part, {title}",
   "document.a-part-2": "a part",
   "document.a-comment-on": "a comment on {part}",
+  "document.open-the-comments": "{count, plural, one {Open the comment} other {Open the # comments}}: {said}",
   "document.comment-is-on-words": "On the words: {quote}",
   "document.accepted-the-comment-is-posted": "Accepted: the comment is posted, as yours.",
   "document.a-work": "a work",

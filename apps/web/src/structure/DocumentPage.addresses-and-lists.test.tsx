@@ -2419,7 +2419,7 @@ describe('the document page as the Ledger draws it (LG6c)', () => {
       within(tabs)
         .getAllByRole('tab')
         .map((tab) => tab.textContent),
-    ).toEqual(['Part', 'Lists', 'Assistant', 'Versions', 'Publishing']);
+    ).toEqual(['Part', 'Lists', 'Assistant', 'Versions', 'Publishing', 'Threads']);
     expect(within(tabs).getByRole('tab', { name: 'Part' })).toHaveAttribute(
       'aria-selected',
       'true',

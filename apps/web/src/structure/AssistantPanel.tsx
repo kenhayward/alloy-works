@@ -240,6 +240,7 @@ export function AssistantPanel({
   onCite,
   onCitations,
   onAccepted,
+  onCommented,
   stream = streamPost,
   origin = window.location.origin,
   now = () => performance.now(),
@@ -261,6 +262,8 @@ export function AssistantPanel({
    * where that leaves the document, which the proposal then says (issue #902).
    */
   onAccepted?: (component: string, version?: string) => Promise<AcceptedInDocument> | void;
+  /** A comment accepted: a thread started on a part. */
+  onCommented?: () => void;
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
@@ -736,12 +739,10 @@ export function AssistantPanel({
               },
       ),
     );
+    if (data?.proposal.state !== 'accepted' || proposal.component === null) return;
     // A comment changes no text: there is no new version for the page to show.
-    if (
-      data?.proposal.state !== 'accepted' ||
-      proposal.component === null ||
-      proposal.comment !== null
-    ) {
+    if (proposal.comment !== null) {
+      onCommented?.();
       return;
     }
     const left = await onAccepted?.(proposal.component, data.proposal.version);

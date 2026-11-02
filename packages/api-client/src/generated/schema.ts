@@ -16103,6 +16103,10 @@ export interface operations {
                              * @description When its latest comment was added
                              */
                             lastAt: string;
+                            /** @description Its first comment as it reads now: words and mentions */
+                            said: {
+                                [key: string]: unknown;
+                            }[];
                             /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
                             orphaned: boolean;
                             /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */
@@ -27298,6 +27302,10 @@ export interface operations {
                              * @description When its latest comment was added
                              */
                             lastAt: string;
+                            /** @description Its first comment as it reads now: words and mentions */
+                            said: {
+                                [key: string]: unknown;
+                            }[];
                             /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
                             orphaned: boolean;
                             /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */
@@ -65457,6 +65465,10 @@ export interface operations {
                              * @description When its latest comment was added
                              */
                             lastAt: string;
+                            /** @description Its first comment as it reads now: words and mentions */
+                            said: {
+                                [key: string]: unknown;
+                            }[];
                             /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
                             orphaned: boolean;
                             /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */

@@ -58,6 +58,8 @@ export interface ThreadSummary {
   readonly resolvedAt: Date | null;
   readonly comments: number;
   readonly lastAt: Date;
+  /** Its first comment as it reads now: what a thread says at a glance. */
+  readonly said: CommentParts;
 }
 
 /** What starting a thread or adding to one answers. */
@@ -590,6 +592,10 @@ export async function listThreads(
       internalOf(held).as('internal'),
       'm.comments',
       'm.last_at',
+      sql<CommentParts>`(select x.parts from thread_comment f
+        join thread_comment_text x on x.comment_id = f.id
+        where f.thread_id = t.id
+        order by f.created_at, f.id, x.id desc limit 1)`.as('said'),
     ])
     .where('t.on_id', 'in', [...input.on]);
   if (input.hideInternal === true) query = query.where(sql<boolean>`not ${internalOf(held)}`);
@@ -617,5 +623,6 @@ export async function listThreads(
     resolvedAt: row.resolved_at,
     comments: Number(row.comments),
     lastAt: row.last_at as Date,
+    said: row.said,
   }));
 }

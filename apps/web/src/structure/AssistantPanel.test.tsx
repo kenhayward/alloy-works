@@ -556,6 +556,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     const user = userEvent.setup();
     const { client, asked } = service();
     const onAccepted = vi.fn();
+    const onCommented = vi.fn();
     render(
       <AssistantPanel
         client={client}
@@ -564,6 +565,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
         nameOf={() => 'Sites'}
         onCite={() => {}}
         onAccepted={onAccepted}
+        onCommented={onCommented}
         stream={running([
           ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
           [
@@ -592,6 +594,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(asked.some((each) => each.includes('/proposals/'))).toBe(false);
     await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
     await within(proposal).findByText('Accepted: the comment is posted, as yours.');
+    expect(onCommented).toHaveBeenCalledOnce();
     expect(onAccepted).not.toHaveBeenCalled();
   });
 

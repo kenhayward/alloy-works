@@ -1,3 +1,4 @@
+import type { StreamPostOptions } from '@alloy-works/api-client';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -16,6 +17,7 @@ import {
 const REFERENCE = 'kkkkkkkkkkkkkkkkkkkkkkkkkk';
 const VERSION = 'vvvvvvvv-0000-4000-8000-000000000001';
 const THREAD = 'tttttttt-0000-4000-8000-000000000001';
+const PROPOSAL = 'cccccccc-0000-4000-8000-0000000000d2';
 const printer = {
   schemaVersion: 1,
   title: 'Install the printer',
@@ -51,6 +53,10 @@ async function openAs(may: {
   mode?: 'review';
   /** A thread already on the component, which the address opens Review at. */
   at?: boolean;
+  /** A thread already on the component, and no address. */
+  held?: boolean;
+  /** That thread resolved. */
+  resolved?: boolean;
 }) {
   if (may.mode) window.localStorage.setItem('alloy-works.mode', may.mode);
   const fake = service(outline([reference(REFERENCE, 'latest')]), {
@@ -61,7 +67,7 @@ async function openAs(may: {
   const component = PRINTER;
   const started: unknown[] = [];
   const threads: unknown[] = [];
-  const held = {
+  const onComponent = {
     id: THREAD,
     on: { id: component, kind: 'component' },
     anchor: { kind: 'component' },
@@ -69,16 +75,16 @@ async function openAs(may: {
     startedBy: { id: ADA, name: 'Ada' },
     startedAt: '2026-10-12T10:00:00.000Z',
   };
-  if (may.at) {
-    threads.push({
-      ...held,
-      resolvedAt: null,
-      comments: 1,
-      lastAt: '2026-10-12T10:00:00.000Z',
-      orphaned: false,
-      places: [{ node: REFERENCE, orphaned: false }],
-    });
-  }
+  const thread = {
+    ...onComponent,
+    resolvedAt: may.resolved ? '2026-10-12T11:00:00.000Z' : null,
+    comments: 1,
+    said: [{ text: 'Which tray?' }],
+    lastAt: '2026-10-12T10:00:00.000Z',
+    orphaned: false,
+    places: [{ node: REFERENCE, orphaned: false }],
+  };
+  if (may.at || may.held) threads.push(thread);
   const fetching = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(String(input), init);
     const path = new URL(request.url).pathname;
@@ -131,9 +137,30 @@ async function openAs(may: {
       });
     }
     if (path === '/v1/people') return json(200, { items: [], next: null });
+    if (request.method === 'POST' && path === '/v1/conversations') {
+      return json(200, {
+        conversation: {
+          id: 'cccccccc-0000-4000-8000-0000000000d1',
+          document: DOCUMENT,
+          title: 'Asked',
+          madeAt: '2026-10-12T10:00:00.000Z',
+          kept: false,
+          turns: [],
+        },
+      });
+    }
+    if (path === '/v1/conversations' || path === '/v1/conversation-endpoints') {
+      return json(200, { items: [] });
+    }
+    if (path === `/v1/assistant/proposals/${PROPOSAL}/acceptance`) {
+      threads.push(thread);
+      return json(200, {
+        proposal: { id: PROPOSAL, state: 'accepted', suggestion: null, thread: THREAD },
+      });
+    }
     if (path === `/v1/threads/${THREAD}` && request.method === 'GET') {
       return json(200, {
-        ...held,
+        ...onComponent,
         resolution: null,
         comments: [
           {
@@ -152,6 +179,7 @@ async function openAs(may: {
       client={client(fetching)}
       id={DOCUMENT}
       principalId={ADA}
+      assistantStream={proposing}
       atPanel={may.at ? { panel: 'threads', arrival: 0, thread: THREAD } : null}
     />,
   );
@@ -160,6 +188,33 @@ async function openAs(may: {
   return { text, shown, started };
 }
 const modeOf = () => screen.getByRole('radiogroup', { name: 'Mode' });
+
+/** A turn that proposes a comment on the component, and ends. */
+const proposing = async (options: StreamPostOptions) => {
+  options.onEvent('run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } });
+  options.onEvent('proposal', {
+    id: PROPOSAL,
+    number: 1,
+    component: PRINTER,
+    against: VERSION,
+    comment: { text: 'Which tray?', quote: null },
+    proposed: { content: [] },
+  });
+  options.onEvent('ended', {
+    outcome: 'finished',
+    model: 'stand-in-1',
+    tokensIn: 1,
+    tokensOut: 1,
+    cost: '0',
+    currency: 'USD',
+    citations: [],
+    dropped: [],
+  });
+  return { kind: 'streamed' as const };
+};
+
+const panelsTab = (name: string) =>
+  within(screen.getByRole('tablist', { name: 'Document panels' })).getByRole('tab', { name });
 
 describe('Review (collaboration.md, "Review mode")', () => {
   it('CNT-155 IAM-081 offers Review beside Reading and Authoring to whoever may comment, and to nobody else', async () => {
@@ -250,6 +305,66 @@ describe('Review (collaboration.md, "Review mode")', () => {
     const panel = await screen.findByRole('tabpanel', { name: 'Threads' });
     expect(await within(panel).findByText('Which tray?')).toBeInTheDocument();
     expect(window.localStorage.getItem('alloy-works.mode')).toBeNull();
+  });
+
+  it('shows the threads in Authoring too, to read and answer, starting none there', async () => {
+    await openAs({ edit: true, review: true, component: true, held: true });
+    await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
+    await userEvent.click(panelsTab('Threads'));
+    const panel = screen.getByRole('tabpanel', { name: 'Threads' });
+    expect(await within(panel).findByText(/1 comment/)).toBeVisible();
+    expect(within(panel).queryByRole('button', { name: 'Start thread' })).toBeNull();
+    // Beside the text it stands on, as in Review.
+    expect(screen.getByRole('article', { name: /in Authoring$/ })).toBeInTheDocument();
+  });
+
+  it('marks a component’s open comment in its gutter, saying it on hover, and opens it in the Threads panel', async () => {
+    const { text } = await openAs({ edit: true, review: true, component: true, held: true });
+    await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
+    const glyph = await within(text).findByRole('button', {
+      name: 'Open the comment: Which tray?',
+    });
+    expect(glyph).toHaveAttribute('title', 'Which tray?');
+    await userEvent.click(glyph);
+    expect(panelsTab('Threads')).toHaveAttribute('aria-selected', 'true');
+    const panel = screen.getByRole('tabpanel', { name: 'Threads' });
+    expect(await within(panel).findByText('Which tray?')).toBeVisible();
+  });
+
+  it('marks no resolved comment in the gutter', async () => {
+    const { text } = await openAs({
+      edit: true,
+      review: true,
+      component: true,
+      held: true,
+      resolved: true,
+    });
+    await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
+    await userEvent.click(panelsTab('Threads'));
+    await within(screen.getByRole('tabpanel', { name: 'Threads' })).findByText(/1 comment/);
+    expect(within(text).queryByRole('button', { name: /Open the comment/ })).toBeNull();
+  });
+
+  it('leaves Suggestions and Rounds to Review', async () => {
+    await openAs({ edit: true, review: true, component: true });
+    await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
+    const tabs = screen.getByRole('tablist', { name: 'Document panels' });
+    expect(within(tabs).queryByRole('tab', { name: 'Suggestions' })).toBeNull();
+    expect(within(tabs).queryByRole('tab', { name: 'Rounds' })).toBeNull();
+  });
+
+  it('lists a comment the assistant posted as it is accepted, without leaving Authoring', async () => {
+    await openAs({ edit: true, review: true, component: true });
+    await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
+    await userEvent.click(panelsTab('Assistant'));
+    await userEvent.type(await screen.findByLabelText('Ask the assistant'), 'Flag it.');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    await userEvent.click(within(proposal).getByRole('button', { name: 'Accept' }));
+    await within(proposal).findByText('Accepted: the comment is posted, as yours.');
+    await userEvent.click(panelsTab('Threads'));
+    const panel = screen.getByRole('tabpanel', { name: 'Threads' });
+    expect(await within(panel).findByText(/1 comment/)).toBeVisible();
   });
 
   it('keeps Review as the reader’s choice for the next document', async () => {

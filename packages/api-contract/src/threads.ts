@@ -70,6 +70,9 @@ export const ThreadSummaryView = z.object({
   resolvedAt: z.iso.datetime().nullable(),
   comments: z.int().positive(),
   lastAt: z.iso.datetime().describe('When its latest comment was added'),
+  said: z
+    .array(z.record(z.string(), z.unknown()))
+    .describe('Its first comment as it reads now: words and mentions'),
   orphaned: z
     .boolean()
     .describe(
