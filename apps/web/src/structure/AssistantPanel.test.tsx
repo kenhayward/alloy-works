@@ -530,6 +530,48 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(within(proposal).queryByRole('button', { name: 'Discard' })).toBeNull();
   });
 
+  it('tells the page which part an accepted proposal changed (issue #876)', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const onAccepted = vi.fn();
+    const stream = running([
+      ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+      [
+        'proposal',
+        {
+          id: PROPOSAL,
+          number: 1,
+          component: SITES,
+          against: 'v1',
+          proposed: {
+            content: [
+              { type: 'paragraph', id: 'p1', content: [{ type: 'text', value: 'It floods.' }] },
+            ],
+          },
+        },
+      ],
+      ended(),
+    ]);
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        onAccepted={onAccepted}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Tighten it.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
+    await within(proposal).findByText('Accepted: it is a new version of the part.');
+    expect(onAccepted).toHaveBeenCalledExactlyOnceWith(SITES);
+  });
+
   it('shows a proposed table by its caption and rows, never as a bare kind (the TE change)', async () => {
     const user = userEvent.setup();
     const { client } = service();

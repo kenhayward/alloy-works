@@ -2058,6 +2058,10 @@ export function DocumentPage({
   const [marked, setMarked] = useState<string | null>(null);
   // The parts the assistant's last answer cited, stepped through above the text (the DP plan).
   const [citedNodes, setCitedNodes] = useState<readonly string[]>([]);
+  // The references an accepted assistant edit changed, marked until the page is left (issue #876),
+  // and how many each component had: its editor in place opens again on the new version.
+  const [changedNodes, setChangedNodes] = useState<ReadonlySet<string>>(new Set());
+  const [acceptances, setAcceptances] = useState<ReadonlyMap<string, number>>(new Map());
   useReadingPosition(textColumn, setInView, loaded.state === 'open' ? loaded.document.id : null);
   // A link's node is gone to once its text is there: the text arrives after the outline, so the
   // arrival waits, and is taken once however often the page draws.
@@ -2983,6 +2987,20 @@ export function DocumentPage({
                               ?.querySelector(`[data-node="${node}"]`)
                               ?.scrollIntoView?.({ block: 'start' });
                           }}
+                          onAccepted={(component) => {
+                            const nodes = [...componentOfNode]
+                              .filter(([, each]) => each === component)
+                              .map(([node]) => node);
+                            if (nodes.length === 0) return;
+                            setChangedNodes((was) => new Set([...was, ...nodes]));
+                            setAcceptances((was) =>
+                              new Map(was).set(component, (was.get(component) ?? 0) + 1),
+                            );
+                            setTextsAttempt((count) => count + 1);
+                            textColumn.current
+                              ?.querySelector(`[data-node="${nodes[0]!}"]`)
+                              ?.scrollIntoView?.({ block: 'start' });
+                          }}
                           onCitations={(cited) => {
                             const nodes = cited.flatMap(({ component }) => {
                               const node = [...componentOfNode].find(
@@ -3198,6 +3216,7 @@ export function DocumentPage({
                 diverged={divergedByNode}
                 translated={translatedByNode}
                 pastReview={pastReviewNodes}
+                changed={changedNodes}
                 overridesOf={overridesByNode}
                 {...(document.mayEdit && authoring ? { onOverride: setOverriding } : {})}
                 newer={{ client, byNode: newerByNode }}
@@ -3301,7 +3320,7 @@ export function DocumentPage({
                       },
                       editor: (component: string, place: Place) => (
                         <ComponentEditor
-                          key={component}
+                          key={`${component}:${acceptances.get(component) ?? 0}`}
                           componentId={component}
                           hostDocument={id}
                           termIndexes={termIndexes}
