@@ -53,6 +53,24 @@ export function modelDeadlineMs(
   return left === undefined ? own : Math.min(own, left);
 }
 
+/**
+ * How many model turns and tool calls an assistant run on an endpoint may make: its own where it
+ * names them, else the default (issue #872). A prompt run is one call, bounded by neither.
+ */
+export const MODEL_TURNS = { least: 1, default: 40, most: 100 } as const;
+export const MODEL_TOOL_CALLS = { least: 1, default: 100, most: 500 } as const;
+
+/** A run's turns and tool calls on an endpoint: its own, or the defaults. */
+export function runLimitsOf(endpoint: {
+  readonly turnsPerRun?: number | undefined;
+  readonly toolCallsPerRun?: number | undefined;
+}): { turns: number; toolCalls: number } {
+  return {
+    turns: endpoint.turnsPerRun ?? MODEL_TURNS.default,
+    toolCalls: endpoint.toolCallsPerRun ?? MODEL_TOOL_CALLS.default,
+  };
+}
+
 /** A model's identifier, as its provider spells it: printable ASCII, no space, 1 to 200 characters. */
 const MODEL = /^[\x21-\x7e]{1,200}$/;
 
@@ -94,6 +112,14 @@ export const modelEndpointSchema = z.strictObject({
   supportsTools: z.boolean().optional(),
   /** Whether the model may be sent images: no unless said. */
   supportsImages: z.boolean().optional(),
+  /** The defaults (`MODEL_TURNS`, `MODEL_TOOL_CALLS`) where unset. */
+  turnsPerRun: z.number().int().min(MODEL_TURNS.least).max(MODEL_TURNS.most).optional(),
+  toolCallsPerRun: z
+    .number()
+    .int()
+    .min(MODEL_TOOL_CALLS.least)
+    .max(MODEL_TOOL_CALLS.most)
+    .optional(),
 });
 export type ModelEndpoint = z.infer<typeof modelEndpointSchema>;
 

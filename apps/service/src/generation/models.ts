@@ -119,6 +119,10 @@ async function endpointView(
     boundary: endpoint.boundary,
     kind: endpointKind(endpoint),
     ...(endpoint.timeoutSeconds === undefined ? {} : { timeoutSeconds: endpoint.timeoutSeconds }),
+    ...(endpoint.turnsPerRun === undefined ? {} : { turnsPerRun: endpoint.turnsPerRun }),
+    ...(endpoint.toolCallsPerRun === undefined
+      ? {}
+      : { toolCallsPerRun: endpoint.toolCallsPerRun }),
     supportsTools: callsTools(endpoint),
     supportsImages: readsImages(endpoint),
     id: endpoint.id,

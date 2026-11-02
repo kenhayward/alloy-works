@@ -237,6 +237,8 @@ export function streamedRun(input: {
     let calls = 0;
     let outcome = 'finished';
     let failure: GenerationFailure | undefined;
+    // Every turn its model allows taken, the last answering tools still (issue #872): not a timeout.
+    let spent = false;
     // A guardrail that refused the run, by its rule (G5-F): never a connector's failure.
     let refusedBy: GuardrailRule | undefined;
     const rules = input.guardrails ?? [];
@@ -391,7 +393,7 @@ export function streamedRun(input: {
           break;
         }
         messages.push({ role: 'user', content: results });
-        if (turn === limits.turns - 1) failure = { code: 'timeout' };
+        if (turn === limits.turns - 1) spent = true;
       }
     } catch (error) {
       // A failure of the product's own, never said as a finished run (the final review).
@@ -399,7 +401,9 @@ export function streamedRun(input: {
       failure = { code: 'connector_error' };
     } finally {
       authority.stop();
-      const ending = refusedBy ? 'guardrail_refused' : (failure?.code ?? outcome);
+      const ending = refusedBy
+        ? 'guardrail_refused'
+        : (failure?.code ?? (spent ? 'turns_spent' : outcome));
       const recorded = await db
         .withTenant(
           tenant,
@@ -441,6 +445,11 @@ export function streamedRun(input: {
           code: failure.code,
           ...(failure.reason ? { reason: failure.reason } : {}),
           message: WORDS[failure.code],
+        });
+      } else if (spent) {
+        send('failed', {
+          code: 'turns_spent',
+          message: 'The run took all the turns its model allows.',
         });
       } else {
         send('ended', {

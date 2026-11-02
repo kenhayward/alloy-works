@@ -205,6 +205,41 @@ describe("Administration's Models (the G1 plan, G1-K)", () => {
     });
   });
 
+  it("asks how many turns and tool calls a model's run may make, empty for the defaults, refusing past its bounds (issue #872)", async () => {
+    const user = userEvent.setup();
+    const { client, asked } = service();
+    render(<Models client={client} />);
+    await screen.findByRole('table', { name: 'Model endpoints' });
+    await user.click(screen.getByRole('button', { name: 'Add an endpoint' }));
+    const form = screen.getByRole('form', { name: 'Add an endpoint' });
+    const turns = within(form).getByLabelText('Turns a run');
+    const calls = within(form).getByLabelText('Tool calls a run');
+    expect(turns).toHaveValue(null);
+    expect(turns).toHaveAttribute('placeholder', '40');
+    expect(calls).toHaveAttribute('placeholder', '100');
+    expect(within(form).getByText('Default: 40 turns and 100 tool calls a run.')).toBeVisible();
+    await user.type(within(form).getByLabelText('Name'), 'Long runs');
+    await user.type(within(form).getByLabelText('Base URL'), 'https://models.example.test');
+    await user.type(within(form).getByLabelText('Model'), 'claude-test');
+    await user.selectOptions(within(form).getByLabelText('Data boundary'), 'inside');
+    await user.type(turns, '101');
+    await user.click(within(form).getByRole('button', { name: 'Save' }));
+    expect(turns).toBeInvalid();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'A run takes 1 to 100 turns and 1 to 500 tool calls.',
+    );
+    expect(asked.find((each) => each.method === 'POST')).toBeUndefined();
+    await user.clear(turns);
+    await user.type(turns, '80');
+    await user.type(calls, '400');
+    await user.click(within(form).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Long runs added.'));
+    expect(asked.find((each) => each.method === 'POST')?.body).toMatchObject({
+      turnsPerRun: 80,
+      toolCallsPerRun: 400,
+    });
+  });
+
   it("edits a model's details beside its line, its settings filled in", async () => {
     const user = userEvent.setup();
     const { client, asked } = service();

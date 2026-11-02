@@ -11,6 +11,7 @@ import { usageByMonth } from './model-usage.js';
 import { migrate } from './migrate.js';
 import {
   changeModelEndpoint,
+  readModelEndpoint,
   endRun,
   listModelEndpoints,
   listModelRoutes,
@@ -121,6 +122,33 @@ describe('model endpoints', () => {
         ['Drafting', 'anthropic', false],
       ]);
       expect(listed[0]).toMatchObject({ priceIn: 3, priceOut: 15, boundary: 'outside' });
+    });
+  });
+
+  it('keeps the model turns and tool calls a run on an endpoint may make, each changed alone (issue #872)', async () => {
+    await service.withTenant(production, async (trx) => {
+      const limited = await made(trx, {
+        ...drafting,
+        name: 'Limited',
+        turnsPerRun: 8,
+        toolCallsPerRun: 30,
+      });
+      expect(limited).toMatchObject({ turnsPerRun: 8, toolCallsPerRun: 30 });
+      const changed = await changeModelEndpoint(trx, limited.id, {
+        ...drafting,
+        name: 'Limited',
+        turnsPerRun: 8,
+        toolCallsPerRun: 250,
+      });
+      if (changed.answer !== 'written') throw new Error(changed.answer);
+      expect(await readModelEndpoint(trx, limited.id)).toMatchObject({
+        turnsPerRun: 8,
+        toolCallsPerRun: 250,
+      });
+      // Left out, the default: none stored.
+      const plain = await made(trx, { ...drafting, name: 'Plain' });
+      expect(plain).not.toHaveProperty('turnsPerRun');
+      expect(plain).not.toHaveProperty('toolCallsPerRun');
     });
   });
 
