@@ -47,6 +47,8 @@ describe('the domain package', () => {
         // And its writing half, so the dialog stores the alternative the author settled on in the
         // same form, by the same parser (ruling R7).
         'withAlternative',
+        'withLanguage',
+        'languageServes',
         // Assets, promoted by figures 1: the formats and limits the service refuses at the door, the
         // header walk the service and the worker both run, and an asset version's stored shape.
         'ADMITTED_FORMATS',
