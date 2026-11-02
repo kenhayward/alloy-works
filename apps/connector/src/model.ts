@@ -237,7 +237,7 @@ const parsedInput = (text: string): Record<string, unknown> | undefined => {
   return value !== undefined && !Array.isArray(value) ? value : undefined;
 };
 
-function anthropicReader(
+export function anthropicReader(
   declared: string,
   emit: Emit,
   fail: (failure: GenerationFailure) => void,
@@ -287,6 +287,9 @@ function anthropicReader(
           } else if (delta?.type === 'input_json_delta' && typeof delta.partial_json === 'string') {
             const tool = tools.get(count(value.index));
             if (tool) tool.input += delta.partial_json;
+            if (delta.partial_json !== '') emit({ type: 'progress' });
+          } else if (delta?.type === 'thinking_delta') {
+            emit({ type: 'progress' });
           }
           return;
         }
@@ -338,7 +341,7 @@ function anthropicReader(
   return reader;
 }
 
-function openaiReader(
+export function openaiReader(
   declared: string,
   emit: Emit,
   fail: (failure: GenerationFailure) => void,
@@ -385,6 +388,10 @@ function openaiReader(
       if (typeof delta?.content === 'string' && delta.content !== '') {
         emit({ type: 'text', text: delta.content });
       }
+      // Thinking, as servers of the protocol name it: LM Studio and DeepSeek, or Ollama and vLLM.
+      for (const thought of [delta?.reasoning_content, delta?.reasoning]) {
+        if (typeof thought === 'string' && thought !== '') emit({ type: 'progress' });
+      }
       for (const call of Array.isArray(delta?.tool_calls)
         ? (delta.tool_calls as Record<string, unknown>[])
         : []) {
@@ -393,7 +400,10 @@ function openaiReader(
         const tool = tools.get(index) ?? { id: '', name: '', input: '' };
         if (typeof call.id === 'string') tool.id = call.id;
         if (typeof fn?.name === 'string' && fn.name !== '') tool.name = fn.name;
-        if (typeof fn?.arguments === 'string') tool.input += fn.arguments;
+        if (typeof fn?.arguments === 'string') {
+          tool.input += fn.arguments;
+          if (fn.arguments !== '') emit({ type: 'progress' });
+        }
         tools.set(index, tool);
       }
       if (choice.finish_reason === 'tool_calls') stop = 'tool_use';

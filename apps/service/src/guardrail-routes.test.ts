@@ -154,13 +154,11 @@ describe('guardrails through the service (the G5 plan, G5-F)', () => {
       const run = String(frames[0]!.data.run);
       const proposals = await h.tenantDb.withTenant(h.tenant, (trx) => proposalsOfRun(trx, run));
       expect(proposals.map((each) => each.state)).toEqual(['discarded']);
-      // A reply that clears it is sent whole, once checked.
+      // A reply that clears it is sent whole, once checked: counted as it comes, none of its words.
       answer = () => [text('It floods each spring.'), ended()];
-      expect((await turn('Say it plainly.')).map((frame) => frame.event)).toEqual([
-        'run',
-        'text',
-        'ended',
-      ]);
+      const cleared = await turn('Say it plainly.');
+      expect(cleared.map((frame) => frame.event)).toEqual(['run', 'progress', 'text', 'ended']);
+      expect(cleared[1]!.data).toEqual({ tokens: 1 });
     } finally {
       answer = () => [text('Fine.'), ended()];
       await h.call('ada', 'POST', `/v1/guardrails/${id}/retirement`);

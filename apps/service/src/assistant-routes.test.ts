@@ -387,6 +387,85 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
     ]);
   });
 
+  it('answers an edit mixing the table forms by saying what to change, and the corrected call makes its proposal (issue #890)', async () => {
+    const tabled = await h.component(h.general, 'Levels');
+    await h.placeBlocks(tabled, {
+      type: 'table',
+      id: 't1',
+      caption: [],
+      headerRows: 0,
+      headerColumns: 0,
+      rows: [
+        {
+          cells: [
+            {
+              content: [
+                {
+                  type: 'paragraph',
+                  id: 'a1',
+                  content: [{ type: 'text', value: '3.2 m', marks: [] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const levels = await h.documentReferencing([tabled.id]);
+    h.connector.modelFor = turns(
+      [
+        tool('t1', 'propose_edit', {
+          component: tabled.id,
+          edits: [
+            {
+              cell: { table: '#t1', row: 1, column: 1 },
+              rows: [['3.4 m']],
+              caption: '',
+              headerRows: 1,
+            },
+          ],
+        }),
+        ended('tool_use'),
+      ],
+      [
+        tool('t2', 'propose_edit', {
+          component: tabled.id,
+          edits: [{ cell: { table: '#t1', row: 1, column: 1 }, markdown: '3.4 m' }],
+        }),
+        ended('tool_use'),
+      ],
+      [text('Proposed.'), ended()],
+    );
+    const response = await h.call('ada', 'POST', `/v1/documents/${levels.id}/assistant/runs`, {
+      ask: 'Correct the level.',
+    });
+    const frames = framesOf(response.body);
+    const answers = frames
+      .filter((frame) => frame.event === 'tool_result')
+      .map((frame) => frame.data as { ok: boolean; result: string; said: { code: string } });
+    expect(answers[0]).toMatchObject({ ok: false, said: { code: 'arguments_refused' } });
+    expect(answers[0]!.result).toContain('Take out rows, caption, headerRows.');
+    expect(answers[1]).toMatchObject({ ok: true, said: { code: 'proposal' } });
+    expect(frames.some((frame) => frame.event === 'proposal')).toBe(true);
+  });
+
+  it('counts what a model streams before its words, thinking and tool calls, with the words after it (the chat progress change)', async () => {
+    h.connector.modelFor = turns([
+      { type: 'progress' },
+      { type: 'progress' },
+      text('It floods.'),
+      ended(),
+    ]);
+    const counted = (await ask('ada', 'When does it flood?'))
+      .filter((frame) => frame.event === 'progress' || frame.event === 'text')
+      .map((frame) => [frame.event, frame.data.tokens]);
+    expect(counted).toEqual([
+      ['progress', 1],
+      ['progress', 2],
+      ['text', 3],
+    ]);
+  });
+
   it('GEN-009 makes a proposal that changes nothing until its requester acts on it', async () => {
     const before = await latest(sites.id);
     const { proposal } = await propose('The north weir floods *every* spring.');

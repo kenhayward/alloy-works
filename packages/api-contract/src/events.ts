@@ -172,7 +172,20 @@ export const assistantEvents = {
         .nonnegative()
         .optional()
         .describe(
-          'How many tokens of the reply have arrived so far, this piece among them: counted as the pieces the provider streamed, about a token each',
+          'How many tokens of the reply have arrived so far, this piece among them, its thinking and tool calls too: counted as the pieces the provider streamed, about a token each',
+        ),
+    }),
+  },
+  progress: {
+    summary:
+      'More of the reply arrived that is not yet its words: the model thinking, writing a tool call, or an answer held for its guardrails. Counted, and what it says never sent',
+    schema: z.object({
+      tokens: z
+        .number()
+        .int()
+        .nonnegative()
+        .describe(
+          'How many tokens of the reply have arrived so far, counted as `text` counts them',
         ),
     }),
   },

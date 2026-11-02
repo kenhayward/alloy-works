@@ -53,7 +53,9 @@ import {
   withReferenceSources,
   proposeComponentInputSchema,
   conversationToolInputSchemas,
+  callsTools,
   isConversationTool,
+  proposeEditProblem,
   applyEdits,
   asData,
   endpointKind,
@@ -127,6 +129,12 @@ const capped = (text: string) =>
   text.length <= TOOL_ANSWER_MAX
     ? text
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
+
+/** What a tool's refusal of its arguments tells the model: enough to correct an edit (issue #890). */
+const refusedArguments = (tool: string, input: unknown) =>
+  tool === 'propose_edit'
+    ? proposeEditProblem(input)
+    : 'The arguments are not what this tool takes.';
 
 /** The text a section title's inline content says. */
 const titleOf = (title: readonly unknown[]): string =>
@@ -330,7 +338,7 @@ export function assistantHandlers(
       if (!parsed.success) {
         return {
           ok: false,
-          content: 'The arguments are not what this tool takes.',
+          content: refusedArguments(name, input),
           said: { code: 'arguments_refused' },
         };
       }
@@ -750,7 +758,7 @@ export function assistantHandlers(
       if (!parsed.success) {
         return {
           ok: false,
-          content: 'The arguments are not what this tool takes.',
+          content: refusedArguments(name, input),
           said: { code: 'arguments_refused' },
         };
       }
@@ -959,6 +967,7 @@ export function assistantHandlers(
             name: each.name,
             model: each.model,
             contextWindow: each.contextWindow,
+            supportsTools: callsTools(each),
             boundary: each.boundary,
             isDefault: each.id === fallback,
           });

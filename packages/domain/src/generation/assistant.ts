@@ -123,6 +123,47 @@ export const CITE_REFERENCE: ModelTool = {
   },
 };
 
+const id = z.string().min(1).max(200);
+const markdown = z.string().min(1).max(20_000);
+
+/** A cell's words: Markdown's inline text, or none to empty it. */
+const cellWords = z.string().max(5_000);
+
+const replaceEdit = z.strictObject({
+  replace: id.describe('The block to replace'),
+  markdown: markdown.describe('Its new text'),
+});
+const insertEdit = z.strictObject({
+  insertAfter: id.nullable().describe('The block to insert after, or null for first'),
+  markdown: markdown.describe('The new text'),
+});
+const deleteEdit = z.strictObject({ delete: id.describe('The block to delete') });
+// One cell of a table, by row and column as `read_component` shows it, counting from 1.
+const cellEdit = z.strictObject({
+  cell: z
+    .strictObject({
+      table: id.describe('The table block'),
+      row: z.number().int().min(1).max(10_000),
+      column: z.number().int().min(1).max(1_000),
+    })
+    .describe('The cell to set'),
+  markdown: cellWords.describe("The cell's new text, empty to clear it"),
+});
+// A whole table's rows, and its header rows and caption where given.
+const rowsEdit = z.strictObject({
+  table: id.describe('The table block whose rows to replace'),
+  rows: z
+    .array(z.array(cellWords).min(1).max(100))
+    .min(1)
+    .max(1_000)
+    .describe("The table's rows, header rows first, each an array of its cells' text"),
+  headerRows: z.number().int().min(0).max(1_000).optional().describe('How many rows are headers'),
+  caption: z.string().max(2_000).optional().describe("The table's caption, empty for none"),
+});
+
+export const blockEditSchema = z.union([replaceEdit, insertEdit, deleteEdit, cellEdit, rowsEdit]);
+export type BlockEdit = z.infer<typeof blockEditSchema>;
+
 /** The tools (GEN-007): the product's own reads and searches, and proposals. Described for a model. */
 export const ASSISTANT_TOOLS: readonly ModelTool[] = [
   {
@@ -162,49 +203,16 @@ export const ASSISTANT_TOOLS: readonly ModelTool[] = [
   {
     name: 'propose_edit',
     description:
-      "Proposes edits to one component's blocks, as read_component numbered them: replace a block with Markdown, insert Markdown after a block (or first, with after null), or delete a block. For a table: set one cell (`cell`, its row and column counting from 1 as read_component shows the table, header rows included and the --- line not), or replace its rows (`table` with `rows`, each row's cells as text, and `headerRows` and `caption` where they change). A bound table's rows come from a query and cannot be edited. Nothing changes until the author accepts.",
+      "Proposes edits to one component's blocks, as read_component numbered them. Each edit is one form and only that form's fields: replace a block with Markdown (`replace`, `markdown`), insert Markdown after a block or first (`insertAfter`, null for first, `markdown`), or delete a block (`delete`). For a table: set one cell (`cell`, `markdown`; its row and column count from 1 as read_component shows the table, header rows included and the --- line not), or replace all its rows (`table`, `rows`, each row's cells as text, and `headerRows` and `caption` where they change). A bound table's rows come from a query and cannot be edited. Nothing changes until the author accepts.",
     inputSchema: {
       type: 'object',
       properties: {
         component: COMPONENT,
         edits: {
           type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              replace: { type: 'string', description: 'The block to replace' },
-              insertAfter: {
-                type: ['string', 'null'],
-                description: 'The block to insert after, or null for first',
-              },
-              delete: { type: 'string', description: 'The block to delete' },
-              markdown: {
-                type: 'string',
-                description: "The new text, for replace and insert, or a cell's, empty to clear it",
-              },
-              cell: {
-                type: 'object',
-                description: 'One cell of a table to set to markdown',
-                properties: {
-                  table: { type: 'string', description: 'The table block' },
-                  row: { type: 'integer', minimum: 1 },
-                  column: { type: 'integer', minimum: 1 },
-                },
-                required: ['table', 'row', 'column'],
-                additionalProperties: false,
-              },
-              table: { type: 'string', description: 'The table block whose rows to replace' },
-              rows: {
-                type: 'array',
-                description:
-                  "The table's rows, header rows first, each an array of its cells' text",
-                items: { type: 'array', items: { type: 'string' }, minItems: 1 },
-                minItems: 1,
-              },
-              headerRows: { type: 'integer', minimum: 0, description: 'How many rows are headers' },
-              caption: { type: 'string', description: "The table's caption, empty for none" },
-            },
-          },
+          description: 'Each edit is exactly one of these forms, with no field of another',
+          // From what is enforced, so the two cannot differ (issue #890).
+          items: { anyOf: z.toJSONSchema(blockEditSchema, { io: 'input' }).anyOf },
           minItems: 1,
         },
       },
@@ -227,35 +235,6 @@ export type AssistantToolName =
 
 export const isAssistantTool = (name: string): name is AssistantToolName =>
   ASSISTANT_TOOLS.some((tool) => tool.name === name);
-
-const id = z.string().min(1).max(200);
-const markdown = z.string().min(1).max(20_000);
-
-/** A cell's words: Markdown's inline text, or none to empty it. */
-const cellWords = z.string().max(5_000);
-
-export const blockEditSchema = z.union([
-  z.strictObject({ replace: id, markdown }),
-  z.strictObject({ insertAfter: id.nullable(), markdown }),
-  z.strictObject({ delete: id }),
-  // One cell of a table, by row and column as `read_component` shows it, counting from 1.
-  z.strictObject({
-    cell: z.strictObject({
-      table: id,
-      row: z.number().int().min(1).max(10_000),
-      column: z.number().int().min(1).max(1_000),
-    }),
-    markdown: cellWords,
-  }),
-  // A whole table's rows, and its header rows and caption where given.
-  z.strictObject({
-    table: id,
-    rows: z.array(z.array(cellWords).min(1).max(100)).min(1).max(1_000),
-    headerRows: z.number().int().min(0).max(1_000).optional(),
-    caption: z.string().max(2_000).optional(),
-  }),
-]);
-export type BlockEdit = z.infer<typeof blockEditSchema>;
 
 export const searchReferencesInputSchema = z.strictObject({
   source: referenceSourceKeySchema,
@@ -280,6 +259,76 @@ export const toolInputSchemas = {
   search_references: searchReferencesInputSchema,
   cite_reference: citeReferenceInputSchema,
 } as const;
+
+/** Each form of edit, by the field that says which it is meant to be. */
+const EDIT_FORMS = [
+  { key: 'cell', says: 'sets one table cell', form: '{ cell, markdown }', schema: cellEdit },
+  {
+    key: 'rows',
+    says: "replaces a table's rows",
+    form: '{ table, rows, headerRows?, caption? }',
+    schema: rowsEdit,
+  },
+  {
+    key: 'table',
+    says: "replaces a table's rows",
+    form: '{ table, rows, headerRows?, caption? }',
+    schema: rowsEdit,
+  },
+  { key: 'replace', says: 'replaces a block', form: '{ replace, markdown }', schema: replaceEdit },
+  {
+    key: 'insertAfter',
+    says: 'inserts after a block',
+    form: '{ insertAfter, markdown }',
+    schema: insertEdit,
+  },
+  { key: 'delete', says: 'deletes a block', form: '{ delete }', schema: deleteEdit },
+] as const;
+
+const issueWords = (issue: z.core.$ZodIssue) =>
+  issue.path.length === 0 ? issue.message : `${issue.path.join('.')}: ${issue.message}`;
+
+/** What is wrong with one edit against the form it is meant to be, never repeating its values. */
+function editProblem(edit: unknown, number: number): string {
+  const fields = typeof edit === 'object' && edit !== null ? edit : {};
+  const form = EDIT_FORMS.find((each) => each.key in fields);
+  if (!form) {
+    return `Edit ${number} is none of the forms an edit takes: { replace, markdown }, { insertAfter, markdown }, { delete }, { cell, markdown }, { table, rows, headerRows?, caption? }.`;
+  }
+  const issues = form.schema.safeParse(edit).error?.issues ?? [];
+  const extra = issues.flatMap((issue) => (issue.code === 'unrecognized_keys' ? issue.keys : []));
+  const missing = issues
+    .filter((issue) => issue.path.length === 1 && !(String(issue.path[0]) in fields))
+    .map((issue) => String(issue.path[0]));
+  const wrong = issues.filter(
+    (issue) => issue.code !== 'unrecognized_keys' && !missing.includes(String(issue.path[0])),
+  );
+  return [
+    `Edit ${number} ${form.says}, which takes ${form.form} and nothing else.`,
+    ...(extra.length === 0 ? [] : [`Take out ${extra.join(', ')}.`]),
+    ...(missing.length === 0 ? [] : [`It needs ${missing.join(', ')}.`]),
+    ...wrong.map(issueWords),
+  ].join(' ');
+}
+
+/**
+ * Why `propose_edit` refused its arguments, for the model to correct them (issue #890): the first
+ * edit refused, against the form it is meant to be, and how many more were.
+ */
+export function proposeEditProblem(input: unknown): string {
+  const issues = toolInputSchemas.propose_edit.safeParse(input).error?.issues ?? [];
+  const inEdit = (issue: z.core.$ZodIssue) =>
+    issue.path[0] === 'edits' && typeof issue.path[1] === 'number';
+  const refused = [...new Set(issues.filter(inEdit).map((issue) => issue.path[1] as number))];
+  const edits = (input as { edits?: readonly unknown[] }).edits;
+  const more = refused.length - 1;
+  return [
+    'The arguments are not what this tool takes.',
+    ...issues.filter((issue) => !inEdit(issue)).map(issueWords),
+    ...(refused.length === 0 ? [] : [editProblem(edits?.[refused[0]!], refused[0]! + 1)]),
+    ...(more < 1 ? [] : [`${plural(more, 'more edit is', 'more edits are')} refused too.`]),
+  ].join(' ');
+}
 
 /** The marks a block may hold and still be edited: what Markdown says, and nothing it cannot (G2-D). */
 const EDITABLE_MARKS = new Set([
