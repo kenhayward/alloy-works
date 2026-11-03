@@ -70,6 +70,8 @@ exist.
 | [0074](0074-panels-are-chosen-from-an-icon-rail.md)                               | A document's panels are chosen from an icon rail                              | Accepted           |
 | [0075](0075-one-header-a-side-dock-and-margin-labels.md)                          | One header, a side dock and style labels in the margin                        | Accepted           |
 | [0076](0076-one-registry-of-commands-and-keys.md)                                 | One registry of commands and keys                                             | Accepted           |
+| [0077](0077-the-threads-panel-reads-as-cards.md)                                  | The threads panel reads as cards, found in the browser                        | Accepted           |
+| [0078](0078-a-drafted-comment-stays-its-persons.md)                               | A comment the assistant drafted stays its person's                            | Accepted           |
 | [0048](0048-plain-http-sources-until-t7.md)                                       | Plain http sources until a tenant can refuse them                             | Accepted           |
 | [0047](0047-workflow-leaves-t3-for-t9.md)                                         | Workflow leaves T3 for T9                                                     | Accepted           |
 | [0046](0046-the-ledger-interface.md)                                              | The Ledger interface                                                          | Accepted           |

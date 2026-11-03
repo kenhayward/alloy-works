@@ -3664,13 +3664,31 @@
       "line": 103
     },
     {
+      "id": "COL-070",
+      "area": "COL",
+      "statement": "A person must see which threads are new to them, a comment by somebody else since they last read it making a thread new, and must be able to mark threads read; the mark is the person's own and is removed when they are erased",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "COL-collaboration-and-review.md",
+      "line": 104
+    },
+    {
+      "id": "COL-071",
+      "area": "COL",
+      "statement": "Threads must be findable in a document's list by a person who started, replied in or is named in them, and by the words of any comment",
+      "tranche": "T3",
+      "status": "Specified",
+      "document": "COL-collaboration-and-review.md",
+      "line": 105
+    },
+    {
       "id": "COL-020",
       "area": "COL",
       "statement": "A reviewer must be able to propose a change as a suggestion, rendered as a redline, without altering the content",
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 127
+      "line": 129
     },
     {
       "id": "COL-021",
@@ -3679,7 +3697,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 128
+      "line": 130
     },
     {
       "id": "COL-022",
@@ -3688,7 +3706,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 129
+      "line": 131
     },
     {
       "id": "COL-023",
@@ -3697,7 +3715,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 130
+      "line": 132
     },
     {
       "id": "COL-024",
@@ -3706,7 +3724,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 131
+      "line": 133
     },
     {
       "id": "COL-025",
@@ -3715,7 +3733,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 132
+      "line": 134
     },
     {
       "id": "COL-026",
@@ -3724,7 +3742,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 133
+      "line": 135
     },
     {
       "id": "COL-027",
@@ -3733,7 +3751,7 @@
       "tranche": "T3",
       "status": "Superseded by COL-065",
       "document": "COL-collaboration-and-review.md",
-      "line": 134
+      "line": 136
     },
     {
       "id": "COL-065",
@@ -3742,7 +3760,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 135
+      "line": 137
     },
     {
       "id": "COL-066",
@@ -3751,7 +3769,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 136
+      "line": 138
     },
     {
       "id": "COL-041",
@@ -3760,7 +3778,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 137
+      "line": 139
     },
     {
       "id": "COL-042",
@@ -3769,7 +3787,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 138
+      "line": 140
     },
     {
       "id": "COL-043",
@@ -3778,7 +3796,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 139
+      "line": 141
     },
     {
       "id": "COL-048",
@@ -3787,7 +3805,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 140
+      "line": 142
     },
     {
       "id": "COL-052",
@@ -3796,7 +3814,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 141
+      "line": 143
     },
     {
       "id": "COL-028",
@@ -3805,7 +3823,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 164
+      "line": 166
     },
     {
       "id": "COL-029",
@@ -3814,7 +3832,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 165
+      "line": 167
     },
     {
       "id": "COL-030",
@@ -3823,7 +3841,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 166
+      "line": 168
     },
     {
       "id": "COL-031",
@@ -3832,7 +3850,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 167
+      "line": 169
     },
     {
       "id": "COL-032",
@@ -3841,7 +3859,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 168
+      "line": 170
     },
     {
       "id": "COL-057",
@@ -3850,7 +3868,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 169
+      "line": 171
     },
     {
       "id": "COL-058",
@@ -3859,7 +3877,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 170
+      "line": 172
     },
     {
       "id": "COL-059",
@@ -3868,7 +3886,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 171
+      "line": 173
     },
     {
       "id": "COL-033",
@@ -3877,7 +3895,7 @@
       "tranche": "T3",
       "status": "Superseded by COL-063",
       "document": "COL-collaboration-and-review.md",
-      "line": 191
+      "line": 193
     },
     {
       "id": "COL-063",
@@ -3886,7 +3904,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 192
+      "line": 194
     },
     {
       "id": "COL-064",
@@ -3895,7 +3913,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 193
+      "line": 195
     },
     {
       "id": "COL-034",
@@ -3904,7 +3922,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 194
+      "line": 196
     },
     {
       "id": "COL-035",
@@ -3913,7 +3931,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 195
+      "line": 197
     },
     {
       "id": "COL-036",
@@ -3922,7 +3940,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 196
+      "line": 198
     },
     {
       "id": "COL-037",
@@ -3931,7 +3949,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 197
+      "line": 199
     },
     {
       "id": "COL-060",
@@ -3940,7 +3958,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 198
+      "line": 200
     },
     {
       "id": "COL-061",
@@ -3949,7 +3967,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 199
+      "line": 201
     },
     {
       "id": "COL-062",
@@ -3958,7 +3976,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 200
+      "line": 202
     },
     {
       "id": "COL-053",
@@ -3967,7 +3985,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 201
+      "line": 203
     },
     {
       "id": "COL-054",
@@ -3976,7 +3994,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 225
+      "line": 227
     },
     {
       "id": "DAT-001",
@@ -5284,13 +5302,22 @@
       "line": 103
     },
     {
+      "id": "GEN-063",
+      "area": "GEN",
+      "statement": "A comment accepted from the assistant must stay the comment of the person who accepted it, and must be marked everywhere it is shown as drafted by the assistant, with the model that drafted it for a reader inside the organisation",
+      "tranche": "T5",
+      "status": "Specified",
+      "document": "GEN-generative-ai.md",
+      "line": 104
+    },
+    {
       "id": "GEN-047",
       "area": "GEN",
       "statement": "A user must be able to hold an interactive conversation with a model, putting their own prompts to it rather than only running a declared one from a library",
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 126
+      "line": 127
     },
     {
       "id": "GEN-048",
@@ -5299,7 +5326,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 127
+      "line": 128
     },
     {
       "id": "GEN-049",
@@ -5308,7 +5335,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 128
+      "line": 129
     },
     {
       "id": "GEN-050",
@@ -5317,7 +5344,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 129
+      "line": 130
     },
     {
       "id": "GEN-051",
@@ -5326,7 +5353,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "GEN-052",
@@ -5335,7 +5362,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "GEN-060",
@@ -5344,7 +5371,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "GEN-053",
@@ -5353,7 +5380,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "GEN-054",
@@ -5362,7 +5389,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "GEN-055",
@@ -5371,7 +5398,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "GEN-013",
@@ -5380,7 +5407,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "GEN-014",
@@ -5389,7 +5416,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "GEN-015",
@@ -5398,7 +5425,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "GEN-016",
@@ -5407,7 +5434,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "GEN-017",
@@ -5416,7 +5443,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 172
+      "line": 173
     },
     {
       "id": "GEN-018",
@@ -5425,7 +5452,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 173
+      "line": 174
     },
     {
       "id": "GEN-019",
@@ -5434,7 +5461,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 174
+      "line": 175
     },
     {
       "id": "GEN-020",
@@ -5443,7 +5470,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 175
+      "line": 176
     },
     {
       "id": "GEN-021",
@@ -5452,7 +5479,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 176
+      "line": 177
     },
     {
       "id": "GEN-022",
@@ -5461,7 +5488,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 187
+      "line": 188
     },
     {
       "id": "GEN-023",
@@ -5470,7 +5497,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 188
+      "line": 189
     },
     {
       "id": "GEN-024",
@@ -5479,7 +5506,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 189
+      "line": 190
     },
     {
       "id": "GEN-025",
@@ -5488,7 +5515,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "GEN-026",
@@ -5497,7 +5524,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "GEN-040",
@@ -5506,7 +5533,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "GEN-041",
@@ -5515,7 +5542,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "GEN-042",
@@ -5524,7 +5551,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "GEN-027",
@@ -5533,7 +5560,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "GEN-028",
@@ -5542,7 +5569,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "GEN-029",
@@ -5551,7 +5578,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "GEN-030",
@@ -5560,7 +5587,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "GEN-031",
@@ -5569,7 +5596,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "GEN-038",
@@ -5578,7 +5605,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "GEN-032",
@@ -5587,7 +5614,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "GEN-033",
@@ -5596,7 +5623,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 228
+      "line": 229
     },
     {
       "id": "GEN-034",
@@ -5605,7 +5632,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 229
+      "line": 230
     },
     {
       "id": "GEN-035",
@@ -5614,7 +5641,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "GEN-036",
@@ -5623,7 +5650,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "GEN-037",
@@ -5632,7 +5659,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "GEN-044",
@@ -5641,7 +5668,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "IAM-001",
@@ -14856,43 +14883,43 @@
       "id": "COL-N01",
       "statement": "**No real-time character-level co-editing.** Scope §9 decision 4; the parallelism authors want is across components (**COL-011**)",
       "document": "COL-collaboration-and-review.md",
-      "line": 231
+      "line": 233
     },
     {
       "id": "COL-N02",
       "statement": "**No document-level locking.** It defeats the point of components",
       "document": "COL-collaboration-and-review.md",
-      "line": 232
+      "line": 234
     },
     {
       "id": "COL-N03",
       "statement": "**No comments in published output** (COL-019)",
       "document": "COL-collaboration-and-review.md",
-      "line": 233
+      "line": 235
     },
     {
       "id": "COL-N04",
       "statement": "**No anonymous review.** Every comment, suggestion and acceptance is attributable, because an audited document cannot contain unattributed changes",
       "document": "COL-collaboration-and-review.md",
-      "line": 234
+      "line": 236
     },
     {
       "id": "COL-N05",
       "statement": "**No live cursors.** Presence says which component each person is in and their mode (COL-001, COL-002), not where their cursor is; cursor-level presence belongs to the co-editing COL-N01 rules out",
       "document": "COL-collaboration-and-review.md",
-      "line": 235
+      "line": 237
     },
     {
       "id": "COL-N06",
       "statement": "**No deleting review history.** Not by its author, not by an author of the component, not by a tenant administrator (COL-049, COL-050). Resolution is how a thread stops mattering",
       "document": "COL-collaboration-and-review.md",
-      "line": 236
+      "line": 238
     },
     {
       "id": "COL-N07",
       "statement": "**No queued or automatic application of a suggestion** (COL-043). A change to a document is made by a person, at a moment they chose, against the content in front of them",
       "document": "COL-collaboration-and-review.md",
-      "line": 237
+      "line": 239
     },
     {
       "id": "DAT-N01",
@@ -14940,37 +14967,37 @@
       "id": "GEN-N01",
       "statement": "**No autonomous publishing.** Nothing a model produces reaches a reader without a person accepting it",
       "document": "GEN-generative-ai.md",
-      "line": 245
+      "line": 246
     },
     {
       "id": "GEN-N02",
       "statement": "**Not a model host.** The product calls endpoints; it does not serve models",
       "document": "GEN-generative-ai.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "GEN-N03",
       "statement": "**No training on customer content.** This product does not train on it. An endpoint that does may only be used where that is stated in configuration (GEN-031)",
       "document": "GEN-generative-ai.md",
-      "line": 247
+      "line": 248
     },
     {
       "id": "GEN-N04",
       "statement": "**No tool the product does not define.** The assistant's tools are the product's own capabilities and nothing else (GEN-007) - a rule about what it may **do**, never about what a user may **ask** (GEN-047, GEN-050)",
       "document": "GEN-generative-ai.md",
-      "line": 248
+      "line": 249
     },
     {
       "id": "GEN-N05",
       "statement": "**No shared personal prompt.** A personal prompt is private until somebody promotes it (GEN-055); there is no setting that shares one, and none that lets a template bind one",
       "document": "GEN-generative-ai.md",
-      "line": 249
+      "line": 250
     },
     {
       "id": "GEN-N06",
       "statement": "**No silent discard.** A generated proposal leaves the record only by somebody discarding it deliberately, and the fact that they did stays (GEN-040, GEN-041)",
       "document": "GEN-generative-ai.md",
-      "line": 250
+      "line": 251
     },
     {
       "id": "IAM-N01",
@@ -15668,42 +15695,42 @@
       "question": "**May a reviewer who also holds authoring rights edit directly instead of suggesting?** Carried from CNT-Q10",
       "settledBy": "Whether review in this market is a separate pass or a mode anybody drops into",
       "document": "COL-collaboration-and-review.md",
-      "line": 243
+      "line": 245
     },
     {
       "id": "COL-Q02",
       "question": "**What is the default lock timeout (COL-008)?** Too short interrupts thinking; too long blocks a colleague",
       "settledBy": "Observed behaviour. Fifteen minutes is a guess, not a finding",
       "document": "COL-collaboration-and-review.md",
-      "line": 244
+      "line": 246
     },
     {
       "id": "COL-Q03",
       "question": "**Can a thread be private to some reviewers?**",
       "settledBy": "**Settled.** Internal threads are required, not optional, because external reviewers exist (COL-038 to COL-040). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "COL-collaboration-and-review.md",
-      "line": 245
+      "line": 247
     },
     {
       "id": "COL-Q04",
       "question": "**Does the soft-lock bet survive contact with users?** Scope §13 names it as a risk, and it is the one thing here that a demo will be judged on",
       "settledBy": "Early evaluations. The content model stays CRDT-compatible either way",
       "document": "COL-collaboration-and-review.md",
-      "line": 246
+      "line": 248
     },
     {
       "id": "COL-Q05",
       "question": "**What are the two idle periods in COL-046 - the one after which a lock may be taken, and the one after which it releases?** COL-Q02 asks half of this question; COL-046 is why it is two",
       "settledBy": "Observed behaviour, as with COL-Q02. The ordering is fixed by COL-046; the numbers are not",
       "document": "COL-collaboration-and-review.md",
-      "line": 247
+      "line": 249
     },
     {
       "id": "COL-Q06",
       "question": "**May a principal who can accept suggestions but cannot author hold a lock in order to accept one?** COL-041 makes accepting an edit, which ties it to the lock and so to authoring rights",
       "settledBy": "A decision in **IAM**. If such a principal exists, either the lock admits a narrower claim or the right implies the other",
       "document": "COL-collaboration-and-review.md",
-      "line": 248
+      "line": 250
     },
     {
       "id": "DAT-Q01",
@@ -15752,42 +15779,42 @@
       "question": "**Does accepted generated content stay marked?** Keeping the mark makes GEN-026 answerable for ever; removing it treats accepted text as authored",
       "settledBy": "A regulatory view. The safer answer is to keep the record even after the mark stops showing",
       "document": "GEN-generative-ai.md",
-      "line": 256
+      "line": 257
     },
     {
       "id": "GEN-Q02",
       "question": "**May a model see content the user can read but should not send outside the tenant?** Permission and data residency are different questions",
       "settledBy": "A decision with **IAM** and **ADM**, forced by the first customer with residency rules",
       "document": "GEN-generative-ai.md",
-      "line": 257
+      "line": 258
     },
     {
       "id": "GEN-Q03",
       "question": "**How is a prompt tested?** A prompt is a versioned artifact whose behaviour is not deterministic, which makes review hard to define",
       "settledBy": "Whether prompt evaluation belongs in the product or beside it",
       "document": "GEN-generative-ai.md",
-      "line": 258
+      "line": 259
     },
     {
       "id": "GEN-Q04",
       "question": "**Does the assistant get memory across sessions?** Useful, and a second store of customer content with its own permission problem",
       "settledBy": "Whether the value survives the governance it would need",
       "document": "GEN-generative-ai.md",
-      "line": 259
+      "line": 260
     },
     {
       "id": "GEN-Q05",
       "question": "**Who configures the guardrails (GEN-049), and how much may a tenant change?** A tenant that can weaken them has a product liability; one that cannot has a compliance department it cannot satisfy",
       "settledBy": "A decision taken with the first regulated customer, and a view on what the product refuses on its own behalf rather than on a tenant's",
       "document": "GEN-generative-ai.md",
-      "line": 260
+      "line": 261
     },
     {
       "id": "GEN-Q06",
       "question": "**Is a conversation transcript retained, and who can see it?** Distinct from GEN-Q04: that asks whether the assistant remembers, this asks whether the record survives and is discoverable",
       "settledBy": "**LIF** retention, and a legal view. A transcript is customer content with a second copy of whatever it retrieved",
       "document": "GEN-generative-ai.md",
-      "line": 261
+      "line": 262
     },
     {
       "id": "IAM-Q01",
@@ -17033,6 +17060,14 @@
         {
           "id": "COL-051",
           "howItIsMet": "An edit is a new text row; the comment shows the latest and says it was edited, and every earlier text is kept and readable to whoever reads the thread"
+        },
+        {
+          "id": "COL-070",
+          "howItIsMet": "`thread_read`: new is somebody else's comment after the mark, or no mark; `POST /v1/threads/read` moves it to the latest comment, never back, passing over what the caller may not read; `erasePerson` removes it (ADR-0077)"
+        },
+        {
+          "id": "COL-071",
+          "howItIsMet": "The list answers `participants`, `mentioned` and `words`; the panel finds by person, the strip and the search one filter, and by words, in the browser (`threadFilters.ts`; ADR-0077)"
         },
         {
           "id": "COL-054",
@@ -18283,6 +18318,10 @@
         {
           "id": "GEN-062",
           "howItIsMet": "`propose_outline`, and `propose_component`'s `place`: a change of the outline proposed against the version read, all of it one version or none as it is accepted (Tools)"
+        },
+        {
+          "id": "GEN-063",
+          "howItIsMet": "`thread_comment.drafted_by`: accepted from `propose_comment`, its author the person, marked with an AI tag and the model, the model kept from a reader from outside (ADR-0078)"
         },
         {
           "id": "GEN-061",
@@ -22226,13 +22265,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 782,
+      "line": 783,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 795,
+      "line": 796,
       "kind": "title"
     },
     {
@@ -22743,6 +22782,12 @@
       "id": "GEN-053",
       "file": "apps/service/src/conversation-routes.test.ts",
       "line": 317,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-063",
+      "file": "apps/service/src/conversation-routes.test.ts",
+      "line": 543,
       "kind": "title"
     },
     {
@@ -24746,7 +24791,7 @@
     {
       "id": "COL-051",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 384,
+      "line": 437,
       "kind": "title"
     },
     {
@@ -24756,9 +24801,27 @@
       "kind": "title"
     },
     {
+      "id": "COL-070",
+      "file": "apps/service/src/thread-routes.test.ts",
+      "line": 402,
+      "kind": "title"
+    },
+    {
+      "id": "COL-071",
+      "file": "apps/service/src/thread-routes.test.ts",
+      "line": 384,
+      "kind": "title"
+    },
+    {
       "id": "IAM-081",
       "file": "apps/service/src/thread-routes.test.ts",
-      "line": 403,
+      "line": 456,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-063",
+      "file": "apps/service/src/thread-view.test.ts",
+      "line": 28,
       "kind": "title"
     },
     {
@@ -27084,39 +27147,81 @@
       "kind": "title"
     },
     {
-      "id": "IAM-045",
+      "id": "GEN-063",
       "file": "apps/web/src/review/ThreadPage.test.tsx",
       "line": 168,
       "kind": "title"
     },
     {
+      "id": "IAM-045",
+      "file": "apps/web/src/review/ThreadPage.test.tsx",
+      "line": 186,
+      "kind": "title"
+    },
+    {
       "id": "CNT-137",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 212,
+      "line": 268,
       "kind": "title"
     },
     {
       "id": "CNT-157",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 189,
+      "line": 241,
+      "kind": "title"
+    },
+    {
+      "id": "COL-015",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 241,
       "kind": "title"
     },
     {
       "id": "COL-038",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 325,
+      "line": 382,
       "kind": "title"
     },
     {
       "id": "COL-067",
       "file": "apps/web/src/review/ThreadsPanel.test.tsx",
-      "line": 291,
+      "line": 340,
+      "kind": "title"
+    },
+    {
+      "id": "COL-070",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 591,
+      "kind": "title"
+    },
+    {
+      "id": "COL-071",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 550,
+      "kind": "title"
+    },
+    {
+      "id": "GEN-063",
+      "file": "apps/web/src/review/ThreadsPanel.test.tsx",
+      "line": 619,
       "kind": "title"
     },
     {
       "id": "COL-012",
       "file": "apps/web/src/review/anchoring.test.ts",
       "line": 70,
+      "kind": "title"
+    },
+    {
+      "id": "COL-015",
+      "file": "apps/web/src/review/mentionDraft.test.ts",
+      "line": 23,
+      "kind": "title"
+    },
+    {
+      "id": "COL-071",
+      "file": "apps/web/src/review/threadFilters.test.ts",
+      "line": 37,
       "kind": "title"
     },
     {
@@ -27206,19 +27311,19 @@
     {
       "id": "CNT-077",
       "file": "apps/web/src/shell/commands/commands.test.ts",
-      "line": 98,
+      "line": 100,
       "kind": "title"
     },
     {
       "id": "CNT-188",
       "file": "apps/web/src/shell/commands/commands.test.ts",
-      "line": 105,
+      "line": 107,
       "kind": "title"
     },
     {
       "id": "CNT-189",
       "file": "apps/web/src/shell/commands/useGoToKeys.test.tsx",
-      "line": 99,
+      "line": 114,
       "kind": "title"
     },
     {
@@ -27728,19 +27833,25 @@
     {
       "id": "CNT-155",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 220,
+      "line": 233,
       "kind": "title"
     },
     {
       "id": "CNT-157",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 243,
+      "line": 256,
+      "kind": "title"
+    },
+    {
+      "id": "COL-070",
+      "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
+      "line": 384,
       "kind": "title"
     },
     {
       "id": "IAM-081",
       "file": "apps/web/src/structure/DocumentPage.review.test.tsx",
-      "line": 220,
+      "line": 233,
       "kind": "title"
     },
     {
@@ -30228,9 +30339,15 @@
       "kind": "title"
     },
     {
+      "id": "COL-070",
+      "file": "packages/db/src/erasure.test.ts",
+      "line": 290,
+      "kind": "title"
+    },
+    {
       "id": "VER-038",
       "file": "packages/db/src/erasure.test.ts",
-      "line": 289,
+      "line": 317,
       "kind": "title"
     },
     {
@@ -35859,6 +35976,18 @@
       "id": "CNT-190",
       "file": "tests/browser/src/canvas.test.ts",
       "line": 206,
+      "kind": "title"
+    },
+    {
+      "id": "COL-070",
+      "file": "tests/browser/src/document-panes.test.ts",
+      "line": 73,
+      "kind": "title"
+    },
+    {
+      "id": "COL-071",
+      "file": "tests/browser/src/document-panes.test.ts",
+      "line": 73,
       "kind": "title"
     },
     {

@@ -44,6 +44,8 @@ next hold the lock. A take is never instant and never silent.
 | **COL-049** | No route deletes a thread or a comment, and the runtime role holds no delete on either |
 | **COL-050** | Each thread records the version it was made against; comments, edits and resolutions are insert-only |
 | **COL-051** | An edit is a new text row; the comment shows the latest and says it was edited, and every earlier text is kept and readable to whoever reads the thread |
+| **COL-070** | `thread_read`: new is somebody else's comment after the mark, or no mark; `POST /v1/threads/read` moves it to the latest comment, never back, passing over what the caller may not read; `erasePerson` removes it (ADR-0077) |
+| **COL-071** | The list answers `participants`, `mentioned` and `words`; the panel finds by person, the strip and the search one filter, and by words, in the browser (`threadFilters.ts`; ADR-0077) |
 | **COL-054** | Every time here is a `timestamptz`, sent as an instant, and shown in the reader's own time zone with its time |
 | **COL-063** | `notification`: one row per recipient, listed in the inbox newest first, unread marked |
 | **COL-034** | `notification_preference`: for each kind - mentions, replies on a thread one is in, resolutions - at once, in a daily digest, or never |

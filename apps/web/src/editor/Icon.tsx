@@ -238,6 +238,7 @@ const ADMIN: Record<string, readonly string[]> = {
     'M15.5 8.5V13a2.5 2.5 0 0 0 5 0v-1A8.5 8.5 0 1 0 17 19.4',
   ],
   Reply: ['m21 3-6.5 18-3.5-7.5L3.5 10z', 'M21 3 11 13.5'],
+  'Resolve thread': ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'm8 12.5 3 3 5-6'],
   'Mark all read': ['m3 13 4 4 8-9', 'm10 16 1 1 9-10'],
   'Open thread': ['M14 4h6v6', 'M20 4l-7 7', 'M10 20H4v-6', 'M4 20l7-7'],
   'Go to text': ['M7 17 17 7', 'M9 7h8v8'],

@@ -115,7 +115,7 @@ const SHOW_ICONS: Record<Show, string> = {
   mine: 'Raised by me',
   assistant: 'Assistant',
   internal: 'Internal',
-  resolved: 'Resolve',
+  resolved: 'Resolve thread',
 };
 
 /** A thread's moment, as the person's language writes it. */
@@ -888,7 +888,7 @@ export function ThreadsPanel({
       label={say('review.resolve')}
       onClick={() => void resolve(thread.id)}
     >
-      <Icon name="Resolve" size={16} />
+      <Icon name="Resolve thread" size={16} />
     </IconButton>
   );
   /** Nobody from outside is offered it; once internal it stays so (COL-038), pressed and at rest. */
@@ -1051,9 +1051,9 @@ export function ThreadsPanel({
   }
 
   return (
-    <div className={styles['panel']}>
+    <div className={styles['threadsPanel']}>
       <header className={styles['head']}>
-        <h2 className={styles['title']}>{say('review.threads')}</h2>
+        <h2 className={styles['title']}>{say('review.threads-title')}</h2>
         <Chip>{say('review.n-open', { count: openCount })}</Chip>
         {newOnes.length > 0 && (
           <Chip tone="accent">{say('review.n-new', { count: newOnes.length })}</Chip>

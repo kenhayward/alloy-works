@@ -57,6 +57,8 @@ async function openAs(may: {
   held?: boolean;
   /** That thread resolved. */
   resolved?: boolean;
+  /** That thread new to the reader. */
+  unread?: boolean;
 }) {
   if (may.mode) window.localStorage.setItem('alloy-works.mode', may.mode);
   const fake = service(outline([reference(REFERENCE, 'latest')]), {
@@ -85,7 +87,7 @@ async function openAs(may: {
     mentioned: [],
     words: 'Which tray?',
     drafted: false,
-    new: false,
+    new: may.unread === true,
     orphaned: false,
     places: [{ node: REFERENCE, orphaned: false }],
   };
@@ -377,6 +379,12 @@ describe('Review (collaboration.md, "Review mode")', () => {
     await userEvent.click(panelsTab('Threads'));
     const panel = screen.getByRole('tabpanel', { name: 'Threads' });
     expect(await within(panel).findByText(/1 comment/)).toBeVisible();
+  });
+
+  it('COL-070 counts the open threads new to the reader on the Threads tab', async () => {
+    await openAs({ edit: true, review: true, component: true, held: true, unread: true });
+    await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
+    expect(await screen.findByRole('tab', { name: /^Threads, 1/ })).toBeInTheDocument();
   });
 
   it('keeps Review as the reader’s choice for the next document', async () => {

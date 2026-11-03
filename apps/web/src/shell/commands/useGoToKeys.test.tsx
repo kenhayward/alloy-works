@@ -59,6 +59,21 @@ afterEach(() => {
   window.localStorage.removeItem('alloy-works.go-to-keys');
 });
 
+describe('a key something else took', () => {
+  it('ends the wait for a letter, so it goes nowhere', () => {
+    const onGone = vi.fn();
+    render(<Page onGone={onGone} />);
+    const target = screen.getByTestId('body-target');
+    target.addEventListener('keydown', (event) => {
+      if (event.key === 'j') event.preventDefault();
+    });
+    fireEvent.keyDown(target, { key: 'g' });
+    fireEvent.keyDown(target, { key: 'j' });
+    fireEvent.keyDown(target, { key: 'd' });
+    expect(onGone).not.toHaveBeenCalled();
+  });
+});
+
 describe('the go-to keys', () => {
   it('go to the rail link a letter names, G then the letter', () => {
     const gone = vi.fn();

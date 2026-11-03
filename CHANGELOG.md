@@ -3,6 +3,23 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.229.0 - 2026-11-03 (PR #NNN)
+
+The threads panel closed (the TP plan): cards you can read at a glance, found by person, words or state, and a thread opened where it is listed or across the panel.
+
+### Added
+
+- **Find threads by person or words.** A people strip and a search box filter the list; type `@` for a person. The search reads every comment. Show gains New to me, Mentioning me, Raised by me, From the assistant and Internal only, each with a count.
+- **See what is new to you.** A dot marks a thread somebody else has commented on since you read it, a badge counts them on the Threads tab, and Mark all as read clears them. On the first day every thread with someone else's comment is new.
+- **Comments the assistant drafted are marked.** A comment you accept from the assistant stays yours, tagged AI and Assistant drafted with its model. Readers from outside the organisation are not told the model.
+- **Copy a link to a thread** from its header.
+
+### Changed
+
+- **Threads are cards.** Each says who started it, where it stands, what it says and who is in it. It opens in place to read and reply, or across the panel with Open thread, where J and K step through the threads shown and Esc goes back.
+- **Name people as you type.** Type `@` and a letter or two in a comment to choose somebody; they stay where you typed them, also when you edit it. Enter sends a reply and Shift+Enter starts a new line.
+- **The buttons are icons**, each with its name as a tooltip, and New thread moves behind a + in the header.
+
 ## 0.228.0 - 2026-11-03 (PR #919)
 
 The assistant's authoring tools closed (the AT plan): it changes words without disturbing what surrounds them, finds parts before writing one, places what stays live, reads comments, and proposes changes to the outline.

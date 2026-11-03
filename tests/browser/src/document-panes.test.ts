@@ -70,6 +70,68 @@ describe("the panes beside a document's text, in Chromium", () => {
     });
   });
 
+  it('COL-070 COL-071 lays out cards and a thread within the panel, opened in place and across, in both themes', async ({
+    task,
+  }) => {
+    await withPage(async (page) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(`${SERVICE}/#/documents/${report}`);
+      await page.getByRole('radio', { name: 'Review' }).check();
+      const panel = page.getByRole('tabpanel', { name: 'Threads' });
+      const card = panel.getByRole('button', { name: /comment/, expanded: false }).first();
+      await card.waitFor();
+      const strip = panel.getByRole('group', { name: 'Filter by person' });
+      await strip.waitFor();
+      const within = async (what: string) => {
+        const overflow = await panel.evaluate((each) => each.scrollWidth - each.clientWidth);
+        expect(overflow, what).toBeLessThanOrEqual(0);
+      };
+      const shot = process.env['TP_SHOT'];
+      await within('the list');
+      await checkAxe(page, 'the threads panel', task.meta, { shows: [strip] });
+      if (shot) await page.screenshot({ path: `${shot}-list.png` });
+      await panel.getByRole('combobox', { name: 'Search, or @ for a person' }).fill('@');
+      await panel.getByRole('listbox', { name: 'Filter by person' }).waitFor();
+      await checkAxe(page, 'the threads panel, finding a person', task.meta, {
+        shows: [panel.getByRole('listbox')],
+      });
+      await panel.getByRole('combobox', { name: 'Search, or @ for a person' }).fill('');
+      await panel.getByRole('button', { name: /^Show: / }).click();
+      await checkAxe(page, 'the threads panel, Show', task.meta, {
+        shows: [panel.getByRole('menu')],
+      });
+      if (shot) await page.screenshot({ path: `${shot}-show.png` });
+      await page.keyboard.press('Escape');
+      await card.click();
+      const reply = panel.getByRole('combobox', { name: 'Reply' });
+      await reply.waitFor();
+      await within('in place');
+      if (shot) await page.screenshot({ path: `${shot}-inplace.png` });
+      await reply.fill('@');
+      await panel.getByRole('listbox', { name: 'Mention someone' }).waitFor();
+      await checkAxe(page, 'the threads panel, mentioning', task.meta, {
+        shows: [panel.getByRole('listbox')],
+      });
+      await reply.fill('');
+      await panel.getByRole('button', { name: 'Open thread' }).click();
+      const back = panel.getByRole('button', { name: 'All threads' });
+      await back.waitFor();
+      await within('across the panel');
+      // The reply stands at the panel's foot, within the window.
+      const box = await panel.getByRole('combobox', { name: 'Reply' }).boundingBox();
+      expect(box!.y + box!.height).toBeLessThanOrEqual(900);
+      await checkAxe(page, 'a thread across the panel', task.meta, { shows: [back] });
+      if (shot) await page.screenshot({ path: `${shot}-whole.png` });
+      if (shot) {
+        await page.emulateMedia({ colorScheme: 'dark' });
+        await page.screenshot({ path: `${shot}-whole-dark.png` });
+        await back.click();
+        await card.waitFor();
+        await page.screenshot({ path: `${shot}-list-dark.png` });
+      }
+    });
+  });
+
   it('starts both panes at one height, holds them still as the text scrolls, and hides the right to its rail', async ({
     task,
   }) => {

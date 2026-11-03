@@ -146,6 +146,7 @@ export function MenuButton({
               type="button"
               role={role}
               tabIndex={-1}
+              data-icon-row={item.icon === undefined ? undefined : ''}
               aria-labelledby={`${menuId}-${item.key}`}
               {...(item.detail === undefined
                 ? {}

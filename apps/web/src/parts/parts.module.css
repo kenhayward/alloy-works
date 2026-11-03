@@ -72,12 +72,6 @@
   font-weight: 600;
 }
 
-.menuCount {
-  float: inline-end;
-  margin-inline-start: var(--space-12);
-  color: var(--muted);
-}
-
 .chip {
   display: inline-flex;
   align-items: center;
@@ -311,6 +305,26 @@
 
 .menu [role='menuitem'][data-tone='danger'] {
   color: var(--danger);
+}
+
+/* An item with an icon before its words and a count after them. */
+.menu [role='menuitemradio'][data-icon-row] {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-8);
+  min-width: 212px;
+}
+
+.menu [data-icon-row] .menuLabel {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.menuCount {
+  color: var(--muted);
 }
 
 /* MenuButton's: a menu lined up with its button's start edge, items of one choice, a quieter line. */

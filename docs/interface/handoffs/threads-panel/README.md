@@ -17,16 +17,16 @@ Delivered as a zip; it lives in `docs/interface/handoffs/threads-panel/`.
 
 ## Screens
 
-| Files                 | Screen                                                                    |
-| --------------------- | ------------------------------------------------------------------------- |
-| `list-*`              | The list: header, search, Show, people strip, cards                       |
-| `one-person-*`        | Ravi chosen in the strip; the same person as a chip in the search box     |
-| `opened-in-place-*`   | One card open in the list: its comments, a reply line, its actions        |
+| Files                 | Screen                                                                     |
+| --------------------- | -------------------------------------------------------------------------- |
+| `list-*`              | The list: header, search, Show, people strip, cards                        |
+| `one-person-*`        | Ravi chosen in the strip; the same person as a chip in the search box      |
+| `opened-in-place-*`   | One card open in the list: its comments, a reply line, its actions         |
 | `whole-panel-*`       | A thread taking the panel: back, 2 of 6, actions, the quoted text, replies |
-| `assistant-comment-*` | A thread the assistant started, with its AI tag and where it came from    |
-| `search-person-*`     | `@` typed in search: people to filter by, with how many threads each      |
-| `show-filter-*`       | The Show menu, with counts                                                |
-| `mention-*`           | `@m` typed in a reply: Mei Chen and Ravi Menon suggested                  |
+| `assistant-comment-*` | A thread the assistant started, with its AI tag and where it came from     |
+| `search-person-*`     | `@` typed in search: people to filter by, with how many threads each       |
+| `show-filter-*`       | The Show menu, with counts                                                 |
+| `mention-*`           | `@m` typed in a reply: Mei Chen and Ravi Menon suggested                   |
 
 ## Decisions to record (two ADRs: the panel, and the assistant as an author)
 
@@ -40,6 +40,7 @@ Delivered as a zip; it lives in `docs/interface/handoffs/threads-panel/`.
 
    A resolved card's text is `--muted`. The whole head of the card is one button
    (`aria-expanded`); its accessible name is "{who}, {anchor}, {n} comments" plus ", new".
+
 2. **The people strip**, under the search: All, then everyone who started, replied in or is
    mentioned in a thread, you as "You" and the assistant as "AI". Each has its avatar, first name
    and a badge counting their **open** threads. Choosing one filters the list to threads they are
@@ -66,15 +67,15 @@ Delivered as a zip; it lives in `docs/interface/handoffs/threads-panel/`.
    - An address that opens a thread (`opening`, SV-M) opens it in the whole panel.
 6. **Icons for every button**, each with its words as accessible name and tooltip:
 
-   | Today | Icon |
-   | ----- | ---- |
-   | Resolve | check in a circle, `--ok` |
-   | Make internal | padlock |
-   | Edit | pencil |
-   | Reply (send) | paper plane; filled `--accent` once there is text |
-   | Mention | `@` |
-   | All threads (back) | arrow left |
-   | Remove {name} | `x` on the chip |
+   | Today              | Icon                                              |
+   | ------------------ | ------------------------------------------------- |
+   | Resolve            | check in a circle, `--ok`                         |
+   | Make internal      | padlock                                           |
+   | Edit               | pencil                                            |
+   | Reply (send)       | paper plane; filled `--accent` once there is text |
+   | Mention            | `@`                                               |
+   | All threads (back) | arrow left                                        |
+   | Remove {name}      | `x` on the chip                                   |
 
 7. **@mentions typed in a reply.**
    - Typing `@` and a letter or two opens **Mention someone** above the reply box. It matches the
@@ -127,14 +128,14 @@ The same shape, stroked only, is the Assistant tab's icon and From the assistant
 
 **Avatar colours**, six pairs per theme, chosen by a stable hash of the person's id. New tokens:
 
-| Token pair      | Light background, text | Dark background, text |
-| --------------- | ---------------------- | --------------------- |
-| `--avatar-1-*`  | `#d7ecf2`, `#165a72`   | `#17414d`, `#8fd0e0`  |
-| `--avatar-2-*`  | `#ebe5fb`, `#5b3fb8`   | `#2f2752`, `#c0adff`  |
-| `--avatar-3-*`  | `#fbe9d6`, `#9a4610`   | `#43301a`, `#f2a764`  |
-| `--avatar-4-*`  | `#dcf1e4`, `#1d7148`   | `#163a28`, `#5ccf93`  |
-| `--avatar-5-*`  | `#fbe1df`, `#b42318`   | `#45201d`, `#ff8a80`  |
-| `--avatar-6-*`  | `#e3e8ee`, `#34424f`   | `#2a3644`, `#c9d2da`  |
+| Token pair     | Light background, text | Dark background, text |
+| -------------- | ---------------------- | --------------------- |
+| `--avatar-1-*` | `#d7ecf2`, `#165a72`   | `#17414d`, `#8fd0e0`  |
+| `--avatar-2-*` | `#ebe5fb`, `#5b3fb8`   | `#2f2752`, `#c0adff`  |
+| `--avatar-3-*` | `#fbe9d6`, `#9a4610`   | `#43301a`, `#f2a764`  |
+| `--avatar-4-*` | `#dcf1e4`, `#1d7148`   | `#163a28`, `#5ccf93`  |
+| `--avatar-5-*` | `#fbe1df`, `#b42318`   | `#45201d`, `#ff8a80`  |
+| `--avatar-6-*` | `#e3e8ee`, `#34424f`   | `#2a3644`, `#c9d2da`  |
 
 Menus and suggestions use `--surface`, `--strong-border` and `--shadow-modal`; the highlighted row
 uses `--hover` from the authoring-page handoff.
@@ -179,6 +180,7 @@ No em or en dashes.
 
    Either way the author needs a kind (`person` or `assistant`) and provenance (who asked or
    accepted, the model, the tool and when). That is a stored shape: a written plan and a migration.
+
 2. **What the assistant may do.** Resolve, make internal, or only comment? And does `@Assistant`
    start a model call in the thread?
 3. **Making a thread visible again.** Internal is one way today (COL-038), and readers from outside
