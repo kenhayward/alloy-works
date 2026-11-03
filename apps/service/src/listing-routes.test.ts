@@ -734,6 +734,8 @@ describe('the listings through the service', () => {
       'listLicences',
       // And the themes: the environment's handful (the SY plan, SY-C).
       'listThemes',
+      // And the restorations: the latest twenty, for a page to pick up where it left off (EIc).
+      'listTenantRestorations',
     ];
     const listings = allRoutes.filter(
       (route) =>

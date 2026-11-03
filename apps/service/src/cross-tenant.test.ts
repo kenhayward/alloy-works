@@ -48,6 +48,7 @@ import {
   type Tenant,
   type TenantDatabase,
   requestAuditExport,
+  createRestoration,
   requestTenantExport,
   makeModelEndpoint,
   makeProposal,
@@ -555,6 +556,10 @@ const OTHER_TENANT_IDS: Readonly<
   getAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   downloadAuditExport: async (tenant, db) => ({ id: await auditExportIdIn(tenant, db) }),
   getTenantExport: async (tenant, db) => ({ id: await tenantExportIdIn(tenant, db) }),
+  getTenantRestoration: async (tenant, db) => ({ id: await restorationIdIn(tenant, db) }),
+  sendTenantRestorationArchive: async (tenant, db) => ({ id: await restorationIdIn(tenant, db) }),
+  answerTenantRestoration: async (tenant, db) => ({ id: await restorationIdIn(tenant, db) }),
+  applyTenantRestoration: async (tenant, db) => ({ id: await restorationIdIn(tenant, db) }),
   downloadTenantExport: async (tenant, db) => ({ id: await tenantExportIdIn(tenant, db) }),
   getModelEndpoint: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
   changeModelEndpoint: async (tenant, db) => ({ id: await modelEndpointIdIn(tenant, db) }),
@@ -2002,6 +2007,21 @@ const importIdIn = (tenant: Tenant, db: TenantDatabase) =>
         fileType: 'docx',
       })
     ).id;
+  });
+
+const restorationIdIn = (tenant: Tenant, db: TenantDatabase) =>
+  db.withTenant(tenant, async (trx) => {
+    const asker = await trx
+      .insertInto('principal')
+      .values({
+        issuer: 'https://idp.example',
+        subject: `ivy-${randomUUID()}`,
+        email: null,
+        display_name: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    return (await createRestoration(trx, asker.id)).id;
   });
 
 const tenantExportIdIn = (tenant: Tenant, db: TenantDatabase) =>

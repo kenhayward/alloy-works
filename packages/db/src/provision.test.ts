@@ -104,6 +104,8 @@ describe('provisionTenant', () => {
     );
     expect(rows).toEqual([
       { member: 'aw_migrator', role: `t_${id}_owner`, inherit_option: false, set_option: true },
+      { member: 'aw_restorer', role: `t_${id}`, inherit_option: false, set_option: true },
+      { member: 'aw_restorer', role: `t_${id}_owner`, inherit_option: false, set_option: true },
       { member: 'aw_service', role: `t_${id}`, inherit_option: false, set_option: true },
       { member: 'aw_worker', role: `t_${id}`, inherit_option: false, set_option: true },
     ]);

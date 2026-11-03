@@ -95,8 +95,9 @@ describe('api_token, where a personal token is kept as its hash (service-foundat
     // Every permission but read, as the domain names the scopes: the check and the code agree.
     for (const permission of permissions) {
       const answer = issue({ scopes: [permission] });
-      if (permission === 'read') await expect(answer, permission).rejects.toThrow();
-      else expect(await answer, permission).toBeDefined();
+      if (permission === 'read' || permission === 'import_environment') {
+        await expect(answer, permission).rejects.toThrow();
+      } else expect(await answer, permission).toBeDefined();
     }
   });
 

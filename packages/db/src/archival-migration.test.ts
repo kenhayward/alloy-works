@@ -89,6 +89,8 @@ describe('migration 0083, which gives Administrator the retire permission', () =
                 'rotate_secrets',
                 'configure_services',
                 'configure_webhooks',
+                // And 0198's, as the same way round.
+                'import_environment',
               ],
             }
           : role,
