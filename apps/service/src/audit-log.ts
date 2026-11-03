@@ -11,6 +11,7 @@ import type {
   TenantExportList,
   TenantExportMade,
   TenantExportParams,
+  TenantExportRequest,
   TenantExportQuery,
   TenantExportView,
 } from '@alloy-works/api-contract';
@@ -206,6 +207,9 @@ function tenantExportView(made: TenantExport): TenantExportView {
   return {
     id: made.id,
     state: made.state,
+    scope: made.scope,
+    scopeId: made.scopeId,
+    followReferences: made.followReferences,
     requestedAt: made.requestedAt.toISOString(),
     requestedBy: made.requestedBy,
     finishedAt: made.finishedAt?.toISOString() ?? null,
@@ -230,11 +234,47 @@ export function tenantExportHandlers(
 ) {
   return {
     requestTenantExport: async (
-      _request: FastifyRequest,
+      request: FastifyRequest,
       { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportMade> => {
-      await holdsTheLog(trx, principalId, facts);
-      const made = await requestTenantExport(trx, principalId);
+      const asked = (request.body ?? {}) as TenantExportRequest;
+      const scope = asked.scope ?? 'tenant';
+      const named = scope === 'space' || scope === 'document' || scope === 'publication';
+      if (named !== (asked.id !== undefined)) {
+        throw new AppError(
+          400,
+          'export_scope_invalid',
+          'A space, document or publication is named by its id, and nothing else is.',
+        );
+      }
+      if (scope === 'tenant') await holdsTheLog(trx, principalId, facts);
+      if (asked.id !== undefined) {
+        const found =
+          scope === 'publication'
+            ? await trx
+                .selectFrom('publication')
+                .select('id')
+                .where('id', '=', asked.id)
+                .executeTakeFirst()
+            : scope === 'space'
+              ? await trx
+                  .selectFrom('space')
+                  .select('id')
+                  .where('id', '=', asked.id)
+                  .executeTakeFirst()
+              : await trx
+                  .selectFrom('artifact')
+                  .select('id')
+                  .where('id', '=', asked.id)
+                  .where('kind', '=', 'document')
+                  .executeTakeFirst();
+        if (!found) throw notFound();
+      }
+      const made = await requestTenantExport(trx, principalId, {
+        scope,
+        id: asked.id ?? null,
+        followReferences: asked.followReferences ?? false,
+      });
       await recordEvent(trx, {
         kind: 'export.produced',
         subject: { kind: 'tenant_export', id: made.id },
@@ -280,10 +320,14 @@ export function tenantExportHandlers(
       request: FastifyRequest,
       { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportDownload> => {
-      await holdsTheLog(trx, principalId, facts);
       const { id } = request.params as TenantExportParams;
       const made = await readTenantExport(trx, id);
       if (!made) throw notFound();
+      // A part is bounded by what its asker may read, so another reader needs what would let them
+      // export it all (EI-J).
+      if (made.scope === 'tenant' || made.requestedBy !== principalId) {
+        await holdsTheLog(trx, principalId, facts);
+      }
       if (made.state !== 'done' || made.key === null) {
         throw new AppError(
           409,

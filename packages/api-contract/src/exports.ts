@@ -7,6 +7,27 @@ import { ErrorBody, LowercaseUuid } from './schemas.js';
 export const TenantExportParams = z.object({ id: LowercaseUuid });
 export type TenantExportParams = z.infer<typeof TenantExportParams>;
 
+export const TenantExportScope = z
+  .enum(['tenant', 'configuration', 'space', 'document', 'publication'])
+  .describe(
+    'What it holds: everything, the configuration, or one space, document or publication with what they need',
+  );
+export type TenantExportScope = z.infer<typeof TenantExportScope>;
+
+export const TenantExportRequest = z
+  .object({
+    scope: TenantExportScope.optional().describe('Everything, where not given'),
+    id: LowercaseUuid.optional().describe('The space, document or publication, for those scopes'),
+    followReferences: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether what the part refers to outside itself comes by value. Where not, it is listed by identity',
+      ),
+  })
+  .strict();
+export type TenantExportRequest = z.infer<typeof TenantExportRequest>;
+
 export const TenantExportQuery = z.object(pageQuery);
 export type TenantExportQuery = z.infer<typeof TenantExportQuery>;
 
@@ -17,6 +38,9 @@ export const TenantExportView = z.object({
     .describe(
       'queued while its job writes it; done once it can be downloaded; expired once its seven days are past and its archive is gone',
     ),
+  scope: TenantExportScope,
+  scopeId: z.string().nullable(),
+  followReferences: z.boolean(),
   requestedAt: z.string(),
   requestedBy: z.string().nullable(),
   finishedAt: z.string().nullable(),
@@ -29,7 +53,7 @@ export const TenantExportView = z.object({
   counts: z
     .record(z.string(), z.number().int())
     .nullable()
-    .describe('How many of each part it holds, and of the objects its bytes are kept as'),
+    .describe('How many rows of each table it holds, and how many objects'),
 });
 export type TenantExportView = z.infer<typeof TenantExportView>;
 
@@ -46,7 +70,7 @@ export const TenantExportDownload = z.object({
   download: z
     .string()
     .describe(
-      'A link to its ZIP archive - a JSON Lines file a part, the bytes it names by hash and its manifest - signed for five minutes',
+      'A link to its tar archive, as docs/guides/export-format.md describes, signed for five minutes',
     ),
 });
 export type TenantExportDownload = z.infer<typeof TenantExportDownload>;
@@ -67,7 +91,7 @@ const EXPORTS = {
 
 const forbiddenWithTheLog = {
   description:
-    '`export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log',
+    '`export_environment` is not held at this environment, or `export_audit` for a whole export, which holds the audit log',
   schema: ErrorBody,
 } as const;
 
@@ -76,10 +100,17 @@ export const exportRoutes = {
     operationId: 'requestTenantExport',
     method: 'POST',
     path: '/v1/exports',
-    summary: 'Export the whole environment as it stands, as a job',
+    summary: 'Export the whole environment, or one part of it, as it stands, as a job',
     tenantScoped: true,
     access: EXPORTS,
+    body: TenantExportRequest,
+    bodyOptional: true,
     responses: {
+      400: {
+        description: '`export_scope_invalid`: a scope named without its id, or an id without one',
+        schema: ErrorBody,
+      },
+      404: { description: 'There is no such space, document or publication', schema: ErrorBody },
       200: { description: 'Asked for: queued, and written by a job', schema: TenantExportMade },
       401: unauthenticated,
       403: forbiddenWithTheLog,

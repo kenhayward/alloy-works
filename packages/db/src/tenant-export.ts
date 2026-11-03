@@ -1,5 +1,6 @@
 import { sql } from 'kysely';
 import type { KeptExport } from './audit-export.js';
+import type { ExportScope } from './export-scope.js';
 import { EXPORT_NOT_CARRIED_COLUMNS, carriedTables, type ExportIdentity } from './export-tables.js';
 import {
   checkedLimit,
@@ -30,6 +31,10 @@ export interface TenantExport {
   readonly requestedAt: Date;
   readonly snapshot: string;
   readonly state: 'queued' | 'done' | 'failed' | 'expired';
+  /** What it holds: the whole tenant, or one part of it (EI-R). */
+  readonly scope: ExportScope;
+  readonly scopeId: string | null;
+  readonly followReferences: boolean;
   readonly key: string | null;
   readonly sha256: string | null;
   readonly bytes: number | null;
@@ -45,6 +50,9 @@ interface Row {
   requested_at: Date;
   snapshot: string;
   state: TenantExport['state'];
+  scope: ExportScope;
+  scope_id: string | null;
+  follow_references: boolean;
   object_key: string | null;
   sha256: string | null;
   bytes: string | null;
@@ -58,6 +66,9 @@ const exportOf = (row: Row): TenantExport => ({
   requestedAt: row.requested_at,
   snapshot: row.snapshot,
   state: row.state,
+  scope: row.scope,
+  scopeId: row.scope_id,
+  followReferences: row.follow_references,
   key: row.object_key,
   sha256: row.sha256,
   bytes: row.bytes === null ? null : Number(row.bytes),
@@ -69,17 +80,24 @@ const exportOf = (row: Row): TenantExport => ({
       : new Date(row.finished_at.getTime() + EXPORT_KEPT_DAYS * 86_400_000),
 });
 
-const COLUMNS = sql`id, requested_by, requested_at, snapshot::text as snapshot, state, object_key,
+const COLUMNS = sql`id, requested_by, requested_at, snapshot::text as snapshot, state, scope, scope_id,
+  follow_references, object_key,
   sha256, bytes::text as bytes, counts, finished_at`;
 
 /** An export asked for, in this transaction's snapshot, and its job queued in the same one. */
 export async function requestTenantExport(
   trx: TenantTransaction,
   principalId: string,
+  asked: {
+    readonly scope?: ExportScope;
+    readonly id?: string | null;
+    readonly followReferences?: boolean;
+  } = {},
 ): Promise<TenantExport> {
   const { rows } = await sql<Row>`
-    insert into tenant_export (requested_by, requested_at, snapshot)
-      values (${principalId}, clock_timestamp(), pg_current_snapshot())
+    insert into tenant_export (requested_by, requested_at, snapshot, scope, scope_id, follow_references)
+      values (${principalId}, clock_timestamp(), pg_current_snapshot(), ${asked.scope ?? 'tenant'},
+              ${asked.id ?? null}, ${asked.followReferences ?? false})
     returning ${COLUMNS}`.execute(trx);
   const made = rows[0]!;
   await enqueueJob(trx, 'tenant_export', made.id);
@@ -158,23 +176,27 @@ export interface ExportCut {
   readonly objects: readonly string[];
 }
 
-/**
- * Every carried table's rows to `lines`, a page at a time through a cursor, as JSON text straight from
- * the database, so a number keeps its precision. Call it in one `repeatable read`, read-only
- * transaction (EI-A): that transaction is the cut, and a row in it names only rows also in it.
- */
-export async function readExportCut(
-  trx: TenantTransaction,
-  lines: (table: string, lines: readonly string[]) => Promise<void>,
-  pageSize = 500,
-): Promise<ExportCut> {
-  const { rows: columns } = await sql<{
-    table: string;
-    name: string;
-    type: string;
-    nullable: boolean;
-    generated: boolean;
-  }>`
+/** The tenant's tables as the database describes them: what a cut and a restore are walked by. */
+export interface ExportCatalogue {
+  readonly columns: readonly {
+    readonly table: string;
+    readonly name: string;
+    readonly type: string;
+    readonly nullable: boolean;
+    readonly generated: boolean;
+  }[];
+  readonly primaryKeys: ReadonlyMap<string, readonly string[]>;
+  readonly foreignKeys: readonly {
+    readonly table: string;
+    readonly columns: readonly string[];
+    readonly refers: string;
+    readonly refersBy: readonly string[];
+    readonly nullable: boolean;
+  }[];
+}
+
+export async function readExportCatalogue(trx: TenantTransaction): Promise<ExportCatalogue> {
+  const { rows: columns } = await sql<ExportCatalogue['columns'][number]>`
     select c.relname as table, a.attname as name, format_type(a.atttypid, a.atttypmod) as type,
            not a.attnotnull as nullable, a.attgenerated <> '' as generated
       from pg_attribute a join pg_class c on c.oid = a.attrelid
@@ -186,15 +208,51 @@ export async function readExportCut(
     type: 'p' | 'f';
     columns: string[];
     refers: string | null;
+    refers_by: string[] | null;
+    nullable: boolean;
   }>`
     select c.relname as table, k.contype as type, k.confrelid::regclass::text as refers,
            array(select a.attname::text
                    from unnest(k.conkey) with ordinality o(attnum, place)
                    join pg_attribute a on a.attrelid = k.conrelid and a.attnum = o.attnum
-                  order by o.place) as columns
+                  order by o.place) as columns,
+           array(select a.attname::text
+                   from unnest(k.confkey) with ordinality o(attnum, place)
+                   join pg_attribute a on a.attrelid = k.confrelid and a.attnum = o.attnum
+                  order by o.place) as refers_by,
+           exists (select from pg_attribute a where a.attrelid = k.conrelid
+                    and a.attnum = any(k.conkey) and not a.attnotnull) as nullable
       from pg_constraint k join pg_class c on c.oid = k.conrelid
      where k.connamespace = current_schema()::regnamespace and k.contype in ('p', 'f')
      order by c.relname, k.conname`.execute(trx);
+  return {
+    columns,
+    primaryKeys: new Map(
+      constraints.filter((each) => each.type === 'p').map((each) => [each.table, each.columns]),
+    ),
+    foreignKeys: constraints
+      .filter((each) => each.type === 'f')
+      .map((each) => ({
+        table: each.table,
+        columns: each.columns,
+        refers: each.refers!,
+        refersBy: each.refers_by!,
+        nullable: each.nullable,
+      })),
+  };
+}
+
+/**
+ * Every carried table's rows to `lines`, a page at a time through a cursor, as JSON text straight from
+ * the database, so a number keeps its precision. Call it in one `repeatable read`, read-only
+ * transaction (EI-A): that transaction is the cut, and a row in it names only rows also in it.
+ */
+export async function readExportCut(
+  trx: TenantTransaction,
+  lines: (table: string, lines: readonly string[]) => Promise<void>,
+  pageSize = 500,
+): Promise<ExportCut> {
+  const { columns, primaryKeys, foreignKeys } = await readExportCatalogue(trx);
   const rows: Record<string, number> = {};
   const schema: Record<string, ExportedTable> = {};
   const secrets: { reference: string; kind: string; table: string; holder: string }[] = [];
@@ -209,16 +267,15 @@ export async function readExportCut(
           table.secrets?.columns.includes(column.name),
       )
       .map((column) => column.name);
-    const keys = constraints.filter((each) => each.table === name);
-    const primaryKey = keys.find((each) => each.type === 'p')?.columns ?? [];
+    const primaryKey = primaryKeys.get(name) ?? [];
     schema[name] = {
       columns: own
         .filter((column) => !notCarried.includes(column.name))
         .map(({ name: column, type, nullable }) => ({ name: column, type, nullable })),
       primaryKey,
-      foreignKeys: keys
-        .filter((each) => each.type === 'f')
-        .map((each) => ({ columns: each.columns, refers: each.refers! })),
+      foreignKeys: foreignKeys
+        .filter((fk) => fk.table === name)
+        .map((fk) => ({ columns: fk.columns, refers: fk.refers })),
       notCarried,
       identity: table.identity,
     };

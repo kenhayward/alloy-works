@@ -1613,6 +1613,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
         ...(route.body ? { body: route.body } : {}),
       },
       ...(onRequest.length > 0 ? { onRequest } : {}),
+      ...(route.bodyOptional
+        ? {
+            preValidation: async (request: FastifyRequest) => {
+              request.body ??= {};
+            },
+          }
+        : {}),
       ...(route.bodyMaxBytes === undefined ? {} : { bodyLimit: route.bodyMaxBytes }),
       ...(route.rawBody
         ? {

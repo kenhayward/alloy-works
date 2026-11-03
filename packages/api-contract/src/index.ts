@@ -125,6 +125,8 @@ export {
 } from './dataset-sources.js';
 export {
   TenantExportDownload,
+  TenantExportRequest,
+  TenantExportScope,
   TenantExportList,
   TenantExportMade,
   TenantExportParams,

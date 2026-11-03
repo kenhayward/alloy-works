@@ -213,7 +213,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   audit log among them, with the images and PDFs they hold by their hash. A schema describes every
   column, a manifest says what it leaves out and why, and a secret is only a reference, never its value.
   [The format guide](guides/export-format.md) lets anyone read one without this product. Importing one
-  is not built yet. Past exports are listed, each downloadable for seven days; asking for one and each
+  is not built yet. The same page exports the configuration alone or one space, bringing what it refers to from other spaces or listing it, and the API a document or a publication; a part holds no audit log or access. Past exports are listed, each downloadable for seven days; asking for one and each
   download are on the audit log. The API does the same (`POST /v1/exports`).
 - **Model endpoints.** An administrator adds the model endpoints the environment calls in
   Administration's **Models**, each on the environment's own provider account: Anthropic's Messages API

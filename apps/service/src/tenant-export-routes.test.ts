@@ -63,6 +63,33 @@ describe("the tenant's export through the service (the R21 plan, R21-B)", () => 
     });
   });
 
+  it('IMP-024 asks for one part, naming it, and refuses a scope without its id or a space not there', async () => {
+    const spaces = (await h.call('ada', 'GET', '/v1/spaces')).json<{ items: { id: string }[] }>();
+    const space = spaces.items[0]!.id;
+    const asked = await h.call('ada', 'POST', '/v1/exports', {
+      scope: 'space',
+      id: space,
+      followReferences: true,
+    });
+    expect(asked.statusCode, asked.body).toBe(200);
+    expect(asked.json<{ export: unknown }>().export).toMatchObject({
+      scope: 'space',
+      scopeId: space,
+      followReferences: true,
+    });
+    const unnamed = await h.call('ada', 'POST', '/v1/exports', { scope: 'space' });
+    expect(unnamed.json()).toMatchObject({ code: 'export_scope_invalid' });
+    const stray = await h.call('ada', 'POST', '/v1/exports', { scope: 'configuration', id: space });
+    expect(stray.json()).toMatchObject({ code: 'export_scope_invalid' });
+    const missing = await h.call('ada', 'POST', '/v1/exports', {
+      scope: 'space',
+      id: '00000000-0000-4000-8000-000000000000',
+    });
+    expect(missing.statusCode).toBe(404);
+    const configuration = await h.call('ada', 'POST', '/v1/exports', { scope: 'configuration' });
+    expect(configuration.statusCode, configuration.body).toBe(200);
+  });
+
   it('API-044 lets only an administrator export the environment or list its exports', async () => {
     for (const [method, url] of [
       ['POST', '/v1/exports'],

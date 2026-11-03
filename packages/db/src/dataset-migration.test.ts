@@ -310,6 +310,7 @@ describe('migration 0047, over an environment made before it', () => {
       '0194_moving',
       '0195_outline_proposals',
       '0196_thread_panel',
+      '0197_partial_exports',
     ]);
     // Every row still there, and what 0048 seeds beside them: the value catalogue, its 0.1 and the
     // default theme's 0.6 (B1); and what 0055 seeds: the table catalogue's fifth version, the default

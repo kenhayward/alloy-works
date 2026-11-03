@@ -212897,6 +212897,26 @@
                             ],
                             "description": "queued while its job writes it; done once it can be downloaded; expired once its seven days are past and its archive is gone"
                           },
+                          "scope": {
+                            "type": "string",
+                            "enum": [
+                              "tenant",
+                              "configuration",
+                              "space",
+                              "document",
+                              "publication"
+                            ],
+                            "description": "What it holds: everything, the configuration, or one space, document or publication with what they need"
+                          },
+                          "scopeId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "followReferences": {
+                            "type": "boolean"
+                          },
                           "requestedAt": {
                             "type": "string"
                           },
@@ -212954,12 +212974,15 @@
                                 "type": "null"
                               }
                             ],
-                            "description": "How many of each part it holds, and of the objects its bytes are kept as"
+                            "description": "How many rows of each table it holds, and how many objects"
                           }
                         },
                         "required": [
                           "id",
                           "state",
+                          "scope",
+                          "scopeId",
+                          "followReferences",
                           "requestedAt",
                           "requestedBy",
                           "finishedAt",
@@ -213166,7 +213189,7 @@
       },
       "post": {
         "operationId": "requestTenantExport",
-        "summary": "Export the whole environment as it stands, as a job",
+        "summary": "Export the whole environment, or one part of it, as it stands, as a job",
         "description": "Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.",
         "tags": [
           "Tenant export"
@@ -213202,6 +213225,47 @@
             }
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "description": "Everything, where not given",
+                    "type": "string",
+                    "enum": [
+                      "tenant",
+                      "configuration",
+                      "space",
+                      "document",
+                      "publication"
+                    ]
+                  },
+                  "id": {
+                    "description": "The space, document or publication, for those scopes",
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      }
+                    ]
+                  },
+                  "followReferences": {
+                    "description": "Whether what the part refers to outside itself comes by value. Where not, it is listed by identity",
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Asked for: queued, and written by a job",
@@ -213225,6 +213289,26 @@
                             "expired"
                           ],
                           "description": "queued while its job writes it; done once it can be downloaded; expired once its seven days are past and its archive is gone"
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "tenant",
+                            "configuration",
+                            "space",
+                            "document",
+                            "publication"
+                          ],
+                          "description": "What it holds: everything, the configuration, or one space, document or publication with what they need"
+                        },
+                        "scopeId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "followReferences": {
+                          "type": "boolean"
                         },
                         "requestedAt": {
                           "type": "string"
@@ -213283,12 +213367,15 @@
                               "type": "null"
                             }
                           ],
-                          "description": "How many of each part it holds, and of the objects its bytes are kept as"
+                          "description": "How many rows of each table it holds, and how many objects"
                         }
                       },
                       "required": [
                         "id",
                         "state",
+                        "scope",
+                        "scopeId",
+                        "followReferences",
                         "requestedAt",
                         "requestedBy",
                         "finishedAt",
@@ -213307,6 +213394,9 @@
                   "export": {
                     "id": "example",
                     "state": "queued",
+                    "scope": "tenant",
+                    "scopeId": "example",
+                    "followReferences": false,
                     "requestedAt": "example",
                     "requestedBy": "example",
                     "finishedAt": "example",
@@ -213332,6 +213422,47 @@
                   "enum": [
                     "true"
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`export_scope_invalid`: a scope named without its id, or an id without one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -213378,7 +213509,48 @@
             }
           },
           "403": {
-            "description": "`export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log",
+            "description": "`export_environment` is not held at this environment, or `export_audit` for a whole export, which holds the audit log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "There is no such space, document or publication",
             "content": {
               "application/json": {
                 "schema": {
@@ -213532,6 +213704,26 @@
                           ],
                           "description": "queued while its job writes it; done once it can be downloaded; expired once its seven days are past and its archive is gone"
                         },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "tenant",
+                            "configuration",
+                            "space",
+                            "document",
+                            "publication"
+                          ],
+                          "description": "What it holds: everything, the configuration, or one space, document or publication with what they need"
+                        },
+                        "scopeId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "followReferences": {
+                          "type": "boolean"
+                        },
                         "requestedAt": {
                           "type": "string"
                         },
@@ -213589,12 +213781,15 @@
                               "type": "null"
                             }
                           ],
-                          "description": "How many of each part it holds, and of the objects its bytes are kept as"
+                          "description": "How many rows of each table it holds, and how many objects"
                         }
                       },
                       "required": [
                         "id",
                         "state",
+                        "scope",
+                        "scopeId",
+                        "followReferences",
                         "requestedAt",
                         "requestedBy",
                         "finishedAt",
@@ -213613,6 +213808,9 @@
                   "export": {
                     "id": "example",
                     "state": "queued",
+                    "scope": "tenant",
+                    "scopeId": "example",
+                    "followReferences": false,
                     "requestedAt": "example",
                     "requestedBy": "example",
                     "finishedAt": "example",
@@ -213856,7 +214054,7 @@
                   "properties": {
                     "download": {
                       "type": "string",
-                      "description": "A link to its ZIP archive - a JSON Lines file a part, the bytes it names by hash and its manifest - signed for five minutes"
+                      "description": "A link to its tar archive, as docs/guides/export-format.md describes, signed for five minutes"
                     }
                   },
                   "required": [
@@ -213919,7 +214117,7 @@
             }
           },
           "403": {
-            "description": "`export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log",
+            "description": "`export_environment` is not held at this environment, or `export_audit` for a whole export, which holds the audit log",
             "content": {
               "application/json": {
                 "schema": {

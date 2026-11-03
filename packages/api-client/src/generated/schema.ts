@@ -3621,7 +3621,7 @@ export interface paths {
         get: operations["listTenantExports"];
         put?: never;
         /**
-         * Export the whole environment as it stands, as a job
+         * Export the whole environment, or one part of it, as it stands, as a job
          * @description Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.
          */
         post: operations["requestTenantExport"];
@@ -72666,6 +72666,13 @@ export interface operations {
                              * @enum {string}
                              */
                             state: "queued" | "done" | "failed" | "expired";
+                            /**
+                             * @description What it holds: everything, the configuration, or one space, document or publication with what they need
+                             * @enum {string}
+                             */
+                            scope: "tenant" | "configuration" | "space" | "document" | "publication";
+                            scopeId: string | null;
+                            followReferences: boolean;
                             requestedAt: string;
                             requestedBy: string | null;
                             finishedAt: string | null;
@@ -72673,7 +72680,7 @@ export interface operations {
                             expiresAt: string | null;
                             bytes: number | null;
                             sha256: string | null;
-                            /** @description How many of each part it holds, and of the objects its bytes are kept as */
+                            /** @description How many rows of each table it holds, and how many objects */
                             counts: {
                                 [key: string]: number;
                             } | null;
@@ -72777,7 +72784,22 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                /** @example {} */
+                "application/json": {
+                    /**
+                     * @description Everything, where not given
+                     * @enum {string}
+                     */
+                    scope?: "tenant" | "configuration" | "space" | "document" | "publication";
+                    /** @description The space, document or publication, for those scopes */
+                    id?: string & (unknown & unknown);
+                    /** @description Whether what the part refers to outside itself comes by value. Where not, it is listed by identity */
+                    followReferences?: boolean;
+                };
+            };
+        };
         responses: {
             /** @description Asked for: queued, and written by a job */
             200: {
@@ -72794,6 +72816,9 @@ export interface operations {
                      *       "export": {
                      *         "id": "example",
                      *         "state": "queued",
+                     *         "scope": "tenant",
+                     *         "scopeId": "example",
+                     *         "followReferences": false,
                      *         "requestedAt": "example",
                      *         "requestedBy": "example",
                      *         "finishedAt": "example",
@@ -72812,6 +72837,13 @@ export interface operations {
                              * @enum {string}
                              */
                             state: "queued" | "done" | "failed" | "expired";
+                            /**
+                             * @description What it holds: everything, the configuration, or one space, document or publication with what they need
+                             * @enum {string}
+                             */
+                            scope: "tenant" | "configuration" | "space" | "document" | "publication";
+                            scopeId: string | null;
+                            followReferences: boolean;
                             requestedAt: string;
                             requestedBy: string | null;
                             finishedAt: string | null;
@@ -72819,11 +72851,31 @@ export interface operations {
                             expiresAt: string | null;
                             bytes: number | null;
                             sha256: string | null;
-                            /** @description How many of each part it holds, and of the objects its bytes are kept as */
+                            /** @description How many rows of each table it holds, and how many objects */
                             counts: {
                                 [key: string]: number;
                             } | null;
                         };
+                    };
+                };
+            };
+            /** @description `export_scope_invalid`: a scope named without its id, or an id without one */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
                     };
                 };
             };
@@ -72847,8 +72899,28 @@ export interface operations {
                     };
                 };
             };
-            /** @description `export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log */
+            /** @description `export_environment` is not held at this environment, or `export_audit` for a whole export, which holds the audit log */
             403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description There is no such space, document or publication */
+            404: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;
@@ -72916,6 +72988,9 @@ export interface operations {
                      *       "export": {
                      *         "id": "example",
                      *         "state": "queued",
+                     *         "scope": "tenant",
+                     *         "scopeId": "example",
+                     *         "followReferences": false,
                      *         "requestedAt": "example",
                      *         "requestedBy": "example",
                      *         "finishedAt": "example",
@@ -72934,6 +73009,13 @@ export interface operations {
                              * @enum {string}
                              */
                             state: "queued" | "done" | "failed" | "expired";
+                            /**
+                             * @description What it holds: everything, the configuration, or one space, document or publication with what they need
+                             * @enum {string}
+                             */
+                            scope: "tenant" | "configuration" | "space" | "document" | "publication";
+                            scopeId: string | null;
+                            followReferences: boolean;
                             requestedAt: string;
                             requestedBy: string | null;
                             finishedAt: string | null;
@@ -72941,7 +73023,7 @@ export interface operations {
                             expiresAt: string | null;
                             bytes: number | null;
                             sha256: string | null;
-                            /** @description How many of each part it holds, and of the objects its bytes are kept as */
+                            /** @description How many rows of each table it holds, and how many objects */
                             counts: {
                                 [key: string]: number;
                             } | null;
@@ -73059,7 +73141,7 @@ export interface operations {
                      *     }
                      */
                     "application/json": {
-                        /** @description A link to its ZIP archive - a JSON Lines file a part, the bytes it names by hash and its manifest - signed for five minutes */
+                        /** @description A link to its tar archive, as docs/guides/export-format.md describes, signed for five minutes */
                         download: string;
                     };
                 };
@@ -73084,7 +73166,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log */
+            /** @description `export_environment` is not held at this environment, or `export_audit` for a whole export, which holds the audit log */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

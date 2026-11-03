@@ -12,6 +12,7 @@ type Client = ReturnType<typeof createApiClient>;
 
 /** An export as Export lists it (API-044; the R21 plan, R21-B). */
 interface ExportRow {
+  scope: 'tenant' | 'configuration' | 'space' | 'document' | 'publication';
   readonly id: string;
   readonly state: 'queued' | 'done' | 'failed' | 'expired';
   readonly requestedAt: string;
@@ -51,6 +52,14 @@ function sizeOf(bytes: number | null): string {
   return words('admin.mb', { mb: bytes / (1024 * 1024) });
 }
 
+const SCOPES: Readonly<Record<ExportRow['scope'], string>> = {
+  tenant: words('admin.export-scope-tenant'),
+  configuration: words('admin.export-scope-configuration'),
+  space: words('admin.export-scope-space'),
+  document: words('admin.export-scope-document'),
+  publication: words('admin.export-scope-publication'),
+};
+
 /**
  * Administration's Export (API-044; the R21 plan, R21-B): **Export everything** asks for an export of
  * the whole environment, written by a job; the past ones are listed, the newest first, each kept seven
@@ -79,6 +88,25 @@ export function TenantExport({
   const read = useListing<ExportRow>(load, true, generation);
   const [said, setSaid] = useState('');
   const [asking, setAsking] = useState(false);
+  const [spaces, setSpaces] = useState<readonly { id: string; name: string }[]>([]);
+  const [space, setSpace] = useState('');
+  const [following, setFollowing] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    void client
+      .GET('/v1/spaces')
+      .then(({ data }) => {
+        if (!live || !data) return;
+        setSpaces(data.items);
+        setSpace((was) => was || (data.items[0]?.id ?? ''));
+      })
+      // Without the list the space's choice is not offered; the rest of the page stands.
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [client]);
 
   // While one is being written, the list is read again until it is not.
   const writing =
@@ -89,11 +117,15 @@ export function TenantExport({
     return () => clearTimeout(timer);
   }, [writing, generation, followMs]);
 
-  const exportAll = async () => {
+  const exportScope = async (body: {
+    scope: 'tenant' | 'configuration' | 'space';
+    id?: string;
+    followReferences?: boolean;
+  }) => {
     setAsking(true);
     setSaid('');
     try {
-      const { data } = await client.POST('/v1/exports');
+      const { data } = await client.POST('/v1/exports', { body });
       setSaid(
         data ? words('admin.export-asked-for-it-is') : words('admin.the-export-could-not-be-3'),
       );
@@ -123,10 +155,52 @@ export function TenantExport({
     <>
       <div className={styles['lead']}>
         <p>{words('admin.an-export-holds-everything-in')}</p>
-        <button type="button" disabled={asking} onClick={() => void exportAll()}>
+        <button
+          type="button"
+          disabled={asking}
+          onClick={() => void exportScope({ scope: 'tenant' })}
+        >
           {words('admin.export-everything')}
         </button>
+        <button
+          type="button"
+          disabled={asking}
+          onClick={() => void exportScope({ scope: 'configuration' })}
+        >
+          {words('admin.export-the-configuration')}
+        </button>
       </div>
+      {spaces.length > 0 && (
+        <div className={styles['lead']}>
+          <label>
+            {words('admin.export-space')}{' '}
+            <select value={space} onChange={(event) => setSpace(event.target.value)}>
+              {spaces.map((each) => (
+                <option key={each.id} value={each.id}>
+                  {each.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={following}
+              onChange={(event) => setFollowing(event.target.checked)}
+            />{' '}
+            {words('admin.export-bring-what-it-refers-to')}
+          </label>
+          <button
+            type="button"
+            disabled={asking}
+            onClick={() =>
+              void exportScope({ scope: 'space', id: space, followReferences: following })
+            }
+          >
+            {words('admin.export-this-space')}
+          </button>
+        </div>
+      )}
       <Shown read={read} failed={words('admin.the-exports-could-not-be-loaded')}>
         {(rows) =>
           rows.length === 0 ? (
@@ -136,6 +210,7 @@ export function TenantExport({
               <thead>
                 <tr>
                   <th scope="col">{words('admin.asked-for')}</th>
+                  <th scope="col">{words('admin.export-holds')}</th>
                   <th scope="col">{words('admin.status')}</th>
                   <th scope="col">{words('admin.size')}</th>
                   <th scope="col">{words('admin.kept-until')}</th>
@@ -150,6 +225,7 @@ export function TenantExport({
                   return (
                     <tr key={row.id} data-archived={row.state === 'expired' ? 'true' : undefined}>
                       <td>{asked}</td>
+                      <td>{SCOPES[row.scope]}</td>
                       <td>
                         <Chip>{STATES[row.state]}</Chip>
                       </td>

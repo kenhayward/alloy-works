@@ -185,6 +185,17 @@ describe('the high-risk permissions', () => {
     const download = `/v1/exports/${id}/download`;
     expect((await get(download, without.cookie)).statusCode).toBe(403);
     expect((await get(download, both.cookie)).json()).toMatchObject({ code: 'export_not_ready' });
+    // A part holds no log, so needs only export_environment (EI-R).
+    const part = await post('/v1/exports', without.cookie, { scope: 'configuration' });
+    expect(part.statusCode).toBe(200);
+    const partId = part.json<{ export: { id: string } }>().export.id;
+    const ofPart = `/v1/exports/${partId}/download`;
+    expect((await get(ofPart, without.cookie)).json()).toMatchObject({ code: 'export_not_ready' });
+    // Bounded by what its asker may read: someone else needs what would let them export it all.
+    const another = await post('/v1/exports', both.cookie, { scope: 'configuration' });
+    const anotherId = another.json<{ export: { id: string } }>().export.id;
+    expect((await get(`/v1/exports/${anotherId}/download`, without.cookie)).statusCode).toBe(403);
+    expect((await get(ofPart, both.cookie)).json()).toMatchObject({ code: 'export_not_ready' });
   });
 
   it('leaves what grants access or makes a token that edits with administer', () => {

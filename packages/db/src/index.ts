@@ -334,6 +334,19 @@ export {
   type OmittedTable,
 } from './export-tables.js';
 export {
+  PARTIAL_CONFIGURATION,
+  PARTIAL_CONTENT,
+  PARTIAL_REFERENCED,
+  insertOrder,
+  partialLeftOut,
+  readPartialCut,
+  readableForExport,
+  type ExportReference,
+  type ExportRequestScope,
+  type ExportScope,
+} from './export-scope.js';
+export { readExportCatalogue, type ExportCatalogue } from './tenant-export.js';
+export {
   IMPORT_KEPT_DAYS,
   IMPORT_WARNED_DAYS,
   abandonImport,
