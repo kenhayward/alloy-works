@@ -27,7 +27,9 @@ describe('migration 0190, over roles and tokens made before it', () => {
     before = await mkdtemp(join(tmpdir(), 'aw-before-0190-'));
     await cp(new URL('../migrations/', import.meta.url), before, {
       recursive: true,
-      filter: (source) => !source.endsWith('0190_high_risk_permissions.sql'),
+      // What comes after 0190 names what 0190 closes: those run after it, as they will have.
+      filter: (source) =>
+        Number(/\/(\d{4})_[^/]*\.sql$/.exec(source.replaceAll('\\', '/'))?.[1] ?? 0) < 190,
     });
   });
 
