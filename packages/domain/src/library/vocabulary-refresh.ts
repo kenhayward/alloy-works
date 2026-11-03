@@ -2,6 +2,7 @@ import {
   holdsVocabularyText,
   isVocabularyKey,
   parseVocabulary,
+  valueIsMade,
   VOCABULARY_LIMITS,
   type Vocabulary,
   type VocabularyValue,
@@ -141,8 +142,27 @@ export function refreshVocabulary(
     delete next.replacedBy;
     return next;
   });
+  const all = [...values, ...added];
+  // A refresh's own additions are checked row by row above, and a value kept from the previous
+  // vocabulary was checked when that was made: where every value is one this module made, the parse
+  // would only repeat checks already done, over the most values a vocabulary holds at once (issue
+  // #861). Anything else, a value made by hand or changed, is parsed as every write is.
+  if (all.every(valueIsMade)) {
+    return {
+      next: { ...previous, values: all },
+      report: {
+        added: added.map((each) => each.id),
+        relabelled: report.relabelled,
+        retired,
+        returned: report.returned,
+        unchanged: report.unchanged,
+        refused,
+        refusedTotal,
+      },
+    };
+  }
   return {
-    next: parseVocabulary({ ...previous, values: [...values, ...added] }),
+    next: parseVocabulary({ ...previous, values: all }),
     report: {
       added: added.map((each) => each.id),
       relabelled: report.relabelled,

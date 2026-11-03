@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { languageTagSchema } from '../content/model/document.js';
 import { characters, CONTROL, storable } from '../data/primitives.js';
+import { storableText } from '../stored/storable.js';
 import { httpsUrl } from '../extensions/manifest.js';
 import { definitionIdentity } from '../metadata/definition.js';
 
@@ -162,6 +163,35 @@ export class VocabularyRefused extends Error {
       `The vocabulary is refused: ${problems.map((each) => each.path || '(the whole)').join(', ')}`,
     );
   }
+}
+
+/**
+ * Whether a value is one this module made, and so needs no parse: a refresh's own additions are built
+ * from what the source gave, checked row by row as they are made (the VO plan, VO-J), and a value that
+ * came from `parseVocabulary` was checked already. Their ids, labels and descriptions are what the
+ * schema accepts; only a value assembled from elsewhere, or changed by hand, needs the parse.
+ */
+export function valueIsMade(value: VocabularyValue): boolean {
+  const words = (items: readonly { language: string; text: string }[], max: number) =>
+    items.length <= VOCABULARY_LIMITS.languages &&
+    new Set(items.map((each) => each.language)).size === items.length &&
+    items.every(
+      (each) =>
+        languageTagSchema.safeParse(each.language).success &&
+        each.text.trim() !== '' &&
+        characters(each.text) <= max &&
+        !CONTROL.test(each.text) &&
+        storableText(each.text),
+    );
+  return (
+    isVocabularyKey(value.id) &&
+    (value.replacedBy === undefined || isVocabularyKey(value.replacedBy)) &&
+    (value.source === undefined ||
+      (value.source.trim() !== '' && value.source.length <= VOCABULARY_LIMITS.sourceIdentifier)) &&
+    value.labels.length >= 1 &&
+    words(value.labels, VOCABULARY_LIMITS.label) &&
+    words(value.descriptions, VOCABULARY_LIMITS.description)
+  );
 }
 
 /** The shape every write parses. Throws `VocabularyRefused`. */
