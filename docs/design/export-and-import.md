@@ -12,8 +12,8 @@ publication. A job writes an archive: every carried table's rows, the bytes they
 of what is in it and what is not, and a schema describing every column, so that it reads without the
 product. A secret is a reference, never a value. To bring one in, an administrator uploads it and is told
 first what would arrive, what stays, and which secrets need binding; a job then applies all of it or
-nothing. What is already here is never overwritten. **The audit log comes back only into an empty tenant**
-(Ken): anywhere else it stays out, and the preview says so.
+nothing. What is already here is never overwritten. **A whole-tenant archive, the only kind holding the audit log,
+restores only into an empty tenant** (Ken); a tenant in use takes a partial archive.
 
 ## Requirements owned
 
@@ -34,7 +34,7 @@ nothing. What is already here is never overwritten. **The audit log comes back o
 | **IMP-046** | The preview needs an answer for every issuer, and lists groups, externals and service identities; an actor is never reassigned (EI-N) |
 | **IMP-048** | A job, `import_environment` or `administer` at the target, the audit event `import.restored`, no token (EI-J, EI-K)                   |
 | **ADM-005** | The scope `configuration`, imported as any other                                                                                      |
-| **ADM-027** | `secrets.jsonl` holds references; an import with one unbound is refused, naming each (EI-G)                                           |
+| **ADM-027** | `secrets.jsonl` holds references; an import with one unanswered is refused, naming each; one may arrive switched off (EI-G)           |
 | **AST-030** | An asset's rows and rights travel with its bytes; each object is checked against its hash on the way in                               |
 | **REL-007** | Relationship types are definitions, carried and imported with the rest                                                                |
 
@@ -75,11 +75,12 @@ stops: this is not a merge. A test holds that no digest serialises a `natural` o
 `restored_from` and its like refer to their own table. The census names the column each cycle breaks on: written null,
 then set. A test builds the graph from `pg_constraint` and fails on a cycle unbroken.
 
-**EI-D. Audit only into an empty tenant** (Ken). The log says what happened in a tenant, so it cannot be
-interleaved with what happened in another. Every other part of a whole-tenant archive can go into a populated
-tenant by EI-C, without grants or roles (EI-F), and the preview says the audit log stays out. _This reads Ken's rule
-as limiting audit, not the rest. Refusing a whole-tenant archive outright anywhere non-empty would be simpler; a
-person could still import its spaces one by one._
+**EI-D. A whole-tenant archive goes only into an empty tenant** (Ken). The log says what happened in a tenant, so it
+cannot be interleaved with what happened in another, and an archive without its log would not be the tenant. So a
+whole-tenant archive anywhere else is refused, `tenant_not_empty`, before any binding is asked for. Only a whole-tenant
+archive holds audit; a partial one never does. A tenant in use takes a `configuration`, `space`, `document` or
+`publication` archive. To take one space from a whole-tenant archive whose source has gone, restore it into a new
+tenant and export the space from there.
 
 **EI-E. "Empty" cannot mean no events.** Provisioning seeds `General`, definitions and starter roles, and the
 person restoring must sign in first, which writes events; so do the vendor's naming of them, and may a stranger's
@@ -100,8 +101,8 @@ So each binding goes through its kind's own path, naming the holder's id and the
 holds what that kind stores (`sealed`, `sealed_for`, `target_digest`, `endpoint`), write-only and removed when the job
 ends. The preview lists each; the administrator gives a value or chooses **Arrive switched off**, the holder then
 having no credential and being off, named in the report. Foreign keys forbid dropping a holder that history points at
-(`generation_run`, `principal.provider_id`). Refused while any is unanswered, which reads ADM-027's "unbound" as
-unanswered. A webhook's `sealed` becomes nullable, with a `disabled_reason` of `restored`. A hashed token cannot be
+(`generation_run`, `principal.provider_id`). Refused while any is unanswered: ADM-027 is amended to say so
+(Ken), since it now asks for every reference bound. A webhook's `sealed` becomes nullable, with a `disabled_reason` of `restored`. A hashed token cannot be
 restored and is listed as left out; so is the environment's store credential.
 
 **EI-H. Restored events are renumbered, and say so.** `audit_event.sequence` is the read's cursor, and the
@@ -137,7 +138,11 @@ and `applyImport` share `planImport`, so a preview cannot say what the import wo
 
 **EI-M. A restored tenant starts quiet.** Subscriptions arrive off (`disabled_reason` `restored`). `webhook_queue_audit` fires on an inserted
 event, so audit is inserted before subscriptions. Restored notifications are not sent again. Derived data is rebuilt by
-the jobs that make it. A due review date or deletion is the open question in the plan's Risks.
+the jobs that make it. Anything already due waits (Ken): restored dates and retention may be long past, and would act at once. While
+`tenant_restore.due_reviewed_at` is null, the sweeps that act on restored content pass this tenant over (`sweepDates`,
+`sweepExpiredIterations`, `sweepOldNotifications`, `sweepUncheckedPublications`), and Administration says so and lists
+what is due until an administrator ends the review, an audited act. A test names every sweep as held or not, so a new
+one must choose. An upload's and an export's expiry, sessions and the like are not held.
 
 **EI-N. Every identity is answered for** (IMP-046). A principal is found by issuer and subject, and an issuer holds
 its host, so a tenant restored elsewhere would lock out everyone in it. The preview lists the archive's issuers with
@@ -161,10 +166,10 @@ outside a digest (`publication_output.object_key`, `report_key`) are rewritten o
 **EI-Q. An old archive brings back what was since erased.** An erasure leaves no trace an archive could consult, and
 a new tenant knows nothing of it. A restore is as of its archive: the preview says how old it is and that anyone
 erased since returns and must be erased again, and the report repeats it (VER-038). A ledger of erasures that outlives
-a tenant would be a list of erased people. _Ken to confirm._
+a tenant would be a list of erased people (Ken).
 
 ## Not designed
 
-Restoring into a different tenant while keeping both signed in; a merge of two histories; an import that updates
+A whole-tenant archive into a tenant in use, or a part picked out of one (EI-D); restoring into a different tenant while keeping both signed in; a merge of two histories; an import that updates
 what is already here; a scheduled export; encrypting an archive with a passphrase (it is permissioned, expiring and
 audited, IMP-044); XML vocabularies (IMP-016).

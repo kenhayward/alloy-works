@@ -1,8 +1,9 @@
 # EI: Export and import
 
 > T7's next slice, designed in [export-and-import.md](../design/export-and-import.md). **Full tier**: several PRs,
-> migrations, a new contract, a process boundary and tenancy. Ken decided that audit comes back only into an empty
-> tenant (EI-D). Pre-flight found sixteen defects, answered in the design and here; neither spike has run.
+> migrations, a new contract, a process boundary and tenancy. Ken decided that a whole-tenant archive goes only into an
+> empty tenant (EI-D), that an erased person's return is a warning (EI-Q), that a secret's holder may arrive switched
+> off (EI-G), and that sweeps wait for a review after a restore (EI-M). Pre-flight found sixteen defects, answered in the design and here; neither spike has run.
 
 **Goal:** an administrator exports a whole tenant, reads it without the product, restores it into a new tenant with
 its audit log and people, and brings a space or the configuration into a tenant already in use.
@@ -12,7 +13,7 @@ its audit log and people, and brings a space or the configuration into a tenant 
 | EIa | Format 2: the census, every carried table in one cut, secrets as references, tar, the format guide, the independent reader |
 | EIb | The partial scopes (`configuration`, `space`, `document`, `publication`), following references, Administration's Export    |
 | EIc | The restore into an empty tenant: upload, preview, identities, binding, audit, a quiet start, EI-K, EI-P                   |
-| EId | Import into a populated tenant, as far as S1 allows; the walks, the final review, the close                                |
+| EId | A partial archive into a tenant in use, as far as S1 allows; the walks, the final review, the close                        |
 
 EIa alone answers "can I get everything out", which TL needs. The empty restore comes before the populated import
 because it is the goal, it may take locks freely, and the populated path is the harder and may shrink. Nothing imports
@@ -20,27 +21,28 @@ until EIc, so format 2 can still change. EIc is the largest, and splits at audit
 
 ## Before EIa
 
-**Amend the requirements through the form** (`pnpm trace draft`): IMP-039 says "restored into a tenant", and EI-D
-narrows it for audit. A new row, IMP-0xx: _the audit log in an export must be restored only into an empty tenant;
-anywhere else it must stay out, and the person importing must be told so before it runs._ The design then claims it.
+**Amend the requirements through the form** (`pnpm trace draft`), and the design then claims them:
+
+- IMP-039 says "restored into a tenant", and EI-D narrows it. A new row, IMP-0xx: _a whole-tenant export, the only kind holding the audit log, must be restored only into an empty tenant; anywhere else it must be refused before it runs._
+- ADM-027 says every reference must be bound, and EI-G also lets one arrive switched off. It gains: _or be marked by the person importing to arrive switched off, with no credential, and be named in the report._
 
 ## Interfaces
 
 - Migrations: `tenant_export` gains `scope`, `scope_id`, `follow_references`, `format`. New: `restoration` (`id`,
   `requested_by`, `object_key`, `sha256`, `state`, `plan`, `issuers`, `finished_at`), `import_binding` (`restoration_id`,
-  `reference`, `sealed`, `sealed_for`, `target_digest`, `endpoint`, `switched_off`), `tenant_restore` (one row at most),
+  `reference`, `sealed`, `sealed_for`, `target_digest`, `endpoint`, `switched_off`), `tenant_restore` (one row at most, `due_reviewed_at`),
   `audit_restored` (`sequence`, `original_sequence`, `restore_id`). `webhook_subscription.sealed` nullable, and
-  `disabled_reason` gains `restored`. Kinds: `import.restored` as declared in audit.md, plus `import.previewed` and `import.refused`.
+  `disabled_reason` gains `restored`. Kinds: `import.restored` as declared in audit.md, plus `import.previewed`, `import.refused` and `import.due_reviewed`.
 - `packages/db/src/export-tables.ts`: `EXPORT_TABLES: Record<string, { fate: 'carried' | 'rebuilt' | 'leftOut'; why?: string; identity?: 'kept' | 'natural' | 'singleton' | 'renumbered'; key?: string[]; breaksCycleAt?: string[]; secrets?: SecretColumn[] }>`. `format.json` beside it, generated.
 - `withTenant` gains an isolation option; the export job runs in one `repeatable read`, read-only transaction, and `EXPORT_PARTS` goes.
 - `packages/db/src/restoring.ts`: `planImport(trx, archive)`, `previewImport`, `applyImport`, `tenantIsEmpty(trx)` answering `empty` or the first thing that is not. `remap` holds natural and renumbered ids.
 - `packages/objects/src/store.ts`: `get`, `sign` and the rest resolve a well-formed key to this tenant's prefix plus its hash (EI-P); the test that another tenant's key is refused becomes one that it cannot reach another tenant's bytes.
 - `apps/worker/src/jobs/tenant-export.ts` writes tar; `apps/worker/src/jobs/restoring.ts` reads it to disk, verifies, then applies. Archive reading in a new `packages/archive`, free of `pg`.
 - The restorer's path (S1's expected answer), EIc's: `aw_restorer` in `bootstrap.ts` and its test, `provision.ts`, a grant for existing tenants, `deploy/`. It assumes the owner role, `set constraints all immediate` before triggers return, then the tenant's role to enqueue rebuilds, since the owner lacks `aw_tenant`.
-- Contract: `POST /v1/exports` takes `{ scope, id?, followReferences? }`; `POST /v1/imports` (a signed upload, as assets do), `GET /v1/imports/{id}` (the plan), `PUT /v1/imports/{id}/bindings/{reference}` (per kind, write-only, or `switchedOff`), `PUT /v1/imports/{id}/identities`, `POST /v1/imports/{id}/apply`. Codes: `export_format_newer`, `export_invalid`, `tenant_not_empty`, `secret_unbound`, `identity_unanswered`, `restorer_would_not_administer`. `import_environment` joins `permissions.ts`, granted by migration as IN-H's six, and is left out of `tokenScopes`. Each route in the usual censuses.
+- Contract: `POST /v1/exports` takes `{ scope, id?, followReferences? }`; `POST /v1/imports` (a signed upload, as assets do), `GET /v1/imports/{id}` (the plan), `PUT /v1/imports/{id}/bindings/{reference}` (per kind, write-only, or `switchedOff`), `PUT /v1/imports/{id}/identities`, `POST /v1/imports/{id}/apply`, `POST /v1/imports/{id}/due-reviewed`. Codes: `export_format_newer`, `export_invalid`, `tenant_not_empty`, `secret_unbound`, `identity_unanswered`, `restorer_would_not_administer`. `import_environment` joins `permissions.ts`, granted by migration as IN-H's six, and is left out of `tokenScopes`. Each route in the usual censuses.
 - Web: `apps/web/src/admin/TenantExport.tsx` gains the scopes; `admin/Import.tsx` the upload, the plan, each binding, each identity. A space's and a document's More actions gain Export.
 - `docs/guides/export-format.md`: the outsider's account, every claim checked against an archive.
-- Sweep: an upload and its bindings expire as an export does (`apps/worker/src/sweep.ts`).
+- Sweep: an upload and its bindings expire as an export does; the held sweeps pass over a tenant under review (`apps/worker/src/sweep.ts`, EI-M).
 
 ## Tests worth naming
 
@@ -59,7 +61,7 @@ anywhere else it must stay out, and the person importing must be told so before 
 - IMP-046 an unanswered issuer refuses; an event's actor is the same principal after a mapping.
 - IMP-048 a token cannot import; a whole-tenant import needs a sign-in in the last ten minutes.
 - IMP-0xx audit returns in order, with original instants, sequences and labels, into an empty tenant.
-- IMP-0xx into a populated tenant the preview says audit stays out, and no event arrives.
+- IMP-0xx a whole-tenant archive into a tenant in use is refused before any binding is asked for, and a partial archive holds no audit.
 - `tenant_not_empty` for another person's act, a made document or a second restore; not for the restorer's sign-in, the vendor's naming or a stranger's failed sign-in.
 - Seeded `General`, roles and policies: an empty tenant ends holding the archive's, with every reference rewritten.
 - A forged archive is refused: a changed version, an object not matching its hash, `../` in an entry name, a declared size exceeded, a script in content.
@@ -68,6 +70,7 @@ anywhere else it must stay out, and the person importing must be told so before 
 - Another tenant's bytes stay unreachable by any key, restored content's included.
 - A migration changing a carried column fails against `format.json`; the frozen format-2 archive still restores.
 - A restored subscription sends nothing until switched on; restoring audit queues no webhook attempt.
+- A date and a retention period long past do nothing after a restore until the review ends, then act; a sweep named as neither held nor not fails.
 - Round trip, whole system: export, new tenant, restore, sign in, publish a restored document.
 
 ## Spikes
@@ -79,7 +82,7 @@ Neither has been run; each could change the plan.
 
 ## Risks
 
-- **Due work on arrival.** Restored retention, review dates and deletions may be past due, and the sweeps would act at once. Recommendation: `tenant_restore` holds sweeps off that tenant until an administrator ends a "review what is due" step. EIc decides, with Ken.
+- **A review nobody ends.** Sweeps stay off a restored tenant until an administrator ends the review (EI-M), so retention could wait indefinitely. Administration says so on every visit; no timeout, since acting unreviewed is what it prevents.
 - **Secrets through the connector.** EI-G asks each kind's sealing path to accept a holder that does not exist yet. If one cannot, that kind binds after the restore and arrives off. Read each path before EIc.
 - **Upload size.** A single signed `PUT` stops at 5 GB on S3. Multipart is needed for a large tenant, and the export's `putFile` needs the same check. Otherwise a stated cap in the preview, and an operator route.
 - **Every migration now costs a format bump** when it touches a carried column. The price of EI-I; the upgrader is usually one line, a default.

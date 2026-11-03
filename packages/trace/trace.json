@@ -18284,7 +18284,7 @@
         },
         {
           "id": "ADM-027",
-          "howItIsMet": "`secrets.jsonl` holds references; an import with one unbound is refused, naming each (EI-G)"
+          "howItIsMet": "`secrets.jsonl` holds references; an import with one unanswered is refused, naming each; one may arrive switched off (EI-G)"
         },
         {
           "id": "AST-030",
