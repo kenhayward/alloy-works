@@ -79,7 +79,7 @@ import {
   footnoteFrom,
   holdsBlock,
   insertIn,
-  proposeInsertInputSchema,
+  type proposeInsertInputSchema,
   walkOutline,
   componentAsText,
   isAssistantTool,
