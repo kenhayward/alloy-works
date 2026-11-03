@@ -18250,7 +18250,7 @@
         },
         {
           "id": "IMP-020",
-          "howItIsMet": "The census's left-out and rebuilt tables, each with its reason, are written into the manifest; a missing object fails the export"
+          "howItIsMet": "The census's left-out and rebuilt tables, each with its reason, are written into the manifest, and so is an object the store has lost"
         },
         {
           "id": "IMP-021",
@@ -23360,7 +23360,13 @@
     {
       "id": "IAM-032",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 215,
+      "line": 222,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-023",
+      "file": "apps/service/src/high-risk-permissions.test.ts",
+      "line": 177,
       "kind": "title"
     },
     {
@@ -29268,9 +29274,39 @@
       "kind": "title"
     },
     {
+      "id": "ADM-054",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 317,
+      "kind": "title"
+    },
+    {
       "id": "API-044",
       "file": "apps/worker/src/tenant-export.test.ts",
-      "line": 97,
+      "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-018",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 262,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-020",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 286,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-021",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 133,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-043",
+      "file": "apps/worker/src/tenant-export.test.ts",
+      "line": 133,
       "kind": "title"
     },
     {
@@ -30465,6 +30501,18 @@
       "id": "VER-038",
       "file": "packages/db/src/erasure.test.ts",
       "line": 317,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-054",
+      "file": "packages/db/src/export-tables.test.ts",
+      "line": 135,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-020",
+      "file": "packages/db/src/export-tables.test.ts",
+      "line": 86,
       "kind": "title"
     },
     {

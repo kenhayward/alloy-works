@@ -308,8 +308,8 @@ export {
 } from './audit-export.js';
 export {
   EXPORT_KEPT_DAYS,
-  EXPORT_PARTS,
-  exportPage,
+  readExportCut,
+  EXPORT_FORMAT,
   failTenantExport,
   finishTenantExport,
   listTenantExports,
@@ -317,9 +317,22 @@ export {
   requestTenantExport,
   expireTenantExport,
   tenantExportsDue,
-  type ExportPart,
+  type ExportCut,
+  type ExportedTable,
   type TenantExport,
 } from './tenant-export.js';
+export {
+  EXPORT_TABLES,
+  EXPORT_NOT_CARRIED_COLUMNS,
+  NOT_OBJECTS,
+  NOT_SECRETS,
+  carriedTables,
+  type CarriedTable,
+  type ExportIdentity,
+  type ExportSecret,
+  type ExportTable,
+  type OmittedTable,
+} from './export-tables.js';
 export {
   IMPORT_KEPT_DAYS,
   IMPORT_WARNED_DAYS,

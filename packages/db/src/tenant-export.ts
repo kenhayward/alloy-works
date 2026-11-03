@@ -1,5 +1,6 @@
-import { sql, type RawBuilder } from 'kysely';
+import { sql } from 'kysely';
 import type { KeptExport } from './audit-export.js';
+import { EXPORT_NOT_CARRIED_COLUMNS, carriedTables, type ExportIdentity } from './export-tables.js';
 import {
   checkedLimit,
   isListingRequest,
@@ -14,9 +15,9 @@ import { enqueueJob } from './queue.js';
 import type { TenantTransaction } from './tables.js';
 
 /**
- * **The tenant's export** (API-044; the R21 plan, R21-B): one archive of the tenant's content as JSON
- * Lines, a part each, with the bytes its assets and publications hold by their hash and a manifest of
- * what it leaves out. Asked for by an administrator, written by a job, kept seven days.
+ * **The tenant's export** (API-044, IMP-018; EI-A): one archive of every carried table as JSON Lines,
+ * with the bytes its rows name by hash, a schema, and a manifest of what it leaves out. Asked for by an
+ * administrator, written by a job, kept seven days.
  */
 
 /** How long a written export is kept before its archive is swept (R21-B). */
@@ -123,128 +124,163 @@ export async function listTenantExports(
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** The parts an export holds, a JSON Lines file each, in the order it writes them. */
-export const EXPORT_PARTS = [
-  'artifacts',
-  'versions',
-  'relationships',
-  'baselines',
-  'publications',
-] as const;
-export type ExportPart = (typeof EXPORT_PARTS)[number];
+/** The archive's format: the tables as stored (EI-A). Format 1 was five curated parts. */
+export const EXPORT_FORMAT = 2;
 
-const visible = (column: string, snapshot: string): RawBuilder<boolean> =>
-  sql<boolean>`pg_visible_in_snapshot(${sql.ref(column)}, ${snapshot}::pg_snapshot)`;
+/** A table as `schema.json` describes it, so an archive reads without the product (IMP-019). */
+export interface ExportedTable {
+  readonly columns: readonly {
+    readonly name: string;
+    readonly type: string;
+    readonly nullable: boolean;
+  }[];
+  readonly primaryKey: readonly string[];
+  readonly foreignKeys: readonly { readonly columns: readonly string[]; readonly refers: string }[];
+  /** Columns this table has that the archive does not hold. */
+  readonly notCarried: readonly string[];
+  readonly identity: ExportIdentity;
+}
 
-/**
- * Each part's rows after `after`, by id, as its JSON Lines hold them. The version chain, the artifacts
- * it is of and the publications are read as of the export's snapshot, so no version is exported
- * without its artifact (the R21 final review); a baseline and a relationship as made by its request -
- * a relationship as it then stands, since one is changed in place.
- */
-function partQuery(
-  part: ExportPart,
-  asked: TenantExport,
-  after: string | undefined,
-  limit: number,
-): RawBuilder<{ id: string; line: Record<string, unknown> }> {
-  const past = after === undefined ? sql`true` : sql`x.id > ${after}::uuid`;
-  const asOf = asked.requestedAt;
-  switch (part) {
-    case 'artifacts':
-      return sql`select x.id, jsonb_build_object('id', x.id, 'kind', x.kind, 'space', x.space_id,
-          'createdAt', x.created_at) as line
-        from artifact x
-        where exists (select 1 from artifact_version v where v.artifact_id = x.id
-            and (v.written_by is null or ${visible('v.written_by', asked.snapshot)}))
-          and ${past}
-        order by x.id limit ${limit}`;
-    case 'versions':
-      return sql`select x.id, jsonb_build_object('id', x.id, 'artifact', x.artifact_id,
-          'kind', x.kind, 'revision', x.revision_no, 'version', x.version_no, 'author', x.author_id,
-          'content', x.content, 'contentHash', x.content_hash, 'restoredFrom', x.restored_from,
-          'line', x.line_id, 'createdAt', x.created_at) as line
-        from artifact_version x
-        where (x.written_by is null or ${visible('x.written_by', asked.snapshot)}) and ${past}
-        order by x.id limit ${limit}`;
-    case 'relationships':
-      return sql`select x.id, jsonb_build_object('id', x.id, 'type', x.type_id,
-          'from', jsonb_build_object('id', x.from_id, 'kind', x.from_kind, 'version', x.from_version),
-          'to', jsonb_build_object('id', x.to_id, 'kind', x.to_kind, 'version', x.to_version),
-          'fields', x.field_values, 'createdBy', x.created_by, 'createdAt', x.created_at,
-          'changedAt', x.changed_at) as line
-        from relationship x where x.created_at <= ${asOf} and ${past} order by x.id limit ${limit}`;
-    case 'baselines':
-      return sql`select x.id, jsonb_build_object('id', x.id, 'document', x.document_id,
-          'name', x.name, 'documentVersion', x.document_version_id,
-          'layoutVersion', x.layout_version_id, 'themeVersion', x.theme_version_id,
-          'templateVersion', x.template_version_id, 'madeBy', x.made_by, 'madeAt', x.made_at,
-          'digest', x.digest,
-          'pins', coalesce((select jsonb_agg(jsonb_build_object('node', p.node,
-              'version', p.version_id, 'artifact', p.artifact_id, 'kind', p.kind)
-              order by p.artifact_id, p.version_id)
-            from baseline_pin p where p.baseline_id = x.id), '[]'::jsonb)) as line
-        from baseline x where x.made_at <= ${asOf} and ${past} order by x.id limit ${limit}`;
-    case 'publications':
-      return sql`select x.id, jsonb_build_object('id', x.id, 'request', x.request_id,
-          'document', x.document_id, 'documentVersion', x.document_version_id,
-          'publisher', x.publisher, 'publishedAt', x.published_at, 'engine', x.engine_version,
-          'template', x.template_version, 'pipeline', x.pipeline_version,
-          'dataSha256', x.data_sha256,
-          'outputs', coalesce((select jsonb_agg(jsonb_build_object('format', o.format,
-              'sha256', o.sha256, 'bytes', o.bytes, 'standard', o.standard) order by o.format)
-            from publication_output o where o.publication_id = x.id), '[]'::jsonb),
-          'assets', coalesce((select jsonb_agg(jsonb_build_object('asset', a.asset_id,
-              'version', a.version_id) order by a.asset_id, a.version_id)
-            from publication_asset a where a.publication_id = x.id), '[]'::jsonb)) as line
-        from publication x
-        where (x.written_by is null or ${visible('x.written_by', asked.snapshot)}) and ${past}
-        order by x.id limit ${limit}`;
-  }
+/** What one cut of the tenant held, once every table's rows have gone to the sink. */
+export interface ExportCut {
+  readonly cutAt: string;
+  readonly lastMigration: string;
+  readonly rows: Readonly<Record<string, number>>;
+  readonly schema: Readonly<Record<string, ExportedTable>>;
+  /** A line of `secrets.jsonl` each, one per holder of a value. */
+  readonly secrets: readonly {
+    readonly reference: string;
+    readonly kind: string;
+    readonly table: string;
+    readonly holder: string;
+  }[];
+  /** The store keys the rows name, once each. */
+  readonly objects: readonly string[];
 }
 
 /**
- * One page of a part: its lines, the store keys of the bytes they name - an asset version's object, a
- * publication's outputs - and where the next page begins, or null at the end.
+ * Every carried table's rows to `lines`, a page at a time through a cursor, as JSON text straight from
+ * the database, so a number keeps its precision. Call it in one `repeatable read`, read-only
+ * transaction (EI-A): that transaction is the cut, and a row in it names only rows also in it.
  */
-export async function exportPage(
+export async function readExportCut(
   trx: TenantTransaction,
-  asked: TenantExport,
-  part: ExportPart,
-  after: string | undefined,
-  limit = 500,
-): Promise<{
-  readonly lines: readonly Record<string, unknown>[];
-  readonly objects: readonly string[];
-  readonly next: string | null;
-}> {
-  const { rows } = await partQuery(part, asked, after, limit + 1).execute(trx);
-  const shown = rows.slice(0, limit);
-  const objects: string[] = [];
-  if (part === 'versions') {
-    for (const { line } of shown) {
-      const content = line['content'] as Record<string, unknown> | null;
-      if (line['kind'] === 'asset' && typeof content?.['object'] === 'string') {
-        objects.push(content['object']);
+  lines: (table: string, lines: readonly string[]) => Promise<void>,
+  pageSize = 500,
+): Promise<ExportCut> {
+  const { rows: columns } = await sql<{
+    table: string;
+    name: string;
+    type: string;
+    nullable: boolean;
+    generated: boolean;
+  }>`
+    select c.relname as table, a.attname as name, format_type(a.atttypid, a.atttypmod) as type,
+           not a.attnotnull as nullable, a.attgenerated <> '' as generated
+      from pg_attribute a join pg_class c on c.oid = a.attrelid
+     where c.relnamespace = current_schema()::regnamespace and c.relkind = 'r'
+       and a.attnum > 0 and not a.attisdropped
+     order by c.relname, a.attnum`.execute(trx);
+  const { rows: constraints } = await sql<{
+    table: string;
+    type: 'p' | 'f';
+    columns: string[];
+    refers: string | null;
+  }>`
+    select c.relname as table, k.contype as type, k.confrelid::regclass::text as refers,
+           array(select a.attname::text
+                   from unnest(k.conkey) with ordinality o(attnum, place)
+                   join pg_attribute a on a.attrelid = k.conrelid and a.attnum = o.attnum
+                  order by o.place) as columns
+      from pg_constraint k join pg_class c on c.oid = k.conrelid
+     where k.connamespace = current_schema()::regnamespace and k.contype in ('p', 'f')
+     order by c.relname, k.conname`.execute(trx);
+  const rows: Record<string, number> = {};
+  const schema: Record<string, ExportedTable> = {};
+  const secrets: { reference: string; kind: string; table: string; holder: string }[] = [];
+  const objects = new Set<string>();
+  for (const [name, table] of carriedTables()) {
+    const own = columns.filter((column) => column.table === name);
+    const notCarried = own
+      .filter(
+        (column) =>
+          column.generated ||
+          EXPORT_NOT_CARRIED_COLUMNS.includes(column.name) ||
+          table.secrets?.columns.includes(column.name),
+      )
+      .map((column) => column.name);
+    const keys = constraints.filter((each) => each.table === name);
+    const primaryKey = keys.find((each) => each.type === 'p')?.columns ?? [];
+    schema[name] = {
+      columns: own
+        .filter((column) => !notCarried.includes(column.name))
+        .map(({ name: column, type, nullable }) => ({ name: column, type, nullable })),
+      primaryKey,
+      foreignKeys: keys
+        .filter((each) => each.type === 'f')
+        .map((each) => ({ columns: each.columns, refers: each.refers! })),
+      notCarried,
+      identity: table.identity,
+    };
+    const dropped = sql.join(
+      notCarried.map((column) => sql`- ${sql.lit(column)}::text`),
+      sql` `,
+    );
+    // By its key, so two exports of one state read alike; a keyless table by its text.
+    const order =
+      primaryKey.length === 0 ? sql`1` : sql.join(primaryKey.map((column) => sql.ref(column)));
+    await sql`declare export_rows no scroll cursor for
+      select (to_jsonb(t) ${dropped})::text as line from ${sql.id(name)} t
+       order by ${order}`.execute(trx);
+    let count = 0;
+    for (;;) {
+      const page = await sql<{ line: string }>`
+        fetch forward ${sql.raw(String(pageSize))} from export_rows`.execute(trx);
+      if (page.rows.length === 0) break;
+      count += page.rows.length;
+      await lines(
+        name,
+        page.rows.map((row) => row.line),
+      );
+    }
+    await sql`close export_rows`.execute(trx);
+    rows[name] = count;
+    for (const column of table.objects ?? []) {
+      const { rows: named } = await sql<{ key: string }>`
+        select distinct ${sql.ref(column)} as key from ${sql.id(name)}
+         where ${sql.ref(column)} is not null`.execute(trx);
+      for (const { key } of named) objects.add(key);
+    }
+    if (table.secrets) {
+      const { kind, holder, columns: held } = table.secrets;
+      const { rows: holders } = await sql<{ holder: string }>`
+        select distinct ${sql.ref(holder)}::text as holder from ${sql.id(name)}
+         where ${sql.ref(held[0]!)} is not null order by 1`.execute(trx);
+      for (const each of holders) {
+        secrets.push({
+          reference: `${kind}:${each.holder}`,
+          kind,
+          table: name,
+          holder: each.holder,
+        });
       }
     }
   }
-  if (part === 'publications' && shown.length > 0) {
-    const keys = await trx
-      .selectFrom('publication_output')
-      .select('object_key')
-      .where(
-        'publication_id',
-        'in',
-        shown.map((row) => row.id),
-      )
-      .execute();
-    objects.push(...keys.map((each) => each.object_key));
-  }
+  // An asset version names its bytes inside its content.
+  const { rows: assets } = await sql<{ key: string }>`
+    select distinct content->>'object' as key from artifact_version
+     where kind = 'asset' and content->>'object' is not null`.execute(trx);
+  for (const { key } of assets) objects.add(key);
+  const { rows: facts } = await sql<{ cut_at: string; last_migration: string }>`
+    select now()::text as cut_at, (select max(version) from schema_migration)::text as last_migration
+  `.execute(trx);
   return {
-    lines: shown.map((row) => row.line),
-    objects,
-    next: rows.length > limit ? shown.at(-1)!.id : null,
+    cutAt: new Date(facts[0]!.cut_at).toISOString(),
+    lastMigration: facts[0]!.last_migration,
+    rows,
+    schema,
+    secrets,
+    objects: [...objects].sort(),
   };
 }
 

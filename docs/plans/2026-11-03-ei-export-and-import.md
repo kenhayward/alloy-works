@@ -26,7 +26,7 @@ until EIc, so format 2 can still change. EIc is the largest, and splits at audit
   `reference`, `sealed`, `sealed_for`, `target_digest`, `endpoint`, `switched_off`), `tenant_restore` (one row at most, `due_reviewed_at`),
   `audit_restored` (`sequence`, `original_sequence`, `restore_id`). `webhook_subscription.sealed` nullable, and
   `disabled_reason` gains `restored`. Kinds: `import.restored` as declared in audit.md, plus `import.previewed`, `import.refused` and `import.due_reviewed`.
-- `packages/db/src/export-tables.ts`: `EXPORT_TABLES: Record<string, { fate: 'carried' | 'rebuilt' | 'leftOut'; why?: string; identity?: 'kept' | 'natural' | 'singleton' | 'renumbered'; key?: string[]; breaksCycleAt?: string[]; secrets?: SecretColumn[] }>`. `format.json` beside it, generated.
+- `packages/db/src/export-tables.ts`: `EXPORT_TABLES: Record<string, { fate: 'carried' | 'rebuilt' | 'leftOut'; why?: string; identity?: 'kept' | 'natural' | 'singleton' | 'renumbered'; key?: string[]; breaksCycleAt?: string[]; secrets?: SecretColumn[] }>`. `format.json` beside it, generated, from EIc: until something imports, format 2 can still change.
 - `withTenant` gains an isolation option; the export job runs in one `repeatable read`, read-only transaction, and `EXPORT_PARTS` goes.
 - `packages/db/src/restoring.ts`: `planImport(trx, archive)`, `previewImport`, `applyImport`, `tenantIsEmpty(trx)` answering `empty` or the first thing that is not. `remap` holds natural and renumbered ids.
 - `packages/objects/src/store.ts`: `get`, `sign` and the rest resolve a well-formed key to this tenant's prefix plus its hash (EI-P); the test that another tenant's key is refused becomes one that it cannot reach another tenant's bytes.
@@ -41,7 +41,7 @@ until EIc, so format 2 can still change. EIc is the largest, and splits at audit
 
 - IMP-020 a table in no list fails the census, and a left-out table's reason is in the manifest.
 - A foreign-key cycle no column breaks fails against `pg_constraint`; no digest serialises a natural or renumbered id.
-- IMP-021 exports a fixture tenant holding every carried table, reads it back and compares row counts and digests.
+- IMP-021 exports a fixture tenant, compares every carried table's row count with the database, and recomputes digests. The tables go through one generic path, so the fixture need not fill each.
 - IMP-043 recomputes each version digest from the archive using only `node:crypto` and the format guide's serialisation.
 - IMP-018 a whole-tenant archive holds audit, people, grants, threads, definitions, assets, baselines and publications.
 - A document written while the export runs is wholly in it or wholly out; no row names one the archive lacks.
@@ -61,7 +61,7 @@ until EIc, so format 2 can still change. EIc is the largest, and splits at audit
 - A person restored by issuer and subject signs in as the restored principal; one who would not administer is refused in the preview.
 - A label erased in the archive stays erased; the preview says how old an archive is and what that brings back.
 - Another tenant's bytes stay unreachable by any key, restored content's included.
-- A migration changing a carried column fails against `format.json`; the frozen format-2 archive still restores.
+- (EIc) A migration changing a carried column fails against `format.json`; the frozen format-2 archive still restores.
 - A restored subscription sends nothing until switched on; restoring audit queues no webhook attempt.
 - A date and a retention period long past do nothing after a restore until the review ends, then act; a sweep named as neither held nor not fails.
 - Round trip, whole system: export, new tenant, restore, sign in, publish a restored document.

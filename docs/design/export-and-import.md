@@ -21,7 +21,7 @@ restores only into an empty tenant** (Ken); a tenant in use takes a partial arch
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | **IMP-018** | Format 2 carries every table a census calls carried, audit, people and grants among them (EI-A, EI-B)                                    |
 | **IMP-019** | `schema.json` in each archive and the format guide, `docs/guides/export-format.md`; no product code is needed to read one                |
-| **IMP-020** | The census's left-out and rebuilt tables, each with its reason, are written into the manifest; a missing object fails the export         |
+| **IMP-020** | The census's left-out and rebuilt tables, each with its reason, are written into the manifest, and so is an object the store has lost    |
 | **IMP-021** | A test exports a fixture tenant, reads it back and compares                                                                              |
 | **IMP-022** | Administration's Export asks for each scope, with nobody else involved                                                                   |
 | **IMP-023** | `export_environment`, and `export_audit` as well for audit; `export.produced` (EI-J)                                                     |
@@ -51,6 +51,7 @@ curated parts, which would need a shape designed for each of some 170 tables, an
 archives stay readable by what they say; they are not importable. The whole export runs in one `repeatable read`,
 read-only transaction: format 1's pages are separate transactions, and most tables carry nothing to read them as of
 a moment, so a row could name another the archive lacks, and refuse its own restore. The manifest says when the cut was.
+A lost object is named there rather than failing the export: otherwise one lost image would keep a tenant from leaving.
 
 **EI-B. A census decides every table and every awkward column.** `EXPORT_TABLES` names each tenant table `carried`,
 `rebuilt` (search, embeddings, derivatives, previews) or `leftOut` with its reason (sessions, sign-in attempts,

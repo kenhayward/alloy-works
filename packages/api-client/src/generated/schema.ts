@@ -3621,7 +3621,7 @@ export interface paths {
         get: operations["listTenantExports"];
         put?: never;
         /**
-         * Export the environment's content as it stands now, as a job
+         * Export the whole environment as it stands, as a job
          * @description Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.
          */
         post: operations["requestTenantExport"];
@@ -72847,7 +72847,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `export_environment` is not held at this environment */
+            /** @description `export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

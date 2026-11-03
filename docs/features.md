@@ -207,11 +207,13 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
-- **Exporting the environment.** An administrator exports everything the environment holds from
-  Administration's **Export** with **Export everything**, as a job: one ZIP archive of every
-  artifact and version, relationship, baseline and publication as JSON Lines, the images and PDFs they
-  hold by their hash, and a manifest saying what it leaves out, such as people, credentials and the
-  audit log. Past exports are listed, each downloadable for seven days; asking for one and each
+- **Exporting the environment.** Someone holding both export permissions exports everything the
+  environment holds from Administration's **Export** with **Export everything**, as a job: one tar
+  archive of every table at one moment as JSON Lines, content, people, access, threads, settings and the
+  audit log among them, with the images and PDFs they hold by their hash. A schema describes every
+  column, a manifest says what it leaves out and why, and a secret is only a reference, never its value.
+  [The format guide](guides/export-format.md) lets anyone read one without this product. Importing one
+  is not built yet. Past exports are listed, each downloadable for seven days; asking for one and each
   download are on the audit log. The API does the same (`POST /v1/exports`).
 - **Model endpoints.** An administrator adds the model endpoints the environment calls in
   Administration's **Models**, each on the environment's own provider account: Anthropic's Messages API

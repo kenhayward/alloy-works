@@ -18,7 +18,7 @@ import { configureStandIn, STAND_IN_SECRET, TEST_SEALING_KEY } from './test/sign
 
 const HOST = 'risk.acme.alloy.test';
 const CALLBACK = `http://${HOST}/v1/sign-in/organisation/callback`;
-const USERS = ['ada', 'grace', 'hedy', 'mary', 'joan', 'ivy'].map((id) => ({
+const USERS = ['ada', 'grace', 'hedy', 'mary', 'joan', 'ivy', 'rosalind', 'emmy'].map((id) => ({
   id,
   name: id,
   email: `${id}@acme.example`,
@@ -172,6 +172,13 @@ describe('the high-risk permissions', () => {
         expect(route?.access, operation).toMatchObject({ permission });
       }
     }
+  });
+
+  it('IMP-023 refuses a whole-tenant export to one holding export_environment without export_audit', async () => {
+    const without = await holding('rosalind', 'Exporter, no log', ['read', 'export_environment']);
+    const both = await holding('emmy', 'Exporter', ['read', 'export_environment', 'export_audit']);
+    expect((await post('/v1/exports', without.cookie, {})).statusCode).toBe(403);
+    expect((await post('/v1/exports', both.cookie, {})).statusCode).toBe(200);
   });
 
   it('leaves what grants access or makes a token that edits with administer', () => {

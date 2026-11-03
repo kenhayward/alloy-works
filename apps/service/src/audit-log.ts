@@ -32,7 +32,7 @@ import {
 import type { ObjectStores } from '@alloy-works/objects';
 import { auditFilterProblem, type AuditFilter } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { authoriseAt, notFound, type Authorised } from './access.js';
 import { pageLimit } from './components.js';
 import { AppError, storageUnavailable } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
@@ -226,8 +226,12 @@ export function tenantExportHandlers(
   return {
     requestTenantExport: async (
       _request: FastifyRequest,
-      { trx, principalId }: Authorised,
+      { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportMade> => {
+      // A whole tenant holds its audit log, so both are asked of the same person (IMP-023, EI-J).
+      await authoriseAt(trx, { principalId, scopes: facts.scopes }, 'export_audit', {
+        kind: 'tenant',
+      });
       const made = await requestTenantExport(trx, principalId);
       await recordEvent(trx, {
         kind: 'export.produced',
@@ -286,7 +290,7 @@ export function tenantExportHandlers(
       }
       if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
-      const download = await store.signedLink(made.key, DOWNLOAD_SECONDS, `export-${id}.zip`);
+      const download = await store.signedLink(made.key, DOWNLOAD_SECONDS, `export-${id}.tar`);
       await recordEvent(trx, {
         kind: 'export.downloaded',
         subject: { kind: 'tenant_export', id },

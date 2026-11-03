@@ -70,13 +70,17 @@ export const exportRoutes = {
     operationId: 'requestTenantExport',
     method: 'POST',
     path: '/v1/exports',
-    summary: "Export the environment's content as it stands now, as a job",
+    summary: 'Export the whole environment as it stands, as a job',
     tenantScoped: true,
     access: EXPORTS,
     responses: {
       200: { description: 'Asked for: queued, and written by a job', schema: TenantExportMade },
       401: unauthenticated,
-      403: forbidden,
+      403: {
+        description:
+          '`export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log',
+        schema: forbidden.schema,
+      },
     },
   },
   listTenantExports: {
