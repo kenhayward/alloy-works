@@ -270,11 +270,11 @@ describe('making, renaming, archiving and restoring a space (the SP1 plan)', () 
         listSpacesFor(trx, ada, undefined, { limit: 100 }, options),
       );
     expect((await listed()).items).toEqual([
-      { id: general, name: 'General', archived: false, language: null, mayCreate: true },
-      { id: quality.id, name: 'Quality', archived: true, language: null, mayCreate: false },
+      { id: general, name: 'General', archived: false, language: null, mayCreate: true, mayMoveInto: true },
+      { id: quality.id, name: 'Quality', archived: true, language: null, mayCreate: false, mayMoveInto: false },
     ]);
     expect((await listed({ archived: false })).items).toEqual([
-      { id: general, name: 'General', archived: false, language: null, mayCreate: true },
+      { id: general, name: 'General', archived: false, language: null, mayCreate: true, mayMoveInto: true },
     ]);
   });
 });

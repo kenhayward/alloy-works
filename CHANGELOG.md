@@ -35,6 +35,7 @@ The MV close, T7's moving of content between spaces (the MV plan), with what has
 - **Keycloak lets the next person sign in.** On a development stack using Keycloak, signing in as somebody else in the same browser was refused until Keycloak's session was ended by hand. That session now lasts 15 seconds.
 - **A document's panes stay still as its text scrolls.** They no longer shift at the start or the end of the scroll. (#891)
 - **Uploads on a development stack short of disk.** The object store sized its volumes from free disk, so with little left every upload answered 500. It now counts them.
+- **Comments stay out of the assistant's document search.** Searching the open document sent the words of a comment on a placed component to the model; it now searches the components' own words.
 
 ## 0.226.0 - 2026-11-02 (PR #888)
 

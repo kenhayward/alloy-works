@@ -260,6 +260,7 @@ describe('finding and opening components through the service', () => {
         mayEdit: true,
         archived: false,
         mayRetire: false,
+        mayMove: false,
         onHold: false,
         mayHold: false,
         lock: null,
