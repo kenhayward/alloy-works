@@ -231,7 +231,7 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Keep as suggestion** (marked **Generated** in Review until it is resolved) or **Discard** it; each act
   is recorded. Each run says its tokens and cost, and your month's. A proposal may set one cell of a table, or
   replace its rows, its header rows and its caption; never a bound table's rows, which a query gives.
-  It may also write a new table, or a list within a list, as Markdown.
+  It may also write a new table, or a list within a list, as Markdown, and change some words of a paragraph or list while what else it holds stands: a citation, a footnote, a cross-reference, a bound value. It may search and read other parts you may read, to reuse or cite them, and edits only those in the document.
   A figure, an equation, a footnote or a reference cannot be edited by a proposal. Each turn shows what you asked
   over its answer, each citation a numbered button to the part it names, and a bar above the text
   steps through the parts the answer cited. Under an answer, its tokens in and out, how fast it came in tokens a second, and its cost where it had one, then **Copy the answer** and **Ask again** as small icons;

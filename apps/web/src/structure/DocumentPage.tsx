@@ -52,6 +52,7 @@ import {
 } from '../publishing/Preview.js';
 import { RANGE_FOLLOW_MS, RangePreviewPane, useRangePreview } from '../publishing/RangePreview.js';
 import { FOLLOW_MS, Publishing } from '../publishing/Publishing.js';
+import { citedPlace } from './citedPlace.js';
 import { AssistantPanel, type AcceptedInDocument } from './AssistantPanel.js';
 import { CitedBar } from './CitedBar.js';
 import { DocumentVersions } from './DocumentVersions.js';
@@ -3317,10 +3318,12 @@ export function DocumentPage({
                               node={editing}
                               nameOf={(component) => names?.get(component)}
                               onCite={(component) => {
-                                const node = [...componentOfNode].find(
-                                  ([, each]) => each === component,
-                                )?.[0];
-                                if (node === undefined) return;
+                                const place = citedPlace(component, componentOfNode);
+                                if ('href' in place) {
+                                  window.location.hash = place.href;
+                                  return;
+                                }
+                                const { node } = place;
                                 setMarked(node);
                                 textColumn.current
                                   ?.querySelector(`[data-node="${node}"]`)

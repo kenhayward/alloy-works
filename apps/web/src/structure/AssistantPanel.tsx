@@ -79,6 +79,9 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   get search_document() {
     return words('document.searched-the-document');
   },
+  get search_components() {
+    return words('document.searched-the-parts');
+  },
   get read_values() {
     return words('document.read-the-bound-values');
   },
@@ -117,7 +120,7 @@ function stepLine(step: Step) {
 interface ListLike {
   readonly type?: string;
   readonly content?: unknown;
-  readonly items?: readonly { readonly content?: readonly ListLike[] }[];
+  readonly items?: readonly { readonly term?: unknown; readonly content?: readonly ListLike[] }[];
 }
 
 /**
@@ -131,22 +134,53 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
           .map((node) => {
             if (typeof node !== 'object' || node === null) return '';
             if ('value' in node) return String((node as { value: unknown }).value);
-            const { type, entry } = node as { type?: unknown; entry?: unknown };
-            if (type !== 'citation') return '';
-            return entry === PENDING_ENTRY && cites !== null
-              ? `[${cites.title ?? cites.identifier}]`
-              : '[citation]';
+            const {
+              type,
+              entry,
+              content: inside,
+              take,
+              name,
+            } = node as {
+              type?: unknown;
+              entry?: unknown;
+              content?: readonly { content?: unknown }[];
+              take?: { column?: unknown };
+              name?: unknown;
+            };
+            switch (type) {
+              case 'citation':
+                return entry === PENDING_ENTRY && cites !== null
+                  ? `[${cites.title ?? cites.identifier}]`
+                  : '[citation]';
+              // An index marker prints nothing on the page, so nothing here.
+              case 'indexMarker':
+                return '';
+              case 'footnote':
+                return words('document.proposed-footnote', {
+                  words: (inside ?? []).map((each) => inline(each.content)).join(' '),
+                });
+              case 'binding':
+                return words('document.proposed-bound-value', { name: String(take?.column ?? '') });
+              case 'variable':
+                return words('document.proposed-variable', { name: String(name ?? '') });
+              case 'crossReference':
+                return words('document.proposed-cross-reference');
+              default:
+                return words('document.proposed-other');
+            }
           })
           .join('')
       : '';
   // A list's items a line each, a list within one indented under it.
   const listLines = (list: ListLike, indent: string): string[] =>
     (list.items ?? []).flatMap((item) =>
-      (item.content ?? []).flatMap((child) =>
-        child.type === 'list'
-          ? listLines(child, `${indent}  `)
-          : [`${indent}- ${inline(child.content)}`],
-      ),
+      (item.content ?? []).flatMap((child, at) => {
+        if (child.type === 'list') return listLines(child, `${indent}  `);
+        const term = at === 0 && item.term !== undefined ? `${inline(item.term)}: ` : '';
+        return [
+          `${indent}- ${term}${child.type === 'paragraph' ? inline(child.content) : words('document.proposed-other')}`,
+        ];
+      }),
     );
   return (proposed.content ?? [])
     .map((block) => {
@@ -168,7 +202,7 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
         );
         return [...(caption === '' ? [] : [`Table: ${caption}`]), ...rows].join('\n');
       }
-      return `[${each.type ?? 'block'}]`;
+      return words('document.proposed-other');
     })
     .join('\n\n');
 }

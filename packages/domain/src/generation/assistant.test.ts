@@ -56,6 +56,7 @@ describe("the assistant's terms", () => {
       'read_outline',
       'read_component',
       'search_document',
+      'search_components',
       'read_values',
       'propose_edit',
       'propose_comment',
@@ -73,8 +74,8 @@ describe("the assistant's terms", () => {
       expect(instructions).toMatch(/ask them what to search for/);
       expect(instructions).toMatch(/say so where a source reports it retracted/);
     }
-    expect(ASSISTANT_INSTRUCTIONS_VERSION).toBe('assistant-5');
-    expect(CONVERSATION_INSTRUCTIONS_VERSION).toBe('conversation-5');
+    expect(ASSISTANT_INSTRUCTIONS_VERSION).toBe('assistant-6');
+    expect(CONVERSATION_INSTRUCTIONS_VERSION).toBe('conversation-6');
   });
 
   it('says what a source reports of a work, before its abstract', () => {
@@ -147,6 +148,7 @@ describe("the assistant's terms", () => {
     };
     const forms = schema.properties.edits.items.anyOf;
     expect(forms.map((form) => Object.keys(form.properties).sort())).toEqual([
+      ['find', 'in', 'to'],
       ['markdown', 'replace'],
       ['insertAfter', 'markdown'],
       ['delete'],
@@ -154,6 +156,7 @@ describe("the assistant's terms", () => {
       ['caption', 'headerRows', 'rows', 'table'],
     ]);
     expect(forms.map((form) => [...form.required].sort())).toEqual([
+      ['find', 'in', 'to'],
       ['markdown', 'replace'],
       ['insertAfter', 'markdown'],
       ['delete'],
@@ -186,7 +189,7 @@ describe("the assistant's terms", () => {
     expect(problem).toContain('It needs markdown.');
     expect(problem).toContain('1 more edit is refused too.');
     expect(proposeEditProblem({ component: 'c1', edits: [{ markdown: 'Where?' }] })).toContain(
-      'Edit 1 is none of the forms an edit takes: { replace, markdown }',
+      'Edit 1 is none of the forms an edit takes: { in, find, to }, { replace, markdown }',
     );
     expect(proposeEditProblem({ component: 'c1', edits: 'not a list' })).toContain('edits:');
     // What the model wrote into a field is never repeated back, only the field's name.
@@ -741,7 +744,8 @@ describe("the assistant's terms", () => {
     const outcome = applyEdits(document(footnoted), [{ replace: 'p1', markdown: 'New.' }], read);
     expect(outcome).toEqual({
       ok: false,
-      problem: 'Block p1 cannot be replaced. It holds a footnote, which a proposal cannot write.',
+      problem:
+        'Block p1 cannot be replaced. It holds a footnote, which a proposal cannot write. To change its words, use in, find and to.',
     });
   });
 

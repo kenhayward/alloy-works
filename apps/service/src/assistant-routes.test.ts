@@ -246,6 +246,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       'read_outline',
       'read_reference',
       'read_values',
+      'search_components',
       'search_document',
       'search_references',
     ]);

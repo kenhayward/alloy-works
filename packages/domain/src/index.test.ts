@@ -977,6 +977,7 @@ describe('the domain package', () => {
         'CITE_REFERENCE',
         'PENDING_ENTRY',
         'READ_REFERENCE',
+        'SEARCH_COMPONENTS',
         'SEARCH_REFERENCES',
         'citeIn',
         'citeReferenceInputSchema',
