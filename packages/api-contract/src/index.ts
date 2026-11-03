@@ -824,6 +824,13 @@ export {
   templateMoveRoutes,
 } from './template-moves.js';
 export {
+  MoveBody,
+  MoveAnswer,
+  MovePreviewAnswer,
+  movingRoutes,
+  type MoveParams,
+} from './moving.js';
+export {
   CohortList,
   CohortListQuery,
   CohortSummaryView,

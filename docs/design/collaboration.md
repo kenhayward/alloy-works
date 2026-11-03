@@ -89,7 +89,7 @@ it with COL-065's reporting, was split by the T3 audit.
 it, and nowhere else; they are kept, and back where they were on undelete. A component only taken out
 of a document, not deleted, is listed there no more, as before.
 
-**Not claimed:** COL-068, which split COL-056 with it (the T3 audit): a component moved between spaces,
+**Not claimed:** COL-068, since superseded by COL-069 in [moving.md](moving.md), which split COL-056 with it (the T3 audit): a component moved between spaces,
 IAM-015's in T7. COL-005 and COL-006 stay component-editor.md's.
 
 ## The row

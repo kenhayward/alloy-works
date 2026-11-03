@@ -32,16 +32,17 @@ good as a word processor, or the product loses the room regardless of what else 
 
 ## 3. Presence
 
-| ID          | Requirement                                                                                                                                                                                                                        | Tranche    | Status                |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------- |
-| **COL-001** | A user must be able to see who else is in a document, and roughly where                                                                                                                                                            | T3         | Specified             |
-| **COL-002** | Presence must show what each person is doing: reading, reviewing or editing (**CNT-154**, **CNT-155**)                                                                                                                             | T3         | Specified             |
-| **COL-003** | Presence must respect permissions - a user must not be shown somebody working in a component they may not read                                                                                                                     | Constraint | Specified             |
-| **COL-004** | Presence must degrade to absence rather than to a wrong answer when a connection drops                                                                                                                                             | T3         | Specified             |
-| **COL-055** | A presence claim must be bounded by a declared heartbeat: a mode not refreshed within that period must be shown as stale, and then as absence, never as a live claim                                                               | T3         | Specified             |
-| **COL-056** | Where a component is deleted or moved, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                   | T3         | Superseded by COL-067 |
-| **COL-067** | Where a component is deleted, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                            | T3         | Specified             |
-| **COL-068** | Where a component is moved between spaces (**IAM-015**), locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017) | T7         | Specified             |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                        | Tranche    | Status                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------- |
+| **COL-001** | A user must be able to see who else is in a document, and roughly where                                                                                                                                                                                                                                            | T3         | Specified             |
+| **COL-002** | Presence must show what each person is doing: reading, reviewing or editing (**CNT-154**, **CNT-155**)                                                                                                                                                                                                             | T3         | Specified             |
+| **COL-003** | Presence must respect permissions - a user must not be shown somebody working in a component they may not read                                                                                                                                                                                                     | Constraint | Specified             |
+| **COL-004** | Presence must degrade to absence rather than to a wrong answer when a connection drops                                                                                                                                                                                                                             | T3         | Specified             |
+| **COL-055** | A presence claim must be bounded by a declared heartbeat: a mode not refreshed within that period must be shown as stale, and then as absence, never as a live claim                                                                                                                                               | T3         | Specified             |
+| **COL-056** | Where a component is deleted or moved, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                                                                                                   | T3         | Superseded by COL-067 |
+| **COL-067** | Where a component is deleted, locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                                                                                                            | T3         | Specified             |
+| **COL-068** | Where a component is moved between spaces (**IAM-015**), locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)                                                                                 | T7         | Superseded by COL-069 |
+| **COL-069** | Where a component is moved between spaces (**IAM-015**), locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), a thread on it must stand for whoever can still read it, and one who cannot must see on the withheld part only that it moved and that threads exist | T7         | Specified             |
 
 **COL-055 bounds the case COL-004 does not.** A dropped connection is visible; a slow one is not,
 and a heartbeat that arrives late is indistinguishable from a person who left an hour ago. Presence
@@ -344,6 +345,12 @@ identifier, and only its tranche changes.
 | Counts       | Before | After                     |
 | ------------ | ------ | ------------------------- |
 | Requirements | 62     | 64, of which 1 superseded |
+
+### Moving, as designed (2026-11-03)
+
+COL-068 took COL-067's words for a deletion, but a moved component still exists and many can still read
+it, so orphaning its threads would break their review ([moving.md](../../design/moving.md), MV-F; Ken's
+answer). **COL-069** supersedes it.
 
 ### From the T3 audit against the code (2026-10-13)
 

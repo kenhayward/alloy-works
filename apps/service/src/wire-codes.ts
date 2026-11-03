@@ -131,6 +131,13 @@ const WIRE_CODES = {
   'table.too_long': 'table_too_long',
   'definition.unreadable': 'definition_unreadable',
   'space.archived': 'space_archived',
+  // A move's own refusals (moving.md, MV-E).
+  'space.moved': 'space_moved',
+  'move.too_large': 'move_too_large',
+  'artifact.not_movable': 'artifact_not_movable',
+  'asset.uploading': 'asset_uploading',
+  'artifact.held': 'artifact_held',
+  'artifact.kept': 'artifact_kept',
   'space.name_invalid': 'space_name_invalid',
   'space.name_taken': 'space_name_taken',
   'space.last': 'space_last',

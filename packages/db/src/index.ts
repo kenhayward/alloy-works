@@ -857,6 +857,17 @@ export {
   type StoredDocument,
 } from './documents.js';
 export {
+  MOVE_MOST,
+  moveToSpace,
+  previewMove,
+  type MoveConsequences,
+  type MoveSkip,
+  type MoveSkipReason,
+  type SpaceMoveAnswer,
+  type SpaceMoveRefusal,
+  type SpaceMovePreview,
+} from './moving.js';
+export {
   setDocumentLanguage,
   type DocumentLanguageAnswer,
   type LanguageSkips,

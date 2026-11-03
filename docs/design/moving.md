@@ -3,7 +3,7 @@
 Moving an artifact from one space to another in a tenant: T7's MV slice. It answers what
 [access.md](access.md) left open ("the act of moving is not designed") and what
 [collaboration.md](collaboration.md) left unclaimed. [The MV plan](../plans/2026-11-02-mv-moving-between-spaces.md)
-builds it. Marked **(Ken?)** are recommendations awaiting his answer; they change this design if refused.
+builds it.
 
 ## The shape in one paragraph
 
@@ -22,8 +22,7 @@ stays, and what will stop working.
 | **IAM-015** | `POST /v1/artifacts/{id}/move` moves a component, document, template or image within a tenant; the chain changes with `space_id`, and grants on the artifact itself end, so no old permission is carried (MV-B). |
 | **IAM-028** | The next decision reads the new chain; a test holds a person's answer before and after, both ways, and a direct allow and a direct deny each ending.                                                             |
 
-**COL-068 is not claimed yet** (MV-F): it asks for more than this design recommends. It joins the table
-as amended, or as written, on Ken's answer.
+**COL-069**, which supersedes COL-068 (MV-F), joins this table with the slice's interface, whose flag it needs.
 
 ## Decisions
 
@@ -33,7 +32,7 @@ unique per space, and LIB-030 (a library shared between spaces, T7) is the real 
 definitions, datasets and prompts are configuration, and EI's. A dataset-origin image never moves: it is
 held per space by its binding, and the library excludes it.
 
-**MV-B. Direct grants end (Ken?).** An allow on the artifact itself would otherwise open it inside a
+**MV-B. Direct grants end.** An allow on the artifact itself would otherwise open it inside a
 space its holder cannot read (access.md, "The nearest level wins"), which is exactly the leak of moving
 something confidential into a closed space. A direct deny ends too: IAM-015 says "rather than carrying the
 old ones", and the space chosen for the content now says who reads it. The preview counts them; each ends
@@ -41,12 +40,12 @@ through `removeGrant`'s event, with the source space passed, since `access.revok
 otherwise has none and a space-filtered log would miss it. The lockout checks count tenant-level grants
 only, so no ended grant can trip them.
 
-**The exception: a publication's shares stay (Ken?).** A share is an artifact-level grant of a fixed role
+**The exception: a publication's shares stay.** A share is an artifact-level grant of a fixed role
 (`shares.ts`, PUB-057, PUB-058): a named recipient handed one copy, not a route into a space. Ending them
 would silently cut off outsiders. They stay and are counted apart in the preview, where the mover can go and
 revoke them.
 
-**MV-C. Who may move (Ken?).** `administer` on the artifact, read through its present chain, and `create`
+**MV-C. Who may move.** `administer` on the artifact, read through its present chain, and `create`
 or `administer` at the target. Not `retire`: a move changes who can read, which is what `administer` is
 for. Either at the target, because no starter role holds both: an Administrator lacks `create`, and an Author
 lacks `administer`. The dialog's targets follow that rule, not `useCreatableSpaces`. No new permission
@@ -59,13 +58,13 @@ the old space's readers keep a copy of what was moved away. `recordPublication` 
 space, so a job running across a move lands correctly; it and the move both take `lockArtifact(document)`,
 or a record committing as the move lists publications stays behind.
 
-"Also move" offers its components and their images **(Ken?)**, as the language dialog offers components: a
+"Also move" offers its components and their images, as the language dialog offers components: a
 document moved without them shows its new readers a page of withheld parts, since a component's chain never
 includes the document. Each is decided for itself, and skipped with a reason rather than refusing the whole:
 not permitted, held or kept, placed in a document that is not moving (it stays, and is listed), archived. An
 image goes only when nothing staying uses it: no `reference`, `baseline_pin` or `publication_asset` outside
 what moves. A component moved alone moves alone. `also` is capped at 500 artifacts, refused `move_too_large`
-(see Risks in the plan).
+(see Risks in the plan): provisional, not yet measured at scale.
 
 **MV-E. Refused, nothing changing.** A hold keyed to the source space (`held`): it joins through the
 space, so leaving would silently end it (ADR-0060). A hold on the artifact itself travels, and refuses nothing;
@@ -82,15 +81,14 @@ before any artifact lock (`deletion.ts`), then `lockAll`, ordered, as the langua
 cut, so a holder who may still edit gets `lock_required`, re-claims and saves on their `openedFrom`; one who
 may not is refused, and the text stays on the page, as any lost permission does.
 
-Threads, and **pushback (Ken?)**. COL-068 is COL-067's words reused, but a move is not a deletion: the anchor
+Threads, and **pushback, accepted**. COL-068 was COL-067's words reused, but a move is not a deletion: the anchor
 still exists, so COL-017 ("no longer exists") does not apply, and orphaning every thread would break review
-of a component everyone can still read. Recommended: **a thread stands for whoever can still read what it is
+of a component everyone can still read. So **a thread stands for whoever can still read what it is
 on. For one who cannot, a document that places the component shows on the withheld part one flag: it moved, and
 threads exist on it.** No rows: a row would reveal how many and when (SCH-032), and its words are the moved
 content. The flag says only that there are any, as `deletion.ts` does. It comes from an insert-only
 `artifact_move` row, as `artifact_archival` records archival; that row cannot say who could read before, so
-one who never could sees the flag too, and learns no more than that. COL-068 would be amended through the
-issue form to say this.
+one who never could sees the flag too, and learns no more than that. COL-069 says this.
 
 **MV-G. What a move leaves behind, named in the preview, never refused.** Citations to the old space's
 bibliography will fail at publish (`publishing.ts`, as `citing.ts` already anticipates); terms print as their

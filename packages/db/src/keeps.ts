@@ -151,6 +151,29 @@ export async function keptNow(
   return found?.live ? found.until : undefined;
 }
 
+/**
+ * When the keep this artifact would lose by moving to `to` passes (MV-E): undefined where that space's
+ * keeps reach as far as those on it now, as a tenant-wide keep always does, or where it has passed.
+ */
+export async function keptAgainst(
+  trx: TenantTransaction,
+  artifactId: string,
+  to: string,
+): Promise<Date | undefined> {
+  const found = await keep(trx, artifactId);
+  if (!found?.live) return undefined;
+  const { rows } = await sql<{ reaches: boolean }>`
+    select coalesce((select max(k.days) from ${LATEST} k, artifact a
+       where a.id = ${artifactId} and k.days is not null
+         and (k.kind is null or k.kind = a.kind)
+         and (k.space_id is null or k.space_id = ${to}))
+      >= (select max(k.days) from ${LATEST} k, artifact a
+       where a.id = ${artifactId} and k.days is not null
+         and (k.kind is null or k.kind = a.kind)
+         and (k.space_id is null or k.space_id = a.space_id)), false) as reaches`.execute(trx);
+  return rows[0]?.reaches === true ? undefined : found.until;
+}
+
 async function keep(
   trx: TenantTransaction,
   artifactId: string,

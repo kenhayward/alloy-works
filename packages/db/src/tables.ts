@@ -1126,6 +1126,16 @@ export interface ArtifactArchivalTable {
   written_by: ColumnType<string, never, never>;
 }
 
+/** One move of an artifact between spaces, inserted and never changed (0194; MV-F). */
+export interface ArtifactMoveTable {
+  id: ColumnType<string, never, never>;
+  artifact_id: string;
+  from_space: string;
+  to_space: string;
+  by: string;
+  at: ColumnType<Date, never, never>;
+}
+
 /** One deletion act on a component or a document, inserted and never changed (0085; DL-B). */
 export interface ArtifactDeletionTable {
   id: ColumnType<string, never, never>;
@@ -1462,6 +1472,7 @@ export interface TenantTables {
   publication_request_rights: PublicationRequestRightsTable;
   search_entry: SearchEntryTable;
   artifact_archival: ArtifactArchivalTable;
+  artifact_move: ArtifactMoveTable;
   artifact_deletion: ArtifactDeletionTable;
   legal_hold: LegalHoldTable;
   legal_hold_release: LegalHoldReleaseTable;

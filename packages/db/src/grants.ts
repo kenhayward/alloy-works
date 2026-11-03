@@ -242,6 +242,8 @@ export async function recordGrantEvent(
     readonly expiresAt: Date;
     readonly extendedFrom: Date | null;
   },
+  /** The space an artifact's grant is about, for a move ending it: otherwise such an event has none. */
+  within?: string,
 ): Promise<void> {
   const grantee = 'principal' in stored.subject ? stored.subject.principal : stored.subject.group;
   const role = await trx
@@ -270,7 +272,7 @@ export async function recordGrantEvent(
     {
       kind,
       subject: { kind: 'grant', id: stored.id },
-      space: stored.level.kind === 'space' ? stored.level.id : null,
+      space: stored.level.kind === 'space' ? stored.level.id : (within ?? null),
       detail: {
         role: stored.roleId,
         level: formatLevel(stored.level),
@@ -398,6 +400,21 @@ export async function administeringGrants(trx: TenantTransaction): Promise<strin
     .orderBy('g.id')
     .execute();
   return rows.map((row) => row.id);
+}
+
+/** Every grant made on these artifacts themselves, in id order. */
+export async function grantsOn(
+  trx: TenantTransaction,
+  artifactIds: readonly string[],
+): Promise<StoredGrant[]> {
+  if (artifactIds.length === 0) return [];
+  const rows = await trx
+    .selectFrom('access_grant')
+    .select(GRANT_COLUMNS)
+    .where('artifact_id', 'in', artifactIds)
+    .orderBy('id')
+    .execute();
+  return rows.map(storedOf);
 }
 
 export type RemovalAnswer =
