@@ -598,6 +598,66 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(onAccepted).not.toHaveBeenCalled();
   });
 
+  it('says a change of the outline step by step, by titles, and tells the page once accepted', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const onAccepted = vi.fn();
+    const onOutlined = vi.fn();
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        onAccepted={onAccepted}
+        onOutlined={onOutlined}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          [
+            'proposal',
+            {
+              id: PROPOSAL,
+              number: 1,
+              component: null,
+              against: 'v1',
+              outline: {
+                says: [
+                  { do: 'move', what: 'Methods', after: 'Results', under: null },
+                  { do: 'place', what: 'Sites', after: null, under: 'Methods', first: true },
+                  { do: 'section', what: 'Annex', after: null, under: null },
+                  { do: 'remove', what: 'Draft notes' },
+                  { do: 'retitle', what: 'Intro', to: 'Introduction' },
+                ],
+              },
+              proposed: { content: [] },
+            },
+          ],
+          ended(),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Reorder it.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(within(proposal).getByText('Proposal 1: a change to the outline')).toBeVisible();
+    for (const said of [
+      'Move “Methods” after “Results”',
+      'Place “Sites” at the start of “Methods”',
+      'Add a section “Annex” at the end of the document',
+      'Remove “Draft notes”',
+      'Retitle “Intro” as “Introduction”',
+    ]) {
+      expect(within(proposal).getByText(said)).toBeVisible();
+    }
+    expect(within(proposal).queryByRole('button', { name: 'Keep as suggestion' })).toBeNull();
+    await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
+    await within(proposal).findByText('Accepted: the outline has changed.');
+    expect(onOutlined).toHaveBeenCalledOnce();
+    expect(onAccepted).not.toHaveBeenCalled();
+  });
+
   it('tells the page which part an accepted proposal changed (issue #876)', async () => {
     const user = userEvent.setup();
     const { client } = service();

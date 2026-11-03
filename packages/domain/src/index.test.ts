@@ -247,6 +247,9 @@ describe('the domain package', () => {
         // them (docs/plans/2026-09-23-cross-references-01-references-in-the-editor.md).
         'documentTargets',
         'blockForms',
+        'outlineStepSchema',
+        'planOutline',
+        'proposedPosition',
         'formsFor',
         'kindWord',
         'printed',
@@ -979,6 +982,8 @@ describe('the domain package', () => {
         'PENDING_ENTRY',
         'PROPOSE_INSERT',
         'READ_REFERENCE',
+        'PROPOSE_OUTLINE',
+        'proposeOutlineInputSchema',
         'READ_COMMENTS',
         'READ_VARIABLES',
         'readCommentsInputSchema',

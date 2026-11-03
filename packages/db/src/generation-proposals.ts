@@ -1,4 +1,9 @@
-import type { CitedSource, ContentDocument } from '@alloy-works/domain';
+import type {
+  CitedSource,
+  ContentDocument,
+  OutlineOperation,
+  OutlineStepSaid,
+} from '@alloy-works/domain';
 import { sql } from 'kysely';
 
 import { recordEvent } from './audit.js';
@@ -26,6 +31,8 @@ export interface GenerationProposal {
   readonly cites: CitedSource | null;
   /** A comment's place and words: a thread started only as it is accepted; null for any other. */
   readonly comment: ProposedComment | null;
+  /** A change of a document's outline, against `madeAgainst`: one version only as it is accepted. */
+  readonly outline: ProposedOutline | null;
   readonly proposed: ContentDocument;
   readonly state: ProposalState;
   readonly suggestionId: string | null;
@@ -48,6 +55,7 @@ interface Row {
   creates?: ProposedComponent | null;
   cites?: CitedSource | null;
   comment?: ProposedComment | null;
+  outline?: ProposedOutline | null;
   proposed: ContentDocument;
   state: ProposalState;
   suggestion_id: string | null;
@@ -68,6 +76,7 @@ const proposalOf = (row: Row): GenerationProposal => ({
   creates: row.creates ?? null,
   cites: row.cites ?? null,
   comment: row.comment ?? null,
+  outline: row.outline ?? null,
   proposed: row.proposed,
   state: row.state,
   suggestionId: row.suggestion_id,
@@ -90,6 +99,20 @@ export interface ProposedComponent {
   readonly title: string;
   readonly language: string;
   readonly direction: 'ltr' | 'rtl';
+  /** Where in a document to place it, once made, against that version (the AT plan, ATe). */
+  readonly place?: {
+    readonly document: string;
+    readonly version: string;
+    readonly parent: string | null;
+    readonly position: number;
+  };
+}
+
+/** The outline's own operations, planned against the version read, and each as a person reads it. */
+export interface ProposedOutline {
+  readonly document: string;
+  readonly operations: readonly OutlineOperation[];
+  readonly says: readonly OutlineStepSaid[];
 }
 
 /** A proposal to make a component, made by a run while it runs, numbered with its edits (G5-E). */
@@ -133,6 +156,26 @@ export async function makeCommentProposal(
       (select coalesce(max(number), 0) + 1 from generation_proposal where run_id = ${input.run}),
       ${input.component}, ${input.against}, ${JSON.stringify(input.proposed)}::jsonb,
       ${JSON.stringify(input.comment)}::jsonb)
+    returning id`.execute(trx);
+  return (await readProposal(trx, rows[0]!.id))!;
+}
+
+/** A proposal to change a document's outline, against the version read: `proposed` holds no blocks. */
+export async function makeOutlineProposal(
+  trx: TenantTransaction,
+  input: {
+    readonly run: string;
+    readonly against: string;
+    readonly outline: ProposedOutline;
+    readonly proposed: ContentDocument;
+  },
+): Promise<GenerationProposal> {
+  const { rows } = await sql<{ id: string }>`insert into generation_proposal
+      (run_id, number, made_against, proposed, outline)
+    values (${input.run},
+      (select coalesce(max(number), 0) + 1 from generation_proposal where run_id = ${input.run}),
+      ${input.against}, ${JSON.stringify(input.proposed)}::jsonb,
+      ${JSON.stringify(input.outline)}::jsonb)
     returning id`.execute(trx);
   return (await readProposal(trx, rows[0]!.id))!;
 }
@@ -192,7 +235,9 @@ async function generationEvent(
       ? { kind: 'component', id: made.component, version: made.version }
       : proposal.creates !== null
         ? { kind: 'space', id: proposal.creates.space }
-        : { kind: 'component', id: proposal.componentId!, version: proposal.madeAgainst! };
+        : proposal.outline !== null
+          ? { kind: 'document', id: proposal.outline.document, version: proposal.madeAgainst! }
+          : { kind: 'component', id: proposal.componentId!, version: proposal.madeAgainst! };
   await recordEvent(trx, {
     kind,
     subject,
@@ -215,6 +260,8 @@ export async function actOnProposal(
     readonly made?: { readonly component: string; readonly version: string };
     /** A comment accepted: the thread it started. */
     readonly thread?: string;
+    /** An outline's change accepted: the version of the document it made. */
+    readonly outlined?: string;
     readonly by: string;
   },
 ): Promise<void> {
@@ -230,6 +277,10 @@ export async function actOnProposal(
       { created: true },
       input.made,
     );
+  } else if (input.act === 'accepted' && input.outlined !== undefined) {
+    await generationEvent(trx, 'generation.accepted', input.proposal, {
+      version: input.outlined,
+    });
   } else if (input.act === 'accepted' && input.thread !== undefined) {
     await generationEvent(trx, 'generation.accepted', input.proposal, { thread: input.thread });
   } else if (input.act === 'accepted') {

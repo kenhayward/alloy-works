@@ -3324,6 +3324,7 @@ export function DocumentPage({
                                   : movePins(component, version);
                               }}
                               onCommented={() => setThreadsRead((count) => count + 1)}
+                              onOutlined={() => void readOutlineAgain()}
                               onCitations={(cited) => {
                                 const nodes = cited.flatMap(({ component }) => {
                                   const node = [...componentOfNode].find(

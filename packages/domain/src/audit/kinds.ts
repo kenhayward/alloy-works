@@ -825,6 +825,8 @@ export const auditKindSpecs = {
       z.strictObject({ run: Id, proposal: Id, suggestion: Id }),
       z.strictObject({ run: Id, proposal: Id, created: z.literal(true) }),
       z.strictObject({ run: Id, proposal: Id, thread: Id }),
+      // A change of a document's outline: the version it made (the AT plan, ATe).
+      z.strictObject({ run: Id, proposal: Id, version: Id }),
     ]),
     PROPOSALS,
   ),

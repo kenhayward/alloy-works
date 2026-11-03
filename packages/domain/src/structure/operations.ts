@@ -644,3 +644,199 @@ export function outlineChangesRefused(
   }
   return reasons;
 }
+
+const placedBy = {
+  under: nodeIdentifier.optional().describe('The section it goes in, else the top of the document'),
+  after: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .describe('The node it follows there, or the word start; left out, last'),
+};
+
+/**
+ * **One step of a proposed change of the outline**, as the assistant names it (the AT plan, ATe): by
+ * the sibling a thing follows, never a position, since the outline it reads leaves out what its person
+ * may not read and a position counts those too. `planOutline` makes each the outline's own operation.
+ */
+export const outlineStepSchema = z.discriminatedUnion('do', [
+  z.strictObject({ do: z.literal('move'), node: nodeIdentifier, ...placedBy }),
+  z.strictObject({
+    do: z.literal('place'),
+    component: referenceNodeSchema.shape.component,
+    ...placedBy,
+  }),
+  z.strictObject({
+    do: z.literal('section'),
+    title: z.string().trim().min(1).max(500),
+    ...placedBy,
+  }),
+  z.strictObject({
+    do: z.literal('remove'),
+    node: nodeIdentifier,
+    reason: z.string().max(2000).optional().describe('Why, where the template requires it'),
+  }),
+  z.strictObject({
+    do: z.literal('retitle'),
+    node: nodeIdentifier,
+    title: z.string().trim().min(1).max(500),
+  }),
+]);
+export type OutlineStep = z.infer<typeof outlineStepSchema>;
+
+/** A step as a person is shown it, by titles: `after` and `under` name its place, null where none. */
+export interface OutlineStepSaid {
+  readonly do: OutlineStep['do'];
+  readonly what: string;
+  readonly to?: string;
+  readonly after?: string | null;
+  readonly under?: string | null;
+  readonly first?: boolean;
+}
+
+/** What may be named: a node's or a part's title, undefined where the person may not read it. */
+export interface OutlineNames {
+  readonly node: (node: OutlineNode) => string | undefined;
+  readonly component: (component: string) => string | undefined;
+}
+
+/** Where `{ under, after }` stands among `nodes`, or why it stands nowhere. */
+function placeAmong(
+  nodes: readonly OutlineNode[],
+  place: { readonly under?: string | undefined; readonly after?: string | undefined },
+): { readonly parent: string | null; readonly position: number } | string {
+  const parent = place.under ?? null;
+  const children = childrenOf(nodes, parent);
+  if (children === undefined) return 'There is no such section to go in.';
+  if (place.after === undefined) return { parent, position: children.length };
+  if (place.after === 'start') return { parent, position: 0 };
+  const index = children.findIndex((each) => each.id === place.after);
+  if (index < 0) return `There is no node ${place.after} there to follow.`;
+  return { parent, position: index + 1 };
+}
+
+/** Where a new part would stand in `outline`, or why it cannot. */
+export function proposedPosition(
+  outline: OutlineDocument,
+  place: { readonly under?: string | undefined; readonly after?: string | undefined },
+): { readonly parent: string | null; readonly position: number } | string {
+  return placeAmong(outline.nodes, place);
+}
+
+/** Identifiers for what a plan inserts, in the plan alone: applying it makes its own. */
+const planned = (made: number) =>
+  `plan${made.toString(2).replace(/0/g, 'a').replace(/1/g, 'b').padStart(22, 'a')}`;
+
+/**
+ * **Steps made the outline's own operations**, each on what the one before left, so a list that plans
+ * applies as one. What its person may not read is named by no step, and a section holding it is not
+ * removed. The template's rules and `mayReference` are the fold's, as it is checked and accepted.
+ */
+export function planOutline(
+  outline: OutlineDocument,
+  steps: readonly OutlineStep[],
+  names: OutlineNames,
+):
+  | {
+      readonly ok: true;
+      readonly operations: readonly OutlineOperation[];
+      readonly says: readonly OutlineStepSaid[];
+    }
+  | { readonly ok: false; readonly problem: string } {
+  const refused = (problem: string) => ({ ok: false as const, problem });
+  let running = outline;
+  let made = 0;
+  const operations: OutlineOperation[] = [];
+  const says: OutlineStepSaid[] = [];
+  const named = (id: string) => {
+    const node = findNode(running.nodes, id);
+    return node === undefined ? undefined : names.node(node);
+  };
+  const where = (place: { under?: string | undefined; after?: string | undefined }) => ({
+    after:
+      place.after === undefined || place.after === 'start' ? null : (named(place.after) ?? null),
+    under: place.under === undefined ? null : (named(place.under) ?? null),
+    ...(place.after === 'start' ? { first: true } : {}),
+  });
+  const seen = (place: { under?: string | undefined; after?: string | undefined }) =>
+    (place.under === undefined || named(place.under) !== undefined) &&
+    (place.after === undefined || place.after === 'start' || named(place.after) !== undefined);
+  for (const step of steps) {
+    let operation: OutlineOperation;
+    let said: OutlineStepSaid;
+    switch (step.do) {
+      case 'move': {
+        const what = named(step.node);
+        if (what === undefined) return refused(`There is no node ${step.node} you may read.`);
+        if (!seen(step)) return refused('That place names a node you may not read.');
+        const left = extractNode(running.nodes, step.node);
+        const at = placeAmong(left.nodes, step);
+        if (typeof at === 'string') return refused(at);
+        operation = { operation: 'move', node: step.node, ...at };
+        said = { do: 'move', what, ...where(step) };
+        break;
+      }
+      case 'place': {
+        const what = names.component(step.component);
+        if (what === undefined) return refused('There is no such part you may read.');
+        if (!seen(step)) return refused('That place names a node you may not read.');
+        const at = placeAmong(running.nodes, step);
+        if (typeof at === 'string') return refused(at);
+        operation = {
+          operation: 'insert',
+          ...at,
+          node: { type: 'reference', component: step.component, mode: { kind: 'latest' } },
+        };
+        said = { do: 'place', what, ...where(step) };
+        break;
+      }
+      case 'section': {
+        if (!seen(step)) return refused('That place names a node you may not read.');
+        const at = placeAmong(running.nodes, step);
+        if (typeof at === 'string') return refused(at);
+        operation = {
+          operation: 'insert',
+          ...at,
+          node: { type: 'section', title: [{ type: 'text', value: step.title, marks: [] }] },
+        } as OutlineOperation;
+        said = { do: 'section', what: step.title, ...where(step) };
+        break;
+      }
+      case 'remove': {
+        const what = named(step.node);
+        if (what === undefined) return refused(`There is no node ${step.node} you may read.`);
+        let unseen = false;
+        walkOutline([findNode(running.nodes, step.node)!], (member) => {
+          if (names.node(member) === undefined) unseen = true;
+        });
+        if (unseen) return refused('That section holds a part you may not read.');
+        operation = {
+          operation: 'remove',
+          node: step.node,
+          ...(step.reason === undefined ? {} : { reason: step.reason }),
+        };
+        said = { do: 'remove', what };
+        break;
+      }
+      case 'retitle': {
+        const what = named(step.node);
+        if (what === undefined) return refused(`There is no node ${step.node} you may read.`);
+        operation = {
+          operation: 'retitle',
+          node: step.node,
+          title: [{ type: 'text', value: step.title, marks: [] }],
+        } as OutlineOperation;
+        said = { do: 'retitle', what, to: step.title };
+        break;
+      }
+    }
+    const applied = applyOutlineOperation(running, operation, () => planned(made++));
+    if (!applied.applied) return refused(applied.reason ?? 'That cannot be done to the outline.');
+    running = applied.outline;
+    operations.push(operation);
+    says.push(said);
+  }
+  if (JSON.stringify(running) === JSON.stringify(outline)) return refused('That changes nothing.');
+  return { ok: true, operations, says };
+}
