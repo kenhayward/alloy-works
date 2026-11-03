@@ -18274,7 +18274,7 @@
         },
         {
           "id": "IMP-039",
-          "howItIsMet": "`POST /v1/imports`, no assisted review (EI-C)"
+          "howItIsMet": "`POST /v1/restorations`, no assisted review (EI-C)"
         },
         {
           "id": "IMP-040",
@@ -18294,7 +18294,7 @@
         },
         {
           "id": "IMP-048",
-          "howItIsMet": "A job, `import_environment` or `administer` at the target, the audit event `import.restored`, no token (EI-J, EI-K)"
+          "howItIsMet": "A job, `import_environment` at the tenant, the audit event `import.restored`, no token (EI-J, EI-K)"
         },
         {
           "id": "ADM-005",
@@ -22364,13 +22364,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 783,
+      "line": 798,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 796,
+      "line": 811,
       "kind": "title"
     },
     {
@@ -22634,7 +22634,7 @@
     {
       "id": "TAB-008",
       "file": "apps/service/src/bound-table-rows.test.ts",
-      "line": 136,
+      "line": 137,
       "kind": "title"
     },
     {
@@ -22928,7 +22928,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2310,
+      "line": 2318,
       "kind": "title"
     },
     {
@@ -23360,13 +23360,13 @@
     {
       "id": "IAM-032",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 239,
+      "line": 249,
       "kind": "title"
     },
     {
       "id": "IMP-023",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 177,
+      "line": 187,
       "kind": "title"
     },
     {
@@ -24189,6 +24189,18 @@
       "id": "REL-046",
       "file": "apps/service/src/relationship-routes.test.ts",
       "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-039",
+      "file": "apps/service/src/restoration-routes.test.ts",
+      "line": 34,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-048",
+      "file": "apps/service/src/restoration-routes.test.ts",
+      "line": 24,
       "kind": "title"
     },
     {
@@ -25563,6 +25575,18 @@
       "id": "LIB-032",
       "file": "apps/web/src/admin/ReferenceSources.test.tsx",
       "line": 38,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-039",
+      "file": "apps/web/src/admin/Restore.test.tsx",
+      "line": 78,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-052",
+      "file": "apps/web/src/admin/Restore.test.tsx",
+      "line": 106,
       "kind": "title"
     },
     {
@@ -29250,6 +29274,48 @@
       "kind": "title"
     },
     {
+      "id": "ADM-054",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 453,
+      "kind": "title"
+    },
+    {
+      "id": "AST-030",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 619,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-039",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 311,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-042",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 834,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-044",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 683,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-046",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 486,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-052",
+      "file": "apps/worker/src/restoration.test.ts",
+      "line": 311,
+      "kind": "title"
+    },
+    {
       "id": "REU-048",
       "file": "apps/worker/src/scan.test.ts",
       "line": 22,
@@ -30572,13 +30638,13 @@
     {
       "id": "ADM-054",
       "file": "packages/db/src/export-tables.test.ts",
-      "line": 135,
+      "line": 137,
       "kind": "title"
     },
     {
       "id": "IMP-020",
       "file": "packages/db/src/export-tables.test.ts",
-      "line": 86,
+      "line": 88,
       "kind": "title"
     },
     {
@@ -32510,13 +32576,13 @@
     {
       "id": "IAM-034",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 76,
+      "line": 82,
       "kind": "title"
     },
     {
       "id": "IAM-062",
       "file": "packages/domain/src/access/scopes.test.ts",
-      "line": 93,
+      "line": 99,
       "kind": "title"
     },
     {
@@ -32624,13 +32690,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 286,
+      "line": 289,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 263,
+      "line": 266,
       "kind": "title"
     },
     {
@@ -36075,6 +36141,12 @@
       "id": "IAM-075",
       "file": "packages/objects/src/store.test.ts",
       "line": 72,
+      "kind": "title"
+    },
+    {
+      "id": "IMP-039",
+      "file": "packages/objects/src/store.test.ts",
+      "line": 135,
       "kind": "title"
     },
     {

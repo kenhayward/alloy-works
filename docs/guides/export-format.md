@@ -40,7 +40,7 @@ required key is not in it.
 | `requestedAt`         | When it was asked for                                                       |
 | `cutAt`               | The moment it holds: every table as of this one instant                     |
 | `lastMigration`       | The newest database migration of the product that wrote it                  |
-| `tables`              | Each carried table's file, row count and bytes unzipped                                     |
+| `tables`              | Each carried table's file, row count and bytes unzipped                     |
 | `objects`             | How many, and `missing`: hashes the store could not give back, or wrongly   |
 | `secrets`             | The file holding the references, and how many                               |
 | `rebuilt`             | Tables not held because they are made again from what is, each with why     |

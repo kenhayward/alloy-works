@@ -616,7 +616,7 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
     });
   });
 
-  it('IMP-039 opens an image from the new tenant store, its content still naming the old prefix', async () => {
+  it('IMP-039 AST-030 opens an image from the new tenant store, its content still naming the old prefix', async () => {
     const target = await newTenant();
     const grace = await signInAs(target);
     const { id } = await uploaded(target, grace, archive);
@@ -730,7 +730,7 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
       );
     });
 
-    it('an object not matching its hash', async () => {
+    it('AST-030 an object not matching its hash', async () => {
       await refused(
         forged((name) => (name.startsWith('objects/') ? Buffer.from('not the image') : undefined)),
       );

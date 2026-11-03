@@ -1887,7 +1887,10 @@ describe('routes that check a permission', () => {
     createTenantRestoration: () => ({ url: '/v1/restorations', status: 403 }),
     listTenantRestorations: () => ({ url: '/v1/restorations', status: 403 }),
     getTenantRestoration: () => ({ url: `/v1/restorations/${randomUUID()}`, status: 403 }),
-    sendTenantRestorationArchive: () => ({ url: `/v1/restorations/${randomUUID()}/archive`, status: 403 }),
+    sendTenantRestorationArchive: () => ({
+      url: `/v1/restorations/${randomUUID()}/archive`,
+      status: 403,
+    }),
     answerTenantRestoration: () => ({
       url: `/v1/restorations/${randomUUID()}/answers`,
       status: 403,

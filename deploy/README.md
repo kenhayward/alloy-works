@@ -64,7 +64,7 @@ worker run from source. [`docs/development.md`](../docs/development.md) is that 
 | `setup`              | `tools`                    | runs once, then exits | Migrations, two invented environments, a store credential each                                                                      |
 | `service`            | `service`                  | `127.0.0.1:8088`      | The API, and the renderer beside it                                                                                                 |
 | `worker`             | `worker`                   | no port               | Claims jobs and runs them, carrying Typst and veraPDF                                                                               |
-| `restorer`           | `worker`                   | no port               | Restores environments from their archives, the one process holding the login that may become a tenant's owner |
+| `restorer`           | `worker`                   | no port               | Restores environments from their archives, the one process holding the login that may become a tenant's owner                       |
 | `connector`          | `connector`                | no port               | Reaches a tenant's own data sources, and nothing else                                                                               |
 | `delivered-postgres` | `pgvector/pgvector:pg17`   | no port               | CT Studio's delivered data tables; the connector reads them on `connector-egress`, the service and worker write them on `delivered` |
 

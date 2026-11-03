@@ -297,10 +297,10 @@ export function restorationJob(deps: {
         let checked: Awaited<ReturnType<typeof checkArchive>>;
         try {
           const names = unpackArchive(path, unpacked);
-          const [current, catalogue] = await deps.db.withTenant(tenant, async (trx) => [
-            await lastMigration(trx),
-            await readExportCatalogue(trx),
-          ] as const);
+          const [current, catalogue] = await deps.db.withTenant(
+            tenant,
+            async (trx) => [await lastMigration(trx), await readExportCatalogue(trx)] as const,
+          );
           checked = await checkArchive(unpacked, names, current, catalogue);
           if (checked.plan.scope === 'tenant') {
             const here = await deps.db.withTenant(tenant, (trx) =>

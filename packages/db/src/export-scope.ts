@@ -291,8 +291,7 @@ export async function readPartialCut(
         fk.refers !== table &&
         kept.has(fk.refers) &&
         !fk.columns.some(
-          (column) =>
-            census.breaksCycleAt?.includes(column) || census.deferredAt?.includes(column),
+          (column) => census.breaksCycleAt?.includes(column) || census.deferredAt?.includes(column),
         ),
     );
     const found = await candidates(trx, catalogue, table, parents, kept, seeded, {
