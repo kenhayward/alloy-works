@@ -784,6 +784,24 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
                   { type: 'indexMarker', id: 'x1' },
                 ],
               },
+              {
+                type: 'paragraph',
+                id: 'p2',
+                content: [{ type: 'messageForm', id: 'm1' }],
+              },
+              {
+                type: 'list',
+                id: 'l1',
+                items: [
+                  {
+                    term: [{ type: 'text', value: 'Weir' }],
+                    content: [
+                      { type: 'paragraph', id: 'a', content: [{ type: 'text', value: 'A dam.' }] },
+                      { type: 'blockquote', id: 'q' },
+                    ],
+                  },
+                ],
+              },
             ],
           },
         },
@@ -807,8 +825,14 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(
       within(proposal).getByText(
         'It floods[footnote: In spring.] at [bound value: height] for [variable: region], [cross-reference].',
+        { exact: false },
       ),
     ).toBeVisible();
+    const shown = proposal.textContent ?? '';
+    expect(shown).toContain('[other content]');
+    expect(shown).toContain('- Weir: A dam.');
+    expect(shown).not.toContain('messageForm');
+    expect(shown).not.toContain('blockquote');
   });
 
   it('says why it was not asked, in the service’s words', async () => {

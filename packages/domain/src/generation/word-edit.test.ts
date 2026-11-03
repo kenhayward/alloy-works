@@ -138,6 +138,41 @@ describe('changing words inside a block, keeping what else it holds', () => {
     }
   });
 
+  it('refuses words running over the edge of a link, which would stretch it or lose it', () => {
+    const link = { type: 'hyperlink', id: 'h1', href: 'https://example.test/report' };
+    const content = document(
+      paragraph('p1', text('Read '), text('the report', [link]), text(' and the weir floods.')),
+    );
+    for (const find of ['report and the weir', 'Read the report']) {
+      expect(problemOf(edit(content, find, 'x'))).toBe(
+        'The words run over the edge of a link. Change the words inside it, or those beside it.',
+      );
+    }
+    expect(inlineOf(edit(content, 'the report', 'our report'))).toEqual([
+      text('Read '),
+      text('our report', [link]),
+      text(' and the weir floods.'),
+    ]);
+  });
+
+  it('holds its new words to what content takes: composed, whole characters, on one line', () => {
+    const content = document(paragraph('p1', text('The caf\u00e9 and the weir \u{1F33F}.')));
+    expect(inlineOf(edit(content, 'weir', 'cafe\u0301'))).toEqual([
+      text('The caf\u00e9 and the caf\u00e9 \u{1F33F}.'),
+    ]);
+    expect(inlineOf(edit(content, 'cafe\u0301', 'inn'))).toEqual([
+      text('The inn and the weir \u{1F33F}.'),
+    ]);
+    expect(problemOf(edit(content, 'weir', 'a\u2028b'))).toBe(
+      'The new words hold a line break or a control character.',
+    );
+    expect(problemOf(edit(content, '\ud83c', 'x'))).toBe('That would split a character.');
+    expect(problemOf(edit(content, 'weir', '\ud83c'))).toBe('That would split a character.');
+    expect(problemOf(edit(document(paragraph('p1', text('Weir.'))), 'Weir.', '  \u200b '))).toBe(
+      'That would leave the paragraph empty: delete the block instead.',
+    );
+  });
+
   it('refuses a block that is no paragraph or list, and a line break in the words', () => {
     const table = { type: 'table', id: 't1', rows: [], headerRows: 0 } as unknown as BlockNode;
     expect(problemOf(edit(document(table), 'x', 'y', 't1'))).toBe(

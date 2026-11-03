@@ -102,6 +102,39 @@ describe('finding a part from inside a document', () => {
     expect(JSON.stringify(refused.result)).not.toContain('confidential');
   });
 
+  it('never reads the latest of a part the document places but cannot resolve', async () => {
+    const draft = await h.component(h.general, 'Draft');
+    await h.place(draft, { type: 'text', value: 'Sluice gates, an unapproved draft.', marks: [] });
+    const made = await h.call('ada', 'POST', `/v1/spaces/${h.general}/documents`, {
+      title: 'Approved only',
+      language: 'en-GB',
+      direction: 'ltr',
+    });
+    const body = made.json<{ id: string; version: { id: string } }>();
+    const inserted = await h.call('ada', 'POST', `/v1/documents/${body.id}/outline`, {
+      openedFrom: body.version.id,
+      operation: {
+        operation: 'insert',
+        parent: null,
+        position: 0,
+        node: { type: 'reference', component: draft.id, mode: { kind: 'approved' } },
+      },
+    });
+    expect(inserted.statusCode, inserted.body).toBe(200);
+    const ask = async (name: string, input: Json) => {
+      h.connector.modelFor = calling(name, input);
+      const response = await h.call('ada', 'POST', `/v1/documents/${body.id}/assistant/runs`, {
+        ask: 'Read it.',
+      });
+      return framesOf(response.body).find((frame) => frame.event === 'tool_result')!.data;
+    };
+    const read = await ask('read_component', { component: draft.id });
+    expect(read).toMatchObject({ ok: false, said: { code: 'no_such_component' } });
+    expect(JSON.stringify(read)).not.toContain('unapproved');
+    const found = await ask('search_components', { query: 'unapproved' });
+    expect(String(found.result)).not.toContain('unapproved');
+  });
+
   it('GEN-011 keeps a citation of a part outside the document, once read', async () => {
     const { ended: end } = await run(
       'grace',

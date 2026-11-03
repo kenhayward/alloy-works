@@ -1015,6 +1015,7 @@
   "document.proposed-bound-value": "[bound value: {name}]",
   "document.proposed-variable": "[variable: {name}]",
   "document.proposed-cross-reference": "[cross-reference]",
+  "document.proposed-other": "[other content]",
   "document.searched-the-parts": "Searched the parts you may read",
   "document.read-a-published-work": "Read a published work",
   "document.proposed-a-citation": "Proposed a citation",

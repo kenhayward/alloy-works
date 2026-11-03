@@ -69,6 +69,7 @@ import {
   referenceAsText,
   referencesAsText,
   citationsIn,
+  walkOutline,
   componentAsText,
   isAssistantTool,
   parseContentDocument,
@@ -173,7 +174,12 @@ export function assistantHandlers(
     for (const each of resolved) {
       if (each.outcome === 'resolved') readable.set(each.component, each.version);
     }
-    return { outline, readable };
+    // Every part it places, resolved or not: one it cannot resolve is not read another way.
+    const placing = new Set<string>();
+    walkOutline(outline.nodes, (node) => {
+      if (node.type === 'reference') placing.add(node.component);
+    });
+    return { outline, readable, placing };
   }
 
   /** A refusal said to the model as the route would say it: its words, and its code as what the step said. */
@@ -204,18 +210,21 @@ export function assistantHandlers(
     trx: TenantTransaction,
     principal: string,
     query: string,
-    where?: (component: string) => string,
+    /** What to say of a part's place; undefined leaves it out. */
+    where: (component: string) => string | undefined = () => '',
   ): Promise<ToolAnswer> {
     const answer = await searchWords(trx, principal, query, {
       limit: 20,
       filters: { kinds: ['component'] },
     });
     const hits =
-      typeof answer === 'object' && answer.outcome === 'results' ? answer.items.slice(0, 10) : [];
+      typeof answer === 'object' && answer.outcome === 'results'
+        ? answer.items.filter((hit) => where(hit.artifactId) !== undefined).slice(0, 10)
+        : [];
     const text = hits
       .map(
         (hit) =>
-          `Component ${hit.artifactId}${where?.(hit.artifactId) ?? ''}: ${hit.passage.map((piece) => piece.text).join('')}`,
+          `Component ${hit.artifactId}${where(hit.artifactId)}: ${hit.passage.map((piece) => piece.text).join('')}`,
       )
       .join('\n');
     return {
@@ -578,6 +587,7 @@ export function assistantHandlers(
               const held = found?.readable.get(component);
               let version = held;
               if (version === undefined) {
+                if (found?.placing.has(component)) return missing('component');
                 // Another part they may read, at its latest: to read and cite, never to edit.
                 try {
                   await authoriseAt(trx, caller, 'read', { kind: 'artifact', id: component });
@@ -613,9 +623,10 @@ export function assistantHandlers(
             const { query } = parsed.data as { query: string };
             return await inDocument(async (trx) => {
               const found = await placed(trx, document, principal);
-              return searchComponents(trx, principal, query, (component) =>
-                found?.readable.has(component) ? ' (in this document)' : ' (elsewhere)',
-              );
+              return searchComponents(trx, principal, query, (component) => {
+                if (found?.readable.has(component)) return ' (in this document)';
+                return found?.placing.has(component) ? undefined : ' (elsewhere)';
+              });
             });
           }
           case 'search_document': {

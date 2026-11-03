@@ -21992,7 +21992,7 @@
     {
       "id": "GEN-011",
       "file": "apps/service/src/assistant-finding-parts.test.ts",
-      "line": 105,
+      "line": 138,
       "kind": "title"
     },
     {
@@ -27158,7 +27158,7 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 947,
+      "line": 971,
       "kind": "title"
     },
     {
@@ -27188,7 +27188,7 @@
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 892,
+      "line": 916,
       "kind": "title"
     },
     {
@@ -27200,19 +27200,19 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1008,
+      "line": 1032,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1008,
+      "line": 1032,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1042,
+      "line": 1066,
       "kind": "title"
     },
     {

@@ -120,7 +120,7 @@ function stepLine(step: Step) {
 interface ListLike {
   readonly type?: string;
   readonly content?: unknown;
-  readonly items?: readonly { readonly content?: readonly ListLike[] }[];
+  readonly items?: readonly { readonly term?: unknown; readonly content?: readonly ListLike[] }[];
 }
 
 /**
@@ -166,7 +166,7 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
               case 'crossReference':
                 return words('document.proposed-cross-reference');
               default:
-                return `[${String(type ?? '')}]`;
+                return words('document.proposed-other');
             }
           })
           .join('')
@@ -174,11 +174,13 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
   // A list's items a line each, a list within one indented under it.
   const listLines = (list: ListLike, indent: string): string[] =>
     (list.items ?? []).flatMap((item) =>
-      (item.content ?? []).flatMap((child) =>
-        child.type === 'list'
-          ? listLines(child, `${indent}  `)
-          : [`${indent}- ${inline(child.content)}`],
-      ),
+      (item.content ?? []).flatMap((child, at) => {
+        if (child.type === 'list') return listLines(child, `${indent}  `);
+        const term = at === 0 && item.term !== undefined ? `${inline(item.term)}: ` : '';
+        return [
+          `${indent}- ${term}${child.type === 'paragraph' ? inline(child.content) : words('document.proposed-other')}`,
+        ];
+      }),
     );
   return (proposed.content ?? [])
     .map((block) => {
@@ -200,7 +202,7 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
         );
         return [...(caption === '' ? [] : [`Table: ${caption}`]), ...rows].join('\n');
       }
-      return `[${each.type ?? 'block'}]`;
+      return words('document.proposed-other');
     })
     .join('\n\n');
 }

@@ -776,6 +776,10 @@ function withParagraphs(
   } as BlockNode;
 }
 
+const LINE_SEPARATORS = /[\u2028\u2029]/;
+/** A code unit of a two-unit character without its other half. */
+const HALF_CHARACTER = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+
 /** A paragraph's nodes as `inlineText` reads them, each with where it stands in that text. */
 function readPieces(content: readonly InlineNode[]) {
   let at = 0;
@@ -796,11 +800,16 @@ function wordsChanged(
   block: BlockNode,
   edit: Extract<BlockEdit, { in: unknown }>,
 ): BlockNode | string {
-  const { in: named, find, to } = edit;
+  const named = edit.in;
+  const find = edit.find.normalize('NFC');
+  const to = edit.to.normalize('NFC');
   if (block.type !== 'paragraph' && block.type !== 'list') {
     return `Block ${named} cannot be changed by its words. ${editableProblem(block)}`;
   }
-  if (CONTROL.test(to)) return 'The new words hold a line break or a control character.';
+  if (CONTROL.test(to) || LINE_SEPARATORS.test(to)) {
+    return 'The new words hold a line break or a control character.';
+  }
+  if (HALF_CHARACTER.test(to) || HALF_CHARACTER.test(find)) return 'That would split a character.';
   let found = 0;
   withParagraphs(block, (each) => {
     const whole = inlineText(each.content);
@@ -827,6 +836,16 @@ function wordsChanged(
         return each;
       }
     }
+    const links = within.flatMap(({ node }) =>
+      node.type === 'text'
+        ? [JSON.stringify((node.marks ?? []).find((each) => each.type === 'hyperlink') ?? null)]
+        : [],
+    );
+    if (new Set(links).size > 1) {
+      problem =
+        'The words run over the edge of a link. Change the words inside it, or those beside it.';
+      return each;
+    }
     const first = within[0]!;
     const last = within.at(-1)!;
     const from = pieces.indexOf(first);
@@ -844,7 +863,12 @@ function wordsChanged(
           ]),
       ...each.content.slice(upTo + 1),
     ].filter((node) => node.type !== 'text' || node.value !== '');
-    if (made.every((node) => node.type === 'indexMarker')) {
+    const blank = (value: string) => value.replace(/[\s\u200b-\u200d\u2060\ufeff]/g, '') === '';
+    if (
+      made.every(
+        (node) => node.type === 'indexMarker' || (node.type === 'text' && blank(node.value)),
+      )
+    ) {
       problem = 'That would leave the paragraph empty: delete the block instead.';
       return each;
     }
