@@ -180,6 +180,24 @@ async function standing(
 
 /** A node's heading is wholly on the screen, below the header rather than under it. */
 async function expectOnScreen(page: Page, node: string, what: string): Promise<void> {
+  // The window may still be at the top when this is called: a node chosen while the texts are arriving
+  // is gone to once they have taken their room (issue #453), so waiting for the window to stop is not
+  // enough on its own. Wait for the heading to reach the screen, then for the window to stop, then
+  // measure once more.
+  await page.waitForFunction(
+    (id) => {
+      const element = document.querySelector(
+        `[aria-label="The document's text"] [data-node="${id}"]`,
+      );
+      if (!element) return false;
+      const heading = element.querySelector('h1, h2, h3, h4, h5, h6') ?? element;
+      const box = heading.getBoundingClientRect();
+      const header = document.querySelector('header')!.getBoundingClientRect().bottom;
+      return box.top >= header - 1 && box.bottom <= window.innerHeight;
+    },
+    node,
+    { timeout: 15_000 },
+  );
   await settled(page);
   const at = await standing(page, node);
   expect(

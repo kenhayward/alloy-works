@@ -9,3 +9,7 @@
   a pathology and still fits four runs beside the supervisor in the container. Fixes #553.
 - The warm compile tests allowed 120s each; one took 121s on a loaded CI runner and timed out
   before its retry passed. Both now allow 180s. Fixes #722.
+- Choosing a part in the outline while a document's placed components were still arriving left the
+  page at the top: the text was not yet tall enough to reach the part, so the scroll was lost. The
+  choice now waits for the texts, as following a link to a part does, and goes there once they have
+  taken their room. Fixes #453 and #747.
