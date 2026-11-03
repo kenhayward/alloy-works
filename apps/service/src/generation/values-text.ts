@@ -29,6 +29,7 @@ function tableText({ headers, rows }: Extract<HeldTableRows, { ok: true }>): str
  */
 export function valueLine(
   node: string,
+  binding: string,
   query: string | null | undefined,
   held: unknown,
   rows?: HeldTableRows,
@@ -44,5 +45,5 @@ export function valueLine(
         : typeof value === 'object'
           ? JSON.stringify(value)
           : String(value);
-  return `At ${node}, from ${query ?? 'a query you may not read'}: ${shown}`;
+  return `At ${node}, binding ${binding}, from ${query ?? 'a query you may not read'}: ${shown}`;
 }

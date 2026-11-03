@@ -60,6 +60,8 @@ describe("the assistant's terms", () => {
       'read_values',
       'propose_edit',
       'propose_comment',
+      'read_variables',
+      'propose_insert',
       'search_references',
       'read_reference',
       'cite_reference',
@@ -74,8 +76,8 @@ describe("the assistant's terms", () => {
       expect(instructions).toMatch(/ask them what to search for/);
       expect(instructions).toMatch(/say so where a source reports it retracted/);
     }
-    expect(ASSISTANT_INSTRUCTIONS_VERSION).toBe('assistant-6');
-    expect(CONVERSATION_INSTRUCTIONS_VERSION).toBe('conversation-6');
+    expect(ASSISTANT_INSTRUCTIONS_VERSION).toBe('assistant-7');
+    expect(CONVERSATION_INSTRUCTIONS_VERSION).toBe('conversation-7');
   });
 
   it('says what a source reports of a work, before its abstract', () => {

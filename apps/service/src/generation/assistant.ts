@@ -1,3 +1,7 @@
+import { randomBytes } from 'node:crypto';
+
+import type { z } from 'zod';
+
 import { valueLine } from './values-text.js';
 import {
   createComponent,
@@ -25,6 +29,7 @@ import {
   listModelRoutes,
   makeCommentProposal,
   makeProposal,
+  variablesByKey,
   startThread,
   makeSuggestion,
   proposalsOfRun,
@@ -68,7 +73,13 @@ import {
   pendingResolved,
   referenceAsText,
   referencesAsText,
+  blockIdentifierFrom,
+  boundValueIn,
   citationsIn,
+  footnoteFrom,
+  holdsBlock,
+  insertIn,
+  proposeInsertInputSchema,
   walkOutline,
   componentAsText,
   isAssistantTool,
@@ -76,6 +87,7 @@ import {
   runLimitsOf,
   toolInputSchemas,
   type ContentDocument,
+  type InlineNode,
   type ModelMessage,
   type OutlineDocument,
   type ReferenceSourceKey,
@@ -307,6 +319,157 @@ export function assistantHandlers(
     }
   }
 
+  /** The environment's variables by key, for one who may read the environment (`listDefinitions`). */
+  async function readVariables(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+  ): Promise<ToolAnswer> {
+    try {
+      await authoriseAt(trx, callerOf(request), 'read', { kind: 'tenant' });
+    } catch {
+      return { ok: false, content: 'You may not read them.', said: { code: 'not_yours_to_read' } };
+    }
+    const variables = [...(await variablesByKey(trx)).values()];
+    return {
+      ok: true,
+      content: asData(
+        'variables',
+        null,
+        variables.length === 0
+          ? 'There are none.'
+          : variables.map((each) => `${each.key}: ${each.name} (${each.type.base})`).join('\n'),
+      ),
+      said: { code: 'found', count: variables.length },
+    };
+  }
+
+  /**
+   * `propose_insert`: what stays live, a proposal against the version read. The item is built here
+   * from what the person may read now, so nothing of it is the model's but its choice: a bound value
+   * is a copy of one the document holds, a reference's target one it holds.
+   */
+  async function proposeInsert(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    run: string,
+    version: string,
+    input: z.infer<typeof proposeInsertInputSchema>,
+    on: { readonly document: string; readonly principal: string } | null,
+  ): Promise<ToolAnswer> {
+    const refused = (content: string): ToolAnswer => ({
+      ok: false,
+      content,
+      said: { code: 'edit_refused' },
+    });
+    try {
+      await authoriseAt(trx, callerOf(request), 'suggest', {
+        kind: 'artifact',
+        id: input.component,
+      });
+    } catch {
+      return {
+        ok: false,
+        content: 'You may not suggest changes to this component.',
+        said: { code: 'not_yours_to_change' },
+      };
+    }
+    const read = (await versionContents(trx, [version])).get(version);
+    const content = read?.content as ContentDocument | undefined;
+    if (!content) return refused('There is no such component.');
+    const newId = () => blockIdentifierFrom(randomBytes(16));
+    const found = on === null ? undefined : await placed(trx, on.document, on.principal);
+    const { item } = input;
+    let node: InlineNode;
+    let what: string;
+    if ('variable' in item) {
+      const variables = await variablesByKey(trx);
+      if (!variables.has(item.variable)) {
+        return refused(
+          `There is no variable ${item.variable}. There are: ${[...variables.keys()].join(', ')}.`,
+        );
+      }
+      node = { type: 'variable', name: item.variable } as InlineNode;
+      what = 'a variable';
+    } else if ('footnote' in item) {
+      const made = markdownReader(content)(item.footnote);
+      if (typeof made === 'string') return refused(made);
+      const note = footnoteFrom(made, newId());
+      if (typeof note === 'string') return refused(note);
+      node = note;
+      what = 'a footnote';
+    } else if ('value' in item) {
+      if (!found) return refused('A bound value or a section is named only on a document.');
+      let component: string | undefined;
+      walkOutline(found.outline.nodes, (each) => {
+        if (each.id === item.value.node && each.type === 'reference') component = each.component;
+      });
+      const held = component === undefined ? undefined : found.readable.get(component);
+      const from = held === undefined ? undefined : (await versionContents(trx, [held])).get(held);
+      const bound =
+        from === undefined
+          ? undefined
+          : boundValueIn(from.content as ContentDocument, item.value.binding);
+      if (!bound) {
+        return refused(
+          `There is no single bound value ${item.value.binding} at that place: read_values names those there are.`,
+        );
+      }
+      node = { ...bound, id: newId() } as InlineNode;
+      what = 'a bound value';
+    } else {
+      const display = item.display ?? 'number';
+      const target = item.reference;
+      let to: unknown;
+      if ('node' in target) {
+        if (!found) return refused('A bound value or a section is named only on a document.');
+        let there = false;
+        walkOutline(found.outline.nodes, (each) => {
+          if (each.id === target.node) there = true;
+        });
+        if (!there) return refused('The document holds no such section or part.');
+        to = { kind: 'node', node: target.node };
+      } else if (target.component !== undefined && target.component !== input.component) {
+        const held = found?.readable.get(target.component);
+        const part =
+          held === undefined ? undefined : (await versionContents(trx, [held])).get(held);
+        if (!part || !holdsBlock(part.content as ContentDocument, target.block)) {
+          return refused('The document holds no such block.');
+        }
+        to = { kind: 'component', component: target.component, block: target.block };
+      } else {
+        if (!holdsBlock(content, target.block)) return refused('This part holds no such block.');
+        to = { kind: 'block', block: target.block };
+      }
+      node = { type: 'crossReference', id: newId(), target: to, display } as unknown as InlineNode;
+      what = 'a cross-reference';
+    }
+    const outcome = insertIn(
+      content,
+      { block: input.block, ...(input.after === undefined ? {} : { after: input.after }) },
+      node,
+      what,
+    );
+    if (!outcome.ok) return refused(outcome.problem);
+    let proposed: ContentDocument;
+    try {
+      proposed = parseContentDocument(outcome.content);
+    } catch {
+      return refused('That would not make content this part can hold.');
+    }
+    const proposal = await makeProposal(trx, {
+      run,
+      component: input.component,
+      against: version,
+      proposed,
+    });
+    return {
+      ok: true,
+      content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it.`,
+      said: { code: 'proposal', number: proposal.number },
+      proposal,
+    };
+  }
+
   /**
    * `cite_reference` (XR-I; LIB-040): a proposal against the version read, its citation naming no
    * entry yet and carrying the source's record, fetched now; the entry is matched or made as it is
@@ -518,6 +681,18 @@ export function assistantHandlers(
                 ),
               ))
             );
+          case 'read_variables':
+            return await inDocument((trx) => readVariables(trx, request));
+          case 'propose_insert': {
+            const input = parsed.data as z.infer<typeof proposeInsertInputSchema>;
+            return await inDocument(async (trx) => {
+              const version = (await placed(trx, document, principal))?.readable.get(
+                input.component,
+              );
+              if (version === undefined) return missing('component');
+              return proposeInsert(trx, request, run, version, input, { document, principal });
+            });
+          }
           case 'cite_reference': {
             const input = parsed.data as Parameters<typeof citeReference>[4];
             return await inDocument(async (trx) => {
@@ -558,6 +733,7 @@ export function assistantHandlers(
                 for (const raw of nodes) {
                   const node = raw as {
                     type: string;
+                    id: string;
                     title?: unknown[];
                     component?: string;
                     children?: unknown[];
@@ -565,10 +741,12 @@ export function assistantHandlers(
                   const indent = '  '.repeat(depth);
                   if (node.type === 'section') {
                     lines.push(
-                      `${indent}Section: ${titleOf(node.title ?? []).replace(/\s+/g, ' ')}`,
+                      `${indent}Section: ${titleOf(node.title ?? []).replace(/\s+/g, ' ')} (node ${node.id})`,
                     );
                   } else if (node.component !== undefined && found.readable.has(node.component)) {
-                    lines.push(`${indent}Component ${node.component}${titled(node.component)}`);
+                    lines.push(
+                      `${indent}Component ${node.component}${titled(node.component)} (node ${node.id})`,
+                    );
                   }
                   visit(node.children ?? [], depth + 1);
                 }
@@ -671,6 +849,7 @@ export function assistantHandlers(
               const values = views.map((view) =>
                 valueLine(
                   view.node,
+                  view.binding.id,
                   view.definition?.title,
                   view.held,
                   tables?.(view.node, view.binding.id),
@@ -1013,6 +1192,14 @@ export function assistantHandlers(
                   parsed.data as { source: ReferenceSourceKey; identifier: string },
                 )
               );
+            case 'read_variables':
+              return readVariables(trx, request);
+            case 'propose_insert': {
+              const input = parsed.data as z.infer<typeof proposeInsertInputSchema>;
+              const latest = await readable(trx, input.component);
+              if (!latest) return missing;
+              return proposeInsert(trx, request, run, latest.id, input, null);
+            }
             case 'cite_reference': {
               const input = parsed.data as Parameters<typeof citeReference>[4];
               const latest = await readable(trx, input.component);
