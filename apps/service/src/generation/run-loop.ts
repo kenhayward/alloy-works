@@ -20,6 +20,8 @@ import {
   modelDeadlineMs,
   declinedInputSchema,
   guardrailMatch,
+  storableCopy,
+  storableEverywhere,
   watchesReplies,
   type GuardrailRule,
   type GenerationFailure,
@@ -274,6 +276,7 @@ export function streamedRun(input: {
         if (refusedBy) break;
         let text = '';
         const calledFor: { id: string; name: string; input: Record<string, unknown> }[] = [];
+        const unstorable = new Set<string>();
         const answer = await input.asking.model(
           {
             requestId: randomUUID(),
@@ -294,7 +297,12 @@ export function streamedRun(input: {
               received += 1;
               send('progress', { tokens: received });
             } else if (event.type === 'tool_call') {
-              calledFor.push({ id: event.id, name: event.name, input: event.input });
+              // A character Postgres cannot store is refused, and the call kept without it, so the
+              // record of it and the history the model is sent both stand (#922).
+              const call = { id: event.id, name: event.name, input: event.input };
+              const kept = storableCopy(call);
+              if (!storableEverywhere(call)) unstorable.add(kept.id);
+              calledFor.push(kept);
             }
           },
           stopped,
@@ -324,6 +332,7 @@ export function streamedRun(input: {
           if (refusedBy) break;
           send('text', { text, tokens: received });
         }
+        text = storableCopy(text);
         said += text;
         const content: Extract<ModelMessage, { role: 'assistant' }>['content'] = [];
         if (text !== '') content.push({ type: 'text', text });
@@ -348,9 +357,16 @@ export function streamedRun(input: {
                   content: 'This run has made all the tool calls it may.',
                   said: { code: 'too_many_calls' },
                 }
-              : each.name === DECLINED.name && offersDeclined
-                ? declined(each.input, send)
-                : await tool(each.name, each.input);
+              : unstorable.has(each.id)
+                ? {
+                    ok: false,
+                    content:
+                      'The arguments hold a character that cannot be stored: write them again without it.',
+                    said: { code: 'arguments_refused' },
+                  }
+                : each.name === DECLINED.name && offersDeclined
+                  ? declined(each.input, send)
+                  : await tool(each.name, each.input);
           if (answered.read) {
             const blocks = read.get(answered.read.component) ?? new Set<string>();
             for (const block of answered.read.blocks) blocks.add(block);

@@ -15,6 +15,10 @@ The assistant's authoring tools closed (the AT plan): it changes words without d
 - **The assistant reads comments.** It can read the comments on a part, as the person asking: what each thread quotes, whether it is open and what was said, with reviewers unnamed. A person from outside the organisation is read no internal thread.
 - **The assistant proposes changes to the outline.** It can move, place, add, remove or retitle in one proposal, shown step by step by titles. Accepting makes one new version of the document, all of it or none, and it is refused once the document has moved on. In a conversation on a document, a new part it proposes can say where to go.
 
+### Fixed
+
+- **A stray character from a model no longer stops the assistant.** A tool call holding a character that cannot be stored is refused and the model asked to write it again, and a reply holding one keeps the rest of its words. Before, the run stopped and said the connector had failed.
+
 ## 0.227.0 - 2026-11-03 (PR #914)
 
 The MV close, T7's moving of content between spaces (the MV plan), with what has landed since the AP close: a document's language, comments in Authoring and more from the assistant.
