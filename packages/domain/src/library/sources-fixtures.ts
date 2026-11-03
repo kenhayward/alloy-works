@@ -158,6 +158,18 @@ export const pubmedSummary = (records: readonly { readonly uid: string }[]) => (
   },
 });
 
+/** PubMed's answer to `efetch.fcgi?db=pubmed&retmode=xml&rettype=abstract` for the dunnart: XML alone. */
+export const pubmedArticle = `<?xml version="1.0" ?>
+<!DOCTYPE PubmedArticleSet PUBLIC "-//NLM//DTD PubMedArticle, 1st January 2025//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_250101.dtd">
+<PubmedArticleSet><PubmedArticle><MedlineCitation><PMID Version="1">99000001</PMID><Article>
+<ArticleTitle>The dunnart in winter.</ArticleTitle>
+<Abstract>
+<AbstractText Label="BACKGROUND" NlmCategory="BACKGROUND">Dunnarts enter <i>torpor</i> below 5 &amp;deg;C in H<sub>2</sub>O &amp; mud.</AbstractText>
+<AbstractText Label="RESULTS" NlmCategory="RESULTS">Invented &lt;findings&gt;.</AbstractText>
+<CopyrightInformation>Invented Society.</CopyrightInformation>
+</Abstract>
+</Article><OtherAbstract Type="Publisher" Language="fre"><AbstractText>Autre.</AbstractText></OtherAbstract></MedlineCitation></PubmedArticle></PubmedArticleSet>`;
+
 /**
  * A retraction notice as Crossref answers `GET /works?filter=updates:{doi}` (XRb): the notice is its
  * own work, its `update-to` naming the work it retracts, once by the publisher and once by Retraction

@@ -12,7 +12,7 @@ import { admitCsl, cslItemSchema, type CslItem } from './entry.js';
  */
 export const REFERENCE_SOURCES_VERSION = 1;
 
-export const REFERENCE_OPERATIONS = ['search', 'fetch', 'check'] as const;
+export const REFERENCE_OPERATIONS = ['search', 'fetch', 'check', 'read'] as const;
 export type ReferenceOperation = (typeof REFERENCE_OPERATIONS)[number];
 
 export const REFERENCE_SOURCE_IDS = ['crossref', 'pubmed'] as const;
@@ -88,7 +88,12 @@ export const REFERENCE_MOST_BYTES: Readonly<Record<ReferenceOperation, number>> 
   search: 512 * 1024,
   fetch: 128 * 1024,
   check: 128 * 1024,
+  // PubMed's article, its reference list and all, each step's.
+  read: 512 * 1024,
 };
+
+/** The longest an abstract is read, in characters; what is past it left out. */
+export const REFERENCE_ABSTRACT_MOST = 8_000;
 
 const DOI = /^10\.[0-9]{4,9}\/\S{1,280}$/;
 const PMID = /^[1-9][0-9]{0,9}$/;
@@ -126,6 +131,8 @@ export type ReferenceStep =
   | { readonly step: 'work'; readonly identifier: string }
   /** Crossref's notices updating a work, by its DOI (XRb): `filter=updates:{doi}`. */
   | { readonly step: 'updates'; readonly identifier: string }
+  /** PubMed's article, XML alone, for its abstract, which a summary does not hold. */
+  | { readonly step: 'abstract'; readonly identifier: string }
   | { readonly step: 'summary'; readonly ids: readonly string[] };
 
 /** A step's path and query on the source's host, every value encoded as a query parameter or segment. */
@@ -146,13 +153,17 @@ export function referencePath(
       query.set('filter', `updates:${step.identifier}`);
       query.set('rows', String(REFERENCE_RESULTS_MOST));
     } else {
-      path = `/works/${encodeURIComponent(step.step === 'work' ? step.identifier : (step.ids[0] ?? ''))}`;
+      path = `/works/${encodeURIComponent(step.step === 'summary' ? (step.ids[0] ?? '') : step.identifier)}`;
     }
     if (contact !== undefined) query.set('mailto', contact);
   } else {
     query.set('db', 'pubmed');
-    query.set('retmode', 'json');
-    if (step.step === 'search') {
+    query.set('retmode', step.step === 'abstract' ? 'xml' : 'json');
+    if (step.step === 'abstract') {
+      path = '/entrez/eutils/efetch.fcgi';
+      query.set('rettype', 'abstract');
+      query.set('id', step.identifier);
+    } else if (step.step === 'search') {
       path = '/entrez/eutils/esearch.fcgi';
       query.set('retmax', String(REFERENCE_RESULTS_MOST));
       query.set('term', step.terms);
@@ -217,8 +228,10 @@ export const referenceResultSchema = z.strictObject({
   csl: cslItemSchema,
   /** The fields the source gave that an entry cannot hold, left out. */
   dropped: z.array(z.string().max(200)).max(200),
-  /** A check's retractions and corrections (XRb); absent from a search or fetch. */
+  /** A check's or read's retractions and corrections (XRb); absent from a search or fetch. */
   notices: z.array(referenceNoticeSchema).max(50).optional(),
+  /** A read's abstract, as plain words, where the source gave one; absent from anything else. */
+  abstract: z.string().min(1).max(REFERENCE_ABSTRACT_MOST).optional(),
 });
 export type ReferenceResult = z.infer<typeof referenceResultSchema>;
 
@@ -528,6 +541,73 @@ function pubmedNotices(record: Json): ReferenceNotice[] {
   return distinct(found);
 }
 
+const XML_ENTITIES: Readonly<Record<string, string>> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+};
+
+/** Markup's words alone: its tags out, a paragraph's end a space, each entity decoded once. */
+function plainWords(markup: string): string {
+  return markup
+    .replace(/<\/(?:jats:)?(?:p|title|sec)>/g, ' ')
+    .replace(/<[^<>]*>/g, '')
+    .replace(
+      /&(?:#(\d{1,7})|#x([0-9a-f]{1,6})|(amp|lt|gt|quot|apos));/gi,
+      (whole, dec, hex, named) => {
+        if (named !== undefined) return XML_ENTITIES[String(named).toLowerCase()] ?? whole;
+        const point = dec !== undefined ? Number(dec) : Number.parseInt(String(hex), 16);
+        return point <= 0x10ffff ? String.fromCodePoint(point) : whole;
+      },
+    )
+    .replace(new RegExp(CONTROL.source, 'gu'), ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const CUT_SHORT = ' [cut short]';
+
+/** An abstract as it is read: plain words, or none; past the most, cut at a whole character, and said. */
+function abstractOf(words: string): string | undefined {
+  if (words === '') return undefined;
+  if (words.length <= REFERENCE_ABSTRACT_MOST) return words;
+  const kept = words.slice(0, REFERENCE_ABSTRACT_MOST - CUT_SHORT.length);
+  return `${kept.replace(/[\uD800-\uDBFF]$/, '')}${CUT_SHORT}`;
+}
+
+/**
+ * The abstract in PubMed's article XML, its sections each by its label: the article's own, never an
+ * `OtherAbstract`. Read by position, not a pattern over the whole, so a hostile answer costs no more
+ * than its length.
+ */
+export function pubmedAbstract(xml: string): string | undefined {
+  const open = xml.indexOf('<Abstract>');
+  if (open < 0) return undefined;
+  const close = xml.indexOf('</Abstract>', open);
+  if (close < 0) return undefined;
+  const sections = xml
+    .slice(open, close)
+    .split('</AbstractText>')
+    .flatMap((piece) => {
+      const at = piece.lastIndexOf('<AbstractText');
+      const end = at < 0 ? -1 : piece.indexOf('>', at);
+      if (end < 0) return [];
+      const text = plainWords(piece.slice(end + 1));
+      if (text === '') return [];
+      const label = /\bLabel="([^"]*)"/.exec(piece.slice(at, end))?.[1];
+      return [label === undefined ? text : `${plainWords(label)}: ${text}`];
+    });
+  return abstractOf(sections.join(' '));
+}
+
+/** A result with the abstract read, where one was. */
+export const withAbstract = (
+  result: ReferenceResult,
+  abstract: string | undefined,
+): ReferenceResult => (abstract === undefined ? result : { ...result, abstract });
+
 /**
  * A source's answer, as parsed JSON, mapped to CSL-JSON results: Crossref's work or work list, or
  * PubMed's summaries. Undefined where it is not the source's shape; a record that does not map is
@@ -542,10 +622,18 @@ export function readReferenceAnswer(
 ): ReferenceResult[] | undefined {
   if (!isRecord(answer)) return undefined;
   const checked = (results: ReferenceResult[], notices: () => ReferenceNotice[]) =>
-    op === 'check' ? results.map((each) => ({ ...each, notices: notices() })) : results;
+    op === 'check' || op === 'read'
+      ? results.map((each) => ({ ...each, notices: notices() }))
+      : results;
   if (source === 'crossref') {
     const message = answer.message;
     if (!isRecord(message)) return undefined;
+    if (op === 'read') {
+      const abstract = abstractOf(plainWords(textOf(message.abstract) ?? ''));
+      return checked(crossrefItem(message), () => crossrefNotices(message, updates)).map((each) =>
+        withAbstract(each, abstract),
+      );
+    }
     if (op !== 'search') {
       return checked(crossrefItem(message), () => crossrefNotices(message, updates));
     }
@@ -694,10 +782,14 @@ export function readExtensionAnswer(
     if (op !== 'search' && asked !== undefined && identifier !== asked) return [];
     const { [EXTENSION_NOTICES]: given, ...record } = item;
     const results = admitted(identifier, record);
-    if (op !== 'check') return results;
+    if (op !== 'check' && op !== 'read') return results;
     const notices = (Array.isArray(given) ? given : []).flatMap(
       (each) => referenceNoticeSchema.safeParse(each).data ?? [],
     );
-    return results.map((each) => ({ ...each, notices: distinct(notices).slice(0, 50) }));
+    const abstract =
+      op === 'read' ? abstractOf(plainWords(textOf(item.abstract) ?? '')) : undefined;
+    return results.map((each) =>
+      withAbstract({ ...each, notices: distinct(notices).slice(0, 50) }, abstract),
+    );
   });
 }

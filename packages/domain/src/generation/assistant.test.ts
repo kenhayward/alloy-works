@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import type { BlockNode } from '../content/model/blocks.js';
 import type { ContentDocument } from '../content/model/document.js';
+import type { ReferenceResult } from '../library/sources.js';
 import {
   ASSISTANT_INSTRUCTIONS,
+  ASSISTANT_INSTRUCTIONS_VERSION,
   ASSISTANT_TOOLS,
   CONVERSATION_INSTRUCTIONS,
+  CONVERSATION_INSTRUCTIONS_VERSION,
   CONVERSATION_TOOLS,
   DOCUMENT_CONVERSATION_TOOLS,
   applyEdits,
@@ -19,6 +22,7 @@ import {
   editableProblem,
   pendingResolved,
   proposeEditProblem,
+  referenceAsText,
   referencesAsText,
   toolInputSchemas,
   withReferenceSources,
@@ -56,8 +60,63 @@ describe("the assistant's terms", () => {
       'propose_edit',
       'propose_comment',
       'search_references',
+      'read_reference',
       'cite_reference',
     ]);
+  });
+
+  it('tells the model to answer what is published from the sources, never from memory', () => {
+    for (const instructions of [ASSISTANT_INSTRUCTIONS, CONVERSATION_INSTRUCTIONS]) {
+      expect(instructions).toMatch(/search_references and read_reference, never from memory/);
+      expect(instructions).toMatch(/name only the works they gave, each with its identifier/);
+      // The terms leave the product, so they stay the person's.
+      expect(instructions).toMatch(/ask them what to search for/);
+      expect(instructions).toMatch(/say so where a source reports it retracted/);
+    }
+    expect(ASSISTANT_INSTRUCTIONS_VERSION).toBe('assistant-5');
+    expect(CONVERSATION_INSTRUCTIONS_VERSION).toBe('conversation-5');
+  });
+
+  it('says what a source reports of a work, before its abstract', () => {
+    const work = {
+      identifier: '99000001',
+      csl: { type: 'article-journal', title: 'The dunnart in winter' },
+      dropped: [],
+      notices: [
+        { kind: 'retraction', identifier: '99000003', date: '2026-04-22' },
+        { kind: 'correction' },
+        { kind: 'supersession', identifier: '99000004' },
+      ],
+    } as ReferenceResult;
+    expect(referenceAsText('pubmed', { ...work, abstract: 'Invented.' })).toBe(
+      [
+        'The dunnart in winter. PMID 99000001',
+        'The source reports this work retracted: 99000003, 2026-04-22.',
+        'The source reports this work corrected.',
+        'The source reports this work superseded: 99000004.',
+        'Abstract: Invented.',
+      ].join('\n'),
+    );
+  });
+
+  it('takes read_reference a source and an identifier, and nothing else', () => {
+    const { read_reference: schema } = toolInputSchemas;
+    expect(schema.safeParse({ source: 'pubmed', identifier: '99000001' }).success).toBe(true);
+    expect(schema.safeParse({ source: 'arxiv', identifier: '99000001' }).success).toBe(false);
+    expect(
+      schema.safeParse({ source: 'pubmed', identifier: '99000001', query: 'dunnart' }).success,
+    ).toBe(false);
+  });
+
+  it('says a work as the model reads it, with its abstract or that it gave none', () => {
+    const csl = { type: 'article-journal', title: 'The dunnart in winter' };
+    const work = { identifier: '99000001', csl, dropped: [] } as ReferenceResult;
+    expect(referenceAsText('pubmed', { ...work, abstract: 'Invented.' })).toBe(
+      'The dunnart in winter. PMID 99000001\nAbstract: Invented.',
+    );
+    expect(referenceAsText('pubmed', work)).toBe(
+      'The dunnart in winter. PMID 99000001\nThe source gave no abstract of this work.',
+    );
   });
 
   it('GEN-009 offers propose_comment on a whole component, or on a block and its words together', () => {
