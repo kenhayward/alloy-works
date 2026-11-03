@@ -183,6 +183,13 @@ describe('the rule behind a refusal', () => {
       'citation.unreadable',
       // And a term the author may not read in the component's space (the TM plan, TM-K).
       'term.unreadable',
+      // A move's own (moving.md, MV-E): guards of the design's, as IAM-015 names no refusal.
+      'space.moved',
+      'move.too_large',
+      'artifact.not_movable',
+      'asset.uploading',
+      'artifact.held',
+      'artifact.kept',
       // A space's own guards (the SP1 plan, SP-B to SP-D): a name past its shape or taken, the last
       // live space, and a creation in an archived one. ADM-049 asks that a space can be archived;
       // what archiving refuses is the design's.
