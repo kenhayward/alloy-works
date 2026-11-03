@@ -56,6 +56,7 @@ understand the storage layer, rather than something to be thrown away.
 | [reference-sources.md](reference-sources.md)           | Crossref and PubMed searched through the connector and cited; a cited source's retraction or correction found, flagged and told                                               |
 | [vocabularies.md](vocabularies.md)                     | Vocabularies as environment-wide definitions, drawn on by fields and condition axes; values labelled per language, deprecated and retired, never dropped; SKOS; from a source |
 | [identity.md](identity.md)                             | More than one identity provider configured in Administration, session lifetimes, re-authentication, SCIM, the high-risk permissions                                           |
+| [moving.md](moving.md)                                 | Moving an artifact between spaces in a tenant: who may, what comes along, what stops working                                                                                  |
 
 ## Why these are not one per requirement area
 
