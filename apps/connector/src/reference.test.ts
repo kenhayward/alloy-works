@@ -91,6 +91,43 @@ describe('a reference source asked through the connector (the XR plan, XR-B)', (
     });
   });
 
+  it('reads a PubMed work: its summary, then its abstract, by its PMID alone', async () => {
+    const before = fake.seen.length;
+    const answer = await ask({ source: 'pubmed', op: 'read', identifier: '99000001' });
+    expect(answer).toMatchObject({
+      type: 'found',
+      results: [{ identifier: '99000001', abstract: expect.stringContaining('BACKGROUND: ') }],
+    });
+    expect(fake.seen.slice(before)).toEqual([
+      '/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=99000001&tool=alloy-works&email=desk%40example.test',
+      '/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&rettype=abstract&id=99000001&tool=alloy-works&email=desk%40example.test',
+    ]);
+  });
+
+  it('reads a PubMed work with no abstract as having none, and asks no abstract of a work it does not hold', async () => {
+    const read = await ask({ source: 'pubmed', op: 'read', identifier: '99000002' });
+    expect(read).toMatchObject({ type: 'found', results: [{ identifier: '99000002' }] });
+    expect((read as { results: object[] }).results[0]).not.toHaveProperty('abstract');
+
+    const before = fake.seen.length;
+    expect(await ask({ source: 'pubmed', op: 'read', identifier: '99000099' })).toEqual({
+      type: 'found',
+      results: [],
+    });
+    expect(fake.seen.slice(before).some((each) => each.includes('efetch'))).toBe(false);
+  });
+
+  it('reads a Crossref work with the one request, its abstract in the work', async () => {
+    const before = fake.seen.length;
+    const answer = await ask({
+      source: 'crossref',
+      op: 'read',
+      identifier: '10.5555/marsh.2021.017',
+    });
+    expect(answer).toMatchObject({ type: 'found', results: [{ abstract: 'Invented.' }] });
+    expect(fake.seen.length - before).toBe(1);
+  });
+
   it('LIB-036 checks a Crossref work, its notices read from the works updating it', async () => {
     const before = fake.seen.length;
     const answer = await ask({

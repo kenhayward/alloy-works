@@ -944,6 +944,7 @@ describe('the domain package', () => {
         'mergeCsl',
         'parseEntry',
         // XRa: the reference sources, their requests, and their answers mapped to CSL.
+        'REFERENCE_ABSTRACT_MOST',
         'REFERENCE_CONTACT',
         'REFERENCE_FAILURES',
         'REFERENCE_MOST_BYTES',
@@ -954,7 +955,9 @@ describe('the domain package', () => {
         'REFERENCE_SOURCE_IDS',
         'childReferenceRequestSchema',
         'identifierFits',
+        'pubmedAbstract',
         'readReferenceAnswer',
+        'withAbstract',
         'referenceAnswerSchema',
         'referencePath',
         'referenceRequestSchema',
@@ -972,11 +975,14 @@ describe('the domain package', () => {
         // XRc: the assistant's reference tools, a citation awaiting its entry, and what it carries.
         'CITE_REFERENCE',
         'PENDING_ENTRY',
+        'READ_REFERENCE',
         'SEARCH_REFERENCES',
         'citeIn',
         'citeReferenceInputSchema',
         'citedSourceSchema',
         'pendingResolved',
+        'readReferenceInputSchema',
+        'referenceAsText',
         'referencesAsText',
         'searchReferencesInputSchema',
         // XRd: extensions of kind reference, keyed among a tenant's sources, reached and read.

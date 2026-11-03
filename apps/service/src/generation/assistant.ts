@@ -66,6 +66,7 @@ import {
   citeIn,
   citedSourceSchema,
   pendingResolved,
+  referenceAsText,
   referencesAsText,
   citationsIn,
   componentAsText,
@@ -128,6 +129,8 @@ const TOOL_ANSWER_MAX = 40_000;
 
 /** The most searches of reference sources one run makes (XR-I). */
 export const REFERENCE_SEARCHES_PER_RUN = 5;
+/** The most works a run may read from reference sources, each a call that leaves the product. */
+export const REFERENCE_READS_PER_RUN = 10;
 
 const capped = (text: string) =>
   text.length <= TOOL_ANSWER_MAX
@@ -196,6 +199,19 @@ export function assistantHandlers(
           };
   };
 
+  /** A run's reads of reference sources: at most ten, each past them asking the source nothing. */
+  const readsOfRun = () => {
+    let left = REFERENCE_READS_PER_RUN;
+    return (): ToolAnswer | undefined =>
+      left-- > 0
+        ? undefined
+        : {
+            ok: false,
+            content: `This run has read ${REFERENCE_READS_PER_RUN} works, as many as it may. Answer from what was read.`,
+            said: { code: 'reference_reads_spent' },
+          };
+  };
+
   /**
    * `search_references` (the XR plan, XR-I; LIB-040): the source asked as the person asks it from the
    * Cite dialog, refused while it is switched off, each result a few fields as data.
@@ -219,6 +235,37 @@ export function assistantHandlers(
           capped(referencesAsText(input.source, results)),
         ),
         said: { code: 'found', count: results.length },
+      };
+    } catch (error) {
+      return refusedTool(error);
+    }
+  }
+
+  /**
+   * `read_reference`: one work by its identifier, the identifier alone sent as a citation's is, its
+   * abstract answered as data. Nothing is kept of it but the step.
+   */
+  async function readReference(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    input: { source: ReferenceSourceKey; identifier: string },
+  ): Promise<ToolAnswer> {
+    try {
+      const source = await sourceSwitchedOn(trx, input.source);
+      const [work] = await askSource(client, tenantOf(request), source, {
+        op: 'read',
+        identifier: input.identifier,
+      });
+      return {
+        ok: true,
+        content: asData(
+          `reference:${input.source}`,
+          null,
+          work === undefined
+            ? `${source.name} holds no work by that identifier.`
+            : capped(referenceAsText(input.source, work)),
+        ),
+        said: { code: 'found', count: work === undefined ? 0 : 1 },
       };
     } catch (error) {
       return refusedTool(error);
@@ -381,6 +428,7 @@ export function assistantHandlers(
   /** Each tool, as the requester, in a transaction of its own that decides `read` again (G2-C). */
   function tools(request: FastifyRequest, document: string, principal: string, run: string) {
     const searched = searchesOfRun();
+    const readWork = readsOfRun();
     const tenant = tenantOf(request);
     const caller = callerOf(request);
     const context = contextOf(request);
@@ -421,6 +469,17 @@ export function assistantHandlers(
                   trx,
                   request,
                   parsed.data as { source: ReferenceSourceKey; query: string },
+                ),
+              ))
+            );
+          case 'read_reference':
+            return (
+              readWork() ??
+              (await inDocument((trx) =>
+                readReference(
+                  trx,
+                  request,
+                  parsed.data as { source: ReferenceSourceKey; identifier: string },
                 ),
               ))
             );
@@ -812,6 +871,7 @@ export function assistantHandlers(
   /** A conversation's tools where it has no document (G5-D), each as its person, deciding again. */
   function looseTools(request: FastifyRequest, principal: string, run: string) {
     const searched = searchesOfRun();
+    const readWork = readsOfRun();
     const tenant = tenantOf(request);
     const caller = callerOf(request);
     const context = contextOf(request);
@@ -891,6 +951,15 @@ export function assistantHandlers(
                   trx,
                   request,
                   parsed.data as { source: ReferenceSourceKey; query: string },
+                )
+              );
+            case 'read_reference':
+              return (
+                readWork() ??
+                readReference(
+                  trx,
+                  request,
+                  parsed.data as { source: ReferenceSourceKey; identifier: string },
                 )
               );
             case 'cite_reference': {

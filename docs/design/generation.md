@@ -239,6 +239,7 @@ every turn ends `turns_spent`, not `timeout`. The tools (GEN-007):
 | `read_values`       | The document's bound values, as the page shows them                                                                                                                              |
 | `propose_edit`      | A whole-component draft against the version it read: a proposal, never a write; a table's cell, or its rows, too (never a bound table's); a new table or nested list as Markdown |
 | `search_references` | A reference source searched with the person's terms (reference-sources.md, XRc)                                                                                                  |
+| `read_reference`    | One work of a source, by its identifier: its details and abstract, as data, ten a run; a read makes no entry (reference-sources.md)                                              |
 | `propose_comment`   | A comment on a component, or on words in a block: a proposal (GEN-009); its thread started, as the person, on acceptance                                                         |
 | `cite_reference`    | A citation of a source's work proposed; its entry matched or made on acceptance                                                                                                  |
 
@@ -281,7 +282,7 @@ whether an acceptance is in it from that list, so one accepted afterwards never 
 Content is data by construction, not by a model's restraint: it reaches the model only in tool
 results and context blocks, each wrapped and labelled with its artifact; the instructions are the
 product's alone. What the defence rests on is that obeying injected text achieves nothing: every
-read is the requester's (GEN-014), nothing leaves through a tool but `search_references`' terms to a
+read is the requester's (GEN-014), nothing leaves through a tool but `search_references`' terms and an identifier to a
 source the tenant has left on (XRc), and every change waits on a person (GEN-009).
 
 **The test** (GEN-020) is the stand-in model in **compliant** mode, obeying any instruction it finds,

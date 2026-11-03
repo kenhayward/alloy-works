@@ -44,6 +44,7 @@ const TOOL_EFFECTS: Readonly<Record<string, () => string>> = {
   propose_component: () => words('document.tool-propose-component'),
   propose_comment: () => words('document.tool-propose-comment'),
   search_references: () => words('document.tool-search-references'),
+  read_reference: () => words('document.tool-read-reference'),
   cite_reference: () => words('document.tool-cite-reference'),
   declined: () => words('document.tool-declined'),
 };

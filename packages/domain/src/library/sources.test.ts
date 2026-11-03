@@ -48,7 +48,7 @@ describe('the reference sources (the XR plan, XR-A)', () => {
       ['pubmed', 'PubMed', 'eutils.ncbi.nlm.nih.gov', 'PMID'],
     ]);
     for (const source of REFERENCE_SOURCES) {
-      expect(source.operations).toEqual(['search', 'fetch', 'check']);
+      expect(source.operations).toEqual(['search', 'fetch', 'check', 'read']);
     }
     expect(referenceSource('crossref')?.name).toBe('Crossref');
     expect(referenceSource('elsewhere')).toBeUndefined();
