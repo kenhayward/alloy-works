@@ -1261,9 +1261,12 @@ describe('the address of every node', () => {
       openLinked(fetch);
       await screen.findByRole('region', { name: "The document's text" });
       await userEvent.click(treeItem(/Unpacking/));
-      expect(scrolledTo).toEqual([FIRST]);
+      // The chosen part waits for the texts with the link: before they arrive the page cannot reach
+      // it, and a scroll now would be lost (issue #453).
+      expect(scrolledTo).toEqual([]);
       release();
       await settle();
+      // Gone to once the texts are there: the reader's choice, not the link's node.
       expect(scrolledTo).toEqual([FIRST]);
     });
 
