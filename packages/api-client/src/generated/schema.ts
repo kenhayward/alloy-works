@@ -73084,7 +73084,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `export_environment` is not held at this environment */
+            /** @description `export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log */
             403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

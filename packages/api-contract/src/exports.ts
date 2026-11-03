@@ -65,6 +65,12 @@ const EXPORTS = {
   target: { tenant: true },
 } as const;
 
+const forbiddenWithTheLog = {
+  description:
+    '`export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log',
+  schema: ErrorBody,
+} as const;
+
 export const exportRoutes = {
   requestTenantExport: {
     operationId: 'requestTenantExport',
@@ -76,11 +82,7 @@ export const exportRoutes = {
     responses: {
       200: { description: 'Asked for: queued, and written by a job', schema: TenantExportMade },
       401: unauthenticated,
-      403: {
-        description:
-          '`export_environment` or `export_audit` is not held at this environment: a whole export holds the audit log',
-        schema: forbidden.schema,
-      },
+      403: forbiddenWithTheLog,
     },
   },
   listTenantExports: {
@@ -124,7 +126,7 @@ export const exportRoutes = {
     responses: {
       200: { description: 'A link to the export', schema: TenantExportDownload },
       401: unauthenticated,
-      403: forbidden,
+      403: forbiddenWithTheLog,
       404: { description: 'No such export in this environment', schema: ErrorBody },
       409: {
         description: '`export_not_ready`: the export is not written yet, failed, or has expired',

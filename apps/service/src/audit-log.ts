@@ -28,6 +28,7 @@ import {
   type TenantExport,
   type AuditExport,
   type Tenant,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
 import { auditFilterProblem, type AuditFilter } from '@alloy-works/domain';
@@ -219,6 +220,10 @@ function tenantExportView(made: TenantExport): TenantExportView {
  * The tenant's export (API-044; the R21 plan, R21-B), run where `administer` was decided: asking for
  * one and each download handed out are events, as an audit export's are; reading and listing are not.
  */
+/** A whole tenant's archive holds its audit log, so both are asked of one person (IMP-023, EI-J). */
+const holdsTheLog = (trx: TenantTransaction, principalId: string, facts: Authorised['facts']) =>
+  authoriseAt(trx, { principalId, scopes: facts.scopes }, 'export_audit', { kind: 'tenant' });
+
 export function tenantExportHandlers(
   tenantOf: (request: FastifyRequest) => Tenant,
   objects: ObjectStores | undefined,
@@ -228,10 +233,7 @@ export function tenantExportHandlers(
       _request: FastifyRequest,
       { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportMade> => {
-      // A whole tenant holds its audit log, so both are asked of the same person (IMP-023, EI-J).
-      await authoriseAt(trx, { principalId, scopes: facts.scopes }, 'export_audit', {
-        kind: 'tenant',
-      });
+      await holdsTheLog(trx, principalId, facts);
       const made = await requestTenantExport(trx, principalId);
       await recordEvent(trx, {
         kind: 'export.produced',
@@ -276,8 +278,9 @@ export function tenantExportHandlers(
 
     downloadTenantExport: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportDownload> => {
+      await holdsTheLog(trx, principalId, facts);
       const { id } = request.params as TenantExportParams;
       const made = await readTenantExport(trx, id);
       if (!made) throw notFound();

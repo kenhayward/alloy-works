@@ -23360,7 +23360,7 @@
     {
       "id": "IAM-032",
       "file": "apps/service/src/high-risk-permissions.test.ts",
-      "line": 222,
+      "line": 228,
       "kind": "title"
     },
     {

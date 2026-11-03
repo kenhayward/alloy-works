@@ -120,7 +120,7 @@ bumps the format and adds an upgrader taking format N to N+1. A frozen fixture a
 archive newer than the product is refused, `export_format_newer`. Without this, an export a year old is not a backup.
 
 **EI-J. Permissions.** `export_environment` for a whole tenant or configuration, and `export_audit` as well for
-the whole tenant, since a complete export holds audit. A partial export needs `administer` at its scope and holds only
+the whole tenant, since a complete export holds audit, to ask for one and to download one. A partial export needs `administer` at its scope and holds only
 what the asker may read, with no internal threads (COL-053), which reads IMP-023 as the whole tenant's rule. A new
 high-risk permission, `import_environment`, for configuration and whole-tenant imports, with a sign-in in the last ten
 minutes (IN-D); `administer` at the target for a partial one.
