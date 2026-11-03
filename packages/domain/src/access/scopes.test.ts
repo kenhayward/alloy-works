@@ -56,8 +56,14 @@ function facts(
 
 describe("a token's scopes, a mask over its creator's grants (TK-A)", () => {
   it('offers every permission but read as a scope, since reading is never masked (TK-B)', () => {
-    expect(tokenScopes).toEqual(permissions.filter((permission) => permission !== 'read'));
+    expect(tokenScopes).toEqual(
+      permissions.filter(
+        (permission) => permission !== 'read' && permission !== 'import_environment',
+      ),
+    );
     expect(tokenScopes).not.toContain('read');
+    // Nor restoring, which is a person's act alone (IMP-048).
+    expect(tokenScopes).not.toContain('import_environment');
   });
 
   it('decides a session, which carries no scopes, exactly as before', () => {

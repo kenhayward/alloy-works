@@ -172,6 +172,15 @@ export const KIND_WORDS: Readonly<Record<AuditKind, string>> = {
   get 'import.abandoned'() {
     return words('admin.import-abandoned');
   },
+  get 'import.previewed'() {
+    return words('admin.import-previewed');
+  },
+  get 'import.refused'() {
+    return words('admin.import-refused');
+  },
+  get 'import.review_ended'() {
+    return words('admin.import-review-ended');
+  },
   get 'import.restored'() {
     return words('admin.import-restored');
   },

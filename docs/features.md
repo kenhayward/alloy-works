@@ -207,12 +207,18 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   reads it the same way (`GET /v1/audit`), each walk of its pages exactly the events its first page
   could see. **Export** writes every event the filters match, as the log stood when it was asked,
   as JSON Lines to download; asking for it and each download are themselves on the log.
+- **Restoring the environment.** Someone holding `import_environment` restores a whole export from
+  Administration's **Export** into an empty environment. It is checked first, as untrusted input, every
+  digest and hash worked out again, and says what it would do. Each sign-in provider is mapped or kept
+  and each secret arrives switched off, to be set afterwards. All of it arrives or nothing does, audit
+  log included, its events marked as restored with their original numbers. Dates and reminders wait
+  until someone lets them run. The API does the same (`/v1/restorations`).
 - **Exporting the environment.** Someone holding both export permissions exports everything the
   environment holds from Administration's **Export** with **Export everything**, as a job: one tar
   archive of every table at one moment as JSON Lines, content, people, access, threads, settings and the
   audit log among them, with the images and PDFs they hold by their hash. A schema describes every
   column, a manifest says what it leaves out and why, and a secret is only a reference, never its value.
-  [The format guide](guides/export-format.md) lets anyone read one without this product. Importing one
+  [The format guide](guides/export-format.md) lets anyone read one without this product. Importing a part
   is not built yet. The same page exports the configuration alone or one space, bringing what it refers to from other spaces or listing it, and the API a document or a publication; a part holds no audit log or access. Past exports are listed, each downloadable for seven days; asking for one and each
   download are on the audit log. The API does the same (`POST /v1/exports`).
 - **Model endpoints.** An administrator adds the model endpoints the environment calls in

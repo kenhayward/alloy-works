@@ -347,6 +347,33 @@ export {
 } from './export-scope.js';
 export { readExportCatalogue, type ExportCatalogue } from './tenant-export.js';
 export {
+  RestoreRefused,
+  answerRestoration,
+  applyWholeRestore,
+  beginRestoration,
+  createRestoration,
+  createRestorerDatabase,
+  endRestoreReview,
+  expiredRestorationArchives,
+  forgetRestorationArchive,
+  restorationJobGaveUp,
+  lastMigration,
+  listRestorations,
+  readRestoration,
+  receiveRestorationArchive,
+  recordRestorationPlan,
+  refuseRestoration,
+  restoreReview,
+  restoreUnderReview,
+  tenantIsEmpty,
+  type TenantRestoration,
+  type RestorationAnswers,
+  type RestorationPlan,
+  type RestorationState,
+  type RestorerDatabase,
+  type RestoreSource,
+} from './restoring.js';
+export {
   IMPORT_KEPT_DAYS,
   IMPORT_WARNED_DAYS,
   abandonImport,
@@ -1433,6 +1460,7 @@ export {
 } from './service-identities.js';
 export {
   changeWebhookSubscription,
+  webhookHasSecret,
   claimDeliveries,
   createWebhookSubscription,
   deliveryRecord,

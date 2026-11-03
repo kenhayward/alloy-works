@@ -3622,7 +3622,7 @@ export interface paths {
         put?: never;
         /**
          * Export the whole environment, or one part of it, as it stands, as a job
-         * @description Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.
+         * @description Asks for an export of the whole environment as it stands now, or one part of it, written by a job into one tar archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.
          */
         post: operations["requestTenantExport"];
         delete?: never;
@@ -5654,6 +5654,150 @@ export interface paths {
          * @description Removes a relationship and records the removal, answering it as it was. Needs read on both ends and the permission the type declares at each.
          */
         delete: operations["removeRelationship"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restorations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This environment's latest restorations, the newest first
+         * @description Lists the latest twenty restorations of this environment, the newest first, each with what it would do and why it stopped, if it did.
+         */
+        get: operations["listTenantRestorations"];
+        put?: never;
+        /**
+         * Begin restoring this environment from an archive
+         * @description Begins restoring this environment from an archive, waiting for its bytes. Needs `import_environment` and a recent sign-in, and no token can hold it.
+         */
+        post: operations["createTenantRestoration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restorations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A restoration: where it has got to, and what it would do
+         * @description Returns a restoration: whether its archive has been checked, what it would do, and why it was refused, if it was. Nothing has changed until it is restored.
+         */
+        get: operations["getTenantRestoration"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restorations/{id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Answer for each secret and each sign-in provider it names
+         * @description Answers for every sign-in provider and secret the plan names. A provider may be mapped to one this environment has, or kept, those people unable to sign in until it is added. Every secret arrives switched off.
+         */
+        put: operations["answerTenantRestoration"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restorations/{id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore it: a job applies all of it or nothing
+         * @description Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers.
+         */
+        post: operations["applyTenantRestoration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restorations/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Send the archive, as bytes; a job then checks it
+         * @description Sends the archive as `application/x-tar`, up to 5 GiB, once. A job then reads it as untrusted input, every digest and hash worked out again, and says what would happen.
+         */
+        put: operations["sendTenantRestorationArchive"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restore-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What would fall due in a restored environment once dates and reminders run
+         * @description Returns what falls due in a restored environment: revisions that would take effect and review dates already past. Dates and reminders are held until this review ends.
+         */
+        get: operations["getRestoreReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/restore-review/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Let dates and reminders run again in a restored environment
+         * @description Ends the review of a restored environment, so its dates and reminders run again, which may act on everything past due at once. Recorded in the audit log, once.
+         */
+        post: operations["endRestoreReview"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -10894,7 +11038,7 @@ export interface operations {
                         target: string;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment";
                             allowed: boolean;
                         }[];
                     };
@@ -11020,7 +11164,7 @@ export interface operations {
                         disabled: boolean;
                         permissions: {
                             /** @enum {string} */
-                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks";
+                            permission: "read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment";
                             allowed: boolean;
                             /**
                              * @description disabled: this person is disabled, refused whatever the grants say; capped: an external principal, refused whatever the grants say. scoped: allowed by the grants, and refused to the API token a request was made with, which is not scoped to it
@@ -98380,6 +98524,1463 @@ export interface operations {
             };
         };
     };
+    listTenantRestorations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The latest twenty */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": []
+                     *     }
+                     */
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** @enum {string} */
+                            state: "awaiting_archive" | "checking" | "previewed" | "refused" | "applying" | "restored" | "failed";
+                            requestedAt: string;
+                            finishedAt: string | null;
+                            /** @description What it would do: set once the archive is checked */
+                            plan: {
+                                /** @description The format the archive was written in */
+                                format: number;
+                                /** @description What the archive holds: `tenant` for a whole environment */
+                                scope: string;
+                                /** @description The instant the archive was cut */
+                                cutAt: string;
+                                /** @description Each table it holds, and how many rows */
+                                tables: {
+                                    [key: string]: number;
+                                };
+                                /** @description The hash of each file lost before the export was made, restored without its bytes */
+                                missingObjects: string[];
+                                /** @description Each secret left out of the archive, which arrives switched off */
+                                secrets: {
+                                    reference: string;
+                                    kind: string;
+                                }[];
+                                /** @description Each sign-in provider its people sign in by, and how many */
+                                issuers: {
+                                    issuer: string;
+                                    people: number;
+                                }[];
+                                /** @description How many groups it holds */
+                                groups: number;
+                                /** @description How many people from outside it holds */
+                                externals: number;
+                                /** @description How many service identities it holds */
+                                serviceIdentities: number;
+                                /** @description What does not travel, and why */
+                                leftOut: {
+                                    [key: string]: string;
+                                };
+                                /** @description What is made again here, and from what */
+                                rebuilt: {
+                                    [key: string]: string;
+                                };
+                            } | null;
+                            answers: {
+                                /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                                issuers: {
+                                    [key: string]: string | null;
+                                };
+                                /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                                switchedOff: string[];
+                            } | null;
+                            /** @description Why it stopped. Nothing has changed. */
+                            refusal: {
+                                code: string;
+                                message: string;
+                            } | null;
+                            /** @description The issuers this environment already signs in by */
+                            providers: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    createTenantRestoration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Waiting for its archive */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "awaiting_archive",
+                     *       "requestedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "plan": {
+                     *         "format": -9007199254740991,
+                     *         "scope": "example",
+                     *         "cutAt": "example",
+                     *         "tables": {},
+                     *         "missingObjects": [],
+                     *         "secrets": [],
+                     *         "issuers": [],
+                     *         "groups": -9007199254740991,
+                     *         "externals": -9007199254740991,
+                     *         "serviceIdentities": -9007199254740991,
+                     *         "leftOut": {},
+                     *         "rebuilt": {}
+                     *       },
+                     *       "answers": {
+                     *         "issuers": {},
+                     *         "switchedOff": []
+                     *       },
+                     *       "refusal": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "providers": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        state: "awaiting_archive" | "checking" | "previewed" | "refused" | "applying" | "restored" | "failed";
+                        requestedAt: string;
+                        finishedAt: string | null;
+                        /** @description What it would do: set once the archive is checked */
+                        plan: {
+                            /** @description The format the archive was written in */
+                            format: number;
+                            /** @description What the archive holds: `tenant` for a whole environment */
+                            scope: string;
+                            /** @description The instant the archive was cut */
+                            cutAt: string;
+                            /** @description Each table it holds, and how many rows */
+                            tables: {
+                                [key: string]: number;
+                            };
+                            /** @description The hash of each file lost before the export was made, restored without its bytes */
+                            missingObjects: string[];
+                            /** @description Each secret left out of the archive, which arrives switched off */
+                            secrets: {
+                                reference: string;
+                                kind: string;
+                            }[];
+                            /** @description Each sign-in provider its people sign in by, and how many */
+                            issuers: {
+                                issuer: string;
+                                people: number;
+                            }[];
+                            /** @description How many groups it holds */
+                            groups: number;
+                            /** @description How many people from outside it holds */
+                            externals: number;
+                            /** @description How many service identities it holds */
+                            serviceIdentities: number;
+                            /** @description What does not travel, and why */
+                            leftOut: {
+                                [key: string]: string;
+                            };
+                            /** @description What is made again here, and from what */
+                            rebuilt: {
+                                [key: string]: string;
+                            };
+                        } | null;
+                        answers: {
+                            /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                            issuers: {
+                                [key: string]: string | null;
+                            };
+                            /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                            switchedOff: string[];
+                        } | null;
+                        /** @description Why it stopped. Nothing has changed. */
+                        refusal: {
+                            code: string;
+                            message: string;
+                        } | null;
+                        /** @description The issuers this environment already signs in by */
+                        providers: string[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getTenantRestoration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The restoration */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "awaiting_archive",
+                     *       "requestedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "plan": {
+                     *         "format": -9007199254740991,
+                     *         "scope": "example",
+                     *         "cutAt": "example",
+                     *         "tables": {},
+                     *         "missingObjects": [],
+                     *         "secrets": [],
+                     *         "issuers": [],
+                     *         "groups": -9007199254740991,
+                     *         "externals": -9007199254740991,
+                     *         "serviceIdentities": -9007199254740991,
+                     *         "leftOut": {},
+                     *         "rebuilt": {}
+                     *       },
+                     *       "answers": {
+                     *         "issuers": {},
+                     *         "switchedOff": []
+                     *       },
+                     *       "refusal": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "providers": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        state: "awaiting_archive" | "checking" | "previewed" | "refused" | "applying" | "restored" | "failed";
+                        requestedAt: string;
+                        finishedAt: string | null;
+                        /** @description What it would do: set once the archive is checked */
+                        plan: {
+                            /** @description The format the archive was written in */
+                            format: number;
+                            /** @description What the archive holds: `tenant` for a whole environment */
+                            scope: string;
+                            /** @description The instant the archive was cut */
+                            cutAt: string;
+                            /** @description Each table it holds, and how many rows */
+                            tables: {
+                                [key: string]: number;
+                            };
+                            /** @description The hash of each file lost before the export was made, restored without its bytes */
+                            missingObjects: string[];
+                            /** @description Each secret left out of the archive, which arrives switched off */
+                            secrets: {
+                                reference: string;
+                                kind: string;
+                            }[];
+                            /** @description Each sign-in provider its people sign in by, and how many */
+                            issuers: {
+                                issuer: string;
+                                people: number;
+                            }[];
+                            /** @description How many groups it holds */
+                            groups: number;
+                            /** @description How many people from outside it holds */
+                            externals: number;
+                            /** @description How many service identities it holds */
+                            serviceIdentities: number;
+                            /** @description What does not travel, and why */
+                            leftOut: {
+                                [key: string]: string;
+                            };
+                            /** @description What is made again here, and from what */
+                            rebuilt: {
+                                [key: string]: string;
+                            };
+                        } | null;
+                        answers: {
+                            /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                            issuers: {
+                                [key: string]: string | null;
+                            };
+                            /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                            switchedOff: string[];
+                        } | null;
+                        /** @description Why it stopped. Nothing has changed. */
+                        refusal: {
+                            code: string;
+                            message: string;
+                        } | null;
+                        /** @description The issuers this environment already signs in by */
+                        providers: string[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such restoration in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    answerTenantRestoration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "issuers": {},
+                 *       "switchedOff": []
+                 *     }
+                 */
+                "application/json": {
+                    /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                    issuers: {
+                        [key: string]: string | null;
+                    };
+                    /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                    switchedOff: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Answered */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "awaiting_archive",
+                     *       "requestedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "plan": {
+                     *         "format": -9007199254740991,
+                     *         "scope": "example",
+                     *         "cutAt": "example",
+                     *         "tables": {},
+                     *         "missingObjects": [],
+                     *         "secrets": [],
+                     *         "issuers": [],
+                     *         "groups": -9007199254740991,
+                     *         "externals": -9007199254740991,
+                     *         "serviceIdentities": -9007199254740991,
+                     *         "leftOut": {},
+                     *         "rebuilt": {}
+                     *       },
+                     *       "answers": {
+                     *         "issuers": {},
+                     *         "switchedOff": []
+                     *       },
+                     *       "refusal": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "providers": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        state: "awaiting_archive" | "checking" | "previewed" | "refused" | "applying" | "restored" | "failed";
+                        requestedAt: string;
+                        finishedAt: string | null;
+                        /** @description What it would do: set once the archive is checked */
+                        plan: {
+                            /** @description The format the archive was written in */
+                            format: number;
+                            /** @description What the archive holds: `tenant` for a whole environment */
+                            scope: string;
+                            /** @description The instant the archive was cut */
+                            cutAt: string;
+                            /** @description Each table it holds, and how many rows */
+                            tables: {
+                                [key: string]: number;
+                            };
+                            /** @description The hash of each file lost before the export was made, restored without its bytes */
+                            missingObjects: string[];
+                            /** @description Each secret left out of the archive, which arrives switched off */
+                            secrets: {
+                                reference: string;
+                                kind: string;
+                            }[];
+                            /** @description Each sign-in provider its people sign in by, and how many */
+                            issuers: {
+                                issuer: string;
+                                people: number;
+                            }[];
+                            /** @description How many groups it holds */
+                            groups: number;
+                            /** @description How many people from outside it holds */
+                            externals: number;
+                            /** @description How many service identities it holds */
+                            serviceIdentities: number;
+                            /** @description What does not travel, and why */
+                            leftOut: {
+                                [key: string]: string;
+                            };
+                            /** @description What is made again here, and from what */
+                            rebuilt: {
+                                [key: string]: string;
+                            };
+                        } | null;
+                        answers: {
+                            /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                            issuers: {
+                                [key: string]: string | null;
+                            };
+                            /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                            switchedOff: string[];
+                        } | null;
+                        /** @description Why it stopped. Nothing has changed. */
+                        refusal: {
+                            code: string;
+                            message: string;
+                        } | null;
+                        /** @description The issuers this environment already signs in by */
+                        providers: string[];
+                    };
+                };
+            };
+            /** @description `restoration_answer_invalid`: an answer missing, or naming nothing */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such restoration in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `restoration_not_previewed`: it is not waiting for its answers */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    applyTenantRestoration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Being applied */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "awaiting_archive",
+                     *       "requestedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "plan": {
+                     *         "format": -9007199254740991,
+                     *         "scope": "example",
+                     *         "cutAt": "example",
+                     *         "tables": {},
+                     *         "missingObjects": [],
+                     *         "secrets": [],
+                     *         "issuers": [],
+                     *         "groups": -9007199254740991,
+                     *         "externals": -9007199254740991,
+                     *         "serviceIdentities": -9007199254740991,
+                     *         "leftOut": {},
+                     *         "rebuilt": {}
+                     *       },
+                     *       "answers": {
+                     *         "issuers": {},
+                     *         "switchedOff": []
+                     *       },
+                     *       "refusal": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "providers": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        state: "awaiting_archive" | "checking" | "previewed" | "refused" | "applying" | "restored" | "failed";
+                        requestedAt: string;
+                        finishedAt: string | null;
+                        /** @description What it would do: set once the archive is checked */
+                        plan: {
+                            /** @description The format the archive was written in */
+                            format: number;
+                            /** @description What the archive holds: `tenant` for a whole environment */
+                            scope: string;
+                            /** @description The instant the archive was cut */
+                            cutAt: string;
+                            /** @description Each table it holds, and how many rows */
+                            tables: {
+                                [key: string]: number;
+                            };
+                            /** @description The hash of each file lost before the export was made, restored without its bytes */
+                            missingObjects: string[];
+                            /** @description Each secret left out of the archive, which arrives switched off */
+                            secrets: {
+                                reference: string;
+                                kind: string;
+                            }[];
+                            /** @description Each sign-in provider its people sign in by, and how many */
+                            issuers: {
+                                issuer: string;
+                                people: number;
+                            }[];
+                            /** @description How many groups it holds */
+                            groups: number;
+                            /** @description How many people from outside it holds */
+                            externals: number;
+                            /** @description How many service identities it holds */
+                            serviceIdentities: number;
+                            /** @description What does not travel, and why */
+                            leftOut: {
+                                [key: string]: string;
+                            };
+                            /** @description What is made again here, and from what */
+                            rebuilt: {
+                                [key: string]: string;
+                            };
+                        } | null;
+                        answers: {
+                            /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                            issuers: {
+                                [key: string]: string | null;
+                            };
+                            /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                            switchedOff: string[];
+                        } | null;
+                        /** @description Why it stopped. Nothing has changed. */
+                        refusal: {
+                            code: string;
+                            message: string;
+                        } | null;
+                        /** @description The issuers this environment already signs in by */
+                        providers: string[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such restoration in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `restoration_not_previewed` or `restoration_unanswered`: it is not ready to apply */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    sendTenantRestorationArchive: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-tar": string;
+            };
+        };
+        responses: {
+            /** @description Kept, and being checked */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "example",
+                     *       "state": "awaiting_archive",
+                     *       "requestedAt": "example",
+                     *       "finishedAt": "example",
+                     *       "plan": {
+                     *         "format": -9007199254740991,
+                     *         "scope": "example",
+                     *         "cutAt": "example",
+                     *         "tables": {},
+                     *         "missingObjects": [],
+                     *         "secrets": [],
+                     *         "issuers": [],
+                     *         "groups": -9007199254740991,
+                     *         "externals": -9007199254740991,
+                     *         "serviceIdentities": -9007199254740991,
+                     *         "leftOut": {},
+                     *         "rebuilt": {}
+                     *       },
+                     *       "answers": {
+                     *         "issuers": {},
+                     *         "switchedOff": []
+                     *       },
+                     *       "refusal": {
+                     *         "code": "example",
+                     *         "message": "example"
+                     *       },
+                     *       "providers": []
+                     *     }
+                     */
+                    "application/json": {
+                        id: string;
+                        /** @enum {string} */
+                        state: "awaiting_archive" | "checking" | "previewed" | "refused" | "applying" | "restored" | "failed";
+                        requestedAt: string;
+                        finishedAt: string | null;
+                        /** @description What it would do: set once the archive is checked */
+                        plan: {
+                            /** @description The format the archive was written in */
+                            format: number;
+                            /** @description What the archive holds: `tenant` for a whole environment */
+                            scope: string;
+                            /** @description The instant the archive was cut */
+                            cutAt: string;
+                            /** @description Each table it holds, and how many rows */
+                            tables: {
+                                [key: string]: number;
+                            };
+                            /** @description The hash of each file lost before the export was made, restored without its bytes */
+                            missingObjects: string[];
+                            /** @description Each secret left out of the archive, which arrives switched off */
+                            secrets: {
+                                reference: string;
+                                kind: string;
+                            }[];
+                            /** @description Each sign-in provider its people sign in by, and how many */
+                            issuers: {
+                                issuer: string;
+                                people: number;
+                            }[];
+                            /** @description How many groups it holds */
+                            groups: number;
+                            /** @description How many people from outside it holds */
+                            externals: number;
+                            /** @description How many service identities it holds */
+                            serviceIdentities: number;
+                            /** @description What does not travel, and why */
+                            leftOut: {
+                                [key: string]: string;
+                            };
+                            /** @description What is made again here, and from what */
+                            rebuilt: {
+                                [key: string]: string;
+                            };
+                        } | null;
+                        answers: {
+                            /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
+                            issuers: {
+                                [key: string]: string | null;
+                            };
+                            /** @description Every secret the plan names: each arrives switched off, to be set afterwards */
+                            switchedOff: string[];
+                        } | null;
+                        /** @description Why it stopped. Nothing has changed. */
+                        refusal: {
+                            code: string;
+                            message: string;
+                        } | null;
+                        /** @description The issuers this environment already signs in by */
+                        providers: string[];
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such restoration in this environment */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `restoration_filled`: this restoration already has its archive */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `archive_too_large`: past 5 GiB */
+            413: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    getRestoreReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "restoredAt": "example",
+                     *       "underReview": false,
+                     *       "datesPast": -9007199254740991,
+                     *       "reviewDatesPast": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description When this environment was restored, if it was */
+                        restoredAt: string | null;
+                        /** @description Whether dates and reminders are still held */
+                        underReview: boolean;
+                        /** @description Revisions that would take effect as soon as they run */
+                        datesPast: number;
+                        /** @description Review dates already past */
+                        reviewDatesPast: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    endRestoreReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review, ended */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "restoredAt": "example",
+                     *       "underReview": false,
+                     *       "datesPast": -9007199254740991,
+                     *       "reviewDatesPast": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description When this environment was restored, if it was */
+                        restoredAt: string | null;
+                        /** @description Whether dates and reminders are still held */
+                        underReview: boolean;
+                        /** @description Revisions that would take effect as soon as they run */
+                        datesPast: number;
+                        /** @description Review dates already past */
+                        reviewDatesPast: number;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
     getRetention: {
         parameters: {
             query?: never;
@@ -98701,7 +100302,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment")[];
                         }[];
                         /** @description The cursor for the next page, or null at the end */
                         next: string | null;
@@ -98836,7 +100437,7 @@ export interface operations {
                     /** @description 1 to 80 characters, trimmed; unique here */
                     name: string;
                     /** @description What it holds, each once. Without read it can only be granted as a denial */
-                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                    permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment")[];
                 };
             };
         };
@@ -98864,7 +100465,7 @@ export interface operations {
                         role: {
                             id: string;
                             name: string;
-                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks")[];
+                            permissions: ("read" | "create" | "edit" | "comment" | "suggest" | "approve" | "publish" | "design" | "manage_definitions" | "administer" | "use_connection" | "write_sql" | "retire" | "export_environment" | "export_audit" | "hold" | "rotate_secrets" | "configure_services" | "configure_webhooks" | "import_environment")[];
                         };
                     };
                 };

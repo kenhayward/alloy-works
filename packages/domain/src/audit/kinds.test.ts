@@ -141,7 +141,10 @@ describe('the audit kinds', () => {
       'webhook.changed',
       'extension.changed',
       'organisation.changed',
+      'import.previewed',
+      'import.refused',
       'import.restored',
+      'import.review_ended',
       // The IM plan's (IM-F): an import accepted, and one abandoned.
       'import.accepted',
       'import.abandoned',

@@ -69,6 +69,7 @@ function counting() {
           const wrapped: TenantStore = {
             put: (body, contentType) => store.put(body, contentType),
             putFile: (path, contentType) => store.putFile(path, contentType),
+            getFile: (key, path) => store.getFile(key, path),
             remove: (key) => store.remove(key),
             signedLink: (key, seconds, fileName) => store.signedLink(key, seconds, fileName),
             async get(key) {

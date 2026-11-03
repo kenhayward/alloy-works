@@ -49,6 +49,9 @@ async function provisionOnce(adminUrl: string, input: NewTenant): Promise<Tenant
     await client.query(`grant ${id(names.role)} to aw_service, aw_worker with inherit false`);
     await client.query(`grant ${id(names.owner)} to aw_migrator with inherit false`);
     await client.query(
+      `grant ${id(names.owner)}, ${id(names.role)} to aw_restorer with inherit false`,
+    );
+    await client.query(
       'insert into platform.organisation (id, name) values ($1, $2) on conflict (id) do nothing',
       [input.organisation.id, input.organisation.name],
     );

@@ -171,6 +171,11 @@ export const documentationGroups = [
           'The model endpoints the environment calls, on its own provider accounts: their keys, which the connector seals and no route answers, whether each sits outside the data boundary, which purpose goes to which, and a test recorded as a run.',
       },
       {
+        name: 'Restoring',
+        description:
+          'Restores an environment from its export: the archive checked, every secret and sign-in provider answered for, then all of it or nothing.',
+      },
+      {
         name: 'Tenant export',
         description:
           'The whole environment exported as a job: its content, versions, relationships, baselines and publication records as JSON Lines, the bytes they name by hash, and a manifest of what it leaves out. Kept seven days.',
@@ -608,6 +613,16 @@ const operationTags = {
     'testModelEndpoint',
     'listModelRoutes',
     'setModelRoute',
+  ],
+  Restoring: [
+    'createTenantRestoration',
+    'listTenantRestorations',
+    'getTenantRestoration',
+    'sendTenantRestorationArchive',
+    'answerTenantRestoration',
+    'applyTenantRestoration',
+    'getRestoreReview',
+    'endRestoreReview',
   ],
   'Tenant export': [
     'requestTenantExport',
@@ -1384,8 +1399,24 @@ const descriptions: Readonly<Record<string, string>> = {
     'Accepts a proposal: its document, sections and components are made in one act, by the person accepting, each at 0.1 and each recording the file it came from. Blank, or from the template named. Each Word author’s tracked changes become one suggestion on each component, and each comment a thread with its replies, all made by the person accepting and attributed to the Word author as the environment’s policy says, with the member it matched; the policy applied is recorded on the import and on each. Refused while a cross-reference outside the file is unresolved. How many parts were accepted unchanged, edited, merged, split or renamed is recorded on the import. Imported again, no document is made: each changed part becomes one suggestion against its component as it is now, by the person accepting, so an edit made in the space is never overwritten, its tracked changes and comments on top; each new part a new component placed in the earlier document after the part before it; and each component no part matched is kept and flagged on the document by a thread. A component the person accepting may not suggest on, or one deleted or archived since it was matched, is skipped and said, unless none can be suggested on. Only its importer may accept it, and they need create in the space. It is made against the revision of the import its importer read, and refused as `import_changed` once the import is past it.',
   abandonImport:
     'Abandons an import before it is accepted: its proposal and its file are removed and nothing of it is left in the space. Recorded as an import abandoned. Only its importer and the space’s administrators may abandon it.',
+  createTenantRestoration:
+    'Begins restoring this environment from an archive, waiting for its bytes. Needs `import_environment` and a recent sign-in, and no token can hold it.',
+  listTenantRestorations:
+    'Lists the latest twenty restorations of this environment, the newest first, each with what it would do and why it stopped, if it did.',
+  getTenantRestoration:
+    'Returns a restoration: whether its archive has been checked, what it would do, and why it was refused, if it was. Nothing has changed until it is restored.',
+  sendTenantRestorationArchive:
+    'Sends the archive as `application/x-tar`, up to 5 GiB, once. A job then reads it as untrusted input, every digest and hash worked out again, and says what would happen.',
+  answerTenantRestoration:
+    'Answers for every sign-in provider and secret the plan names. A provider may be mapped to one this environment has, or kept, those people unable to sign in until it is added. Every secret arrives switched off.',
+  applyTenantRestoration:
+    'Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers.',
+  getRestoreReview:
+    'Returns what falls due in a restored environment: revisions that would take effect and review dates already past. Dates and reminders are held until this review ends.',
+  endRestoreReview:
+    'Ends the review of a restored environment, so its dates and reminders run again, which may act on everything past due at once. Recorded in the audit log, once.',
   requestTenantExport:
-    'Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.',
+    'Asks for an export of the whole environment as it stands now, or one part of it, written by a job into one tar archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.',
   listTenantExports:
     'Lists the environment’s exports, the newest first, a page at a time: each queued, done, failed or expired, with its size and when its archive is removed. Needs export_environment at the environment.',
   getTenantExport:

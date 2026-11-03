@@ -15,6 +15,7 @@ import { ModelSpending } from './ModelSpending.js';
 import { Webhooks } from './Webhooks.js';
 import { CtStudio } from './CtStudio.js';
 import { Models } from './Models.js';
+import { Restore } from './Restore.js';
 import { TenantExport } from './TenantExport.js';
 import { Editing } from './Editing.js';
 import { ImagesPolicy } from './ImagesPolicy.js';
@@ -581,7 +582,12 @@ export function Administration({
           <QueryUsage client={client} mayChange={administers.get('tenant') === true} />
         )}
         {shown === 'audit' && <AuditLog client={client} />}
-        {shown === 'export' && <TenantExport client={client} />}
+        {shown === 'export' && (
+          <>
+            <TenantExport client={client} />
+            <Restore client={client} />
+          </>
+        )}
         {shown === 'models' && <Models client={client} />}
         {shown === 'guardrails' && <Guardrails client={client} />}
         {shown === 'citation-styles' && <CitationStyles client={client} />}

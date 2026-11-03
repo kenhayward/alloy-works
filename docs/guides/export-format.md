@@ -40,7 +40,7 @@ required key is not in it.
 | `requestedAt`         | When it was asked for                                                       |
 | `cutAt`               | The moment it holds: every table as of this one instant                     |
 | `lastMigration`       | The newest database migration of the product that wrote it                  |
-| `tables`              | Each carried table's file and row count                                     |
+| `tables`              | Each carried table's file, row count and bytes unzipped                                     |
 | `objects`             | How many, and `missing`: hashes the store could not give back, or wrongly   |
 | `secrets`             | The file holding the references, and how many                               |
 | `rebuilt`             | Tables not held because they are made again from what is, each with why     |
@@ -107,3 +107,7 @@ In a `version_definition` row, `id` is `definition_artifact_id`, `kind` is `defi
 An asset version names its bytes in `content.object`; a publication's output in
 `publication_output.object_key`. Either is a key ending in the SHA-256 of the bytes, and the bytes are
 at `objects/<that hash>`. Check them against it.
+
+## Restoring
+
+An archive goes back through `/v1/restorations`. `bytes` in the manifest is what each table holds unzipped, and a table past it is refused, as is any entry but those named here, any column the schema of the release restoring it does not have, and any version whose digests do not match. An archive from a newer release is refused, `export_format_newer`.

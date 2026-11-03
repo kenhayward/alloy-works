@@ -237,6 +237,7 @@ export const TEST_PASSWORDS = {
   service: 'aw_service_dev',
   worker: 'aw_worker_dev',
   migrator: 'aw_migrator_dev',
+  restorer: 'aw_restorer_dev',
 } as const;
 
 export interface TestDatabase {
@@ -245,6 +246,7 @@ export interface TestDatabase {
   readonly serviceUrl: string;
   readonly workerUrl: string;
   readonly migratorUrl: string;
+  readonly restorerUrl: string;
   /** A tenant id this database will clean up after: `test` and eight hex digits. */
   newTenantId(): string;
   drop(): Promise<void>;
@@ -327,6 +329,7 @@ export async function freshDatabase(): Promise<TestDatabase> {
     serviceUrl: asLogin(adminUrl, 'aw_service', TEST_PASSWORDS.service),
     workerUrl: asLogin(adminUrl, 'aw_worker', TEST_PASSWORDS.worker),
     migratorUrl: asLogin(adminUrl, 'aw_migrator', TEST_PASSWORDS.migrator),
+    restorerUrl: asLogin(adminUrl, 'aw_restorer', TEST_PASSWORDS.restorer),
     newTenantId() {
       const id = `test${randomBytes(4).toString('hex')}`;
       tenantIds.push(id);

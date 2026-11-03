@@ -123,10 +123,19 @@ describe("a tenant's own corner of the object store", () => {
     }
   });
 
-  it("IAM-075 refuses a key that is not this tenant's before it asks the store", async () => {
-    await expect(forA.get(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);
-    await expect(forA.signedLink('../elsewhere', 60)).rejects.toThrow(/this tenant/);
-    await expect(forA.remove(`${b.role}/sha256/${'0'.repeat(64)}`)).rejects.toThrow(/this tenant/);
+  it("IAM-075 reaches only this tenant's bytes whichever prefix a key names, and refuses what is not a key", async () => {
+    const theirs = await forB.put(bytes('only for the other tenant'), 'image/png');
+    await expect(forA.get(theirs.key)).rejects.toThrow();
+    await forA.remove(theirs.key);
+    expect((await forB.get(theirs.key)).toString()).toBe('only for the other tenant');
+    await expect(forA.signedLink('../elsewhere', 60)).rejects.toThrow(/Not an object key/);
+    await expect(forA.get(`${b.role}/../${a.role}/x`)).rejects.toThrow(/Not an object key/);
+  });
+
+  it('IMP-039 finds its own copy by a key written under another tenant, as restored content holds', async () => {
+    const mine = await forA.put(bytes('restored bytes'), 'image/png');
+    const asWritten = `${b.role}/sha256/${mine.key.slice(mine.key.lastIndexOf('/') + 1)}`;
+    expect((await forA.get(asWritten)).toString()).toBe('restored bytes');
   });
 
   it('removes an object, and leaves its tenant nothing to fetch under that key', async () => {

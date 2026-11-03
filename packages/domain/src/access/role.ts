@@ -60,6 +60,7 @@ export const starterRoles: readonly StarterRole[] = [
       'rotate_secrets',
       'configure_services',
       'configure_webhooks',
+      'import_environment',
     ],
   },
   { name: 'Editing', permissions: ['edit'] },

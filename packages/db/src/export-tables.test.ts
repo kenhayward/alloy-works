@@ -22,6 +22,7 @@ interface ForeignKey {
   refers: string;
   columns: string[];
   nullable: boolean;
+  deferrable: boolean;
 }
 
 const SECRET_SHAPED = /seal|secret|password|private|client_|_hash$/;
@@ -57,6 +58,7 @@ describe('the census of what an export does with each table (EI-B)', () => {
       foreignKeys = (
         await sql<ForeignKey>`
           select conrelid::regclass::text as table, confrelid::regclass::text as refers,
+                 condeferrable as deferrable,
                  array(select a.attname::text from pg_attribute a
                         where a.attrelid = conrelid and a.attnum = any(conkey)) as columns,
                  exists (select from pg_attribute a where a.attrelid = conrelid
@@ -164,7 +166,9 @@ describe('the census of what an export does with each table (EI-B)', () => {
     for (const fk of foreignKeys) {
       const from = carriedOf(fk.table);
       if (!from || !carriedOf(fk.refers)) continue;
-      if (!fk.columns.some((column) => from.breaksCycleAt?.includes(column))) {
+      if (fk.columns.some((column) => from.deferredAt?.includes(column))) {
+        if (!fk.deferrable) notNull.push(`${fk.table}.${fk.columns.join()}`);
+      } else if (!fk.columns.some((column) => from.breaksCycleAt?.includes(column))) {
         left.get(fk.table)!.add(fk.refers);
       } else if (!fk.nullable) notNull.push(`${fk.table}.${fk.columns.join()}`);
     }

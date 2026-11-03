@@ -10,6 +10,7 @@ import { shareRoutes } from './shares.js';
 import { queryUsageRoutes } from './query-usage.js';
 import { datasetSourceRoutes } from './dataset-sources.js';
 import { exportRoutes } from './exports.js';
+import { restorationRoutes } from './restorations.js';
 import { modelEndpointRoutes } from './model-endpoints.js';
 import { serviceIdentityRoutes } from './service-identities.js';
 import { webhookDeliveryRoutes, webhookRoutes } from './webhooks.js';
@@ -436,6 +437,7 @@ type Routes = typeof ownRoutes &
   typeof queryUsageRoutes &
   typeof datasetSourceRoutes &
   typeof exportRoutes &
+  typeof restorationRoutes &
   typeof modelEndpointRoutes &
   typeof serviceIdentityRoutes &
   typeof webhookRoutes &
@@ -519,6 +521,7 @@ export const routes: Routes = {
   ...queryUsageRoutes,
   ...datasetSourceRoutes,
   ...exportRoutes,
+  ...restorationRoutes,
   ...modelEndpointRoutes,
   ...serviceIdentityRoutes,
   ...webhookRoutes,

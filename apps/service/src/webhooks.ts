@@ -16,6 +16,7 @@ import type {
 } from '@alloy-works/api-contract';
 import {
   changeWebhookSubscription,
+  webhookHasSecret,
   createWebhookSubscription,
   deliveryRecord,
   listDeliveries,
@@ -153,6 +154,10 @@ export function webhookHandlers(
           'service_identity_unavailable',
           'Its service identity is disabled, so it cannot be turned on.',
         );
+      }
+      // Restored with no secret, it stays off until one is rotated in (ADM-054; the EI plan, EIc).
+      if (body.enabled === true && body.url === undefined && !(await webhookHasSecret(trx, id))) {
+        throw new AppError(409, 'webhook_no_secret', 'Set its secret before turning it on.');
       }
       // A new URL needs a secret sealed to it: the old one was sealed to the old URL (WB-G).
       const moving = body.url !== undefined && body.url !== held.url;

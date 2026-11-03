@@ -143,6 +143,14 @@ export interface Harness {
     url: string,
     payload?: unknown,
   ): Promise<LightMyRequestResponse>;
+  /** Calls as `call` does, with a body of bytes of one content type. */
+  bytes(
+    as: string,
+    method: 'PUT' | 'POST',
+    url: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<LightMyRequestResponse>;
   /** Calls as `call` does, to a service of the same environment given no object store. */
   callWithout(): Harness['call'];
   /**
@@ -366,6 +374,15 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
       const alias = `${user}#${sessions}`;
       cookies[alias] = await signIn(app, HOST, user, idp.issuer);
       return alias;
+    },
+
+    bytes(as, method, url, body, contentType) {
+      return app.inject({
+        method,
+        url,
+        headers: { host: HOST, cookie: cookies[as]!, 'content-type': contentType },
+        payload: body,
+      });
     },
 
     bearer(token, method, url, payload) {

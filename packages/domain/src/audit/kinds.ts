@@ -147,6 +147,7 @@ const Revised = z.strictObject({
 });
 
 /** An export, and what of: a translation job's file is downloaded as it is written (XL-D). */
+const Restoring = z.strictObject({ restoration: Id });
 const Exported = z.strictObject({ export: Id, of: z.enum(['audit', 'tenant', 'translation_job']) });
 
 interface KindSpec {
@@ -940,7 +941,19 @@ export const auditKindSpecs = {
     z.strictObject({ swept: z.boolean() }),
     'packages/db/src/imports.ts',
   ),
-  'import.restored': kind(['IMP-048'], empty, LATER),
+  // A tenant restored from its export (the EI plan, EIc). Previewing and refusing are the job's.
+  'import.previewed': kind(['IMP-048'], Restoring, 'apps/worker/src/jobs/restoration.ts'),
+  'import.refused': kind(
+    ['IMP-048'],
+    z.strictObject({ restoration: Id, code: AuditName }),
+    'apps/worker/src/jobs/restoration.ts',
+  ),
+  'import.restored': kind(
+    ['IMP-048'],
+    z.strictObject({ restoration: Id, events: z.number().int().nonnegative() }),
+    'packages/db/src/restoring.ts',
+  ),
+  'import.review_ended': kind(['IMP-048'], Restoring, 'apps/service/src/restorations.ts'),
   'library.changed': kind(['LIB-056'], empty, LATER),
   'line.merged': kind(['LIF-045'], empty, LATER),
   'component.type_changed': kind(['MET-014'], empty, LATER),

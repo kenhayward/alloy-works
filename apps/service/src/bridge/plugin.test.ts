@@ -63,6 +63,7 @@ describe('the bridge contract served under /bridge (API-065, API-068)', () => {
           storeDown ? Promise.reject(new Error('the store is down')) : store.put(body, type),
         putFile: (path, type) => store.putFile(path, type),
         get: (key) => store.get(key),
+        getFile: async () => undefined,
         remove: (key) => store.remove(key),
         signedLink: (...args) => store.signedLink(...args),
       };

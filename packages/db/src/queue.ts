@@ -29,6 +29,7 @@ export type JobKind =
   | 'impact_report'
   | 'cohort'
   | 'tenant_export'
+  | 'restoration'
   | 'range'
   | 'embed'
   | 'import'

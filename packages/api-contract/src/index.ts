@@ -135,6 +135,15 @@ export {
   exportRoutes,
 } from './exports.js';
 export {
+  RESTORATION_MAX_BYTES,
+  RestoreReview,
+  TenantRestorationAnswers,
+  TenantRestorationList,
+  TenantRestorationParams,
+  TenantRestorationView,
+  restorationRoutes,
+} from './restorations.js';
+export {
   ModelEndpointAnswer,
   ModelEndpointBody,
   ModelEndpointList,

@@ -99,6 +99,7 @@ const marked = (store: TenantStore): TenantStore => {
     put: reach(store.put.bind(store)),
     putFile: reach(store.putFile.bind(store)),
     get: reach(store.get.bind(store)),
+    getFile: reach(store.getFile.bind(store)),
     remove: reach(store.remove.bind(store)),
     signedLink: reach(store.signedLink.bind(store)),
   };

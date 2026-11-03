@@ -34,6 +34,16 @@ const SPLIT: Readonly<Record<string, readonly string[]>> = {
   ],
   export_audit: ['requestAuditExport', 'getAuditExport', 'downloadAuditExport'],
   hold: ['placeHold', 'releaseHold', 'listHolds'],
+  import_environment: [
+    'createTenantRestoration',
+    'listTenantRestorations',
+    'getTenantRestoration',
+    'sendTenantRestorationArchive',
+    'answerTenantRestoration',
+    'applyTenantRestoration',
+    'getRestoreReview',
+    'endRestoreReview',
+  ],
   rotate_secrets: [
     'setConnectionCredential',
     'setModelEndpointKey',
