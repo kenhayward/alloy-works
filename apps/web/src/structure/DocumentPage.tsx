@@ -2161,10 +2161,14 @@ export function DocumentPage({
   // arrival waits, and is taken once however often the page draws.
   const arriving = useRef<string | null>(null);
   const arrived = useRef<number | null>(null);
+  // Bumped each time an arrival is armed, by a link or by a part chosen in the outline while the
+  // texts are still arriving, so the watcher below starts for either.
+  const [armed, setArmed] = useState(0);
   useEffect(() => {
     if (linked === null || arrived.current === linked.arrival) return;
     arrived.current = linked.arrival;
     arriving.current = linked.node;
+    setArmed((was) => was + 1);
     setMarked(linked.node);
   }, [linked]);
   // Nor once they have done anything with the page themselves while it waited - a wheel, a key, a
@@ -2189,7 +2193,7 @@ export function DocumentPage({
     );
     waiting.current = watch;
     return () => watch.stop();
-  }, [linked?.arrival]);
+  }, [armed]);
   // The theme's presentation in, or refused: told by the provider below, which the page renders.
   const [presented] = useState(() => {
     let told!: () => void;
@@ -3056,9 +3060,17 @@ export function DocumentPage({
                     stopWaiting();
                     letGo();
                     // And the text goes to it (STR-035); a link's mark stays only on what it marked.
-                    textColumn.current
-                      ?.querySelector(`[data-node="${node}"]`)
-                      ?.scrollIntoView?.({ block: 'start' });
+                    // Chosen while the texts are still arriving, the window cannot yet reach the node: the
+                    // scroll lands short and is lost (issue #453). The arrival below goes to it once the
+                    // text is whole, as a link's node is.
+                    if (textsRead === shownVersion) {
+                      textColumn.current
+                        ?.querySelector(`[data-node="${node}"]`)
+                        ?.scrollIntoView?.({ block: 'start' });
+                    } else {
+                      arriving.current = node;
+                      setArmed((was) => was + 1);
+                    }
                     if (node !== marked) setMarked(null);
                   }}
                 />

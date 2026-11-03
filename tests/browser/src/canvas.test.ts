@@ -120,6 +120,17 @@ async function openDocument(
     .poll(() => canvas.evaluate((element) => element.style.getPropertyValue('--aw-zoom')))
     .toBe(zoom);
   await canvas.getByText(/^Zc0 /).waitFor();
+  // Every image sized before anything is measured: an image takes its size when it loads, and the
+  // line holding it grows then, moving the text below it a few pixels (issue #639).
+  await expect
+    .poll(() =>
+      canvas.evaluate((root) =>
+        [...root.querySelectorAll('img')].every(
+          (image) => image.complete && image.style.width !== '',
+        ),
+      ),
+    )
+    .toBe(true);
   await page.evaluate(async () => {
     await document.fonts.ready;
   });

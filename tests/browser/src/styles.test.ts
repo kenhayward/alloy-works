@@ -129,13 +129,21 @@ async function measureView(
     await page.goto(`${SERVICE}/#/documents/${opened.id}`);
     const title = (opened.outline as { title?: string }).title;
     expect(title).toMatch(/^Measured style, /);
-    await expect.poll(() => page.locator('#document-title').textContent()).toBe(title);
+    // The polls below allow 30s, not the default 5: on a loaded runner the page's first render can
+    // take longer than that, and the poll is what times out, not the test (issue #813).
+    await expect
+      .poll(() => page.locator('#document-title').textContent(), { timeout: 30_000 })
+      .toBe(title);
     await page.getByRole('radio', { name: 'Reading' }).click();
-    await expect.poll(() => page.locator('#document-mode').textContent()).toBe('in Reading');
+    await expect
+      .poll(() => page.locator('#document-mode').textContent(), { timeout: 30_000 })
+      .toBe('in Reading');
     const canvas = page.locator('section.aw-canvas');
     // The printed size: at any other zoom every length is scaled, and measured as that.
     await expect
-      .poll(() => canvas.evaluate((element) => element.style.getPropertyValue('--aw-zoom')))
+      .poll(() => canvas.evaluate((element) => element.style.getPropertyValue('--aw-zoom')), {
+        timeout: 30_000,
+      })
       .toBe('1');
     await page.waitForFunction(
       ({ words, labels }) => {

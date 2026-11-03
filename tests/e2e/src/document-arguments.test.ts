@@ -180,14 +180,27 @@ describe("a document's parameter feeding a binding over the whole system", () =>
     const node = made.outline.nodes.length > 0 ? first.children![0]!.id : first.id;
 
     // Resolved with the document's period.
-    const resolve = async () =>
-      (
-        ok(
-          await call('POST', `/v1/documents/${made.id}/bindings/resolve`, {
-            bindings: [{ node, binding: 'opened' }],
-          }),
-        ) as { results: { held: { version: string } }[] }
-      ).results[0]!.held.version;
+    // A resolve runs the binding through the connector, which answers `connector_busy` at its
+    // concurrency cap and says to try again in a moment; the suite runs its tests in parallel
+    // against one connector, so a resolve can hit the cap (issue #633). Try again, as it says.
+    const resolve = async () => {
+      for (let attempt = 0; ; attempt++) {
+        const results = (
+          ok(
+            await call('POST', `/v1/documents/${made.id}/bindings/resolve`, {
+              bindings: [{ node, binding: 'opened' }],
+            }),
+          ) as {
+            results: { held?: { version: string }; failure?: { code: string } }[];
+          }
+        ).results;
+        const first = results[0]!;
+        const busy =
+          first.failure?.code === 'connector_busy' || first.failure?.code === 'query_throttled';
+        if (first.held !== undefined || !busy || attempt >= 10) return first.held!.version;
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+      }
+    };
     const rowsOf = async (version: string) =>
       (
         ok(await call('GET', `/v1/documents/${made.id}/datasets/${version}`)) as {
