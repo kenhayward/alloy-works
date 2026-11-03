@@ -91,14 +91,15 @@ corpus.
 
 ## 4. The assistant
 
-| ID          | Requirement                                                                                                                                                                                             | Tranche    | Status    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **GEN-007** | The assistant's tools must be the product's own capabilities - search, read, propose an edit, run a declared query - and nothing else                                                                   | Constraint | Specified |
-| **GEN-008** | Every tool call must be authorised exactly as the equivalent user action would be, using the calling user's identity (**IAM-036**)                                                                      | Constraint | Specified |
-| **GEN-009** | A tool call that changes anything must be confirmed by the user before it takes effect                                                                                                                  | Constraint | Specified |
-| **GEN-010** | The assistant must show what it did: which tools it called, with what arguments, and what came back                                                                                                     | T5         | Specified |
-| **GEN-011** | The assistant must be able to cite the content it drew on, by identity, so that a claim can be checked                                                                                                  | T5         | Specified |
-| **GEN-012** | A thin assistant capability - drafting against the current document - must be the first of the assistant's capabilities built, so that this governance is exercised against real use before the rest is | T5         | Specified |
+| ID          | Requirement                                                                                                                                                                                                                                             | Tranche    | Status    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **GEN-007** | The assistant's tools must be the product's own capabilities - search, read, propose an edit, run a declared query - and nothing else                                                                                                                   | Constraint | Specified |
+| **GEN-008** | Every tool call must be authorised exactly as the equivalent user action would be, using the calling user's identity (**IAM-036**)                                                                                                                      | Constraint | Specified |
+| **GEN-009** | A tool call that changes anything must be confirmed by the user before it takes effect                                                                                                                                                                  | Constraint | Specified |
+| **GEN-010** | The assistant must show what it did: which tools it called, with what arguments, and what came back                                                                                                                                                     | T5         | Specified |
+| **GEN-011** | The assistant must be able to cite the content it drew on, by identity, so that a claim can be checked                                                                                                                                                  | T5         | Specified |
+| **GEN-012** | A thin assistant capability - drafting against the current document - must be the first of the assistant's capabilities built, so that this governance is exercised against real use before the rest is                                                 | T5         | Specified |
+| **GEN-061** | The assistant must read the comments on a component the person may read, as that person: each thread's quote and state and each comment's latest words, with authors unnamed, mentions removed and internal threads left out for a person from outside. | T5         | Specified |
 
 **GEN-012 is deliberate sequencing.** A governance model designed in the abstract and first used by
 the whole assistant will be wrong in ways nobody can predict; the same model exercised against a thin
@@ -345,3 +346,7 @@ identifier, and only its tranche changes.
 | Counts       | Before | After |
 | ------------ | ------ | ----- |
 | Requirements | 60     | 60    |
+
+### The assistant reads comments, 2026-11-03
+
+GEN-061 added: Ken's answer to the AT plan, that comments reach a model through `read_comments` alone.

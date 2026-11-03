@@ -29,6 +29,9 @@ import {
   listModelRoutes,
   makeCommentProposal,
   makeProposal,
+  listThreads,
+  loadFacts,
+  readThread,
   variablesByKey,
   startThread,
   makeSuggestion,
@@ -82,6 +85,7 @@ import {
   type CrossReferenceDisplay,
   insertIn,
   type proposeInsertInputSchema,
+  type readCommentsInputSchema,
   walkOutline,
   componentAsText,
   isAssistantTool,
@@ -153,6 +157,9 @@ const capped = (text: string) =>
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
 
 /** What a tool's refusal of its arguments tells the model: enough to correct an edit (issue #890). */
+/** The threads `read_comments` reads at most, newest first. */
+const COMMENT_THREADS_MOST = 50;
+
 const refusedArguments = (tool: string, input: unknown) =>
   tool === 'propose_edit'
     ? proposeEditProblem(input)
@@ -321,6 +328,67 @@ export function assistantHandlers(
     } catch (error) {
       return refusedTool(error);
     }
+  }
+
+  /**
+   * `read_comments` (GEN-061): a part's threads as the person may read them, through `readThread`
+   * for each comment's latest words, its authors numbered and its mentions gone. A thread kept from
+   * one from outside is no thread (COL-038). The caller's own read of the part decides.
+   */
+  async function readComments(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    input: z.infer<typeof readCommentsInputSchema>,
+  ): Promise<ToolAnswer> {
+    const target = { kind: 'artifact', id: input.component } as const;
+    try {
+      await authoriseAt(trx, callerOf(request), 'read', target);
+    } catch {
+      return {
+        ok: false,
+        content: 'There is no component by that identifier that you can read.',
+        said: { code: 'no_such_component' },
+      };
+    }
+    const facts = await loadFacts(trx, callerOf(request).principalId, target);
+    const page = await listThreads(trx, {
+      on: [input.component],
+      limit: COMMENT_THREADS_MOST + 1,
+      ...(input.state === undefined ? {} : { state: input.state }),
+      ...(facts?.principal.kind === 'external' ? { hideInternal: true } : {}),
+    });
+    const reviewers = new Map<string, number>();
+    const threads: string[] = [];
+    for (const { id } of page.slice(0, COMMENT_THREADS_MOST)) {
+      const thread = await readThread(trx, id);
+      if (!thread) continue;
+      const anchor = thread.anchor;
+      threads.push(
+        [
+          `Thread (${thread.resolution === null ? 'open' : 'resolved'}${thread.internal ? ', internal' : ''}) ${
+            anchor.kind === 'span' ? `on "${anchor.quote}"` : 'on the part'
+          }:`,
+          ...thread.comments.map((comment) => {
+            const who = reviewers.get(comment.author.id) ?? reviewers.size + 1;
+            reviewers.set(comment.author.id, who);
+            const parts = comment.texts.at(-1)?.parts ?? [];
+            const words = parts.flatMap((part) => ('text' in part ? [part.text] : [])).join('');
+            return `Reviewer ${who}: ${words}`;
+          }),
+        ].join('\n'),
+      );
+    }
+    return {
+      ok: true,
+      content: asData(
+        `comments:${input.component}`,
+        null,
+        threads.length === 0
+          ? 'There are none.'
+          : `${threads.join('\n\n')}${page.length > COMMENT_THREADS_MOST ? '\n\nThe older threads are not shown.' : ''}`,
+      ),
+      said: { code: 'found', count: threads.length },
+    };
   }
 
   /** The environment's variables by key, for one who may read the environment (`listDefinitions`). */
@@ -716,6 +784,10 @@ export function assistantHandlers(
                   parsed.data as { source: ReferenceSourceKey; identifier: string },
                 ),
               ))
+            );
+          case 'read_comments':
+            return await inDocument((trx) =>
+              readComments(trx, request, parsed.data as z.infer<typeof readCommentsInputSchema>),
             );
           case 'read_variables':
             return await inDocument((trx) => readVariables(trx, request));
@@ -1227,6 +1299,12 @@ export function assistantHandlers(
                   request,
                   parsed.data as { source: ReferenceSourceKey; identifier: string },
                 )
+              );
+            case 'read_comments':
+              return readComments(
+                trx,
+                request,
+                parsed.data as z.infer<typeof readCommentsInputSchema>,
               );
             case 'read_variables':
               return readVariables(trx, request);

@@ -94,6 +94,9 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   get read_reference() {
     return words('document.read-a-published-work');
   },
+  get read_comments() {
+    return words('document.read-the-comments');
+  },
   get read_variables() {
     return words('document.read-the-variables');
   },
