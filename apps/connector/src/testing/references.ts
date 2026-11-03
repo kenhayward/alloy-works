@@ -13,6 +13,7 @@ import {
   crossrefWork,
   extensionHerbarium,
   extensionHerbariumRetracted,
+  pubmedArticle,
   pubmedCorrected,
   pubmedDunnart,
   pubmedRetracted,
@@ -110,6 +111,10 @@ export async function startFakeReferences(): Promise<FakeReferences> {
           200,
           JSON.stringify(pubmedSummary(RECORDS.filter((each) => ids.includes(each.uid)))),
         );
+      }
+      if (url.pathname === '/entrez/eutils/efetch.fcgi') {
+        const id = url.searchParams.get('id');
+        return send(200, id === pubmedDunnart.uid ? pubmedArticle : '<PubmedArticleSet/>');
       }
       return send(404, '{}');
     },

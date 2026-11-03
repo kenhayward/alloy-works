@@ -88,6 +88,9 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   get search_references() {
     return words('document.searched-a-reference-source');
   },
+  get read_reference() {
+    return words('document.read-a-published-work');
+  },
   get propose_comment() {
     return words('document.proposed-a-comment');
   },

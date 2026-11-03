@@ -3,10 +3,12 @@ import {
   REFERENCE_MOST_BYTES,
   extensionReferencePath,
   isExtensionSource,
+  pubmedAbstract,
   readExtensionAnswer,
   readReferenceAnswer,
   referencePath,
   searchIdentifiers,
+  withAbstract,
   type ChildReferenceRequest,
   type ReferenceAnswer,
   type ReferenceSourceId,
@@ -71,8 +73,10 @@ export async function answerReference(
   const deadline = Date.now() + REFERENCE_DEADLINE_MS;
   const maxBytes = REFERENCE_MOST_BYTES[request.op];
 
-  /** One step's JSON, or undefined where the source holds no such record. */
-  const get = async (step: ReferenceStep): Promise<unknown> => {
+  /** One step's body, or undefined where the source holds no such record. */
+  const bodyOf = async (
+    step: ReferenceStep,
+  ): Promise<{ status: number; text: string } | undefined> => {
     const fetched = await exchange(
       {
         host: input.host,
@@ -117,8 +121,15 @@ export async function answerReference(
           throw new Failed('connector');
       }
     }
-    const text = fetched.body.toString('utf8');
-    if (fetched.status === 404) {
+    return { status: fetched.status, text: fetched.body.toString('utf8') };
+  };
+
+  /** One step's JSON, or undefined where the source holds no such record. */
+  const get = async (step: ReferenceStep): Promise<unknown> => {
+    const body = await bodyOf(step);
+    if (body === undefined) return undefined;
+    const { status, text } = body;
+    if (status === 404) {
       if (/^\s*\[\s*\]\s*$/.test(text)) return undefined;
       throw new Failed('status');
     }
@@ -154,9 +165,17 @@ export async function answerReference(
     const identifier = request.identifier!;
     const answer = await get({ step: 'work', identifier });
     if (answer === undefined) return { type: 'found', results: [] };
-    // A Crossref check also asks for the notices updating the work (XRb): `filter=updates:{doi}`.
-    if (request.op === 'check' && request.source === 'crossref') {
+    // A Crossref check or read also asks for the notices updating the work (XRb): `filter=updates:{doi}`.
+    if ((request.op === 'check' || request.op === 'read') && request.source === 'crossref') {
       return found(answer, await get({ step: 'updates', identifier }));
+    }
+    // A PubMed summary holds no abstract: its article, XML alone, does.
+    if (request.op === 'read' && request.source === 'pubmed') {
+      const summary = found(answer);
+      if (summary.type !== 'found' || summary.results.length === 0) return summary;
+      const article = await bodyOf({ step: 'abstract', identifier });
+      const abstract = article === undefined ? undefined : pubmedAbstract(article.text);
+      return { ...summary, results: summary.results.map((each) => withAbstract(each, abstract)) };
     }
     return found(answer);
   } catch (error) {
