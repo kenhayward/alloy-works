@@ -189,12 +189,13 @@ export const PROPOSE_INSERT: ModelTool = {
   name: 'propose_insert',
   description:
     "Proposes inserting one item in a paragraph: a variable, a bound value, a cross-reference or a footnote. Use it rather than typing a value or a section's number, which go stale. Nothing changes until the author accepts.",
-  inputSchema: (() => {
-    const { $schema: _unused, ...schema } = z.toJSONSchema(proposeInsertInputSchema, {
-      io: 'input',
-    });
-    return schema as ModelTool['inputSchema'];
-  })(),
+  // From what is enforced, so the two cannot differ (issue #890).
+  inputSchema: {
+    type: 'object',
+    properties: z.toJSONSchema(proposeInsertInputSchema, { io: 'input' }).properties ?? {},
+    required: ['component', 'block', 'item'],
+    additionalProperties: false,
+  },
 };
 
 export const READ_VARIABLES: ModelTool = {
