@@ -300,7 +300,7 @@ describe('creating a component through the service', () => {
         archived: false,
         language: null,
         mayCreate: false,
-        mayMoveInto: false,
+        mayMoveInto: true,
       },
     ]);
     const alice = await call('alice', 'GET', '/v1/spaces');
