@@ -133,6 +133,7 @@ describe('the domain package', () => {
         // Access: the permission set, roles, levels, the decision and the readable set.
         'allowable',
         'checkRole',
+        'administerOrAbove',
         'decide',
         'externalCap',
         'formatLevel',

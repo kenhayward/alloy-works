@@ -139,6 +139,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/artifacts/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move a component, document, template or image to another space
+         * @description Moves a component, document, template or image to another space, changing nothing it says and cutting no version. A document's publications follow, and with `also` its components and their images, each decided for itself and otherwise left and listed. Grants on what moves end, but for a publication's shares; who may read it then follows the new space at once. Needs administer on it, and create or administer at the target. Supply the space it was read in.
+         */
+        post: operations["moveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/artifacts/{id}/move/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What moving to another space would carry, leave and stop
+         * @description Answers what `moveToSpace` would do now, or how it would refuse, and what it would leave behind, changing nothing.
+         */
+        post: operations["previewMoveToSpace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/artifacts/{id}/path": {
         parameters: {
             query?: never;
@@ -11563,6 +11603,392 @@ export interface operations {
             };
             /** @description No such artifact the caller may read */
             404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    moveToSpace: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "from": "00000000-0000-4000-8000-000000000001",
+                 *       "to": "00000000-0000-4000-8000-000000000001",
+                 *       "also": false
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The space the caller read it in */
+                    from: string & (unknown & unknown);
+                    /** @description The space to move it to */
+                    to: string & (unknown & unknown);
+                    /** @description A document's components and images too, each decided for itself and otherwise left */
+                    also: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved, or there already */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "changed": false,
+                     *       "moved": [],
+                     *       "skipped": [],
+                     *       "grantsEnded": -9007199254740991,
+                     *       "sharesKept": -9007199254740991
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description False where it is in that space already */
+                        changed: boolean;
+                        /** @description Everything that moves: it, then what follows or is carried */
+                        moved: (string & (unknown & unknown))[];
+                        /** @description Each component or image of the document that stays, and why */
+                        skipped: {
+                            id: string & (unknown & unknown);
+                            /** @enum {string} */
+                            kind: "component" | "asset";
+                            /**
+                             * @description Why it stays where it is
+                             * @enum {string}
+                             */
+                            reason: "not_permitted" | "held" | "kept" | "placed_elsewhere" | "archived" | "in_use" | "dataset" | "uploading";
+                            /** @description Its title, null where the caller may not read it */
+                            title: string | null;
+                        }[];
+                        /** @description Grants on what moves that end with the move */
+                        grantsEnded: number;
+                        /** @description Shares of the document's publications, which stay */
+                        sharesKept: number;
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It needs administer on the artifact, and create or administer at the target */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact or space, or the caller may not read it */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once */
+            409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    previewMoveToSpace: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+                /** @description Use the same key to retry this mutation without applying it twice. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                id: string & (unknown & unknown);
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "from": "00000000-0000-4000-8000-000000000001",
+                 *       "to": "00000000-0000-4000-8000-000000000001",
+                 *       "also": false
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The space the caller read it in */
+                    from: string & (unknown & unknown);
+                    /** @description The space to move it to */
+                    to: string & (unknown & unknown);
+                    /** @description A document's components and images too, each decided for itself and otherwise left */
+                    also: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description What the move would do, nothing changing */
+            200: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    /** @description True when this answer is a replay of an earlier keyed request. */
+                    "Idempotent-Replayed"?: "true";
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "changed": false,
+                     *       "moved": [],
+                     *       "skipped": [],
+                     *       "grantsEnded": -9007199254740991,
+                     *       "sharesKept": -9007199254740991,
+                     *       "consequences": {
+                     *         "citations": -9007199254740991,
+                     *         "terms": -9007199254740991,
+                     *         "imagesStaying": -9007199254740991,
+                     *         "bound": -9007199254740991,
+                     *         "usingTemplate": -9007199254740991,
+                     *         "openRounds": -9007199254740991,
+                     *         "delivered": -9007199254740991
+                     *       }
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description False where it is in that space already: nothing would move */
+                        changed: boolean;
+                        /** @description Everything that moves: it, then what follows or is carried */
+                        moved: (string & (unknown & unknown))[];
+                        /** @description Each component or image of the document that stays, and why */
+                        skipped: {
+                            id: string & (unknown & unknown);
+                            /** @enum {string} */
+                            kind: "component" | "asset";
+                            /**
+                             * @description Why it stays where it is
+                             * @enum {string}
+                             */
+                            reason: "not_permitted" | "held" | "kept" | "placed_elsewhere" | "archived" | "in_use" | "dataset" | "uploading";
+                            /** @description Its title, null where the caller may not read it */
+                            title: string | null;
+                        }[];
+                        /** @description Grants on what moves that end with the move */
+                        grantsEnded: number;
+                        /** @description Shares of the document's publications, which stay */
+                        sharesKept: number;
+                        /** @description What the move leaves behind: never refused, and named here */
+                        consequences: {
+                            /** @description Citations of the old space's bibliography */
+                            citations: number;
+                            /** @description Marked terms, which print as their words */
+                            terms: number;
+                            /** @description Images staying, which new readers may not read */
+                            imagesStaying: number;
+                            /** @description Bound parts, whose query definition stays */
+                            bound: number;
+                            /** @description Documents and cohorts using a moved template */
+                            usingTemplate: number;
+                            /** @description Open review rounds */
+                            openRounds: number;
+                            /** @description What CT Studio delivered, which will refuse redelivery */
+                            delivered: number;
+                        };
+                    };
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description It needs administer on the artifact, and create or administer at the target */
+            403: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No such artifact or space, or the caller may not read it */
+            404: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description space_moved: it is no longer in `from`; space_archived: the target is archived; artifact_archived; artifact_not_movable: this kind moves with its document, or stays with its dataset; asset_uploading: a replacement is on its way; artifact_held: a hold on the space it is leaving, or on a publication of it; artifact_kept: a retention keep the target does not reach; move_too_large: more than 500 artifacts at once */
+            409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

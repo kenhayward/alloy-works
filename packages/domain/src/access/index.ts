@@ -11,6 +11,7 @@ export {
 export { allowable, checkRole, starterRoles, type RoleProblem, type StarterRole } from './role.js';
 export { formatLevel, parseLevel, sameLevel, type Level } from './level.js';
 export {
+  administerOrAbove,
   decide,
   type AccessFacts,
   type AccessGrant,

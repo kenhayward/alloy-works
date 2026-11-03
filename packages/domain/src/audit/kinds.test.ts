@@ -70,6 +70,7 @@ describe('the audit kinds', () => {
       'hold.removed',
       'artifact.archived',
       'artifact.unarchived',
+      'artifact.moved',
       'artifact.deleted',
       'artifact.undeleted',
       'retention.changed',

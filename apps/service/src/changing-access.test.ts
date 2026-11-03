@@ -191,6 +191,7 @@ describe('a route that changes access', () => {
       'extendGrant',
       'issueCtStudioToken',
       'makeGrant',
+      'moveToSpace',
       'removeGrant',
       'revokePublicationShare',
       'setGoogleSignIn',

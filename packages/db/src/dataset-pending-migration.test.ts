@@ -283,6 +283,7 @@ describe('migration 0051, which keeps a result waiting on its images', () => {
       '0191_role_made',
       '0192_comment_proposals',
       '0193_space_language',
+      '0194_moving',
     ]);
     const kept = await queryAs(
       db.adminUrl,
