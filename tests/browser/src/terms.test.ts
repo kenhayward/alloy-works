@@ -106,10 +106,12 @@ describe('terms in Chromium (the TM plan, TMc)', () => {
       await page.keyboard.press('Enter');
       await surface.waitFor({ state: 'hidden' });
 
-      // Published, from the Publishing panel: Tab to the panels' one stop, End to choose the last.
+      // Published, from the Publishing panel: Tab to the panels' one stop, then End and back one.
       const panels = page.getByRole('tablist', { name: 'Document panels' });
       await tabTo(page, panels.getByRole('tab', { selected: true }), 120);
       await page.keyboard.press('End');
+      // In Authoring, Threads stands after Publishing.
+      await page.keyboard.press('ArrowUp');
       const publish = page.getByRole('button', { name: /^Publish as/ }).first();
       await tabTo(page, publish, 120);
       await page.keyboard.press('Enter');

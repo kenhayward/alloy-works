@@ -212,9 +212,11 @@ describe("a document's parameter feeding a value, in Chromium (the TP2 plan, tas
       expect(await row.textContent()).toContain('South bank');
       expect(await row.getByText("The document's period changed").count()).toBe(0);
 
-      // Published, from the Publishing panel: Tab to the panels' one stop, End to choose the last.
+      // Published, from the Publishing panel: Tab to the panels' one stop, then End and back one.
       await tabTo(page, panels.getByRole('tab', { selected: true }), 120);
       await page.keyboard.press('End');
+      // In Authoring, Threads stands after Publishing.
+      await page.keyboard.press('ArrowUp');
       const publish = page.getByRole('button', { name: /^Publish as/ }).first();
       await tabTo(page, publish, 120);
       await page.keyboard.press('Enter');
