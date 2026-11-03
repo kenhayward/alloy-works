@@ -8,6 +8,7 @@ import {
   REFERENCE_SOURCE_IDS,
   referenceSource,
   referenceSourceKeySchema,
+  type ReferenceNotice,
   type ReferenceResult,
   type ReferenceSourceKey,
 } from '../library/sources.js';
@@ -35,7 +36,7 @@ const instructions = (declining: readonly string[]) =>
     'accept it.',
     'Asked what has been published on a subject, answer from search_references and read_reference, never',
     'from memory: name only the works they gave, each with its identifier, and read a work before saying',
-    'what it finds. To cite a published work, find it the same way and propose it with cite_reference.',
+    'what it finds, and say so where a source reports it retracted, superseded or corrected. To cite a published work, find it the same way and propose it with cite_reference.',
     'Search only for what the author asked you to, in their words; asked for works related to the',
     'document, ask them what to search for.',
     'When you rely on something you read, cite it as [[COMPONENT#BLOCK]], with the component and block',
@@ -130,7 +131,7 @@ export const PROPOSE_COMMENT: ModelTool = {
 export const READ_REFERENCE: ModelTool = {
   name: 'read_reference',
   description:
-    'Reads one published work from a reference source, by the identifier search_references gave: its title, authors, year, where it appeared, and its abstract where the source gives one. An abstract is all you read of a work, never the work itself.',
+    'Reads one published work from a reference source, by the identifier search_references gave: its title, authors, year, where it appeared, and its abstract where the source gives one, and whether the source reports it retracted, superseded or corrected. An abstract is all you read of a work, never the work itself.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -1205,10 +1206,20 @@ export function referencesAsText(
   return results.map((each) => referenceLine(source, each)).join('\n');
 }
 
-/** One work as the model reads it: its line, and its abstract or that the source gave none. */
+const NOTICE_WORDS: Readonly<Record<ReferenceNotice['kind'], string>> = {
+  retraction: 'retracted',
+  supersession: 'superseded',
+  correction: 'corrected',
+};
+
+/** One work as the model reads it: its line, what its source reports, and its abstract or that it gave none. */
 export function referenceAsText(source: ReferenceSourceKey, result: ReferenceResult): string {
   return [
     referenceLine(source, result),
+    ...(result.notices ?? []).map(({ kind, identifier, date }) => {
+      const where = [identifier, date].filter((part) => part !== undefined).join(', ');
+      return `The source reports this work ${NOTICE_WORDS[kind]}${where === '' ? '' : `: ${where}`}.`;
+    }),
     result.abstract === undefined
       ? 'The source gave no abstract of this work.'
       : `Abstract: ${result.abstract}`,

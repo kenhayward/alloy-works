@@ -117,15 +117,29 @@ describe('a reference source asked through the connector (the XR plan, XR-B)', (
     expect(fake.seen.slice(before).some((each) => each.includes('efetch'))).toBe(false);
   });
 
-  it('reads a Crossref work with the one request, its abstract in the work', async () => {
+  it('reads a Crossref work: its abstract in the work, and the notices updating it', async () => {
     const before = fake.seen.length;
     const answer = await ask({
       source: 'crossref',
       op: 'read',
       identifier: '10.5555/marsh.2021.017',
     });
-    expect(answer).toMatchObject({ type: 'found', results: [{ abstract: 'Invented.' }] });
-    expect(fake.seen.length - before).toBe(1);
+    expect(answer).toMatchObject({
+      type: 'found',
+      results: [{ abstract: 'Invented.', notices: [{ kind: 'retraction' }] }],
+    });
+    expect(fake.seen.slice(before)).toEqual([
+      '/works/10.5555%2Fmarsh.2021.017?mailto=desk%40example.test',
+      '/works?filter=updates%3A10.5555%2Fmarsh.2021.017&rows=20&mailto=desk%40example.test',
+    ]);
+  });
+
+  it('reads that PubMed reports a work retracted', async () => {
+    const answer = await ask({ source: 'pubmed', op: 'read', identifier: '99000002' });
+    expect(answer).toMatchObject({
+      type: 'found',
+      results: [{ identifier: '99000002', notices: [{ kind: 'retraction' }] }],
+    });
   });
 
   it('LIB-036 checks a Crossref work, its notices read from the works updating it', async () => {

@@ -215,6 +215,31 @@ describe("the assistant's reference tools (the XR plan, XR-I)", () => {
     }
   });
 
+  it('tells the model what a source reports of a work it reads', async () => {
+    const was = h.connector.referenceFor;
+    h.connector.referenceFor = (request) => {
+      const answer = answering(request);
+      return {
+        ...answer,
+        results: answer.results.map((each) => ({
+          ...each,
+          notices: [{ kind: 'retraction' as const, identifier: `${MARSH}.retraction` }],
+        })),
+      };
+    };
+    try {
+      const { result } = await run('grace', 'read_reference', {
+        source: 'crossref',
+        identifier: MARSH,
+      });
+      expect(String(result.result)).toContain(
+        `The source reports this work retracted: ${MARSH}.retraction.`,
+      );
+    } finally {
+      h.connector.referenceFor = was;
+    }
+  });
+
   it('says a work has no abstract, and that a source holds no such work', async () => {
     const held = await run('grace', 'read_reference', { source: 'pubmed', identifier: '99000001' });
     expect(String(held.result.result)).toContain('The source gave no abstract of this work.');

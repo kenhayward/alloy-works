@@ -21605,13 +21605,13 @@
     {
       "id": "LIB-032",
       "file": "apps/connector/src/reference.test.ts",
-      "line": 271,
+      "line": 285,
       "kind": "title"
     },
     {
       "id": "LIB-036",
       "file": "apps/connector/src/reference.test.ts",
-      "line": 131,
+      "line": 145,
       "kind": "title"
     },
     {
@@ -33029,25 +33029,25 @@
     {
       "id": "GEN-009",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 99,
+      "line": 122,
       "kind": "title"
     },
     {
       "id": "GEN-017",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 233,
+      "line": 256,
       "kind": "title"
     },
     {
       "id": "LIB-032",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 201,
+      "line": 224,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "packages/domain/src/generation/assistant.test.ts",
-      "line": 175,
+      "line": 198,
       "kind": "title"
     },
     {

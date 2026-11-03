@@ -17,7 +17,7 @@ review; one final review per PR. ATe carries the close.
 | ATa | Published-work instruction; `read_reference` (this PR) | One new connector operation                                  |
 | ATb | Word-level edit; finding parts from a document         | Low: an edit form, and a wider read                          |
 | ATc | Inserting a live item; proposing a footnote            | Medium: a new tool, new reads, the panel's account of them   |
-| ATd | Reading comments                                       | Medium: a data boundary; Ken's answer needed first           |
+| ATd | Reading comments                                       | Medium: a data boundary, and the search check first          |
 | ATe | Outline proposals; the close                           | High: a stored shape, and a proposal that changes a document |
 
 ## Global Constraints
@@ -36,19 +36,19 @@ review; one final review per PR. ATe carries the close.
   binding, cross-reference or variable. ATb and ATc fix that for what they write.
 - No requirement is claimed by a test that does not demonstrate it.
 
-## Questions for Ken
+## Ken's answers (2026-11-03)
 
-1. **Requirements.** Outline proposals and reading comments have no row saying so. Recommended: draft
-   two through `pnpm trace draft`, at ATd and ATe; nothing for the rest.
-2. **Blocks ATd: comments reaching a model.** `assistant-routes.test.ts` holds that a component's comment
-   "reaches no model", yet `search_document` passes no `kinds` filter, so a thread's words appear able to
-   reach one today (read in the code, not reproduced). That fix is separate and comes first. Then,
-   recommended: allow comments through `read_comments` alone, read as the person, authors unnamed.
-3. **ATd: an internal thread.** An insider's model could read one, and `propose_comment` posts
-   non-internal, a route to outsiders. Recommended: leave internal threads out of `read_comments`.
-4. **ATe: a part placed in more than one document.** Recommended yes: placing is a reference.
-5. **GEN-007 names "run a declared query"**, marked Covered, and no tool does it. Not among the eight.
-   Recommended: reword the row to what is built.
+1. **Requirements:** draft two rows through `pnpm trace draft`, reading comments at ATd and outline proposals
+   at ATe; nothing for the rest.
+2. **Comments reach a model through `read_comments` alone**, read as the person, authors unnamed. Whether
+   `search_document` already passes them is being checked apart and fixed first if so.
+3. **Internal threads are included where the person is internal**, and left out for an external one.
+   `propose_comment` posts non-internal, so a comment drawn from an internal thread could reach outsiders
+   once a person accepts it: the panel shows its words before they do, and ATd tests that an external
+   person reads none.
+4. **A part may be placed in more than one document:** placing is a reference.
+5. **GEN-007 is reworded to what is built**, no query tool, with a change history, in the PR of a close so
+   the baseline moves with it. Not among the eight.
 
 ## Review Focus
 
@@ -69,7 +69,8 @@ review; one final review per PR. ATe carries the close.
 
 Built: instructions `assistant-5`, `conversation-5`; `read_reference`; the connector's `read` operation
 (PubMed's `efetch` XML alone, Crossref's work, an extension's CSL `abstract`), ten a run, an abstract at
-most 8,000 characters and said where cut. No requirement added or cited.
+most 8,000 characters and said where cut; what the source reports of it retracted, superseded or corrected
+said too. No requirement added or cited.
 
 Real model, invented subject, the real PubMed, 3 trials each. Old instructions: searched 2 times, read
 none, named only works found. New: searched 2 times, read 7 or 8 abstracts, named only works found. So
@@ -131,11 +132,11 @@ union: `{ component, block, after?, item }`, `item` one of `{ variable: key }`, 
 
 ### ATd: reading comments
 
-Blocked on questions 2 and 3, and the search fix.
+After the search check (answer 2).
 
 - [ ] `read_comments`, `{ component, state? }`, as the person, through `readThread`: `listThreads` holds
       only a thread's first words. Each thread's quote, state and each comment's latest text, `{mention}`
-      parts removed, authors `Reviewer 1`, `Reviewer 2` by first appearance. `hideInternal` per question 3.
+      parts removed, authors `Reviewer 1`, `Reviewer 2` by first appearance. `hideInternal` for an external person.
 - [ ] Failing tests: a part they may not read answers none; a comment asking for a call is obeyed nowhere
       (GEN-017, GEN-020, a new title beside the compliant-model tests); no name, email or mention reaches
       the model. `assistant-routes.test.ts:761` narrows, and the PR says so; the prompt-run test at `:941`
@@ -167,9 +168,7 @@ A pre-flight of its own before it starts, with what ATa to ATd taught.
 
 ## Not in this plan
 
-- **A retraction in `read_reference`.** It reads no notice, so a retracted paper can be described as sound,
-  flagged only once cited. The `read` operation can carry `notices` for a line or two. Worth doing soon.
-- Figures and equations by proposal; replying to and resolving comments; a query tool (question 5).
+- Figures and equations by proposal; replying to and resolving comments; a query tool (answer 5).
 
 Pre-flight review (2026-11-03) folded in above: list paragraphs, meaningful marks, the tray, variables by
 environment, binding identity, `readThread`, the proposals' constraints, the gate, and the search finding.

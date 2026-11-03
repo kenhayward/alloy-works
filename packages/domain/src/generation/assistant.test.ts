@@ -71,9 +71,32 @@ describe("the assistant's terms", () => {
       expect(instructions).toMatch(/name only the works they gave, each with its identifier/);
       // The terms leave the product, so they stay the person's.
       expect(instructions).toMatch(/ask them what to search for/);
+      expect(instructions).toMatch(/say so where a source reports it retracted/);
     }
     expect(ASSISTANT_INSTRUCTIONS_VERSION).toBe('assistant-5');
     expect(CONVERSATION_INSTRUCTIONS_VERSION).toBe('conversation-5');
+  });
+
+  it('says what a source reports of a work, before its abstract', () => {
+    const work = {
+      identifier: '99000001',
+      csl: { type: 'article-journal', title: 'The dunnart in winter' },
+      dropped: [],
+      notices: [
+        { kind: 'retraction', identifier: '99000003', date: '2026-04-22' },
+        { kind: 'correction' },
+        { kind: 'supersession', identifier: '99000004' },
+      ],
+    } as ReferenceResult;
+    expect(referenceAsText('pubmed', { ...work, abstract: 'Invented.' })).toBe(
+      [
+        'The dunnart in winter. PMID 99000001',
+        'The source reports this work retracted: 99000003, 2026-04-22.',
+        'The source reports this work corrected.',
+        'The source reports this work superseded: 99000004.',
+        'Abstract: Invented.',
+      ].join('\n'),
+    );
   });
 
   it('takes read_reference a source and an identifier, and nothing else', () => {

@@ -115,8 +115,8 @@ warns.
   both conversations' (instructions `assistant-2`, `conversation-2`). Each runs as the person in the
   run's transaction, refused `reference_source_off` while the source is off; a search answers each
   result's title, authors, year, container and identifier as data.
-- **Reading a work** (`read_reference`, the AT plan) is the connector's `read` operation: a fetch and its
-  abstract, PubMed's from `efetch`, XML alone, read by position; Crossref's from the work's JATS; an
+- **Reading a work** (`read_reference`, the AT plan) is the connector's `read` operation: a check, so
+  what the source reports of it reaches the model, and its abstract, PubMed's from `efetch`, XML alone, read by position; Crossref's from the work's JATS; an
   extension's from its CSL. Plain words, at most 8,000 characters, ten a run, the identifier alone sent.
   The abstract answers the model as data; a read makes no entry. (An extension whose CSL gives an
   `abstract` keeps it on an entry made by a fetch, as any CSL variable; Crossref's and PubMed's map none.)

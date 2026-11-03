@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { crossrefWork, extensionHerbarium, pubmedArticle } from './sources-fixtures.js';
+import {
+  crossrefMarsh,
+  crossrefMarshRetraction,
+  crossrefUpdates,
+  crossrefWork,
+  extensionHerbarium,
+  extensionHerbariumRetracted,
+  pubmedArticle,
+  pubmedRetractedLinked,
+  pubmedSummary,
+} from './sources-fixtures.js';
 import {
   REFERENCE_ABSTRACT_MOST,
   pubmedAbstract,
@@ -88,6 +98,36 @@ describe("reading a source's work and its abstract", () => {
       extensionHerbarium.id,
     );
     expect(read![0]).toMatchObject({ abstract: 'Saltbush keeps.' });
+  });
+
+  it('carries what each source reports of a work it reads: retracted, superseded or corrected', () => {
+    expect(
+      readReferenceAnswer(
+        'crossref',
+        'read',
+        crossrefWork(crossrefMarsh),
+        crossrefUpdates([crossrefMarshRetraction]),
+      )![0],
+    ).toMatchObject({
+      abstract: 'Invented.',
+      notices: [
+        {
+          kind: 'retraction',
+          identifier: '10.5555/marsh.2021.017.retraction',
+          date: '2026-04-22',
+        },
+      ],
+    });
+    expect(
+      readReferenceAnswer('pubmed', 'read', pubmedSummary([pubmedRetractedLinked]))![0],
+    ).toMatchObject({ notices: [{ kind: 'retraction', identifier: '99000003' }] });
+    expect(
+      readExtensionAnswer(
+        'read',
+        [extensionHerbariumRetracted],
+        extensionHerbariumRetracted.id,
+      )![0],
+    ).toMatchObject({ notices: [{ kind: 'retraction', identifier: 'HERB-R-0001' }] });
   });
 
   it('asks for a read by an identifier alone', () => {

@@ -165,8 +165,8 @@ export async function answerReference(
     const identifier = request.identifier!;
     const answer = await get({ step: 'work', identifier });
     if (answer === undefined) return { type: 'found', results: [] };
-    // A Crossref check also asks for the notices updating the work (XRb): `filter=updates:{doi}`.
-    if (request.op === 'check' && request.source === 'crossref') {
+    // A Crossref check or read also asks for the notices updating the work (XRb): `filter=updates:{doi}`.
+    if ((request.op === 'check' || request.op === 'read') && request.source === 'crossref') {
       return found(answer, await get({ step: 'updates', identifier }));
     }
     // A PubMed summary holds no abstract: its article, XML alone, does.

@@ -228,7 +228,7 @@ export const referenceResultSchema = z.strictObject({
   csl: cslItemSchema,
   /** The fields the source gave that an entry cannot hold, left out. */
   dropped: z.array(z.string().max(200)).max(200),
-  /** A check's retractions and corrections (XRb); absent from a search or fetch. */
+  /** A check's or read's retractions and corrections (XRb); absent from a search or fetch. */
   notices: z.array(referenceNoticeSchema).max(50).optional(),
   /** A read's abstract, as plain words, where the source gave one; absent from anything else. */
   abstract: z.string().min(1).max(REFERENCE_ABSTRACT_MOST).optional(),
@@ -622,13 +622,17 @@ export function readReferenceAnswer(
 ): ReferenceResult[] | undefined {
   if (!isRecord(answer)) return undefined;
   const checked = (results: ReferenceResult[], notices: () => ReferenceNotice[]) =>
-    op === 'check' ? results.map((each) => ({ ...each, notices: notices() })) : results;
+    op === 'check' || op === 'read'
+      ? results.map((each) => ({ ...each, notices: notices() }))
+      : results;
   if (source === 'crossref') {
     const message = answer.message;
     if (!isRecord(message)) return undefined;
     if (op === 'read') {
       const abstract = abstractOf(plainWords(textOf(message.abstract) ?? ''));
-      return crossrefItem(message).map((each) => withAbstract(each, abstract));
+      return checked(crossrefItem(message), () => crossrefNotices(message, updates)).map((each) =>
+        withAbstract(each, abstract),
+      );
     }
     if (op !== 'search') {
       return checked(crossrefItem(message), () => crossrefNotices(message, updates));
@@ -778,14 +782,14 @@ export function readExtensionAnswer(
     if (op !== 'search' && asked !== undefined && identifier !== asked) return [];
     const { [EXTENSION_NOTICES]: given, ...record } = item;
     const results = admitted(identifier, record);
-    if (op === 'read') {
-      const abstract = abstractOf(plainWords(textOf(item.abstract) ?? ''));
-      return results.map((each) => withAbstract(each, abstract));
-    }
-    if (op !== 'check') return results;
+    if (op !== 'check' && op !== 'read') return results;
     const notices = (Array.isArray(given) ? given : []).flatMap(
       (each) => referenceNoticeSchema.safeParse(each).data ?? [],
     );
-    return results.map((each) => ({ ...each, notices: distinct(notices).slice(0, 50) }));
+    const abstract =
+      op === 'read' ? abstractOf(plainWords(textOf(item.abstract) ?? '')) : undefined;
+    return results.map((each) =>
+      withAbstract({ ...each, notices: distinct(notices).slice(0, 50) }, abstract),
+    );
   });
 }
