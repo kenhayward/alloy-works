@@ -17,7 +17,7 @@ review; one final review per PR. ATe carries the close.
 | ATa | Published-work instruction; `read_reference` (this PR) | One new connector operation                                  |
 | ATb | Word-level edit; finding parts from a document         | Low: an edit form, and a wider read                          |
 | ATc | Inserting a live item; proposing a footnote            | Medium: a new tool, new reads, the panel's account of them   |
-| ATd | Reading comments                                       | Medium: a data boundary, and the search check first          |
+| ATd | Reading comments                                       | Medium: a data boundary                                      |
 | ATe | Outline proposals; the close                           | High: a stored shape, and a proposal that changes a document |
 
 ## Global Constraints
@@ -40,8 +40,8 @@ review; one final review per PR. ATe carries the close.
 
 1. **Requirements:** draft two rows through `pnpm trace draft`, reading comments at ATd and outline proposals
    at ATe; nothing for the rest.
-2. **Comments reach a model through `read_comments` alone**, read as the person, authors unnamed. Whether
-   `search_document` already passes them is being checked apart and fixed first if so.
+2. **Comments reach a model through `read_comments` alone**, read as the person, authors unnamed.
+   `search_document` did pass them (#915); #916 fixed it, and Ken checked that no earlier transcript holds one.
 3. **Internal threads are included where the person is internal**, and left out for an external one.
    `propose_comment` posts non-internal, so a comment drawn from an internal thread could reach outsiders
    once a person accepts it: the panel shows its words before they do, and ATd tests that an external
@@ -132,15 +132,15 @@ union: `{ component, block, after?, item }`, `item` one of `{ variable: key }`, 
 
 ### ATd: reading comments
 
-After the search check (answer 2).
+The search check is done (answer 2).
 
 - [ ] `read_comments`, `{ component, state? }`, as the person, through `readThread`: `listThreads` holds
       only a thread's first words. Each thread's quote, state and each comment's latest text, `{mention}`
       parts removed, authors `Reviewer 1`, `Reviewer 2` by first appearance. `hideInternal` for an external person.
 - [ ] Failing tests: a part they may not read answers none; a comment asking for a call is obeyed nowhere
       (GEN-017, GEN-020, a new title beside the compliant-model tests); no name, email or mention reaches
-      the model. `assistant-routes.test.ts:761` narrows, and the PR says so; the prompt-run test at `:941`
-      stays true. Replying and resolving are later.
+      the model. `assistant-routes.test.ts:761` narrows, and the PR says so; the search tests at `:824` and
+      `:843` and the prompt-run test at `:996` stay true. Replying and resolving are later.
 
 ### ATe: outline proposals, and the close
 
