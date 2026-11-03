@@ -156,10 +156,10 @@ const capped = (text: string) =>
     ? text
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
 
-/** What a tool's refusal of its arguments tells the model: enough to correct an edit (issue #890). */
 /** The threads `read_comments` reads at most, newest first. */
 const COMMENT_THREADS_MOST = 50;
 
+/** What a tool's refusal of its arguments tells the model: enough to correct an edit (issue #890). */
 const refusedArguments = (tool: string, input: unknown) =>
   tool === 'propose_edit'
     ? proposeEditProblem(input)
@@ -341,21 +341,23 @@ export function assistantHandlers(
     input: z.infer<typeof readCommentsInputSchema>,
   ): Promise<ToolAnswer> {
     const target = { kind: 'artifact', id: input.component } as const;
+    const none: ToolAnswer = {
+      ok: false,
+      content: 'There is no component by that identifier that you can read.',
+      said: { code: 'no_such_component' },
+    };
     try {
       await authoriseAt(trx, callerOf(request), 'read', target);
     } catch {
-      return {
-        ok: false,
-        content: 'There is no component by that identifier that you can read.',
-        said: { code: 'no_such_component' },
-      };
+      return none;
     }
+    if ((await latestVersion(trx, input.component))?.kind !== 'component') return none;
     const facts = await loadFacts(trx, callerOf(request).principalId, target);
     const page = await listThreads(trx, {
       on: [input.component],
       limit: COMMENT_THREADS_MOST + 1,
       ...(input.state === undefined ? {} : { state: input.state }),
-      ...(facts?.principal.kind === 'external' ? { hideInternal: true } : {}),
+      ...(facts === undefined || facts.principal.kind === 'external' ? { hideInternal: true } : {}),
     });
     const reviewers = new Map<string, number>();
     const threads: string[] = [];
@@ -372,7 +374,11 @@ export function assistantHandlers(
             const who = reviewers.get(comment.author.id) ?? reviewers.size + 1;
             reviewers.set(comment.author.id, who);
             const parts = comment.texts.at(-1)?.parts ?? [];
-            const words = parts.flatMap((part) => ('text' in part ? [part.text] : [])).join('');
+            // One line, so a comment cannot read as another reviewer's or another thread.
+            const words = parts
+              .flatMap((part) => ('text' in part ? [part.text] : []))
+              .join('')
+              .replace(/\s*\n\s*/g, ' ');
             return `Reviewer ${who}: ${words}`;
           }),
         ].join('\n'),
@@ -385,7 +391,9 @@ export function assistantHandlers(
         null,
         threads.length === 0
           ? 'There are none.'
-          : `${threads.join('\n\n')}${page.length > COMMENT_THREADS_MOST ? '\n\nThe older threads are not shown.' : ''}`,
+          : capped(
+              `${page.length > COMMENT_THREADS_MOST ? 'The older threads are not shown.\n\n' : ''}${threads.join('\n\n')}`,
+            ),
       ),
       said: { code: 'found', count: threads.length },
     };
@@ -785,10 +793,17 @@ export function assistantHandlers(
                 ),
               ))
             );
-          case 'read_comments':
-            return await inDocument((trx) =>
-              readComments(trx, request, parsed.data as z.infer<typeof readCommentsInputSchema>),
-            );
+          case 'read_comments': {
+            const input = parsed.data as z.infer<typeof readCommentsInputSchema>;
+            return await inDocument(async (trx) => {
+              // A placing that does not resolve is not read another way, as `read_component` holds.
+              const found = await placed(trx, document, principal);
+              if (found?.placing.has(input.component) && !found.readable.has(input.component)) {
+                return missing('component');
+              }
+              return readComments(trx, request, input);
+            });
+          }
           case 'read_variables':
             return await inDocument((trx) => readVariables(trx, request));
           case 'propose_insert': {
