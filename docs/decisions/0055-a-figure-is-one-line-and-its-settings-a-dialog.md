@@ -1,6 +1,6 @@
 # 0055 - A figure is one line, and its settings a dialog
 
-- **Status:** Accepted; decision 1 amended for tables by [ADR-0079](0079-a-tables-toolbar-floats-and-its-tab-is-a-map.md)
+- **Status:** Accepted
 - **Date:** 2026-10-10
 
 ## Context
