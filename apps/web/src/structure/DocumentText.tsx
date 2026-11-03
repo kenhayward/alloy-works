@@ -504,8 +504,11 @@ export function DocumentText({
   openComments,
   onSuggest,
   newer,
+  movedParts,
 }: {
   outline: OutlineView;
+  /** Withheld parts that moved to another space and have threads (COL-069): only that is said. */
+  movedParts?: readonly string[] | undefined;
   scheme: NumberingScheme | null;
   /** What a relative cross-reference prints for above and below (cross-references 2, ruling R9). */
   words?: { readonly above: string; readonly below: string } | null;
@@ -734,7 +737,12 @@ export function DocumentText({
                   <Chip tone="ok">{say('document.changed-by-the-assistant')}</Chip>
                 )}
                 {node.component === null ? (
-                  <Lozenge kind="notYoursToRead">{say('document.not-yours-to-read')}</Lozenge>
+                  <>
+                    <Lozenge kind="notYoursToRead">{say('document.not-yours-to-read')}</Lozenge>
+                    {movedParts?.includes(node.id) === true && (
+                      <span>{say('moving.part-moved-with-threads')}</span>
+                    )}
+                  </>
                 ) : (
                   <>
                     {choosing ? (

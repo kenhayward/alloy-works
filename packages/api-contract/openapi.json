@@ -52378,6 +52378,10 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -53174,6 +53178,7 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
                     "state",
                     "states",
                     "transitions",
@@ -53211,6 +53216,7 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -97610,6 +97616,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -98146,6 +98163,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -98203,6 +98222,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -163033,6 +163054,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -163569,6 +163601,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -163692,6 +163726,8 @@
                     "mayEdit": false,
                     "archived": false,
                     "mayRetire": false,
+                    "mayMove": false,
+                    "movedParts": [],
                     "state": {
                       "key": "example",
                       "name": "example",
@@ -164193,6 +164229,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -164729,6 +164776,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -165456,6 +165505,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -165992,6 +166052,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -170719,6 +170781,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -171255,6 +171328,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -171312,6 +171387,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -171801,6 +171878,17 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
+                        },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
                         },
                         "state": {
                           "type": "object",
@@ -172338,6 +172426,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -173065,6 +173155,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -173601,6 +173702,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -174999,6 +175102,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -175535,6 +175649,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -175592,6 +175708,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -176081,6 +176199,17 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
+                        },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
                         },
                         "state": {
                           "type": "object",
@@ -176618,6 +176747,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -177345,6 +177476,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -177881,6 +178023,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -180527,6 +180671,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -181063,6 +181218,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -181120,6 +181277,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -181609,6 +181768,17 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
+                        },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
                         },
                         "state": {
                           "type": "object",
@@ -182146,6 +182316,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -182873,6 +183045,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -183409,6 +183592,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -185640,6 +185825,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -186176,6 +186372,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -186233,6 +186431,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -186722,6 +186922,17 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
+                        },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
                         },
                         "state": {
                           "type": "object",
@@ -187259,6 +187470,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -187986,6 +188199,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -188522,6 +188746,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -199554,6 +199780,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -200090,6 +200327,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -200147,6 +200386,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -200760,6 +201001,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -201296,6 +201548,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -206081,6 +206335,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -206617,6 +206882,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -206674,6 +206941,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -207163,6 +207432,17 @@
                         "mayRetire": {
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
+                        },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
                         },
                         "state": {
                           "type": "object",
@@ -207700,6 +207980,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -208427,6 +208709,17 @@
                           "type": "boolean",
                           "description": "Whether the caller may archive and unarchive it"
                         },
+                        "mayMove": {
+                          "type": "boolean",
+                          "description": "Whether the caller may move it to another space: administer on it"
+                        },
+                        "movedParts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                        },
                         "state": {
                           "type": "object",
                           "properties": {
@@ -208963,6 +209256,8 @@
                         "mayEdit",
                         "archived",
                         "mayRetire",
+                        "mayMove",
+                        "movedParts",
                         "state",
                         "states",
                         "transitions",
@@ -300927,6 +301222,10 @@
                           "mayCreate": {
                             "type": "boolean",
                             "description": "Whether the caller may create a component in this space; never in one archived"
+                          },
+                          "mayMoveInto": {
+                            "type": "boolean",
+                            "description": "Whether the caller may move content into this space: create or administer there"
                           }
                         },
                         "required": [
@@ -300934,7 +301233,8 @@
                           "name",
                           "archived",
                           "language",
-                          "mayCreate"
+                          "mayCreate",
+                          "mayMoveInto"
                         ]
                       }
                     },
@@ -324233,6 +324533,10 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -325029,6 +325333,7 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
                     "state",
                     "states",
                     "transitions",
@@ -325066,6 +325371,7 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
                   "state": {
                     "key": "example",
                     "name": "example",
@@ -328697,6 +329003,17 @@
                       "type": "boolean",
                       "description": "Whether the caller may archive and unarchive it"
                     },
+                    "mayMove": {
+                      "type": "boolean",
+                      "description": "Whether the caller may move it to another space: administer on it"
+                    },
+                    "movedParts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said"
+                    },
                     "state": {
                       "type": "object",
                       "properties": {
@@ -329252,6 +329569,8 @@
                     "mayEdit",
                     "archived",
                     "mayRetire",
+                    "mayMove",
+                    "movedParts",
                     "state",
                     "states",
                     "transitions",
@@ -329310,6 +329629,8 @@
                   "mayEdit": false,
                   "archived": false,
                   "mayRetire": false,
+                  "mayMove": false,
+                  "movedParts": [],
                   "state": {
                     "key": "example",
                     "name": "example",

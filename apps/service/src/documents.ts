@@ -30,6 +30,7 @@ import {
   waivedKeys,
   editOutline,
   setDocumentLanguage,
+  movedWithThreads,
   isArchived,
   isHeld,
   listReadableDocuments,
@@ -71,6 +72,7 @@ import {
 } from '@alloy-works/db';
 import type { AfterCommit } from './after-commit.js';
 import {
+  administerOrAbove,
   conditions,
   decide,
   number,
@@ -141,6 +143,27 @@ async function outlineView(
   });
   const readable = await readableComponents(viewer.trx, viewer.principalId, components);
   return withholdComponents(read.outline, (component) => readable.has(component));
+}
+
+/** The nodes this viewer may not read whose components moved and have threads (MV-F; COL-069). */
+async function movedParts(
+  viewer: Viewer,
+  document: string,
+  version: StoredVersion,
+): Promise<string[]> {
+  const read = readOutline(version.content, { artifact: document, version: version.id });
+  if (!read.ok) return [];
+  const placed: { node: string; component: string }[] = [];
+  walkOutline(read.outline.nodes, (node) => {
+    if (node.type === 'reference') placed.push({ node: node.id, component: node.component });
+  });
+  const components = placed.map((each) => each.component);
+  const readable = await readableComponents(viewer.trx, viewer.principalId, components);
+  const moved = await movedWithThreads(
+    viewer.trx,
+    components.filter((each) => !readable.has(each)),
+  );
+  return placed.filter((each) => moved.has(each.component)).map((each) => each.node);
 }
 
 /**
@@ -249,6 +272,8 @@ async function documentView(
     mayEdit: viewer.mayEdit,
     archived: await isArchived(viewer.trx, document.id),
     mayRetire: viewer.mayRetire,
+    mayMove: administerOrAbove(viewer.facts).allowed,
+    movedParts: await movedParts(viewer, document.id, version),
     // Told only to whoever may retire it or administer the environment (AH-G).
     onHold: (viewer.mayRetire || viewer.mayHold) && (await isHeld(viewer.trx, document.id)),
     mayHold: viewer.mayHold,

@@ -28,9 +28,10 @@ One service PR rather than two: a route moving a document without its publicatio
   `POST /v1/artifacts/{id}/move/preview`. Failure codes `space_moved`, `move_too_large`, plus those
   existing. Every route in the usual tests (`access-routes`, `audit-census`, `changing-access`,
   `cross-tenant`, `documentation.ts`). `SpaceList` items gain whether the caller may move into each.
-- Web: `apps/web/src/parts/MoveDialog.tsx`, targets from that field, the preview, "Also move"; a `move`
-  command in `shell/commands/registry.ts` and `menus.ts`, from `DocumentPage` and `ComponentEditor` beside
-  archive, and an image's page. One who can no longer read lands on Home, with a notice.
+- Web: `apps/web/src/lifecycle/MoveDialog.tsx`, targets from that field, the preview, "Also move"; a `move`
+  command in `shell/commands/registry.ts` and `menus.ts` for `DocumentPage`, a button beside archive in
+  `ComponentEditor`. An image has no page, and a template no such band: each moves by the API, an image
+  also with its document. One who may move here may read it after, so no landing on Home is needed.
 
 ## Tests worth naming
 

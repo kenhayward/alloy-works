@@ -52,6 +52,7 @@ import {
   storableEverywhere,
   type ContentDocument,
   type EffectiveField,
+  administerOrAbove,
 } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
 import { administersTenant, holdsAtTenant, notFound, scopesOf, type Authorised } from './access.js';
@@ -419,6 +420,7 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: false,
         mayRetire: decide('retire', facts).allowed,
+        mayMove: administerOrAbove(facts).allowed,
         // In its workflow's initial state, decided as `mayEdit` is, against the space.
         ...(await workflowView(trx, answer.version.artifactId, facts, principalId)),
         ...(await datesView(trx, answer.version.artifactId)),
@@ -567,6 +569,7 @@ export function componentHandlers(
         mayEdit: decide('edit', facts).allowed,
         archived: await isArchived(trx, id),
         mayRetire: decide('retire', facts).allowed,
+        mayMove: administerOrAbove(facts).allowed,
         ...(await workflowView(trx, id, facts, principalId, line)),
         ...(await datesView(trx, id)),
         ...(await scopeView(trx, id, principalId, line)),

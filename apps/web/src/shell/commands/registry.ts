@@ -63,6 +63,7 @@ export const COMMANDS: readonly AppCommand[] = [
   page('language', 'document.language', 'Language'),
   page('relationships', 'reuse.relationships'),
   page('access', 'access.manage-access', 'Manage access'),
+  page('move', 'moving.move-to-another-space-menu'),
   page('hold', 'menu.place-a-hold'),
   page('archive', 'lifecycle.archive'),
   page('delete', 'menu.delete'),

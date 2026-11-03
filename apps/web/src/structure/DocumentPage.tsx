@@ -70,6 +70,7 @@ import type { CommandState } from '../shell/commands/menus.js';
 import { StatusLead } from '../shell/Status.js';
 import { DocumentHeader } from './DocumentHeader.js';
 import { DocumentLanguage } from './DocumentLanguage.js';
+import { MoveDialog } from '../lifecycle/MoveDialog.js';
 import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
@@ -166,6 +167,9 @@ interface Opened {
   readonly archived: boolean;
   /** Whether the reader may archive and unarchive it. */
   readonly mayRetire: boolean;
+  readonly mayMove: boolean;
+  /** Withheld parts that moved and have threads (COL-069). */
+  readonly movedParts: readonly string[];
   /** Its workflow state and the transitions the reader may take (WF-G); null from a view before it. */
   readonly standing: Standing | null;
   /** Under a legal hold, told only to whoever may retire it or administer the environment. */
@@ -245,6 +249,8 @@ function documentIn(data: unknown): Read {
     mayReview,
     archived,
     mayRetire,
+    mayMove,
+    movedParts,
     onHold,
     mayHold,
     layout,
@@ -289,6 +295,10 @@ function documentIn(data: unknown): Read {
     mayReview: mayReview === true,
     archived: archived === true,
     mayRetire: mayRetire === true,
+    mayMove: mayMove === true,
+    movedParts: Array.isArray(movedParts)
+      ? movedParts.filter((each): each is string => typeof each === 'string')
+      : [],
     standing: standingIn(data) ?? null,
     onHold: onHold === true,
     dates: datesIn(data) ?? null,
@@ -963,6 +973,8 @@ export function DocumentPage({
   const datesAct = useRef<() => void>(null);
   const scopeAct = useRef<() => void>(null);
   const languageAct = useRef<() => void>(null);
+  const moveAct = useRef<() => void>(null);
+  const [movedSaid, setMovedSaid] = useState('');
   const relationshipsAct = useRef<() => void>(null);
   const archiveAct = useRef<() => void>(null);
   const deleteAct = useRef<() => void>(null);
@@ -2543,6 +2555,8 @@ export function DocumentPage({
         return opening(languageAct, document.mayEdit && !document.archived);
       case 'relationships':
         return opening(relationshipsAct);
+      case 'move':
+        return opening(moveAct, document.mayMove && !document.archived);
       case 'hold':
         return opening(holdAct, document.mayHold);
       case 'archive':
@@ -2695,6 +2709,18 @@ export function DocumentPage({
                 stateOf={commandState}
               />
               {/* What the Document menu opens: its dialogs, no buttons (ADR-0075). */}
+              <MoveDialog
+                act={moveAct}
+                client={client}
+                id={document.id}
+                from={document.space.id}
+                carries
+                onChanged={(said) => {
+                  setMovedSaid(said);
+                  setAttempt((count) => count + 1);
+                }}
+              />
+              {movedSaid !== '' && <p role="status">{movedSaid}</p>}
               <DocumentLanguage
                 act={languageAct}
                 client={client}
@@ -3527,6 +3553,7 @@ export function DocumentPage({
                     scheme={document.scheme}
                     words={document.words}
                     names={names}
+                    movedParts={document.movedParts}
                     texts={texts}
                     editable={editableNow}
                     present={presentIn}

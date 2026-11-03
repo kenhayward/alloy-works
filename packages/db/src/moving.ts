@@ -301,9 +301,14 @@ async function carried(
     }
     const { rows } = await sql<{ elsewhere: boolean }>`
       select exists (select from reference r
-                      where r.to_id = ${id} and r.from_id <> ${artifactId}) as elsewhere`.execute(
-      trx,
-    );
+                      where r.to_id = ${id} and r.from_id <> ${artifactId})
+          or exists (select from baseline_pin p join baseline b on b.id = p.baseline_id
+                      where p.artifact_id = ${id} and b.document_id <> ${artifactId})
+          or exists (select from publication_input i
+                       join artifact_version v on v.id = i.version_id
+                       join publication d on d.id = i.publication_id
+                      where v.artifact_id = ${id} and d.document_id <> ${artifactId})
+         as elsewhere`.execute(trx);
     if (rows[0]?.elsewhere) {
       stay(id, 'component', 'placed_elsewhere');
       continue;
@@ -478,4 +483,21 @@ export async function previewMove(
     sharesKept: plan.sharesKept,
     consequences: rows[0]!,
   };
+}
+
+/**
+ * Which of these components moved and have threads (MV-F): what a document may say of a part it
+ * withholds, and nothing of how many, when or who. Moved at any time: `artifact_move` cannot say who
+ * could read before, so one who never could learns as much, and no more.
+ */
+export async function movedWithThreads(
+  trx: TenantTransaction,
+  components: readonly string[],
+): Promise<ReadonlySet<string>> {
+  if (components.length === 0) return new Set();
+  const { rows } = await sql<{ id: string }>`
+    select distinct m.artifact_id as id from artifact_move m
+     where m.artifact_id = any(${ids(components)})
+       and exists (select from thread t where t.on_id = m.artifact_id)`.execute(trx);
+  return new Set(rows.map((row) => row.id));
 }

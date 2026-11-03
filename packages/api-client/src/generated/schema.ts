@@ -22577,6 +22577,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -22666,6 +22667,8 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -39368,6 +39371,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -39526,6 +39531,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -56122,6 +56131,8 @@ export interface operations {
                      *         "mayEdit": false,
                      *         "archived": false,
                      *         "mayRetire": false,
+                     *         "mayMove": false,
+                     *         "movedParts": [],
                      *         "state": {
                      *           "key": "example",
                      *           "name": "example",
@@ -56292,6 +56303,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -56591,6 +56606,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -56975,6 +56994,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -58171,6 +58194,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -58329,6 +58354,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -58610,6 +58639,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -58994,6 +59027,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -59508,6 +59545,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -59666,6 +59705,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -59947,6 +59990,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -60331,6 +60378,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -61105,6 +61156,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -61263,6 +61316,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -61544,6 +61601,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -61928,6 +61989,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -62774,6 +62839,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -62932,6 +62999,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -63213,6 +63284,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -63597,6 +63672,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -67804,6 +67883,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -67962,6 +68043,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -68303,6 +68388,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -70183,6 +70272,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -70341,6 +70432,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -70622,6 +70717,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -71006,6 +71105,10 @@ export interface operations {
                             archived: boolean;
                             /** @description Whether the caller may archive and unarchive it */
                             mayRetire: boolean;
+                            /** @description Whether the caller may move it to another space: administer on it */
+                            mayMove: boolean;
+                            /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                            movedParts: string[];
                             /** @description Its workflow state now, named by the definition deciding its next move */
                             state: {
                                 key: string;
@@ -105421,6 +105524,8 @@ export interface operations {
                             language: string | null;
                             /** @description Whether the caller may create a component in this space; never in one archived */
                             mayCreate: boolean;
+                            /** @description Whether the caller may move content into this space: create or administer there */
+                            mayMoveInto: boolean;
                         }[];
                         /** @description The cursor for the next page, or null at the end. A walk is read as of its first page: what changes after it is found by listing again */
                         next: string | null;
@@ -111753,6 +111858,7 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -111842,6 +111948,8 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;
@@ -113111,6 +113219,8 @@ export interface operations {
                      *       "mayEdit": false,
                      *       "archived": false,
                      *       "mayRetire": false,
+                     *       "mayMove": false,
+                     *       "movedParts": [],
                      *       "state": {
                      *         "key": "example",
                      *         "name": "example",
@@ -113270,6 +113380,10 @@ export interface operations {
                         archived: boolean;
                         /** @description Whether the caller may archive and unarchive it */
                         mayRetire: boolean;
+                        /** @description Whether the caller may move it to another space: administer on it */
+                        mayMove: boolean;
+                        /** @description The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said */
+                        movedParts: string[];
                         /** @description Its workflow state now, named by the definition deciding its next move */
                         state: {
                             key: string;

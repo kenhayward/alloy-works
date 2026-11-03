@@ -649,6 +649,18 @@ const administration = (ada: Adas): readonly Surface[] => [
     (language) => say(language, 'lifecycle.delete', { title: ada.component.title }),
   ),
   byButton(
+    'The Move dialog',
+    'lifecycle/MoveDialog.tsx',
+    `#/components/${ada.component.id}`,
+    (page, language) =>
+      page.getByRole('button', {
+        name: say(language, 'moving.move-to-another-space-menu'),
+        exact: true,
+      }),
+    'moving.move-to-another-space-menu',
+    (language) => say(language, 'moving.move-to-another-space'),
+  ),
+  byButton(
     'The Place a hold dialog',
     'lifecycle/Hold.tsx',
     `#/components/${ada.component.id}`,

@@ -760,6 +760,10 @@ marked `x-alloy-token-enabled`, sends `Authorization: Bearer` with the token typ
 The browser suite's `api-documentation.test.ts` drives it in the pinned Chromium against the page
 served by `registerDocs` and a stand-in `/v1/me` and upload route.
 
+### Moving between spaces
+
+`packages/db/src/moving.ts` ([moving.md](design/moving.md)): `moveToSpace` and `previewMove` share `planMove`, so a preview cannot say what a move would not do. The route holds the access epoch FOR UPDATE, and `artifact_space_changed` moves it, so no decision outlives the move; none is stored to recompute. What carries `space_id` is moved or named as staying by a test (`moving.test.ts`). `artifact_move` (0194) is insert-only, read only to say a withheld part moved and has threads. `recordPublication` takes the document's lock, so a publication recorded across a move lands where the document is.
+
 ## The audit log
 
 Every act writes its event in its own transaction, designed in [`design/audit.md`](design/audit.md) and

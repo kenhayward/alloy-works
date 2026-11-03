@@ -1,4 +1,4 @@
-import { decide, type AccessFacts, type Permission } from '@alloy-works/domain';
+import { administerOrAbove, decide, type AccessFacts, type Permission } from '@alloy-works/domain';
 import { sql } from 'kysely';
 import { loadFacts, loadReadableSet } from './access-facts.js';
 import { recordEvent, type AuditLabel } from './audit.js';
@@ -303,6 +303,8 @@ export interface SpaceForPrincipal {
   /** Archived: listed to its readers, marked, and never one to create in (SP-E). */
   readonly archived: boolean;
   readonly mayCreate: boolean;
+  /** Whether the caller may move content here: `create` or `administer` (MV-C), never one archived. */
+  readonly mayMoveInto: boolean;
 }
 
 /**
@@ -362,6 +364,11 @@ export async function listSpacesFor(
       archived,
       language: row.language,
       mayCreate: !archived && facts !== undefined && decide('create', { ...facts, scopes }).allowed,
+      mayMoveInto:
+        !archived &&
+        facts !== undefined &&
+        (decide('create', { ...facts, scopes }).allowed ||
+          administerOrAbove({ ...facts, scopes }).allowed),
     });
   }
   return { items: shown, next, snapshot };
