@@ -466,7 +466,10 @@ describe('the threads panel', () => {
     screen.getByRole('button', { name: 'Copy link' }).focus();
     await userEvent.keyboard('j');
     expect(await screen.findByText('3 of 3 threads')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next thread' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next thread' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     screen.getByRole('button', { name: 'Copy link' }).focus();
     await userEvent.keyboard('k');
     expect(await screen.findByText('2 of 3 threads')).toBeInTheDocument();
@@ -657,5 +660,186 @@ describe('the threads panel', () => {
       'aria-checked',
       'true',
     );
+  });
+  const opensAcross = async (description: string) => {
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Grace, .*comment/, description }),
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Open thread' }));
+  };
+
+  it('keeps each thread’s draft to itself, and takes a draft across the panel', async () => {
+    const { client, threads } = service();
+    threads.push(held(1, 'Which tray?'), held(2, 'Which printer?'));
+    panel(client);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Grace, .*comment/, description: 'Which tray?' }),
+    );
+    await userEvent.type(await screen.findByRole('combobox', { name: 'Reply' }), 'For the first');
+    await userEvent.click(screen.getByRole('button', { name: 'Open thread' }));
+    expect(screen.getByRole('combobox', { name: 'Reply' })).toHaveValue('For the first');
+    await userEvent.click(screen.getByRole('button', { name: 'Next thread' }));
+    await screen.findByText('2 of 2 threads');
+    expect(screen.getByRole('combobox', { name: 'Reply' })).toHaveValue('');
+    await userEvent.click(screen.getByRole('button', { name: 'Previous thread' }));
+    await screen.findByText('1 of 2 threads');
+    expect(screen.getByRole('combobox', { name: 'Reply' })).toHaveValue('For the first');
+  });
+
+  it('keeps a thread being read in the list when reading it leaves the filter', async () => {
+    const { client, threads } = service();
+    threads.push(held(1, 'Which tray?', { new: true }));
+    panel(client);
+    await screen.findByText('1 new');
+    await showing(/^New to me/);
+    const card = screen.getByRole('button', { name: /^Grace, .*new$/ });
+    await userEvent.click(card);
+    expect(await screen.findByRole('combobox', { name: 'Reply' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve' }));
+    await screen.findByText(/Resolved by Ada/);
+    expect(screen.getByText(/Resolved by Ada/)).toBeVisible();
+    // Once it closes, it goes, and the keys go to the list.
+    await userEvent.click(screen.getByRole('button', { name: /^Grace, .*comment/ }));
+    await waitFor(() => expect(screen.queryByText('Which tray?')).toBeNull());
+  });
+
+  it('keeps the keys in a thread after an act removes the control they were on', async () => {
+    const { client, threads } = service();
+    threads.push(held(1, 'Which tray?'), held(2, 'Which printer?'));
+    panel(client);
+    await opensAcross('Which tray?');
+    await userEvent.click(screen.getByRole('button', { name: 'Next thread' }));
+    await screen.findByText('2 of 2 threads');
+    // At the last, it says so and keeps the keys.
+    expect(screen.getByRole('button', { name: 'Next thread' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await userEvent.keyboard('k');
+    await screen.findByText('1 of 2 threads');
+    await userEvent.click(screen.getByRole('button', { name: 'Resolve' }));
+    await screen.findByText(/Resolved by Ada/);
+    expect(document.activeElement?.closest('section')).not.toBeNull();
+    await userEvent.keyboard('{Escape}');
+    expect(await screen.findByRole('button', { name: 'Show: Open' })).toBeInTheDocument();
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it('caps a long list of people to choose from, the one chosen scrolled to', async () => {
+    const { client, threads } = service();
+    const many = Array.from({ length: 30 }, (_, at) => ({ id: `p${at}`, name: `Person ${at}` }));
+    threads.push(
+      held(1, 'Which tray?', {
+        comments: many.map((each, at) => ({
+          id: id(400 + at),
+          author: each,
+          at: '2026-10-12T10:00:00.000Z',
+          texts: [{ parts: [{ text: 'Hm' }], at: '2026-10-12T10:00:00.000Z' }],
+        })),
+      }),
+    );
+    panel(client);
+    const search = await screen.findByRole('combobox', { name: 'Search, or @ for a person' });
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    await userEvent.type(search, '@per');
+    await userEvent.keyboard('{ArrowDown}');
+    await waitFor(() => expect(scrolled).toHaveBeenCalled());
+  });
+
+  it('COL-070 marks a thread an address opens as read, however soon the list arrives', async () => {
+    const { client, threads, asked } = service();
+    threads.push(held(1, 'Which tray?', { new: true }));
+    render(
+      <ThreadsPanel
+        client={client}
+        document={DOCUMENT}
+        targets={[]}
+        people={PEOPLE}
+        principalId={ADA}
+        mayAnswer={() => true}
+        placeOf={() => '1 Method'}
+        opening={{ thread: id(1), arrival: 1 }}
+      />,
+    );
+    await screen.findByRole('heading', { name: 'The whole component' });
+    await waitFor(() => expect(asked).toContain('POST /v1/threads/read'));
+    await userEvent.click(screen.getByRole('button', { name: 'All threads' }));
+    expect(screen.queryByText('1 new')).toBeNull();
+  });
+
+  it('steps past a thread that does not open', async () => {
+    const { client, threads } = service();
+    threads.push(held(1, 'One'), held(2, 'Two'), held(3, 'Three'));
+    const fetching = client;
+    const refusing = createApiClient({
+      baseUrl: 'http://acme.test',
+      fetch: (async (input: Request) => {
+        if (new URL(input.url).pathname === `/v1/threads/${id(2)}`) {
+          return json(410, { code: 'artifact_deleted', message: 'This has been deleted.' });
+        }
+        const answer = await fetching.GET(
+          new URL(input.url).pathname as never,
+          {
+            params: { query: Object.fromEntries(new URL(input.url).searchParams) },
+          } as never,
+        );
+        return json(200, answer.data);
+      }) as unknown as typeof fetch,
+    });
+    panel(refusing);
+    await opensAcross('One');
+    await userEvent.click(screen.getByRole('button', { name: 'Next thread' }));
+    expect(await screen.findByText('3 of 3 threads')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('reads a thread again when an act on it is refused, offering no more than it now takes', async () => {
+    const { client, threads } = service();
+    threads.push(held(1, 'Which tray?'));
+    const refusing = createApiClient({
+      baseUrl: 'http://acme.test',
+      fetch: (async (input: Request) => {
+        const path = new URL(input.url).pathname;
+        if (input.method === 'POST' && path.endsWith('/comments')) {
+          threads[0]!.resolution = {
+            by: { id: GRACE, name: 'Grace' },
+            at: '2026-10-12T11:00:00.000Z',
+          };
+          return json(409, { code: 'thread_resolved', message: 'This thread is resolved.' });
+        }
+        const answer = await client.GET(
+          path as never,
+          {
+            params: { query: Object.fromEntries(new URL(input.url).searchParams) },
+          } as never,
+        );
+        return json(200, answer.data);
+      }) as unknown as typeof fetch,
+    });
+    panel(refusing);
+    await userEvent.click(await screen.findByRole('button', { name: /^Grace, .*comment/ }));
+    await userEvent.type(await screen.findByRole('combobox', { name: 'Reply' }), 'Yes{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent('This thread is resolved.');
+    await waitFor(() => expect(screen.queryByRole('combobox', { name: 'Reply' })).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Resolve' })).toBeNull();
+  });
+
+  it('searches words starting with @ where they name nobody, and counts only open threads as new', async () => {
+    const { client, threads } = service();
+    threads.push(
+      held(1, 'See @zzz here'),
+      held(2, 'Other'),
+      held(3, 'Done', {
+        new: true,
+        resolution: { by: { id: ADA, name: 'Ada' }, at: '2026-10-12T11:00:00.000Z' },
+      }),
+    );
+    panel(client);
+    const search = await screen.findByRole('combobox', { name: 'Search, or @ for a person' });
+    expect(screen.queryByText(/\d new/)).toBeNull();
+    await userEvent.type(search, '@zzz');
+    expect(screen.getByText('See @zzz here')).toBeInTheDocument();
+    expect(screen.queryByText('Other')).toBeNull();
   });
 });

@@ -16,19 +16,25 @@ export const MOST_MENTIONS = 20;
  * The text changed to `value`: a mention before or after the change moves with its text, and one the
  * change lands in stops being a mention, its words left as typed.
  */
-export function applyEdit(draft: Draft, value: string): Draft {
+export function applyEdit(draft: Draft, value: string, caret?: number): Draft {
   const before = draft.text;
-  let start = 0;
-  while (start < before.length && start < value.length && before[start] === value[start]) {
-    start += 1;
-  }
+  // Where the caret stands says which of two alike characters changed: all after it stood still.
+  const mostTail = Math.min(before.length, value.length - (caret ?? 0));
   let tail = 0;
   while (
-    tail < before.length - start &&
-    tail < value.length - start &&
+    tail < mostTail &&
+    (caret !== undefined || tail < Math.min(before.length, value.length)) &&
     before[before.length - 1 - tail] === value[value.length - 1 - tail]
   ) {
     tail += 1;
+  }
+  let start = 0;
+  while (
+    start < before.length - tail &&
+    start < value.length - tail &&
+    before[start] === value[start]
+  ) {
+    start += 1;
   }
   const end = before.length - tail;
   const moved = value.length - before.length;
@@ -50,7 +56,7 @@ export function typedMention(
   const at = draft.text.lastIndexOf('@', caret - 1);
   if (at < 0 || caret === 0) return null;
   const query = draft.text.slice(at + 1, caret);
-  if (/[\s@]/.test(query) || query.length > 40) return null;
+  if (/[\n@]/.test(query) || query.length > 60) return null;
   if (at > 0 && !/\s/.test(draft.text[at - 1]!)) return null;
   if (draft.mentions.some((each) => at >= each.from && at < each.to)) return null;
   return { at, query };
@@ -64,7 +70,11 @@ export function chooseMention(
   person: { readonly id: string; readonly name: string },
 ): { readonly draft: Draft; readonly caret: number } {
   const said = `@${person.name}`;
-  const next = applyEdit(draft, `${draft.text.slice(0, at)}${said} ${draft.text.slice(caret)}`);
+  const next = applyEdit(
+    draft,
+    `${draft.text.slice(0, at)}${said} ${draft.text.slice(caret)}`,
+    at + said.length + 1,
+  );
   const to = at + said.length;
   return {
     draft: {

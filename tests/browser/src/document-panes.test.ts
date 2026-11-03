@@ -108,7 +108,12 @@ describe("the panes beside a document's text, in Chromium", () => {
       await within('in place');
       if (shot) await page.screenshot({ path: `${shot}-inplace.png` });
       await reply.fill('@');
-      await panel.getByRole('listbox', { name: 'Mention someone' }).waitFor();
+      const mentioning = panel.getByRole('listbox', { name: 'Mention someone' });
+      await mentioning.waitFor();
+      // Standing in the window, whatever the panel clips.
+      const offered = await mentioning.boundingBox();
+      expect(offered!.y).toBeGreaterThanOrEqual(0);
+      expect(offered!.y + offered!.height).toBeLessThanOrEqual(900);
       await checkAxe(page, 'the threads panel, mentioning', task.meta, {
         shows: [panel.getByRole('listbox')],
       });

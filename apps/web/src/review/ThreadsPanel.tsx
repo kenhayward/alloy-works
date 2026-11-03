@@ -27,7 +27,13 @@ import {
   firstName,
   type Person,
 } from './ThreadFaces.js';
-import { nameMatches, ThreadComposer } from './ThreadComposer.js';
+import type { Draft } from './mentionDraft.js';
+import {
+  nameMatches,
+  ThreadComposer,
+  useActiveInSight,
+  useChoicesPlace,
+} from './ThreadComposer.js';
 import {
   countsOf,
   inState,
@@ -55,6 +61,7 @@ export interface ThreadSummary {
   readonly internal?: boolean;
   readonly resolvedAt: string | null;
   readonly comments: number;
+  readonly lastAt: string;
   /** Its first comment as it reads now. */
   readonly said: readonly Part[];
   /** Whoever has commented, in the order each first did. */
@@ -278,6 +285,9 @@ function ThreadSearch({
       ? []
       : found.filter((each) => each.id !== person && nameMatches(nameFor(each), typed));
   const shownActive = Math.min(active, Math.max(offered.length - 1, 0));
+  const around = useRef<HTMLDivElement>(null);
+  const place = useChoicesPlace(around, offered.length > 0, false);
+  useActiveInSight(`${ids}-option-${shownActive}`, offered.length > 0, shownActive);
   const choose = (each: InThreads) => {
     onChoose(each.id);
     onText(text.slice(0, at).trimEnd());
@@ -305,7 +315,7 @@ function ThreadSearch({
   };
   return (
     <div className={styles['search']}>
-      <div className={styles['searchBox']}>
+      <div ref={around} className={styles['searchBox']}>
         <Icon name="Search" size={16} />
         {chosen && (
           <span className={styles['personChip']}>
@@ -345,7 +355,7 @@ function ThreadSearch({
         />
       </div>
       {offered.length > 0 && (
-        <div className={styles['suggestions']}>
+        <div className={styles['suggestions']} style={place}>
           <p id={`${ids}-heading`} className={styles['suggestHeading']}>
             {say('review.filter-by-person')}
           </p>
@@ -558,6 +568,17 @@ export function ThreadsPanel({
   const [editing, setEditing] = useState<string | null>(null);
   const [said, setSaid] = useState('');
   const [refused, setRefused] = useState('');
+  // The thread being read from the list, which stays in it until it closes, whatever reading it did.
+  const [fromList_, setFromList] = useState<string | null>(null);
+  const drafts = useRef(new Map<string, Draft>());
+  const keptDraft = (thread: string) => ({
+    kept: drafts.current.get(thread),
+    onKept: (draft: Draft) => drafts.current.set(thread, draft),
+  });
+  // What the reader has read here, by the latest comment they saw: a list read since, begun before
+  // the mark was taken, says no otherwise.
+  const readTo = useRef(new Map<string, string>());
+  const root = useRef<HTMLDivElement>(null);
   const whole = useRef<HTMLElement>(null);
   const cardToFocus = useRef<string | null>(null);
   const takeFocus = useRef(false);
@@ -587,7 +608,12 @@ export function ThreadsPanel({
         setThreads(null);
         return null;
       }
-      listed.push(...(answer.data.threads as unknown as ThreadSummary[]));
+      listed.push(
+        ...(answer.data.threads as unknown as ThreadSummary[]).map((each) => {
+          const to = readTo.current.get(each.id);
+          return to !== undefined && each.lastAt <= to ? { ...each, new: false } : each;
+        }),
+      );
       cursor = answer.data.next ?? undefined;
     } while (cursor !== undefined);
     setThreads(listed);
@@ -602,32 +628,50 @@ export function ThreadsPanel({
     if (threads) onThreadsNow(threads, inState(threads, show));
   }, [threads, show, onThreadsNow]);
 
-  /** The reader has read these: marked, and no longer new here, without reading the list again. */
-  const markRead = (these: readonly string[]) => {
+  /** The reader has read these, this far: marked, and no longer new here, the list not read again. */
+  const markRead = (these: readonly { readonly id: string; readonly to: string }[]) => {
     if (these.length === 0) return;
+    for (const each of these) readTo.current.set(each.id, each.to);
+    const ids = these.map((each) => each.id);
     setThreads(
-      (was) =>
-        was?.map((each) => (these.includes(each.id) ? { ...each, new: false } : each)) ?? was,
+      (was) => was?.map((each) => (ids.includes(each.id) ? { ...each, new: false } : each)) ?? was,
     );
-    for (let at = 0; at < these.length; at += 1000) {
+    for (let at = 0; at < ids.length; at += 1000) {
       void client
-        .POST('/v1/threads/read', { body: { threads: [...these.slice(at, at + 1000)] } })
+        .POST('/v1/threads/read', { body: { threads: ids.slice(at, at + 1000) } })
         .catch(() => {});
     }
   };
 
-  const open = async (id: string, wholePanel: boolean) => {
+  const open = async (id: string, wholePanel: boolean, fromList = true): Promise<boolean> => {
     setRefused('');
     setEditing(null);
     const answer = await client.GET('/v1/threads/{id}', { params: { path: { id } } });
-    if (answer.data) {
-      setOpened(answer.data as unknown as Thread);
-      setAcross(wholePanel);
-      setStarting(false);
-      if (summaryOf(id)?.new === true) markRead([id]);
+    if (!answer.data) {
+      // A thread on a component since deleted is listed and does not open (COL-067): say why.
+      setRefused(refusalOf(answer.error, say('review.the-thread-could-not-be-2')));
+      return false;
     }
-    // A thread on a component since deleted is listed and does not open (COL-067): say why.
-    else setRefused(refusalOf(answer.error, say('review.the-thread-could-not-be-2')));
+    const thread = answer.data as unknown as Thread;
+    setOpened(thread);
+    setAcross(wholePanel);
+    setStarting(false);
+    setFromList(fromList ? id : null);
+    markRead([{ id, to: thread.comments.at(-1)?.at ?? '' }]);
+    return true;
+  };
+
+  /** A thread read again after an act on it was refused: what it now takes is what it offers. */
+  const readItAgain = async (id: string) => {
+    const answer = await client.GET('/v1/threads/{id}', { params: { path: { id } } });
+    if (answer.data) setOpened(answer.data as unknown as Thread);
+    await read();
+  };
+
+  /** The keys, once an act has taken away the control they were on. */
+  const keysAfterAct = (thread: string) => {
+    if (across) whole.current?.focus();
+    else cardToFocus.current = thread;
   };
 
   const openedFor = useRef<number | null>(null);
@@ -637,7 +681,7 @@ export function ThreadsPanel({
     // A click somewhere else on the page (each one's arrival below zero) brings the keys along; an
     // address arriving does not take them from where the page put them.
     takeFocus.current = opening.arrival < 0;
-    void open(opening.thread, true);
+    void open(opening.thread, true, false);
     // `open` is made afresh each render; the arrival is what asks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opening?.thread, opening?.arrival]);
@@ -667,7 +711,9 @@ export function ThreadsPanel({
       whole.current?.focus();
     }
     if (cardToFocus.current !== null && !across) {
-      window.document.getElementById(`${ids}-card-${cardToFocus.current}`)?.focus();
+      (
+        window.document.getElementById(`${ids}-card-${cardToFocus.current}`) ?? root.current
+      )?.focus();
       cardToFocus.current = null;
     }
   });
@@ -751,6 +797,7 @@ export function ThreadsPanel({
     });
     if (!answer.data) {
       setRefused(refusalOf(answer.error, say('review.the-reply-could-not-be')));
+      await readItAgain(thread);
       return false;
     }
     untold(answer.data);
@@ -768,6 +815,7 @@ export function ThreadsPanel({
     });
     if (!answer.data) {
       setRefused(refusalOf(answer.error, say('review.the-comment-could-not-be')));
+      await readItAgain(thread);
       return false;
     }
     untold(answer.data);
@@ -786,6 +834,8 @@ export function ThreadsPanel({
     });
     if (!answer.data) {
       setRefused(refusalOf(answer.error, say('review.the-thread-could-not-be-4')));
+      await readItAgain(thread);
+      keysAfterAct(thread);
       return;
     }
     setSaid(
@@ -795,6 +845,7 @@ export function ThreadsPanel({
       ),
     );
     setOpened(answer.data as unknown as Thread);
+    keysAfterAct(thread);
     await read();
   };
 
@@ -806,6 +857,8 @@ export function ThreadsPanel({
     });
     if (!answer.data) {
       setRefused(refusalOf(answer.error, say('review.the-thread-could-not-be-5')));
+      await readItAgain(thread);
+      keysAfterAct(thread);
       return;
     }
     setSaid(
@@ -815,6 +868,7 @@ export function ThreadsPanel({
       ),
     );
     setOpened(answer.data as unknown as Thread);
+    keysAfterAct(thread);
     await read();
   };
 
@@ -841,23 +895,31 @@ export function ThreadsPanel({
   );
   const all = threads ?? [];
   const found = peopleIn(all, people, principalId);
-  const shown = shownThreads(all, { show, person, text: textOf(text) }, reading);
+  const found_ = shownThreads(all, { show, person, text: textOf(text, found) }, reading);
+  const shown = all.filter((each) => each.id === fromList_ || found_.includes(each));
   const counts = countsOf(all, principalId);
   const openCount = all.filter((each) => each.resolvedAt === null).length;
   const newOnes = all.filter((each) => each.new);
+  const newOpen = newOnes.filter((each) => each.resolvedAt === null);
 
   const leave = () => {
     if (opened !== null) cardToFocus.current = opened.id;
     setOpened(null);
     setAcross(false);
+    setFromList(null);
   };
 
   const at = opened === null ? -1 : shown.findIndex((each) => each.id === opened.id);
-  const step = (by: 1 | -1) => {
-    const next = shown[at + by];
-    if (next === undefined) return;
-    onGoTo?.(next);
-    void open(next.id, true);
+  /** The next thread that opens, passing over any that does not (COL-067). */
+  const step = async (by: 1 | -1) => {
+    if (at < 0) return;
+    for (let next = at + by; shown[next] !== undefined; next += by) {
+      const thread = shown[next]!;
+      if (await open(thread.id, true)) {
+        onGoTo?.(thread);
+        return;
+      }
+    }
   };
 
   const onPanelKey = (event: KeyboardEvent<HTMLElement>) => {
@@ -873,7 +935,7 @@ export function ThreadsPanel({
     if (key === 'j' || key === 'k') {
       // Taken here, so a `G` waiting for its letter stops waiting (`useGoToKeys`).
       event.preventDefault();
-      step(key === 'j' ? 1 : -1);
+      void step(key === 'j' ? 1 : -1);
     }
   };
 
@@ -966,8 +1028,8 @@ export function ThreadsPanel({
                 className={styles['icon']}
                 label={say('review.previous-thread')}
                 shortcut="K"
-                disabled={at === 0}
-                onClick={() => step(-1)}
+                aria-disabled={at === 0}
+                onClick={() => void step(-1)}
               >
                 <Icon name="Move up" size={16} />
               </IconButton>
@@ -975,8 +1037,8 @@ export function ThreadsPanel({
                 className={styles['icon']}
                 label={say('review.next-thread')}
                 shortcut="J"
-                disabled={at === shown.length - 1}
-                onClick={() => step(1)}
+                aria-disabled={at === shown.length - 1}
+                onClick={() => void step(1)}
               >
                 <Icon name="Move down" size={16} />
               </IconButton>
@@ -1036,6 +1098,8 @@ export function ThreadsPanel({
         {mayAct(opened) && (
           <div className={styles['wholeReply']}>
             <ThreadComposer
+              key={opened.id}
+              {...keptDraft(opened.id)}
               label={say('review.reply')}
               placeholder={say('review.reply-or-type-at')}
               action={say('review.reply')}
@@ -1051,12 +1115,12 @@ export function ThreadsPanel({
   }
 
   return (
-    <div className={styles['threadsPanel']}>
+    <div ref={root} tabIndex={-1} className={styles['threadsPanel']}>
       <header className={styles['head']}>
         <h2 className={styles['title']}>{say('review.threads-title')}</h2>
         <Chip>{say('review.n-open', { count: openCount })}</Chip>
-        {newOnes.length > 0 && (
-          <Chip tone="accent">{say('review.n-new', { count: newOnes.length })}</Chip>
+        {newOpen.length > 0 && (
+          <Chip tone="accent">{say('review.n-new', { count: newOpen.length })}</Chip>
         )}
         <span className={styles['headSpace']} />
         {targets.length > 0 && (
@@ -1073,7 +1137,7 @@ export function ThreadsPanel({
           className={styles['icon']}
           label={say('review.mark-all-as-read')}
           disabled={newOnes.length === 0}
-          onClick={() => markRead(newOnes.map((each) => each.id))}
+          onClick={() => markRead(newOnes.map((each) => ({ id: each.id, to: each.lastAt })))}
         >
           <Icon name="Mark all read" size={16} />
         </IconButton>
@@ -1184,6 +1248,7 @@ export function ThreadsPanel({
                     onClick={() => {
                       if (isOpen) {
                         setOpened(null);
+                        setFromList(null);
                         return;
                       }
                       onGoTo?.(thread);
@@ -1250,6 +1315,8 @@ export function ThreadsPanel({
                       />
                       {mayAct(opened) && (
                         <ThreadComposer
+                          key={opened.id}
+                          {...keptDraft(opened.id)}
                           label={say('review.reply')}
                           placeholder={say('review.reply-or-at')}
                           action={say('review.reply')}
@@ -1286,8 +1353,10 @@ export function ThreadsPanel({
   );
 }
 
-/** The search's words, the person being typed after an `@` left out until they are chosen. */
-const textOf = (typed: string) => {
+/** The search's words, leaving out a person being typed after an `@`, where it names anybody. */
+const textOf = (typed: string, found: readonly InThreads[]) => {
   const at = typed.lastIndexOf('@');
-  return at >= 0 && (at === 0 || typed[at - 1] === ' ') ? typed.slice(0, at) : typed;
+  if (at < 0 || (at > 0 && typed[at - 1] !== ' ')) return typed;
+  const query = typed.slice(at + 1);
+  return found.some((each) => nameMatches(each.name, query)) ? typed.slice(0, at) : typed;
 };

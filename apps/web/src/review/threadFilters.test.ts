@@ -14,6 +14,7 @@ const thread = (id: string, over: Partial<ThreadSummary> = {}): ThreadSummary =>
   startedAt: '2026-11-03T09:00:00.000Z',
   resolvedAt: null,
   comments: 1,
+  lastAt: '2026-11-03T09:00:00.000Z',
   said: [{ text: 'Said' }],
   participants: [ADA],
   mentioned: [],

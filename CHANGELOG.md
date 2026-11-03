@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.229.0 - 2026-11-03 (PR #NNN)
+## 0.229.0 - 2026-11-03 (PR #925)
 
 The threads panel closed (the TP plan): cards you can read at a glance, found by person, words or state, and a thread opened where it is listed or across the panel.
 

@@ -1,10 +1,13 @@
 import {
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type FormEvent,
   type KeyboardEvent,
+  type RefObject,
 } from 'react';
 
 import { Icon } from '../editor/Icon.js';
@@ -27,6 +30,7 @@ import { fold } from './threadFilters.js';
 import styles from './ThreadsPanel.module.css';
 
 const SUGGESTED = 6;
+const ROOM_WANTED = 240;
 
 /** A person's name, the letters a query matched underlined, wherever folding kept each letter's place. */
 function Matched({ name, query }: { name: string; query: string }) {
@@ -44,11 +48,61 @@ function Matched({ name, query }: { name: string; query: string }) {
   );
 }
 
-/** Whether a query matches the start of any of a name's words. */
+/** Whether a query matches a name from the start of any of its words, across the words after. */
 export const nameMatches = (name: string | null, query: string): boolean => {
+  const folded = fold(name ?? '');
   const wanted = fold(query);
-  return (name ?? '').split(/\s+/).some((word) => fold(word).startsWith(wanted));
+  return folded.startsWith(wanted) || folded.includes(` ${wanted}`);
 };
+
+/**
+ * Where a list of choices stands by what it belongs to: fixed to the window, as the panel clips what
+ * overflows it, above if it fits and on whichever side has more room if it does not.
+ */
+export function useChoicesPlace(
+  anchor: RefObject<HTMLElement | null>,
+  open: boolean,
+  prefersAbove: boolean,
+): CSSProperties {
+  const [place, setPlace] = useState<CSSProperties>({});
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const measure = () => {
+      const box = anchor.current?.getBoundingClientRect();
+      if (!box) return;
+      const gap = 4;
+      const above = box.top - gap * 2;
+      const below = window.innerHeight - box.bottom - gap * 2;
+      const up = prefersAbove
+        ? above >= ROOM_WANTED || above > below
+        : above > below && below < ROOM_WANTED;
+      setPlace({
+        position: 'fixed',
+        insetInline: 'auto',
+        left: box.left,
+        width: box.width,
+        ...(up
+          ? { top: 'auto', bottom: window.innerHeight - box.top + gap, maxHeight: above }
+          : { top: box.bottom + gap, bottom: 'auto', maxHeight: below }),
+      });
+    };
+    measure();
+    window.addEventListener('scroll', measure, true);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('scroll', measure, true);
+      window.removeEventListener('resize', measure);
+    };
+  }, [anchor, open, prefersAbove]);
+  return place;
+}
+
+/** The chosen one of a list kept in sight as the arrows move. */
+export function useActiveInSight(id: string, open: boolean, active: number): void {
+  useEffect(() => {
+    if (open) document.getElementById(id)?.scrollIntoView?.({ block: 'nearest' });
+  }, [id, open, active]);
+}
 
 /**
  * A comment being written (TH-B; the TP plan, T5): a plain box, the people it names typed where they
@@ -64,6 +118,8 @@ export function ThreadComposer({
   initial,
   roomy = false,
   focusWhen,
+  kept,
+  onKept,
   onSend,
   onCancel,
 }: {
@@ -78,6 +134,9 @@ export function ThreadComposer({
   roomy?: boolean;
   /** Counted up for what asks for the keys here. */
   focusWhen?: number;
+  /** A draft kept by whoever holds this box, and told as it changes, to outlive its leaving. */
+  kept?: Draft | undefined;
+  onKept?: (draft: Draft) => void;
   onSend: (parts: Part[]) => Promise<boolean>;
   onCancel?: () => void;
 }) {
@@ -85,13 +144,18 @@ export function ThreadComposer({
   const nameOf = (id: string) =>
     people.find((each) => each.id === id)?.name ?? say('review.somebody');
   const [draft, setDraft] = useState<Draft>(() =>
-    initial === undefined ? EMPTY_DRAFT : fromParts(initial, nameOf),
+    initial === undefined ? (kept ?? EMPTY_DRAFT) : fromParts(initial, nameOf),
   );
+  const keep = (next: Draft) => {
+    setDraft(next);
+    onKept?.(next);
+  };
   const [caret, setCaret] = useState(draft.text.length);
   const [closed, setClosed] = useState(false);
   const [active, setActive] = useState(0);
   const [busy, setBusy] = useState(false);
   const box = useRef<HTMLTextAreaElement>(null);
+  const boxAround = useRef<HTMLDivElement>(null);
   const caretTo = useRef<number | null>(null);
 
   useLayoutEffect(() => {
@@ -118,7 +182,7 @@ export function ThreadComposer({
   const shownActive = Math.min(active, Math.max(offered.length - 1, 0));
 
   const change = (value: string, at: number) => {
-    setDraft(applyEdit(draft, value));
+    keep(applyEdit(draft, value, at));
     setCaret(at);
     setClosed(false);
     setActive(0);
@@ -130,7 +194,7 @@ export function ThreadComposer({
       id: person.id,
       name: person.name ?? say('review.somebody'),
     });
-    setDraft(chosen.draft);
+    keep(chosen.draft);
     setCaret(chosen.caret);
     caretTo.current = chosen.caret;
     box.current?.focus();
@@ -143,7 +207,7 @@ export function ThreadComposer({
     const sent = await onSend(toParts(draft));
     setBusy(false);
     if (sent && initial === undefined) {
-      setDraft(EMPTY_DRAFT);
+      keep(EMPTY_DRAFT);
       setCaret(0);
     }
   };
@@ -187,6 +251,8 @@ export function ThreadComposer({
   };
 
   const ready = hasContent(draft) && !busy;
+  const place = useChoicesPlace(boxAround, offered.length > 0, true);
+  useActiveInSight(`${ids}-option-${shownActive}`, offered.length > 0, shownActive);
   return (
     <form
       className={styles['composer']}
@@ -194,7 +260,7 @@ export function ThreadComposer({
       onSubmit={(event) => void send(event)}
     >
       {offered.length > 0 && (
-        <div className={styles['suggestions']} data-above="">
+        <div className={styles['suggestions']} style={place}>
           <p id={`${ids}-heading`} className={styles['suggestHeading']}>
             {say('review.mention-someone')}
           </p>
@@ -223,7 +289,7 @@ export function ThreadComposer({
           <p className={styles['suggestFoot']}>{say('review.enter-or-tab-to-choose')}</p>
         </div>
       )}
-      <div className={styles['box']}>
+      <div ref={boxAround} className={styles['box']}>
         <label htmlFor={`${ids}-words`} className={styles['hiddenLabel']}>
           {label}
         </label>

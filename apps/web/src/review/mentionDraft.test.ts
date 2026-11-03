@@ -48,6 +48,15 @@ describe('mentions typed in a comment', () => {
     expect(applyEdit(draft, `${draft.text}x`).mentions).toHaveLength(1);
   });
 
+  it('keeps a mention through an @ typed or deleted right before it, by where the caret is', () => {
+    const { draft } = named('hi @a');
+    const typed = applyEdit(draft, `hi @${draft.text.slice(3)}`, 4);
+    expect(typed.mentions).toHaveLength(1);
+    expect(typed.mentions[0]!.from).toBe(4);
+    const back = applyEdit(typed, draft.text, 3);
+    expect(back.mentions).toEqual(draft.mentions);
+  });
+
   it('keeps a mention’s place through a comment read back to edit', () => {
     const parts = [{ text: 'Ask ' }, { mention: 'one' }, { text: ' please' }];
     const draft = fromParts(parts, () => 'Ada Moreau');
@@ -60,7 +69,8 @@ describe('mentions typed in a comment', () => {
     expect(typed('Ask @me')).toEqual({ at: 4, query: 'me' });
     expect(typed('@')).toEqual({ at: 0, query: '' });
     expect(typed('ada@example')).toBeNull();
-    expect(typed('@me now')).toBeNull();
+    expect(typed('@ada mor')).toEqual({ at: 0, query: 'ada mor' });
+    expect(typed('@me\nnow')).toBeNull();
     expect(typedMention(named('@a').draft, 3)).toBeNull();
   });
 

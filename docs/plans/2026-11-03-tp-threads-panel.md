@@ -176,6 +176,14 @@ and `architecture.md`. `trace generate` after prettier; CI's full run decides th
 - **Kept**: the CSS classes `RoundsPanel` and `SuggestionsPanel` import, and `anchorValues`, `personValues`.
 - **Also moved**: `DocumentPage.review.test.tsx`, `BaselinePage.test.tsx` fakes, `audit-census.test.ts`.
 
+## Final review
+
+Drove the stack and found eight breaks, each reproduced, fixed with a test: a draft posted to the next thread;
+a thread vanishing as reading it left the filter; the keys lost when an act removed their control; suggestions
+clipped by the panel; the person list uncapped; an address's thread never marked read; an `@` typed before a
+mention dropping it; J and K stuck on a thread that does not open. Marking read needs one route alone
+(`POST /v1/threads/read`), so T2's `PUT` was not built.
+
 ## Review focus
 
 For the pre-flight and the final review, to drive rather than read:
