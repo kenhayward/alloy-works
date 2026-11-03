@@ -311,11 +311,10 @@ describe('the list panel', () => {
     act(() => view.dispatch(view.state.tr.insertText('Creep')));
     fireEvent.keyDown(view.dom, { key: 'Enter', keyCode: 13 });
 
-    await waitFor(() => expect(asked.some((each) => each.route.startsWith('PUT'))).toBe(true));
-    const saved = asked.filter((each) => each.route.startsWith('PUT')).at(-1)!.body as {
-      content: { content: unknown[] };
-    };
-    expect(saved.content.content).toMatchObject([
+    // Wait for the save that holds the finished list, not the first PUT: an autosave of the
+    // half-made list (term typed, Enter not yet pressed) can reach `asked` first under load,
+    // and the last PUT at that moment is that intermediate one (issue #507).
+    const expected = [
       {
         type: 'list',
         kind: 'definition',
@@ -329,7 +328,13 @@ describe('the list panel', () => {
         ],
       },
       { type: 'paragraph', id: 'b2' },
-    ]);
+    ];
+    await waitFor(() => {
+      const last = asked.filter((each) => each.route.startsWith('PUT')).at(-1);
+      expect(last, 'a PUT reached the fake transport').toBeTruthy();
+      const saved = last!.body as { content: { content: unknown[] } };
+      expect(saved.content.content).toMatchObject(expected);
+    });
   });
 });
 

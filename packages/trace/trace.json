@@ -21539,7 +21539,7 @@
     {
       "id": "DAT-105",
       "file": "apps/connector/src/http-source.test.ts",
-      "line": 374,
+      "line": 377,
       "kind": "title"
     },
     {
@@ -25841,79 +25841,79 @@
     {
       "id": "AST-015",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1260,
+      "line": 1265,
       "kind": "title"
     },
     {
       "id": "AST-017",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1428,
+      "line": 1433,
       "kind": "title"
     },
     {
       "id": "AST-032",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1399,
+      "line": 1404,
       "kind": "title"
     },
     {
       "id": "AST-039",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1174,
+      "line": 1179,
       "kind": "title"
     },
     {
       "id": "AST-052",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1399,
+      "line": 1404,
       "kind": "title"
     },
     {
       "id": "CNT-016",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 867,
+      "line": 872,
       "kind": "title"
     },
     {
       "id": "CNT-018",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 556,
+      "line": 561,
       "kind": "title"
     },
     {
       "id": "CNT-036",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1856,
+      "line": 1861,
       "kind": "title"
     },
     {
       "id": "CNT-038",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1975,
+      "line": 1980,
       "kind": "title"
     },
     {
       "id": "CNT-077",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 346,
+      "line": 351,
       "kind": "title"
     },
     {
       "id": "CNT-087",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1706,
+      "line": 1711,
       "kind": "title"
     },
     {
       "id": "CNT-121",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 1090,
+      "line": 1095,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.blocks.test.tsx",
-      "line": 791,
+      "line": 796,
       "kind": "title"
     },
     {
@@ -26117,43 +26117,43 @@
     {
       "id": "CNT-044",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 846,
+      "line": 850,
       "kind": "title"
     },
     {
       "id": "CNT-048",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 874,
+      "line": 878,
       "kind": "title"
     },
     {
       "id": "CNT-057",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 1286,
+      "line": 1290,
       "kind": "title"
     },
     {
       "id": "CNT-080",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 919,
+      "line": 923,
       "kind": "title"
     },
     {
       "id": "REU-018",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 1330,
+      "line": 1334,
       "kind": "title"
     },
     {
       "id": "REU-026",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 1369,
+      "line": 1373,
       "kind": "title"
     },
     {
       "id": "STR-071",
       "file": "apps/web/src/editor/ComponentEditor.insertions.test.tsx",
-      "line": 350,
+      "line": 354,
       "kind": "title"
     },
     {
@@ -36041,19 +36041,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 952,
+      "line": 1000,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 948,
+      "line": 996,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 948,
+      "line": 996,
       "kind": "title"
     },
     {
