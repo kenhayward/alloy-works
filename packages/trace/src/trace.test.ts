@@ -112,7 +112,8 @@ describe('the committed trace.json', () => {
     // 1627, from 1625 (2026-11-01): AST-052 and AST-053, superseding AST-025 and AST-043 (AL).
     // 1628, from 1627 (2026-11-01): STY-086, superseding STY-066 (SY).
     // 1631, from 1628 (2026-11-02): CNT-188, CNT-189 and CNT-190 (AP).
-    expect(model.requirements).toHaveLength(1631);
+    // 1632, from 1631 (2026-11-03): COL-069 supersedes COL-068 (MV).
+    expect(model.requirements).toHaveLength(1632);
     expect(model.nonRequirements).toHaveLength(118);
     expect(model.questions).toHaveLength(135);
     // 591, from 589 (2026-10-04): bindings.md claims DAT-116 and STY-082 on Ken's answers to its questions; DAT-115 (review is not designed) and PUB-108 are named gaps.
@@ -1038,7 +1039,7 @@ describe('the citations in the committed model', () => {
     // 2393 (2026-11-01): SYc - themes of their own, STY-072 and STY-026.
     // 2399 (2026-11-02): SYd - the character form and the styles offered to authors, STY-033.
     // 2409 (2026-11-02): SYe - catalogues exported and imported, STY-043, STY-044, STY-071, STY-073.
-    expect(model.citations).toHaveLength(2432);
+    expect(model.citations).toHaveLength(2435);
   });
 
   it('cites no identifier the corpus does not hold', () => {

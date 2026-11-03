@@ -1,4 +1,5 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { movingHandlers } from './moving.js';
 import { templateMoveHandlers } from './template-moves.js';
 import { datesHandlers } from './dates.js';
 import { scopeHandlers } from './scopes.js';
@@ -874,6 +875,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...translationHandlers(tenantOf, options.objects),
     ...shareHandlers(tenantOf, options.objects),
     ...queryUsageHandlers(),
+    ...movingHandlers(),
     ...templateMoveHandlers(),
     ...erasureHandlers(),
 

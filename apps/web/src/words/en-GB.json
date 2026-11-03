@@ -3434,6 +3434,7 @@
   "admin.needs": "Needs",
   "admin.gate": "Gate",
   "admin.requires": "Requires",
+  "admin.moved": "Moved to another space",
   "admin.moves-from": "{label} moves from",
   "admin.moves-to": "{label} moves to",
   "admin.needs-2": "{label} needs",

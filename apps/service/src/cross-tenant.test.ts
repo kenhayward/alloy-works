@@ -250,6 +250,8 @@ const OTHER_TENANT_IDS: Readonly<
   createDocument: async (tenant, db) => ({ space: await spaceIdIn(tenant, db) }),
   getDocument: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   editOutline: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  moveToSpace: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
+  previewMoveToSpace: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   setDocumentLanguage: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   recordDocumentValues: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
   getDocumentParameters: async (tenant, db) => ({ id: await documentIdIn(tenant, db) }),
@@ -858,6 +860,8 @@ const VALID_INPUT: Readonly<
     },
   },
   createAssetUpload: { payload: { alternative: null } },
+  moveToSpace: { payload: { from: SESSION, to: SESSION, also: false } },
+  previewMoveToSpace: { payload: { from: SESSION, to: SESSION, also: false } },
   setDocumentLanguage: {
     payload: { openedFrom: SESSION, language: 'fr-FR', components: false },
   },

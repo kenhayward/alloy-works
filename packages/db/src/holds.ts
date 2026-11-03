@@ -170,7 +170,11 @@ interface HeldPlace {
  * title at the version it published, as publications are listed. An asset has no name: its
  * alternative text, as search finds it.
  */
-async function heldPlace(trx: TenantTransaction, kind: HeldKind, id: string): Promise<HeldPlace> {
+export async function heldPlace(
+  trx: TenantTransaction,
+  kind: HeldKind,
+  id: string,
+): Promise<HeldPlace> {
   if (kind === 'publication') {
     const row = await trx
       .selectFrom('publication as p')
@@ -220,6 +224,17 @@ export async function isHeld(trx: TenantTransaction, artifactId: string): Promis
       where not exists (select from legal_hold_release r where r.hold_id = h.id)
         and (h.artifact_id = ${artifactId}
           or h.space_id = (select a.space_id from artifact a where a.id = ${artifactId}))
+    ) as held`.execute(trx);
+  return rows[0]?.held === true;
+}
+
+/** Whether a hold on this space stands: leaving it would silently end that hold (MV-E). */
+export async function spaceHeld(trx: TenantTransaction, spaceId: string): Promise<boolean> {
+  const { rows } = await sql<{ held: boolean }>`
+    select exists (
+      select from legal_hold h
+      where h.space_id = ${spaceId}
+        and not exists (select from legal_hold_release r where r.hold_id = h.id)
     ) as held`.execute(trx);
   return rows[0]?.held === true;
 }

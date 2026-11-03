@@ -128,6 +128,7 @@ import type { StoredTheme } from './themes.js';
 import {
   headingOf,
   latestVersion,
+  lockArtifact,
   readVersion,
   type StoredVersion,
   type VersionHeading,
@@ -2459,6 +2460,14 @@ export async function recordPublication(
   trx: TenantTransaction,
   input: NewPublication,
 ): Promise<string | undefined> {
+  // Under the document's lock (MV-D): a move lists its publications under it, so this one is either
+  // listed or reads the space the move left, never left behind.
+  const of = await trx
+    .selectFrom('publication_request')
+    .select('document_id')
+    .where('id', '=', input.requestId)
+    .executeTakeFirst();
+  if (of) await lockArtifact(trx, of.document_id);
   const request = await trx
     .selectFrom('publication_request as r')
     .innerJoin('artifact as a', 'a.id', 'r.document_id')

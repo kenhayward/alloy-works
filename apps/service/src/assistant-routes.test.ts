@@ -804,6 +804,61 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       expect(sentSince(from)).not.toContain(marker);
     });
 
+    /** A component saying `word`, and Grace's comment saying it too, beside a marker no model may see. */
+    const commentedSaying = async (word: string) => {
+      const part = await h.component(h.general, 'Beds');
+      await h.place(part, { type: 'text', value: `The ${word} bed floods.`, marks: [] });
+      const marker = `COMMENT-${randomUUID()}`;
+      const started = await h.call('grace', 'POST', `/v1/components/${part.id}/threads`, {
+        version: part.version,
+        anchor: { kind: 'span', block: 'p1', quote: 'The', before: '' },
+        parts: [{ text: `${word} ${marker}` }],
+      });
+      expect(started.statusCode, started.body).toBe(200);
+      // Grace's own search finds the thread: what a model must not be given is there to give.
+      const searched = await h.call('grace', 'GET', `/v1/search?q=${word}&kind=thread`);
+      expect(searched.body).toContain(marker);
+      return { part, marker };
+    };
+
+    it('GEN-020 keeps a comment out of a document search: the component’s words are found, the comment’s reach no model', async () => {
+      const { part, marker } = await commentedSaying('larkspur');
+      const beds = await h.documentReferencing([part.id]);
+      const from = modelCalls();
+      h.connector.modelFor = turns(
+        [tool('t1', 'search_document', { query: 'larkspur' }), ended('tool_use')],
+        [text('Found.'), ended()],
+      );
+      const response = await h.call('grace', 'POST', `/v1/documents/${beds.id}/assistant/runs`, {
+        ask: 'Where is the larkspur?',
+      });
+      const found = framesOf(response.body).find((frame) => frame.event === 'tool_result')!;
+      expect(String(found.data.result)).toContain(part.id);
+      expect(String(found.data.result)).toContain('bed floods');
+      expect(modelCalls()).toBeGreaterThan(from);
+      expect(sentSince(from)).not.toContain(marker);
+      expect(response.body).not.toContain(marker);
+    });
+
+    it('GEN-020 keeps a comment out of a conversation’s component search too', async () => {
+      const { part, marker } = await commentedSaying('foxglove');
+      const conversation = (
+        await h.call('grace', 'POST', '/v1/conversations', { title: 'About the beds' })
+      ).json<{ conversation: { id: string } }>().conversation.id;
+      const from = modelCalls();
+      h.connector.modelFor = turns(
+        [tool('t1', 'search_components', { query: 'foxglove' }), ended('tool_use')],
+        [text('Found.'), ended()],
+      );
+      const response = await h.call('grace', 'POST', `/v1/conversations/${conversation}/turns`, {
+        ask: 'Where is the foxglove?',
+      });
+      const found = framesOf(response.body).find((frame) => frame.event === 'tool_result')!;
+      expect(String(found.data.result)).toContain(part.id);
+      expect(sentSince(from)).not.toContain(marker);
+      expect(response.body).not.toContain(marker);
+    });
+
     it('GEN-017 GEN-020 holds a query result to data too: a bound value asking for a call reaches only the requester’s reads', async () => {
       const connection = await h.connection('Injected readings');
       const definition = await h.definition(connection.id);

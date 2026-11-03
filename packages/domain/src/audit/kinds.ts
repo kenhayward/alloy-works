@@ -530,6 +530,13 @@ export const auditKindSpecs = {
   // A component or a document archived and unarchived (the AH plan, AH-E): about the artifact.
   'artifact.archived': kind(['LIF-073'], empty, 'packages/db/src/archival.ts'),
   'artifact.unarchived': kind(['LIF-073'], empty, 'packages/db/src/archival.ts'),
+  // An artifact moved between spaces (moving.md, MV-H): written once on each side, so each space's
+  // auditors see it, and about the artifact.
+  'artifact.moved': kind(
+    ['IAM-015'],
+    z.strictObject({ from: Id, to: Id }),
+    'packages/db/src/moving.ts',
+  ),
   // A component or a document deleted and undeleted (the DL plan, DL-B): about the artifact.
   'artifact.deleted': kind(['LIF-073'], empty, 'packages/db/src/deletion.ts'),
   'artifact.undeleted': kind(['LIF-073'], empty, 'packages/db/src/deletion.ts'),

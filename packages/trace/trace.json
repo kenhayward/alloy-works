@@ -3425,9 +3425,18 @@
       "area": "COL",
       "statement": "Where a component is moved between spaces (**IAM-015**), locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), and threads anchored into it must be surfaced as orphaned (COL-017)",
       "tranche": "T7",
-      "status": "Specified",
+      "status": "Superseded by COL-069",
       "document": "COL-collaboration-and-review.md",
       "line": 44
+    },
+    {
+      "id": "COL-069",
+      "area": "COL",
+      "statement": "Where a component is moved between spaces (**IAM-015**), locks and presence against it must degrade to absence exactly as a dropped connection does (COL-004), a thread on it must stand for whoever can still read it, and one who cannot must see on the withheld part only that it moved and that threads exist",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "COL-collaboration-and-review.md",
+      "line": 45
     },
     {
       "id": "COL-005",
@@ -3436,7 +3445,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 55
+      "line": 56
     },
     {
       "id": "COL-006",
@@ -3445,7 +3454,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 56
+      "line": 57
     },
     {
       "id": "COL-007",
@@ -3454,7 +3463,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 57
+      "line": 58
     },
     {
       "id": "COL-008",
@@ -3463,7 +3472,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 58
+      "line": 59
     },
     {
       "id": "COL-009",
@@ -3472,7 +3481,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 59
+      "line": 60
     },
     {
       "id": "COL-010",
@@ -3481,7 +3490,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 60
+      "line": 61
     },
     {
       "id": "COL-011",
@@ -3490,7 +3499,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 61
+      "line": 62
     },
     {
       "id": "COL-044",
@@ -3499,7 +3508,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 62
+      "line": 63
     },
     {
       "id": "COL-045",
@@ -3508,7 +3517,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 63
+      "line": 64
     },
     {
       "id": "COL-046",
@@ -3517,7 +3526,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 64
+      "line": 65
     },
     {
       "id": "COL-047",
@@ -3526,7 +3535,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 65
+      "line": 66
     },
     {
       "id": "COL-012",
@@ -3535,7 +3544,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 89
+      "line": 90
     },
     {
       "id": "COL-013",
@@ -3544,7 +3553,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 90
+      "line": 91
     },
     {
       "id": "COL-014",
@@ -3553,7 +3562,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 91
+      "line": 92
     },
     {
       "id": "COL-015",
@@ -3562,7 +3571,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 92
+      "line": 93
     },
     {
       "id": "COL-016",
@@ -3571,7 +3580,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 93
+      "line": 94
     },
     {
       "id": "COL-017",
@@ -3580,7 +3589,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 94
+      "line": 95
     },
     {
       "id": "COL-018",
@@ -3589,7 +3598,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 95
+      "line": 96
     },
     {
       "id": "COL-019",
@@ -3598,7 +3607,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 96
+      "line": 97
     },
     {
       "id": "COL-038",
@@ -3607,7 +3616,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 97
+      "line": 98
     },
     {
       "id": "COL-039",
@@ -3616,7 +3625,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 98
+      "line": 99
     },
     {
       "id": "COL-040",
@@ -3625,7 +3634,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 99
+      "line": 100
     },
     {
       "id": "COL-049",
@@ -3634,7 +3643,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 100
+      "line": 101
     },
     {
       "id": "COL-050",
@@ -3643,7 +3652,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 101
+      "line": 102
     },
     {
       "id": "COL-051",
@@ -3652,7 +3661,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 102
+      "line": 103
     },
     {
       "id": "COL-020",
@@ -3661,7 +3670,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 126
+      "line": 127
     },
     {
       "id": "COL-021",
@@ -3670,7 +3679,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 127
+      "line": 128
     },
     {
       "id": "COL-022",
@@ -3679,7 +3688,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 128
+      "line": 129
     },
     {
       "id": "COL-023",
@@ -3688,7 +3697,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 129
+      "line": 130
     },
     {
       "id": "COL-024",
@@ -3697,7 +3706,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "COL-025",
@@ -3706,7 +3715,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "COL-026",
@@ -3715,7 +3724,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "COL-027",
@@ -3724,7 +3733,7 @@
       "tranche": "T3",
       "status": "Superseded by COL-065",
       "document": "COL-collaboration-and-review.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "COL-065",
@@ -3733,7 +3742,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "COL-066",
@@ -3742,7 +3751,7 @@
       "tranche": "T9",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "COL-041",
@@ -3751,7 +3760,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "COL-042",
@@ -3760,7 +3769,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "COL-043",
@@ -3769,7 +3778,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "COL-048",
@@ -3778,7 +3787,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "COL-052",
@@ -3787,7 +3796,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "COL-028",
@@ -3796,7 +3805,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "COL-029",
@@ -3805,7 +3814,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "COL-030",
@@ -3814,7 +3823,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "COL-031",
@@ -3823,7 +3832,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "COL-032",
@@ -3832,7 +3841,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 167
+      "line": 168
     },
     {
       "id": "COL-057",
@@ -3841,7 +3850,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 168
+      "line": 169
     },
     {
       "id": "COL-058",
@@ -3850,7 +3859,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 169
+      "line": 170
     },
     {
       "id": "COL-059",
@@ -3859,7 +3868,7 @@
       "tranche": "T4",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 170
+      "line": 171
     },
     {
       "id": "COL-033",
@@ -3868,7 +3877,7 @@
       "tranche": "T3",
       "status": "Superseded by COL-063",
       "document": "COL-collaboration-and-review.md",
-      "line": 190
+      "line": 191
     },
     {
       "id": "COL-063",
@@ -3877,7 +3886,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "COL-064",
@@ -3886,7 +3895,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "COL-034",
@@ -3895,7 +3904,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "COL-035",
@@ -3904,7 +3913,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 194
+      "line": 195
     },
     {
       "id": "COL-036",
@@ -3913,7 +3922,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "COL-037",
@@ -3922,7 +3931,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "COL-060",
@@ -3931,7 +3940,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "COL-061",
@@ -3940,7 +3949,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "COL-062",
@@ -3949,7 +3958,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "COL-053",
@@ -3958,7 +3967,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 200
+      "line": 201
     },
     {
       "id": "COL-054",
@@ -3967,7 +3976,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "COL-collaboration-and-review.md",
-      "line": 224
+      "line": 225
     },
     {
       "id": "DAT-001",
@@ -14829,43 +14838,43 @@
       "id": "COL-N01",
       "statement": "**No real-time character-level co-editing.** Scope §9 decision 4; the parallelism authors want is across components (**COL-011**)",
       "document": "COL-collaboration-and-review.md",
-      "line": 230
+      "line": 231
     },
     {
       "id": "COL-N02",
       "statement": "**No document-level locking.** It defeats the point of components",
       "document": "COL-collaboration-and-review.md",
-      "line": 231
+      "line": 232
     },
     {
       "id": "COL-N03",
       "statement": "**No comments in published output** (COL-019)",
       "document": "COL-collaboration-and-review.md",
-      "line": 232
+      "line": 233
     },
     {
       "id": "COL-N04",
       "statement": "**No anonymous review.** Every comment, suggestion and acceptance is attributable, because an audited document cannot contain unattributed changes",
       "document": "COL-collaboration-and-review.md",
-      "line": 233
+      "line": 234
     },
     {
       "id": "COL-N05",
       "statement": "**No live cursors.** Presence says which component each person is in and their mode (COL-001, COL-002), not where their cursor is; cursor-level presence belongs to the co-editing COL-N01 rules out",
       "document": "COL-collaboration-and-review.md",
-      "line": 234
+      "line": 235
     },
     {
       "id": "COL-N06",
       "statement": "**No deleting review history.** Not by its author, not by an author of the component, not by a tenant administrator (COL-049, COL-050). Resolution is how a thread stops mattering",
       "document": "COL-collaboration-and-review.md",
-      "line": 235
+      "line": 236
     },
     {
       "id": "COL-N07",
       "statement": "**No queued or automatic application of a suggestion** (COL-043). A change to a document is made by a person, at a moment they chose, against the content in front of them",
       "document": "COL-collaboration-and-review.md",
-      "line": 236
+      "line": 237
     },
     {
       "id": "DAT-N01",
@@ -15641,42 +15650,42 @@
       "question": "**May a reviewer who also holds authoring rights edit directly instead of suggesting?** Carried from CNT-Q10",
       "settledBy": "Whether review in this market is a separate pass or a mode anybody drops into",
       "document": "COL-collaboration-and-review.md",
-      "line": 242
+      "line": 243
     },
     {
       "id": "COL-Q02",
       "question": "**What is the default lock timeout (COL-008)?** Too short interrupts thinking; too long blocks a colleague",
       "settledBy": "Observed behaviour. Fifteen minutes is a guess, not a finding",
       "document": "COL-collaboration-and-review.md",
-      "line": 243
+      "line": 244
     },
     {
       "id": "COL-Q03",
       "question": "**Can a thread be private to some reviewers?**",
       "settledBy": "**Settled.** Internal threads are required, not optional, because external reviewers exist (COL-038 to COL-040). See [ADR-0011](../../decisions/0011-external-participation-guests-and-identified-links.md)",
       "document": "COL-collaboration-and-review.md",
-      "line": 244
+      "line": 245
     },
     {
       "id": "COL-Q04",
       "question": "**Does the soft-lock bet survive contact with users?** Scope §13 names it as a risk, and it is the one thing here that a demo will be judged on",
       "settledBy": "Early evaluations. The content model stays CRDT-compatible either way",
       "document": "COL-collaboration-and-review.md",
-      "line": 245
+      "line": 246
     },
     {
       "id": "COL-Q05",
       "question": "**What are the two idle periods in COL-046 - the one after which a lock may be taken, and the one after which it releases?** COL-Q02 asks half of this question; COL-046 is why it is two",
       "settledBy": "Observed behaviour, as with COL-Q02. The ordering is fixed by COL-046; the numbers are not",
       "document": "COL-collaboration-and-review.md",
-      "line": 246
+      "line": 247
     },
     {
       "id": "COL-Q06",
       "question": "**May a principal who can accept suggestions but cannot author hold a lock in order to accept one?** COL-041 makes accepting an edit, which ties it to the lock and so to authoring rights",
       "settledBy": "A decision in **IAM**. If such a principal exists, either the lock admits a narrower claim or the right implies the other",
       "document": "COL-collaboration-and-review.md",
-      "line": 247
+      "line": 248
     },
     {
       "id": "DAT-Q01",
@@ -21989,7 +21998,7 @@
     {
       "id": "ADM-010",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 1027,
+      "line": 1082,
       "kind": "title"
     },
     {
@@ -22091,13 +22100,13 @@
     {
       "id": "GEN-033",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 1027,
+      "line": 1082,
       "kind": "title"
     },
     {
       "id": "GEN-037",
       "file": "apps/service/src/assistant-routes.test.ts",
-      "line": 1027,
+      "line": 1082,
       "kind": "title"
     },
     {
@@ -22145,13 +22154,13 @@
     {
       "id": "LIF-063",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 780,
+      "line": 782,
       "kind": "title"
     },
     {
       "id": "LIF-067",
       "file": "apps/service/src/audit-census.test.ts",
-      "line": 793,
+      "line": 795,
       "kind": "title"
     },
     {
@@ -22703,7 +22712,7 @@
     {
       "id": "IAM-004",
       "file": "apps/service/src/cross-tenant.test.ts",
-      "line": 2305,
+      "line": 2309,
       "kind": "title"
     },
     {
@@ -23568,6 +23577,12 @@
       "id": "GEN-035",
       "file": "apps/service/src/model-limit-routes.test.ts",
       "line": 70,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-015",
+      "file": "apps/service/src/moving-routes.test.ts",
+      "line": 135,
       "kind": "title"
     },
     {
@@ -30567,6 +30582,18 @@
       "kind": "title"
     },
     {
+      "id": "IAM-015",
+      "file": "packages/db/src/moving.test.ts",
+      "line": 244,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-028",
+      "file": "packages/db/src/moving.test.ts",
+      "line": 281,
+      "kind": "title"
+    },
+    {
       "id": "STR-036",
       "file": "packages/db/src/numbering.test.ts",
       "line": 245,
@@ -32165,13 +32192,13 @@
     {
       "id": "LIF-030",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 285,
+      "line": 286,
       "kind": "title"
     },
     {
       "id": "LIF-070",
       "file": "packages/domain/src/audit/kinds.test.ts",
-      "line": 262,
+      "line": 263,
       "kind": "title"
     },
     {
@@ -33221,7 +33248,7 @@
     {
       "id": "CNT-010",
       "file": "packages/domain/src/index.test.ts",
-      "line": 1176,
+      "line": 1177,
       "kind": "title"
     },
     {

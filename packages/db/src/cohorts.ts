@@ -182,12 +182,28 @@ export async function readCohortAs(
   const cohort = await readCohort(trx, id);
   if (!cohort) return undefined;
   const readable = await loadReadableSet(trx, by);
+  // Each by its own space: a document moved away since (MV-G) is not the cohort's space's to answer.
+  const made = cohort.rows.flatMap((each) => (each.document === null ? [] : [each.document]));
+  const spaces = new Map(
+    made.length === 0
+      ? []
+      : (
+          await trx
+            .selectFrom('artifact')
+            .select(['id', 'space_id'])
+            .where('id', 'in', made)
+            .execute()
+        ).map((row) => [row.id, row.space_id]),
+  );
   return {
     ...cohort,
     rows: cohort.rows.map((each) =>
       each.document !== null &&
       (readable === undefined ||
-        !mayReadArtifact(readable, { id: each.document, spaceId: cohort.spaceId }))
+        !mayReadArtifact(readable, {
+          id: each.document,
+          spaceId: spaces.get(each.document) ?? null,
+        }))
         ? { ...each, document: null }
         : each,
     ),

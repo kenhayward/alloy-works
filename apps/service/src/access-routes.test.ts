@@ -909,6 +909,16 @@ describe('routes that check a permission', () => {
       status: 404,
       payload: { document: MISSING, node: 'n1' },
     }),
+    moveToSpace: () => ({
+      url: `/v1/artifacts/${report}/move`,
+      status: 404,
+      payload: { from: MISSING, to: MISSING, also: false },
+    }),
+    previewMoveToSpace: () => ({
+      url: `/v1/artifacts/${report}/move/preview`,
+      status: 404,
+      payload: { from: MISSING, to: MISSING, also: false },
+    }),
     setDocumentLanguage: () => ({
       url: `/v1/documents/${report}/language`,
       status: 404,

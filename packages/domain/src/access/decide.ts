@@ -156,3 +156,21 @@ function walk(permission: Permission, facts: AccessFacts): Decision {
   }
   return { permission, allowed: false, reason: 'not_granted', level: null, grants: [], checked };
 }
+
+/**
+ * access.md, "Routes": `administer` is asked "at the target's level or above" - each level on the
+ * chain its own walk (decisions.md, finding 6), so a denial at a level below does not stand against
+ * an administrator above it, the way the ordinary nearest-level walk (`decide` on the whole chain)
+ * would. Tries the target's own walk first, then each level above it in turn, and returns the first
+ * that allows; the target's own result otherwise, since that is the refusal closest to what was asked.
+ */
+export function administerOrAbove(
+  facts: AccessFacts,
+  permission: Permission = 'administer',
+): Decision {
+  for (let start = 0; start < facts.chain.length; start += 1) {
+    const decision = decide(permission, { ...facts, chain: facts.chain.slice(start) });
+    if (decision.allowed) return decision;
+  }
+  return decide(permission, facts);
+}

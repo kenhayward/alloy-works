@@ -10,6 +10,7 @@ import {
 } from '@alloy-works/db';
 import {
   administrativePermissions,
+  administerOrAbove,
   decide,
   parseLevel,
   type AccessFacts,
@@ -59,7 +60,7 @@ export const notFound = () => new AppError(404, 'not_found', 'There is nothing a
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-const forbidden = (permission: string) =>
+export const forbidden = (permission: string) =>
   new AppError(403, 'forbidden', `This needs the ${permission} permission.`);
 
 /**
@@ -85,7 +86,7 @@ export function refusedBy(
 }
 
 /** Not found, for a target that exists and that the caller may not read: the read refused it. */
-const hiddenBy = (facts: AccessFacts, target: RefusedTarget) =>
+export const hiddenBy = (facts: AccessFacts, target: RefusedTarget) =>
   refusedBy(notFound(), decide('read', facts), facts, target, true);
 
 /**
@@ -229,23 +230,7 @@ export async function beforeDeciding(
   else await decideOnly(trx);
 }
 
-/**
- * access.md, "Routes": `administer` is asked "at the target's level or above" - each level on the
- * chain its own walk (decisions.md, finding 6), so a denial at a level below does not stand against
- * an administrator above it, the way the ordinary nearest-level walk (`decide` on the whole chain)
- * would. Tries the target's own walk first, then each level above it in turn, and returns the first
- * that allows; the target's own result otherwise, since that is the refusal closest to what was asked.
- */
-export function administerOrAbove(
-  facts: AccessFacts,
-  permission: Permission = 'administer',
-): Decision {
-  for (let start = 0; start < facts.chain.length; start += 1) {
-    const decision = decide(permission, { ...facts, chain: facts.chain.slice(start) });
-    if (decision.allowed) return decision;
-  }
-  return decide(permission, facts);
-}
+export { administerOrAbove };
 
 /** A permission as a route would decide it: an administrative one at its level or above. */
 export function decideAsARoute(permission: Permission, facts: AccessFacts): Decision {
