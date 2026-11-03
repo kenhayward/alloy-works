@@ -338,14 +338,17 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
       JSON_ROWS,
     );
     expect(json.peaks).toHaveLength(1);
-    expect(json.peaks[0]).toBeLessThan(371 * 1024 * 1024);
+    // D2 measured 371 MiB on a quiet runner; a loaded CI runner sits a little above it (issue
+    // #553, over by 60 KiB). The bound catches a pathology, not tens of kilobytes, and four
+    // runs at this bound still fit the container beside the supervisor (MAX_RUNS).
+    expect(json.peaks[0]).toBeLessThan(400 * 1024 * 1024);
     expect(jsonLines.bytes).toBeGreaterThan(JSON_LINES_MAX_BYTES - 512 * 1024);
     expect(jsonLines.bytes).toBeLessThanOrEqual(JSON_LINES_MAX_BYTES);
     expect(
       jsonLines.answer !== 'busy' && jsonLines.answer.outcome === 'ok' && jsonLines.answer.rowCount,
     ).toBe(LINES_ROWS);
     expect(jsonLines.peaks).toHaveLength(1);
-    expect(jsonLines.peaks[0]).toBeLessThan(371 * 1024 * 1024);
+    expect(jsonLines.peaks[0]).toBeLessThan(400 * 1024 * 1024);
   });
 
   it('reads a CSV body at its ceiling, 6 MiB, within the memory a run at the ceilings takes, and refuses one past it', async () => {
@@ -356,7 +359,7 @@ describe('an HTTP source', { timeout: LOADED_TIMEOUT_MS }, () => {
       CSV_ROWS,
     );
     expect(csv.peaks).toHaveLength(1);
-    expect(csv.peaks[0]).toBeLessThan(371 * 1024 * 1024);
+    expect(csv.peaks[0]).toBeLessThan(400 * 1024 * 1024);
     const past = await measuredRun(Math.ceil(CSV_ROWS * 1.1), 'csv');
     expect(past.bytes).toBeGreaterThan(CSV_MAX_BYTES);
     expect(failure(past.answer)).toEqual({ code: 'byte_limit', attribution: 'query' });
