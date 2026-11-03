@@ -5268,7 +5268,7 @@
     {
       "id": "GEN-061",
       "area": "GEN",
-      "statement": "The assistant must read the comments on a component the person may read, as that person: each thread's quote and state and each comment's latest words, with authors unnamed, mentions removed and internal threads left out for a person from outside.",
+      "statement": "The assistant must read the comments on a component the person may read, as that person: each thread's quote and state and each comment's latest words, with authors unnamed, mentions removed and internal threads left out for a person from outside and read to a person inside, whichever side of the data boundary the endpoint sits.",
       "tranche": "T5",
       "status": "Specified",
       "document": "GEN-generative-ai.md",

@@ -45,7 +45,8 @@ review; one final review per PR. ATe carries the close.
 3. **Internal threads are included where the person is internal**, and left out for an external one.
    `propose_comment` posts non-internal, so a comment drawn from an internal thread could reach outsiders
    once a person accepts it: the panel shows its words before they do, and ATd tests that an external
-   person reads none.
+   person reads none. They reach the model whichever side of the data boundary its endpoint sits: Ken's
+   answer to ATd's review, 2026-11-03.
 4. **A part may be placed in more than one document:** placing is a reference.
 5. **GEN-007 is reworded to what is built**, no query tool, with a change history, in the PR of a close so
    the baseline moves with it. Not among the eight.
