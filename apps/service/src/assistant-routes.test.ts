@@ -243,6 +243,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       'propose_comment',
       'propose_edit',
       'propose_insert',
+      'propose_outline',
       'read_comments',
       'read_component',
       'read_outline',

@@ -34,6 +34,12 @@ export type {
 
 export {
   applyOutlineOperation,
+  outlineStepSchema,
+  planOutline,
+  proposedPosition,
+  type OutlineNames,
+  type OutlineStep,
+  type OutlineStepSaid,
   outlineChangesRefused,
   outlineOperationSchema,
   repointsBetween,
