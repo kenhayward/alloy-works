@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.227.0 - 2026-11-03 (PR #PRNUMBER)
+## 0.227.0 - 2026-11-03 (PR #914)
 
 The MV close, T7's moving of content between spaces (the MV plan), with what has landed since the AP close: a document's language, comments in Authoring and more from the assistant.
 
