@@ -650,7 +650,7 @@ const administration = (ada: Adas): readonly Surface[] => [
   ),
   byButton(
     'The Move dialog',
-    'parts/MoveDialog.tsx',
+    'lifecycle/MoveDialog.tsx',
     `#/components/${ada.component.id}`,
     (page, language) =>
       page.getByRole('button', {

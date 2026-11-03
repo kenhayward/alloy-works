@@ -131,7 +131,7 @@ import { BoundTablePanel } from './BoundTablePanel.js';
 import { BoundTableReadOnly, TableReadOnly } from './TableReadOnly.js';
 import { FigurePanel } from './FigurePanel.js';
 import { ArchiveButton } from '../lifecycle/Archive.js';
-import { MoveDialog } from '../parts/MoveDialog.js';
+import { MoveDialog } from '../lifecycle/MoveDialog.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
 import {
   ReachDialog,

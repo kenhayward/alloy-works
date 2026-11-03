@@ -70,7 +70,7 @@ import type { CommandState } from '../shell/commands/menus.js';
 import { StatusLead } from '../shell/Status.js';
 import { DocumentHeader } from './DocumentHeader.js';
 import { DocumentLanguage } from './DocumentLanguage.js';
-import { MoveDialog } from '../parts/MoveDialog.js';
+import { MoveDialog } from '../lifecycle/MoveDialog.js';
 import { keep, kept, PaneSeparator, usePaneWidth } from '../layouts/PaneWidth.js';
 import { StatusBar, StatusTools, usePageShown, useStatus } from '../shell/Status.js';
 import { RelationshipsButton } from '../reuse/Relationships.js';
