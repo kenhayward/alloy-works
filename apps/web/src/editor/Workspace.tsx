@@ -188,7 +188,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
   const [fieldsHost, setFieldsHost] = useState<HTMLElement | null>(null);
   // Where an open component's table is formatted, and whether it holds one (ADR-0052).
   const [tableHost, setTableHost] = useState<HTMLElement | null>(null);
-  const [heldTable, setHeldTable] = useState({ holds: false, entered: 0 });
+  const [heldTable, setHeldTable] = useState({ holds: false, inHand: false });
   // What the open editor opened and shows now, read by the Versions panel's My changes (CNT-113).
   const mineOf = useRef<(() => Mine) | null>(null);
   // Whether the open component may be edited, as the editor says once open: state, so the Versions

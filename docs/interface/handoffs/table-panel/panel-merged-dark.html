@@ -1,0 +1,3244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <style>
+      .sc-placeholder {
+        background: color-mix(in srgb, currentColor 8%, transparent);
+        border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
+        border-radius: 2px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      @keyframes sc-shine {
+        0% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+      html.sc-dc-streaming .sc-placeholder,
+      html.sc-dc-streaming .sc-interp.sc-missing {
+        position: relative;
+        background: color-mix(in srgb, currentColor 5%, transparent);
+        border-color: transparent;
+      }
+      html.sc-dc-streaming .sc-placeholder::before,
+      html.sc-dc-streaming .sc-interp.sc-missing::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(
+          90deg,
+          rgba(217, 119, 87, 0) 25%,
+          rgba(247, 225, 211, 0.95) 37%,
+          rgba(217, 119, 87, 0) 63%
+        );
+        background-size: 400% 100%;
+        animation: sc-shine 1.4s ease infinite;
+      }
+      html.sc-dc-streaming .sc-placeholder:nth-child(n + 9 of .sc-placeholder)::before,
+      html.sc-dc-streaming .sc-interp.sc-missing:nth-child(n + 9 of .sc-interp.sc-missing)::before {
+        animation: none;
+        background: color-mix(in srgb, currentColor 8%, transparent);
+      }
+      .sc-placeholder-error {
+        padding: 4px 8px;
+        font:
+          11px/1.4 ui-monospace,
+          monospace;
+        color: color-mix(in srgb, currentColor 70%, transparent);
+        word-break: break-word;
+      }
+      .sc-interp.sc-missing {
+        display: inline-block;
+        width: 2em;
+        height: 1em;
+        overflow: hidden;
+        vertical-align: text-bottom;
+        background: rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(0, 0, 0, 0.5);
+        border-radius: 2px;
+        box-sizing: border-box;
+        color: transparent;
+        user-select: none;
+      }
+      .sc-interp.sc-unresolved {
+        font-family: ui-monospace, monospace;
+        font-size: 0.85em;
+        color: color-mix(in srgb, currentColor 50%, transparent);
+        background: color-mix(in srgb, currentColor 10%, transparent);
+        border-radius: 3px;
+        padding: 0 3px;
+      }
+      .sc-host.sc-has-error {
+        position: relative;
+      }
+      .sc-logic-error {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 2147483647;
+        max-width: 60ch;
+        padding: 6px 10px;
+        background: #b00020;
+        color: #fff;
+        font:
+          12px/1.4 ui-monospace,
+          monospace;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        pointer-events: none;
+      }
+      /* Mirrors PRINT_BASELINE_CSS in apps/web deck-stage-export.ts — keep both
+       in sync until dc-runtime regains a build step. */
+      @media print {
+        @page {
+          margin: 0.5cm;
+        }
+        figure,
+        table {
+          break-inside: avoid;
+        }
+        #dc-root,
+        #dc-root > .sc-host {
+          height: auto;
+        }
+        *,
+        *::before,
+        *::after {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          animation-delay: -99s !important;
+          animation-duration: 0.001s !important;
+          animation-iteration-count: 1 !important;
+          animation-fill-mode: both !important;
+          animation-play-state: running !important;
+          transition-duration: 0s !important;
+        }
+      }
+    </style>
+    <meta charset="utf-8" />
+    <title>Table: panel-merged, dark</title>
+    <style>
+      x-dc {
+        display: none !important;
+      }
+    </style>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      #dc-root,
+      #dc-root > .sc-host {
+        height: 100%;
+      }
+    </style>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap"
+      rel="stylesheet"
+      data-dc-tpl="1"
+    />
+    <style data-dc-tpl="2">
+      body {
+        margin: 0;
+        background: #070a0d;
+      }
+    </style>
+    <style data-dc-tpl="2">
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dc-root">
+      <div class="sc-host" data-sc-name="tp-panel-merged-dark">
+        <div data-dc-tpl="3" style="width: 400px; height: 1010px">
+          <div class="sc-host" data-sc-name="Table" data-dc-tpl="4">
+            <div
+              data-dc-tpl="3"
+              style="
+                width: 400px;
+                height: 1010px;
+                box-sizing: border-box;
+                display: flex;
+                border: 1px solid rgb(35, 47, 58);
+                border-radius: 12px;
+                background: rgb(17, 24, 31);
+                color: rgb(229, 234, 239);
+                font-family: 'IBM Plex Sans', system-ui, sans-serif;
+                font-size: 13px;
+                overflow: hidden;
+              "
+            >
+              <div
+                data-dc-tpl="4"
+                style="flex: 1 1 0px; min-width: 0px; display: flex; flex-direction: column"
+              >
+                <div
+                  data-dc-tpl="5"
+                  style="
+                    flex: 0 0 auto;
+                    height: 52px;
+                    box-sizing: border-box;
+                    padding: 0px 12px 0px 16px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    border-bottom: 1px solid rgb(35, 47, 58);
+                  "
+                >
+                  <h2 data-dc-tpl="6" style="margin: 0px; font-size: 15px; font-weight: 600">
+                    Table
+                  </h2>
+                  <span
+                    data-dc-tpl="8"
+                    style="
+                      padding: 1px 8px;
+                      border-radius: 999px;
+                      background: rgb(19, 47, 57);
+                      color: rgb(143, 208, 224);
+                      font-size: 11px;
+                      font-weight: 600;
+                    "
+                    >Table 3</span
+                  >
+                  <span data-dc-tpl="9" style="flex: 1 1 0%"></span>
+                  <button
+                    data-dc-tpl="10"
+                    type="button"
+                    aria-label="Go to the table"
+                    title="Go to the table"
+                    style="
+                      width: 30px;
+                      height: 30px;
+                      padding: 0px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      border: 0px;
+                      border-radius: 6px;
+                      background: transparent;
+                      color: rgb(154, 166, 178);
+                      cursor: pointer;
+                    "
+                  >
+                    <svg
+                      data-dc-tpl="11"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path
+                        data-dc-tpl="12"
+                        d="M12 2v4M12 18v4M2 12h4M18 12h4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8"
+                      ></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <div data-dc-tpl="13" style="flex: 1 1 0px; min-height: 0px; overflow-y: auto">
+                  <div data-dc-tpl="15" style="padding: 12px 14px 4px">
+                    <div
+                      data-dc-tpl="16"
+                      style="font-size: 13px; line-height: 1.4; font-weight: 500"
+                    >
+                      <span class="sc-interp"
+                        >Table 3. Summary of Performance Testing – Bench Studies</span
+                      >
+                    </div>
+                    <div
+                      data-dc-tpl="17"
+                      style="
+                        margin-top: 4px;
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 4px 10px;
+                        font-size: 11px;
+                        color: rgb(154, 166, 178);
+                      "
+                    >
+                      <span data-dc-tpl="18"><span class="sc-interp">5 columns × 8 rows</span></span
+                      ><span data-dc-tpl="19"><span class="sc-interp">1 header row</span></span
+                      ><span data-dc-tpl="20"><span class="sc-interp">Style: Table</span></span
+                      ><span data-dc-tpl="21"><span class="sc-interp">No note</span></span>
+                    </div>
+                  </div>
+
+                  <div
+                    data-dc-tpl="22"
+                    style="
+                      margin: 8px 14px 0px;
+                      padding: 10px;
+                      border: 1px solid rgb(35, 47, 58);
+                      border-radius: 10px;
+                      background: rgb(15, 22, 29);
+                    "
+                  >
+                    <div
+                      data-dc-tpl="23"
+                      role="grid"
+                      aria-label="The table, as a map. Choose a cell to move there"
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(5, minmax(0px, 1fr));
+                        grid-auto-rows: 20px;
+                        gap: 2px;
+                      "
+                    >
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 1, column 1, Test, header"
+                        aria-selected="false"
+                        style="
+                          grid-area: 1 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(28, 39, 50);
+                          color: rgb(229, 234, 239);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 600;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Test</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 1, column 2, Purpose, header"
+                        aria-selected="false"
+                        style="
+                          grid-area: 1 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(28, 39, 50);
+                          color: rgb(229, 234, 239);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 600;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Purpose</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 1, column 3, Method, header"
+                        aria-selected="false"
+                        style="
+                          grid-area: 1 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(28, 39, 50);
+                          color: rgb(229, 234, 239);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 600;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Method</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 1, column 4, Acceptance Criteria, header"
+                        aria-selected="false"
+                        style="
+                          grid-area: 1 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(28, 39, 50);
+                          color: rgb(229, 234, 239);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 600;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Acceptance Criteria</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 1, column 5, Results, header"
+                        aria-selected="false"
+                        style="
+                          grid-area: 1 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(28, 39, 50);
+                          color: rgb(229, 234, 239);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 600;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Results</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 2, column 1, Optical power"
+                        aria-selected="false"
+                        style="
+                          grid-area: 2 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Optical power</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 2, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 2 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 60%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 2, column 3, merged across 2 columns"
+                        aria-selected="true"
+                        style="
+                          grid-area: 2 / 3 / auto / span 2;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid rgb(95, 182, 204);
+                          border-radius: 3px;
+                          background: rgb(19, 47, 57);
+                          color: rgb(143, 208, 224);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 73%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 2, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 2 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 54%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 3, column 1, Lenslet power"
+                        aria-selected="false"
+                        style="
+                          grid-area: 3 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Lenslet power</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 3, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 3 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 67%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 3, column 3"
+                        aria-selected="false"
+                        style="
+                          grid-area: 3 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 80%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 3, column 4"
+                        aria-selected="false"
+                        style="
+                          grid-area: 3 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 48%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 3, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 3 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 61%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 4, column 1, Impact resistance"
+                        aria-selected="false"
+                        style="
+                          grid-area: 4 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Impact resistance</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 4, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 4 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 74%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 4, column 3"
+                        aria-selected="false"
+                        style="
+                          grid-area: 4 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 42%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 4, column 4"
+                        aria-selected="false"
+                        style="
+                          grid-area: 4 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 55%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 4, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 4 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 68%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 5, column 1, Transmittance"
+                        aria-selected="false"
+                        style="
+                          grid-area: 5 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Transmittance</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 5, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 5 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 81%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 5, column 3"
+                        aria-selected="false"
+                        style="
+                          grid-area: 5 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 49%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 5, column 4"
+                        aria-selected="false"
+                        style="
+                          grid-area: 5 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 62%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 5, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 5 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 75%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 6, column 1, Coating adhesion"
+                        aria-selected="false"
+                        style="
+                          grid-area: 6 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Coating adhesion</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 6, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 6 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 43%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 6, column 3"
+                        aria-selected="false"
+                        style="
+                          grid-area: 6 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 56%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 6, column 4"
+                        aria-selected="false"
+                        style="
+                          grid-area: 6 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 69%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 6, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 6 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 82%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 7, column 1, Dimensional stability"
+                        aria-selected="false"
+                        style="
+                          grid-area: 7 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Dimensional stability</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 7, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 7 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 50%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 7, column 3"
+                        aria-selected="false"
+                        style="
+                          grid-area: 7 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 63%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 7, column 4"
+                        aria-selected="false"
+                        style="
+                          grid-area: 7 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 76%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 7, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 7 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 44%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 8, column 1, Flammability"
+                        aria-selected="false"
+                        style="
+                          grid-area: 8 / 1 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp">Flammability</span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 8, column 2"
+                        aria-selected="false"
+                        style="
+                          grid-area: 8 / 2 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 57%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 8, column 3"
+                        aria-selected="false"
+                        style="
+                          grid-area: 8 / 3 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 70%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 8, column 4"
+                        aria-selected="false"
+                        style="
+                          grid-area: 8 / 4 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 83%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+
+                      <button
+                        data-dc-tpl="25"
+                        type="button"
+                        role="gridcell"
+                        aria-label="Row 8, column 5"
+                        aria-selected="false"
+                        style="
+                          grid-area: 8 / 5 / auto / span 1;
+                          min-width: 0px;
+                          padding: 0px 4px;
+                          display: flex;
+                          align-items: center;
+                          border: 1px solid transparent;
+                          border-radius: 3px;
+                          background: rgb(17, 24, 31);
+                          color: rgb(154, 166, 178);
+                          font-family: inherit;
+                          font-size: 9px;
+                          font-weight: 400;
+                          text-align: left;
+                          overflow: hidden;
+                          white-space: nowrap;
+                          text-overflow: ellipsis;
+                          cursor: pointer;
+                        "
+                      >
+                        <span class="sc-interp"></span
+                        ><span
+                          data-dc-tpl="27"
+                          aria-hidden="true"
+                          style="
+                            width: 51%;
+                            height: 3px;
+                            border-radius: 2px;
+                            background: rgb(52, 66, 79);
+                          "
+                        ></span>
+                      </button>
+                    </div>
+
+                    <div
+                      data-dc-tpl="30"
+                      style="
+                        margin-top: 8px;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        font-size: 12px;
+                      "
+                    >
+                      <svg
+                        data-dc-tpl="31"
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        style="color: rgb(143, 208, 224)"
+                      >
+                        <path data-dc-tpl="32" d="M5 3l14 7-6 2-2 6z"></path></svg
+                      ><span data-dc-tpl="33" style="flex: 1 1 0%; min-width: 0px"
+                        ><span class="sc-interp"
+                          >Row 2 of 8 · column 3 of 5, Method · merged cell</span
+                        ></span
+                      >
+                    </div>
+                    <div
+                      data-dc-tpl="34"
+                      style="margin-top: 2px; font-size: 11px; color: rgb(154, 166, 178)"
+                    >
+                      Choose a cell to move there. Shift and choose to select cells.
+                    </div>
+                  </div>
+
+                  <div
+                    data-dc-tpl="35"
+                    style="
+                      padding: 12px 14px 0px;
+                      display: grid;
+                      grid-template-columns: repeat(2, minmax(0px, 1fr));
+                      gap: 10px;
+                    "
+                  >
+                    <div data-dc-tpl="37" role="group" aria-label="Row 2">
+                      <div
+                        data-dc-tpl="38"
+                        style="
+                          margin-bottom: 6px;
+                          font-size: 11px;
+                          font-weight: 600;
+                          letter-spacing: 0.04em;
+                          text-transform: uppercase;
+                          color: rgb(154, 166, 178);
+                        "
+                      >
+                        <span class="sc-interp">Row 2</span>
+                      </div>
+                      <div
+                        data-dc-tpl="39"
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(3, minmax(0px, 1fr));
+                          gap: 4px;
+                        "
+                      >
+                        <button
+                          data-dc-tpl="41"
+                          type="button"
+                          aria-label="Row above"
+                          aria-disabled="false"
+                          title="Row above"
+                          style="
+                            height: 54px;
+                            padding: 4px 0px 0px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                            border: 1px solid rgb(35, 47, 58);
+                            border-radius: 8px;
+                            background: rgb(20, 28, 36);
+                            color: rgb(229, 234, 239);
+                            opacity: 1;
+                            font-family: inherit;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="42"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="43"
+                              d="M4 13h16v8H4zM4 17h16M12 2v8M8 6h8"
+                            ></path></svg
+                          ><span data-dc-tpl="44" aria-hidden="true"
+                            ><span class="sc-interp">Above</span></span
+                          >
+                        </button>
+
+                        <button
+                          data-dc-tpl="41"
+                          type="button"
+                          aria-label="Row below"
+                          aria-disabled="false"
+                          title="Row below"
+                          style="
+                            height: 54px;
+                            padding: 4px 0px 0px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                            border: 1px solid rgb(35, 47, 58);
+                            border-radius: 8px;
+                            background: rgb(20, 28, 36);
+                            color: rgb(229, 234, 239);
+                            opacity: 1;
+                            font-family: inherit;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="42"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="43"
+                              d="M4 3h16v8H4zM4 7h16M12 14v8M8 18h8"
+                            ></path></svg
+                          ><span data-dc-tpl="44" aria-hidden="true"
+                            ><span class="sc-interp">Below</span></span
+                          >
+                        </button>
+
+                        <button
+                          data-dc-tpl="41"
+                          type="button"
+                          aria-label="Delete row"
+                          aria-disabled="false"
+                          title="Delete row"
+                          style="
+                            height: 54px;
+                            padding: 4px 0px 0px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                            border: 1px solid rgb(35, 47, 58);
+                            border-radius: 8px;
+                            background: rgb(20, 28, 36);
+                            color: rgb(255, 138, 128);
+                            opacity: 1;
+                            font-family: inherit;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="42"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path data-dc-tpl="43" d="M4 4h16v7H4zM9 15l6 6M15 15l-6 6"></path></svg
+                          ><span data-dc-tpl="44" aria-hidden="true"
+                            ><span class="sc-interp">Delete</span></span
+                          >
+                        </button>
+                      </div>
+                    </div>
+
+                    <div data-dc-tpl="37" role="group" aria-label="Column 3">
+                      <div
+                        data-dc-tpl="38"
+                        style="
+                          margin-bottom: 6px;
+                          font-size: 11px;
+                          font-weight: 600;
+                          letter-spacing: 0.04em;
+                          text-transform: uppercase;
+                          color: rgb(154, 166, 178);
+                        "
+                      >
+                        <span class="sc-interp">Column 3</span>
+                      </div>
+                      <div
+                        data-dc-tpl="39"
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(3, minmax(0px, 1fr));
+                          gap: 4px;
+                        "
+                      >
+                        <button
+                          data-dc-tpl="41"
+                          type="button"
+                          aria-label="Column before"
+                          aria-disabled="false"
+                          title="Column before"
+                          style="
+                            height: 54px;
+                            padding: 4px 0px 0px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                            border: 1px solid rgb(35, 47, 58);
+                            border-radius: 8px;
+                            background: rgb(20, 28, 36);
+                            color: rgb(229, 234, 239);
+                            opacity: 1;
+                            font-family: inherit;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="42"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="43"
+                              d="M13 4h8v16h-8zM17 4v16M2 12h8M6 8v8"
+                            ></path></svg
+                          ><span data-dc-tpl="44" aria-hidden="true"
+                            ><span class="sc-interp">Before</span></span
+                          >
+                        </button>
+
+                        <button
+                          data-dc-tpl="41"
+                          type="button"
+                          aria-label="Column after"
+                          aria-disabled="false"
+                          title="Column after"
+                          style="
+                            height: 54px;
+                            padding: 4px 0px 0px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                            border: 1px solid rgb(35, 47, 58);
+                            border-radius: 8px;
+                            background: rgb(20, 28, 36);
+                            color: rgb(229, 234, 239);
+                            opacity: 1;
+                            font-family: inherit;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="42"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="43"
+                              d="M3 4h8v16H3zM7 4v16M14 12h8M18 8v8"
+                            ></path></svg
+                          ><span data-dc-tpl="44" aria-hidden="true"
+                            ><span class="sc-interp">After</span></span
+                          >
+                        </button>
+
+                        <button
+                          data-dc-tpl="41"
+                          type="button"
+                          aria-label="Delete column"
+                          aria-disabled="false"
+                          title="Delete column"
+                          style="
+                            height: 54px;
+                            padding: 4px 0px 0px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                            border: 1px solid rgb(35, 47, 58);
+                            border-radius: 8px;
+                            background: rgb(20, 28, 36);
+                            color: rgb(255, 138, 128);
+                            opacity: 1;
+                            font-family: inherit;
+                            font-size: 11px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="42"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path data-dc-tpl="43" d="M4 4h7v16H4zM15 9l6 6M21 9l-6 6"></path></svg
+                          ><span data-dc-tpl="44" aria-hidden="true"
+                            ><span class="sc-interp">Delete</span></span
+                          >
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div data-dc-tpl="45" style="padding: 10px 14px 0px">
+                    <div
+                      data-dc-tpl="46"
+                      style="
+                        margin-bottom: 6px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        letter-spacing: 0.04em;
+                        text-transform: uppercase;
+                        color: rgb(154, 166, 178);
+                      "
+                    >
+                      Cells
+                    </div>
+                    <div
+                      data-dc-tpl="47"
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 6px;
+                      "
+                    >
+                      <button
+                        data-dc-tpl="49"
+                        type="button"
+                        aria-disabled="true"
+                        title="Merge cells: select two or more cells in a row first"
+                        style="
+                          height: 40px;
+                          padding: 0px 10px;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          border: 1px solid rgb(35, 47, 58);
+                          border-radius: 8px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(229, 234, 239);
+                          opacity: 0.4;
+                          font-family: inherit;
+                          font-size: 12px;
+                          text-align: left;
+                          cursor: pointer;
+                        "
+                      >
+                        <svg
+                          data-dc-tpl="50"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            data-dc-tpl="51"
+                            d="M3 5h18v14H3zM12 5v4M12 15v4M5 12h5M8 10l2 2-2 2M19 12h-5M16 10l-2 2 2 2"
+                          ></path></svg
+                        ><span data-dc-tpl="52" style="flex: 1 1 0%; min-width: 0px"
+                          ><span data-dc-tpl="53" style="display: block; font-weight: 500"
+                            ><span class="sc-interp">Merge cells</span></span
+                          ><span
+                            data-dc-tpl="54"
+                            style="
+                              display: block;
+                              font-size: 10px;
+                              color: rgb(154, 166, 178);
+                              white-space: nowrap;
+                              overflow: hidden;
+                              text-overflow: ellipsis;
+                            "
+                            ><span class="sc-interp">Select cells first</span></span
+                          ></span
+                        >
+                      </button>
+
+                      <button
+                        data-dc-tpl="49"
+                        type="button"
+                        aria-disabled="false"
+                        title="Split cell"
+                        style="
+                          height: 40px;
+                          padding: 0px 10px;
+                          display: flex;
+                          align-items: center;
+                          gap: 8px;
+                          border: 1px solid rgb(35, 47, 58);
+                          border-radius: 8px;
+                          background: rgb(20, 28, 36);
+                          color: rgb(229, 234, 239);
+                          opacity: 1;
+                          font-family: inherit;
+                          font-size: 12px;
+                          text-align: left;
+                          cursor: pointer;
+                        "
+                      >
+                        <svg
+                          data-dc-tpl="50"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            data-dc-tpl="51"
+                            d="M3 5h18v14H3zM12 5v14M5 12h4M7 10l-2 2 2 2M19 12h-4M17 10l2 2-2 2"
+                          ></path></svg
+                        ><span data-dc-tpl="52" style="flex: 1 1 0%; min-width: 0px"
+                          ><span data-dc-tpl="53" style="display: block; font-weight: 500"
+                            ><span class="sc-interp">Split cell</span></span
+                          ><span
+                            data-dc-tpl="54"
+                            style="
+                              display: block;
+                              font-size: 10px;
+                              color: rgb(154, 166, 178);
+                              white-space: nowrap;
+                              overflow: hidden;
+                              text-overflow: ellipsis;
+                            "
+                            ><span class="sc-interp">Back into 2 cells</span></span
+                          ></span
+                        >
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    data-dc-tpl="55"
+                    style="
+                      margin: 14px 14px 0px;
+                      padding-top: 12px;
+                      border-top: 1px solid rgb(35, 47, 58);
+                    "
+                  >
+                    <div
+                      data-dc-tpl="56"
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(2, minmax(0px, 1fr));
+                        gap: 10px;
+                      "
+                    >
+                      <div data-dc-tpl="58" role="group" aria-label="Header rows">
+                        <div
+                          data-dc-tpl="59"
+                          style="
+                            margin-bottom: 4px;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            font-size: 12px;
+                            color: rgb(154, 166, 178);
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="60"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path data-dc-tpl="61" d="M3 4h18v16H3zM3 9h18M7 6.5h10"></path></svg
+                          ><span class="sc-interp">Header rows</span>
+                        </div>
+                        <div
+                          data-dc-tpl="62"
+                          style="
+                            height: 32px;
+                            display: flex;
+                            align-items: center;
+                            border: 1px solid rgb(52, 66, 79);
+                            border-radius: 8px;
+                            background: rgb(15, 22, 29);
+                          "
+                        >
+                          <button
+                            data-dc-tpl="63"
+                            type="button"
+                            aria-label="One fewer header row"
+                            aria-disabled="false"
+                            style="
+                              width: 32px;
+                              height: 30px;
+                              padding: 0px;
+                              display: flex;
+                              align-items: center;
+                              justify-content: center;
+                              border: 0px;
+                              background: transparent;
+                              color: rgb(229, 234, 239);
+                              opacity: 1;
+                              cursor: pointer;
+                            "
+                          >
+                            <svg
+                              data-dc-tpl="64"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="65" d="M5 12h14"></path>
+                            </svg>
+                          </button>
+                          <output
+                            data-dc-tpl="66"
+                            style="
+                              flex: 1 1 0%;
+                              text-align: center;
+                              font-family: 'IBM Plex Mono', monospace;
+                              font-size: 13px;
+                            "
+                            ><span class="sc-interp">1</span></output
+                          >
+                          <button
+                            data-dc-tpl="67"
+                            type="button"
+                            aria-label="One more header row"
+                            aria-disabled="false"
+                            style="
+                              width: 32px;
+                              height: 30px;
+                              padding: 0px;
+                              display: flex;
+                              align-items: center;
+                              justify-content: center;
+                              border: 0px;
+                              background: transparent;
+                              color: rgb(229, 234, 239);
+                              opacity: 1;
+                              cursor: pointer;
+                            "
+                          >
+                            <svg
+                              data-dc-tpl="68"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="69" d="M12 5v14M5 12h14"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div data-dc-tpl="58" role="group" aria-label="Header columns">
+                        <div
+                          data-dc-tpl="59"
+                          style="
+                            margin-bottom: 4px;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            font-size: 12px;
+                            color: rgb(154, 166, 178);
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="60"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path data-dc-tpl="61" d="M3 4h18v16H3zM9 4v16M6 8v8"></path></svg
+                          ><span class="sc-interp">Header columns</span>
+                        </div>
+                        <div
+                          data-dc-tpl="62"
+                          style="
+                            height: 32px;
+                            display: flex;
+                            align-items: center;
+                            border: 1px solid rgb(52, 66, 79);
+                            border-radius: 8px;
+                            background: rgb(15, 22, 29);
+                          "
+                        >
+                          <button
+                            data-dc-tpl="63"
+                            type="button"
+                            aria-label="One fewer header column"
+                            aria-disabled="true"
+                            style="
+                              width: 32px;
+                              height: 30px;
+                              padding: 0px;
+                              display: flex;
+                              align-items: center;
+                              justify-content: center;
+                              border: 0px;
+                              background: transparent;
+                              color: rgb(229, 234, 239);
+                              opacity: 0.35;
+                              cursor: pointer;
+                            "
+                          >
+                            <svg
+                              data-dc-tpl="64"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="65" d="M5 12h14"></path>
+                            </svg>
+                          </button>
+                          <output
+                            data-dc-tpl="66"
+                            style="
+                              flex: 1 1 0%;
+                              text-align: center;
+                              font-family: 'IBM Plex Mono', monospace;
+                              font-size: 13px;
+                            "
+                            ><span class="sc-interp">0</span></output
+                          >
+                          <button
+                            data-dc-tpl="67"
+                            type="button"
+                            aria-label="One more header column"
+                            aria-disabled="false"
+                            style="
+                              width: 32px;
+                              height: 30px;
+                              padding: 0px;
+                              display: flex;
+                              align-items: center;
+                              justify-content: center;
+                              border: 0px;
+                              background: transparent;
+                              color: rgb(229, 234, 239);
+                              opacity: 1;
+                              cursor: pointer;
+                            "
+                          >
+                            <svg
+                              data-dc-tpl="68"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              aria-hidden="true"
+                            >
+                              <path data-dc-tpl="69" d="M12 5v14M5 12h14"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <label data-dc-tpl="70" style="margin-top: 12px; display: block">
+                      <span
+                        data-dc-tpl="71"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          gap: 6px;
+                          margin-bottom: 4px;
+                          font-size: 12px;
+                          color: rgb(154, 166, 178);
+                        "
+                        ><svg
+                          data-dc-tpl="72"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            data-dc-tpl="73"
+                            d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-.6-.4-1-.4-1.6 0-.8.6-1.4 1.4-1.4H17a4 4 0 0 0 4-4c0-4.4-4-7.5-9-7.5zM7.5 11h.01M10 7.5h.01M15 7.5h.01"
+                          ></path></svg
+                        >Table style</span
+                      >
+                      <span data-dc-tpl="74" style="position: relative; display: block">
+                        <select
+                          data-dc-tpl="75"
+                          style="
+                            width: 100%;
+                            height: 32px;
+                            box-sizing: border-box;
+                            padding: 0px 30px 0px 10px;
+                            border: 1px solid rgb(52, 66, 79);
+                            border-radius: 8px;
+                            background: rgb(15, 22, 29);
+                            color: rgb(229, 234, 239);
+                            font-family: inherit;
+                            font-size: 13px;
+                            appearance: none;
+                          "
+                        >
+                          <option data-dc-tpl="76">Table</option>
+                          <option data-dc-tpl="77">Table, compact</option>
+                          <option data-dc-tpl="78">Table, ruled</option>
+                        </select>
+                        <svg
+                          data-dc-tpl="79"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                          style="
+                            position: absolute;
+                            right: 10px;
+                            top: 9px;
+                            color: rgb(154, 166, 178);
+                            pointer-events: none;
+                          "
+                        >
+                          <path data-dc-tpl="80" d="M6 9l6 6 6-6"></path>
+                        </svg>
+                      </span>
+                    </label>
+
+                    <div
+                      data-dc-tpl="81"
+                      role="radiogroup"
+                      aria-label="Wide"
+                      style="margin-top: 12px"
+                    >
+                      <div
+                        data-dc-tpl="82"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          gap: 6px;
+                          margin-bottom: 4px;
+                          font-size: 12px;
+                          color: rgb(154, 166, 178);
+                        "
+                      >
+                        <svg
+                          data-dc-tpl="83"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path
+                            data-dc-tpl="84"
+                            d="M3 7h18v10H3zM7 12H3M21 12h-4M5 10l-2 2 2 2M19 10l2 2-2 2"
+                          ></path></svg
+                        >Wide
+                      </div>
+                      <div
+                        data-dc-tpl="85"
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(3, minmax(0px, 1fr));
+                          gap: 2px;
+                          padding: 2px;
+                          border: 1px solid rgb(52, 66, 79);
+                          border-radius: 8px;
+                          background: rgb(15, 22, 29);
+                        "
+                      >
+                        <button
+                          data-dc-tpl="87"
+                          type="button"
+                          role="radio"
+                          aria-checked="true"
+                          title="The table style's"
+                          style="
+                            height: 44px;
+                            padding: 0px 4px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 3px;
+                            border: 0px;
+                            border-radius: 6px;
+                            background: rgb(19, 47, 57);
+                            color: rgb(143, 208, 224);
+                            font-family: inherit;
+                            font-size: 10px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="88"
+                            width="17"
+                            height="17"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="89"
+                              d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"
+                            ></path></svg
+                          ><span
+                            data-dc-tpl="90"
+                            style="
+                              max-width: 100%;
+                              white-space: nowrap;
+                              overflow: hidden;
+                              text-overflow: ellipsis;
+                            "
+                            ><span class="sc-interp">Style</span></span
+                          >
+                        </button>
+
+                        <button
+                          data-dc-tpl="87"
+                          type="button"
+                          role="radio"
+                          aria-checked="false"
+                          title="Scale to fit"
+                          style="
+                            height: 44px;
+                            padding: 0px 4px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 3px;
+                            border: 0px;
+                            border-radius: 6px;
+                            background: transparent;
+                            color: rgb(154, 166, 178);
+                            font-family: inherit;
+                            font-size: 10px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="88"
+                            width="17"
+                            height="17"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="89"
+                              d="M6 3h12v18H6zM9 9l-3-3M15 9l3-3M9 15l-3 3M15 15l3 3"
+                            ></path></svg
+                          ><span
+                            data-dc-tpl="90"
+                            style="
+                              max-width: 100%;
+                              white-space: nowrap;
+                              overflow: hidden;
+                              text-overflow: ellipsis;
+                            "
+                            ><span class="sc-interp">Scale</span></span
+                          >
+                        </button>
+
+                        <button
+                          data-dc-tpl="87"
+                          type="button"
+                          role="radio"
+                          aria-checked="false"
+                          title="Rotate onto landscape pages"
+                          style="
+                            height: 44px;
+                            padding: 0px 4px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 3px;
+                            border: 0px;
+                            border-radius: 6px;
+                            background: transparent;
+                            color: rgb(154, 166, 178);
+                            font-family: inherit;
+                            font-size: 10px;
+                            cursor: pointer;
+                          "
+                        >
+                          <svg
+                            data-dc-tpl="88"
+                            width="17"
+                            height="17"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path
+                              data-dc-tpl="89"
+                              d="M3 7h18v12H3zM8 3.5a6 6 0 0 1 7.5.5M16 1.5v3h-3"
+                            ></path></svg
+                          ><span
+                            data-dc-tpl="90"
+                            style="
+                              max-width: 100%;
+                              white-space: nowrap;
+                              overflow: hidden;
+                              text-overflow: ellipsis;
+                            "
+                            ><span class="sc-interp">Landscape</span></span
+                          >
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      data-dc-tpl="91"
+                      style="margin-top: 12px; display: flex; flex-direction: column; gap: 2px"
+                    >
+                      <div
+                        data-dc-tpl="93"
+                        style="min-height: 40px; display: flex; align-items: center; gap: 10px"
+                      >
+                        <svg
+                          data-dc-tpl="94"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                          style="flex: 0 0 auto; color: rgb(154, 166, 178)"
+                        >
+                          <path data-dc-tpl="95" d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path>
+                        </svg>
+                        <span data-dc-tpl="96" style="flex: 1 1 0%; min-width: 0px"
+                          ><span data-dc-tpl="97" style="display: block; font-size: 13px"
+                            ><span class="sc-interp">Numbered</span></span
+                          ><span
+                            data-dc-tpl="98"
+                            style="display: block; font-size: 11px; color: rgb(154, 166, 178)"
+                            ><span class="sc-interp">Table 3 in the list of tables</span></span
+                          ></span
+                        >
+                        <button
+                          data-dc-tpl="99"
+                          type="button"
+                          role="switch"
+                          aria-checked="true"
+                          aria-label="Numbered"
+                          style="
+                            flex: 0 0 auto;
+                            width: 34px;
+                            height: 20px;
+                            padding: 2px;
+                            display: flex;
+                            justify-content: flex-end;
+                            border: 0px;
+                            border-radius: 999px;
+                            background: rgb(95, 182, 204);
+                            cursor: pointer;
+                          "
+                        >
+                          <span
+                            data-dc-tpl="100"
+                            style="
+                              width: 16px;
+                              height: 16px;
+                              border-radius: 50%;
+                              background: rgb(4, 34, 43);
+                            "
+                          ></span>
+                        </button>
+                      </div>
+
+                      <div
+                        data-dc-tpl="93"
+                        style="min-height: 40px; display: flex; align-items: center; gap: 10px"
+                      >
+                        <svg
+                          data-dc-tpl="94"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.7"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                          style="flex: 0 0 auto; color: rgb(154, 166, 178)"
+                        >
+                          <path
+                            data-dc-tpl="95"
+                            d="M4 3h16v18H4zM8 15h8M8 18h5M8 7h8M8 10h8"
+                          ></path>
+                        </svg>
+                        <span data-dc-tpl="96" style="flex: 1 1 0%; min-width: 0px"
+                          ><span data-dc-tpl="97" style="display: block; font-size: 13px"
+                            ><span class="sc-interp">Note beneath the table</span></span
+                          ><span
+                            data-dc-tpl="98"
+                            style="display: block; font-size: 11px; color: rgb(154, 166, 178)"
+                            ><span class="sc-interp">None yet</span></span
+                          ></span
+                        >
+                        <button
+                          data-dc-tpl="99"
+                          type="button"
+                          role="switch"
+                          aria-checked="false"
+                          aria-label="Note beneath the table"
+                          style="
+                            flex: 0 0 auto;
+                            width: 34px;
+                            height: 20px;
+                            padding: 2px;
+                            display: flex;
+                            justify-content: flex-start;
+                            border: 0px;
+                            border-radius: 999px;
+                            background: rgb(52, 66, 79);
+                            cursor: pointer;
+                          "
+                        >
+                          <span
+                            data-dc-tpl="100"
+                            style="
+                              width: 16px;
+                              height: 16px;
+                              border-radius: 50%;
+                              background: rgb(229, 234, 239);
+                            "
+                          ></span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div data-dc-tpl="101" style="padding: 14px 14px 16px">
+                    <button
+                      data-dc-tpl="102"
+                      type="button"
+                      style="
+                        width: 100%;
+                        height: 36px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        border: 1px solid rgb(107, 52, 49);
+                        border-radius: 8px;
+                        background: transparent;
+                        color: rgb(255, 138, 128);
+                        font-family: inherit;
+                        font-size: 13px;
+                        font-weight: 500;
+                        cursor: pointer;
+                      "
+                    >
+                      <svg
+                        data-dc-tpl="103"
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path data-dc-tpl="104" d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg
+                      >Delete table
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                data-dc-tpl="168"
+                role="tablist"
+                aria-orientation="vertical"
+                aria-label="Side panels"
+                style="
+                  flex: 0 0 auto;
+                  width: 48px;
+                  box-sizing: border-box;
+                  padding: 10px 0px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 6px;
+                  border-left: 1px solid rgb(35, 47, 58);
+                "
+              >
+                <button
+                  data-dc-tpl="169"
+                  type="button"
+                  aria-label="Collapse panel"
+                  style="
+                    width: 32px;
+                    height: 32px;
+                    padding: 0px;
+                    margin-bottom: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 6px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="170"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path data-dc-tpl="171" d="M9 6l6 6-6 6"></path>
+                  </svg>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="true"
+                  aria-label="Table"
+                  title="Table"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: rgb(19, 47, 57);
+                    color: rgb(143, 208, 224);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      data-dc-tpl="175"
+                      d="M3 4h18v16H3zM3 10h18M3 15h18M9 4v16M15 4v16"
+                    ></path></svg
+                  ><span
+                    data-dc-tpl="177"
+                    aria-hidden="true"
+                    style="
+                      position: absolute;
+                      right: -6px;
+                      top: 8px;
+                      width: 3px;
+                      height: 20px;
+                      border-radius: 3px 0px 0px 3px;
+                      background: rgb(95, 182, 204);
+                    "
+                  ></span>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-label="Layers"
+                  title="Layers"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      data-dc-tpl="175"
+                      d="M12 2 2 7l10 5 10-5zM2 12l10 5 10-5M2 17l10 5 10-5"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-label="Outline"
+                  title="Outline"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      data-dc-tpl="175"
+                      d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-label="Assistant"
+                  title="Assistant"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      data-dc-tpl="175"
+                      d="M12 2.5C13.2 7.8 16.2 10.8 21.5 12C16.2 13.2 13.2 16.2 12 21.5C10.8 16.2 7.8 13.2 2.5 12C7.8 10.8 10.8 7.8 12 2.5Z"
+                    ></path>
+                  </svg>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-label="History"
+                  title="History"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path data-dc-tpl="175" d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"></path>
+                  </svg>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-label="Publish"
+                  title="Publish"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path data-dc-tpl="175" d="M22 2l-7 20-4-9-9-4zM22 2 11 13"></path>
+                  </svg>
+                </button>
+
+                <button
+                  data-dc-tpl="173"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-label="Threads"
+                  title="Threads"
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 0px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: rgb(154, 166, 178);
+                    cursor: pointer;
+                  "
+                >
+                  <svg
+                    data-dc-tpl="174"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      data-dc-tpl="175"
+                      d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2zM18 9h2a2 2 0 0 1 2 2v11l-3-3h-6a2 2 0 0 1-2-2v-1"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

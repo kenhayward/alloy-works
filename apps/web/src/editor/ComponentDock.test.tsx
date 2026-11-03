@@ -13,34 +13,37 @@ const tabNames = () =>
     .map((tab) => tab.textContent);
 
 describe("an open component's panels", () => {
-  it('offers the Table tab first while the component holds a table, and chooses it each time the cursor enters one (ADR-0052)', async () => {
-    const dock = (holds: boolean, entered: number) => (
+  it('offers the Table tab first while the component holds a table, and never chooses it for the reader (ADR-0079)', async () => {
+    const dock = (holds: boolean, inHand: boolean) => (
       <ComponentDock
         client={client}
         id="c"
         onFieldsHost={() => {}}
-        table={{ holds, entered }}
+        table={{ holds, inHand }}
         onTableHost={() => {}}
       />
     );
-    const { rerender } = render(dock(false, 0));
+    const { rerender } = render(dock(false, false));
     expect(tabNames()).toEqual(['Attributes', 'Versions', 'Access']);
 
-    rerender(dock(true, 0));
+    rerender(dock(true, false));
     expect(tabNames()).toEqual(['Table', 'Attributes', 'Versions', 'Access']);
-    // Holding a table chooses nothing: the cursor entering one does.
-    expect(screen.getByRole('tab', { name: 'Attributes' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    rerender(dock(true, 1));
-    expect(screen.getByRole('tab', { name: 'Table' })).toHaveAttribute('aria-selected', 'true');
+    const attributes = screen.getByRole('tab', { name: 'Attributes' });
+    expect(attributes).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Table' }).querySelector('[data-dot]')).toBeNull();
 
-    // The reader's own choice stands until the cursor enters a table again.
-    await userEvent.click(screen.getByRole('tab', { name: 'Access' }));
-    rerender(dock(true, 1));
-    expect(screen.getByRole('tab', { name: 'Access' })).toHaveAttribute('aria-selected', 'true');
-    rerender(dock(true, 2));
+    // The cursor entering a table changes no tab: the tab says so, in its dot and its name.
+    rerender(dock(true, true));
+    expect(attributes).toHaveAttribute('aria-selected', 'true');
+    const table = screen.getByRole('tab', { name: 'Table, the cursor is in a table' });
+    expect(table.querySelector('[data-dot]')).not.toBeNull();
+
+    // The reader's own choice stands, and the tab showing needs no dot.
+    await userEvent.click(table);
+    const chosen = screen.getByRole('tab', { name: 'Table' });
+    expect(chosen).toHaveAttribute('aria-selected', 'true');
+    expect(chosen.querySelector('[data-dot]')).toBeNull();
+    rerender(dock(true, false));
     expect(screen.getByRole('tab', { name: 'Table' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: 'Table' })).toBeInTheDocument();
   });

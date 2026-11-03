@@ -1,10 +1,12 @@
-import type { BoundTablePlace, TableAt } from '@alloy-works/editor';
+import type { BoundTablePlace, TableAt, TableGrid } from '@alloy-works/editor';
 import { useState, type ReactNode } from 'react';
 
 import { Chip } from '../parts/Chip.js';
 import { usePresentation } from '../theme/presentation.js';
 import { tableChoices } from '../theme/StyleChoice.js';
 import { BOUND_TABLE_WORDS, Fold, noteOnWords } from './BoundTablePanel.js';
+import { TableDetails } from './TablePanel.js';
+import { TableMap } from './TableMap.js';
 import styles from './BoundTablePanel.module.css';
 import { words } from '../words/words.js';
 
@@ -201,11 +203,32 @@ export function BoundTableReadOnly({
 }
 
 /** **A plain table's formatting, read only** (ADR-0052, decision 5; TF-C): its settings as text. */
-export function TableReadOnly({ table }: { readonly table: TableAt }) {
+export function TableReadOnly({
+  table,
+  grid,
+  caption,
+  number,
+  onGoTo,
+}: {
+  readonly table: TableAt;
+  /** Its grid and caption, as the tab's map and details draw them (ADR-0079). */
+  readonly grid: TableGrid;
+  readonly caption: string;
+  readonly number?: string | null | undefined;
+  /** Takes the reader to the table; absent where there is nowhere to take them. */
+  readonly onGoTo?: (() => void) | undefined;
+}) {
   const styleName = useStyleName(table.style);
   return (
     <div role="group" aria-label={BOUND_TABLE_WORDS.tableReadOnly} className={styles['band']}>
       <ReadOnlyNote />
+      {onGoTo !== undefined && (
+        <button type="button" onClick={onGoTo}>
+          {words('editor.table-go-to')}
+        </button>
+      )}
+      <TableDetails table={table} caption={caption} number={number} />
+      <TableMap grid={grid} cursor={null} />
       <section className={styles['section']} aria-label={BOUND_TABLE_WORDS.table}>
         <h3 className={styles['heading']}>{BOUND_TABLE_WORDS.table}</h3>
         <Facts

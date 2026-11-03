@@ -158,7 +158,9 @@ describe('the warm range preview compile (the R22 plan, R22-A)', () => {
     for (let page = 1; page <= clean.length; page += 1) {
       expect((await warm.page(page)).equals(clean[page - 1]!), `page ${page}`).toBe(true);
     }
-  }, 120_000);
+    // A warm compile of a six-chapter document, twice, on a runner shared with the rest of the
+    // suite: 120s was measured on a quieter run and a loaded runner went past it (issue #722).
+  }, 180_000);
 
   it('PUB-076 publishes the same PDF from a warm compile as from a clean one of the same input', async () => {
     // The tagged PDF as a publish makes it, compiled twice cold, and once warm through `typst watch`
@@ -224,5 +226,7 @@ describe('the warm range preview compile (the R22 plan, R22-A)', () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
-  }, 120_000);
+    // Three cold compiles plus a warm watch over the earlier input, on a runner shared with the
+    // rest of the suite: it took 121s on a loaded CI runner and went past the old 120s (issue #722).
+  }, 180_000);
 });

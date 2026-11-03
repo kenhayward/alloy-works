@@ -1,0 +1,103 @@
+/* A plain table's floating toolbar (ADR-0079): over the desk, in the reader's theme, 34px buttons. */
+
+.toolbar {
+  position: fixed;
+  z-index: var(--z-popover);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--strong-border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--size-13);
+  box-shadow: var(--shadow-raised);
+}
+
+.toolbar[hidden] {
+  display: none;
+}
+
+.toolbar:focus {
+  outline: none;
+}
+
+.name,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.button {
+  width: 34px;
+  padding: 0;
+}
+
+.name {
+  gap: var(--space-8);
+  padding-inline: var(--space-8);
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.name[aria-expanded='true'] {
+  background: var(--accent-weak);
+}
+
+.name:hover,
+.button:hover {
+  background: var(--sunken);
+}
+
+.button[data-danger='true'] {
+  color: var(--danger);
+}
+
+.button[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.group {
+  display: inline-flex;
+  align-items: center;
+}
+
+.rule {
+  width: 1px;
+  height: 22px;
+  margin-inline: var(--space-4);
+  background: var(--border);
+}
+
+.popover {
+  position: absolute;
+  inset-block-start: calc(100% + 4px);
+  inset-inline-start: 4px;
+  box-sizing: border-box;
+  width: 300px;
+  max-height: calc(100vh - 120px);
+  padding: var(--space-12);
+  overflow-y: auto;
+  border: 1px solid var(--strong-border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+}
+
+.facts {
+  margin: 0 0 var(--space-12);
+  color: var(--muted);
+  font-size: var(--size-12);
+}
