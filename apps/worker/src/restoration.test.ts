@@ -526,6 +526,123 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
     });
   });
 
+  it('IMP-046 refuses where the person restoring is in the archive disabled, or erased', async () => {
+    for (const [column, value] of [
+      ['disabled_at', new Date().toISOString()],
+      ['erased_at', new Date().toISOString()],
+    ] as const) {
+      const target = await newTenant();
+      const fresh = await signInAs(target, 'ada');
+      const bad = forged((name, content) => {
+        if (name !== 'tables/principal.jsonl.gz') return undefined;
+        return rezip(
+          rowsIn(content).map((row) =>
+            row['subject'] === 'ada'
+              ? {
+                  ...row,
+                  [column]: value,
+                  ...(column === 'disabled_at' ? { disabled_by: 'person' } : {}),
+                }
+              : row,
+          ),
+        );
+      });
+      const { id } = await uploaded(target, fresh, bad);
+      expect(await answered(target, id)).toMatchObject({
+        state: 'refused',
+        refusal: { code: 'restorer_would_not_administer' },
+      });
+    }
+  });
+
+  it('IMP-046 leaves a provider here as it is, and closes one that arrives', async () => {
+    const target = await newTenant();
+    const grace = await signInAs(target);
+    await service.withTenant(target, async (trx) => {
+      await sql`insert into identity_provider (issuer, name, client_id, secret_name)
+        values ('https://here.example', 'Your organisation', 'mine', 'here_secret')`.execute(trx);
+    });
+    const bad = forged((name, content) => {
+      if (name === 'manifest.json') {
+        const manifest = JSON.parse(content.toString()) as {
+          tables: Record<string, { rows: number; bytes: number }>;
+        };
+        manifest.tables['identity_provider']!.rows = 2;
+        manifest.tables['identity_provider']!.bytes = 4000;
+        return Buffer.from(JSON.stringify(manifest));
+      }
+      if (name !== 'tables/identity_provider.jsonl.gz') return undefined;
+      return rezip([
+        ...rowsIn(content),
+        {
+          id: '00000000-0000-4000-8000-00000000aaa1',
+          issuer: 'https://here.example',
+          name: 'Taken over',
+          client_id: 'theirs',
+          secret_name: 'their_secret',
+          groups_claim: 'forged',
+          scim_claim: 'sub',
+          closed_at: new Date().toISOString(),
+        },
+        {
+          id: '00000000-0000-4000-8000-00000000aaa2',
+          issuer: 'https://arrives.example',
+          name: 'Your organisation',
+          client_id: 'theirs',
+          secret_name: 'their_secret',
+          groups_claim: 'groups',
+          scim_claim: 'sub',
+          closed_at: null,
+        },
+      ]);
+    });
+    const { id, read } = await uploaded(target, grace, bad);
+    if ((await read())!.state !== 'previewed') {
+      // The two rows above are what the check should reach: say so if it stops first.
+      throw new Error(JSON.stringify((await read())!.refusal));
+    }
+    const done = await answered(target, id);
+    expect(done.state, JSON.stringify(done.refusal)).toBe('restored');
+    await service.withTenant(target, async (trx) => {
+      const { rows } = await sql<{
+        issuer: string;
+        name: string;
+        client_id: string;
+        closed_at: Date | null;
+        groups_claim: string;
+      }>`select issuer, name, client_id, closed_at, groups_claim from identity_provider`.execute(
+        trx,
+      );
+      const here = rows.find((each) => each.issuer === 'https://here.example')!;
+      expect(here).toMatchObject({
+        name: 'Your organisation',
+        client_id: 'mine',
+        groups_claim: 'groups',
+        closed_at: null,
+      });
+      const arrived = rows.find((each) => each.issuer === 'https://arrives.example')!;
+      expect(arrived.name).toBe('Your organisation (restored)');
+      expect(arrived.closed_at).not.toBeNull();
+    });
+  });
+
+  it('IMP-044 keeps the bytes an archive shares with another restoration when one expires', async () => {
+    const target = await newTenant();
+    const grace = await signInAs(target);
+    const first = await uploaded(target, grace, archive);
+    const second = await uploaded(target, grace, archive);
+    const key = (await first.read())!.objectKey!;
+    await service.withTenant(target, async (trx) => {
+      await sql`update restoration set requested_at = now() - interval '8 days'
+        where id = ${first.id}`.execute(trx);
+    });
+    await sweepRestorations(worker, stores, queue, quiet);
+    expect((await first.read())!.objectKey).toBeNull();
+    expect((await second.read())!.objectKey).toBe(key);
+    const store = await service.withTenant(target, (trx) => stores.forTenant(trx, target));
+    expect((await store.get(key)).length).toBeGreaterThan(0);
+  });
+
   it('IMP-046 says when two providers mapped to one would make two people one', async () => {
     const collide = forged((name, content) => {
       if (name !== 'tables/principal.jsonl.gz' && name !== 'manifest.json') return undefined;
@@ -818,6 +935,17 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
       );
     });
 
+    it('IMP-052 a whole archive short of a table a restore would wipe', async () => {
+      await refused(
+        forged((name, content) => {
+          if (name !== 'manifest.json') return undefined;
+          const manifest = JSON.parse(content.toString()) as { tables: Record<string, unknown> };
+          delete manifest.tables['role'];
+          return Buffer.from(JSON.stringify(manifest));
+        }),
+      );
+    });
+
     it('a format newer than this release', async () => {
       await refused(
         forged((name, content) => {
@@ -831,7 +959,31 @@ describe('a tenant restored from its export (the EI plan, EIc)', () => {
     });
   });
 
-  it('IMP-042 leaves nothing of an import that fails at its end', async () => {
+  it('IMP-042 leaves nothing of a load that fails near its end, triggers on and the tenant as it was', async () => {
+    const bad = forged((name, content) => {
+      if (name !== 'tables/webhook_subscription.jsonl.gz') return undefined;
+      return rezip(rowsIn(content).map((row) => ({ ...row, event_types: ['not.a.kind'] })));
+    });
+    const target = await newTenant();
+    const grace = await signInAs(target);
+    const { id, read } = await uploaded(target, grace, bad);
+    expect((await read())!.state).toBe('previewed');
+    const done = await answered(target, id);
+    expect(done).toMatchObject({ state: 'refused', refusal: { code: 'export_invalid' } });
+    await service.withTenant(target, async (trx) => {
+      const { rows } = await sql<{ disabled: number; artifacts: number; people: number }>`
+        select (select count(*)::int from pg_trigger t
+                  join pg_class c on c.oid = t.tgrelid
+                  join pg_namespace s on s.oid = c.relnamespace
+                 where s.nspname = current_schema() and not t.tgisinternal
+                   and t.tgenabled = 'D') as disabled,
+               (select count(*)::int from artifact where kind = 'component') as artifacts,
+               (select count(*)::int from principal where id = ${grace}) as people`.execute(trx);
+      expect(rows[0]).toEqual({ disabled: 0, artifacts: 0, people: 1 });
+    });
+  });
+
+  it('IMP-052 refuses when someone arrives between the preview and the job', async () => {
     const target = await newTenant();
     const grace = await signInAs(target);
     const { id } = await uploaded(target, grace, archive);

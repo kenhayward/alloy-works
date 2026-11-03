@@ -10,6 +10,7 @@ import {
   type ExportCatalogue,
   RestoreRefused,
   applyWholeRestore,
+  carriedTables,
   PARTIAL_CONFIGURATION,
   PARTIAL_CONTENT,
   PARTIAL_REFERENCED,
@@ -76,7 +77,7 @@ interface ArchiveSchema {
 const invalid = (message: string) => new JobRefused('export_invalid', message);
 
 /** More than any manifest, schema or list of secrets holds: read whole, so held to a size. */
-const MAX_WHOLE_BYTES = 256 * 1024 * 1024;
+const MAX_WHOLE_BYTES = 64 * 1024 * 1024;
 
 const whole = (path: string) => {
   if (statSync(path).size > MAX_WHOLE_BYTES) {
@@ -268,6 +269,12 @@ async function checkArchive(
   }
   const scope = manifest.scope;
   if (!SCOPES.has(scope)) throw invalid('The archive does not say what it holds.');
+  if (scope === 'tenant') {
+    // A restore wipes what was seeded, so an archive short of a table would leave a tenant without it.
+    for (const [table] of carriedTables()) {
+      if (!manifest.tables?.[table]) throw invalid(`The archive lacks the table ${table}.`);
+    }
+  }
   if (scope !== 'tenant') {
     // Never access, and never the log, whatever its manifest claims (EI-D, EI-F).
     for (const table of Object.keys(manifest.tables ?? {})) {
@@ -312,7 +319,8 @@ export function restorationJob(deps: {
         await deps.db.withTenant(
           tenant,
           async (trx) => {
-            await refuseRestoration(trx, id, { code, message }, 'refused');
+            // A second attempt finding the first already finished has refused nothing.
+            if (!(await refuseRestoration(trx, id, { code, message }, 'refused'))) return;
             await recordEvent(trx, {
               kind: 'import.refused',
               subject: { kind: 'restoration', id },

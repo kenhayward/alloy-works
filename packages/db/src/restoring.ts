@@ -1,5 +1,6 @@
-import type { AuditContext } from '@alloy-works/domain';
+import { starterRoles, type AuditContext } from '@alloy-works/domain';
 import { Kysely, PostgresDialect, sql } from 'kysely';
+import { holdObject, objectInUse } from './assets.js';
 import { auditContextSetting, AUDIT_SETTING, recordEvent } from './audit.js';
 import { insertOrder } from './export-scope.js';
 import type { ImportReport } from './restoring-part.js';
@@ -147,10 +148,11 @@ export async function refuseRestoration(
   id: string,
   refusal: { readonly code: string; readonly message: string },
   state: 'refused' | 'failed' = 'refused',
-): Promise<void> {
-  await sql`update restoration
+): Promise<boolean> {
+  const { rows } = await sql<{ id: string }>`update restoration
        set refusal = ${JSON.stringify(refusal)}::jsonb, state = ${state}, finished_at = now()
-     where id = ${id} and state in ('checking', 'applying', 'previewed')`.execute(trx);
+     where id = ${id} and state in ('checking', 'applying', 'previewed') returning id`.execute(trx);
+  return rows.length > 0;
 }
 
 export async function answerRestoration(
@@ -216,6 +218,9 @@ export async function tenantIsEmpty(
       union all select 'access given to someone else' where exists (
         select from access_grant where principal_id is distinct from ${restorer})
       union all select 'a model endpoint' where exists (select from model_endpoint)
+      union all select 'a group' where exists (select from access_group)
+      union all select 'a role someone made' where exists (
+        select from role where name <> all(${[...starterRoles.map((each) => each.name), 'Connection user', 'Shared reader']}::text[]))
       union all select 'a token' where exists (select from api_token)
       union all select 'a webhook' where exists (select from webhook_subscription)
       union all select 'an extension' where exists (select from extension)
@@ -280,9 +285,9 @@ export async function endRestoreReview(
 export async function expiredRestorationArchives(
   trx: TenantTransaction,
   now: Date,
-): Promise<readonly { readonly id: string; readonly key: string }[]> {
-  const { rows } = await sql<{ id: string; key: string }>`
-    select id, object_key as key from restoration
+): Promise<readonly { readonly id: string; readonly key: string; readonly sha256: string }[]> {
+  const { rows } = await sql<{ id: string; key: string; sha256: string }>`
+    select id, object_key as key, sha256 from restoration
      where object_key is not null and requested_at < ${now}::timestamptz - interval '7 days'
        and state not in ('checking', 'applying')`.execute(trx);
   return rows;
@@ -380,6 +385,8 @@ export async function applyWholeRestore(
   },
 ): Promise<void> {
   const { source, answers, restorer } = input;
+  // One idle session on one of 170 tables is a job to try again, not a tenant stopped.
+  await sql`set local lock_timeout = '30s'`.execute(trx);
   const catalogue = await readExportCatalogue(trx);
   const everyTable = [...new Set(catalogue.columns.map((column) => column.table))];
   for (const table of everyTable) {
@@ -393,11 +400,9 @@ export async function applyWholeRestore(
 
   const { rows: me } = await sql<{ issuer: string | null; subject: string | null }>`
     select issuer, subject from principal where id = ${restorer}`.execute(trx);
-  const { rows: providers } = await sql<{
-    issuer: string;
-    client_id: string;
-    sealed_secret: string | null;
-  }>`select issuer, client_id, sealed_secret from identity_provider`.execute(trx);
+  const { rows: providers } = await sql<LocalProvider>`
+    select issuer, name, client_id, secret_name, sealed_secret, groups_claim, scim_claim, closed_at
+      from identity_provider`.execute(trx);
 
   const wipe = Object.entries(EXPORT_TABLES)
     .filter(([name, table]) => table.fate !== 'leftOut' && !NOT_WIPED.has(name))
@@ -469,6 +474,14 @@ export async function applyWholeRestore(
           );
         }
         people.add(person);
+      }
+    } else if (table === 'identity_provider') {
+      // Who signs in here is this tenant's to say: never what an archive's row says (ADM-054).
+      row['scim_identity'] = null;
+      row['closed_at'] ??= new Date().toISOString();
+      const others = providers.filter((each) => each.issuer !== row['issuer']);
+      if (others.some((each) => each.name === row['name'])) {
+        row['name'] = `${String(row['name'])} (restored)`;
       }
     } else if (table === 'webhook_subscription') {
       row['disabled_at'] = new Date().toISOString();
@@ -570,20 +583,26 @@ export async function applyWholeRestore(
     // Superseded by who they were, the archive's record of them, which now holds their sign-in.
     await sql`update principal set disabled_at = now(), disabled_by = 'person'
        where id = ${restorer}`.execute(trx);
-    const { rows: held } = await sql<{ holds: boolean }>`
-      select exists (
-        select from access_grant g join role r on r.id = g.role_id
-         where g.principal_id = ${restoredSelf} and g.level = 'tenant' and g.effect = 'allow'
-           and (g.expires_at is null or g.expires_at > now())
-           and ('administer' = any(r.permissions) or 'import_environment' = any(r.permissions))
-      ) as holds`.execute(trx);
-    if (!held[0]!.holds) {
-      throw new RestoreRefused(
-        'restorer_would_not_administer',
-        'You are in this archive without the right to administer it, so nobody could.',
-      );
-    }
   }
+  // Whoever did this can administer what they did it to, or none of it happened (IN-B, EI-N).
+  const { rows: held } = await sql<{ holds: boolean }>`
+    select exists (
+      select from access_grant g
+        join role r on r.id = g.role_id
+        join principal p on p.id = g.principal_id
+       where g.principal_id = ${restoredSelf ?? restorer}
+         and g.level = 'tenant' and g.effect = 'allow'
+         and (g.expires_at is null or g.expires_at > now())
+         and p.disabled_at is null and p.erased_at is null
+         and 'administer' = any(r.permissions)
+    ) as holds`.execute(trx);
+  if (!held[0]!.holds) {
+    throw new RestoreRefused(
+      'restorer_would_not_administer',
+      'After this, you could not administer this environment, so nothing was changed.',
+    );
+  }
+  await switchExtensionsOff(trx);
 
   // Every generated key goes on from where the archive stopped.
   await setSequences(trx);
@@ -619,17 +638,57 @@ export class RestoreRefused extends Error {
   }
 }
 
+interface LocalProvider {
+  readonly issuer: string;
+  readonly name: string;
+  readonly client_id: string;
+  readonly secret_name: string;
+  readonly sealed_secret: string | null;
+  readonly groups_claim: string;
+  readonly scim_claim: string;
+  readonly closed_at: Date | null;
+}
+
+/** An extension may call out with no secret at all, so its switch goes off too (ADM-054). */
+export async function switchExtensionsOff(
+  trx: TenantTransaction,
+  only?: readonly string[],
+): Promise<void> {
+  await sql`insert into reference_source_policy (source, enabled)
+    select 'ext:' || id::text, false from extension
+     where ${only === undefined ? sql`true` : sql`id = any(${[...only]}::uuid[])`}
+    on conflict (source) do update set enabled = false`.execute(trx);
+}
+
+/**
+ * Whether anything else needs an archive's bytes: a key is the bytes' hash, so a restoration, an export,
+ * an asset and an import of one file share it. Asked under `holdObject`.
+ */
+export async function archiveHeldElsewhere(
+  trx: TenantTransaction,
+  archive: { readonly key: string; readonly sha256: string },
+  except: { readonly restoration?: string; readonly tenantExport?: string },
+): Promise<boolean> {
+  await holdObject(trx, archive.sha256);
+  const { rows } = await sql<{ held: boolean }>`
+    select exists (select from restoration where object_key = ${archive.key}
+                    and id is distinct from ${except.restoration ?? null}::uuid)
+        or exists (select from tenant_export where object_key = ${archive.key}
+                    and id is distinct from ${except.tenantExport ?? null}::uuid)
+        or exists (select from import where object_key = ${archive.key}) as held`.execute(trx);
+  return (
+    rows[0]!.held ||
+    (await objectInUse(trx, archive.key, '00000000-0000-0000-0000-000000000000'))
+  );
+}
+
 const breaksOf = (census: CarriedTable): readonly string[] => census.breaksCycleAt ?? [];
 
 async function restoreIdentities(
   trx: TenantTransaction,
   input: {
     readonly answers: RestorationAnswers;
-    readonly providers: readonly {
-      readonly issuer: string;
-      readonly client_id: string;
-      readonly sealed_secret: string | null;
-    }[];
+    readonly providers: readonly LocalProvider[];
     readonly restorer: string;
     readonly restoredSelf: string | undefined;
     readonly archiveIssuers: ReadonlySet<string>;
@@ -644,11 +703,12 @@ async function restoreIdentities(
     const here = providers.find((each) => each.issuer === issuer);
     if (here) {
       await sql`update identity_provider
-           set client_id = ${here.client_id}, sealed_secret = ${here.sealed_secret}
+           set name = ${here.name}, client_id = ${here.client_id}, secret_name = ${here.secret_name},
+               sealed_secret = ${here.sealed_secret}, groups_claim = ${here.groups_claim},
+               scim_claim = ${here.scim_claim}, closed_at = ${here.closed_at}
          where issuer = ${issuer}`.execute(trx);
     } else {
-      await sql`update identity_provider set closed_at = coalesce(closed_at, now())
-         where issuer = ${issuer}`.execute(trx);
+      await sql`update identity_provider set closed_at = now() where issuer = ${issuer}`.execute(trx);
     }
   }
   // Each person mapped signs in by the provider they were mapped to; an actor is never reassigned.
@@ -666,8 +726,8 @@ async function restoreIdentities(
        where id = ${restorer}`.execute(trx);
     // They were not in it, so they keep the environment: nobody is locked out (IN-B).
     await sql`insert into access_grant (principal_id, role_id, level, effect, granted_by)
-      select ${restorer}::uuid, id, 'tenant', 'allow', ${restorer}::uuid from role where fixed
-      `.execute(trx);
+      select ${restorer}::uuid, id, 'tenant', 'allow', ${restorer}::uuid from role
+       where name = 'Administrator' and 'administer' = any(permissions)`.execute(trx);
   }
 }
 

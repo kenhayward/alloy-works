@@ -353,6 +353,7 @@ export {
   beginRestoration,
   createRestoration,
   createRestorerDatabase,
+  archiveHeldElsewhere,
   endRestoreReview,
   expiredRestorationArchives,
   forgetRestorationArchive,

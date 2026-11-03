@@ -6,7 +6,7 @@ import { EXPORT_TABLES } from './export-tables.js';
 import { assertTenantRole } from './names.js';
 import type { Tenant } from './provision.js';
 import type { RestorationAnswers, RestoreSource, RestorerDatabase } from './restoring.js';
-import { finishRestoration, recordRestorationReport } from './restoring.js';
+import { finishRestoration, recordRestorationReport, switchExtensionsOff } from './restoring.js';
 import { reindexArtifacts } from './search.js';
 import type { TenantTransaction } from './tables.js';
 import { readExportCatalogue } from './tenant-export.js';
@@ -163,7 +163,8 @@ export async function applyPartialImport(
           row['disabled_at'] = new Date().toISOString();
           row['disabled_reason'] = 'restored';
         } else if (table === 'identity_provider') {
-          row['closed_at'] = row['closed_at'] ?? new Date().toISOString();
+          row['closed_at'] = new Date().toISOString();
+          row['scim_identity'] = null;
         }
 
         let drop = false;
@@ -350,6 +351,10 @@ export async function applyPartialImport(
   const artifacts = [...(maps.get('artifact.id')?.values() ?? [])].filter((id) =>
     wrote.has(`artifact|${id}`),
   );
+  const extensions = [...(maps.get('extension.id')?.values() ?? [])].filter((id) =>
+    wrote.has(`extension|${id}`),
+  );
+  await switchExtensionsOff(trx, extensions);
   return {
     report: {
       added,

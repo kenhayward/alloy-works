@@ -106,6 +106,9 @@ having no credential and being off, named in the report. Foreign keys forbid dro
 (`generation_run`, `principal.provider_id`). Refused while any is unanswered (ADM-054, Ken). A webhook's `sealed` becomes nullable, with a `disabled_reason` of `restored`. A hashed token cannot be
 restored and is listed as left out; so is the environment's store credential.
 
+As built, only **Arrive switched off** is offered: a value is set afterwards through its kind's own route, and `import_binding` is not
+built. A model or connection with no credential cannot run, and is refused as it would be unset; an extension's switch is turned off too.
+
 **EI-H. Restored events are renumbered, and say so.** `audit_event.sequence` is the read's cursor, and the
 restorer's sign-ins hold the low numbers. Each restored event takes a new sequence and its original `at`, with
 `audit_restored (sequence, original_sequence, restore_id)` beside it, its `audit_label` rows remapped with it, and reads "Restored from an export" in the
@@ -152,7 +155,7 @@ counts, and its groups, externals and service identities. Each issuer needs an a
 keeping subjects, or **keep as they are**, those people arriving unable to sign in. An actor is never reassigned; a
 mapping changes how a principal signs in, not who it is. If the restorer's issuer and subject are in the archive, that
 restored principal wins, the fresh one gives up its identity (`provider_id` and `provider_key` too) and they sign in
-again; the preview refuses unless that principal is enabled, not erased and would administer, so nobody is locked out (IN-B).
+again; applying refuses, undoing everything, unless that principal is enabled, not erased and would administer, so nobody is locked out (IN-B).
 If they are not in it, they keep their principal and Administrator grant.
 
 **EI-O. Tar, not ZIP.** A ZIP without its 64-bit extension stops at 65,000 entries and 4 GB, which format 1 refuses as

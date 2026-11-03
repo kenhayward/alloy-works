@@ -6,6 +6,8 @@ import {
   answerRestoration,
   beginRestoration,
   createComponent,
+  createServiceIdentity,
+  createWebhookSubscription,
   createJobQueue,
   createRestoration,
   createRestorerDatabase,
@@ -32,6 +34,7 @@ import { tarWriter } from './tar.js';
 import { processNext, type WorkerLog } from './worker.js';
 
 const quiet: WorkerLog = { info: () => {}, warn: () => {}, error: () => {} };
+const MARKER = 'v1.AAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBB.SEALEDMARKER';
 
 describe('a part of a tenant imported into one in use (the EI plan, EId)', () => {
   let db: TestDatabase;
@@ -120,7 +123,11 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
     return sourceStore.get(written.key!);
   };
   /** The archive with entries changed, as an administrator with a text editor might. */
-  const forged = (from: Buffer, change: (name: string, content: Buffer) => Buffer | undefined) => {
+  const forged = (
+    from: Buffer,
+    change: (name: string, content: Buffer) => Buffer | undefined,
+    extra: readonly (readonly [string, Buffer])[] = [],
+  ) => {
     const entries: [string, Buffer][] = [];
     let at = 0;
     while (at + 512 <= from.length) {
@@ -135,7 +142,7 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
     const path = join(folder, 'forged.tar');
     const fd = openSync(path, 'w');
     const tar = tarWriter(fd);
-    for (const [name, content] of entries) tar.bytes(name, content);
+    for (const [name, content] of [...entries, ...extra]) tar.bytes(name, content);
     tar.end();
     closeSync(fd);
     const bytes = readFileSync(path);
@@ -195,6 +202,28 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
       });
       if (component.answer !== 'created') throw new Error(component.answer);
       part = component.version.artifactId;
+    });
+    await service.withTenant(source, async (trx) => {
+      await sql`insert into model_endpoint (name, protocol, base_url, model, context_window,
+          price_in_micros, price_out_micros, currency, boundary, made_by)
+        values ('Marked', 'openai', 'https://model.example/', 'm', 2000, 0, 0, 'GBP', 'inside',
+                ${ada})`.execute(trx);
+      await sql`insert into model_credential (endpoint_id, sealed, sealed_for, set_by)
+        select id, ${MARKER}, ${MARKER}, ${ada} from model_endpoint`.execute(trx);
+      const identity = await createServiceIdentity(trx, {
+        name: 'Bridge',
+        description: '',
+        by: ada,
+      });
+      await createWebhookSubscription(trx, {
+        id: '00000000-0000-4000-8000-00000000abcd',
+        serviceIdentity: identity.id,
+        url: 'https://hooks.example/in',
+        description: '',
+        eventTypes: ['content.version_cut'],
+        sealed: MARKER,
+        by: ada,
+      });
     });
     archive = await exported({ scope: 'space', id: space });
     configuration = await exported({ scope: 'configuration', id: null });
@@ -349,13 +378,23 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
     expect((await service.withTenant(target, latest)).rows).toEqual(before);
   });
 
-  it('IMP-039 leaves this tenant its settings, and brings endpoints and webhooks off', async () => {
+  it('IMP-039 leaves this tenant its settings, and brings an endpoint and a webhook off', async () => {
     const target = await newTenant();
     const grace = await signInAs(target, 'grace');
     const { id } = await uploaded(target, grace, configuration);
     const done = await applied(target, id);
     expect(done.state, JSON.stringify(done.refusal)).toBe('restored');
     expect(done.report!.settingsLeft).toContain('access_policy');
+    await service.withTenant(target, async (trx) => {
+      const endpoints = await sql<{ name: string }>`select name from model_endpoint`.execute(trx);
+      expect(endpoints.rows.map((each) => each.name)).toEqual(['Marked']);
+      const keys = await sql<{ n: number }>`
+        select count(*)::int as n from model_credential`.execute(trx);
+      expect(keys.rows[0]!.n).toBe(0);
+      const hooks = await sql<{ sealed: string | null; disabled_reason: string | null }>`
+        select sealed, disabled_reason from webhook_subscription`.execute(trx);
+      expect(hooks.rows).toEqual([{ sealed: null, disabled_reason: 'restored' }]);
+    });
   });
 
   it('turns every trigger back on afterwards', async () => {
@@ -376,18 +415,29 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
   });
 
   describe('a forged part is refused, and nothing changes', () => {
-    const refused = async (bytes: Buffer, code = 'export_invalid') => {
+    const refused = async (bytes: Buffer, code = 'export_invalid', says?: RegExp) => {
       const target = await newTenant();
       const grace = await signInAs(target, 'grace');
       const { read } = await uploaded(target, grace, bytes);
-      expect(await read()).toMatchObject({ state: 'refused', refusal: { code } });
+      const seen = (await read())!;
+      expect(seen).toMatchObject({ state: 'refused', refusal: { code } });
+      if (says) expect(seen.refusal!.message).toMatch(says);
       const artifacts = await service.withTenant(target, (trx) =>
         trx.selectFrom('artifact').select('id').where('kind', '=', 'component').execute(),
       );
       expect(artifacts).toEqual([]);
     };
     const withTable = (name: string, rows: readonly Record<string, unknown>[], columns: string[]) =>
+      added(`tables/${name}.jsonl.gz`, rezip(rows), name, rows, columns);
+    const added = (
+      path: string,
+      file: Buffer,
+      name: string,
+      rows: readonly Record<string, unknown>[],
+      columns: string[],
+    ) =>
       forged(archive, (entry, content) => {
+        // The table's file takes the place of a references list it would otherwise lack.
         if (entry === 'manifest.json') {
           const manifest = JSON.parse(content.toString()) as {
             tables: Record<string, unknown>;
@@ -406,17 +456,15 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
           schema.tables[name] = { columns: columns.map((column) => ({ name: column })) };
           return Buffer.from(JSON.stringify(schema));
         }
-        if (entry === 'references.jsonl') return content;
         return undefined;
-      });
+      }, [[path, file]]);
 
     it('IMP-039 a part holding access', async () => {
-      const grant = withTable('access_grant', [], ['id']);
-      await refused(grant);
+      await refused(withTable('access_grant', [], ['id']), 'export_invalid', /cannot hold/);
     });
 
     it('IMP-052 a part holding the audit log', async () => {
-      await refused(withTable('audit_event', [], ['sequence']));
+      await refused(withTable('audit_event', [], ['sequence']), 'export_invalid', /cannot hold/);
     });
 
     it('IMP-042 a row no constraint would take, found by the preview', async () => {
