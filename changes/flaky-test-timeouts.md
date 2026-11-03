@@ -26,3 +26,6 @@
   parallel: the connector answered 503 `connector_busy` and said to try again in a moment, and the
   test took the refusal as a failure. It now waits a moment and tries again, as the connector says.
   Fixes #478.
+- The document parameter test resolved a binding through the connector and read its held result
+  blindly; when the connector was busy at its cap the resolve answered a failure instead, and the
+  test threw. It now tries again when the connector says it is busy, as it says. Fixes #633.
