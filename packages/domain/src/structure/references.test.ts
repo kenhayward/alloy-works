@@ -8,6 +8,7 @@ import { contributionsOf, type Contribution } from './contributions.js';
 import { conditions, number, resolve } from './numbering.js';
 import type { OutlineMatter, OutlineNode, OutlineViewNode } from './outline.js';
 import {
+  blockForms,
   documentTargets,
   formsFor,
   kindWord,
@@ -1035,5 +1036,59 @@ describe('the forms a bound target can print', () => {
       'page',
       'relative',
     ]);
+  });
+});
+
+describe('blockForms', () => {
+  const MATHML = '<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>';
+  const part = parseContentDocument({
+    schemaVersion: 1,
+    title: 'A part',
+    language: 'en-GB',
+    direction: 'ltr',
+    content: [
+      {
+        type: 'paragraph',
+        id: 'p1',
+        content: [
+          { type: 'text', value: 'Words', marks: [] },
+          {
+            type: 'footnote',
+            id: 'f1',
+            anchor: { kind: 'span' },
+            content: [
+              {
+                type: 'paragraph',
+                id: 'f1p',
+                content: [{ type: 'text', value: 'A note', marks: [] }],
+              },
+            ],
+          },
+          {
+            type: 'crossReference',
+            id: 'x1',
+            target: { kind: 'block', block: 'p1' },
+            display: 'page',
+          },
+        ],
+      },
+      { type: 'equation', id: 'e1', mathml: MATHML, numbered: true },
+      { type: 'equation', id: 'e2', mathml: MATHML, numbered: false },
+    ],
+  });
+
+  it('offers what the block kind prints, as publishing reads it', () => {
+    expect(blockForms(part, 'p1')).toEqual(['page', 'relative']);
+    expect(blockForms(part, 'f1')).toEqual(['number', 'page', 'relative']);
+    expect(blockForms(part, 'e1')).toEqual(['number', 'page', 'relative']);
+  });
+
+  it('leaves out a number for what is marked unnumbered', () => {
+    expect(blockForms(part, 'e2')).toEqual(['page', 'relative']);
+  });
+
+  it('finds no block in what is not one', () => {
+    expect(blockForms(part, 'x1')).toBeUndefined();
+    expect(blockForms(part, 'absent')).toBeUndefined();
   });
 });

@@ -153,25 +153,91 @@ describe('inserting what stays live', () => {
     expect(unplaced.result).toMatchObject({ ok: false, said: { code: 'edit_refused' } });
   });
 
-  it('CNT-027 proposes a cross-reference holding its target and what to display, never a number', async () => {
-    const block = await insert({ reference: { block: 'p1' } });
+  it('says a copied value holds nothing until it is resolved', async () => {
+    const { result } = await insert({ value: { node: document.nodes[2]!, binding: 'b1' } });
+    expect(String(result.result)).toContain('It holds no value until it is resolved');
+  });
+
+  it('refuses copying a value whose query the person may not read', async () => {
+    const connection = await h.connection('Private');
+    await h.allow(h.ids.ada!, h.roles.Author!, { kind: 'space', id: h.quality });
+    const definition = await h.definition(connection.id, {}, h.quality);
+    const hidden = await h.component(h.general, 'Hidden');
+    await h.place(
+      hidden,
+      { type: 'text', value: 'It is ', marks: [] },
+      binding('b2', definition.id, { take: { column: 'name' } }),
+    );
+    const held = await h.documentReferencing([sites.id, hidden.id]);
+    h.connector.modelFor = calling('propose_insert', {
+      component: sites.id,
+      block: 'p1',
+      item: { value: { node: held.nodes[1]!, binding: 'b2' } },
+    });
+    const response = await h.call('grace', 'POST', `/v1/documents/${held.id}/assistant/runs`, {
+      ask: 'Insert it.',
+    });
+    const result = framesOf(response.body).find((frame) => frame.event === 'tool_result')!.data;
+    expect(result).toMatchObject({ ok: false, said: { code: 'edit_refused' } });
+    expect(String(result.result)).toBe('You may not read the query that value comes from.');
+  });
+
+  it('names the variables to none who may not read them', async () => {
+    const refused = await insert({ variable: 'invented' }, 'grace');
+    expect(refused.result).toMatchObject({ ok: false, said: { code: 'edit_refused' } });
+    expect(String(refused.result.result)).toBe('There is no variable invented.');
+  });
+
+  it('CNT-027 proposes a cross-reference holding its target and a form that target can print, never a number', async () => {
+    const block = await insert({ reference: { block: '#p1' } });
     expect(insertedBy(block.proposal)).toMatchObject({
       type: 'crossReference',
       target: { kind: 'block', block: 'p1' },
-      display: 'number',
+      display: 'page',
     });
     const part = await insert({
       reference: { block: 'p1', component: other.id },
-      display: 'title',
+      display: 'relative',
     });
     expect(insertedBy(part.proposal)).toMatchObject({
       target: { kind: 'component', component: other.id, block: 'p1' },
-      display: 'title',
+      display: 'relative',
     });
     const node = await insert({ reference: { node: document.nodes[1]! } });
     expect(insertedBy(node.proposal)).toMatchObject({
       target: { kind: 'node', node: document.nodes[1]! },
+      display: 'title',
     });
+  });
+
+  it('refuses a form the target cannot print, naming those it can', async () => {
+    const { result, proposal } = await insert({ reference: { block: 'p1' }, display: 'number' });
+    expect(result).toMatchObject({ ok: false, said: { code: 'edit_refused' } });
+    expect(String(result.result)).toBe('That can be referred to by: page, relative.');
+    expect(proposal).toBeUndefined();
+  });
+
+  it('refuses a reference to a part placed more than once, which publishing cannot resolve', async () => {
+    const twice = await h.documentReferencing([sites.id, other.id, other.id]);
+    h.connector.modelFor = calling('propose_insert', {
+      component: sites.id,
+      block: 'p1',
+      item: { reference: { block: 'p1', component: other.id }, display: 'page' },
+    });
+    const response = await h.call('ada', 'POST', `/v1/documents/${twice.id}/assistant/runs`, {
+      ask: 'Insert it.',
+    });
+    const result = framesOf(response.body).find((frame) => frame.event === 'tool_result')!.data;
+    expect(result).toMatchObject({ ok: false, said: { code: 'edit_refused' } });
+    expect(String(result.result)).toBe(
+      'That part is placed more than once, so a reference to it cannot say which.',
+    );
+  });
+
+  it('says what a reference takes where its arguments are refused', async () => {
+    const { result } = await insert({ reference: { block: 'p1', node: 'n1' } });
+    expect(result).toMatchObject({ ok: false });
+    expect(String(result.result)).toContain('a reference names a block');
   });
 
   it('refuses a cross-reference to what the document does not hold', async () => {

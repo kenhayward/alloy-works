@@ -178,7 +178,10 @@ export const proposeInsertInputSchema = z.strictObject({
           .describe(
             'A block, of this part or another in the document, or a node read_outline gave',
           ),
-        display: z.enum(['number', 'title', 'numberAndTitle']).optional(),
+        display: z
+          .enum(['number', 'title', 'numberAndTitle', 'page', 'relative'])
+          .optional()
+          .describe('Left out, the form the target suits'),
       }),
       z.strictObject({ footnote: z.string().min(1).max(5_000).describe('The note, as Markdown') }),
     ])
@@ -727,7 +730,7 @@ export type EditOutcome =
   | { readonly ok: false; readonly problem: string };
 
 /** A block's identifier as read_component shows it, `[#id]`, taken with or without its `#` (#870). */
-const bare = (id: string) => (id.startsWith('#') ? id.slice(1) : id);
+export const bare = (id: string) => (id.startsWith('#') ? id.slice(1) : id);
 
 /** An edit whose blocks are named bare, however the model wrote them. */
 function bareEdit(edit: BlockEdit): BlockEdit {
@@ -1431,23 +1434,6 @@ export function boundValueIn(content: ContentDocument, id: string): InlineNode |
   };
   visit(content.content);
   return found;
-}
-
-/** Whether a part holds a block by this identifier, at any depth. */
-export function holdsBlock(content: ContentDocument, id: string): boolean {
-  let held = false;
-  const visit = (value: unknown): void => {
-    if (held || typeof value !== 'object' || value === null) return;
-    if (Array.isArray(value)) return value.forEach(visit);
-    const node = value as { type?: unknown; id?: unknown };
-    if (node.id === bare(id) && node.type !== 'binding' && node.type !== 'footnote') {
-      held = true;
-      return;
-    }
-    Object.values(value).forEach(visit);
-  };
-  visit(content.content);
-  return held;
 }
 
 /** A footnote of what Markdown made (CNT-129): paragraphs a proposal may write, or why it cannot. */

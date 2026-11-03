@@ -1,4 +1,5 @@
 import type { BlockNode } from '../content/model/blocks.js';
+import type { ContentDocument } from '../content/model/document.js';
 import type { Bound } from '../publishing/bind.js';
 import type {
   CrossReferenceDisplay,
@@ -490,6 +491,8 @@ export function referenceResolver(
 interface Found {
   readonly kind: ReferenceKind;
   readonly caption: string | null;
+  /** Marked to take no number (STR-071), or an equation left without one. */
+  readonly unnumbered?: true;
 }
 
 /**
@@ -531,10 +534,18 @@ function findIn(block: BlockNode, index: Map<string, Found>): void {
       index.set(block.id, { kind: 'block', caption: null });
       return;
     case 'equation':
-      index.set(block.id, { kind: 'equation', caption: null });
+      index.set(block.id, {
+        kind: 'equation',
+        caption: null,
+        ...(block.numbered ? {} : { unnumbered: true as const }),
+      });
       return;
     case 'table':
-      index.set(block.id, { kind: 'table', caption: captionText(block.caption) });
+      index.set(block.id, {
+        kind: 'table',
+        caption: captionText(block.caption),
+        ...(block.numbered === false ? { unnumbered: true as const } : {}),
+      });
       footnotesIn(block.caption, index);
       for (const row of block.rows) {
         for (const cell of row.cells) for (const each of cell.content) findIn(each, index);
@@ -543,13 +554,21 @@ function findIn(block: BlockNode, index: Map<string, Found>): void {
       return;
     case 'boundTable':
       // Found as a table, its caption's words beside it (TB1-D), where `blockContributions` numbers it.
-      index.set(block.id, { kind: 'table', caption: captionText(block.caption) });
+      index.set(block.id, {
+        kind: 'table',
+        caption: captionText(block.caption),
+        ...(block.numbered === false ? { unnumbered: true as const } : {}),
+      });
       footnotesIn(block.caption, index);
       footnotesIn(block.note ?? [], index);
       footnotesIn(block.source ?? [], index);
       return;
     case 'figure':
-      index.set(block.id, { kind: 'figure', caption: captionText(block.caption) });
+      index.set(block.id, {
+        kind: 'figure',
+        caption: captionText(block.caption),
+        ...(block.numbered === false ? { unnumbered: true as const } : {}),
+      });
       footnotesIn(block.caption, index);
       return;
     default: {
@@ -557,6 +576,26 @@ function findIn(block: BlockNode, index: Map<string, Found>): void {
       throw new Error(`No resolution rule for a block of kind ${(unreachable as BlockNode).type}`);
     }
   }
+}
+
+/**
+ * **The forms a block of a part can be referred to in**, found as `referenceResolver` finds it, or
+ * undefined where the part holds no such block: its kind's, less a title where it has no words and a
+ * number where it is marked to take none. A number the layout gives or not is known only at publish.
+ */
+export function blockForms(
+  content: ContentDocument,
+  block: string,
+): readonly CrossReferenceDisplay[] | undefined {
+  const index = new Map<string, Found>();
+  for (const each of content.content) findIn(each, index);
+  const found = index.get(block);
+  if (found === undefined) return undefined;
+  return formsFor(found.kind).filter(
+    (form) =>
+      !(found.unnumbered && (form === 'number' || form === 'numberAndTitle')) &&
+      !(!hasText(found.caption ?? '') && (form === 'title' || form === 'numberAndTitle')),
+  );
 }
 
 /**
