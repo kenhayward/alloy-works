@@ -10,6 +10,26 @@ export const storableText = (text: string): boolean =>
   !text.includes('\u0000') && !LONE_SURROGATE.test(text);
 
 /**
+ * A JSON value as Postgres can store it, each NUL and half a surrogate pair the replacement character:
+ * for recording what came from outside and was not admitted, where refusing the record would lose it.
+ */
+export function storableCopy<T>(value: T): T {
+  const copied = (each: unknown): unknown => {
+    if (typeof each === 'string') {
+      return each.replace(new RegExp(`\\u0000|${LONE_SURROGATE.source}`, 'g'), '\uFFFD');
+    }
+    if (Array.isArray(each)) return each.map(copied);
+    if (typeof each === 'object' && each !== null) {
+      return Object.fromEntries(
+        Object.entries(each).map(([name, member]) => [copied(name), copied(member)]),
+      );
+    }
+    return each;
+  };
+  return copied(value) as T;
+}
+
+/**
  * Whether every string in a JSON value - every member name as well as every value - is storable.
  * Iterative, with a stack of its own, because it runs over a title before anything has bounded how
  * deep its footnotes nest: a recursive walk would throw on a deep enough value rather than answer.

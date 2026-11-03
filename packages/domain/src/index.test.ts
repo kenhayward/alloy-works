@@ -115,6 +115,7 @@ describe('the domain package', () => {
         'validate',
         // The version record's serialisation, promoted in the storage plan that composes it.
         // What the store can hold, promoted when saving an iteration began asking (issue #127).
+        'storableCopy',
         'storableEverywhere',
         // Search's projection: what a version is found by, place by place (search.md; W6.1).
         'SEARCH_CONFIGURATIONS',
