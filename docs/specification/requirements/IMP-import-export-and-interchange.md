@@ -121,6 +121,7 @@ to what gets kept.
 | **IMP-016** | Structured content in a standard XML vocabulary should be importable, with a mapping the importer states rather than assumes                                                                                                                                                       | T7         | Specified             |
 | **IMP-017** | An import must never be able to create content that fails validation (**CNT-013**)                                                                                                                                                                                                 | Constraint | Specified             |
 | **IMP-039** | The product's own export format must be importable, so that an export can be restored into a tenant. IMP-003's attended rule exists for the split judgement a legacy document needs; content that is already components needs no such judgement and must not be forced through one | T7         | Specified             |
+| **IMP-052** | A whole-tenant export, the only kind holding the audit log, must be restored only into an empty tenant; anywhere else it must be refused before it runs                                                                                                                            | T7         | Specified             |
 
 **IMP-039 makes IMP-018 a route out and back rather than a file nobody can use.** An export that
 only this product's absence can read is a guarantee against lock-in; an export this product can also
@@ -349,3 +350,15 @@ own; a rewording for clarity is an edit.
 | Counts       | Before | After                     |
 | ------------ | ------ | ------------------------- |
 | Requirements | 48     | 51, of which 2 superseded |
+
+### Export and import's design, 2026-11-03
+
+Not a review. Ken agreed the EI plan (issue #934): a log says what happened in one tenant, and IMP-039 left a populated tenant open.
+
+| What was found                                                                                           | Change          |
+| -------------------------------------------------------------------------------------------------------- | --------------- |
+| IMP-039 says an export can be restored into a tenant, and a populated one would interleave two histories | **IMP-052**, T7 |
+
+| Counts       | Before                    | After                     |
+| ------------ | ------------------------- | ------------------------- |
+| Requirements | 51, of which 2 superseded | 52, of which 2 superseded |
