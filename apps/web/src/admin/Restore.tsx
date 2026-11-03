@@ -164,7 +164,7 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
   return (
     <section aria-labelledby="restore-heading">
       <h3 id="restore-heading">{words('admin.restore-heading')}</h3>
-      <p>{words('admin.restore-intro')}</p>
+      <p className={styles['muted']}>{words('admin.restore-intro')}</p>
 
       {review?.underReview && (
         <div role="group" aria-label={words('admin.restore-review-heading')}>
@@ -182,18 +182,20 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
       )}
 
       {!review?.restoredAt && !plan && !following && (
-        <label className={styles['field']}>
-          {words('admin.restore-choose')}
-          <input
-            type="file"
-            accept=".tar,application/x-tar"
-            disabled={busy}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void send(file);
-            }}
-          />
-        </label>
+        <div className={styles['lead']}>
+          <label>
+            {words('admin.restore-choose')}
+            <input
+              type="file"
+              accept=".tar,application/x-tar"
+              disabled={busy}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void send(file);
+              }}
+            />
+          </label>
+        </div>
       )}
 
       {current?.state === 'checking' && <p role="status">{words('admin.restore-checking')}</p>}
