@@ -20,9 +20,8 @@ stays, and what will stop working.
 | ID          | How it is met                                                                                                                                                                                                    |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **IAM-015** | `POST /v1/artifacts/{id}/move` moves a component, document, template or image within a tenant; the chain changes with `space_id`, and grants on the artifact itself end, so no old permission is carried (MV-B). |
+| **COL-069** | Locks and presence on what moves go, a thread stands for whoever can read what it is on, and a document says of a part it withholds only that it moved and has threads (MV-F).                                   |
 | **IAM-028** | The next decision reads the new chain; a test holds a person's answer before and after, both ways, and a direct allow and a direct deny each ending.                                                             |
-
-**COL-069**, which supersedes COL-068 (MV-F), joins this table with the slice's interface, whose flag it needs.
 
 ## Decisions
 

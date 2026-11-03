@@ -121,7 +121,7 @@ export function buildMenus(
       lifecycleRows,
       rows('preview', 'save-version', 'history'),
       rows('dates', 'scope', 'language', 'relationships', 'access'),
-      rows('hold', 'archive'),
+      rows('move', 'hold', 'archive'),
       [item('delete', stateOf, true)],
     ]),
     menu('edit', 'menu.edit', 'E', [rows('undo', 'redo'), rows('search')]),

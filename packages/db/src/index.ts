@@ -862,6 +862,7 @@ export {
 } from './documents.js';
 export {
   MOVE_MOST,
+  movedWithThreads,
   moveToSpace,
   previewMove,
   type MoveConsequences,

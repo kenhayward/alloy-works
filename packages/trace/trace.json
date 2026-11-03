@@ -18852,6 +18852,10 @@
           "howItIsMet": "`POST /v1/artifacts/{id}/move` moves a component, document, template or image within a tenant; the chain changes with `space_id`, and grants on the artifact itself end, so no old permission is carried (MV-B)."
         },
         {
+          "id": "COL-069",
+          "howItIsMet": "Locks and presence on what moves go, a thread stands for whoever can read what it is on, and a document says of a part it withholds only that it moved and has threads (MV-F)."
+        },
+        {
           "id": "IAM-028",
           "howItIsMet": "The next decision reads the new chain; a test holds a person's answer before and after, both ways, and a direct allow and a direct deny each ending."
         }
@@ -23648,9 +23652,15 @@
       "kind": "title"
     },
     {
+      "id": "COL-069",
+      "file": "apps/service/src/moving-routes.test.ts",
+      "line": 174,
+      "kind": "title"
+    },
+    {
       "id": "IAM-015",
       "file": "apps/service/src/moving-routes.test.ts",
-      "line": 135,
+      "line": 137,
       "kind": "title"
     },
     {
@@ -30650,6 +30660,12 @@
       "kind": "title"
     },
     {
+      "id": "COL-069",
+      "file": "packages/db/src/moving.test.ts",
+      "line": 467,
+      "kind": "title"
+    },
+    {
       "id": "IAM-015",
       "file": "packages/db/src/moving.test.ts",
       "line": 244,
@@ -35890,19 +35906,19 @@
     {
       "id": "LOC-004",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 940,
+      "line": 952,
       "kind": "title"
     },
     {
       "id": "LOC-029",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 936,
+      "line": 948,
       "kind": "title"
     },
     {
       "id": "LOC-042",
       "file": "tests/browser/src/pseudo.test.ts",
-      "line": 936,
+      "line": 948,
       "kind": "title"
     },
     {

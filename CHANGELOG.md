@@ -3,34 +3,41 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.227.0 - 2026-11-03 (PR #919)
+## 0.228.0 - 2026-11-03 (PR #919)
 
 The assistant's authoring tools closed (the AT plan): it changes words without disturbing what surrounds them, finds parts before writing one, places what stays live, reads comments, and proposes changes to the outline.
 
 ### Added
 
-- **Commands in the assistant's box.** Type `/clear` to clear this conversation and start a new one, `/tools` for the tools the model can use and what each does, `/save` to save this conversation, and `/commands` for this list. They never reach the model.
-- **The assistant places what stays live.** It can propose a variable, a bound value already in the document, a cross-reference or a footnote in a paragraph, rather than typing a number that would go stale.
-- **The assistant can propose new tables and lists within lists.** An edit's text may now hold either, as well as paragraphs and plain lists. An existing table is still changed cell by cell or row by row, which keeps what its cells hold.
-- **The assistant proposes changes to the outline.** It can move, place, add, remove or retitle in one proposal, shown step by step by titles. Accepting makes one new version of the document, all of it or none, and it is refused once the document has moved on. In a conversation on a document, a new part it proposes can say where to go.
-- **The assistant can propose a comment on a part.** A new `propose_comment` tool, listed by `/tools`, proposes a comment on a whole part or on words in it. Nothing is posted until you accept it, when it is posted as yours.
-- **The assistant answers what has been published from its sources.** Asked what papers relate to a subject, it searches Crossref, PubMed or an installed reference source with your words, names only the works found, and can read a work's abstract to say what it finds, and whether its source reports it retracted, superseded or corrected. Only the identifier is sent to read one.
-- **The assistant reads comments.** It can read the comments on a part, as the person asking: what each thread quotes, whether it is open and what was said, with reviewers unnamed. A person from outside the organisation is read no internal thread.
 - **The assistant changes words without disturbing what surrounds them.** It can reword a paragraph or list holding a citation, a footnote, a cross-reference or a bound value, which stand as they were. A proposal now shows them too.
 - **The assistant looks for a part before writing one.** In a document it can search and read other parts you may read, to reuse or cite them. It edits only the parts in the document.
-- **Make a role in Administration.** Roles now has New role: a name and any of the permissions. It does nothing until it is granted, and making one is audited. Roles cannot be changed or removed here yet.
+- **The assistant places what stays live.** It can propose a variable, a bound value already in the document, a cross-reference or a footnote in a paragraph, rather than typing a number that would go stale.
+- **The assistant reads comments.** It can read the comments on a part, as the person asking: what each thread quotes, whether it is open and what was said, with reviewers unnamed. A person from outside the organisation is read no internal thread.
+- **The assistant proposes changes to the outline.** It can move, place, add, remove or retitle in one proposal, shown step by step by titles. Accepting makes one new version of the document, all of it or none, and it is refused once the document has moved on. In a conversation on a document, a new part it proposes can say where to go.
+
+## 0.227.0 - 2026-11-03 (PR #914)
+
+The MV close, T7's moving of content between spaces (the MV plan), with what has landed since the AP close: a document's language, comments in Authoring and more from the assistant.
+
+### Added
+
+- **Move content to another space.** Move to another space, in the Document menu and on a component's band, says first what comes along, what stays and what would stop working. A document's publications follow it, and its components and images can too, where nothing else needs them. Who can read it follows the new space at once: direct grants on it end, a publication's shares stay. `POST /v1/artifacts/{id}/move` does the same for a template or an image.
 - **A space's default language.** Set it from More actions on the space's row in Spaces. New documents and components there start in it, and content delivered from CT Studio takes it instead of `und`. Delivering again brings an `und` document into it.
 - **Change a document's language.** Language, in the Document menu and as an icon beside Preview, lets you type or choose one, and can set its components' too. A component that cannot change is left, and you are told how many and why.
+- **The assistant can propose a comment on a part.** A new `propose_comment` tool, listed by `/tools`, proposes a comment on a whole part or on words in it. Nothing is posted until you accept it, when it is posted as yours.
+- **The assistant can propose new tables and lists within lists.** An edit's text may now hold either, as well as paragraphs and plain lists. An existing table is still changed cell by cell or row by row, which keeps what its cells hold.
+- **Commands in the assistant's box.** Type `/clear` to clear this conversation and start a new one, `/tools` for the tools the model can use and what each does, `/save` to save this conversation, and `/commands` for this list. They never reach the model.
+- **The assistant answers what has been published from its sources.** Asked what papers relate to a subject, it searches Crossref, PubMed or an installed reference source with your words, names only the works found, and can read a work's abstract to say what it finds, and whether its source reports it retracted, superseded or corrected. Only the identifier is sent to read one.
+- **Make a role in Administration.** Roles now has New role: a name and any of the permissions. It does nothing until it is granted, and making one is audited. Roles cannot be changed or removed here yet.
 - **Keycloak for development sign-in.** An optional override runs Keycloak in place of the stand-in provider, so you can add people and groups and test permission models. An existing development stack moves to it and keeps its people. Other machines can sign in through it over https.
 - **A guide to Keycloak, people and permissions on a development stack.** How to start it, add people one at a time or from a file, give them access through roles and groups, and try several people.
-- **Move content to another space, through the API.** `POST /v1/artifacts/{id}/move` moves a component, document, template or image, and who can read it follows the new space at once. Direct grants on it end, a publication's shares stay, and a document's publications follow. A preview route says first what would come along, what stays and what would stop working.
 
 ### Changed
 
 - **A language change no longer blocks CT Studio.** Changing a delivered document's language in Alloy Works is not counted as an edit, so its next delivery still goes through and keeps your choice.
-- **A document's text scrolls between the top and bottom edges of its panes.** It no longer runs past them to the header or the status bar, and the end of the sheet stops level with the panes.
 - **The Threads panel shows in Authoring as well as Review.** You can read, answer and resolve comments while you update a document, with each one marked in the text where it stands. A new thread is still started from Review.
 - **A component with an open comment shows a glyph in the gutter to its left.** Hover to read the comment, or click to open it in the Threads panel.
+- **A document's text scrolls between the top and bottom edges of its panes.** It no longer runs past them to the header or the status bar, and the end of the sheet stops level with the panes.
 
 ### Fixed
 
@@ -38,10 +45,10 @@ The assistant's authoring tools closed (the AT plan): it changes words without d
 - **The conversation keeps up as it goes.** A follow-up question and the answer coming under it stay in view without scrolling, until you scroll back to read; your next question brings you back.
 - **Tokens are counted as they arrive, thinking too.** The count no longer stays at 0 while a model thinks or writes a tool call, and a prompt run now counts as a conversation does.
 - **An accepted assistant edit stays on the page where the document pins the component.** Accepting moves the document's pin to the version it made, as a change Undo in the outline takes back, and the proposal says so. Where you may not change the document the pin stays, and the proposal says that instead.
-- **Comments stay out of the assistant's document search.** Searching the open document sent the words of a comment on a placed component to the model; it now searches the components' own words.
 - **Keycloak lets the next person sign in.** On a development stack using Keycloak, signing in as somebody else in the same browser was refused until Keycloak's session was ended by hand. That session now lasts 15 seconds.
 - **A document's panes stay still as its text scrolls.** They no longer shift at the start or the end of the scroll. (#891)
 - **Uploads on a development stack short of disk.** The object store sized its volumes from free disk, so with little left every upload answered 500. It now counts them.
+- **Comments stay out of the assistant's document search.** Searching the open document sent the words of a comment on a placed component to the model; it now searches the components' own words.
 
 ## 0.226.0 - 2026-11-02 (PR #888)
 

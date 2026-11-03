@@ -393,6 +393,14 @@ export const DocumentView = z.object({
       'Archived: left out of ordinary listings and search, and still read, referenced and published',
     ),
   mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
+  mayMove: z
+    .boolean()
+    .describe('Whether the caller may move it to another space: administer on it'),
+  movedParts: z
+    .array(z.string())
+    .describe(
+      'The nodes of withheld parts that moved to another space and have threads: only that, so nothing of them is said',
+    ),
   state: WorkflowStandingView,
   states: WorkflowStatesView,
   transitions: z
