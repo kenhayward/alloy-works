@@ -28,11 +28,12 @@ import {
   type TenantExport,
   type AuditExport,
   type Tenant,
+  type TenantTransaction,
 } from '@alloy-works/db';
 import type { ObjectStores } from '@alloy-works/objects';
 import { auditFilterProblem, type AuditFilter } from '@alloy-works/domain';
 import type { FastifyRequest } from 'fastify';
-import { notFound, type Authorised } from './access.js';
+import { authoriseAt, notFound, type Authorised } from './access.js';
 import { pageLimit } from './components.js';
 import { AppError, storageUnavailable } from './errors.js';
 import { cursorFor, pageAsked } from './listing.js';
@@ -219,6 +220,10 @@ function tenantExportView(made: TenantExport): TenantExportView {
  * The tenant's export (API-044; the R21 plan, R21-B), run where `administer` was decided: asking for
  * one and each download handed out are events, as an audit export's are; reading and listing are not.
  */
+/** A whole tenant's archive holds its audit log, so both are asked of one person (IMP-023, EI-J). */
+const holdsTheLog = (trx: TenantTransaction, principalId: string, facts: Authorised['facts']) =>
+  authoriseAt(trx, { principalId, scopes: facts.scopes }, 'export_audit', { kind: 'tenant' });
+
 export function tenantExportHandlers(
   tenantOf: (request: FastifyRequest) => Tenant,
   objects: ObjectStores | undefined,
@@ -226,8 +231,9 @@ export function tenantExportHandlers(
   return {
     requestTenantExport: async (
       _request: FastifyRequest,
-      { trx, principalId }: Authorised,
+      { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportMade> => {
+      await holdsTheLog(trx, principalId, facts);
       const made = await requestTenantExport(trx, principalId);
       await recordEvent(trx, {
         kind: 'export.produced',
@@ -272,8 +278,9 @@ export function tenantExportHandlers(
 
     downloadTenantExport: async (
       request: FastifyRequest,
-      { trx }: Authorised,
+      { trx, principalId, facts }: Authorised,
     ): Promise<TenantExportDownload> => {
+      await holdsTheLog(trx, principalId, facts);
       const { id } = request.params as TenantExportParams;
       const made = await readTenantExport(trx, id);
       if (!made) throw notFound();
@@ -286,7 +293,7 @@ export function tenantExportHandlers(
       }
       if (!objects) throw storageUnavailable();
       const store = await objects.forTenant(trx, tenantOf(request));
-      const download = await store.signedLink(made.key, DOWNLOAD_SECONDS, `export-${id}.zip`);
+      const download = await store.signedLink(made.key, DOWNLOAD_SECONDS, `export-${id}.tar`);
       await recordEvent(trx, {
         kind: 'export.downloaded',
         subject: { kind: 'tenant_export', id },

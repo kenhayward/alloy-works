@@ -3398,7 +3398,7 @@
   "admin.expired": "Expired",
   "admin.bytes-2": "{bytes, plural, one {# byte} other {# bytes}}",
   "admin.export-asked-for-it-is": "Export asked for. It is listed below while it is written.",
-  "admin.an-export-holds-everything-in": "An export holds everything in this environment as it stands when it is asked for: every component, document, template and definition with all their versions, relationships, baselines and publications, and the images and PDFs they hold. Its manifest says what it leaves out, such as people, credentials and the audit log. Each export is kept seven days.",
+  "admin.an-export-holds-everything-in": "An export holds everything in this environment at one moment: all content with its versions, baselines and publications, people, access, threads, settings and the audit log, and the images and PDFs they hold. Secrets are only referred to. Its manifest says what it leaves out and why, and it reads without this product. Exporting needs both Export environment and Export audit. Each export is kept seven days.",
   "admin.export-everything": "Export everything",
   "admin.nothing-has-been-exported-yet": "Nothing has been exported yet.",
   "admin.exports": "Exports",

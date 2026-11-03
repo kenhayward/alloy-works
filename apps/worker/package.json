@@ -34,6 +34,7 @@
     "@alloy-works/conformance": "workspace:^",
     "@types/node": "^24.5.2",
     "@types/pg": "^8.23.1",
+    "kysely": "^0.29.5",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^5.0.0"

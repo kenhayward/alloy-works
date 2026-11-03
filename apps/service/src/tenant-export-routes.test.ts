@@ -56,7 +56,7 @@ describe("the tenant's export through the service (the R21 plan, R21-B)", () => 
     expect(Date.parse(shown.expiresAt) - Date.parse(shown.finishedAt)).toBe(7 * 86_400_000);
     const link = await h.call('ada', 'GET', `/v1/exports/${made.id}/download`);
     expect(link.statusCode, link.body).toBe(200);
-    expect(link.json<{ download: string }>().download).toContain(`export-${made.id}.zip`);
+    expect(link.json<{ download: string }>().download).toContain(`.tar`);
     expect((await events('export.downloaded')).map((each) => each.detail)).toContainEqual({
       export: made.id,
       of: 'tenant',

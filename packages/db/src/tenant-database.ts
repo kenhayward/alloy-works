@@ -18,6 +18,7 @@ export interface TenantDatabase {
     tenant: Tenant,
     work: (db: Transaction<TenantTables>) => Promise<T>,
     context?: AuditContext,
+    options?: TenantTransactionOptions,
   ): Promise<T>;
   /** The tenant a hostname belongs to, from the platform table; undefined when none does. */
   resolveHostname(hostname: string): Promise<Tenant | undefined>;
@@ -30,6 +31,12 @@ export interface TenantDatabase {
   /** Who the connection is outside any tenant transaction. For tests and diagnostics. */
   whoAmI(): Promise<{ readonly user: string; readonly searchPath: string }>;
   close(): Promise<void>;
+}
+
+/** One long read that must see one moment (EI-A); every other transaction takes the defaults. */
+export interface TenantTransactionOptions {
+  readonly isolation?: 'repeatable read';
+  readonly readOnly?: boolean;
 }
 
 export interface TenantDatabaseOptions {
@@ -59,12 +66,16 @@ export function createTenantDatabase(
   return {
     // Async so that a refused name rejects like every other failure rather than throwing
     // before a promise exists.
-    async withTenant(tenant, work, context) {
+    async withTenant(tenant, work, context, transaction = {}) {
       // Checked before any SQL is built: these are identifiers, which cannot be parameters.
       const role = assertTenantRole(tenant.role);
       const schema = assertTenantRole(tenant.schema);
       const audit = context === undefined ? fallback : auditContextSetting(context);
-      return db.transaction().execute(async (trx) => {
+      const isolated = transaction.isolation
+        ? db.transaction().setIsolationLevel(transaction.isolation)
+        : db.transaction();
+      const started = transaction.readOnly ? isolated.setAccessMode('read only') : isolated;
+      return started.execute(async (trx) => {
         await sql`set local role ${sql.id(role)}`.execute(trx);
         await sql`select set_config('search_path', ${`${schema}, extensions`}, true),
           set_config(${AUDIT_SETTING}, ${audit ?? ''}, true)`.execute(trx);
