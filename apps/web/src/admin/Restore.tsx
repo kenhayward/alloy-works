@@ -6,7 +6,24 @@ import { words } from '../words/words.js';
 
 type Client = ReturnType<typeof createApiClient>;
 
+interface Report {
+  readonly added: Readonly<Record<string, number>>;
+  readonly already: Readonly<Record<string, number>>;
+  readonly skipped: Readonly<Record<string, number>>;
+  readonly conflictCount: number;
+}
+const sum = (counts: Readonly<Record<string, number>>) =>
+  Object.values(counts).reduce((total, rows) => total + rows, 0);
+const reportWords = (report: Report) =>
+  words('admin.restore-part-counts', {
+    added: sum(report.added),
+    already: sum(report.already),
+    conflicts: report.conflictCount,
+    skipped: sum(report.skipped),
+  });
+
 interface Plan {
+  readonly would?: Report;
   readonly tables: Readonly<Record<string, number>>;
   readonly missingObjects: readonly string[];
   readonly secrets: readonly { readonly reference: string; readonly kind: string }[];
@@ -20,6 +37,7 @@ interface Restoration {
   readonly state: string;
   readonly plan: Plan | null;
   readonly refusal: { readonly code: string; readonly message: string } | null;
+  readonly report: Report | null;
   readonly providers: readonly string[];
 }
 interface Review {
@@ -180,7 +198,11 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
 
       {current?.state === 'checking' && <p role="status">{words('admin.restore-checking')}</p>}
       {current?.state === 'applying' && <p role="status">{words('admin.restore-applying')}</p>}
-      {current?.state === 'restored' && <p role="status">{words('admin.restore-done')}</p>}
+      {current?.state === 'restored' && (
+        <p role="status">
+          {current.report ? reportWords(current.report) : words('admin.restore-done')}
+        </p>
+      )}
       {(current?.state === 'refused' || current?.state === 'failed') && current.refusal && (
         <p role="alert">{current.refusal.message}</p>
       )}
@@ -202,6 +224,12 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
               services: plan.serviceIdentities,
             })}
           </p>
+          {plan.would && (
+            <>
+              <p>{reportWords(plan.would)}</p>
+              <p>{words('admin.restore-part-waits')}</p>
+            </>
+          )}
           {plan.missingObjects.length > 0 && (
             <p role="alert">
               {words('admin.restore-missing', { count: plan.missingObjects.length })}
@@ -234,7 +262,7 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
             </>
           )}
           <button type="submit" disabled={busy}>
-            {words('admin.restore-apply')}
+            {plan.would ? words('admin.restore-apply-part') : words('admin.restore-apply')}
           </button>
         </form>
       )}

@@ -1410,7 +1410,7 @@ const descriptions: Readonly<Record<string, string>> = {
   answerTenantRestoration:
     'Answers for every sign-in provider and secret the plan names. A provider may be mapped to one this environment has, or kept, those people unable to sign in until it is added. Every secret arrives switched off.',
   applyTenantRestoration:
-    'Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers.',
+    'Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers. A part goes into an environment in use, adding what is not here and overwriting nothing: writers to the tables it holds wait while it runs.',
   getRestoreReview:
     'Returns what falls due in a restored environment: revisions that would take effect and review dates already past. Dates and reminders are held until this review ends.',
   endRestoreReview:

@@ -373,6 +373,7 @@ export {
   type RestorerDatabase,
   type RestoreSource,
 } from './restoring.js';
+export { importPart, previewPartialImport, type ImportReport } from './restoring-part.js';
 export {
   IMPORT_KEPT_DAYS,
   IMPORT_WARNED_DAYS,

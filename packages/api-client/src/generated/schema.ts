@@ -5734,7 +5734,7 @@ export interface paths {
         put?: never;
         /**
          * Restore it: a job applies all of it or nothing
-         * @description Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers.
+         * @description Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers. A part goes into an environment in use, adding what is not here and overwriting nothing: writers to the tables it holds wait while it runs.
          */
         post: operations["applyTenantRestoration"];
         delete?: never;
@@ -98594,6 +98594,33 @@ export interface operations {
                                 rebuilt: {
                                     [key: string]: string;
                                 };
+                                /** @description A part's dry run: what it would add and leave here, as this environment stands */
+                                would?: {
+                                    /** @description Rows added, by table */
+                                    added: {
+                                        [key: string]: number;
+                                    };
+                                    /** @description Rows already here, the same or matched, and left: by table */
+                                    already: {
+                                        [key: string]: number;
+                                    };
+                                    /** @description The first hundred rows here with other content, left as they are */
+                                    conflicts: {
+                                        table: string;
+                                        id: string;
+                                    }[];
+                                    conflictCount: number;
+                                    /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                    skipped: {
+                                        [key: string]: number;
+                                    };
+                                    /** @description Optional references to what is not here, written empty, by table */
+                                    cleared: {
+                                        [key: string]: number;
+                                    };
+                                    /** @description This environment's settings, left as they are */
+                                    settingsLeft: string[];
+                                };
                             } | null;
                             answers: {
                                 /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
@@ -98607,6 +98634,33 @@ export interface operations {
                             refusal: {
                                 code: string;
                                 message: string;
+                            } | null;
+                            /** @description What a part did, once applied */
+                            report: {
+                                /** @description Rows added, by table */
+                                added: {
+                                    [key: string]: number;
+                                };
+                                /** @description Rows already here, the same or matched, and left: by table */
+                                already: {
+                                    [key: string]: number;
+                                };
+                                /** @description The first hundred rows here with other content, left as they are */
+                                conflicts: {
+                                    table: string;
+                                    id: string;
+                                }[];
+                                conflictCount: number;
+                                /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                skipped: {
+                                    [key: string]: number;
+                                };
+                                /** @description Optional references to what is not here, written empty, by table */
+                                cleared: {
+                                    [key: string]: number;
+                                };
+                                /** @description This environment's settings, left as they are */
+                                settingsLeft: string[];
                             } | null;
                             /** @description The issuers this environment already signs in by */
                             providers: string[];
@@ -98724,6 +98778,15 @@ export interface operations {
                      *         "code": "example",
                      *         "message": "example"
                      *       },
+                     *       "report": {
+                     *         "added": {},
+                     *         "already": {},
+                     *         "conflicts": [],
+                     *         "conflictCount": -9007199254740991,
+                     *         "skipped": {},
+                     *         "cleared": {},
+                     *         "settingsLeft": []
+                     *       },
                      *       "providers": []
                      *     }
                      */
@@ -98771,6 +98834,33 @@ export interface operations {
                             rebuilt: {
                                 [key: string]: string;
                             };
+                            /** @description A part's dry run: what it would add and leave here, as this environment stands */
+                            would?: {
+                                /** @description Rows added, by table */
+                                added: {
+                                    [key: string]: number;
+                                };
+                                /** @description Rows already here, the same or matched, and left: by table */
+                                already: {
+                                    [key: string]: number;
+                                };
+                                /** @description The first hundred rows here with other content, left as they are */
+                                conflicts: {
+                                    table: string;
+                                    id: string;
+                                }[];
+                                conflictCount: number;
+                                /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                skipped: {
+                                    [key: string]: number;
+                                };
+                                /** @description Optional references to what is not here, written empty, by table */
+                                cleared: {
+                                    [key: string]: number;
+                                };
+                                /** @description This environment's settings, left as they are */
+                                settingsLeft: string[];
+                            };
                         } | null;
                         answers: {
                             /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
@@ -98784,6 +98874,33 @@ export interface operations {
                         refusal: {
                             code: string;
                             message: string;
+                        } | null;
+                        /** @description What a part did, once applied */
+                        report: {
+                            /** @description Rows added, by table */
+                            added: {
+                                [key: string]: number;
+                            };
+                            /** @description Rows already here, the same or matched, and left: by table */
+                            already: {
+                                [key: string]: number;
+                            };
+                            /** @description The first hundred rows here with other content, left as they are */
+                            conflicts: {
+                                table: string;
+                                id: string;
+                            }[];
+                            conflictCount: number;
+                            /** @description Rows needing what neither the archive nor this environment holds, by table */
+                            skipped: {
+                                [key: string]: number;
+                            };
+                            /** @description Optional references to what is not here, written empty, by table */
+                            cleared: {
+                                [key: string]: number;
+                            };
+                            /** @description This environment's settings, left as they are */
+                            settingsLeft: string[];
                         } | null;
                         /** @description The issuers this environment already signs in by */
                         providers: string[];
@@ -98902,6 +99019,15 @@ export interface operations {
                      *         "code": "example",
                      *         "message": "example"
                      *       },
+                     *       "report": {
+                     *         "added": {},
+                     *         "already": {},
+                     *         "conflicts": [],
+                     *         "conflictCount": -9007199254740991,
+                     *         "skipped": {},
+                     *         "cleared": {},
+                     *         "settingsLeft": []
+                     *       },
                      *       "providers": []
                      *     }
                      */
@@ -98949,6 +99075,33 @@ export interface operations {
                             rebuilt: {
                                 [key: string]: string;
                             };
+                            /** @description A part's dry run: what it would add and leave here, as this environment stands */
+                            would?: {
+                                /** @description Rows added, by table */
+                                added: {
+                                    [key: string]: number;
+                                };
+                                /** @description Rows already here, the same or matched, and left: by table */
+                                already: {
+                                    [key: string]: number;
+                                };
+                                /** @description The first hundred rows here with other content, left as they are */
+                                conflicts: {
+                                    table: string;
+                                    id: string;
+                                }[];
+                                conflictCount: number;
+                                /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                skipped: {
+                                    [key: string]: number;
+                                };
+                                /** @description Optional references to what is not here, written empty, by table */
+                                cleared: {
+                                    [key: string]: number;
+                                };
+                                /** @description This environment's settings, left as they are */
+                                settingsLeft: string[];
+                            };
                         } | null;
                         answers: {
                             /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
@@ -98962,6 +99115,33 @@ export interface operations {
                         refusal: {
                             code: string;
                             message: string;
+                        } | null;
+                        /** @description What a part did, once applied */
+                        report: {
+                            /** @description Rows added, by table */
+                            added: {
+                                [key: string]: number;
+                            };
+                            /** @description Rows already here, the same or matched, and left: by table */
+                            already: {
+                                [key: string]: number;
+                            };
+                            /** @description The first hundred rows here with other content, left as they are */
+                            conflicts: {
+                                table: string;
+                                id: string;
+                            }[];
+                            conflictCount: number;
+                            /** @description Rows needing what neither the archive nor this environment holds, by table */
+                            skipped: {
+                                [key: string]: number;
+                            };
+                            /** @description Optional references to what is not here, written empty, by table */
+                            cleared: {
+                                [key: string]: number;
+                            };
+                            /** @description This environment's settings, left as they are */
+                            settingsLeft: string[];
                         } | null;
                         /** @description The issuers this environment already signs in by */
                         providers: string[];
@@ -99121,6 +99301,15 @@ export interface operations {
                      *         "code": "example",
                      *         "message": "example"
                      *       },
+                     *       "report": {
+                     *         "added": {},
+                     *         "already": {},
+                     *         "conflicts": [],
+                     *         "conflictCount": -9007199254740991,
+                     *         "skipped": {},
+                     *         "cleared": {},
+                     *         "settingsLeft": []
+                     *       },
                      *       "providers": []
                      *     }
                      */
@@ -99168,6 +99357,33 @@ export interface operations {
                             rebuilt: {
                                 [key: string]: string;
                             };
+                            /** @description A part's dry run: what it would add and leave here, as this environment stands */
+                            would?: {
+                                /** @description Rows added, by table */
+                                added: {
+                                    [key: string]: number;
+                                };
+                                /** @description Rows already here, the same or matched, and left: by table */
+                                already: {
+                                    [key: string]: number;
+                                };
+                                /** @description The first hundred rows here with other content, left as they are */
+                                conflicts: {
+                                    table: string;
+                                    id: string;
+                                }[];
+                                conflictCount: number;
+                                /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                skipped: {
+                                    [key: string]: number;
+                                };
+                                /** @description Optional references to what is not here, written empty, by table */
+                                cleared: {
+                                    [key: string]: number;
+                                };
+                                /** @description This environment's settings, left as they are */
+                                settingsLeft: string[];
+                            };
                         } | null;
                         answers: {
                             /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
@@ -99181,6 +99397,33 @@ export interface operations {
                         refusal: {
                             code: string;
                             message: string;
+                        } | null;
+                        /** @description What a part did, once applied */
+                        report: {
+                            /** @description Rows added, by table */
+                            added: {
+                                [key: string]: number;
+                            };
+                            /** @description Rows already here, the same or matched, and left: by table */
+                            already: {
+                                [key: string]: number;
+                            };
+                            /** @description The first hundred rows here with other content, left as they are */
+                            conflicts: {
+                                table: string;
+                                id: string;
+                            }[];
+                            conflictCount: number;
+                            /** @description Rows needing what neither the archive nor this environment holds, by table */
+                            skipped: {
+                                [key: string]: number;
+                            };
+                            /** @description Optional references to what is not here, written empty, by table */
+                            cleared: {
+                                [key: string]: number;
+                            };
+                            /** @description This environment's settings, left as they are */
+                            settingsLeft: string[];
                         } | null;
                         /** @description The issuers this environment already signs in by */
                         providers: string[];
@@ -99363,6 +99606,15 @@ export interface operations {
                      *         "code": "example",
                      *         "message": "example"
                      *       },
+                     *       "report": {
+                     *         "added": {},
+                     *         "already": {},
+                     *         "conflicts": [],
+                     *         "conflictCount": -9007199254740991,
+                     *         "skipped": {},
+                     *         "cleared": {},
+                     *         "settingsLeft": []
+                     *       },
                      *       "providers": []
                      *     }
                      */
@@ -99410,6 +99662,33 @@ export interface operations {
                             rebuilt: {
                                 [key: string]: string;
                             };
+                            /** @description A part's dry run: what it would add and leave here, as this environment stands */
+                            would?: {
+                                /** @description Rows added, by table */
+                                added: {
+                                    [key: string]: number;
+                                };
+                                /** @description Rows already here, the same or matched, and left: by table */
+                                already: {
+                                    [key: string]: number;
+                                };
+                                /** @description The first hundred rows here with other content, left as they are */
+                                conflicts: {
+                                    table: string;
+                                    id: string;
+                                }[];
+                                conflictCount: number;
+                                /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                skipped: {
+                                    [key: string]: number;
+                                };
+                                /** @description Optional references to what is not here, written empty, by table */
+                                cleared: {
+                                    [key: string]: number;
+                                };
+                                /** @description This environment's settings, left as they are */
+                                settingsLeft: string[];
+                            };
                         } | null;
                         answers: {
                             /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
@@ -99423,6 +99702,33 @@ export interface operations {
                         refusal: {
                             code: string;
                             message: string;
+                        } | null;
+                        /** @description What a part did, once applied */
+                        report: {
+                            /** @description Rows added, by table */
+                            added: {
+                                [key: string]: number;
+                            };
+                            /** @description Rows already here, the same or matched, and left: by table */
+                            already: {
+                                [key: string]: number;
+                            };
+                            /** @description The first hundred rows here with other content, left as they are */
+                            conflicts: {
+                                table: string;
+                                id: string;
+                            }[];
+                            conflictCount: number;
+                            /** @description Rows needing what neither the archive nor this environment holds, by table */
+                            skipped: {
+                                [key: string]: number;
+                            };
+                            /** @description Optional references to what is not here, written empty, by table */
+                            cleared: {
+                                [key: string]: number;
+                            };
+                            /** @description This environment's settings, left as they are */
+                            settingsLeft: string[];
                         } | null;
                         /** @description The issuers this environment already signs in by */
                         providers: string[];
@@ -99585,6 +99891,15 @@ export interface operations {
                      *         "code": "example",
                      *         "message": "example"
                      *       },
+                     *       "report": {
+                     *         "added": {},
+                     *         "already": {},
+                     *         "conflicts": [],
+                     *         "conflictCount": -9007199254740991,
+                     *         "skipped": {},
+                     *         "cleared": {},
+                     *         "settingsLeft": []
+                     *       },
                      *       "providers": []
                      *     }
                      */
@@ -99632,6 +99947,33 @@ export interface operations {
                             rebuilt: {
                                 [key: string]: string;
                             };
+                            /** @description A part's dry run: what it would add and leave here, as this environment stands */
+                            would?: {
+                                /** @description Rows added, by table */
+                                added: {
+                                    [key: string]: number;
+                                };
+                                /** @description Rows already here, the same or matched, and left: by table */
+                                already: {
+                                    [key: string]: number;
+                                };
+                                /** @description The first hundred rows here with other content, left as they are */
+                                conflicts: {
+                                    table: string;
+                                    id: string;
+                                }[];
+                                conflictCount: number;
+                                /** @description Rows needing what neither the archive nor this environment holds, by table */
+                                skipped: {
+                                    [key: string]: number;
+                                };
+                                /** @description Optional references to what is not here, written empty, by table */
+                                cleared: {
+                                    [key: string]: number;
+                                };
+                                /** @description This environment's settings, left as they are */
+                                settingsLeft: string[];
+                            };
                         } | null;
                         answers: {
                             /** @description For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added */
@@ -99645,6 +99987,33 @@ export interface operations {
                         refusal: {
                             code: string;
                             message: string;
+                        } | null;
+                        /** @description What a part did, once applied */
+                        report: {
+                            /** @description Rows added, by table */
+                            added: {
+                                [key: string]: number;
+                            };
+                            /** @description Rows already here, the same or matched, and left: by table */
+                            already: {
+                                [key: string]: number;
+                            };
+                            /** @description The first hundred rows here with other content, left as they are */
+                            conflicts: {
+                                table: string;
+                                id: string;
+                            }[];
+                            conflictCount: number;
+                            /** @description Rows needing what neither the archive nor this environment holds, by table */
+                            skipped: {
+                                [key: string]: number;
+                            };
+                            /** @description Optional references to what is not here, written empty, by table */
+                            cleared: {
+                                [key: string]: number;
+                            };
+                            /** @description This environment's settings, left as they are */
+                            settingsLeft: string[];
                         } | null;
                         /** @description The issuers this environment already signs in by */
                         providers: string[];

@@ -177,8 +177,14 @@ audit and everything else stay out, and the manifest says so. Definitions always
 them. What a row names and the archive lacks is in `references.jsonl` by identity, or by value where followed. It runs
 in one read-only cut like a whole export, and the asker's readable set, read first, bounds what is seeded.
 
+**EI-S. A part comes in as a dry run, then for good.** The same code runs for both, the preview rolled back, so it says what
+will happen here rather than what the archive holds. One transaction as the owner, user triggers off on the tables the
+archive holds alone, so writers to those wait, the wait bounded by a 30 second lock timeout. A part holding access or audit is refused,
+whatever its manifest says. A renumbered row whose required parent was already here is taken as already here, so
+importing twice adds nothing. A part does not hold its dates back: EI-M is for a tenant restored whole.
+
 ## Not designed
 
-A whole-tenant archive into a tenant in use, or a part picked out of one (EI-D); restoring into a different tenant while keeping both signed in; a merge of two histories; an import that updates
+A whole-tenant archive into a tenant in use, or a part picked out of one (EI-D); moving what arrives to another space on the way in; restoring into a different tenant while keeping both signed in; a merge of two histories; an import that updates
 what is already here; a scheduled export; encrypting an archive with a passphrase (it is permissioned, expiring and
 audited, IMP-044); XML vocabularies (IMP-016).

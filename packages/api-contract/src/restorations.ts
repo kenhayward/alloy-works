@@ -16,6 +16,24 @@ export const TenantRestorationParams = z.object({
 });
 export type TenantRestorationParams = z.infer<typeof TenantRestorationParams>;
 
+const ImportReport = z.object({
+  added: z.record(z.string(), z.number().int()).describe('Rows added, by table'),
+  already: z
+    .record(z.string(), z.number().int())
+    .describe('Rows already here, the same or matched, and left: by table'),
+  conflicts: z
+    .array(z.object({ table: z.string(), id: z.string() }))
+    .describe('The first hundred rows here with other content, left as they are'),
+  conflictCount: z.number().int(),
+  skipped: z
+    .record(z.string(), z.number().int())
+    .describe('Rows needing what neither the archive nor this environment holds, by table'),
+  cleared: z
+    .record(z.string(), z.number().int())
+    .describe('Optional references to what is not here, written empty, by table'),
+  settingsLeft: z.array(z.string()).describe("This environment's settings, left as they are"),
+});
+
 const TenantRestorationPlan = z.object({
   format: z.number().int().describe('The format the archive was written in'),
   scope: z.string().describe('What the archive holds: `tenant` for a whole environment'),
@@ -35,6 +53,9 @@ const TenantRestorationPlan = z.object({
   serviceIdentities: z.number().int().describe('How many service identities it holds'),
   leftOut: z.record(z.string(), z.string()).describe('What does not travel, and why'),
   rebuilt: z.record(z.string(), z.string()).describe('What is made again here, and from what'),
+  would: ImportReport.optional().describe(
+    "A part's dry run: what it would add and leave here, as this environment stands",
+  ),
 });
 
 export const TenantRestorationAnswers = z.object({
@@ -70,6 +91,7 @@ export const TenantRestorationView = z.object({
     .object({ code: z.string(), message: z.string() })
     .nullable()
     .describe('Why it stopped. Nothing has changed.'),
+  report: ImportReport.nullable().describe('What a part did, once applied'),
   providers: z.array(z.string()).describe('The issuers this environment already signs in by'),
 });
 export type TenantRestorationView = z.infer<typeof TenantRestorationView>;

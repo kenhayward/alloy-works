@@ -273,6 +273,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0196_thread_panel',
       '0197_partial_exports',
       '0198_restoration',
+      '0199_restoration_report',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -416,6 +417,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0196_thread_panel',
       '0197_partial_exports',
       '0198_restoration',
+      '0199_restoration_report',
     ]);
 
     expect(await queryRoles(development)).toEqual([

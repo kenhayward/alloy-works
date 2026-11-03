@@ -2,6 +2,7 @@ import type { AuditContext } from '@alloy-works/domain';
 import { Kysely, PostgresDialect, sql } from 'kysely';
 import { auditContextSetting, AUDIT_SETTING, recordEvent } from './audit.js';
 import { insertOrder } from './export-scope.js';
+import type { ImportReport } from './restoring-part.js';
 import { EXPORT_TABLES, type CarriedTable } from './export-tables.js';
 import { assertTenantRole } from './names.js';
 import { createPool } from './pool.js';
@@ -37,6 +38,8 @@ export interface RestorationPlan {
   readonly serviceIdentities: number;
   readonly leftOut: Readonly<Record<string, string>>;
   readonly rebuilt: Readonly<Record<string, string>>;
+  /** A part's dry run: what it would add and leave in this tenant as it stood. */
+  readonly would?: ImportReport;
 }
 
 /** What the administrator answered. */
@@ -57,6 +60,7 @@ export interface TenantRestoration {
   readonly plan: RestorationPlan | null;
   readonly answers: RestorationAnswers | null;
   readonly refusal: { readonly code: string; readonly message: string } | null;
+  readonly report: ImportReport | null;
   readonly finishedAt: Date | null;
 }
 
@@ -70,6 +74,7 @@ interface Row {
   plan: RestorationPlan | null;
   answers: RestorationAnswers | null;
   refusal: TenantRestoration['refusal'];
+  report: ImportReport | null;
   finished_at: Date | null;
 }
 
@@ -83,6 +88,7 @@ const restorationOf = (row: Row): TenantRestoration => ({
   plan: row.plan,
   answers: row.answers,
   refusal: row.refusal,
+  report: row.report,
   finishedAt: row.finished_at,
 });
 
@@ -170,6 +176,16 @@ export async function beginRestoration(
   if (!rows[0]) return undefined;
   await enqueueJob(trx, 'restoration', id);
   return restorationOf(rows[0]);
+}
+
+export async function recordRestorationReport(
+  trx: TenantTransaction,
+  id: string,
+  report: ImportReport,
+): Promise<void> {
+  await sql`update restoration set report = ${JSON.stringify(report)}::jsonb where id = ${id}`.execute(
+    trx,
+  );
 }
 
 export async function finishRestoration(trx: TenantTransaction, id: string): Promise<void> {

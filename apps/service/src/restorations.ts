@@ -65,6 +65,7 @@ async function viewOf(
     plan: made.plan as TenantRestorationView['plan'],
     answers: made.answers as TenantRestorationView['answers'],
     refusal: made.refusal,
+    report: made.report as TenantRestorationView['report'],
     providers: rows.map((row) => row.issuer),
   };
 }

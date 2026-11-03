@@ -10,13 +10,19 @@ import {
   type ExportCatalogue,
   RestoreRefused,
   applyWholeRestore,
+  PARTIAL_CONFIGURATION,
+  PARTIAL_CONTENT,
+  PARTIAL_REFERENCED,
+  importPart,
   lastMigration,
+  previewPartialImport,
   readRestoration,
   recordRestorationPlan,
   refuseRestoration,
   recordEvent,
   tenantIsEmpty,
   versionDigests,
+  type RestorationAnswers,
   type RestorationPlan,
   type RestorerDatabase,
   type RestoreSource,
@@ -48,6 +54,20 @@ interface Manifest {
   readonly rebuilt: Readonly<Record<string, string>>;
   readonly leftOut: Readonly<Record<string, string>>;
 }
+
+const SCOPES: ReadonlySet<string> = new Set([
+  'tenant',
+  'configuration',
+  'space',
+  'document',
+  'publication',
+]);
+
+/** A row no table here would take: the archive's fault, and the same every time it is tried. */
+const unfit = (error: unknown) => {
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' && /^(22|23)/.test(code);
+};
 
 interface ArchiveSchema {
   readonly tables: Readonly<Record<string, { readonly columns: readonly { name: string }[] }>>;
@@ -246,6 +266,18 @@ async function checkArchive(
       secrets.push({ reference, kind });
     }
   }
+  const scope = manifest.scope;
+  if (!SCOPES.has(scope)) throw invalid('The archive does not say what it holds.');
+  if (scope !== 'tenant') {
+    // Never access, and never the log, whatever its manifest claims (EI-D, EI-F).
+    for (const table of Object.keys(manifest.tables ?? {})) {
+      const carried =
+        PARTIAL_CONTENT.has(table) ||
+        PARTIAL_REFERENCED.has(table) ||
+        (scope === 'configuration' && PARTIAL_CONFIGURATION.has(table));
+      if (!carried) throw invalid(`A part cannot hold ${table}.`);
+    }
+  }
   const plan: RestorationPlan = {
     format: manifest.format,
     scope: manifest.scope,
@@ -319,11 +351,36 @@ export function restorationJob(deps: {
           return;
         }
 
+        const whole = checked.plan.scope === 'tenant';
+        const partInput = (answers: RestorationAnswers) => ({
+          tenant,
+          restorationId: id,
+          answers,
+          source: checked.source,
+          auditContext: { actorKind: 'person' as const, actor: asked.requestedBy },
+        });
+
         if (asked.state === 'checking') {
+          let plan = checked.plan;
+          if (!whole) {
+            try {
+              plan = {
+                ...plan,
+                would: await previewPartialImport(
+                  deps.restorer,
+                  partInput({ issuers: {}, switchedOff: [] }),
+                ),
+              };
+            } catch (error) {
+              if (!unfit(error)) throw error;
+              await refuse('export_invalid', 'A row in this archive cannot be kept here.');
+              return;
+            }
+          }
           await deps.db.withTenant(
             tenant,
             async (trx) => {
-              await recordRestorationPlan(trx, id, checked.plan);
+              await recordRestorationPlan(trx, id, plan);
               await recordEvent(trx, {
                 kind: 'import.previewed',
                 subject: { kind: 'restoration', id },
@@ -340,6 +397,10 @@ export function restorationJob(deps: {
           await store.putFile(join(unpacked, 'objects', name), 'application/octet-stream');
         }
         try {
+          if (!whole) {
+            await importPart(deps.restorer, partInput(asked.answers!));
+            return;
+          }
           await deps.restorer.asOwner(tenant, (trx) =>
             applyWholeRestore(trx, {
               tenant,
@@ -351,6 +412,10 @@ export function restorationJob(deps: {
             }),
           );
         } catch (error) {
+          if (unfit(error)) {
+            await refuse('export_invalid', 'A row in this archive cannot be kept here.');
+            return;
+          }
           if (!(error instanceof RestoreRefused)) throw error;
           await refuse(error.code, error.message);
         }
