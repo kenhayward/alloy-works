@@ -182,7 +182,11 @@ describe('cross-references in the editor (cross-references 1)', () => {
     fireEvent.keyDown(view.dom, { key: 'x', ctrlKey: true, altKey: true });
 
     expect(await screen.findByRole('dialog', { name: 'Reference' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Table: Readings' })).toHaveFocus();
+    // The dialog puts the focus on the chosen target in an effect; under load that lands after
+    // the dialog is in the DOM, so wait for it (issue #763).
+    await waitFor(() =>
+      expect(screen.getByRole('radio', { name: 'Table: Readings' })).toHaveFocus(),
+    );
   });
 
   it('in a document, offers its sections and its numbered table, and the reference shows the label', async () => {
