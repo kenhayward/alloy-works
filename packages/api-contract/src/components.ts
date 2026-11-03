@@ -58,7 +58,9 @@ export const SpaceList = z.object({
         .describe('Whether the caller may create a component in this space; never in one archived'),
       mayMoveInto: z
         .boolean()
-        .describe('Whether the caller may move content into this space: create or administer there'),
+        .describe(
+          'Whether the caller may move content into this space: create or administer there',
+        ),
     }),
   ),
   next: nextCursor,
@@ -333,7 +335,9 @@ export const ComponentView = z.object({
       'Archived: left out of ordinary listings and search, and still read, referenced and edited',
     ),
   mayRetire: z.boolean().describe('Whether the caller may archive and unarchive it'),
-  mayMove: z.boolean().describe('Whether the caller may move it to another space: administer on it'),
+  mayMove: z
+    .boolean()
+    .describe('Whether the caller may move it to another space: administer on it'),
   state: WorkflowStandingView,
   states: WorkflowStatesView,
   transitions: z

@@ -3464,7 +3464,7 @@
   "moving.refused-kept": "A retention keep stops this moving to that space.",
   "moving.refused-archived": "It is archived, and does not move until unarchived.",
   "moving.refused-space-archived": "That space is archived.",
-  "moving.refused-moved": "It has moved since you opened it. Reload and try again.",
+  "moving.refused-moved": "It had already moved to another space. This page now shows where it is.",
   "moving.refused-too-large": "This is too much to move at once. Leave out its components, or move them first.",
   "moving.refused-uploading": "A replacement for this image is on its way. Try again once it arrives.",
   "moving.part-moved-with-threads": "This part moved to another space, and has threads there.",

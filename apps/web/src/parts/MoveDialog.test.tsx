@@ -32,6 +32,8 @@ const PREVIEW = {
   },
 };
 
+let previewed: unknown = PREVIEW;
+
 function service(moved: { status: number; answer: unknown }) {
   const sent: { path: string; body: unknown }[] = [];
   const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -44,7 +46,7 @@ function service(moved: { status: number; answer: unknown }) {
       });
     if (path === '/v1/spaces') return reply(200, SPACES);
     sent.push({ path, body: await request.clone().json() });
-    if (path.endsWith('/preview')) return reply(200, PREVIEW);
+    if (path.endsWith('/preview')) return reply(200, previewed);
     return reply(moved.status, moved.answer);
   }) as typeof globalThis.fetch;
   return { client: createApiClient({ baseUrl: 'http://acme.example.test', fetch }), sent };
@@ -52,11 +54,18 @@ function service(moved: { status: number; answer: unknown }) {
 
 function opened(client: ReturnType<typeof createApiClient>, carries = true) {
   const act: RefObject<(() => void) | null> = createRef();
-  const onMoved = vi.fn();
+  const onChanged = vi.fn();
   render(
-    <MoveDialog act={act} client={client} id="d1" from="s1" carries={carries} onMoved={onMoved} />,
+    <MoveDialog
+      act={act}
+      client={client}
+      id="d1"
+      from="s1"
+      carries={carries}
+      onChanged={onChanged}
+    />,
   );
-  return { act, onMoved };
+  return { act, onChanged };
 }
 
 const open = async (act: RefObject<(() => void) | null>) => {
@@ -86,13 +95,13 @@ describe('moving to another space', () => {
 
   it('moves as previewed, and says where it went and how much stayed', async () => {
     const { client, sent } = service({ status: 200, answer: PREVIEW });
-    const { act, onMoved } = opened(client);
+    const { act, onChanged } = opened(client);
     await open(act);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Move' })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: 'Move' }));
 
     await waitFor(() =>
-      expect(onMoved).toHaveBeenCalledWith('Moved 2 items to Quality. 1 stayed where it was.'),
+      expect(onChanged).toHaveBeenCalledWith('Moved 2 items to Quality. 1 stayed where it was.'),
     );
     expect(sent.at(-1)).toEqual({
       path: '/v1/artifacts/d1/move',
@@ -122,16 +131,41 @@ describe('moving to another space', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
+  it('hands back to the page where it has moved since, and lists alike parts without a clash', async () => {
+    const { client } = service({
+      status: 409,
+      answer: { code: 'space_moved', message: 'x', traceId: 't' },
+    });
+    previewed = {
+      ...PREVIEW,
+      skipped: [
+        { id: 'c2', kind: 'component', reason: 'not_permitted', title: null },
+        { id: 'c3', kind: 'component', reason: 'not_permitted', title: null },
+      ],
+    };
+    const { act, onChanged } = opened(client);
+    const dialog = await open(act);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Move' })).toBeEnabled());
+    expect(dialog.querySelectorAll('li')).toHaveLength(4);
+    await userEvent.click(screen.getByRole('button', { name: 'Move' }));
+    await waitFor(() =>
+      expect(onChanged).toHaveBeenCalledWith(
+        'It had already moved to another space. This page now shows where it is.',
+      ),
+    );
+    previewed = PREVIEW;
+  });
+
   it('says why it was refused, and stays open', async () => {
     const { client } = service({
       status: 409,
       answer: { code: 'artifact_held', message: 'x', traceId: 't' },
     });
-    const { act, onMoved } = opened(client);
+    const { act, onChanged } = opened(client);
     const dialog = await open(act);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Move' })).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: 'Move' }));
     await waitFor(() => expect(dialog).toHaveTextContent('A hold stops this moving.'));
-    expect(onMoved).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
   });
 });

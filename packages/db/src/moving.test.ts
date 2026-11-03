@@ -464,7 +464,7 @@ describe('moving content between spaces', () => {
     expect(ended.map((each) => each.space)).toEqual([open]);
   });
 
-  it("COL-069 a held lock and presence are gone after a move, and the holder claims again", async () => {
+  it('COL-069 a held lock and presence are gone after a move, and the holder claims again', async () => {
     const made = await component();
     const document = await placing(made);
     const session = randomUUID();
@@ -581,6 +581,34 @@ describe('moving content between spaces', () => {
     expect(await spaceOf(goes.artifactId)).toBe(closed);
     expect(await spaceOf(asset.artifactId)).toBe(closed);
     expect(await spaceOf(shared.artifactId)).toBe(open);
+  });
+
+  it('a component another document published stays, though that document places it no more', async () => {
+    const part = await component('Published elsewhere');
+    const other = await placing(part);
+    await work((trx) =>
+      publish(trx, {
+        document: { artifactId: other.artifactId, id: other.id },
+        author: ada,
+        role: tenant.role,
+      }),
+    );
+    await work(async (trx) => {
+      const node = (other.content as { nodes: { id: string }[] }).nodes[0]!.id;
+      const answer = await editOutline(trx, {
+        artifactId: other.artifactId,
+        openedFrom: other.id,
+        author: ada,
+        operation: { operation: 'remove', node } as never,
+      });
+      if (answer.answer !== 'recorded') throw new Error(JSON.stringify(answer));
+    });
+    const report = await placing(part);
+    expect(await move(report.artifactId, { also: true })).toMatchObject({
+      answer: 'changed',
+      skipped: [{ id: part.artifactId, reason: 'placed_elsewhere' }],
+    });
+    expect(await spaceOf(part.artifactId)).toBe(open);
   });
 
   it("a dataset's image never moves, and one with a replacement on its way waits for it", async () => {

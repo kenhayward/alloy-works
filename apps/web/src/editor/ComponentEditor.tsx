@@ -2798,7 +2798,10 @@ export function ComponentEditor({
                   id={componentId}
                   from={shown.space.id}
                   carries={false}
-                  onMoved={setNotice}
+                  onChanged={(said) => {
+                    setNotice(said);
+                    setAttempt((count) => count + 1);
+                  }}
                 />
               </>
             )}

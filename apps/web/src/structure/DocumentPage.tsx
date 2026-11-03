@@ -2715,7 +2715,7 @@ export function DocumentPage({
                 id={document.id}
                 from={document.space.id}
                 carries
-                onMoved={(said) => {
+                onChanged={(said) => {
                   setMovedSaid(said);
                   setAttempt((count) => count + 1);
                 }}

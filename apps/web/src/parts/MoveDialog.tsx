@@ -107,7 +107,7 @@ export function MoveDialog({
   id,
   from,
   carries,
-  onMoved,
+  onChanged,
 }: {
   act: Ref<() => void>;
   client: Client;
@@ -115,7 +115,7 @@ export function MoveDialog({
   from: string;
   /** A document: it offers to take its components and images with it. */
   carries: boolean;
-  onMoved: (said: string) => void;
+  onChanged: (said: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   useImperativeHandle(act, () => () => setOpen(true), []);
@@ -126,9 +126,9 @@ export function MoveDialog({
       from={from}
       carries={carries}
       onClose={() => setOpen(false)}
-      onMoved={(said) => {
+      onChanged={(said) => {
         setOpen(false);
-        onMoved(said);
+        onChanged(said);
       }}
     />
   ) : null;
@@ -140,14 +140,14 @@ function Dialog({
   from,
   carries,
   onClose,
-  onMoved,
+  onChanged,
 }: {
   client: Client;
   id: string;
   from: string;
   carries: boolean;
   onClose: () => void;
-  onMoved: (said: string) => void;
+  onChanged: (said: string) => void;
 }) {
   const heading = useId();
   const [targets, setTargets] = useState<readonly Target[] | null>(null);
@@ -215,12 +215,18 @@ function Dialog({
       });
       if (data) {
         const name = targets?.find((each) => each.id === to)?.name ?? '';
-        onMoved(
+        onChanged(
           words('moving.moved', { name, count: data.moved.length, stays: data.skipped.length }),
         );
         return;
       }
-      setSaid(refusedWords((error as { code?: unknown } | undefined)?.code));
+      const code = (error as { code?: unknown } | undefined)?.code;
+      // Moved by somebody else: the page holds a space it is no longer in, so it reads afresh.
+      if (code === 'space_moved') {
+        onChanged(refusedWords(code));
+        return;
+      }
+      setSaid(refusedWords(code));
     } catch {
       setSaid(words('moving.could-not'));
     } finally {
@@ -263,8 +269,8 @@ function Dialog({
             <p>{words('moving.will-move', { count: preview.moved.length })}</p>
             {lines.length > 0 && (
               <ul className={styles['lines']}>
-                {lines.map((line) => (
-                  <li key={line}>{line}</li>
+                {lines.map((line, index) => (
+                  <li key={index}>{line}</li>
                 ))}
               </ul>
             )}

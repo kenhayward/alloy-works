@@ -427,29 +427,6 @@ const surfaces = (grace: Graces): readonly Surface[] => [
     },
   },
   {
-    name: 'The Move dialog',
-    dialog: 'parts/MoveDialog.tsx',
-    address: `#/documents/${grace.document}`,
-    regions: ['[role="dialog"]'],
-    ready: documentDrawn,
-    open: async (page, language) => {
-      await documentDrawn(page, language).check();
-      await page
-        .getByRole('menubar')
-        .getByRole('menuitem', { name: say(language, 'menu.document'), exact: true })
-        .click();
-      await page
-        .getByRole('menuitem', {
-          name: say(language, 'moving.move-to-another-space-menu'),
-          exact: true,
-        })
-        .click();
-      return page.getByRole('dialog', {
-        name: say(language, 'moving.move-to-another-space'),
-      });
-    },
-  },
-  {
     name: 'The Place from a document dialog',
     dialog: 'structure/PlaceSection.tsx',
     address: `#/documents/${grace.document}`,
@@ -670,6 +647,18 @@ const administration = (ada: Adas): readonly Surface[] => [
       page.getByRole('button', { name: say(language, 'lifecycle.delete-2'), exact: true }),
     'lifecycle.delete-2',
     (language) => say(language, 'lifecycle.delete', { title: ada.component.title }),
+  ),
+  byButton(
+    'The Move dialog',
+    'parts/MoveDialog.tsx',
+    `#/components/${ada.component.id}`,
+    (page, language) =>
+      page.getByRole('button', {
+        name: say(language, 'moving.move-to-another-space-menu'),
+        exact: true,
+      }),
+    'moving.move-to-another-space-menu',
+    (language) => say(language, 'moving.move-to-another-space'),
   ),
   byButton(
     'The Place a hold dialog',

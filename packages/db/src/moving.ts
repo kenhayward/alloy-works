@@ -301,9 +301,14 @@ async function carried(
     }
     const { rows } = await sql<{ elsewhere: boolean }>`
       select exists (select from reference r
-                      where r.to_id = ${id} and r.from_id <> ${artifactId}) as elsewhere`.execute(
-      trx,
-    );
+                      where r.to_id = ${id} and r.from_id <> ${artifactId})
+          or exists (select from baseline_pin p join baseline b on b.id = p.baseline_id
+                      where p.artifact_id = ${id} and b.document_id <> ${artifactId})
+          or exists (select from publication_input i
+                       join artifact_version v on v.id = i.version_id
+                       join publication d on d.id = i.publication_id
+                      where v.artifact_id = ${id} and d.document_id <> ${artifactId})
+         as elsewhere`.execute(trx);
     if (rows[0]?.elsewhere) {
       stay(id, 'component', 'placed_elsewhere');
       continue;
