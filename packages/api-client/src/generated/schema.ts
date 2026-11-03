@@ -14028,6 +14028,8 @@ export interface operations {
                             suggestion: string | null;
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
+                            /** @description A new component with a place, accepted: whether it stands there; it is made either way */
+                            placed?: boolean;
                             /** @description A proposed edit, accepted: the version of the component it made; a change of the outline, of the document */
                             version?: string;
                             /** @description A proposal to comment, accepted: the thread started on the component */
@@ -14198,6 +14200,8 @@ export interface operations {
                             suggestion: string | null;
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
+                            /** @description A new component with a place, accepted: whether it stands there; it is made either way */
+                            placed?: boolean;
                             /** @description A proposed edit, accepted: the version of the component it made; a change of the outline, of the document */
                             version?: string;
                             /** @description A proposal to comment, accepted: the thread started on the component */
@@ -14368,6 +14372,8 @@ export interface operations {
                             suggestion: string | null;
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
+                            /** @description A new component with a place, accepted: whether it stands there; it is made either way */
+                            placed?: boolean;
                             /** @description A proposed edit, accepted: the version of the component it made; a change of the outline, of the document */
                             version?: string;
                             /** @description A proposal to comment, accepted: the thread started on the component */

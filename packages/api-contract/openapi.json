@@ -23943,6 +23943,10 @@
                           "description": "A proposal to make a component, accepted: the component made, at 0.1",
                           "type": "string"
                         },
+                        "placed": {
+                          "description": "A new component with a place, accepted: whether it stands there; it is made either way",
+                          "type": "boolean"
+                        },
                         "version": {
                           "description": "A proposed edit, accepted: the version of the component it made; a change of the outline, of the document",
                           "type": "string"
@@ -24305,6 +24309,10 @@
                           "description": "A proposal to make a component, accepted: the component made, at 0.1",
                           "type": "string"
                         },
+                        "placed": {
+                          "description": "A new component with a place, accepted: whether it stands there; it is made either way",
+                          "type": "boolean"
+                        },
                         "version": {
                           "description": "A proposed edit, accepted: the version of the component it made; a change of the outline, of the document",
                           "type": "string"
@@ -24666,6 +24674,10 @@
                         "component": {
                           "description": "A proposal to make a component, accepted: the component made, at 0.1",
                           "type": "string"
+                        },
+                        "placed": {
+                          "description": "A new component with a place, accepted: whether it stands there; it is made either way",
+                          "type": "boolean"
                         },
                         "version": {
                           "description": "A proposed edit, accepted: the version of the component it made; a change of the outline, of the document",

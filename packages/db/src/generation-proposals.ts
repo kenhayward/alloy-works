@@ -99,12 +99,15 @@ export interface ProposedComponent {
   readonly title: string;
   readonly language: string;
   readonly direction: 'ltr' | 'rtl';
-  /** Where in a document to place it, once made, against that version (the AT plan, ATe). */
+  /**
+   * Where in a document to place it, once made (the AT plan, ATe): by the sibling it follows, found
+   * in the document as it stands when accepted, so that one part placed does not stop the next.
+   */
   readonly place?: {
     readonly document: string;
-    readonly version: string;
-    readonly parent: string | null;
-    readonly position: number;
+    readonly under?: string;
+    readonly after?: string;
+    readonly says: OutlineStepSaid;
   };
 }
 

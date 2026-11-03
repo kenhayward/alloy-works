@@ -22046,21 +22046,15 @@
       "kind": "title"
     },
     {
-      "id": "GEN-014",
-      "file": "apps/service/src/assistant-outline.test.ts",
-      "line": 171,
-      "kind": "title"
-    },
-    {
       "id": "GEN-040",
       "file": "apps/service/src/assistant-outline.test.ts",
-      "line": 203,
+      "line": 220,
       "kind": "title"
     },
     {
       "id": "GEN-062",
       "file": "apps/service/src/assistant-outline.test.ts",
-      "line": 102,
+      "line": 113,
       "kind": "title"
     },
     {
@@ -27220,7 +27214,7 @@
     {
       "id": "GEN-004",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1031,
+      "line": 1072,
       "kind": "title"
     },
     {
@@ -27250,7 +27244,7 @@
     {
       "id": "GEN-036",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 976,
+      "line": 1017,
       "kind": "title"
     },
     {
@@ -27262,25 +27256,25 @@
     {
       "id": "GEN-047",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1092,
+      "line": 1133,
       "kind": "title"
     },
     {
       "id": "GEN-051",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1092,
+      "line": 1133,
       "kind": "title"
     },
     {
       "id": "GEN-053",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 1126,
+      "line": 1167,
       "kind": "title"
     },
     {
       "id": "LIB-040",
       "file": "apps/web/src/structure/AssistantPanel.test.tsx",
-      "line": 754,
+      "line": 795,
       "kind": "title"
     },
     {

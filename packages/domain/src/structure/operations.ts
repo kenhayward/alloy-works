@@ -693,6 +693,9 @@ export interface OutlineStepSaid {
   readonly after?: string | null;
   readonly under?: string | null;
   readonly first?: boolean;
+  /** A removal: the reason it would record, and how many parts go with it. */
+  readonly reason?: string;
+  readonly holds?: number;
 }
 
 /** What may be named: a node's or a part's title, undefined where the person may not read it. */
@@ -768,8 +771,8 @@ export function planOutline(
     switch (step.do) {
       case 'move': {
         const what = named(step.node);
-        if (what === undefined) return refused(`There is no node ${step.node} you may read.`);
-        if (!seen(step)) return refused('That place names a node you may not read.');
+        if (what === undefined) return refused(`There is no node ${step.node} shown to you.`);
+        if (!seen(step)) return refused('That place names a node not shown to you.');
         const left = extractNode(running.nodes, step.node);
         const at = placeAmong(left.nodes, step);
         if (typeof at === 'string') return refused(at);
@@ -780,7 +783,7 @@ export function planOutline(
       case 'place': {
         const what = names.component(step.component);
         if (what === undefined) return refused('There is no such part you may read.');
-        if (!seen(step)) return refused('That place names a node you may not read.');
+        if (!seen(step)) return refused('That place names a node not shown to you.');
         const at = placeAmong(running.nodes, step);
         if (typeof at === 'string') return refused(at);
         operation = {
@@ -792,7 +795,7 @@ export function planOutline(
         break;
       }
       case 'section': {
-        if (!seen(step)) return refused('That place names a node you may not read.');
+        if (!seen(step)) return refused('That place names a node not shown to you.');
         const at = placeAmong(running.nodes, step);
         if (typeof at === 'string') return refused(at);
         operation = {
@@ -805,23 +808,30 @@ export function planOutline(
       }
       case 'remove': {
         const what = named(step.node);
-        if (what === undefined) return refused(`There is no node ${step.node} you may read.`);
+        if (what === undefined) return refused(`There is no node ${step.node} shown to you.`);
         let unseen = false;
+        let holds = 0;
         walkOutline([findNode(running.nodes, step.node)!], (member) => {
           if (names.node(member) === undefined) unseen = true;
+          if (member.id !== step.node && member.type === 'reference') holds += 1;
         });
-        if (unseen) return refused('That section holds a part you may not read.');
+        if (unseen) return refused('That section holds a part that is not shown to you.');
         operation = {
           operation: 'remove',
           node: step.node,
           ...(step.reason === undefined ? {} : { reason: step.reason }),
         };
-        said = { do: 'remove', what };
+        said = {
+          do: 'remove',
+          what,
+          ...(holds === 0 ? {} : { holds }),
+          ...(step.reason === undefined ? {} : { reason: step.reason }),
+        };
         break;
       }
       case 'retitle': {
         const what = named(step.node);
-        if (what === undefined) return refused(`There is no node ${step.node} you may read.`);
+        if (what === undefined) return refused(`There is no node ${step.node} shown to you.`);
         operation = {
           operation: 'retitle',
           node: step.node,

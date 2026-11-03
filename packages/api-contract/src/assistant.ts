@@ -34,6 +34,12 @@ export const ProposalActed = z.object({
       .string()
       .optional()
       .describe('A proposal to make a component, accepted: the component made, at 0.1'),
+    placed: z
+      .boolean()
+      .optional()
+      .describe(
+        'A new component with a place, accepted: whether it stands there; it is made either way',
+      ),
     version: z
       .string()
       .optional()

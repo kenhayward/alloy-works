@@ -91,6 +91,7 @@ import {
   insertIn,
   type proposeInsertInputSchema,
   type readCommentsInputSchema,
+  type OutlineNode,
   type proposeOutlineInputSchema,
   planOutline,
   proposedPosition,
@@ -163,6 +164,9 @@ const capped = (text: string) =>
   text.length <= TOOL_ANSWER_MAX
     ? text
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
+
+/** Stands for a part in a plan of its place, before it is made. */
+const NOT_YET_MADE = '00000000-0000-4000-8000-000000000000';
 
 /** The threads `read_comments` reads at most, newest first. */
 const COMMENT_THREADS_MOST = 50;
@@ -340,6 +344,25 @@ export function assistantHandlers(
     }
   }
 
+  /** The title of each part a person may read in a document, for saying a step by titles. */
+  async function titlesOfPlaced(trx: TenantTransaction, readable: ReadonlyMap<string, string>) {
+    const titles = new Map<string, string>();
+    const contents = await versionContents(trx, [...readable.values()]);
+    for (const [component, version] of readable) {
+      const title = (contents.get(version)?.content as { title?: unknown } | undefined)?.title;
+      titles.set(component, typeof title === 'string' ? title : component);
+    }
+    return titles;
+  }
+
+  /** A node as a step says it, undefined where it is not shown to the person. */
+  const nodeNamed = (titles: ReadonlyMap<string, string>) => (node: OutlineNode) =>
+    node.type === 'section'
+      ? titleOf(node.title).replace(/\s+/g, ' ')
+      : node.component === null
+        ? undefined
+        : titles.get(node.component);
+
   /**
    * `propose_outline` (GEN-062): the steps planned over the document as read and checked as acceptance
    * will check them, a proposal against that version, every operation made one version only as it is
@@ -358,22 +381,18 @@ export function assistantHandlers(
       said: { code: 'edit_refused' },
     });
     try {
-      await authoriseAt(trx, callerOf(request), 'suggest', { kind: 'artifact', id: on.document });
+      // What accepting it needs: there is no keeping it for somebody who may (GEN-008).
+      await authoriseAt(trx, callerOf(request), 'edit', { kind: 'artifact', id: on.document });
     } catch {
       return {
         ok: false,
-        content: 'You may not suggest changes to this document.',
+        content: 'You may not change this document.',
         said: { code: 'not_yours_to_change' },
       };
     }
     const found = await placed(trx, on.document, on.principal);
     if (!found) return refused('There is no such document.');
-    const titles = new Map<string, string>();
-    const contents = await versionContents(trx, [...found.readable.values()]);
-    for (const [component, version] of found.readable) {
-      const title = (contents.get(version)?.content as { title?: unknown } | undefined)?.title;
-      titles.set(component, typeof title === 'string' ? title : component);
-    }
+    const titles = await titlesOfPlaced(trx, found.readable);
     for (const step of input.steps) {
       if (step.do !== 'place' || titles.has(step.component)) continue;
       if (found.placing.has(step.component)) continue;
@@ -392,12 +411,7 @@ export function assistantHandlers(
       titles.set(step.component, typeof title === 'string' ? title : step.component);
     }
     const plan = planOutline(found.outline, input.steps, {
-      node: (node) =>
-        node.type === 'section'
-          ? titleOf(node.title).replace(/\s+/g, ' ')
-          : node.component === null
-            ? undefined
-            : titles.get(node.component),
+      node: nodeNamed(titles),
       component: (component) => titles.get(component),
     });
     if (!plan.ok) return refused(plan.problem);
@@ -1342,23 +1356,34 @@ export function assistantHandlers(
           let place: NonNullable<ProposedComponent['place']> | undefined;
           if (parsed.data.place !== undefined) {
             try {
-              await authoriseAt(trx, callerOf(request), 'suggest', {
+              await authoriseAt(trx, callerOf(request), 'edit', {
                 kind: 'artifact',
                 id: document,
               });
             } catch {
               return {
                 ok: false,
-                content: 'You may not suggest changes to this document.',
+                content: 'You may not change this document.',
                 said: { code: 'not_yours_to_change' },
               };
             }
             const found = await placed(trx, document, principal);
-            const at = proposedPosition(found!.outline, parsed.data.place);
-            if (typeof at === 'string') {
-              return { ok: false, content: at, said: { code: 'edit_refused' } };
+            const titles = await titlesOfPlaced(trx, found!.readable);
+            // Planned as a step of the outline, to be refused now as one would, by a part yet to be.
+            const plan = planOutline(
+              found!.outline,
+              [{ do: 'place', component: NOT_YET_MADE, ...parsed.data.place }],
+              { node: nodeNamed(titles), component: () => parsed.data.title },
+            );
+            if (!plan.ok) {
+              return { ok: false, content: plan.problem, said: { code: 'edit_refused' } };
             }
-            place = { document, version: found!.version, ...at };
+            place = {
+              document,
+              ...(parsed.data.place.under === undefined ? {} : { under: parsed.data.place.under }),
+              ...(parsed.data.place.after === undefined ? {} : { after: parsed.data.place.after }),
+              says: plan.says[0]!,
+            };
           }
           return proposeComponent(
             trx,
@@ -2079,27 +2104,10 @@ export function assistantHandlers(
     if (made.answer !== 'created') {
       throw new AppError(409, made.answer.replace(/\./g, '_'), 'The component could not be made.');
     }
-    if (creates.place !== undefined) {
-      await outlineStands(trx, request, creates.place.document, creates.place.version);
-      const placedThere = await editOutlineAll(trx, {
-        artifactId: creates.place.document,
-        openedFrom: creates.place.version,
-        author: principalId,
-        operations: [
-          {
-            operation: 'insert',
-            parent: creates.place.parent,
-            position: creates.place.position,
-            node: {
-              type: 'reference',
-              component: made.version.artifactId,
-              mode: { kind: 'latest' },
-            },
-          },
-        ],
-      });
-      if (placedThere.answer !== 'recorded') throw outlineRefused(placedThere.answer);
-    }
+    const placedThere =
+      creates.place === undefined
+        ? undefined
+        : await placeMade(trx, request, principalId, creates.place, made.version.artifactId);
     await actOnProposal(trx, {
       proposal,
       act: 'accepted',
@@ -2112,6 +2120,7 @@ export function assistantHandlers(
         state: 'accepted' as const,
         suggestion: null,
         component: made.version.artifactId,
+        ...(placedThere === undefined ? {} : { placed: placedThere }),
       },
     };
   }
@@ -2121,6 +2130,42 @@ export function assistantHandlers(
    * they may comment now, on the version it was made against; discarded, nothing is. Never kept: a
    * suggestion is a change of the text.
    */
+  /**
+   * A part just made, placed where its proposal named in the document as it stands: false where it no
+   * longer can be, the part kept all the same, so the words the person accepted are not lost.
+   */
+  async function placeMade(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    principalId: string,
+    place: NonNullable<ProposedComponent['place']>,
+    component: string,
+  ): Promise<boolean> {
+    try {
+      await authoriseAt(trx, callerOf(request), 'edit', { kind: 'artifact', id: place.document });
+    } catch {
+      return false;
+    }
+    if (await isHeld(trx, place.document)) return false;
+    const stored = await readDocument(trx, place.document);
+    if (!stored) return false;
+    const at = proposedPosition(stored.version.content as OutlineDocument, place);
+    if (typeof at === 'string') return false;
+    const recorded = await editOutlineAll(trx, {
+      artifactId: place.document,
+      openedFrom: stored.version.id,
+      author: principalId,
+      operations: [
+        {
+          operation: 'insert',
+          ...at,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      ],
+    });
+    return recorded.answer === 'recorded';
+  }
+
   /** A change of the outline accepted against the version it read and no other, nor under a hold. */
   async function outlineStands(
     trx: TenantTransaction,

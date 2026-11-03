@@ -20,7 +20,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 
 /** The proposal acts and the month's usage, as the service answers them. */
-function service() {
+function service(acted: Record<string, unknown> = {}) {
   const asked: string[] = [];
   // Each request's whole URL, its query among it.
   const urls: string[] = [];
@@ -183,7 +183,7 @@ function service() {
     }
     if (path === `/v1/assistant/proposals/${PROPOSAL}/acceptance`) {
       return json(200, {
-        proposal: { id: PROPOSAL, state: 'accepted', suggestion: 'x', version: 'v2' },
+        proposal: { id: PROPOSAL, state: 'accepted', suggestion: 'x', version: 'v2', ...acted },
       });
     }
     if (path === `/v1/assistant/proposals/${PROPOSAL}/discarding`) {
@@ -626,7 +626,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
                   { do: 'move', what: 'Methods', after: 'Results', under: null },
                   { do: 'place', what: 'Sites', after: null, under: 'Methods', first: true },
                   { do: 'section', what: 'Annex', after: null, under: null },
-                  { do: 'remove', what: 'Draft notes' },
+                  { do: 'remove', what: 'Draft notes', holds: 2, reason: 'No longer wanted.' },
                   { do: 'retitle', what: 'Intro', to: 'Introduction' },
                 ],
               },
@@ -646,7 +646,7 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
       'Move “Methods” after “Results”',
       'Place “Sites” at the start of “Methods”',
       'Add a section “Annex” at the end of the document',
-      'Remove “Draft notes”',
+      'Remove “Draft notes” and the parts it holds: 2. Recorded as your reason: No longer wanted.',
       'Retitle “Intro” as “Introduction”',
     ]) {
       expect(within(proposal).getByText(said)).toBeVisible();
@@ -656,6 +656,47 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     await within(proposal).findByText('Accepted: the outline has changed.');
     expect(onOutlined).toHaveBeenCalledOnce();
     expect(onAccepted).not.toHaveBeenCalled();
+  });
+
+  it('says where a new part would be placed, and whether it was', async () => {
+    const user = userEvent.setup();
+    const { client } = service({ placed: false, component: SITES });
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        onAccepted={vi.fn()}
+        stream={running([
+          ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+          [
+            'proposal',
+            {
+              id: PROPOSAL,
+              number: 1,
+              component: null,
+              creates: {
+                title: 'Fresh',
+                place: { says: { do: 'place', what: 'Fresh', after: 'Methods', under: null } },
+              },
+              proposed: { content: [] },
+            },
+          ],
+          ended(),
+        ])}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Write it.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(within(proposal).getByText('Place “Fresh” after “Methods”')).toBeVisible();
+    await user.click(within(proposal).getByRole('button', { name: 'Accept' }));
+    await within(proposal).findByText(
+      'Accepted: the part is made, but the document has changed and it is not placed.',
+    );
   });
 
   it('tells the page which part an accepted proposal changed (issue #876)', async () => {

@@ -34,7 +34,10 @@ interface Proposal {
   /** The part edited; null for one proposed to be made (G5-E). */
   readonly component: string | null;
   /** Where and under what title a proposed part would be made. */
-  readonly creates: { readonly title: string; readonly place?: unknown } | null;
+  readonly creates: {
+    readonly title: string;
+    readonly place?: { readonly says: OutlineSaid };
+  } | null;
   /** A citation of a source's work (XR-I): its entry found or made only as it is accepted. */
   readonly cites: Cites | null;
   /** A comment on the part: a thread started only as it is accepted. */
@@ -53,6 +56,8 @@ interface OutlineSaid {
   readonly after?: string | null;
   readonly under?: string | null;
   readonly first?: boolean;
+  readonly reason?: string;
+  readonly holds?: number;
 }
 
 /** Where a step of the outline puts what it names, by titles. */
@@ -76,7 +81,14 @@ function outlineStep(step: OutlineSaid): string {
     case 'section':
       return words('document.outline-section', { what: step.what, where: outlineWhere(step) });
     case 'remove':
-      return words('document.outline-remove', { what: step.what });
+      return [
+        step.holds === undefined
+          ? words('document.outline-remove', { what: step.what })
+          : words('document.outline-remove-holding', { what: step.what, count: step.holds }),
+        ...(step.reason === undefined
+          ? []
+          : [words('document.outline-reason', { reason: step.reason })]),
+      ].join(' ');
     case 'retitle':
       return words('document.outline-retitle', { what: step.what, to: step.to ?? '' });
   }
@@ -745,7 +757,7 @@ export function AssistantPanel({
                 component: typeof frame.component === 'string' ? frame.component : null,
                 creates:
                   typeof frame.creates === 'object' && frame.creates !== null
-                    ? (frame.creates as { title: string })
+                    ? (frame.creates as NonNullable<Proposal['creates']>)
                     : null,
                 cites:
                   typeof frame.cites === 'object' && frame.cites !== null
@@ -817,7 +829,9 @@ export function AssistantPanel({
                 said:
                   data.proposal.state === 'accepted'
                     ? each.creates !== null
-                      ? words('document.accepted-the-part-is-made')
+                      ? data.proposal.placed === false
+                        ? words('document.accepted-the-part-is-made-not-placed')
+                        : words('document.accepted-the-part-is-made')
                       : each.outline !== null
                         ? words('document.accepted-the-outline-has-changed')
                         : each.comment !== null
@@ -1249,6 +1263,9 @@ export function AssistantPanel({
                       {proposal.comment?.text ?? proposedText(proposal.proposed, proposal.cites)}
                     </ins>
                   </pre>
+                )}
+                {proposal.creates?.place !== undefined && (
+                  <p className={styles['muted']}>{outlineStep(proposal.creates.place.says)}</p>
                 )}
                 {proposal.comment !== null && proposal.comment.quote !== null && (
                   <p className={styles['muted']}>
