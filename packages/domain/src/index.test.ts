@@ -246,6 +246,7 @@ describe('the domain package', () => {
         // What a document offers a reference and what one prints, promoted in the plan that builds
         // them (docs/plans/2026-09-23-cross-references-01-references-in-the-editor.md).
         'documentTargets',
+        'blockForms',
         'formsFor',
         'kindWord',
         'printed',
@@ -981,7 +982,7 @@ describe('the domain package', () => {
         'READ_VARIABLES',
         'boundValueIn',
         'footnoteFrom',
-        'holdsBlock',
+        'bare',
         'insertIn',
         'proposeInsertInputSchema',
         'SEARCH_COMPONENTS',

@@ -77,7 +77,9 @@ import {
   boundValueIn,
   citationsIn,
   footnoteFrom,
-  holdsBlock,
+  bare,
+  blockForms,
+  type CrossReferenceDisplay,
   insertIn,
   type proposeInsertInputSchema,
   walkOutline,
@@ -104,7 +106,7 @@ import { authoriseAt, callerOf, notFound, type Authorised } from '../access.js';
 import { contextOf } from '../audit.js';
 import { createConnectorClient } from '../data/connector.js';
 import type { ConnectorOptions } from '../data/connections.js';
-import { heldTableRows, liveBindingStates } from '../data/bindings.js';
+import { definitionReader, heldTableRows, liveBindingStates } from '../data/bindings.js';
 import { mayCite, mayCiteIn } from '../bibliography/citing.js';
 import { mayUseTerms, mayUseTermsIn } from '../terms/editing.js';
 import { askSource, sourceSwitchedOn } from '../bibliography/sources.js';
@@ -154,7 +156,9 @@ const capped = (text: string) =>
 const refusedArguments = (tool: string, input: unknown) =>
   tool === 'propose_edit'
     ? proposeEditProblem(input)
-    : 'The arguments are not what this tool takes.';
+    : tool === 'propose_insert'
+      ? 'The arguments are not what this tool takes: the item is one of variable, value, reference (with its display) or footnote, and a reference names a block, with its component if another part, or a node.'
+      : 'The arguments are not what this tool takes.';
 
 /** The text a section title's inline content says. */
 const titleOf = (title: readonly unknown[]): string =>
@@ -381,11 +385,19 @@ export function assistantHandlers(
     const { item } = input;
     let node: InlineNode;
     let what: string;
+    let afterwards = '';
     if ('variable' in item) {
       const variables = await variablesByKey(trx);
       if (!variables.has(item.variable)) {
+        // The keys go only to one who may read them, as `read_variables` does.
+        const reads = await authoriseAt(trx, callerOf(request), 'read', { kind: 'tenant' }).then(
+          () => true,
+          () => false,
+        );
         return refused(
-          `There is no variable ${item.variable}. There are: ${[...variables.keys()].join(', ')}.`,
+          reads
+            ? `There is no variable ${item.variable}. There are: ${[...variables.keys()].join(', ')}.`
+            : `There is no variable ${item.variable}.`,
         );
       }
       node = { type: 'variable', name: item.variable } as InlineNode;
@@ -414,31 +426,55 @@ export function assistantHandlers(
           `There is no single bound value ${item.value.binding} at that place: read_values names those there are.`,
         );
       }
+      // Who may not read a query may not resolve what asks it (`mayResolve`).
+      const { query } = bound as unknown as { query: string };
+      if (!(await definitionReader(trx, callerOf(request))(query))) {
+        return refused('You may not read the query that value comes from.');
+      }
       node = { ...bound, id: newId() } as InlineNode;
       what = 'a bound value';
+      afterwards = ' It holds no value until it is resolved on the document, once accepted.';
     } else {
-      const display = item.display ?? 'number';
       const target = item.reference;
       let to: unknown;
+      let forms: readonly CrossReferenceDisplay[] | undefined;
       if ('node' in target) {
         if (!found) return refused('A bound value or a section is named only on a document.');
-        let there = false;
         walkOutline(found.outline.nodes, (each) => {
-          if (each.id === target.node) there = true;
+          if (each.id !== target.node) return;
+          // Its title first: whether the layout numbers it is known only at publish. A title holding
+          // an equation prints no words (`targetForms`).
+          forms =
+            each.type === 'section' && each.title.some((inline) => inline.type === 'equation')
+              ? ['number', 'page', 'relative']
+              : ['title', 'number', 'numberAndTitle', 'page', 'relative'];
         });
-        if (!there) return refused('The document holds no such section or part.');
+        if (forms === undefined) return refused('The document holds no such section or part.');
         to = { kind: 'node', node: target.node };
       } else if (target.component !== undefined && target.component !== input.component) {
         const held = found?.readable.get(target.component);
         const part =
           held === undefined ? undefined : (await versionContents(trx, [held])).get(held);
-        if (!part || !holdsBlock(part.content as ContentDocument, target.block)) {
-          return refused('The document holds no such block.');
+        forms = part && blockForms(part.content as ContentDocument, bare(target.block));
+        if (forms === undefined) return refused('The document holds no such block.');
+        let placings = 0;
+        walkOutline(found!.outline.nodes, (each) => {
+          if (each.type === 'reference' && each.component === target.component) placings += 1;
+        });
+        if (placings > 1) {
+          return refused(
+            'That part is placed more than once, so a reference to it cannot say which.',
+          );
         }
-        to = { kind: 'component', component: target.component, block: target.block };
+        to = { kind: 'component', component: target.component, block: bare(target.block) };
       } else {
-        if (!holdsBlock(content, target.block)) return refused('This part holds no such block.');
-        to = { kind: 'block', block: target.block };
+        forms = blockForms(content, bare(target.block));
+        if (forms === undefined) return refused('This part holds no such block.');
+        to = { kind: 'block', block: bare(target.block) };
+      }
+      const display = item.display ?? forms[0];
+      if (display === undefined || !forms.includes(display)) {
+        return refused(`That can be referred to by: ${forms.join(', ')}.`);
       }
       node = { type: 'crossReference', id: newId(), target: to, display } as unknown as InlineNode;
       what = 'a cross-reference';
@@ -464,7 +500,7 @@ export function assistantHandlers(
     });
     return {
       ok: true,
-      content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it.`,
+      content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it.${afterwards}`,
       said: { code: 'proposal', number: proposal.number },
       proposal,
     };
