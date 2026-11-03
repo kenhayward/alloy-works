@@ -744,6 +744,73 @@ describe("the document page's Assistant (the G2 plan, G2-K)", () => {
     expect(within(proposal).queryByRole('button', { name: 'Keep as suggestion' })).toBeNull();
   });
 
+  it('shows what a proposal holds beside its words, so nothing is accepted blind', async () => {
+    const user = userEvent.setup();
+    const { client } = service();
+    const stream = running([
+      ['run', { run: 'r1', endpoint: { name: 'Drafting', boundary: 'inside' } }],
+      [
+        'proposal',
+        {
+          id: PROPOSAL,
+          number: 1,
+          component: SITES,
+          against: 'v1',
+          proposed: {
+            content: [
+              {
+                type: 'paragraph',
+                id: 'p1',
+                content: [
+                  { type: 'text', value: 'It floods' },
+                  {
+                    type: 'footnote',
+                    id: 'f1',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        id: 'n1',
+                        content: [{ type: 'text', value: 'In spring.' }],
+                      },
+                    ],
+                  },
+                  { type: 'text', value: ' at ' },
+                  { type: 'binding', id: 'b1', take: { column: 'height' } },
+                  { type: 'text', value: ' for ' },
+                  { type: 'variable', name: 'region' },
+                  { type: 'text', value: ', ' },
+                  { type: 'crossReference', target: { kind: 'block', block: 'p9' } },
+                  { type: 'text', value: '.' },
+                  { type: 'indexMarker', id: 'x1' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+      ended(),
+    ]);
+    render(
+      <AssistantPanel
+        client={client}
+        document={DOCUMENT}
+        component={SITES}
+        nameOf={() => 'Sites'}
+        onCite={() => {}}
+        stream={stream}
+        origin="http://doc.test"
+      />,
+    );
+    await user.type(screen.getByLabelText('Ask the assistant'), 'Reword it.');
+    await user.click(screen.getByRole('button', { name: 'Ask' }));
+    const proposal = await screen.findByRole('article', { name: 'Proposal 1' });
+    expect(
+      within(proposal).getByText(
+        'It floods[footnote: In spring.] at [bound value: height] for [variable: region], [cross-reference].',
+      ),
+    ).toBeVisible();
+  });
+
   it('says why it was not asked, in the service’s words', async () => {
     const user = userEvent.setup();
     const { client } = service();

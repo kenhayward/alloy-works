@@ -79,6 +79,9 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   get search_document() {
     return words('document.searched-the-document');
   },
+  get search_components() {
+    return words('document.searched-the-parts');
+  },
   get read_values() {
     return words('document.read-the-bound-values');
   },
@@ -131,11 +134,40 @@ function proposedText(proposed: Proposal['proposed'], cites: Cites | null): stri
           .map((node) => {
             if (typeof node !== 'object' || node === null) return '';
             if ('value' in node) return String((node as { value: unknown }).value);
-            const { type, entry } = node as { type?: unknown; entry?: unknown };
-            if (type !== 'citation') return '';
-            return entry === PENDING_ENTRY && cites !== null
-              ? `[${cites.title ?? cites.identifier}]`
-              : '[citation]';
+            const {
+              type,
+              entry,
+              content: inside,
+              take,
+              name,
+            } = node as {
+              type?: unknown;
+              entry?: unknown;
+              content?: readonly { content?: unknown }[];
+              take?: { column?: unknown };
+              name?: unknown;
+            };
+            switch (type) {
+              case 'citation':
+                return entry === PENDING_ENTRY && cites !== null
+                  ? `[${cites.title ?? cites.identifier}]`
+                  : '[citation]';
+              // An index marker prints nothing on the page, so nothing here.
+              case 'indexMarker':
+                return '';
+              case 'footnote':
+                return words('document.proposed-footnote', {
+                  words: (inside ?? []).map((each) => inline(each.content)).join(' '),
+                });
+              case 'binding':
+                return words('document.proposed-bound-value', { name: String(take?.column ?? '') });
+              case 'variable':
+                return words('document.proposed-variable', { name: String(name ?? '') });
+              case 'crossReference':
+                return words('document.proposed-cross-reference');
+              default:
+                return `[${String(type ?? '')}]`;
+            }
           })
           .join('')
       : '';

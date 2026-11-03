@@ -199,6 +199,32 @@ export function assistantHandlers(
           };
   };
 
+  /** The parts a person may read holding words, each by a line; a thread's words never among them. */
+  async function searchComponents(
+    trx: TenantTransaction,
+    principal: string,
+    query: string,
+    where?: (component: string) => string,
+  ): Promise<ToolAnswer> {
+    const answer = await searchWords(trx, principal, query, {
+      limit: 20,
+      filters: { kinds: ['component'] },
+    });
+    const hits =
+      typeof answer === 'object' && answer.outcome === 'results' ? answer.items.slice(0, 10) : [];
+    const text = hits
+      .map(
+        (hit) =>
+          `Component ${hit.artifactId}${where?.(hit.artifactId) ?? ''}: ${hit.passage.map((piece) => piece.text).join('')}`,
+      )
+      .join('\n');
+    return {
+      ok: true,
+      content: asData('search', null, text === '' ? 'Nothing matched.' : capped(text)),
+      said: { code: 'found', count: hits.length },
+    };
+  }
+
   /** A run's reads of reference sources: at most ten, each past them asking the source nothing. */
   const readsOfRun = () => {
     let left = REFERENCE_READS_PER_RUN;
@@ -549,19 +575,47 @@ export function assistantHandlers(
             const { component } = parsed.data as { component: string };
             return await inDocument(async (trx) => {
               const found = await placed(trx, document, principal);
-              const version = found?.readable.get(component);
-              if (version === undefined) return missing('component');
+              const held = found?.readable.get(component);
+              let version = held;
+              if (version === undefined) {
+                // Another part they may read, at its latest: to read and cite, never to edit.
+                try {
+                  await authoriseAt(trx, caller, 'read', { kind: 'artifact', id: component });
+                } catch {
+                  return missing('component');
+                }
+                const latest = await latestVersion(trx, component);
+                if (latest?.kind !== 'component') return missing('component');
+                version = latest.id;
+              }
               const contents = await versionContents(trx, [version]);
               const read = contents.get(version);
               if (!read) return missing('component');
               const content = read.content as ContentDocument;
               const number = `${read.revision}.${read.version}`;
+              const answered = asData(
+                `component:${component}`,
+                number,
+                capped(componentAsText(content)),
+              );
               return {
                 ok: true,
-                content: asData(`component:${component}`, number, capped(componentAsText(content))),
+                content:
+                  held === undefined
+                    ? `This part is not in the open document: you may read and cite it, not edit it.\n${answered}`
+                    : answered,
                 said: { code: 'blocks', count: content.content.length, version: number },
                 read: { component, version, blocks: content.content.map((block) => block.id) },
               };
+            });
+          }
+          case 'search_components': {
+            const { query } = parsed.data as { query: string };
+            return await inDocument(async (trx) => {
+              const found = await placed(trx, document, principal);
+              return searchComponents(trx, principal, query, (component) =>
+                found?.readable.has(component) ? ' (in this document)' : ' (elsewhere)',
+              );
             });
           }
           case 'search_document': {
@@ -911,25 +965,7 @@ export function assistantHandlers(
           switch (name) {
             case 'search_components': {
               const { query } = parsed.data as { query: string };
-              const answer = await searchWords(trx, principal, query, {
-                limit: 20,
-                filters: { kinds: ['component'] },
-              });
-              const hits =
-                typeof answer === 'object' && answer.outcome === 'results'
-                  ? answer.items.slice(0, 10)
-                  : [];
-              const text = hits
-                .map(
-                  (hit) =>
-                    `Component ${hit.artifactId}: ${hit.passage.map((piece) => piece.text).join('')}`,
-                )
-                .join('\n');
-              return {
-                ok: true,
-                content: asData('search', null, text === '' ? 'Nothing matched.' : capped(text)),
-                said: { code: 'found', count: hits.length },
-              };
+              return searchComponents(trx, principal, query);
             }
             case 'read_component': {
               const { component } = parsed.data as { component: string };
@@ -1359,13 +1395,23 @@ export function assistantHandlers(
           version: each.version,
           blocks: each.content.content.map((block) => block.id),
         })),
-        // A tool's read joins the tray, so later turns read it again (G5-D).
+        // A tool's read joins the tray, so later turns read it again (G5-D); on a document, only a
+        // part it places, as the tray reads only those.
         onRead: (run, read) =>
           db
             .withTenant(
               tenant,
-              (inner) =>
-                addToTray(inner, { conversation: conversation.id, component: read.component, run }),
+              async (inner) => {
+                if (document !== null) {
+                  const found = await placed(inner, document, principalId);
+                  if (!found?.readable.has(read.component)) return;
+                }
+                await addToTray(inner, {
+                  conversation: conversation.id,
+                  component: read.component,
+                  run,
+                });
+              },
               contextOf(request),
             )
             .then(() => undefined),
