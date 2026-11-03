@@ -213,7 +213,8 @@
 
 /* While the Assistant is open the dock stands its full height, however short the conversation, so its
    composer sits at the bottom (the DQ plan's final review). */
-.dockArea:has(.assistantTab:not([hidden])) {
+.dockArea:has(.assistantTab:not([hidden])),
+.dockArea:has(.threadsTab:not([hidden])) {
   /* Its room where the page has measured it, so it never runs under the status bar (issue #868). */
   height: min(var(--dock-most), var(--dock-room, var(--dock-most)));
 }
@@ -221,7 +222,8 @@
 /* The Assistant's tab filling the dock to its edges, its own toolbar naming it, so its middle scrolls
    and its composer stays on the bottom edge (issue #864). It stands in `.side`, beside the empty host
    a part's details are drawn into, so every box from the dock down is a column that fills. */
-.dockBody:has(.assistantTab:not([hidden])) {
+.dockBody:has(.assistantTab:not([hidden])),
+.dockBody:has(.threadsTab:not([hidden])) {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -230,14 +232,16 @@
   overflow: hidden;
 }
 
-.side:has(> .assistantTab:not([hidden])) {
+.side:has(> .assistantTab:not([hidden])),
+.side:has(> .threadsTab:not([hidden])) {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
 }
 
-.assistantTab {
+.assistantTab,
+.threadsTab {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -245,7 +249,8 @@
   overflow: hidden;
 }
 
-.assistantTab[hidden] {
+.assistantTab[hidden],
+.threadsTab[hidden] {
   display: none;
 }
 

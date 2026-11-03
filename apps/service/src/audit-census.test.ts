@@ -283,6 +283,7 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   getAttention: read,
   listInbox: read,
   markNotificationRead: { none: 'inbox' },
+  markThreadsRead: { none: 'inbox' },
   deleteNotification: { none: 'inbox' },
   getInboxPreferences: read,
   setInboxPreferences: { none: 'inbox' },

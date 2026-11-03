@@ -39,6 +39,11 @@ export type CommentBody = z.infer<typeof CommentBody>;
 export const ThreadParams = z.object({ id: LowercaseUuid });
 export type ThreadParams = z.infer<typeof ThreadParams>;
 
+export const ThreadsReadBody = z.strictObject({
+  threads: z.array(LowercaseUuid).min(1).max(1000).describe('The threads the caller has now read'),
+});
+export type ThreadsReadBody = z.infer<typeof ThreadsReadBody>;
+
 export const CommentParams = z.object({ id: LowercaseUuid, comment: LowercaseUuid });
 export type CommentParams = z.infer<typeof CommentParams>;
 
@@ -73,6 +78,17 @@ export const ThreadSummaryView = z.object({
   said: z
     .array(z.record(z.string(), z.unknown()))
     .describe('Its first comment as it reads now: words and mentions'),
+  participants: z.array(Person).describe('Whoever has commented, in the order each first did'),
+  mentioned: z
+    .array(LowercaseUuid)
+    .describe('The people its comments name as they read now, each once'),
+  words: z.string().describe('The words of every comment as it reads now, a line each'),
+  drafted: z.boolean().describe('Whether a comment on it was drafted by the assistant (GEN-063)'),
+  new: z
+    .boolean()
+    .describe(
+      'Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens',
+    ),
   orphaned: z
     .boolean()
     .describe(
@@ -105,6 +121,19 @@ export const ThreadView = z.object({
       id: LowercaseUuid,
       author: Person,
       at: z.iso.datetime(),
+      drafted: z
+        .object({
+          model: z
+            .string()
+            .nullable()
+            .describe(
+              'The model that drafted it; null where the run named none, or for a reader from outside',
+            ),
+        })
+        .optional()
+        .describe(
+          'Drafted by the assistant and accepted by its author (GEN-063); absent otherwise',
+        ),
       texts: z
         .array(
           z.object({ parts: z.array(z.record(z.string(), z.unknown())), at: z.iso.datetime() }),
@@ -282,6 +311,24 @@ export const threadRoutes = {
       },
       404: { description: 'No such thread, or no such comment on it', schema: ErrorBody },
       409: resolved,
+    },
+  },
+  markThreadsRead: {
+    operationId: 'markThreadsRead',
+    method: 'POST',
+    path: '/v1/threads/read',
+    summary: 'Mark threads read, as far as each has been commented on',
+    tenantScoped: true,
+    access: { check: 'session', credential: 'session' },
+    body: ThreadsReadBody,
+    responses: {
+      204: { description: 'Marked' },
+      400: { description: '`invalid_request`: not a list of threads', schema: ErrorBody },
+      401: unauthenticated,
+      403: {
+        description: '`token_not_allowed`: a read mark is a person’s, never a token’s',
+        schema: ErrorBody,
+      },
     },
   },
   markThreadInternal: {

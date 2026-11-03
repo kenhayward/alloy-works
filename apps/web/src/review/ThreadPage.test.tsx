@@ -165,6 +165,24 @@ describe('a thread at its own address', () => {
     expect(screen.queryByRole('link', { name: 'Open the component' })).toBeNull();
   });
 
+  it('GEN-063 says a comment was drafted by the assistant, here as in the panel', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    render(
+      <ThreadPage
+        client={client(
+          json(200, {
+            ...thread,
+            comments: [{ ...thread.comments[0], drafted: { model: 'stand-in-1' } }],
+          }),
+        )}
+        on={{ kind: 'component', id: COMPONENT }}
+        thread={THREAD}
+        comment={null}
+      />,
+    );
+    expect(await screen.findByText('Assistant drafted · stand-in-1')).toBeInTheDocument();
+  });
+
   it('IAM-045 says a comment written from outside the organisation is so', async () => {
     Element.prototype.scrollIntoView = vi.fn();
     const grace = { id: GRACE, name: 'Grace', external: true };

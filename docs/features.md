@@ -1587,7 +1587,14 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   **Authoring** shows the same panel and marks beside the text, so an author can read and answer what
   was said while updating the document; a new thread is started from Review. In both, a component with
   an open comment shows a small glyph in the gutter to its left: hover to read the comment, click to
-  open it in **Threads**.
+  open it in **Threads**. The panel lists a card per thread: who started it and when, where it stands,
+  what it says, who is in it and whether it is new to you. Find one with the people strip, a search of
+  every comment's words or `@` for a person, and **Show**: Open by default, All, New to me, Mentioning me,
+  Raised by me, From the assistant, Internal only or Resolved, each with its count. A thread opens in place,
+  or takes the panel with **Open thread**, where previous and next (`K`, `J`) step through what is shown and
+  `Esc` goes back. Type `@` in a reply to name somebody where the words belong. A comment accepted from the
+  assistant stays yours, marked **AI** and Assistant drafted with its model, the model hidden from readers
+  from outside. **Mark all as read**, and a badge on the Threads tab counts open threads new to you.
   Filter by open or resolved. A thread whose words have gone is listed as orphaned, never lost; in a
   document a component's thread is placed by the version each occurrence shows, and one on a component
   the document once placed, since deleted, is listed as orphaned too. Starting and resolving a thread

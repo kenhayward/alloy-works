@@ -27,6 +27,8 @@ interface Thread {
     readonly id: string;
     readonly author: Person;
     readonly at: string;
+    /** Drafted by the assistant, accepted by its author (GEN-063). */
+    readonly drafted?: { readonly model: string | null };
     readonly texts: readonly { readonly parts: readonly Part[] }[];
   }[];
 }
@@ -178,6 +180,14 @@ export function ThreadPage({
                         who: <span data-content>{each.author.name}</span>,
                         outside: <Outside person={each.author} />,
                       },
+                    )}
+                    {each.drafted !== undefined && (
+                      <span>
+                        {' '}
+                        {each.drafted.model === null
+                          ? words('review.assistant-drafted')
+                          : words('review.assistant-drafted-by', { model: each.drafted.model })}
+                      </span>
                     )}
                   </p>
                   <p data-content>

@@ -52,6 +52,8 @@ export const COMMANDS: readonly AppCommand[] = [
     undefined,
     'editor',
   ),
+  page('thread-previous', 'review.previous-thread', undefined, 'k'),
+  page('thread-next', 'review.next-thread', undefined, 'j'),
   page('undo', 'menu.undo', undefined, 'Mod-z', 'editor'),
   page('redo', 'menu.redo', undefined, 'Mod-y', 'editor'),
   page('search', 'menu.search', undefined, 'Mod-k', 'global'),

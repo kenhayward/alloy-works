@@ -7,6 +7,10 @@ export interface MenuItem {
   readonly label: string;
   /** A second, quieter line: where an endpoint runs, when a conversation was kept. */
   readonly detail?: string;
+  /** Its icon, before its words. */
+  readonly icon?: ReactNode;
+  /** How many it would show, after its words: part of what is said of it. */
+  readonly count?: string;
   /** Set on every item of a menu choosing one: each is then a `menuitemradio`. */
   readonly checked?: boolean;
   readonly onSelect: () => void;
@@ -142,6 +146,7 @@ export function MenuButton({
               type="button"
               role={role}
               tabIndex={-1}
+              data-icon-row={item.icon === undefined ? undefined : ''}
               aria-labelledby={`${menuId}-${item.key}`}
               {...(item.detail === undefined
                 ? {}
@@ -152,8 +157,15 @@ export function MenuButton({
                 item.onSelect();
               }}
             >
+              {item.icon}
               <span id={`${menuId}-${item.key}`} className={styles['menuLabel']}>
                 {item.label}
+                {item.count !== undefined && (
+                  <span className={styles['menuCount']}>
+                    <span className={styles['hiddenText']}>, </span>
+                    {item.count}
+                  </span>
+                )}
               </span>
               {item.detail !== undefined && (
                 <span id={`${menuId}-${item.key}-detail`} className={styles['menuDetail']}>

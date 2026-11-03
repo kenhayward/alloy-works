@@ -307,6 +307,26 @@
   color: var(--danger);
 }
 
+/* An item with an icon before its words and a count after them. */
+.menu [role='menuitemradio'][data-icon-row] {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-8);
+  min-width: 212px;
+}
+
+.menu [data-icon-row] .menuLabel {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.menuCount {
+  color: var(--muted);
+}
+
 /* MenuButton's: a menu lined up with its button's start edge, items of one choice, a quieter line. */
 .menu[data-align='start'] {
   inset-inline: 0 auto;

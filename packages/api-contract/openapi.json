@@ -30777,6 +30777,68 @@
                             },
                             "description": "Its first comment as it reads now: words and mentions"
                           },
+                          "participants": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                "name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "description": "Whoever has commented, in the order each first did"
+                          },
+                          "mentioned": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            "description": "The people its comments name as they read now, each once"
+                          },
+                          "words": {
+                            "type": "string",
+                            "description": "The words of every comment as it reads now, a line each"
+                          },
+                          "drafted": {
+                            "type": "boolean",
+                            "description": "Whether a comment on it was drafted by the assistant (GEN-063)"
+                          },
+                          "new": {
+                            "type": "boolean",
+                            "description": "Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens"
+                          },
                           "orphaned": {
                             "type": "boolean",
                             "description": "Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to"
@@ -30813,6 +30875,11 @@
                           "comments",
                           "lastAt",
                           "said",
+                          "participants",
+                          "mentioned",
+                          "words",
+                          "drafted",
+                          "new",
                           "orphaned"
                         ]
                       }
@@ -65357,6 +65424,68 @@
                             },
                             "description": "Its first comment as it reads now: words and mentions"
                           },
+                          "participants": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                "name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "description": "Whoever has commented, in the order each first did"
+                          },
+                          "mentioned": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            "description": "The people its comments name as they read now, each once"
+                          },
+                          "words": {
+                            "type": "string",
+                            "description": "The words of every comment as it reads now, a line each"
+                          },
+                          "drafted": {
+                            "type": "boolean",
+                            "description": "Whether a comment on it was drafted by the assistant (GEN-063)"
+                          },
+                          "new": {
+                            "type": "boolean",
+                            "description": "Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens"
+                          },
                           "orphaned": {
                             "type": "boolean",
                             "description": "Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to"
@@ -65393,6 +65522,11 @@
                           "comments",
                           "lastAt",
                           "said",
+                          "participants",
+                          "mentioned",
+                          "words",
+                          "drafted",
+                          "new",
                           "orphaned"
                         ]
                       }
@@ -65946,6 +66080,22 @@
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
                           },
                           "texts": {
                             "type": "array",
@@ -197660,6 +197810,68 @@
                             },
                             "description": "Its first comment as it reads now: words and mentions"
                           },
+                          "participants": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "allOf": [
+                                    {
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                    }
+                                  ]
+                                },
+                                "name": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "external": {
+                                  "description": "True where the person is from outside the organisation; absent otherwise",
+                                  "type": "boolean",
+                                  "const": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "description": "Whoever has commented, in the order each first did"
+                          },
+                          "mentioned": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "allOf": [
+                                {
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                {
+                                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                                }
+                              ]
+                            },
+                            "description": "The people its comments name as they read now, each once"
+                          },
+                          "words": {
+                            "type": "string",
+                            "description": "The words of every comment as it reads now, a line each"
+                          },
+                          "drafted": {
+                            "type": "boolean",
+                            "description": "Whether a comment on it was drafted by the assistant (GEN-063)"
+                          },
+                          "new": {
+                            "type": "boolean",
+                            "description": "Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens"
+                          },
                           "orphaned": {
                             "type": "boolean",
                             "description": "Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to"
@@ -197696,6 +197908,11 @@
                           "comments",
                           "lastAt",
                           "said",
+                          "participants",
+                          "mentioned",
+                          "words",
+                          "drafted",
+                          "new",
                           "orphaned"
                         ]
                       }
@@ -198255,6 +198472,22 @@
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
                           },
                           "texts": {
                             "type": "array",
@@ -358791,6 +359024,22 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
+                          },
                           "texts": {
                             "type": "array",
                             "items": {
@@ -359350,6 +359599,22 @@
                             "type": "string",
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
                           },
                           "texts": {
                             "type": "array",
@@ -360018,6 +360283,22 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
+                          },
                           "texts": {
                             "type": "array",
                             "items": {
@@ -360638,6 +360919,22 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
+                          },
                           "texts": {
                             "type": "array",
                             "items": {
@@ -361217,6 +361514,22 @@
                             "format": "date-time",
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           },
+                          "drafted": {
+                            "description": "Drafted by the assistant and accepted by its author (GEN-063); absent otherwise",
+                            "type": "object",
+                            "properties": {
+                              "model": {
+                                "description": "The model that drafted it; null where the run named none, or for a reader from outside",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "model"
+                            ]
+                          },
                           "texts": {
                             "type": "array",
                             "items": {
@@ -361450,6 +361763,249 @@
           },
           "409": {
             "description": "`thread_resolved`: the thread is resolved, and takes nothing more",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/threads/read": {
+      "post": {
+        "operationId": "markThreadsRead",
+        "summary": "Mark threads read, as far as each has been commented on",
+        "description": "Moves the caller’s read mark on each thread to its latest comment, never back, so that the lists stop calling it new until somebody else comments. A thread the caller may not read is passed over silently, as one that does not exist.",
+        "tags": [
+          "Threads"
+        ],
+        "x-alloy-token-enabled": false,
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "threads": {
+                    "minItems": 1,
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        }
+                      ]
+                    },
+                    "description": "The threads the caller has now read"
+                  }
+                },
+                "required": [
+                  "threads"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "threads": [
+                  "00000000-0000-4000-8000-000000000001"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Marked",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`invalid_request`: not a list of threads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`token_not_allowed`: a read mark is a person’s, never a token’s",
             "content": {
               "application/json": {
                 "schema": {

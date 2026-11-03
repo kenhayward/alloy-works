@@ -569,6 +569,7 @@ export function Workspace({ fetch: given }: WorkspaceProps) {
             document={documents.document}
             baseline={documents.baseline}
             node={documents.node}
+            principalId={me}
           />
         </>
       );

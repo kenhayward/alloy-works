@@ -101,6 +101,8 @@ unfinished state into the permanent record with nobody's name against the decisi
 | **COL-049** | A thread must not be deletable, by its author, by an author of the component, or by a tenant administrator. A thread that should not have been raised is resolved, and the record of it stays                                               | Constraint | Specified |
 | **COL-050** | Review metadata - threads, replies, suggestions, withdrawals, acceptances, rejections and round state - must be retained against the version it was made against, and must be removable through no product surface by anybody (**LIF-025**) | Constraint | Specified |
 | **COL-051** | A comment may be edited by its author, and the earlier text must be retained in the record rather than replaced                                                                                                                             | T3         | Specified |
+| **COL-070** | A person must see which threads are new to them, a comment by somebody else since they last read it making a thread new, and must be able to mark threads read; the mark is the person's own and is removed when they are erased            | T3         | Specified |
+| **COL-071** | Threads must be findable in a document's list by a person who started, replied in or is named in them, and by the words of any comment                                                                                                      | T3         | Specified |
 
 **COL-017 is the same principle as everywhere else in this specification.** A comment that vanishes
 because somebody edited the sentence it referred to is feedback silently discarded, and the person

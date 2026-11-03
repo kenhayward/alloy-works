@@ -23,6 +23,8 @@ export interface StoredComment {
   readonly id: string;
   readonly author: PersonView;
   readonly createdAt: Date;
+  /** Drafted by the assistant, and the model if its run named one (GEN-063). */
+  readonly drafted?: { readonly model: string | null };
   readonly texts: readonly { readonly parts: CommentParts; readonly writtenAt: Date }[];
 }
 
@@ -60,6 +62,16 @@ export interface ThreadSummary {
   readonly lastAt: Date;
   /** Its first comment as it reads now: what a thread says at a glance. */
   readonly said: CommentParts;
+  /** Whoever has commented, in the order each first did. */
+  readonly participants: readonly PersonView[];
+  /** The people its comments name as they read now, each once. */
+  readonly mentioned: readonly string[];
+  /** The words of every comment as it reads now, a line each: what a search of the list reads. */
+  readonly words: string;
+  /** Whether a comment on it was drafted by the assistant (GEN-063). */
+  readonly drafted: boolean;
+  /** Whether somebody else has commented since the reader's mark (COL-070); never without a reader. */
+  readonly isNew: boolean;
 }
 
 /** What starting a thread or adding to one answers. */
@@ -159,6 +171,8 @@ export async function startThread(
     readonly author: string;
     /** Kept from every principal from outside (COL-038; the R13 plan, R13-C). */
     readonly internal?: boolean;
+    /** The proposal it was accepted from (GEN-063). */
+    readonly draftedBy?: string;
   },
 ): Promise<ThreadAnswer> {
   // Under its artifact's lock, as an archival or a deletion takes it, so its search row is flagged as
@@ -205,7 +219,7 @@ export async function startThread(
     thread: thread.id,
     anchor: anchor.data.kind,
   });
-  const comment = await insertComment(trx, thread.id, input.author, checked.parts);
+  const comment = await insertComment(trx, thread.id, input.author, checked.parts, input.draftedBy);
   await indexThreadStarted(trx, thread.id, { comment, parts: checked.parts });
   const mentioned = mentionsIn(checked.parts);
   const { untold } = await tell(trx, {
@@ -223,10 +237,15 @@ async function insertComment(
   thread: string,
   author: string,
   parts: CommentParts,
+  draftedBy?: string,
 ): Promise<string> {
   const comment = await trx
     .insertInto('thread_comment')
-    .values({ thread_id: thread, author })
+    .values({
+      thread_id: thread,
+      author,
+      ...(draftedBy === undefined ? {} : { drafted_by: draftedBy }),
+    })
     .returning('id')
     .executeTakeFirstOrThrow();
   await trx
@@ -491,6 +510,9 @@ export async function readThread(
     .innerJoin('principal as p', 'p.id', 'm.author')
     .innerJoin('thread_comment_text as x', 'x.comment_id', 'm.id')
     .select([
+      'm.drafted_by',
+      sql<string | null>`(select gr.model from generation_proposal gp
+        join generation_run gr on gr.id = gp.run_id where gp.id = m.drafted_by)`.as('model'),
       'm.id',
       'm.author',
       'p.display_name',
@@ -515,6 +537,7 @@ export async function readThread(
         id: each.id,
         author: personView(each.author, each.display_name, each.kind),
         createdAt: each.created_at,
+        ...(each.drafted_by === null ? {} : { drafted: { model: each.model } }),
         texts: [],
       };
       byId.set(each.id, comment);
@@ -557,6 +580,8 @@ export async function listThreads(
     readonly limit?: number;
     /** Leaves out every internal thread: what a principal from outside is listed (COL-038; R13-D). */
     readonly hideInternal?: boolean;
+    /** Whose read mark says which are new (COL-070). */
+    readonly reader?: string;
   },
 ): Promise<ThreadSummary[]> {
   if (input.on.length === 0) return [];
@@ -596,6 +621,25 @@ export async function listThreads(
         join thread_comment_text x on x.comment_id = f.id
         where f.thread_id = t.id
         order by f.created_at, f.id, x.id desc limit 1)`.as('said'),
+      sql<{ id: string; name: string | null; kind: string }[]>`(select jsonb_agg(
+          jsonb_build_object('id', p.id, 'name', p.display_name, 'kind', p.kind)
+          order by s.first_at, p.id)
+        from (select author, min(created_at) as first_at from thread_comment
+          where thread_id = t.id group by author) s
+        join principal p on p.id = s.author)`.as('participants'),
+      sql<CommentParts[]>`(select jsonb_agg(l.parts order by l.created_at, l.id)
+        from (select distinct on (f.id) f.id, f.created_at, x.parts from thread_comment f
+          join thread_comment_text x on x.comment_id = f.id
+          where f.thread_id = t.id order by f.id, x.id desc) l)`.as('latest'),
+      sql<boolean>`exists (select 1 from thread_comment f
+        where f.thread_id = t.id and f.drafted_by is not null)`.as('drafted'),
+      (input.reader === undefined
+        ? sql<boolean>`false`
+        : sql<boolean>`exists (select 1 from thread_comment f
+            where f.thread_id = t.id and f.author <> ${input.reader}
+              and f.created_at > coalesce((select tr.read_to from thread_read tr
+                where tr.thread_id = t.id and tr.principal_id = ${input.reader}), '-infinity'))`
+      ).as('is_new'),
     ])
     .where('t.on_id', 'in', [...input.on]);
   if (input.hideInternal === true) query = query.where(sql<boolean>`not ${internalOf(held)}`);
@@ -624,5 +668,52 @@ export async function listThreads(
     comments: Number(row.comments),
     lastAt: row.last_at as Date,
     said: row.said,
+    participants: row.participants.map((each) =>
+      personView(each.id, each.name, each.kind as Parameters<typeof personView>[2]),
+    ),
+    mentioned: [...new Set(row.latest.flatMap((parts) => mentionsIn(parts)))],
+    words: row.latest
+      .map((parts) => parts.flatMap((part) => ('text' in part ? [part.text] : [])).join(''))
+      .join('\n'),
+    drafted: row.drafted,
+    isNew: row.is_new,
   }));
+}
+
+/**
+ * A person's read mark moved to each thread's latest comment (COL-070), never back: taken here, to the
+ * microsecond the list compares, not from what a client was last told. Who may read which is the
+ * caller's to have decided.
+ */
+export async function markThreadsRead(
+  trx: TenantTransaction,
+  principal: string,
+  threads: readonly string[],
+): Promise<void> {
+  if (threads.length === 0) return;
+  await trx
+    .insertInto('thread_read')
+    .columns(['thread_id', 'principal_id', 'read_to'])
+    .expression((eb) =>
+      eb
+        .selectFrom('thread_comment')
+        .select((inner) => [
+          'thread_id',
+          sql.val(principal).as('principal_id'),
+          inner.fn.max('created_at').as('read_to'),
+        ])
+        .where('thread_id', 'in', [...threads])
+        .groupBy('thread_id'),
+    )
+    .onConflict((conflict) =>
+      conflict.columns(['thread_id', 'principal_id']).doUpdateSet({
+        read_to: sql`greatest(thread_read.read_to, excluded.read_to)`,
+      }),
+    )
+    .execute();
+}
+
+/** Every read mark of a person gone (VER-038; COL-070): what they read is nobody else's to know. */
+export async function eraseThreadReads(trx: TenantTransaction, principal: string): Promise<void> {
+  await trx.deleteFrom('thread_read').where('principal_id', '=', principal).execute();
 }

@@ -2271,6 +2271,7 @@ export function assistantHandlers(
       anchor: proposal.comment!.anchor,
       parts: proposal.comment!.parts,
       author: principalId,
+      draftedBy: proposal.id,
     });
     if (started.answer !== 'done') {
       throw new AppError(409, 'comment_refused', 'The comment could not be posted.');

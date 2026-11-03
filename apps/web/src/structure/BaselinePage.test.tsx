@@ -169,11 +169,12 @@ describe('a baseline at its own address', () => {
     );
     // Never the document's own list, which judges against the text as it is now.
     expect(asked.map((each) => each.path)).not.toContain(`/v1/documents/${DOCUMENT}/threads`);
+    await userEvent.click(await within(threads).findByRole('button', { name: 'New thread' }));
     expect(within(threads).getByRole('combobox', { name: 'On' })).toHaveTextContent(
       'The whole of Install the printer',
     );
     await userEvent.type(
-      within(threads).getByRole('textbox', { name: 'Comment' }),
+      within(threads).getByRole('combobox', { name: 'Comment' }),
       'Is this right?',
     );
     await userEvent.click(within(threads).getByRole('button', { name: 'Start thread' }));

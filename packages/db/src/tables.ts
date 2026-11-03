@@ -33,6 +33,7 @@ import type {
   ThreadCommentTable,
   ThreadCommentTextTable,
   ThreadInternalTable,
+  ThreadReadTable,
   ThreadResolutionTable,
   ThreadTable,
 } from './threads-tables.js';
@@ -1527,6 +1528,7 @@ export interface TenantTables {
   thread_comment_text: ThreadCommentTextTable;
   thread_resolution: ThreadResolutionTable;
   thread_internal: ThreadInternalTable;
+  thread_read: ThreadReadTable;
   notification: NotificationTable;
   notification_held: NotificationHeldTable;
   notification_preference: NotificationPreferenceTable;

@@ -11,87 +11,88 @@ time (below); embeddings for meaning are [search.md](search.md)'s and
 
 ## Requirements owned
 
-| Requirement | How                                                                                                                                                                      |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **GEN-027** | `model_endpoint`, any number, each speaking one of two protocols (GN-B)                                                                                                  |
-| **GEN-028** | `model_route`: each purpose names one endpoint (GN-B)                                                                                                                    |
-| **GEN-029** | The endpoint's key sealed and opened by the connector alone, write-only from the renderer, as a connection's is (GN-A)                                                   |
-| **GEN-030** | Every endpoint is the tenant's own account; no platform key (GN-C)                                                                                                       |
-| **GEN-031** | `boundary` is required when an endpoint is made, and shown wherever the endpoint is named (GN-B)                                                                         |
-| **GEN-032** | `model_unavailable`, never another endpoint (Failures)                                                                                                                   |
-| **IAM-076** | Endpoints, routes and runs are tenant schema tables                                                                                                                      |
-| **GEN-006** | `generation_run` (The run)                                                                                                                                               |
-| **GEN-023** | A generated suggestion names its run, which holds the model, its version, the prompt version and the digest                                                              |
-| **GEN-039** | One digest, over the request as sent, canonical (The run)                                                                                                                |
-| **GEN-046** | A run is kept while anything it produced is, and never by a sweep (The run)                                                                                              |
-| **GEN-043** | `context_too_large` before the call, and the same code where the provider refuses for length (The context)                                                               |
-| **GEN-003** | The request is assembled from the resolved declaration alone; nothing is added after (The context)                                                                       |
-| **GEN-057** | The resolved set, by artifact, version and block, is recorded on the run and read back (The context)                                                                     |
-| **GEN-058** | Resolution reads as the requester (The context)                                                                                                                          |
-| **GEN-062** | `propose_outline`, and `propose_component`'s `place`: a change of the outline proposed against the version read, all of it one version or none as it is accepted (Tools) |
-| **GEN-061** | `read_comments`, the comments on a part read as the person, authors unnamed, mentions gone, none internal for one from outside (Tools)                                   |
-| **GEN-059** | Nothing resolved fails `context_empty`; too much, `context_too_large` (The context)                                                                                      |
-| **GEN-007** | The assistant's tools are four product reads and one proposal (The assistant)                                                                                            |
-| **GEN-008** | Each tool runs in the service as the requester, through the route's own authorisation                                                                                    |
-| **GEN-009** | A proposal changes nothing until the requester accepts or keeps it (Proposals)                                                                                           |
-| **GEN-010** | Every tool call, its arguments and its result are events of the run's stream, and kept on the run                                                                        |
-| **GEN-011** | Citations by component and block, checked against what the run retrieved (The assistant)                                                                                 |
-| **GEN-012** | G2 is drafting against the open document, before prompts, chat or retrieval at large (The order)                                                                         |
-| **GEN-013** | Retrieval is the tenant's own search and reads, filtered by them                                                                                                         |
-| **GEN-014** | Every read a tool makes is the requester's read                                                                                                                          |
-| **GEN-015** | A run lives in one tenant's schema and reads through `withTenant`                                                                                                        |
-| **GEN-016** | The run's page lists what was retrieved, by version                                                                                                                      |
-| **GEN-017** | Content reaches the model only inside tool results and context blocks marked as data (Injection)                                                                         |
-| **GEN-018** | What content says changes no tool, permission or confirmation (Injection)                                                                                                |
-| **GEN-019** | Authority comes from the requester's session alone (Injection)                                                                                                           |
-| **GEN-020** | The compliant stand-in model, through each of the four paths (Injection)                                                                                                 |
-| **GEN-021** | A declined instruction said aloud: a conversation's `declined` tool, its step kept and a `notice` streamed (Injection)                                                   |
-| **GEN-022** | A generated suggestion is marked until accepted (Proposals)                                                                                                              |
-| **GEN-024** | A suggestion made from a run; acceptance is `suggestion.accepted`, naming the person (Proposals)                                                                         |
-| **GEN-040** | Discarding is a rejection, recorded with who and when                                                                                                                    |
-| **GEN-041** | Suggestions and runs are insert-only; a discard purges nothing                                                                                                           |
-| **GEN-042** | Only an open generated suggestion blocks a publish (Proposals)                                                                                                           |
-| **GEN-025** | `generated_unaccepted` at publish, and a gate condition requiring none (Proposals)                                                                                       |
-| **GEN-026** | `GET /v1/documents/{id}/generated`: each version a run produced and who accepted it (Proposals)                                                                          |
-| **GEN-060** | Acceptance is `acceptSuggestion`, which writes as any edit does, the lock first                                                                                          |
-| **PUB-082** | `publication_generated`: each accepted suggestion and creation it printed, with its run, written as it is recorded (Proposals)                                           |
-| **API-064** | The run's stream is a message set of the AsyncAPI document, apart from OpenAPI (The assistant)                                                                           |
-| **GEN-033** | Each run records tokens with tenant, user, purpose and document (Cost)                                                                                                   |
-| **ADM-010** | The same record                                                                                                                                                          |
-| **GEN-035** | `model_rate_limited`, per user per hour (Cost)                                                                                                                           |
-| **GEN-034** | `generation_budget`: a monthly limit, its rising thresholds, alerts as each run ends (Cost)                                                                              |
-| **ADM-013** | The same; an alert before the limit, at a threshold below 100 (Cost; its gap beside the table)                                                                           |
-| **ADM-014** | Declared in advance on the budget's view and page: nothing stops, every capability continues (Cost)                                                                      |
-| **GEN-036** | The Anthropic adapter's cache breakpoints, cached tokens priced; a prompt run reuses its requester's own identical run (Cost; its gap beside the table)                  |
-| **ADM-034** | A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)                                                                     |
-| **GEN-038** | Embedding routed to an OpenAI-protocol endpoint alone, which a self-hosted model inside the boundary speaks; none routed, no meaning search (Meaning)                    |
-| **GEN-044** | Embedding runs attributed and budgeted as generation's; a model not serving waits, its estimate shown, until an administrator confirms it (Meaning)                      |
-| **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                                                                          |
-| **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)                                                                |
-| **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                                                                    |
-| **GEN-004** | `output.componentType`: a part of another type fails `prompt_output_mismatch` before any call; listed only where it fits (Prompts)                                       |
-| **GEN-045** | Approving a prompt version needs a finished trial run of it, which no tenant's workflow lifts (GN-F)                                                                     |
-| **GEN-056** | `context`: the part, its section or the document; related components; a field's value; parameters                                                                        |
-| **TPL-061** | A template names one library, `prompts`; a library is a versioned list of prompts by identity                                                                            |
-| **TPL-071** | `prompt_library_default`, seeded empty, is the library of a template naming none                                                                                         |
-| **GEN-047** | A conversation: a person's turns, each a run, the earlier turns' words sent with the next (G5-A)                                                                         |
-| **GEN-048** | A turn runs the assistant's loop: its instructions, tools as the requester, proposals, a run (G5-B)                                                                      |
-| **GEN-050** | Nothing filters a turn on its subject; only a guardrail refuses (G5-B, G5-F)                                                                                             |
-| **GEN-051** | A turn names an endpoint in use, the chat route's by default, its name and boundary shown (G5-C)                                                                         |
-| **GEN-049** | `guardrail`: phrases forbidden in what is sent and what returns, a reply held where one watches it, a refusal naming the rule and reason (G5-F)                          |
-| **GEN-053** | `conversation_context`: a tray each turn re-reads as the person, a part they no longer read left out and named; added and removed by them (G5-D)                         |
-| **GEN-052** | `propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)                                            |
-| **GEN-054** | `personal_prompt`: its owner's alone, never an artifact, so no template binds one and nobody else reads or runs it (G5-G)                                                |
-| **GEN-055** | Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)                                                   |
-| **API-018** | Seven tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)                                                                                      |
-| **API-019** | Each tool's description: what it is for, when to use it, what it returns (MCP)                                                                                           |
-| **API-020** | A tool is its route, called in process with the caller's token: no other path (MCP)                                                                                      |
-| **API-021** | A changing tool's annotations say it is not read-only and its title starts `Changes:`; the route refuses what the token may not (MCP)                                    |
-| **API-022** | A result is the route's JSON, never prose made from content, every description saying so (MCP)                                                                           |
-| **API-023** | `tool.used`: the identity, the tool, its arguments as identifiers and digests, the outcome (MCP)                                                                         |
-| **API-024** | The tools are rows in the G8 plan; adding one is a row there first (MCP)                                                                                                 |
-| **API-052** | Every tool wraps a `/v1` route; a `/v2` names in its ADR what moves (ADR-0065)                                                                                           |
-| **REL-021** | `related` is `/v1/artifacts/{id}/relationships` and `/path`, as the caller (MCP)                                                                                         |
+| Requirement | How                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **GEN-027** | `model_endpoint`, any number, each speaking one of two protocols (GN-B)                                                                                                        |
+| **GEN-028** | `model_route`: each purpose names one endpoint (GN-B)                                                                                                                          |
+| **GEN-029** | The endpoint's key sealed and opened by the connector alone, write-only from the renderer, as a connection's is (GN-A)                                                         |
+| **GEN-030** | Every endpoint is the tenant's own account; no platform key (GN-C)                                                                                                             |
+| **GEN-031** | `boundary` is required when an endpoint is made, and shown wherever the endpoint is named (GN-B)                                                                               |
+| **GEN-032** | `model_unavailable`, never another endpoint (Failures)                                                                                                                         |
+| **IAM-076** | Endpoints, routes and runs are tenant schema tables                                                                                                                            |
+| **GEN-006** | `generation_run` (The run)                                                                                                                                                     |
+| **GEN-023** | A generated suggestion names its run, which holds the model, its version, the prompt version and the digest                                                                    |
+| **GEN-039** | One digest, over the request as sent, canonical (The run)                                                                                                                      |
+| **GEN-046** | A run is kept while anything it produced is, and never by a sweep (The run)                                                                                                    |
+| **GEN-043** | `context_too_large` before the call, and the same code where the provider refuses for length (The context)                                                                     |
+| **GEN-003** | The request is assembled from the resolved declaration alone; nothing is added after (The context)                                                                             |
+| **GEN-057** | The resolved set, by artifact, version and block, is recorded on the run and read back (The context)                                                                           |
+| **GEN-058** | Resolution reads as the requester (The context)                                                                                                                                |
+| **GEN-062** | `propose_outline`, and `propose_component`'s `place`: a change of the outline proposed against the version read, all of it one version or none as it is accepted (Tools)       |
+| **GEN-063** | `thread_comment.drafted_by`: accepted from `propose_comment`, its author the person, marked with an AI tag and the model, the model kept from a reader from outside (ADR-0078) |
+| **GEN-061** | `read_comments`, the comments on a part read as the person, authors unnamed, mentions gone, none internal for one from outside (Tools)                                         |
+| **GEN-059** | Nothing resolved fails `context_empty`; too much, `context_too_large` (The context)                                                                                            |
+| **GEN-007** | The assistant's tools are four product reads and one proposal (The assistant)                                                                                                  |
+| **GEN-008** | Each tool runs in the service as the requester, through the route's own authorisation                                                                                          |
+| **GEN-009** | A proposal changes nothing until the requester accepts or keeps it (Proposals)                                                                                                 |
+| **GEN-010** | Every tool call, its arguments and its result are events of the run's stream, and kept on the run                                                                              |
+| **GEN-011** | Citations by component and block, checked against what the run retrieved (The assistant)                                                                                       |
+| **GEN-012** | G2 is drafting against the open document, before prompts, chat or retrieval at large (The order)                                                                               |
+| **GEN-013** | Retrieval is the tenant's own search and reads, filtered by them                                                                                                               |
+| **GEN-014** | Every read a tool makes is the requester's read                                                                                                                                |
+| **GEN-015** | A run lives in one tenant's schema and reads through `withTenant`                                                                                                              |
+| **GEN-016** | The run's page lists what was retrieved, by version                                                                                                                            |
+| **GEN-017** | Content reaches the model only inside tool results and context blocks marked as data (Injection)                                                                               |
+| **GEN-018** | What content says changes no tool, permission or confirmation (Injection)                                                                                                      |
+| **GEN-019** | Authority comes from the requester's session alone (Injection)                                                                                                                 |
+| **GEN-020** | The compliant stand-in model, through each of the four paths (Injection)                                                                                                       |
+| **GEN-021** | A declined instruction said aloud: a conversation's `declined` tool, its step kept and a `notice` streamed (Injection)                                                         |
+| **GEN-022** | A generated suggestion is marked until accepted (Proposals)                                                                                                                    |
+| **GEN-024** | A suggestion made from a run; acceptance is `suggestion.accepted`, naming the person (Proposals)                                                                               |
+| **GEN-040** | Discarding is a rejection, recorded with who and when                                                                                                                          |
+| **GEN-041** | Suggestions and runs are insert-only; a discard purges nothing                                                                                                                 |
+| **GEN-042** | Only an open generated suggestion blocks a publish (Proposals)                                                                                                                 |
+| **GEN-025** | `generated_unaccepted` at publish, and a gate condition requiring none (Proposals)                                                                                             |
+| **GEN-026** | `GET /v1/documents/{id}/generated`: each version a run produced and who accepted it (Proposals)                                                                                |
+| **GEN-060** | Acceptance is `acceptSuggestion`, which writes as any edit does, the lock first                                                                                                |
+| **PUB-082** | `publication_generated`: each accepted suggestion and creation it printed, with its run, written as it is recorded (Proposals)                                                 |
+| **API-064** | The run's stream is a message set of the AsyncAPI document, apart from OpenAPI (The assistant)                                                                                 |
+| **GEN-033** | Each run records tokens with tenant, user, purpose and document (Cost)                                                                                                         |
+| **ADM-010** | The same record                                                                                                                                                                |
+| **GEN-035** | `model_rate_limited`, per user per hour (Cost)                                                                                                                                 |
+| **GEN-034** | `generation_budget`: a monthly limit, its rising thresholds, alerts as each run ends (Cost)                                                                                    |
+| **ADM-013** | The same; an alert before the limit, at a threshold below 100 (Cost; its gap beside the table)                                                                                 |
+| **ADM-014** | Declared in advance on the budget's view and page: nothing stops, every capability continues (Cost)                                                                            |
+| **GEN-036** | The Anthropic adapter's cache breakpoints, cached tokens priced; a prompt run reuses its requester's own identical run (Cost; its gap beside the table)                        |
+| **ADM-034** | A `budget` notification in the inbox, COL-063's channel, to recipients an administrator names (Cost)                                                                           |
+| **GEN-038** | Embedding routed to an OpenAI-protocol endpoint alone, which a self-hosted model inside the boundary speaks; none routed, no meaning search (Meaning)                          |
+| **GEN-044** | Embedding runs attributed and budgeted as generation's; a model not serving waits, its estimate shown, until an administrator confirms it (Meaning)                            |
+| **GEN-037** | The run's cost shown to its requester as it ends, and their month on the assistant panel (Cost)                                                                                |
+| **GEN-001** | A prompt: an artifact kind in a space, versioned, listed by a library, the fourth workflow kind (Prompts)                                                                      |
+| **GEN-005** | `models`: a purpose and the models accepted; another fails `model_mismatch` before any call (Prompts)                                                                          |
+| **GEN-004** | `output.componentType`: a part of another type fails `prompt_output_mismatch` before any call; listed only where it fits (Prompts)                                             |
+| **GEN-045** | Approving a prompt version needs a finished trial run of it, which no tenant's workflow lifts (GN-F)                                                                           |
+| **GEN-056** | `context`: the part, its section or the document; related components; a field's value; parameters                                                                              |
+| **TPL-061** | A template names one library, `prompts`; a library is a versioned list of prompts by identity                                                                                  |
+| **TPL-071** | `prompt_library_default`, seeded empty, is the library of a template naming none                                                                                               |
+| **GEN-047** | A conversation: a person's turns, each a run, the earlier turns' words sent with the next (G5-A)                                                                               |
+| **GEN-048** | A turn runs the assistant's loop: its instructions, tools as the requester, proposals, a run (G5-B)                                                                            |
+| **GEN-050** | Nothing filters a turn on its subject; only a guardrail refuses (G5-B, G5-F)                                                                                                   |
+| **GEN-051** | A turn names an endpoint in use, the chat route's by default, its name and boundary shown (G5-C)                                                                               |
+| **GEN-049** | `guardrail`: phrases forbidden in what is sent and what returns, a reply held where one watches it, a refusal naming the rule and reason (G5-F)                                |
+| **GEN-053** | `conversation_context`: a tray each turn re-reads as the person, a part they no longer read left out and named; added and removed by them (G5-D)                               |
+| **GEN-052** | `propose_component` in a conversation: made at 0.1 as the person only once accepted, never kept, reported as generated (G5-E)                                                  |
+| **GEN-054** | `personal_prompt`: its owner's alone, never an artifact, so no template binds one and nobody else reads or runs it (G5-G)                                                      |
+| **GEN-055** | Promotion, the one path: a new prompt at draft in a space its owner may edit, reviewed and tried like any other (G5-G)                                                         |
+| **API-018** | Seven tools over the API, each the `/v1` route it wraps, never a mirror of it (MCP)                                                                                            |
+| **API-019** | Each tool's description: what it is for, when to use it, what it returns (MCP)                                                                                                 |
+| **API-020** | A tool is its route, called in process with the caller's token: no other path (MCP)                                                                                            |
+| **API-021** | A changing tool's annotations say it is not read-only and its title starts `Changes:`; the route refuses what the token may not (MCP)                                          |
+| **API-022** | A result is the route's JSON, never prose made from content, every description saying so (MCP)                                                                                 |
+| **API-023** | `tool.used`: the identity, the tool, its arguments as identifiers and digests, the outcome (MCP)                                                                               |
+| **API-024** | The tools are rows in the G8 plan; adding one is a row there first (MCP)                                                                                                       |
+| **API-052** | Every tool wraps a `/v1` route; a `/v2` names in its ADR what moves (ADR-0065)                                                                                                 |
+| **REL-021** | `related` is `/v1/artifacts/{id}/relationships` and `/path`, as the caller (MCP)                                                                                               |
 
 GEN-004 is claimed for a part's text of a declared component type (the GC plan, GC-C); a field as a
 prompt's output is not built, and is the gap.

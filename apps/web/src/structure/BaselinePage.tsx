@@ -11,7 +11,9 @@ import {
   type ThreadAnchor,
 } from '@alloy-works/domain';
 import { TEXT_CLASS } from '@alloy-works/editor';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { byName } from '../metadata/people.js';
+import { everyPage } from '../paging.js';
 
 import { anchorFromSelection, type Placed } from '../review/anchoring.js';
 import {
@@ -136,16 +138,40 @@ export function BaselinePage({
   document,
   baseline,
   node,
+  principalId,
 }: {
   client: Client;
   document: string;
   baseline: string;
   node: string | null;
+  /** Who is reading, for what is theirs in its threads (COL-031). */
+  principalId?: string | undefined;
 }) {
+  const onThreads = useCallback(
+    (_all: readonly ThreadSummary[], marked: readonly ThreadSummary[]) => setThreads(marked),
+    [],
+  );
   const [shown, setShown] = useState<Shown | 'missing' | 'failed' | null>(null);
   // Review over the pinned text (the RR plan, RR-G; COL-031): threads on what the baseline pins.
   const [reviewing, setReviewing] = useState(false);
   const [threads, setThreads] = useState<readonly ThreadSummary[]>([]);
+  const [people, setPeople] = useState<readonly { id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!reviewing) return undefined;
+    let current = true;
+    everyPage((cursor) =>
+      client.GET('/v1/people', {
+        params: { query: { limit: '100', ...(cursor === undefined ? {} : { cursor }) } },
+      }),
+    )
+      .then((all) => {
+        if (current && 'items' in all) setPeople(byName(all.items));
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [client, reviewing]);
   const [proposed, setProposed] = useState<{ node: string; anchor: ThreadAnchor } | null>(null);
   const textColumn = useRef<HTMLDivElement>(null);
   const textsNow = typeof shown === 'object' && shown !== null ? shown.texts : null;
@@ -343,7 +369,8 @@ export function BaselinePage({
               document={document}
               baseline={baseline}
               targets={targets}
-              people={[]}
+              people={people}
+              principalId={principalId}
               mayAnswer={(on) =>
                 on.kind === 'document'
                   ? shown.mayComment
@@ -356,7 +383,7 @@ export function BaselinePage({
                   thread.anchor.kind === 'node' ? thread.anchor.node : thread.places?.[0]?.node;
                 return at === undefined ? say('document.this-document') : placeOf(at);
               }}
-              onThreads={setThreads}
+              onThreads={onThreads}
             />
           </section>
         )}

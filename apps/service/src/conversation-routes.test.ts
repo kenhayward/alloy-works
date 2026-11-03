@@ -540,7 +540,7 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
     }
   });
 
-  it('GEN-009 starts no thread from a proposed comment until it is accepted, then as the person, on the words given', async () => {
+  it('GEN-009 GEN-063 starts no thread from a proposed comment until it is accepted, then as the person, marked as drafted', async () => {
     const part = await h.component(h.general, 'Weir history');
     await h.place(part, { type: 'text', value: 'The weir was built in 1912.', marks: [] });
     const held = (await h.call('grace', 'GET', `/v1/components/${part.id}`)).json<{
@@ -588,6 +588,14 @@ describe('conversations through the service (the G5 plan, G5-A to G5-C)', () => 
       const after = await threads();
       expect(after).toHaveLength(1);
       expect(after[0]!.anchor).toMatchObject({ kind: 'span', quote: 'in 1912' });
+      expect(after[0]).toMatchObject({ drafted: true });
+      const thread = (
+        await h.call('grace', 'GET', `/v1/threads/${(after[0] as unknown as { id: string }).id}`)
+      ).json<{
+        comments: { author: { id: string }; drafted?: { model: string | null } }[];
+      }>();
+      expect(thread.comments[0]!.author.id).toBe(h.ids.grace);
+      expect(thread.comments[0]!.drafted).toBeDefined();
       const head = (await h.call('grace', 'GET', `/v1/components/${part.id}`)).json<{
         version: { id: string };
       }>();
