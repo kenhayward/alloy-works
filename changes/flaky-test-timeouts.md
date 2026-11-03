@@ -19,3 +19,6 @@
   image had taken its size, so the image loading moved the text a few pixels between the two reads.
   The document now waits for every image to be sized before anything is measured, as opening a
   component already did. Fixes #639 and #640.
+- The style measurement test polled for the document page to render with the default five seconds; a
+  loaded runner can take longer for the first render, and the poll timed out before the page drew.
+  The polls now allow 30s, as the wait beside them already did. Fixes #813.
