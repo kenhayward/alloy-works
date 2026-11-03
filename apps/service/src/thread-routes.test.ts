@@ -381,7 +381,7 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
     );
   });
 
-  it('COL-018 COL-071 lists each thread with who spoke, who is named and every comment\'s latest words', async () => {
+  it("COL-018 COL-071 lists each thread with who spoke, who is named and every comment's latest words", async () => {
     const version = await component([para('p1', 'Set the tray, then wait.')]);
     const thread = (await start(version, SPAN, 'grace')).json<ThreadView>();
     const replied = await call('POST', `/v1/threads/${thread.id}/comments`, 'ada', {
@@ -399,13 +399,12 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
     expect(summary!.drafted).toBe(false);
   });
 
-  it('COL-070 calls a thread new for a comment by somebody else after the reader\'s mark, never for their own', async () => {
+  it("COL-070 calls a thread new for a comment by somebody else after the reader's mark, never for their own", async () => {
     const version = await component([para('p1', 'Set the tray, then wait.')]);
     const thread = (await start(version, SPAN, 'grace')).json<ThreadView>();
     const isNew = async (who: string) =>
-      (
-        await call('GET', `/v1/components/${version.artifactId}/threads`, who)
-      ).json<ThreadList>().threads[0]!.new;
+      (await call('GET', `/v1/components/${version.artifactId}/threads`, who)).json<ThreadList>()
+        .threads[0]!.new;
     expect(await isNew('grace')).toBe(false);
     expect(await isNew('ada')).toBe(true);
     const marked = await call('POST', '/v1/threads/read', 'ada', { threads: [thread.id] });

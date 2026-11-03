@@ -48,7 +48,12 @@ export function useGoToKeys(): void {
       waiting = null;
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+      // A key something else took ends the wait too: `G`, then a key that went elsewhere, goes nowhere.
+      if (event.defaultPrevented) {
+        stop();
+        return;
+      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       const from = event.target instanceof Element ? event.target : null;
       if (from?.closest(TAKEN) || document.querySelector('[aria-modal="true"]') !== null) {
         stop();

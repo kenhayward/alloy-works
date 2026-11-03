@@ -143,6 +143,18 @@
 [data-theme='light'],
 .aw-canvas {
   --hover: #eef1f4;
+  --avatar-1-bg: #d7ecf2;
+  --avatar-1-text: #165a72;
+  --avatar-2-bg: #ebe5fb;
+  --avatar-2-text: #5b3fb8;
+  --avatar-3-bg: #fbe9d6;
+  --avatar-3-text: #9a4610;
+  --avatar-4-bg: #dcf1e4;
+  --avatar-4-text: #1d7148;
+  --avatar-5-bg: #fbe1df;
+  --avatar-5-text: #b42318;
+  --avatar-6-bg: #e3e8ee;
+  --avatar-6-text: #34424f;
   --divider-strong: #b4bdc7;
   --tip-bg: #15202b;
   --tip-text: #ffffff;
@@ -190,6 +202,18 @@
 /* The Dark theme. Only the desk darkens around a page; the page stays paper. */
 [data-theme='dark'] {
   --hover: #232f3a;
+  --avatar-1-bg: #17414d;
+  --avatar-1-text: #8fd0e0;
+  --avatar-2-bg: #2f2752;
+  --avatar-2-text: #c0adff;
+  --avatar-3-bg: #43301a;
+  --avatar-3-text: #f2a764;
+  --avatar-4-bg: #163a28;
+  --avatar-4-text: #5ccf93;
+  --avatar-5-bg: #45201d;
+  --avatar-5-text: #ff8a80;
+  --avatar-6-bg: #2a3644;
+  --avatar-6-text: #c9d2da;
   --divider-strong: #4a5a69;
   --tip-bg: #e5eaef;
   --tip-text: #0d1217;

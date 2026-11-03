@@ -56,6 +56,8 @@ describe('the command registry', () => {
       undo: 'Mod-z',
       redo: 'Mod-y',
       search: 'Mod-k',
+      'thread-next': 'j',
+      'thread-previous': 'k',
       assistant: 'Mod-j',
       'zoom-in': 'Mod-Alt-=',
       'zoom-out': 'Mod-Alt--',

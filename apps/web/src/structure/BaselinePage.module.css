@@ -56,7 +56,11 @@
 }
 
 .threads {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  /* It has no dock to stand in: its list scrolls, and a thread's reply stays in reach. */
+  max-height: 85vh;
 }
 
 .links {

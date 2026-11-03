@@ -124,6 +124,7 @@ describe('what each route checks', () => {
         'listSessions',
         'listTokens',
         'markNotificationRead',
+        'markThreadsRead',
         'openStream',
         'requestSample',
         'revokePrincipalToken',

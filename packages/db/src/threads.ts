@@ -219,13 +219,7 @@ export async function startThread(
     thread: thread.id,
     anchor: anchor.data.kind,
   });
-  const comment = await insertComment(
-    trx,
-    thread.id,
-    input.author,
-    checked.parts,
-    input.draftedBy,
-  );
+  const comment = await insertComment(trx, thread.id, input.author, checked.parts, input.draftedBy);
   await indexThreadStarted(trx, thread.id, { comment, parts: checked.parts });
   const mentioned = mentionsIn(checked.parts);
   const { untold } = await tell(trx, {

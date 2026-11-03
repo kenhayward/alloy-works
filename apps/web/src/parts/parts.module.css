@@ -72,6 +72,12 @@
   font-weight: 600;
 }
 
+.menuCount {
+  float: inline-end;
+  margin-inline-start: var(--space-12);
+  color: var(--muted);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

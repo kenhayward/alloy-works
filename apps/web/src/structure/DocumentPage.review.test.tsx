@@ -81,6 +81,11 @@ async function openAs(may: {
     comments: 1,
     said: [{ text: 'Which tray?' }],
     lastAt: '2026-10-12T10:00:00.000Z',
+    participants: [{ id: ADA, name: 'Ada' }],
+    mentioned: [],
+    words: 'Which tray?',
+    drafted: false,
+    new: false,
     orphaned: false,
     places: [{ node: REFERENCE, orphaned: false }],
   };
@@ -117,6 +122,12 @@ async function openAs(may: {
         startedAt: '2026-10-12T10:00:00.000Z',
         resolvedAt: null,
         comments: 1,
+        said: [{ text: 'Which box?' }],
+        participants: [{ id: ADA, name: 'Ada' }],
+        mentioned: [],
+        words: '',
+        drafted: false,
+        new: false,
         lastAt: '2026-10-12T10:00:00.000Z',
         orphaned: false,
         places: [{ node: REFERENCE, orphaned: false }],
@@ -282,6 +293,7 @@ describe('Review (collaboration.md, "Review mode")', () => {
       expect(text.querySelector('mark[data-thread]')).toHaveTextContent('the printer'),
     );
     // And a selection in text already marked holds: the text is not drawn again under it.
+    await userEvent.click(within(panel).getByRole('button', { name: 'All threads' }));
     const marked = text.querySelector('mark[data-thread]')!.previousSibling!;
     const again = document.createRange();
     again.setStart(marked, 0);
@@ -341,7 +353,7 @@ describe('Review (collaboration.md, "Review mode")', () => {
     });
     await userEvent.click(within(modeOf()).getByRole('radio', { name: 'Authoring' }));
     await userEvent.click(panelsTab('Threads'));
-    await within(screen.getByRole('tabpanel', { name: 'Threads' })).findByText(/1 comment/);
+    await within(screen.getByRole('tabpanel', { name: 'Threads' })).findByText('No threads here.');
     expect(within(text).queryByRole('button', { name: /Open the comment/ })).toBeNull();
   });
 

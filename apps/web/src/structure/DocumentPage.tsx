@@ -943,6 +943,17 @@ export function DocumentPage({
   const [suggestionsRead, setSuggestionsRead] = useState(0);
   // In Review: the threads the panel lists, and what the reader's selection offers a thread on.
   const [threadList, setThreadList] = useState<readonly ThreadSummary[]>([]);
+  // Those Show's state leaves: what the text marks. A component's glyph stands for any open comment.
+  const [threadsMarked, setThreadsMarked] = useState<ReadonlySet<string>>(new Set());
+  const onThreads = useCallback(
+    (all: readonly ThreadSummary[], marked: readonly ThreadSummary[]) => {
+      setThreadList(all);
+      setThreadsMarked(new Set(marked.map((each) => each.id)));
+    },
+    [],
+  );
+  // Counted up for what asks to start a thread: the panel opens its form and takes the keys.
+  const [threadStarted, setThreadStarted] = useState(0);
   // Counted up as the assistant's comment is accepted: the threads panel reads its list again.
   const [threadsRead, setThreadsRead] = useState(0);
   // The thread a comment's glyph asked for, each click below zero so no address's arrival is taken for
@@ -1613,7 +1624,8 @@ export function DocumentPage({
     ([...opened.fields.document, ...opened.fields.section].some(
       (each) => each.dataType === 'user',
     ) ||
-      chosenMode === 'review');
+      chosenMode === 'review' ||
+      chosenMode === 'authoring');
   useEffect(() => {
     if (!wantsPeople) return;
     let current = true;
@@ -2095,16 +2107,6 @@ export function DocumentPage({
   };
   // What a selection offers takes the panels while it stands, unless they are in the middle of the
   // Assistant, as the toolbar's second line once came at once; it hands them back as it was (ADR-0075).
-  const composing = useRef(false);
-  useEffect(() => {
-    if (!composing.current) return;
-    const words = window.document
-      .getElementById(dockIds('threads').panel)
-      ?.querySelector('textarea');
-    if (!words) return;
-    composing.current = false;
-    words.focus();
-  });
   const beforeSelection = useRef<DockPanel | null>(null);
   useEffect(() => {
     if (selectionHeld) {
@@ -2421,7 +2423,7 @@ export function DocumentPage({
           : (thread.places ?? []).filter((each) => !each.orphaned).map((each) => each.node);
       for (const node of nodes) {
         if (thread.on.kind === 'component' && thread.resolvedAt === null) {
-          const said = (thread.said ?? [])
+          const said = thread.said
             .map((part) =>
               'text' in part
                 ? part.text
@@ -2433,6 +2435,7 @@ export function DocumentPage({
             { thread: thread.id, said },
           ]);
         }
+        if (!threadsMarked.has(thread.id)) continue;
         if (thread.anchor.kind === 'span' || thread.anchor.kind === 'cell') {
           threadMarks.set(node, [
             ...(threadMarks.get(node) ?? []),
@@ -2493,7 +2496,7 @@ export function DocumentPage({
     chooseMode('review');
     setDock('threads');
     dockPane.setCollapsed(false);
-    composing.current = true;
+    setThreadStarted((count) => count + 1);
   };
   const assistantOffered = dockTabs.some((each) => each.key === 'assistant');
   const toggleAssistant = () => {
@@ -3067,8 +3070,8 @@ export function DocumentPage({
                     aria-label={say('document.panels-beside-the-text')}
                     hidden={dockPane.collapsed}
                   >
-                    {/* The Assistant names itself in its own toolbar line (issue #864). */}
-                    {shownDock !== 'assistant' && (
+                    {/* The Assistant names itself in its own toolbar line (issue #864); the Threads panel in its header. */}
+                    {shownDock !== 'assistant' && shownDock !== 'threads' && (
                       <h2 className={styles['dockHeading']}>
                         {dockTabs.find((each) => each.key === shownDock)?.label}
                       </h2>
@@ -3249,6 +3252,7 @@ export function DocumentPage({
                         {threadsShown && (
                           <div
                             id={dockIds('threads').panel}
+                            className={styles['threadsTab']}
                             role="tabpanel"
                             aria-labelledby={dockIds('threads').tab}
                             hidden={shownDock !== 'threads'}
@@ -3279,7 +3283,8 @@ export function DocumentPage({
                                   ? say('document.a-component-no-longer-in')
                                   : say('document.this-document');
                               }}
-                              onThreads={setThreadList}
+                              onThreads={onThreads}
+                              startWhen={threadStarted}
                               readAgain={threadsRead}
                               opening={
                                 threadOpened ??
@@ -3449,7 +3454,13 @@ export function DocumentPage({
                   <PanelRail
                     label={say('document.document-panels')}
                     listLabel={say('document.document-panels-2')}
-                    tabs={dockTabs}
+                    tabs={dockTabs.map((each) => {
+                      if (each.key !== 'threads') return each;
+                      const unread = threadList.filter(
+                        (thread) => thread.new && thread.resolvedAt === null,
+                      ).length;
+                      return unread === 0 ? each : { ...each, count: unread };
+                    })}
                     chosen={shownDock}
                     onChoose={(key) => setDock(key as DockPanel)}
                     ids={dockIds}
