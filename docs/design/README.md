@@ -57,6 +57,7 @@ understand the storage layer, rather than something to be thrown away.
 | [vocabularies.md](vocabularies.md)                     | Vocabularies as environment-wide definitions, drawn on by fields and condition axes; values labelled per language, deprecated and retired, never dropped; SKOS; from a source |
 | [identity.md](identity.md)                             | More than one identity provider configured in Administration, session lifetimes, re-authentication, SCIM, the high-risk permissions                                           |
 | [moving.md](moving.md)                                 | Moving an artifact between spaces in a tenant: who may, what comes along, what stops working                                                                                  |
+| [export-and-import.md](export-and-import.md)           | A tenant, its configuration or a part exported and readable without the product, and restored: audit only into an empty tenant                                                |
 
 ## Why these are not one per requirement area
 

@@ -18220,6 +18220,83 @@
       ]
     },
     {
+      "document": "export-and-import.md",
+      "owns": [
+        {
+          "id": "IMP-018",
+          "howItIsMet": "Format 2 carries every table a census calls carried, audit, people and grants among them (EI-A, EI-B)"
+        },
+        {
+          "id": "IMP-019",
+          "howItIsMet": "`schema.json` in each archive and the format guide, `docs/guides/export-format.md`; no product code is needed to read one"
+        },
+        {
+          "id": "IMP-020",
+          "howItIsMet": "The census's left-out and rebuilt tables, each with its reason, are written into the manifest; a missing object fails the export"
+        },
+        {
+          "id": "IMP-021",
+          "howItIsMet": "A test exports a fixture tenant, reads it back and compares"
+        },
+        {
+          "id": "IMP-022",
+          "howItIsMet": "Administration's Export asks for each scope, with nobody else involved"
+        },
+        {
+          "id": "IMP-023",
+          "howItIsMet": "`export_environment`, and `export_audit` as well for audit; `export.produced` (EI-J)"
+        },
+        {
+          "id": "IMP-024",
+          "howItIsMet": "The scopes `space`, `document` and `publication`"
+        },
+        {
+          "id": "IMP-038",
+          "howItIsMet": "A partial archive's `references.jsonl` lists each thing outside it by identity, and by value or by reference (EI-E)"
+        },
+        {
+          "id": "IMP-039",
+          "howItIsMet": "`POST /v1/imports`, no assisted review (EI-C)"
+        },
+        {
+          "id": "IMP-040",
+          "howItIsMet": "`followReferences` on the request, recorded in the manifest"
+        },
+        {
+          "id": "IMP-043",
+          "howItIsMet": "The read-back test's reader imports neither `@alloy-works/db` nor `@alloy-works/domain`"
+        },
+        {
+          "id": "IMP-044",
+          "howItIsMet": "An archive and an upload are kept in the tenant's store, seven days, and each download is an event"
+        },
+        {
+          "id": "IMP-046",
+          "howItIsMet": "The preview needs an answer for every issuer, and lists groups, externals and service identities; an actor is never reassigned (EI-N)"
+        },
+        {
+          "id": "IMP-048",
+          "howItIsMet": "A job, `import_environment` or `administer` at the target, the audit event `import.restored`, no token (EI-J, EI-K)"
+        },
+        {
+          "id": "ADM-005",
+          "howItIsMet": "The scope `configuration`, imported as any other"
+        },
+        {
+          "id": "ADM-027",
+          "howItIsMet": "`secrets.jsonl` holds references; an import with one unbound is refused, naming each (EI-G)"
+        },
+        {
+          "id": "AST-030",
+          "howItIsMet": "An asset's rows and rights travel with its bytes; each object is checked against its hash on the way in"
+        },
+        {
+          "id": "REL-007",
+          "howItIsMet": "Relationship types are definitions, carried and imported with the rest"
+        }
+      ]
+    },
+    {
       "document": "extensions.md",
       "owns": [
         {
