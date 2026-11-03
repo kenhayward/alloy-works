@@ -1,6 +1,6 @@
 # 0052 - Table formatting is a tab beside the text
 
-- **Status:** Accepted
+- **Status:** Accepted; decision 2 amended by [ADR-0079](0079-a-tables-toolbar-floats-and-its-tab-is-a-map.md)
 - **Date:** 2026-10-10
 
 ## Context

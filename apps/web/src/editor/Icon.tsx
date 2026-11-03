@@ -203,6 +203,19 @@ const ADMIN: Record<string, readonly string[]> = {
   Notes: NOTE,
   Source: ['M6 4h9l4 4v12H6z', 'M14.5 4v4.5H19M9 13h7M9 16.5h5'],
   Wide: ['M3 12h18M6.5 8.5 3 12l3.5 3.5M17.5 8.5 21 12l-3.5 3.5'],
+  // A table's grid and what is done to it (ADR-0079, the handoff's own shapes).
+  'Row above': ['M4 13h16v8H4zM4 17h16', 'M12 2v8M8 6h8'],
+  'Row below': ['M4 3h16v8H4zM4 7h16', 'M12 14v8M8 18h8'],
+  'Column before': ['M13 4h8v16h-8zM17 4v16', 'M2 12h8M6 8v8'],
+  'Column after': ['M3 4h8v16H3zM7 4v16', 'M14 12h8M18 8v8'],
+  'Delete row': ['M4 4h16v7H4z', 'M9 15l6 6M15 15l-6 6'],
+  'Delete column': ['M4 4h7v16H4z', 'M15 9l6 6M21 9l-6 6'],
+  'Merge cells': ['M3 5h18v14H3zM12 5v4M12 15v4', 'M5 12h5M8 10l2 2-2 2M19 12h-5M16 10l-2 2 2 2'],
+  'Split cell': ['M3 5h18v14H3zM12 5v14', 'M5 12h4M7 10l-2 2 2 2M19 12h-4M17 10l2 2-2 2'],
+  'Go to the table': ['M12 2v4M12 18v4M2 12h4M18 12h4', 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8'],
+  'Wide style': ['M6 3h12v18H6zM9 8h6M9 12h6M9 16h4'],
+  'Wide scale': ['M6 3h12v18H6z', 'M9 9 6 6M15 9l3-3M9 15l-3 3M15 15l3 3'],
+  'Wide landscape': ['M3 7h18v12H3z', 'M8 3.5a6 6 0 0 1 7.5.5M16 1.5v3h-3'],
   Wrap: ['M4 6h16M4 12h13a3 3 0 0 1 0 6h-4', 'm15 16-2 2 2 2', 'M4 18h5'],
   Format: ['M4 7h10M18 7h2M4 17h4M12 17h8', ring(16, 7, 2), ring(10, 17, 2)],
   'Move up': ['m6 15 6-6 6 6'],
@@ -278,6 +291,9 @@ const TRIANGLE = 'M1.5 2.5h7L5 7.5z';
  * triangle. A letter, a clock or a tick reads the same either way.
  */
 const MIRRORED = new Set([
+  'Column before',
+  'Column after',
+  'Delete column',
   'Back',
   'Undo',
   'Previous page',

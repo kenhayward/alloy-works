@@ -1,19 +1,418 @@
-/* The table panel: its two counts and its buttons in one wrapping row, like the list panel beside it. */
+/* The Table tab as a map of the table (ADR-0079), and what it shares with the toolbar's popover. */
 
 .panel {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-8) var(--space-8);
+  flex-direction: column;
+  gap: var(--space-16);
   font-size: var(--size-13);
 }
 
-.count {
-  display: inline-flex;
+.panel:focus {
+  outline: none;
+}
+
+.panel h3 {
+  margin: 0;
+  font-size: var(--size-16);
+  font-weight: 600;
+}
+
+.panel h4 {
+  margin: 0 0 var(--space-8);
+  color: var(--muted);
+  font-size: var(--size-12);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.head {
+  display: flex;
   align-items: center;
   gap: var(--space-8);
 }
 
-.count input {
-  width: 4em;
+.goTo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-inline-start: auto;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.goTo:hover {
+  background: var(--sunken);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.caption {
+  margin: 0;
+  font-size: var(--size-14);
+  font-weight: 500;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-12);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+/* The map: 24px rows, the smallest a pointer's target may be (WCAG 2.5.8). */
+.mapBox {
+  padding: var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.map {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.mapGrid {
+  display: grid;
+  grid-template-columns: repeat(var(--map-columns), minmax(0, 1fr));
+  grid-auto-rows: 24px;
+  gap: 2px;
+}
+
+.mapGrid:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A row is ARIA's alone: its cells stand on the grid, so a span can reach into the rows below. */
+.mapRow {
+  display: contents;
+}
+
+.mapCell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-inline: var(--space-4);
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: var(--surface);
+  font-size: var(--size-12);
+}
+
+[role='gridcell'].mapCell {
+  cursor: pointer;
+}
+
+.mapCell[data-header='true'] {
+  background: var(--strong-border);
+  font-weight: 600;
+}
+
+.mapCell[data-current='true'] {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+
+.mapWords {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapBar {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--strong-border);
+}
+
+.mapMore {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.where {
+  margin: var(--space-8) 0 0;
+}
+
+.hint {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.ops {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+}
+
+.opRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+.op,
+.cellOp {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-8);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.op {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 54px;
+  padding: 0;
+  font-size: var(--size-12);
+}
+
+.op[data-danger='true'] {
+  color: var(--danger);
+}
+
+.cellOps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+}
+
+.cellOp {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  text-align: start;
+}
+
+.cellOp small {
+  display: block;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.op:hover,
+.cellOp:hover {
+  background: var(--sunken);
+}
+
+.op[aria-disabled='true'],
+.cellOp[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+/* The settings, in the tab and the toolbar's popover. */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.settings select {
+  width: 100%;
+}
+
+.counters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.counterField {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+}
+
+.counterField button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.counterField button[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.counterField input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--mono);
+  text-align: center;
+  appearance: textfield;
+}
+
+.counterField input::-webkit-inner-spin-button {
+  appearance: none;
+}
+
+.wide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.wideChoices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--strong-border);
+  border-radius: var(--radius-8);
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+.wideChoices label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 44px;
+  color: var(--muted);
+  font-size: var(--size-12);
+  cursor: pointer;
+}
+
+.wideChoices label[data-chosen='true'] {
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+/* The radio stays a radio, for the keyboard and a screen reader, under the drawn choice. */
+.wideChoices input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.wideChoices label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  cursor: pointer;
+}
+
+.switchWords small {
+  display: block;
+  color: var(--muted);
+  font-size: var(--size-12);
+}
+
+.switchRow input {
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--strong-border);
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.switchRow input::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--on-accent);
+  transition: translate 0.1s;
+}
+
+.switchRow input:checked {
+  background: var(--accent);
+}
+
+.switchRow input:checked::before {
+  translate: 14px;
+}
+
+:global(:root[dir='rtl']) .switchRow input:checked::before {
+  translate: -14px;
+}
+
+.switchRow input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.switchRow input[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.deleteTable {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  height: 36px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  cursor: pointer;
+}
+
+.deleteTable[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: default;
 }

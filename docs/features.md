@@ -520,14 +520,21 @@ The canonical, full-prose inventory of what Alloy Works does. The Features table
   and three rows after the paragraph you are in, its first row a header row, with a caption line above
   it that says **Caption** until you type one - a caption is formatted like any other text. A cell
   holds paragraphs and lists. `Tab` moves to the next cell and `Shift-Tab` to the one before, and
-  from the last cell or the first the focus moves on out of the table. While the cursor is in a table
-  a **Table** panel offers how many **Header rows** and **Header columns** it has, and **Row above**,
-  **Row below**, **Column before**, **Column after**, **Delete row**, **Delete column**, **Merge cells**
-  (over cells you have selected by dragging), **Split cell**, **Delete table**, and **Add note** and
-  **Remove note** for a note on the table as a whole, written beneath it, and a **Numbered** box:
-  untick it for a table that should take no number, such as one used only for layout, and the next
-  table takes the number it would have had. It keeps its caption, which a table still needs to be
-  published. A button that would do nothing says it is unavailable. `F6` reaches the panel like the other regions. A table pasted
+  from the last cell or the first the focus moves on out of the table. While you edit with the cursor
+  in a plain table, a **floating toolbar** stands above it without moving the text, and stays in view
+  as a long table scrolls: **Row above**, **Row below**, **Column before**, **Column after**, **Delete
+  row**, **Delete column**, **Merge cells** (over cells you have selected) and **Split cell**. A button
+  that would do nothing says why in its tooltip. The table's name on it - its number in a document,
+  **Table** otherwise - opens the table's settings. `F6` reaches the toolbar and `Esc` goes back to the
+  cell. Entering a table leaves the right-hand panel on the tab you have open, Threads say; a dot on the
+  **Table** tab says the cursor is in a table, and the Selection tab leaves Threads alone too. The tab
+  is a **map of the table**: its caption and details, a grid of its cells where choosing one moves the
+  cursor there and Shift and choosing selects cells, as do the arrow keys and Shift, then the row and
+  column you are in, merging and splitting. Past nine rows the map shows those around you. The tab and
+  the toolbar's settings both set **Header rows** and **Header columns**, **Table style**, **Wide**,
+  **Delete table**, a **note beneath the table** as a whole, and **Numbered**: turn it off for a table
+  that should take no number, such as one used only for layout, and the next table takes the number it
+  would have had. It keeps its caption, which a table still needs to be published. A table pasted
   from a web page, Word, Google Docs or Markdown arrives as a table, with its caption, header rows and
   columns and merged cells.
 
