@@ -722,6 +722,32 @@ export async function editOutline(
     readonly operation: OutlineOperation;
   },
 ): Promise<OutlineAnswer> {
+  return editOutlineAll(trx, { ...input, operations: [input.operation] });
+}
+
+interface Folded {
+  readonly answer: 'folded';
+  readonly opened: StoredVersion;
+  readonly before: OutlineDocument;
+  readonly after: OutlineDocument;
+  readonly waivers: readonly { readonly keys: readonly string[]; readonly reason: string }[];
+}
+
+/**
+ * **Operations applied in turn over one outline, all or none** (the AT plan, ATe), each held to what
+ * `editOutline` has always held one to, on what the one before it left. Nothing is recorded here.
+ */
+async function foldOperations(
+  trx: TenantTransaction,
+  input: {
+    readonly artifactId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly operations: readonly OutlineOperation[];
+  },
+): Promise<
+  Folded | Exclude<OutlineAnswer, RecordAnswer> | { readonly answer: 'artifact.missing' }
+> {
   const opened = await readVersion(trx, input.openedFrom);
   if (!opened || opened.artifactId !== input.artifactId || opened.kind !== 'document') {
     return { answer: 'artifact.missing' };
@@ -735,59 +761,103 @@ export async function editOutline(
       `The document ${input.artifactId} at ${opened.id} does not read: ${read.failure}`,
     );
   }
-  // Checked before the operation is applied, in this transaction, so what is recorded points only
-  // at what the author may read: nothing is stored that a later rule would have to refuse.
-  const target = targetOf(read.outline, input.operation);
-  if (target && (await mayReference(trx, input.author, target)) !== 'ok') {
-    return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
-  }
-  // Overrides name a paragraph of the reference's component at a version of it the author may read
-  // (REU-012; the R4 plan, R4-B).
-  if (input.operation.operation === 'set' && (input.operation.overrides?.length ?? 0) > 0) {
-    let node: OutlineNode | undefined;
-    walkOutline(read.outline.nodes, (each) => {
-      if (each.id === (input.operation as { node: string }).node) node = each;
-    });
-    if (node?.type === 'reference') {
-      const component = node.component;
-      const overrides = input.operation.overrides!;
-      for (const version of new Set(overrides.map((each) => each.against))) {
-        const answer = await mayReference(trx, input.author, {
-          component: node.component,
-          version,
-        });
-        if (answer !== 'ok') return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
-      }
-      const originals = await overrideOriginals(
-        trx,
-        overrides.map((each) => ({ component, version: each.against })),
-      );
-      const refused = overridesRefusal(overrides, originals);
-      if (refused) return { answer: 'outline.invalid', reason: refused };
-    }
-  }
   // Held to the document's template (TPL-015, STR-060): its recorded version's changes always, and
   // its section-level fields where a section's values are written, which needs it to resolve now.
   const rules = await documentRules(trx, input.artifactId);
-  let held: OutlineRules = {};
-  if (rules.bound) {
-    const writesValues =
-      input.operation.operation === 'set' && input.operation.values !== undefined;
-    if (!rules.resolved.ok && writesValues) {
-      return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
+  let running = read.outline;
+  const waivers: { keys: readonly string[]; reason: string }[] = [];
+  for (const operation of input.operations) {
+    // Checked before the operation is applied, in this transaction, so what is recorded points only
+    // at what the author may read: nothing is stored that a later rule would have to refuse.
+    const target = targetOf(running, operation);
+    if (target && (await mayReference(trx, input.author, target)) !== 'ok') {
+      return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
     }
-    held = rules.resolved.ok
-      ? { changes: rules.changes, sectionFields: rules.resolved.section }
-      : { changes: rules.changes };
-    // A section it requires goes only with a reason (TPL-029; WF6-B).
-    held = { ...held, required: requiredKeys(rules.definition) };
+    // Overrides name a paragraph of the reference's component at a version of it the author may read
+    // (REU-012; the R4 plan, R4-B).
+    if (operation.operation === 'set' && (operation.overrides?.length ?? 0) > 0) {
+      let node: OutlineNode | undefined;
+      walkOutline(running.nodes, (each) => {
+        if (each.id === operation.node) node = each;
+      });
+      if (node?.type === 'reference') {
+        const component = node.component;
+        const overrides = operation.overrides!;
+        for (const version of new Set(overrides.map((each) => each.against))) {
+          const answer = await mayReference(trx, input.author, {
+            component: node.component,
+            version,
+          });
+          if (answer !== 'ok') return { answer: 'outline.invalid', reason: REFERENCE_REFUSED };
+        }
+        const originals = await overrideOriginals(
+          trx,
+          overrides.map((each) => ({ component, version: each.against })),
+        );
+        const refused = overridesRefusal(overrides, originals);
+        if (refused) return { answer: 'outline.invalid', reason: refused };
+      }
+    }
+    let held: OutlineRules = {};
+    if (rules.bound) {
+      const writesValues = operation.operation === 'set' && operation.values !== undefined;
+      if (!rules.resolved.ok && writesValues) {
+        return { answer: 'template.unresolved', unresolved: rules.resolved.unresolved };
+      }
+      held = rules.resolved.ok
+        ? { changes: rules.changes, sectionFields: rules.resolved.section }
+        : { changes: rules.changes };
+      // A section it requires goes only with a reason (TPL-029; WF6-B).
+      held = { ...held, required: requiredKeys(rules.definition) };
+    }
+    const applied = applyOutlineOperation(running, operation, newNodeIdentifier, held);
+    if (!applied.applied) {
+      return applied.failures
+        ? { answer: 'values.invalid', failures: applied.failures }
+        : { answer: 'outline.invalid', reason: applied.reason };
+    }
+    // The reason a required section was removed for, kept on the document (TPL-029; WF6-B).
+    if (operation.operation === 'remove' && held.required !== undefined) {
+      waivers.push({
+        keys: requiredRemoved(running, applied.outline, held.required),
+        reason: operation.reason ?? '',
+      });
+    }
+    running = applied.outline;
   }
-  const applied = applyOutlineOperation(read.outline, input.operation, newNodeIdentifier, held);
-  if (!applied.applied) {
-    return applied.failures
-      ? { answer: 'values.invalid', failures: applied.failures }
-      : { answer: 'outline.invalid', reason: applied.reason };
-  }
+  return { answer: 'folded', opened, before: read.outline, after: running, waivers };
+}
+
+/** Whether operations would apply as they stand, recording nothing: undefined, or what refuses them. */
+export async function outlineOperationsRefused(
+  trx: TenantTransaction,
+  input: {
+    readonly artifactId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly operations: readonly OutlineOperation[];
+  },
+): Promise<string | undefined> {
+  const folded = await foldOperations(trx, input);
+  if (folded.answer === 'folded') return undefined;
+  return folded.answer === 'outline.invalid'
+    ? folded.reason
+    : 'That cannot be done to the outline.';
+}
+
+/** Operations made one version of a document, all or none: `editOutline`'s, for any number. */
+export async function editOutlineAll(
+  trx: TenantTransaction,
+  input: {
+    readonly artifactId: string;
+    readonly openedFrom: string;
+    readonly author: string;
+    readonly operations: readonly OutlineOperation[];
+  },
+): Promise<OutlineAnswer> {
+  const folded = await foldOperations(trx, input);
+  if (folded.answer !== 'folded') return folded;
+  const { opened, before, after, waivers } = folded;
   const recorded = await recordVersion(trx, {
     artifactId: input.artifactId,
     openedFrom: input.openedFrom,
@@ -796,21 +866,15 @@ export async function editOutline(
     // they stand (TP1-E).
     substance: {
       kind: 'document',
-      content: applied.outline,
+      content: after,
       values: opened.values,
       parameters: opened.parameters,
     },
   });
   if (recorded.answer === 'recorded') {
-    await recordRepoints(trx, recorded.version, read.outline, applied.outline);
-    // The reason a required section was removed for, kept on the document (TPL-029; WF6-B).
-    if (input.operation.operation === 'remove' && held.required !== undefined) {
-      await recordWaivers(trx, {
-        version: recorded.version,
-        keys: requiredRemoved(read.outline, applied.outline, held.required),
-        reason: input.operation.reason ?? '',
-        by: input.author,
-      });
+    await recordRepoints(trx, recorded.version, before, after);
+    for (const { keys, reason } of waivers) {
+      await recordWaivers(trx, { version: recorded.version, keys, reason, by: input.author });
     }
   }
   return recorded;

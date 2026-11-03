@@ -14028,7 +14028,9 @@ export interface operations {
                             suggestion: string | null;
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
-                            /** @description A proposed edit, accepted: the version of the component it made */
+                            /** @description A new component with a place, accepted: whether it stands there; it is made either way */
+                            placed?: boolean;
+                            /** @description A proposed edit, accepted: the version of the component it made; a change of the outline, of the document */
                             version?: string;
                             /** @description A proposal to comment, accepted: the thread started on the component */
                             thread?: string;
@@ -14116,7 +14118,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `proposal_outline`: a change of the outline kept, likewise; `outline_moved`: the document has a later version than the one it was proposed against; `outline_refused`: the outline cannot now take it; `document_held`: the document is under a legal hold; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -14198,7 +14200,9 @@ export interface operations {
                             suggestion: string | null;
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
-                            /** @description A proposed edit, accepted: the version of the component it made */
+                            /** @description A new component with a place, accepted: whether it stands there; it is made either way */
+                            placed?: boolean;
+                            /** @description A proposed edit, accepted: the version of the component it made; a change of the outline, of the document */
                             version?: string;
                             /** @description A proposal to comment, accepted: the thread started on the component */
                             thread?: string;
@@ -14286,7 +14290,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `proposal_outline`: a change of the outline kept, likewise; `outline_moved`: the document has a later version than the one it was proposed against; `outline_refused`: the outline cannot now take it; `document_held`: the document is under a legal hold; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
@@ -14368,7 +14372,9 @@ export interface operations {
                             suggestion: string | null;
                             /** @description A proposal to make a component, accepted: the component made, at 0.1 */
                             component?: string;
-                            /** @description A proposed edit, accepted: the version of the component it made */
+                            /** @description A new component with a place, accepted: whether it stands there; it is made either way */
+                            placed?: boolean;
+                            /** @description A proposed edit, accepted: the version of the component it made; a change of the outline, of the document */
                             version?: string;
                             /** @description A proposal to comment, accepted: the thread started on the component */
                             thread?: string;
@@ -14456,7 +14462,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
+            /** @description `proposal_resolved`; `proposal_cites`: a citation of a source kept, which is accepted or discarded alone; `proposal_comment`: a comment kept, likewise; `proposal_outline`: a change of the outline kept, likewise; `outline_moved`: the document has a later version than the one it was proposed against; `outline_refused`: the outline cannot now take it; `document_held`: the document is under a legal hold; `comment_refused`: its thread could not be started; `entry_refused`: its entry could not be made; or the suggestion’s own refusals: `suggestion.empty`, `suggestion.limit`, `suggestion.stale`, `lock.held`, `edits.pending`, `values.invalid` */
             409: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */

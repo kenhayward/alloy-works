@@ -3,6 +3,22 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
+## 0.228.0 - 2026-11-03 (PR #919)
+
+The assistant's authoring tools closed (the AT plan): it changes words without disturbing what surrounds them, finds parts before writing one, places what stays live, reads comments, and proposes changes to the outline.
+
+### Added
+
+- **The assistant changes words without disturbing what surrounds them.** It can reword a paragraph or list holding a citation, a footnote, a cross-reference or a bound value, which stand as they were. A proposal now shows them too.
+- **The assistant looks for a part before writing one.** In a document it can search and read other parts you may read, to reuse or cite them. It edits only the parts in the document.
+- **The assistant places what stays live.** It can propose a variable, a bound value already in the document, a cross-reference or a footnote in a paragraph, rather than typing a number that would go stale.
+- **The assistant reads comments.** It can read the comments on a part, as the person asking: what each thread quotes, whether it is open and what was said, with reviewers unnamed. A person from outside the organisation is read no internal thread.
+- **The assistant proposes changes to the outline.** It can move, place, add, remove or retitle in one proposal, shown step by step by titles. Accepting makes one new version of the document, all of it or none, and it is refused once the document has moved on. In a conversation on a document, a new part it proposes can say where to go.
+
+### Fixed
+
+- **A stray character from a model no longer stops the assistant.** A tool call holding a character that cannot be stored is refused and the model asked to write it again, and a reply holding one keeps the rest of its words. Before, the run stopped and said the connector had failed.
+
 ## 0.227.0 - 2026-11-03 (PR #914)
 
 The MV close, T7's moving of content between spaces (the MV plan), with what has landed since the AP close: a document's language, comments in Authoring and more from the assistant.

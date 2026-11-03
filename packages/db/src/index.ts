@@ -411,6 +411,7 @@ export {
 export {
   actOnProposal,
   makeCommentProposal,
+  makeOutlineProposal,
   makeCreationProposal,
   makeProposal,
   proposalsOfRun,
@@ -418,6 +419,7 @@ export {
   type GenerationProposal,
   type ProposalState,
   type ProposedComment,
+  type ProposedOutline,
   type ProposedComponent,
 } from './generation-proposals.js';
 export {
@@ -834,6 +836,8 @@ export {
   resolveForDocument,
   type TemplateResolution,
   editOutline,
+  editOutlineAll,
+  outlineOperationsRefused,
   recordDocumentValues,
   recordDocumentParameters,
   recordDocumentProfile,

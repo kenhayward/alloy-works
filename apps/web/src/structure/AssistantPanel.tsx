@@ -34,14 +34,64 @@ interface Proposal {
   /** The part edited; null for one proposed to be made (G5-E). */
   readonly component: string | null;
   /** Where and under what title a proposed part would be made. */
-  readonly creates: { readonly title: string } | null;
+  readonly creates: {
+    readonly title: string;
+    readonly place?: { readonly says: OutlineSaid };
+  } | null;
   /** A citation of a source's work (XR-I): its entry found or made only as it is accepted. */
   readonly cites: Cites | null;
   /** A comment on the part: a thread started only as it is accepted. */
   readonly comment: { readonly text: string; readonly quote: string | null } | null;
+  /** A change of the document's outline, step by step, by titles. */
+  readonly outline: { readonly says: readonly OutlineSaid[] } | null;
   readonly proposed: { readonly content?: readonly unknown[] };
   readonly state: 'open' | 'accepted' | 'kept' | 'discarded';
   readonly said?: string;
+}
+
+interface OutlineSaid {
+  readonly do: 'move' | 'place' | 'section' | 'remove' | 'retitle';
+  readonly what: string;
+  readonly to?: string;
+  readonly after?: string | null;
+  readonly under?: string | null;
+  readonly first?: boolean;
+  readonly reason?: string;
+  readonly holds?: number;
+}
+
+/** Where a step of the outline puts what it names, by titles. */
+function outlineWhere(step: OutlineSaid): string {
+  if (typeof step.after === 'string') return words('document.outline-after', { title: step.after });
+  if (typeof step.under === 'string') {
+    return step.first
+      ? words('document.outline-start-of', { title: step.under })
+      : words('document.outline-end-of', { title: step.under });
+  }
+  return step.first ? words('document.outline-start') : words('document.outline-end');
+}
+
+/** A step of the outline in words. */
+function outlineStep(step: OutlineSaid): string {
+  switch (step.do) {
+    case 'move':
+      return words('document.outline-move', { what: step.what, where: outlineWhere(step) });
+    case 'place':
+      return words('document.outline-place', { what: step.what, where: outlineWhere(step) });
+    case 'section':
+      return words('document.outline-section', { what: step.what, where: outlineWhere(step) });
+    case 'remove':
+      return [
+        step.holds === undefined
+          ? words('document.outline-remove', { what: step.what })
+          : words('document.outline-remove-holding', { what: step.what, count: step.holds }),
+        ...(step.reason === undefined
+          ? []
+          : [words('document.outline-reason', { reason: step.reason })]),
+      ].join(' ');
+    case 'retitle':
+      return words('document.outline-retitle', { what: step.what, to: step.to ?? '' });
+  }
 }
 
 interface Cites {
@@ -93,6 +143,12 @@ const TOOL_WORDS: Readonly<Record<string, string>> = {
   },
   get read_reference() {
     return words('document.read-a-published-work');
+  },
+  get read_comments() {
+    return words('document.read-the-comments');
+  },
+  get propose_outline() {
+    return words('document.proposed-an-outline');
   },
   get read_variables() {
     return words('document.read-the-variables');
@@ -284,6 +340,7 @@ export function AssistantPanel({
   onCitations,
   onAccepted,
   onCommented,
+  onOutlined,
   stream = streamPost,
   origin = window.location.origin,
   now = () => performance.now(),
@@ -307,6 +364,8 @@ export function AssistantPanel({
   onAccepted?: (component: string, version?: string) => Promise<AcceptedInDocument> | void;
   /** A comment accepted: a thread started on a part. */
   onCommented?: () => void;
+  /** A change of the outline accepted: the document has a new version to show. */
+  onOutlined?: () => void;
   /** Given in tests. */
   stream?: (options: StreamPostOptions) => ReturnType<typeof streamPost>;
   origin?: string;
@@ -698,7 +757,7 @@ export function AssistantPanel({
                 component: typeof frame.component === 'string' ? frame.component : null,
                 creates:
                   typeof frame.creates === 'object' && frame.creates !== null
-                    ? (frame.creates as { title: string })
+                    ? (frame.creates as NonNullable<Proposal['creates']>)
                     : null,
                 cites:
                   typeof frame.cites === 'object' && frame.cites !== null
@@ -707,6 +766,10 @@ export function AssistantPanel({
                 comment:
                   typeof frame.comment === 'object' && frame.comment !== null
                     ? (frame.comment as NonNullable<Proposal['comment']>)
+                    : null,
+                outline:
+                  typeof frame.outline === 'object' && frame.outline !== null
+                    ? (frame.outline as NonNullable<Proposal['outline']>)
                     : null,
                 proposed: frame.proposed as Proposal['proposed'],
                 state: 'open',
@@ -766,10 +829,14 @@ export function AssistantPanel({
                 said:
                   data.proposal.state === 'accepted'
                     ? each.creates !== null
-                      ? words('document.accepted-the-part-is-made')
-                      : each.comment !== null
-                        ? words('document.accepted-the-comment-is-posted')
-                        : words('document.accepted-it-is-a-new')
+                      ? data.proposal.placed === false
+                        ? words('document.accepted-the-part-is-made-not-placed')
+                        : words('document.accepted-the-part-is-made')
+                      : each.outline !== null
+                        ? words('document.accepted-the-outline-has-changed')
+                        : each.comment !== null
+                          ? words('document.accepted-the-comment-is-posted')
+                          : words('document.accepted-it-is-a-new')
                     : data.proposal.state === 'kept'
                       ? words('document.kept-as-a-suggestion-marked')
                       : words('document.discarded'),
@@ -782,6 +849,12 @@ export function AssistantPanel({
               },
       ),
     );
+    if (
+      data?.proposal.state === 'accepted' &&
+      (proposal.outline !== null || proposal.creates?.place !== undefined)
+    ) {
+      onOutlined?.();
+    }
     if (data?.proposal.state !== 'accepted' || proposal.component === null) return;
     // A comment changes no text: there is no new version for the page to show.
     if (proposal.comment !== null) {
@@ -1164,23 +1237,36 @@ export function AssistantPanel({
                     what:
                       proposal.creates !== null
                         ? words('document.a-new-part', { title: proposal.creates.title })
-                        : proposal.comment !== null
-                          ? words('document.a-comment-on', {
-                              part:
-                                (proposal.component === null
-                                  ? undefined
-                                  : nameOf(proposal.component)) ?? words('document.a-part-2'),
-                            })
-                          : ((proposal.component === null
-                              ? undefined
-                              : nameOf(proposal.component)) ?? words('document.a-part-2')),
+                        : proposal.outline !== null
+                          ? words('document.a-change-to-the-outline')
+                          : proposal.comment !== null
+                            ? words('document.a-comment-on', {
+                                part:
+                                  (proposal.component === null
+                                    ? undefined
+                                    : nameOf(proposal.component)) ?? words('document.a-part-2'),
+                              })
+                            : ((proposal.component === null
+                                ? undefined
+                                : nameOf(proposal.component)) ?? words('document.a-part-2')),
                   })}
                 </h3>
-                <pre className={styles['proposed']}>
-                  <ins>
-                    {proposal.comment?.text ?? proposedText(proposal.proposed, proposal.cites)}
-                  </ins>
-                </pre>
+                {proposal.outline !== null ? (
+                  <ul>
+                    {proposal.outline.says.map((step, index) => (
+                      <li key={index}>{outlineStep(step)}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <pre className={styles['proposed']}>
+                    <ins>
+                      {proposal.comment?.text ?? proposedText(proposal.proposed, proposal.cites)}
+                    </ins>
+                  </pre>
+                )}
+                {proposal.creates?.place !== undefined && (
+                  <p className={styles['muted']}>{outlineStep(proposal.creates.place.says)}</p>
+                )}
                 {proposal.comment !== null && proposal.comment.quote !== null && (
                   <p className={styles['muted']}>
                     {words('document.comment-is-on-words', { quote: proposal.comment.quote })}
@@ -1218,7 +1304,8 @@ export function AssistantPanel({
                     </button>
                     {proposal.creates === null &&
                       proposal.cites === null &&
-                      proposal.comment === null && (
+                      proposal.comment === null &&
+                      proposal.outline === null && (
                         <button type="button" onClick={() => void act(proposal, 'keeping')}>
                           {words('document.keep-as-suggestion')}
                         </button>

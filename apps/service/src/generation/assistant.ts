@@ -29,6 +29,14 @@ import {
   listModelRoutes,
   makeCommentProposal,
   makeProposal,
+  editOutlineAll,
+  isHeld,
+  listThreads,
+  makeOutlineProposal,
+  type ProposedComponent,
+  outlineOperationsRefused,
+  loadFacts,
+  readThread,
   variablesByKey,
   startThread,
   makeSuggestion,
@@ -82,6 +90,11 @@ import {
   type CrossReferenceDisplay,
   insertIn,
   type proposeInsertInputSchema,
+  type readCommentsInputSchema,
+  type OutlineNode,
+  type proposeOutlineInputSchema,
+  planOutline,
+  proposedPosition,
   walkOutline,
   componentAsText,
   isAssistantTool,
@@ -152,13 +165,21 @@ const capped = (text: string) =>
     ? text
     : `${text.slice(0, TOOL_ANSWER_MAX)}\n[Cut short: the rest is not shown.]`;
 
+/** Stands for a part in a plan of its place, before it is made. */
+const NOT_YET_MADE = '00000000-0000-4000-8000-000000000000';
+
+/** The threads `read_comments` reads at most, newest first. */
+const COMMENT_THREADS_MOST = 50;
+
 /** What a tool's refusal of its arguments tells the model: enough to correct an edit (issue #890). */
 const refusedArguments = (tool: string, input: unknown) =>
   tool === 'propose_edit'
     ? proposeEditProblem(input)
-    : tool === 'propose_insert'
-      ? 'The arguments are not what this tool takes: the item is one of variable, value, reference (with its display) or footnote, and a reference names a block, with its component if another part, or a node.'
-      : 'The arguments are not what this tool takes.';
+    : tool === 'propose_outline'
+      ? 'The arguments are not what this tool takes: steps is a list, each with do as one of move, place, section, remove or retitle; a node is an identifier read_outline gave.'
+      : tool === 'propose_insert'
+        ? 'The arguments are not what this tool takes: the item is one of variable, value, reference (with its display) or footnote, and a reference names a block, with its component if another part, or a node.'
+        : 'The arguments are not what this tool takes.';
 
 /** The text a section title's inline content says. */
 const titleOf = (title: readonly unknown[]): string =>
@@ -195,7 +216,7 @@ export function assistantHandlers(
     walkOutline(outline.nodes, (node) => {
       if (node.type === 'reference') placing.add(node.component);
     });
-    return { outline, readable, placing };
+    return { outline, readable, placing, version: stored.version.id };
   }
 
   /** A refusal said to the model as the route would say it: its words, and its code as what the step said. */
@@ -321,6 +342,173 @@ export function assistantHandlers(
     } catch (error) {
       return refusedTool(error);
     }
+  }
+
+  /** The title of each part a person may read in a document, for saying a step by titles. */
+  async function titlesOfPlaced(trx: TenantTransaction, readable: ReadonlyMap<string, string>) {
+    const titles = new Map<string, string>();
+    const contents = await versionContents(trx, [...readable.values()]);
+    for (const [component, version] of readable) {
+      const title = (contents.get(version)?.content as { title?: unknown } | undefined)?.title;
+      titles.set(component, typeof title === 'string' ? title : component);
+    }
+    return titles;
+  }
+
+  /** A node as a step says it, undefined where it is not shown to the person. */
+  const nodeNamed = (titles: ReadonlyMap<string, string>) => (node: OutlineNode) =>
+    node.type === 'section'
+      ? titleOf(node.title).replace(/\s+/g, ' ')
+      : node.component === null
+        ? undefined
+        : titles.get(node.component);
+
+  /**
+   * `propose_outline` (GEN-062): the steps planned over the document as read and checked as acceptance
+   * will check them, a proposal against that version, every operation made one version only as it is
+   * accepted. Who may not read a part names it nowhere.
+   */
+  async function proposeOutline(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    run: string,
+    on: { readonly document: string; readonly principal: string },
+    input: z.infer<typeof proposeOutlineInputSchema>,
+  ): Promise<ToolAnswer> {
+    const refused = (content: string): ToolAnswer => ({
+      ok: false,
+      content,
+      said: { code: 'edit_refused' },
+    });
+    try {
+      // What accepting it needs: there is no keeping it for somebody who may (GEN-008).
+      await authoriseAt(trx, callerOf(request), 'edit', { kind: 'artifact', id: on.document });
+    } catch {
+      return {
+        ok: false,
+        content: 'You may not change this document.',
+        said: { code: 'not_yours_to_change' },
+      };
+    }
+    const found = await placed(trx, on.document, on.principal);
+    if (!found) return refused('There is no such document.');
+    const titles = await titlesOfPlaced(trx, found.readable);
+    for (const step of input.steps) {
+      if (step.do !== 'place' || titles.has(step.component)) continue;
+      if (found.placing.has(step.component)) continue;
+      try {
+        await authoriseAt(trx, callerOf(request), 'read', {
+          kind: 'artifact',
+          id: step.component,
+        });
+      } catch {
+        continue;
+      }
+      const latest = await latestVersion(trx, step.component);
+      if (latest?.kind !== 'component') continue;
+      const read = (await versionContents(trx, [latest.id])).get(latest.id);
+      const title = (read?.content as { title?: unknown } | undefined)?.title;
+      titles.set(step.component, typeof title === 'string' ? title : step.component);
+    }
+    const plan = planOutline(found.outline, input.steps, {
+      node: nodeNamed(titles),
+      component: (component) => titles.get(component),
+    });
+    if (!plan.ok) return refused(plan.problem);
+    const refusal = await outlineOperationsRefused(trx, {
+      artifactId: on.document,
+      openedFrom: found.version,
+      author: on.principal,
+      operations: plan.operations,
+    });
+    if (refusal !== undefined) return refused(refusal);
+    const proposal = await makeOutlineProposal(trx, {
+      run,
+      against: found.version,
+      outline: { document: on.document, operations: plan.operations, says: plan.says },
+      proposed: {
+        schemaVersion: 1,
+        title: found.outline.title,
+        language: found.outline.language,
+        direction: found.outline.direction,
+        content: [],
+      } as unknown as ContentDocument,
+    });
+    return {
+      ok: true,
+      content: `Proposal ${proposal.number} made. Nothing changes until the author accepts it, and it can be accepted only while the document stands as it does now, so put every step of a change in one proposal.`,
+      said: { code: 'proposal', number: proposal.number },
+      proposal,
+    };
+  }
+
+  /**
+   * `read_comments` (GEN-061): a part's threads as the person may read them, through `readThread`
+   * for each comment's latest words, its authors numbered and its mentions gone. A thread kept from
+   * one from outside is no thread (COL-038). The caller's own read of the part decides.
+   */
+  async function readComments(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    input: z.infer<typeof readCommentsInputSchema>,
+  ): Promise<ToolAnswer> {
+    const target = { kind: 'artifact', id: input.component } as const;
+    const none: ToolAnswer = {
+      ok: false,
+      content: 'There is no component by that identifier that you can read.',
+      said: { code: 'no_such_component' },
+    };
+    try {
+      await authoriseAt(trx, callerOf(request), 'read', target);
+    } catch {
+      return none;
+    }
+    if ((await latestVersion(trx, input.component))?.kind !== 'component') return none;
+    const facts = await loadFacts(trx, callerOf(request).principalId, target);
+    const page = await listThreads(trx, {
+      on: [input.component],
+      limit: COMMENT_THREADS_MOST + 1,
+      ...(input.state === undefined ? {} : { state: input.state }),
+      ...(facts === undefined || facts.principal.kind === 'external' ? { hideInternal: true } : {}),
+    });
+    const reviewers = new Map<string, number>();
+    const threads: string[] = [];
+    for (const { id } of page.slice(0, COMMENT_THREADS_MOST)) {
+      const thread = await readThread(trx, id);
+      if (!thread) continue;
+      const anchor = thread.anchor;
+      threads.push(
+        [
+          `Thread (${thread.resolution === null ? 'open' : 'resolved'}${thread.internal ? ', internal' : ''}) ${
+            anchor.kind === 'span' ? `on "${anchor.quote}"` : 'on the part'
+          }:`,
+          ...thread.comments.map((comment) => {
+            const who = reviewers.get(comment.author.id) ?? reviewers.size + 1;
+            reviewers.set(comment.author.id, who);
+            const parts = comment.texts.at(-1)?.parts ?? [];
+            // One line, so a comment cannot read as another reviewer's or another thread.
+            const words = parts
+              .flatMap((part) => ('text' in part ? [part.text] : []))
+              .join('')
+              .replace(/\s*\n\s*/g, ' ');
+            return `Reviewer ${who}: ${words}`;
+          }),
+        ].join('\n'),
+      );
+    }
+    return {
+      ok: true,
+      content: asData(
+        `comments:${input.component}`,
+        null,
+        threads.length === 0
+          ? 'There are none.'
+          : capped(
+              `${page.length > COMMENT_THREADS_MOST ? 'The older threads are not shown.\n\n' : ''}${threads.join('\n\n')}`,
+            ),
+      ),
+      said: { code: 'found', count: threads.length },
+    };
   }
 
   /** The environment's variables by key, for one who may read the environment (`listDefinitions`). */
@@ -717,6 +905,27 @@ export function assistantHandlers(
                 ),
               ))
             );
+          case 'propose_outline':
+            return await inDocument((trx) =>
+              proposeOutline(
+                trx,
+                request,
+                run,
+                { document, principal },
+                parsed.data as z.infer<typeof proposeOutlineInputSchema>,
+              ),
+            );
+          case 'read_comments': {
+            const input = parsed.data as z.infer<typeof readCommentsInputSchema>;
+            return await inDocument(async (trx) => {
+              // A placing that does not resolve is not read another way, as `read_component` holds.
+              const found = await placed(trx, document, principal);
+              if (found?.placing.has(input.component) && !found.readable.has(input.component)) {
+                return missing('component');
+              }
+              return readComments(trx, request, input);
+            });
+          }
           case 'read_variables':
             return await inDocument((trx) => readVariables(trx, request));
           case 'propose_insert': {
@@ -1068,6 +1277,7 @@ export function assistantHandlers(
     run: string,
     input: { space: string; type?: string | undefined; title: string; markdown: string },
     written: { language: string; direction: 'ltr' | 'rtl' },
+    place?: NonNullable<ProposedComponent['place']>,
   ): Promise<ToolAnswer> {
     try {
       await authoriseAt(trx, callerOf(request), 'create', { kind: 'space', id: input.space });
@@ -1106,6 +1316,7 @@ export function assistantHandlers(
         title: input.title,
         language: written.language,
         direction: written.direction,
+        ...(place === undefined ? {} : { place }),
       },
       proposed: { ...blank, content: [...blocks] },
     });
@@ -1142,10 +1353,49 @@ export function assistantHandlers(
           // Written in the document's language and direction.
           const outline = (await readDocument(trx, document))?.version.content as
             { language?: string; direction?: 'ltr' | 'rtl' } | undefined;
-          return proposeComponent(trx, request, run, parsed.data, {
-            language: outline?.language ?? 'en-GB',
-            direction: outline?.direction ?? 'ltr',
-          });
+          let place: NonNullable<ProposedComponent['place']> | undefined;
+          if (parsed.data.place !== undefined) {
+            try {
+              await authoriseAt(trx, callerOf(request), 'edit', {
+                kind: 'artifact',
+                id: document,
+              });
+            } catch {
+              return {
+                ok: false,
+                content: 'You may not change this document.',
+                said: { code: 'not_yours_to_change' },
+              };
+            }
+            const found = await placed(trx, document, principal);
+            const titles = await titlesOfPlaced(trx, found!.readable);
+            // Planned as a step of the outline, to be refused now as one would, by a part yet to be.
+            const plan = planOutline(
+              found!.outline,
+              [{ do: 'place', component: NOT_YET_MADE, ...parsed.data.place }],
+              { node: nodeNamed(titles), component: () => parsed.data.title },
+            );
+            if (!plan.ok) {
+              return { ok: false, content: plan.problem, said: { code: 'edit_refused' } };
+            }
+            place = {
+              document,
+              ...(parsed.data.place.under === undefined ? {} : { under: parsed.data.place.under }),
+              ...(parsed.data.place.after === undefined ? {} : { after: parsed.data.place.after }),
+              says: plan.says[0]!,
+            };
+          }
+          return proposeComponent(
+            trx,
+            request,
+            run,
+            parsed.data,
+            {
+              language: outline?.language ?? 'en-GB',
+              direction: outline?.direction ?? 'ltr',
+            },
+            place,
+          );
         },
         contextOf(request),
       );
@@ -1228,6 +1478,12 @@ export function assistantHandlers(
                   parsed.data as { source: ReferenceSourceKey; identifier: string },
                 )
               );
+            case 'read_comments':
+              return readComments(
+                trx,
+                request,
+                parsed.data as z.infer<typeof readCommentsInputSchema>,
+              );
             case 'read_variables':
               return readVariables(trx, request);
             case 'propose_insert': {
@@ -1256,6 +1512,13 @@ export function assistantHandlers(
               return proposeComment(trx, request, run, latest.id, input);
             }
             case 'propose_component':
+              if ((parsed.data as { place?: unknown }).place !== undefined) {
+                return {
+                  ok: false,
+                  content: 'A place is named only on a document.',
+                  said: { code: 'edit_refused' },
+                };
+              }
               return proposeComponent(
                 trx,
                 request,
@@ -1841,6 +2104,10 @@ export function assistantHandlers(
     if (made.answer !== 'created') {
       throw new AppError(409, made.answer.replace(/\./g, '_'), 'The component could not be made.');
     }
+    const placedThere =
+      creates.place === undefined
+        ? undefined
+        : await placeMade(trx, request, principalId, creates.place, made.version.artifactId);
     await actOnProposal(trx, {
       proposal,
       act: 'accepted',
@@ -1853,6 +2120,7 @@ export function assistantHandlers(
         state: 'accepted' as const,
         suggestion: null,
         component: made.version.artifactId,
+        ...(placedThere === undefined ? {} : { placed: placedThere }),
       },
     };
   }
@@ -1862,6 +2130,111 @@ export function assistantHandlers(
    * they may comment now, on the version it was made against; discarded, nothing is. Never kept: a
    * suggestion is a change of the text.
    */
+  /**
+   * A part just made, placed where its proposal named in the document as it stands: false where it no
+   * longer can be, the part kept all the same, so the words the person accepted are not lost.
+   */
+  async function placeMade(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    principalId: string,
+    place: NonNullable<ProposedComponent['place']>,
+    component: string,
+  ): Promise<boolean> {
+    try {
+      await authoriseAt(trx, callerOf(request), 'edit', { kind: 'artifact', id: place.document });
+    } catch {
+      return false;
+    }
+    if (await isHeld(trx, place.document)) return false;
+    const stored = await readDocument(trx, place.document);
+    if (!stored) return false;
+    const at = proposedPosition(stored.version.content as OutlineDocument, place);
+    if (typeof at === 'string') return false;
+    const recorded = await editOutlineAll(trx, {
+      artifactId: place.document,
+      openedFrom: stored.version.id,
+      author: principalId,
+      operations: [
+        {
+          operation: 'insert',
+          ...at,
+          node: { type: 'reference', component, mode: { kind: 'latest' } },
+        },
+      ],
+    });
+    return recorded.answer === 'recorded';
+  }
+
+  /** A change of the outline accepted against the version it read and no other, nor under a hold. */
+  async function outlineStands(
+    trx: TenantTransaction,
+    request: FastifyRequest,
+    document: string,
+    version: string,
+  ) {
+    await authoriseAt(trx, callerOf(request), 'edit', { kind: 'artifact', id: document });
+    if (await isHeld(trx, document)) {
+      throw new AppError(409, 'document_held', 'This document is under a legal hold.');
+    }
+    if ((await latestVersion(trx, document))?.id !== version) throw outlineRefused('moved');
+  }
+
+  /** `propose_outline`'s, acted on: every operation one version of the document, all or none. */
+  async function actOnOutline(
+    request: FastifyRequest,
+    trx: TenantTransaction,
+    principalId: string,
+    proposal: GenerationProposal,
+    act: 'accepted' | 'kept' | 'discarded',
+  ) {
+    const { document, operations } = proposal.outline!;
+    if (proposal.state !== 'open') {
+      throw new AppError(
+        409,
+        'proposal_resolved',
+        'This proposal has been accepted or discarded already.',
+      );
+    }
+    if (proposal.runOutcome === 'running') {
+      throw new AppError(409, 'run_running', 'The run that made this proposal has not ended yet.');
+    }
+    if (act === 'kept') {
+      throw new AppError(
+        409,
+        'proposal_outline',
+        'A proposal to change the outline is accepted or discarded: there is no change of the text to suggest.',
+      );
+    }
+    if (act === 'discarded') {
+      await authoriseAt(trx, callerOf(request), 'read', { kind: 'artifact', id: document });
+      await actOnProposal(trx, { proposal, act, by: principalId });
+      return { proposal: { id: proposal.id, state: 'discarded' as const, suggestion: null } };
+    }
+    await outlineStands(trx, request, document, proposal.madeAgainst!);
+    const recorded = await editOutlineAll(trx, {
+      artifactId: document,
+      openedFrom: proposal.madeAgainst!,
+      author: principalId,
+      operations,
+    });
+    if (recorded.answer !== 'recorded') throw outlineRefused(recorded.answer);
+    await actOnProposal(trx, {
+      proposal,
+      act,
+      outlined: recorded.version.id,
+      by: principalId,
+    });
+    return {
+      proposal: {
+        id: proposal.id,
+        state: 'accepted' as const,
+        suggestion: null,
+        version: recorded.version.id,
+      },
+    };
+  }
+
   async function actOnComment(
     request: FastifyRequest,
     trx: TenantTransaction,
@@ -1992,6 +2365,7 @@ export function assistantHandlers(
     const caller = callerOf(request);
     if (proposal.creates !== null) return actOnCreation(request, trx, principalId, proposal, act);
     if (proposal.comment !== null) return actOnComment(request, trx, principalId, proposal, act);
+    if (proposal.outline !== null) return actOnOutline(request, trx, principalId, proposal, act);
     await authoriseAt(
       trx,
       caller,
@@ -2065,6 +2439,17 @@ export function assistantHandlers(
       },
     };
   }
+}
+
+/** A change of the outline's refusal, said for a proposal (the AT plan, ATe). */
+function outlineRefused(answer: string): AppError {
+  return answer === 'moved' || answer === 'version.precondition' || answer === 'artifact.missing'
+    ? new AppError(
+        409,
+        'outline_moved',
+        'The document has changed since this was proposed: ask for it again.',
+      )
+    : new AppError(409, 'outline_refused', 'The outline cannot be changed that way now.');
 }
 
 /** A suggestion's refusal, said for a proposal (G2-E). */

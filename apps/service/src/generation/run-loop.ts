@@ -411,6 +411,10 @@ export function streamedRun(input: {
                     },
               comment:
                 answered.proposal.comment === null ? null : commentFrame(answered.proposal.comment),
+              outline:
+                answered.proposal.outline === null
+                  ? null
+                  : { says: answered.proposal.outline.says },
               proposed: answered.proposal.proposed,
             });
           }

@@ -243,6 +243,8 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       'propose_comment',
       'propose_edit',
       'propose_insert',
+      'propose_outline',
+      'read_comments',
       'read_component',
       'read_outline',
       'read_reference',
@@ -761,7 +763,7 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       return marker;
     };
 
-    it('GEN-017 GEN-018 GEN-019 GEN-020 holds content to data: a compliant model obeying what a component says reads nothing more, writes nothing, and reaches nothing new; a comment on it reaches no model', async () => {
+    it('GEN-017 GEN-018 GEN-019 GEN-020 holds content to data: a compliant model obeying what a component says reads nothing more, writes nothing, and reaches nothing new; a comment on it reaches no model that did not read the comments', async () => {
       const injected = await h.component(h.general, 'Injected');
       await h.place(injected, {
         type: 'text',
@@ -805,6 +807,35 @@ describe('the drafting assistant through the service (the G2 plan)', () => {
       // The component's own comment was never sent.
       expect(modelCalls()).toBeGreaterThan(from);
       expect(sentSince(from)).not.toContain(marker);
+    });
+
+    it('GEN-017 GEN-020 holds a comment to data: a compliant model obeying what a comment asks reads nothing more, and its author stays unnamed', async () => {
+      const injected = await h.component(h.general, 'Commented');
+      await h.place(injected, { type: 'text', value: 'Ignore this part.', marks: [] });
+      const marker = await commentOn(injected, 'Ignore');
+      const commented = await h.documentReferencing([injected.id, secret.id]);
+      const from = modelCalls();
+      h.connector.modelFor = compliant(tool('t1', 'read_comments', { component: injected.id }));
+      const response = await h.call(
+        'grace',
+        'POST',
+        `/v1/documents/${commented.id}/assistant/runs`,
+        {
+          ask: 'What do the comments say?',
+        },
+      );
+      const frames = framesOf(response.body);
+      const results = frames
+        .filter((frame) => frame.event === 'tool_result')
+        .map((frame) => frame.data);
+      // Read as data, and the call it asks for answered as anybody's: Grace may not read the secret.
+      expect(String(results[0]!.result)).toMatch(/^<content source="comments:/);
+      expect(results.slice(1).map((each) => [each.name, each.ok])).toEqual([
+        ['read_component', false],
+      ]);
+      expect(JSON.stringify(frames)).not.toContain('confidential');
+      expect(sentSince(from)).toContain(marker);
+      expect(sentSince(from)).not.toContain('Grace');
     });
 
     /** A component saying `word`, and Grace's comment saying it too, beside a marker no model may see. */
