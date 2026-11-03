@@ -17,26 +17,27 @@ restores only into an empty tenant** (Ken); a tenant in use takes a partial arch
 
 ## Requirements owned
 
-| ID          | How it is met                                                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **IMP-018** | Format 2 carries every table a census calls carried, audit, people and grants among them (EI-A, EI-B)                                 |
-| **IMP-019** | `schema.json` in each archive and the format guide, `docs/guides/export-format.md`; no product code is needed to read one             |
-| **IMP-020** | The census's left-out and rebuilt tables, each with its reason, are written into the manifest; a missing object fails the export      |
-| **IMP-021** | A test exports a fixture tenant, reads it back and compares                                                                           |
-| **IMP-022** | Administration's Export asks for each scope, with nobody else involved                                                                |
-| **IMP-023** | `export_environment`, and `export_audit` as well for audit; `export.produced` (EI-J)                                                  |
-| **IMP-024** | The scopes `space`, `document` and `publication`                                                                                      |
-| **IMP-038** | A partial archive's `references.jsonl` lists each thing outside it by identity, and by value or by reference (EI-E)                   |
-| **IMP-039** | `POST /v1/imports`, no assisted review (EI-C)                                                                                         |
-| **IMP-040** | `followReferences` on the request, recorded in the manifest                                                                           |
-| **IMP-043** | The read-back test's reader imports neither `@alloy-works/db` nor `@alloy-works/domain`                                               |
-| **IMP-044** | An archive and an upload are kept in the tenant's store, seven days, and each download is an event                                    |
-| **IMP-046** | The preview needs an answer for every issuer, and lists groups, externals and service identities; an actor is never reassigned (EI-N) |
-| **IMP-048** | A job, `import_environment` or `administer` at the target, the audit event `import.restored`, no token (EI-J, EI-K)                   |
-| **ADM-005** | The scope `configuration`, imported as any other                                                                                      |
-| **ADM-027** | `secrets.jsonl` holds references; an import with one unanswered is refused, naming each; one may arrive switched off (EI-G)           |
-| **AST-030** | An asset's rows and rights travel with its bytes; each object is checked against its hash on the way in                               |
-| **REL-007** | Relationship types are definitions, carried and imported with the rest                                                                |
+| ID          | How it is met                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **IMP-018** | Format 2 carries every table a census calls carried, audit, people and grants among them (EI-A, EI-B)                                    |
+| **IMP-019** | `schema.json` in each archive and the format guide, `docs/guides/export-format.md`; no product code is needed to read one                |
+| **IMP-020** | The census's left-out and rebuilt tables, each with its reason, are written into the manifest; a missing object fails the export         |
+| **IMP-021** | A test exports a fixture tenant, reads it back and compares                                                                              |
+| **IMP-022** | Administration's Export asks for each scope, with nobody else involved                                                                   |
+| **IMP-023** | `export_environment`, and `export_audit` as well for audit; `export.produced` (EI-J)                                                     |
+| **IMP-024** | The scopes `space`, `document` and `publication`                                                                                         |
+| **IMP-038** | A partial archive's `references.jsonl` lists each thing outside it by identity, and by value or by reference (EI-E)                      |
+| **IMP-039** | `POST /v1/imports`, no assisted review (EI-C)                                                                                            |
+| **IMP-040** | `followReferences` on the request, recorded in the manifest                                                                              |
+| **IMP-043** | The read-back test's reader imports neither `@alloy-works/db` nor `@alloy-works/domain`                                                  |
+| **IMP-044** | An archive and an upload are kept in the tenant's store, seven days, and each download is an event                                       |
+| **IMP-046** | The preview needs an answer for every issuer, and lists groups, externals and service identities; an actor is never reassigned (EI-N)    |
+| **IMP-048** | A job, `import_environment` or `administer` at the target, the audit event `import.restored`, no token (EI-J, EI-K)                      |
+| **ADM-005** | The scope `configuration`, imported as any other                                                                                         |
+| **ADM-054** | `secrets.jsonl` holds references; an import with one unanswered is refused, naming each; one may arrive switched off (EI-G)              |
+| **AST-030** | An asset's rows and rights travel with its bytes; each object is checked against its hash on the way in                                  |
+| **REL-007** | Relationship types are definitions, carried and imported with the rest                                                                   |
+| **IMP-052** | A whole-tenant archive anywhere but an empty tenant is refused, `tenant_not_empty`; only a whole-tenant archive holds audit (EI-D, EI-E) |
 
 **Not claimed.** IMP-045 names notification channels, which do not exist until EM: the census will catch their table, and EM claims it then. ADM-029 is TL's: this offers the export, TL makes closure wait for it. ADM-043, a rehearsal
 on a schedule, is DG's, and this slice must not be presented as a backup until it is. LIF-055, a chain over
@@ -101,8 +102,7 @@ So each binding goes through its kind's own path, naming the holder's id and the
 holds what that kind stores (`sealed`, `sealed_for`, `target_digest`, `endpoint`), write-only and removed when the job
 ends. The preview lists each; the administrator gives a value or chooses **Arrive switched off**, the holder then
 having no credential and being off, named in the report. Foreign keys forbid dropping a holder that history points at
-(`generation_run`, `principal.provider_id`). Refused while any is unanswered: ADM-027 is amended to say so
-(Ken), since it now asks for every reference bound. A webhook's `sealed` becomes nullable, with a `disabled_reason` of `restored`. A hashed token cannot be
+(`generation_run`, `principal.provider_id`). Refused while any is unanswered (ADM-054, Ken). A webhook's `sealed` becomes nullable, with a `disabled_reason` of `restored`. A hashed token cannot be
 restored and is listed as left out; so is the environment's store credential.
 
 **EI-H. Restored events are renumbered, and say so.** `audit_event.sequence` is the read's cursor, and the

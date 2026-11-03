@@ -50,9 +50,18 @@
       "area": "ADM",
       "statement": "A configuration export must carry a reference to each secret rather than its value, and an import must bind every reference to a secret in the receiving tenant. An import with an unbound reference must be refused, naming each one (ADM-005, ADM-008, **IMP-018**)",
       "tranche": "T7",
-      "status": "Specified",
+      "status": "Superseded by ADM-054",
       "document": "ADM-administration-cost-and-observability.md",
       "line": 48
+    },
+    {
+      "id": "ADM-054",
+      "area": "ADM",
+      "statement": "A configuration export must carry a reference to each secret rather than its value, and an import must have every reference either bound to a secret in the receiving tenant or marked by the person importing to arrive switched off, with no credential, and named in the report. An import with a reference unanswered must be refused, naming each one (ADM-005, ADM-008, **IMP-018**)",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "ADM-administration-cost-and-observability.md",
+      "line": 49
     },
     {
       "id": "ADM-049",
@@ -61,7 +70,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 49
+      "line": 50
     },
     {
       "id": "ADM-038",
@@ -70,7 +79,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 68
+      "line": 69
     },
     {
       "id": "ADM-039",
@@ -79,7 +88,7 @@
       "tranche": "T3",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 69
+      "line": 70
     },
     {
       "id": "ADM-040",
@@ -88,7 +97,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 70
+      "line": 71
     },
     {
       "id": "ADM-041",
@@ -97,7 +106,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 71
+      "line": 72
     },
     {
       "id": "ADM-042",
@@ -106,7 +115,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 72
+      "line": 73
     },
     {
       "id": "ADM-043",
@@ -115,7 +124,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 73
+      "line": 74
     },
     {
       "id": "ADM-044",
@@ -124,7 +133,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 74
+      "line": 75
     },
     {
       "id": "ADM-046",
@@ -133,7 +142,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 75
+      "line": 76
     },
     {
       "id": "ADM-048",
@@ -142,7 +151,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 76
+      "line": 77
     },
     {
       "id": "ADM-028",
@@ -151,7 +160,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 87
+      "line": 88
     },
     {
       "id": "ADM-029",
@@ -160,7 +169,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 88
+      "line": 89
     },
     {
       "id": "ADM-030",
@@ -169,7 +178,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 89
+      "line": 90
     },
     {
       "id": "ADM-031",
@@ -178,7 +187,7 @@
       "tranche": "T7",
       "status": "Superseded by ADM-045",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 90
+      "line": 91
     },
     {
       "id": "ADM-045",
@@ -187,7 +196,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 91
+      "line": 92
     },
     {
       "id": "ADM-051",
@@ -196,7 +205,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 105
+      "line": 106
     },
     {
       "id": "ADM-052",
@@ -205,7 +214,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 106
+      "line": 107
     },
     {
       "id": "ADM-053",
@@ -214,7 +223,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 107
+      "line": 108
     },
     {
       "id": "ADM-006",
@@ -223,7 +232,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 113
+      "line": 114
     },
     {
       "id": "ADM-007",
@@ -232,7 +241,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 114
+      "line": 115
     },
     {
       "id": "ADM-008",
@@ -241,7 +250,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 115
+      "line": 116
     },
     {
       "id": "ADM-009",
@@ -250,7 +259,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 116
+      "line": 117
     },
     {
       "id": "ADM-032",
@@ -259,7 +268,7 @@
       "tranche": "T7",
       "status": "Superseded by ADM-047",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 117
+      "line": 118
     },
     {
       "id": "ADM-047",
@@ -268,7 +277,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 118
+      "line": 119
     },
     {
       "id": "ADM-050",
@@ -277,7 +286,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 119
+      "line": 120
     },
     {
       "id": "ADM-010",
@@ -286,7 +295,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 130
+      "line": 131
     },
     {
       "id": "ADM-011",
@@ -295,7 +304,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 131
+      "line": 132
     },
     {
       "id": "ADM-012",
@@ -304,7 +313,7 @@
       "tranche": "T5",
       "status": "Superseded by ADM-033",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 132
+      "line": 133
     },
     {
       "id": "ADM-013",
@@ -313,7 +322,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 133
+      "line": 134
     },
     {
       "id": "ADM-014",
@@ -322,7 +331,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 134
+      "line": 135
     },
     {
       "id": "ADM-033",
@@ -331,7 +340,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 135
+      "line": 136
     },
     {
       "id": "ADM-034",
@@ -340,7 +349,7 @@
       "tranche": "T5",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 136
+      "line": 137
     },
     {
       "id": "ADM-035",
@@ -349,7 +358,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 137
+      "line": 138
     },
     {
       "id": "ADM-015",
@@ -358,7 +367,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "ADM-016",
@@ -367,7 +376,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "ADM-017",
@@ -376,7 +385,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "ADM-018",
@@ -385,7 +394,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "ADM-019",
@@ -394,7 +403,7 @@
       "tranche": "T7",
       "status": "Superseded by ADM-037",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "ADM-020",
@@ -403,7 +412,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "ADM-021",
@@ -412,7 +421,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "ADM-036",
@@ -421,7 +430,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "ADM-037",
@@ -430,7 +439,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 166
+      "line": 167
     },
     {
       "id": "ADM-022",
@@ -439,7 +448,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 195
+      "line": 196
     },
     {
       "id": "ADM-023",
@@ -448,7 +457,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 196
+      "line": 197
     },
     {
       "id": "ADM-024",
@@ -457,7 +466,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 197
+      "line": 198
     },
     {
       "id": "ADM-025",
@@ -466,7 +475,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 198
+      "line": 199
     },
     {
       "id": "ADM-026",
@@ -475,7 +484,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 199
+      "line": 200
     },
     {
       "id": "API-001",
@@ -6715,13 +6724,22 @@
       "line": 123
     },
     {
+      "id": "IMP-052",
+      "area": "IMP",
+      "statement": "A whole-tenant export, the only kind holding the audit log, must be restored only into an empty tenant; anywhere else it must be refused before it runs",
+      "tranche": "T7",
+      "status": "Specified",
+      "document": "IMP-import-export-and-interchange.md",
+      "line": 124
+    },
+    {
       "id": "IMP-035",
       "area": "IMP",
       "statement": "An import must record what it came from: the source file's name, its content hash, when it was imported and by whom, against everything it created",
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 138
+      "line": 139
     },
     {
       "id": "IMP-036",
@@ -6730,7 +6748,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 139
+      "line": 140
     },
     {
       "id": "IMP-037",
@@ -6739,7 +6757,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 140
+      "line": 141
     },
     {
       "id": "IMP-018",
@@ -6748,7 +6766,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 153
+      "line": 154
     },
     {
       "id": "IMP-019",
@@ -6757,7 +6775,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 154
+      "line": 155
     },
     {
       "id": "IMP-020",
@@ -6766,7 +6784,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 155
+      "line": 156
     },
     {
       "id": "IMP-021",
@@ -6775,7 +6793,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 156
+      "line": 157
     },
     {
       "id": "IMP-022",
@@ -6784,7 +6802,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 157
+      "line": 158
     },
     {
       "id": "IMP-023",
@@ -6793,7 +6811,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 158
+      "line": 159
     },
     {
       "id": "IMP-024",
@@ -6802,7 +6820,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 159
+      "line": 160
     },
     {
       "id": "IMP-038",
@@ -6811,7 +6829,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 160
+      "line": 161
     },
     {
       "id": "IMP-040",
@@ -6820,7 +6838,7 @@
       "tranche": "T7",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 161
+      "line": 162
     },
     {
       "id": "IMP-043",
@@ -6829,7 +6847,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 162
+      "line": 163
     },
     {
       "id": "IMP-044",
@@ -6838,7 +6856,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 163
+      "line": 164
     },
     {
       "id": "IMP-045",
@@ -6847,7 +6865,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 164
+      "line": 165
     },
     {
       "id": "IMP-046",
@@ -6856,7 +6874,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 165
+      "line": 166
     },
     {
       "id": "IMP-025",
@@ -6865,7 +6883,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 191
+      "line": 192
     },
     {
       "id": "IMP-026",
@@ -6874,7 +6892,7 @@
       "tranche": "T6",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 192
+      "line": 193
     },
     {
       "id": "IMP-027",
@@ -6883,7 +6901,7 @@
       "tranche": "Constraint",
       "status": "Specified",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 193
+      "line": 194
     },
     {
       "id": "LIB-001",
@@ -14739,31 +14757,31 @@
       "id": "ADM-N01",
       "statement": "**No standing support access to tenant content** (ADM-023)",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 211
+      "line": 212
     },
     {
       "id": "ADM-N02",
       "statement": "**No cross-tenant reporting** of content, or of product analytics identifying individuals or unrelated tenants, other than aggregates that identify nobody. Administrative and cost reporting across the tenants of one customer organisation is permitted to that organisation's own administrators (**IAM-068**, **IAM-069**), because they are one customer looking at themselves",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 212
+      "line": 213
     },
     {
       "id": "ADM-N03",
       "statement": "**Not a billing system.** Usage is measured and reported here; invoicing is somewhere else",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 213
+      "line": 214
     },
     {
       "id": "ADM-N04",
       "statement": "**No configuration only reachable by the vendor.** Anything a tenant is entitled to change, a tenant administrator can change",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 214
+      "line": 215
     },
     {
       "id": "ADM-N05",
       "statement": "**Not a notification system.** This area decides what is worth alerting on and who should receive it; the inbox, the email and the delivery are **COL**'s (COL-033 to COL-036)",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "API-N01",
@@ -15039,37 +15057,37 @@
       "id": "IMP-N01",
       "statement": "**No unattended import**, at any scale (IMP-003)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 204
+      "line": 205
     },
     {
       "id": "IMP-N02",
       "statement": "**No claim of lossless Word round-tripping** (IMP-025)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 205
+      "line": 206
     },
     {
       "id": "IMP-N03",
       "statement": "**No import that bypasses validation** (IMP-017)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 206
+      "line": 207
     },
     {
       "id": "IMP-N04",
       "statement": "**No migration service disguised as a feature.** Bulk conversion of a legacy estate is a project, and it is a person's job",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 207
+      "line": 208
     },
     {
       "id": "IMP-N05",
       "statement": "**No scanning of body content for personal data.** Section 4's scope is the identities a document carries as metadata and annotations. A customer's name inside the prose of a report is content the customer wrote, and this product does not inspect, classify or redact it",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 208
+      "line": 209
     },
     {
       "id": "IMP-N06",
       "statement": "**No unattended import _of a foreign document_** (IMP-003, IMP-N01). The product's own export format is not a foreign document: it is already components, needs no split judgement, and is importable (IMP-039)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 209
+      "line": 210
     },
     {
       "id": "LIB-N01",
@@ -15450,49 +15468,49 @@
       "question": "**What data residency commitments are made?** It interacts with tenant isolation, model endpoints, malware scanning and translation vendors",
       "settledBy": "The first customer who asks, which in this market is early",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 221
+      "line": 222
     },
     {
       "id": "ADM-Q02",
       "question": "**Is usage metered for pricing, or only for visibility?** Metering for pricing makes every measurement a billing dispute waiting to happen",
       "settledBy": "The commercial model. Settling it feeds straight back into ADM-010, ADM-011 and ADM-035: metering for pricing raises the precision each measurement needs and the time each record must survive, neither of which can be applied retrospectively",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 222
+      "line": 223
     },
     {
       "id": "ADM-Q03",
       "question": "**How much can support diagnose from metadata alone (ADM-022)?** The aspiration is most things; the practice will find the exceptions",
       "settledBy": "Experience. It should be revisited after the first hundred support cases",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 223
+      "line": 224
     },
     {
       "id": "ADM-Q04",
       "question": "**Who administers a tenant before it has an administrator?** Bootstrapping needs vendor action, which ADM-N04 is uncomfortable with",
       "settledBy": "A decision on onboarding, taken deliberately rather than by whoever builds signup",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 224
+      "line": 225
     },
     {
       "id": "ADM-Q05",
       "question": "**Who may close a tenant (ADM-030)?** ADM-N04 says nothing is vendor-only, but ending a contract is a commercial act and a customer cannot be the sole author of an irreversible deletion",
       "settledBy": "The commercial model, taken with ADM-Q04 - the two are the same decision at opposite ends of a tenant's life",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 225
+      "line": 226
     },
     {
       "id": "ADM-Q06",
       "question": "**How long is the grace period in ADM-030, and what survives it?** A legal hold (**LIF-021**) prevents deletion regardless of retention policy, which a closing tenant has to reckon with",
       "settledBy": "Legal input, taken with **LIF**. The hold question is the one that decides whether closure can ever be final",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 226
+      "line": 227
     },
     {
       "id": "ADM-Q07",
       "question": "**Should notifications, background work, and security and data protection become areas of their own?** Each is now specified as cross-cutting requirements with named owners - COL-060 to COL-062 and API-055 for notification and webhook mechanics, ADM-040 for scheduled work, ADM-041 to ADM-044 and IAM-066 for boundaries, backup and derived copies - which is the smaller move. Each could instead be an area",
       "settledBy": "Whether the cross-cutting requirements hold together as the tranches are planned. An area earns its own document when its requirements stop fitting in somebody else's, and these are close to that line rather than over it",
       "document": "ADM-administration-cost-and-observability.md",
-      "line": 227
+      "line": 228
     },
     {
       "id": "API-Q01",
@@ -15884,35 +15902,35 @@
       "question": "**How does assisted import scale to a legacy estate of thousands?** IMP-003 forbids unattended import and a customer will have four thousand reports",
       "settledBy": "**A measured number, from the first customer migration: documents converted per person per day, with IMP-031's accepted-unchanged rate beside it.** It settles before T6 is planned, because the two answers build different things - throughput work in the product (queued proposals, reviewer tooling, IMP-029), or a stated boundary saying an estate is a services project (IMP-N04)",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 215
+      "line": 216
     },
     {
       "id": "IMP-Q02",
       "question": "**Should a model propose the breakdown (IMP-004)?** It is a good use of one and it is exactly where a bad proposal is expensive",
       "settledBy": "Whether the proposal is reviewed faster than the breakdown could be made by hand, measured the same way as IMP-Q01. IMP-030 means the answer changes who proposes and nothing else: the constraints on a proposal hold whatever produced it",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 216
+      "line": 217
     },
     {
       "id": "IMP-Q03",
       "question": "**Which XML vocabularies are worth importing (IMP-016)?** DITA is the obvious one and it is a large mapping",
       "settledBy": "A customer with an existing structured estate. Until then it stays a `should`",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 217
+      "line": 218
     },
     {
       "id": "IMP-Q04",
       "question": "**Does export include iterations?** They are recovery rather than record, and a customer leaving may still want everything",
       "settledBy": "A decision with **VER**, probably no, stated in the export",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 218
+      "line": 219
     },
     {
       "id": "IMP-Q05",
       "question": "**How far does a re-import go (IMP-036)?** Recognising the source and showing what changed is settled; reconciling a changed source against components an author has since edited is a three-way merge, and a large piece of work",
       "settledBy": "A customer who re-imports rather than edits in place. Until one exists, IMP-036 recognises, shows and offers, and a person decides component by component",
       "document": "IMP-import-export-and-interchange.md",
-      "line": 219
+      "line": 220
     },
     {
       "id": "LIB-Q01",
@@ -18283,7 +18301,7 @@
           "howItIsMet": "The scope `configuration`, imported as any other"
         },
         {
-          "id": "ADM-027",
+          "id": "ADM-054",
           "howItIsMet": "`secrets.jsonl` holds references; an import with one unanswered is refused, naming each; one may arrive switched off (EI-G)"
         },
         {
@@ -18293,6 +18311,10 @@
         {
           "id": "REL-007",
           "howItIsMet": "Relationship types are definitions, carried and imported with the rest"
+        },
+        {
+          "id": "IMP-052",
+          "howItIsMet": "A whole-tenant archive anywhere but an empty tenant is refused, `tenant_not_empty`; only a whole-tenant archive holds audit (EI-D, EI-E)"
         }
       ]
     },

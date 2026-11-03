@@ -19,13 +19,6 @@ EIa alone answers "can I get everything out", which TL needs. The empty restore 
 because it is the goal, it may take locks freely, and the populated path is the harder and may shrink. Nothing imports
 until EIc, so format 2 can still change. EIc is the largest, and splits at audit if it must.
 
-## Before EIa
-
-**Amend the requirements through the form** (`pnpm trace draft`), and the design then claims them:
-
-- IMP-039 says "restored into a tenant", and EI-D narrows it. A new row, IMP-0xx: _a whole-tenant export, the only kind holding the audit log, must be restored only into an empty tenant; anywhere else it must be refused before it runs._
-- ADM-027 says every reference must be bound, and EI-G also lets one arrive switched off. It gains: _or be marked by the person importing to arrive switched off, with no credential, and be named in the report._
-
 ## Interfaces
 
 - Migrations: `tenant_export` gains `scope`, `scope_id`, `follow_references`, `format`. New: `restoration` (`id`,
@@ -52,16 +45,16 @@ until EIc, so format 2 can still change. EIc is the largest, and splits at audit
 - IMP-043 recomputes each version digest from the archive using only `node:crypto` and the format guide's serialisation.
 - IMP-018 a whole-tenant archive holds audit, people, grants, threads, definitions, assets, baselines and publications.
 - A document written while the export runs is wholly in it or wholly out; no row names one the archive lacks.
-- ADM-027 no sealed value appears anywhere in the archive; each secret column is seeded with a marker and the bytes searched.
-- ADM-027 an import with an unanswered reference is refused, naming each; one switched off arrives with no credential and off.
+- ADM-054 no sealed value appears anywhere in the archive; each secret column is seeded with a marker and the bytes searched.
+- ADM-054 an import with an unanswered reference is refused, naming each; one switched off arrives with no credential and off.
 - IMP-040 a space exported without following references lists an outside component by identity, and with it, by value.
 - IMP-023 a whole-tenant export without `export_audit` is refused, and a partial one holds no part its asker cannot read.
 - IMP-039 a tenant restored keeps every version digest, and an image in it opens from the new tenant's store.
 - IMP-042 an import failing at its last row leaves no row and no event but the refusal.
 - IMP-046 an unanswered issuer refuses; an event's actor is the same principal after a mapping.
 - IMP-048 a token cannot import; a whole-tenant import needs a sign-in in the last ten minutes.
-- IMP-0xx audit returns in order, with original instants, sequences and labels, into an empty tenant.
-- IMP-0xx a whole-tenant archive into a tenant in use is refused before any binding is asked for, and a partial archive holds no audit.
+- IMP-052 audit returns in order, with original instants, sequences and labels, into an empty tenant.
+- IMP-052 a whole-tenant archive into a tenant in use is refused before any binding is asked for, and a partial archive holds no audit.
 - `tenant_not_empty` for another person's act, a made document or a second restore; not for the restorer's sign-in, the vendor's naming or a stranger's failed sign-in.
 - Seeded `General`, roles and policies: an empty tenant ends holding the archive's, with every reference rewritten.
 - A forged archive is refused: a changed version, an object not matching its hash, `../` in an entry name, a declared size exceeded, a script in content.
