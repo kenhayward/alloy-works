@@ -3,7 +3,7 @@
 One entry per slice or tranche close, folded from the fragments in [changes/](changes/README.md). The
 topmost version matches `version.json`. Up to 0.132.3, every pull request had its own entry.
 
-## 0.230.0 - 2026-11-03 (PR #PRNUM)
+## 0.230.0 - 2026-11-03 (PR #929)
 
 A plain table's floating toolbar and the Table tab as a map closed (the TT plan): the quick changes sit on the table, and the panel stays on the tab you have open.
 
