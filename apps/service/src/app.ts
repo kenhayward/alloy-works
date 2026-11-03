@@ -85,6 +85,7 @@ import { createHttp, logFailure, type HttpOptions } from './http.js';
 import { sendStreamed } from './streamed.js';
 import { groupHandlers } from './groups.js';
 import { auditHandlers, tenantExportHandlers } from './audit-log.js';
+import { restorationHandlers } from './restorations.js';
 import { assistantHandlers } from './generation/assistant.js';
 import { generatedHandlers } from './generation/generated.js';
 import { modelEndpointHandlers } from './generation/models.js';
@@ -815,6 +816,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...extensionHandlers(tenantOf, options.connector),
     ...auditHandlers(tenantOf, options.objects),
     ...tenantExportHandlers(tenantOf, options.objects),
+    ...restorationHandlers(db, tenantOf, options.objects),
     ...rangePreviewHandlers(),
     ...modelEndpointHandlers(db, tenantOf, options.connector),
     ...promptHandlers(db, tenantOf, principalOf),
@@ -1530,6 +1532,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
     { parseAs: 'buffer' },
     (_request, body, done) => done(null, body),
   );
+
+  // An archive stays an unread stream until its route has decided: nothing unasked for reaches a disk.
+  app.addContentTypeParser('application/x-tar', (_request, payload, done) => done(null, payload));
 
   const http = app.withTypeProvider<ZodTypeProvider>();
   for (const [name, route] of Object.entries(routes) as [keyof Handlers, RouteContract][]) {

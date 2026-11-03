@@ -2964,8 +2964,9 @@ export async function sweepPreviews(trx: TenantTransaction): Promise<string[]> {
     union select object_key from sample where object_key = any(${keys}::text[])
     union select object_key from asset_upload
       where object_key = any(${keys}::text[]) and state in ('checking', 'ready')
-    union select content ->> 'object' from artifact_version
-      where kind = 'asset' and content ->> 'object' = any(${keys}::text[])
+    union select k from unnest(${keys}::text[]) as k where exists (
+      select from artifact_version v where v.kind = 'asset'
+        and split_part(v.content ->> 'object', '/sha256/', 2) = split_part(k, '/sha256/', 2))
     union select report_key from publication_check where report_key = any(${keys}::text[])`.execute(
     trx,
   );

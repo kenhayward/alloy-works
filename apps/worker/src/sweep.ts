@@ -1,4 +1,9 @@
 import {
+  expiredRestorationArchives,
+  forgetRestorationArchive,
+  restorationJobGaveUp,
+  type Tenant,
+  restoreUnderReview,
   CHECK_GIVE_UPS,
   enqueueJob,
   foldDigests,
@@ -26,6 +31,38 @@ import {
 } from '@alloy-works/db';
 import type { ObjectStores, TenantStore } from '@alloy-works/objects';
 import type { WorkerLog } from './worker.js';
+
+/** A restored tenant, whose dates and reminders wait until someone has looked (EI-M). */
+const held = (db: TenantDatabase, tenant: Tenant) =>
+  db.withTenant(tenant, (trx) => restoreUnderReview(trx));
+
+/**
+ * Which sweeps a restored tenant holds, and which run regardless, because what they tidy cannot surprise
+ * anyone: a sweep added must say which it is (the EI plan, EI-M).
+ */
+export const SWEEPS_UNDER_REVIEW = {
+  held: [
+    'foldNotificationDigests',
+    'sweepDates',
+    'sweepExpiredIterations',
+    'sweepOldNotifications',
+    'sweepUncheckedPublications',
+  ],
+  running: [
+    'sweepAbandonedGenerationRuns',
+    'sweepEmbeddingLagEverywhere',
+    'sweepExpiredPreviews',
+    'sweepExpiredQueryRuns',
+    'sweepExpiredRangePreviews',
+    'sweepExpiredSignIns',
+    'sweepExpiredTenantExports',
+    'sweepImportsEverywhere',
+    'sweepQueryEmbeddingsEverywhere',
+    'sweepRestorations',
+    'sweepStalePresence',
+    'sweepWebhookDeliveriesEverywhere',
+  ],
+} as const;
 
 /**
  * What sign-ins leave behind: attempts and hand-offs nobody came back for, and sessions past their
@@ -90,6 +127,7 @@ export async function sweepExpiredIterations(db: TenantDatabase, log: WorkerLog)
   let removed = 0;
   for (const tenant of await db.tenants()) {
     try {
+      if (await held(db, tenant)) continue;
       removed += await db.withTenant(tenant, (trx) => sweepIterations(trx));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the iteration sweep failed in a tenant');
@@ -211,6 +249,7 @@ export async function sweepUncheckedPublications(
   let left = 0;
   for (const tenant of await db.tenants()) {
     try {
+      if (await held(db, tenant)) continue;
       const waiting = await queue.waiting(tenant.id, 'check_pdf');
       const givenUp = await queue.givenUp(tenant.id, 'check_pdf');
       const swept = await db.withTenant(tenant, async (trx) => {
@@ -323,6 +362,7 @@ export async function foldNotificationDigests(
   let made = 0;
   for (const tenant of await db.tenants()) {
     try {
+      if (await held(db, tenant)) continue;
       made += await db.withTenant(tenant, (trx) => foldDigests(trx, now));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the inbox digests were not folded');
@@ -345,6 +385,7 @@ export async function sweepDates(
   let lapsed = 0;
   for (const tenant of await db.tenants()) {
     try {
+      if (await held(db, tenant)) continue;
       const done = await db.withTenant(
         tenant,
         async (trx) => ({
@@ -371,9 +412,44 @@ export async function sweepOldNotifications(
   let removed = 0;
   for (const tenant of await db.tenants()) {
     try {
+      if (await held(db, tenant)) continue;
       removed += await db.withTenant(tenant, (trx) => sweepNotifications(trx, now));
     } catch (error) {
       log.error({ tenant: tenant.id, err: error }, 'the old notifications were not swept');
+    }
+  }
+  return removed;
+}
+
+/**
+ * What restoring leaves behind, in every tenant: each uploaded archive past its seven days (IMP-044),
+ * and each restoration whose job gave up where nobody could say so (the EI plan, EIc).
+ */
+export async function sweepRestorations(
+  db: TenantDatabase,
+  stores: ObjectStores,
+  queue: Pick<JobQueue, 'givenUp'>,
+  log: WorkerLog,
+  now: Date = new Date(),
+): Promise<number> {
+  let removed = 0;
+  for (const tenant of await db.tenants()) {
+    try {
+      const gaveUp = await queue.givenUp(tenant.id, 'restoration');
+      const { store, expired } = await db.withTenant(tenant, async (trx) => {
+        for (const id of gaveUp.keys()) await restorationJobGaveUp(trx, id);
+        return {
+          store: await stores.forTenant(trx, tenant),
+          expired: await expiredRestorationArchives(trx, now),
+        };
+      });
+      for (const { id, key } of expired) {
+        await store.remove(key);
+        await db.withTenant(tenant, (trx) => forgetRestorationArchive(trx, id));
+        removed += 1;
+      }
+    } catch (error) {
+      log.error({ tenant: tenant.id, err: error }, 'restorations were not swept');
     }
   }
   return removed;

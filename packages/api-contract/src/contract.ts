@@ -105,7 +105,7 @@ export interface RouteContract {
    * it is read whole (figures 1, R2). A route declares this or `body`, never both.
    */
   readonly rawBody?: {
-    readonly contentType: 'application/octet-stream';
+    readonly contentType: 'application/octet-stream' | 'application/x-tar';
     readonly maxBytes: number;
   };
   /** The most bytes a JSON `body` may be, where not the service's default of 1 MiB: `413` past it. */

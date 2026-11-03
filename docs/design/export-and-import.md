@@ -27,12 +27,12 @@ restores only into an empty tenant** (Ken); a tenant in use takes a partial arch
 | **IMP-023** | `export_environment`, and `export_audit` as well for audit; `export.produced` (EI-J)                                                     |
 | **IMP-024** | The scopes `space`, `document` and `publication`                                                                                         |
 | **IMP-038** | A partial archive's `references.jsonl` lists each thing outside it by identity, and by value or by reference (EI-E)                      |
-| **IMP-039** | `POST /v1/imports`, no assisted review (EI-C)                                                                                            |
+| **IMP-039** | `POST /v1/restorations`, no assisted review (EI-C)                                                                                       |
 | **IMP-040** | `followReferences` on the request, recorded in the manifest                                                                              |
 | **IMP-043** | The read-back test's reader imports neither `@alloy-works/db` nor `@alloy-works/domain`                                                  |
 | **IMP-044** | An archive and an upload are kept in the tenant's store, seven days, and each download is an event                                       |
 | **IMP-046** | The preview needs an answer for every issuer, and lists groups, externals and service identities; an actor is never reassigned (EI-N)    |
-| **IMP-048** | A job, `import_environment` or `administer` at the target, the audit event `import.restored`, no token (EI-J, EI-K)                      |
+| **IMP-048** | A job, `import_environment` at the tenant, the audit event `import.restored`, no token (EI-J, EI-K)                                      |
 | **ADM-005** | The scope `configuration`, imported as any other                                                                                         |
 | **ADM-054** | `secrets.jsonl` holds references; an import with one unanswered is refused, naming each; one may arrive switched off (EI-G)              |
 | **AST-030** | An asset's rows and rights travel with its bytes; each object is checked against its hash on the way in                                  |

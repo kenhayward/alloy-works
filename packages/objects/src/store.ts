@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
+import { pipeline } from 'node:stream/promises';
 import type { Tenant, TenantTransaction } from '@alloy-works/db';
 import {
   DeleteObjectCommand,
@@ -22,6 +23,8 @@ export interface TenantStore {
    */
   putFile(path: string, contentType: string): Promise<StoredObject>;
   get(key: string): Promise<Buffer>;
+  /** The object written to a file, as a stream, so an archive is never whole in memory. */
+  getFile(key: string, path: string): Promise<void>;
   /**
    * Removes the object under this key; removing one already gone is not an error. The caller decides
    * that nothing else names these bytes first - a key is a hash, so two uploads of the same bytes share
@@ -54,10 +57,10 @@ function assertFileName(fileName: string): string {
 }
 
 function assertTenantKey(tenant: Tenant, key: string): string {
-  if (!KEY.test(key) || !key.startsWith(tenantPrefix(tenant))) {
-    throw new Error(`That is not a key of this tenant's: ${JSON.stringify(key)}`);
-  }
-  return key;
+  if (!KEY.test(key)) throw new Error(`Not an object key: ${key}`);
+  // Content holds the key it was written with, inside its digest, so a restored version names another
+  // tenant's prefix (EI-P). This tenant's prefix is always the one read: never another's bytes.
+  return `${tenantPrefix(tenant)}sha256/${key.slice(key.lastIndexOf('/') + 1)}`;
 }
 
 /**
@@ -138,6 +141,13 @@ export function createObjectStores(settings: StoreSettings, sealingKey: Buffer):
           await client.send(
             new DeleteObjectCommand({ Bucket: bucket, Key: assertTenantKey(tenant, key) }),
           );
+        },
+
+        async getFile(key, path) {
+          const answer = await client.send(
+            new GetObjectCommand({ Bucket: bucket, Key: assertTenantKey(tenant, key) }),
+          );
+          await pipeline(answer.Body as NodeJS.ReadableStream, createWriteStream(path));
         },
 
         async signedLink(key, seconds, fileName) {

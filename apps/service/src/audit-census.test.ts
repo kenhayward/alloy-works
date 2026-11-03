@@ -29,6 +29,8 @@ const REASONS = {
   preview: 'A preview, kept for an hour and published nowhere',
   lock: "A lock claimed or released: COL's lock-taking design records lock.taken (COL-009)",
   iteration: 'An iteration, which is never a version (VER-005)',
+  restoring:
+    'A restoration on its way: the job records its preview, its refusal and its restoring (IMP-048)',
   upload: 'An upload waiting for its bytes: its asset is ingested, or the upload refused, later',
   importing:
     "An import's proposal, held apart from the space (IM-A): its acceptance and its abandonment are recorded",
@@ -70,6 +72,14 @@ const ROUTES: Readonly<Record<string, Entry>> = {
   listTenantExports: read,
   getTenantExport: read,
   downloadTenantExport: writes('export.downloaded'),
+  createTenantRestoration: { none: 'restoring' },
+  listTenantRestorations: read,
+  getTenantRestoration: read,
+  sendTenantRestorationArchive: { none: 'restoring' },
+  answerTenantRestoration: { none: 'restoring' },
+  applyTenantRestoration: { none: 'restoring' },
+  getRestoreReview: read,
+  endRestoreReview: writes('import.review_ended'),
   listModelEndpoints: read,
   makeModelEndpoint: writes('model_endpoint.made'),
   getModelEndpoint: read,
@@ -661,6 +671,10 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     ),
   },
   /** The worker's jobs, by the kind each handles (apps/worker/src/main.ts). */
+  // Run by the restorer alone: the worker does not claim it (the EI plan, S1).
+  restorer: {
+    restoration: writes('import.previewed', 'import.refused', 'import.restored'),
+  },
   jobs: {
     sample_pdf: { none: 'derived' },
     publish: writes('publication.produced', 'publication.failed'),
@@ -694,6 +708,7 @@ const WRITERS: Readonly<Record<string, Readonly<Record<string, Entry>>>> = {
     sweepUncheckedPublications: { none: 'derived' },
     sweepExpiredPreviews: { none: 'preview' },
     sweepExpiredTenantExports: { none: 'derived' },
+    sweepRestorations: { none: 'derived' },
     sweepExpiredRangePreviews: { none: 'preview' },
     sweepAbandonedGenerationRuns: { none: 'derived' },
     sweepQueryEmbeddingsEverywhere: { none: 'derived' },
@@ -857,6 +872,14 @@ describe('the census of the audit log', () => {
     expect(block).toBeDefined();
     const registered = [...block!.matchAll(/^\s+(\w+)[:,]/gm)].map((match) => match[1]);
     expect(Object.keys(WRITERS.jobs!).sort()).toEqual(registered.sort());
+  });
+
+  it("pins the restorer's jobs to the handlers it registers", () => {
+    const main = source('../../worker/src/restorer.ts');
+    const block = /const handlers = \{([^}]*)\}/.exec(main)?.[1];
+    expect(block).toBeDefined();
+    const registered = [...block!.matchAll(/(\w+): restorationJob/g)].map((match) => match[1]);
+    expect(Object.keys(WRITERS.restorer!)).toEqual(registered);
   });
 
   it("pins the worker's sweeps to those it exports", () => {

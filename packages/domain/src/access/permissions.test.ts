@@ -39,6 +39,7 @@ describe('the permission set', () => {
         'export_audit',
         'export_environment',
         'hold',
+        'import_environment',
         'manage_definitions',
         'publish',
         'read',

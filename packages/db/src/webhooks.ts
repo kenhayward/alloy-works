@@ -99,6 +99,16 @@ export async function subscribableIdentity(
   return row !== undefined && row.disabled_at === null;
 }
 
+/** Restored with no secret, it stays off until one is set (ADM-054; the EI plan, EIc). */
+export async function webhookHasSecret(trx: TenantTransaction, id: string): Promise<boolean> {
+  const row = await trx
+    .selectFrom('webhook_subscription')
+    .select('sealed')
+    .where('id', '=', id)
+    .executeTakeFirst();
+  return row?.sealed != null;
+}
+
 /** Makes a subscription by the id its secret was sealed to (WB-G). */
 export async function createWebhookSubscription(
   trx: TenantTransaction,

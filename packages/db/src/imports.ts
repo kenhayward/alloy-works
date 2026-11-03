@@ -1681,7 +1681,10 @@ async function assetsOf(
           .select('v.id')
           .where('v.kind', '=', 'asset')
           .where('a.space_id', '=', row.space_id)
-          .where(sql<boolean>`v.content ->> 'object' = ${each.object_key}`)
+          // By hash: a restored version's key holds the prefix it was written under (EI-P).
+          .where(
+            sql<boolean>`v.content ->> 'object' like ${`%/sha256/${each.object_key.slice(each.object_key.lastIndexOf('/') + 1)}`}`,
+          )
           .where(
             sql<boolean>`not exists (select from asset_upload u
                                       where u.asset_id = a.id and u.origin = 'dataset')`,

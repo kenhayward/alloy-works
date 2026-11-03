@@ -413,7 +413,10 @@ export async function objectInUse(
     .selectFrom('artifact_version')
     .select('id')
     .where('kind', '=', 'asset')
-    .where(sql<boolean>`content ->> 'object' = ${key}`)
+    // By hash: a restored version's key holds the prefix of the tenant it was written in (EI-P).
+    .where(
+      sql<boolean>`split_part(content ->> 'object', '/sha256/', 2) = split_part(${key}, '/sha256/', 2)`,
+    )
     .limit(1)
     .executeTakeFirst();
   if (version) return true;

@@ -517,6 +517,7 @@ describe('the import job, which reads a file into a proposal (the IM plan, IM-C)
           },
           putFile: (path, type) => real.putFile(path, type),
           get: (key) => real.get(key),
+          getFile: (key, path) => real.getFile(key, path),
           remove: (key) => real.remove(key),
           signedLink: (key, seconds, name) => real.signedLink(key, seconds, name),
         };

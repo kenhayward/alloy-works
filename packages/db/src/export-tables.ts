@@ -23,6 +23,8 @@ export interface CarriedTable {
   readonly key?: readonly string[];
   /** A nullable foreign key written null and set afterwards: a cycle has no insert order (EI-C). */
   readonly breaksCycleAt?: readonly string[];
+  /** A deferrable foreign key that a check keeps from being null: deferring is what breaks it. */
+  readonly deferredAt?: readonly string[];
   /** A nullable foreign key into a table that does not travel, written null on the way back in. */
   readonly pointsOut?: readonly string[];
   readonly secrets?: ExportSecret;
@@ -79,7 +81,8 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   artifact_move: renumbered(),
   artifact_scope: renumbered(),
   artifact_version: kept({
-    breaksCycleAt: ['line_id', 'restored_from', 'component_type_version_id'],
+    breaksCycleAt: ['line_id', 'restored_from'],
+    deferredAt: ['component_type_version_id'],
   }),
   asset_derivative: rebuilt("An image's other sizes, made again from its bytes."),
   asset_derivative_wanted: rebuilt("An image's other sizes still to be made."),
@@ -88,6 +91,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   audit_event: renumbered(),
   audit_export: leftOut('An earlier export of the log, which this holds whole.'),
   audit_label: kept(),
+  audit_restored: kept(),
   baseline: kept(),
   baseline_binding: kept(),
   baseline_pin: kept(),
@@ -199,6 +203,7 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   range_preview: PREVIEW,
   reference: renumbered(),
   reference_source_policy: kept(),
+  restoration: leftOut('An earlier restore, which belongs to the environment it happened to.'),
   relationship: kept(),
   retention_keep: renumbered(),
   review_lapse: renumbered(),
@@ -233,6 +238,9 @@ export const EXPORT_TABLES: Readonly<Record<string, ExportTable>> = {
   space: natural(['name']),
   suggestion: kept(),
   suggestion_resolution: kept(),
+  tenant_restore: leftOut(
+    'That this environment was restored, which an archive of it does not undo.',
+  ),
   tenant_export: leftOut('An earlier export; an archive does not list archives.'),
   theme_default: singleton(),
   thread: kept(),

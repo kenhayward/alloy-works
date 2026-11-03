@@ -290,7 +290,9 @@ export async function readPartialCut(
         fk.table === table &&
         fk.refers !== table &&
         kept.has(fk.refers) &&
-        !fk.columns.some((column) => census.breaksCycleAt?.includes(column)),
+        !fk.columns.some(
+          (column) => census.breaksCycleAt?.includes(column) || census.deferredAt?.includes(column),
+        ),
     );
     const found = await candidates(trx, catalogue, table, parents, kept, seeded, {
       publication,
@@ -458,7 +460,10 @@ export function insertOrder(
             fk.table === table &&
             fk.refers !== table &&
             left.has(fk.refers) &&
-            !fk.columns.some((column) => census.breaksCycleAt?.includes(column)),
+            !fk.columns.some(
+              (column) =>
+                census.breaksCycleAt?.includes(column) || census.deferredAt?.includes(column),
+            ),
         ),
     );
     if (ready.length === 0) throw new Error(`No order among ${[...left.keys()].join(', ')}`);

@@ -6,12 +6,15 @@ export interface LoginPasswords {
   readonly service: string;
   readonly worker: string;
   readonly migrator: string;
+  readonly restorer: string;
 }
 
 const LOGIN_ROLES = [
   ['aw_service', 'service'],
   ['aw_worker', 'worker'],
   ['aw_migrator', 'migrator'],
+  // The one login that may become a tenant's owner at run time, held by the restorer alone (EI S1).
+  ['aw_restorer', 'restorer'],
 ] as const;
 
 /**
@@ -78,9 +81,11 @@ export async function prepareDatabase(adminUrl: string): Promise<void> {
           'select role_name from platform.tenant',
         );
         for (const row of rows) {
-          await client.query(
-            `grant aw_tenant to ${client.escapeIdentifier(assertTenantRole(row.role_name))}`,
-          );
+          const role = client.escapeIdentifier(assertTenantRole(row.role_name));
+          const owner = client.escapeIdentifier(`${assertTenantRole(row.role_name)}_owner`);
+          await client.query(`grant aw_tenant to ${role}`);
+          // Tenants from before the restorer's login exist too (the EI plan, EIc).
+          await client.query(`grant ${owner}, ${role} to aw_restorer with inherit false`);
         }
       }
       await client.query('revoke create on schema public from public');

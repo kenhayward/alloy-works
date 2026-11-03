@@ -238,6 +238,9 @@ async function assetHolding(
   spaceId: string,
   key: string,
 ): Promise<{ readonly artifactId: string; readonly versionId: string } | undefined> {
+  // By hash: a restored version's key holds the prefix of the tenant it was written in (EI-P).
+  const hashed = `/sha256/${key.slice(key.lastIndexOf('/') + 1)}`;
+  const byHash = `%${hashed}`;
   const { rows } = await sql<{ artifact_id: string; id: string; object: string | null }>`
     select distinct on (v.artifact_id) v.artifact_id, v.id, v.content ->> 'object' as object
       from artifact_version v
@@ -245,9 +248,9 @@ async function assetHolding(
      where a.space_id = ${spaceId}
        and a.kind = 'asset'
        and v.artifact_id in (
-         select artifact_id from artifact_version where content ->> 'object' = ${key})
+         select artifact_id from artifact_version where content ->> 'object' like ${byHash})
      order by v.artifact_id, v.revision_no desc, v.version_no desc`.execute(trx);
-  const latest = rows.find((row) => row.object === key);
+  const latest = rows.find((row) => row.object?.endsWith(hashed));
   return latest && { artifactId: latest.artifact_id, versionId: latest.id };
 }
 

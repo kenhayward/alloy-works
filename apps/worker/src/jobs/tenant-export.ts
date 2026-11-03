@@ -62,8 +62,14 @@ export function tenantExportJob(deps: {
         await mkdir(tables);
         await mkdir(objects);
         const file = (table: string) => join(tables, `${table}.jsonl.gz`);
+        const bytes = new Map<string, number>();
         const write = async (table: string, lines: readonly string[]) => {
           // Gzip's members concatenate, so each page is written and forgotten.
+          bytes.set(
+            table,
+            (bytes.get(table) ?? 0) +
+              lines.reduce((total, line) => total + Buffer.byteLength(line) + 1, 0),
+          );
           await appendFile(file(table), await zipped(`${lines.join('\n')}\n`));
         };
         const whole = asked.scope === 'tenant';
@@ -135,7 +141,11 @@ export function tenantExportJob(deps: {
           tables: Object.fromEntries(
             names.map((name) => [
               name,
-              { file: `tables/${name}.jsonl.gz`, rows: cut.rows[name] ?? 0 },
+              {
+                file: `tables/${name}.jsonl.gz`,
+                rows: cut.rows[name] ?? 0,
+                bytes: bytes.get(name) ?? 0,
+              },
             ]),
           ),
           objects: {

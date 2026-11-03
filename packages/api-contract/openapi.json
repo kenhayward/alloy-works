@@ -164,6 +164,10 @@
       "description": "The model endpoints the environment calls, on its own provider accounts: their keys, which the connector seals and no route answers, whether each sits outside the data boundary, which purpose goes to which, and a test recorded as a run."
     },
     {
+      "name": "Restoring",
+      "description": "Restores an environment from its export: the archive checked, every secret and sign-in provider answered for, then all of it or nothing."
+    },
+    {
       "name": "Tenant export",
       "description": "The whole environment exported as a job: its content, versions, relationships, baselines and publication records as JSON Lines, the bytes they name by hash, and a manifest of what it leaves out. Kept seven days."
     },
@@ -329,6 +333,7 @@
         "Embedding",
         "Prompts",
         "Model endpoints",
+        "Restoring",
         "Tenant export",
         "Stored results as sources",
         "Query usage",
@@ -16211,7 +16216,8 @@
                               "hold",
                               "rotate_secrets",
                               "configure_services",
-                              "configure_webhooks"
+                              "configure_webhooks",
+                              "import_environment"
                             ]
                           },
                           "allowed": {
@@ -16506,7 +16512,8 @@
                               "hold",
                               "rotate_secrets",
                               "configure_services",
-                              "configure_webhooks"
+                              "configure_webhooks",
+                              "import_environment"
                             ]
                           },
                           "allowed": {
@@ -213190,7 +213197,7 @@
       "post": {
         "operationId": "requestTenantExport",
         "summary": "Export the whole environment, or one part of it, as it stands, as a job",
-        "description": "Asks for an export of the whole environment as it stands now, written by a job into one ZIP archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.",
+        "description": "Asks for an export of the whole environment as it stands now, or one part of it, written by a job into one tar archive: a JSON Lines file each for its artifacts, versions, relationships, baselines and publications, the bytes its assets and publications hold under objects/ by their SHA-256, and manifest.json saying what it holds and what it leaves out. Recorded as an export produced. Needs export_environment at the environment.",
         "tags": [
           "Tenant export"
         ],
@@ -283970,6 +283977,3620 @@
         }
       }
     },
+    "/v1/restorations": {
+      "get": {
+        "operationId": "listTenantRestorations",
+        "summary": "This environment's latest restorations, the newest first",
+        "description": "Lists the latest twenty restorations of this environment, the newest first, each with what it would do and why it stopped, if it did.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The latest twenty",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "awaiting_archive",
+                              "checking",
+                              "previewed",
+                              "refused",
+                              "applying",
+                              "restored",
+                              "failed"
+                            ]
+                          },
+                          "requestedAt": {
+                            "type": "string"
+                          },
+                          "finishedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "plan": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "format": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "The format the archive was written in"
+                                  },
+                                  "scope": {
+                                    "type": "string",
+                                    "description": "What the archive holds: `tenant` for a whole environment"
+                                  },
+                                  "cutAt": {
+                                    "type": "string",
+                                    "description": "The instant the archive was cut"
+                                  },
+                                  "tables": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "description": "Each table it holds, and how many rows"
+                                  },
+                                  "missingObjects": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "The hash of each file lost before the export was made, restored without its bytes"
+                                  },
+                                  "secrets": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "reference": {
+                                          "type": "string"
+                                        },
+                                        "kind": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "reference",
+                                        "kind"
+                                      ]
+                                    },
+                                    "description": "Each secret left out of the archive, which arrives switched off"
+                                  },
+                                  "issuers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "issuer": {
+                                          "type": "string"
+                                        },
+                                        "people": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        }
+                                      },
+                                      "required": [
+                                        "issuer",
+                                        "people"
+                                      ]
+                                    },
+                                    "description": "Each sign-in provider its people sign in by, and how many"
+                                  },
+                                  "groups": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many groups it holds"
+                                  },
+                                  "externals": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many people from outside it holds"
+                                  },
+                                  "serviceIdentities": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "How many service identities it holds"
+                                  },
+                                  "leftOut": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "description": "What does not travel, and why"
+                                  },
+                                  "rebuilt": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "description": "What is made again here, and from what"
+                                  }
+                                },
+                                "required": [
+                                  "format",
+                                  "scope",
+                                  "cutAt",
+                                  "tables",
+                                  "missingObjects",
+                                  "secrets",
+                                  "issuers",
+                                  "groups",
+                                  "externals",
+                                  "serviceIdentities",
+                                  "leftOut",
+                                  "rebuilt"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "What it would do: set once the archive is checked"
+                          },
+                          "answers": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "issuers": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                                  },
+                                  "switchedOff": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                                  }
+                                },
+                                "required": [
+                                  "issuers",
+                                  "switchedOff"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "refusal": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "message"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why it stopped. Nothing has changed."
+                          },
+                          "providers": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The issuers this environment already signs in by"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "state",
+                          "requestedAt",
+                          "finishedAt",
+                          "plan",
+                          "answers",
+                          "refusal",
+                          "providers"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                },
+                "example": {
+                  "items": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTenantRestoration",
+        "summary": "Begin restoring this environment from an archive",
+        "description": "Begins restoring this environment from an archive, waiting for its bytes. Needs `import_environment` and a recent sign-in, and no token can hold it.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Waiting for its archive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting_archive",
+                        "checking",
+                        "previewed",
+                        "refused",
+                        "applying",
+                        "restored",
+                        "failed"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string"
+                    },
+                    "finishedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "plan": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "format": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "The format the archive was written in"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "description": "What the archive holds: `tenant` for a whole environment"
+                            },
+                            "cutAt": {
+                              "type": "string",
+                              "description": "The instant the archive was cut"
+                            },
+                            "tables": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Each table it holds, and how many rows"
+                            },
+                            "missingObjects": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The hash of each file lost before the export was made, restored without its bytes"
+                            },
+                            "secrets": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "reference": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reference",
+                                  "kind"
+                                ]
+                              },
+                              "description": "Each secret left out of the archive, which arrives switched off"
+                            },
+                            "issuers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "issuer": {
+                                    "type": "string"
+                                  },
+                                  "people": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "issuer",
+                                  "people"
+                                ]
+                              },
+                              "description": "Each sign-in provider its people sign in by, and how many"
+                            },
+                            "groups": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many groups it holds"
+                            },
+                            "externals": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many people from outside it holds"
+                            },
+                            "serviceIdentities": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many service identities it holds"
+                            },
+                            "leftOut": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What does not travel, and why"
+                            },
+                            "rebuilt": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What is made again here, and from what"
+                            }
+                          },
+                          "required": [
+                            "format",
+                            "scope",
+                            "cutAt",
+                            "tables",
+                            "missingObjects",
+                            "secrets",
+                            "issuers",
+                            "groups",
+                            "externals",
+                            "serviceIdentities",
+                            "leftOut",
+                            "rebuilt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What it would do: set once the archive is checked"
+                    },
+                    "answers": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "issuers": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                            },
+                            "switchedOff": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                            }
+                          },
+                          "required": [
+                            "issuers",
+                            "switchedOff"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "refusal": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it stopped. Nothing has changed."
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The issuers this environment already signs in by"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "requestedAt",
+                    "finishedAt",
+                    "plan",
+                    "answers",
+                    "refusal",
+                    "providers"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "state": "awaiting_archive",
+                  "requestedAt": "example",
+                  "finishedAt": "example",
+                  "plan": {
+                    "format": -9007199254740991,
+                    "scope": "example",
+                    "cutAt": "example",
+                    "tables": {},
+                    "missingObjects": [],
+                    "secrets": [],
+                    "issuers": [],
+                    "groups": -9007199254740991,
+                    "externals": -9007199254740991,
+                    "serviceIdentities": -9007199254740991,
+                    "leftOut": {},
+                    "rebuilt": {}
+                  },
+                  "answers": {
+                    "issuers": {},
+                    "switchedOff": []
+                  },
+                  "refusal": {
+                    "code": "example",
+                    "message": "example"
+                  },
+                  "providers": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restorations/{id}": {
+      "get": {
+        "operationId": "getTenantRestoration",
+        "summary": "A restoration: where it has got to, and what it would do",
+        "description": "Returns a restoration: whether its archive has been checked, what it would do, and why it was refused, if it was. Nothing has changed until it is restored.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The restoration's id"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The restoration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting_archive",
+                        "checking",
+                        "previewed",
+                        "refused",
+                        "applying",
+                        "restored",
+                        "failed"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string"
+                    },
+                    "finishedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "plan": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "format": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "The format the archive was written in"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "description": "What the archive holds: `tenant` for a whole environment"
+                            },
+                            "cutAt": {
+                              "type": "string",
+                              "description": "The instant the archive was cut"
+                            },
+                            "tables": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Each table it holds, and how many rows"
+                            },
+                            "missingObjects": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The hash of each file lost before the export was made, restored without its bytes"
+                            },
+                            "secrets": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "reference": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reference",
+                                  "kind"
+                                ]
+                              },
+                              "description": "Each secret left out of the archive, which arrives switched off"
+                            },
+                            "issuers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "issuer": {
+                                    "type": "string"
+                                  },
+                                  "people": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "issuer",
+                                  "people"
+                                ]
+                              },
+                              "description": "Each sign-in provider its people sign in by, and how many"
+                            },
+                            "groups": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many groups it holds"
+                            },
+                            "externals": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many people from outside it holds"
+                            },
+                            "serviceIdentities": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many service identities it holds"
+                            },
+                            "leftOut": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What does not travel, and why"
+                            },
+                            "rebuilt": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What is made again here, and from what"
+                            }
+                          },
+                          "required": [
+                            "format",
+                            "scope",
+                            "cutAt",
+                            "tables",
+                            "missingObjects",
+                            "secrets",
+                            "issuers",
+                            "groups",
+                            "externals",
+                            "serviceIdentities",
+                            "leftOut",
+                            "rebuilt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What it would do: set once the archive is checked"
+                    },
+                    "answers": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "issuers": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                            },
+                            "switchedOff": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                            }
+                          },
+                          "required": [
+                            "issuers",
+                            "switchedOff"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "refusal": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it stopped. Nothing has changed."
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The issuers this environment already signs in by"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "requestedAt",
+                    "finishedAt",
+                    "plan",
+                    "answers",
+                    "refusal",
+                    "providers"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "state": "awaiting_archive",
+                  "requestedAt": "example",
+                  "finishedAt": "example",
+                  "plan": {
+                    "format": -9007199254740991,
+                    "scope": "example",
+                    "cutAt": "example",
+                    "tables": {},
+                    "missingObjects": [],
+                    "secrets": [],
+                    "issuers": [],
+                    "groups": -9007199254740991,
+                    "externals": -9007199254740991,
+                    "serviceIdentities": -9007199254740991,
+                    "leftOut": {},
+                    "rebuilt": {}
+                  },
+                  "answers": {
+                    "issuers": {},
+                    "switchedOff": []
+                  },
+                  "refusal": {
+                    "code": "example",
+                    "message": "example"
+                  },
+                  "providers": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such restoration in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restorations/{id}/answers": {
+      "put": {
+        "operationId": "answerTenantRestoration",
+        "summary": "Answer for each secret and each sign-in provider it names",
+        "description": "Answers for every sign-in provider and secret the plan names. A provider may be mapped to one this environment has, or kept, those people unable to sign in until it is added. Every secret arrives switched off.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The restoration's id"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "issuers": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                  },
+                  "switchedOff": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                  }
+                },
+                "required": [
+                  "issuers",
+                  "switchedOff"
+                ]
+              },
+              "example": {
+                "issuers": {},
+                "switchedOff": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting_archive",
+                        "checking",
+                        "previewed",
+                        "refused",
+                        "applying",
+                        "restored",
+                        "failed"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string"
+                    },
+                    "finishedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "plan": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "format": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "The format the archive was written in"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "description": "What the archive holds: `tenant` for a whole environment"
+                            },
+                            "cutAt": {
+                              "type": "string",
+                              "description": "The instant the archive was cut"
+                            },
+                            "tables": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Each table it holds, and how many rows"
+                            },
+                            "missingObjects": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The hash of each file lost before the export was made, restored without its bytes"
+                            },
+                            "secrets": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "reference": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reference",
+                                  "kind"
+                                ]
+                              },
+                              "description": "Each secret left out of the archive, which arrives switched off"
+                            },
+                            "issuers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "issuer": {
+                                    "type": "string"
+                                  },
+                                  "people": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "issuer",
+                                  "people"
+                                ]
+                              },
+                              "description": "Each sign-in provider its people sign in by, and how many"
+                            },
+                            "groups": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many groups it holds"
+                            },
+                            "externals": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many people from outside it holds"
+                            },
+                            "serviceIdentities": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many service identities it holds"
+                            },
+                            "leftOut": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What does not travel, and why"
+                            },
+                            "rebuilt": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What is made again here, and from what"
+                            }
+                          },
+                          "required": [
+                            "format",
+                            "scope",
+                            "cutAt",
+                            "tables",
+                            "missingObjects",
+                            "secrets",
+                            "issuers",
+                            "groups",
+                            "externals",
+                            "serviceIdentities",
+                            "leftOut",
+                            "rebuilt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What it would do: set once the archive is checked"
+                    },
+                    "answers": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "issuers": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                            },
+                            "switchedOff": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                            }
+                          },
+                          "required": [
+                            "issuers",
+                            "switchedOff"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "refusal": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it stopped. Nothing has changed."
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The issuers this environment already signs in by"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "requestedAt",
+                    "finishedAt",
+                    "plan",
+                    "answers",
+                    "refusal",
+                    "providers"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "state": "awaiting_archive",
+                  "requestedAt": "example",
+                  "finishedAt": "example",
+                  "plan": {
+                    "format": -9007199254740991,
+                    "scope": "example",
+                    "cutAt": "example",
+                    "tables": {},
+                    "missingObjects": [],
+                    "secrets": [],
+                    "issuers": [],
+                    "groups": -9007199254740991,
+                    "externals": -9007199254740991,
+                    "serviceIdentities": -9007199254740991,
+                    "leftOut": {},
+                    "rebuilt": {}
+                  },
+                  "answers": {
+                    "issuers": {},
+                    "switchedOff": []
+                  },
+                  "refusal": {
+                    "code": "example",
+                    "message": "example"
+                  },
+                  "providers": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`restoration_answer_invalid`: an answer missing, or naming nothing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such restoration in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`restoration_not_previewed`: it is not waiting for its answers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restorations/{id}/apply": {
+      "post": {
+        "operationId": "applyTenantRestoration",
+        "summary": "Restore it: a job applies all of it or nothing",
+        "description": "Restores it, as a job: all of it or nothing. A whole environment goes only into an empty one. Its people, versions and audit log arrive as they were, and the log is marked as restored, with its original numbers.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The restoration's id"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Being applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting_archive",
+                        "checking",
+                        "previewed",
+                        "refused",
+                        "applying",
+                        "restored",
+                        "failed"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string"
+                    },
+                    "finishedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "plan": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "format": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "The format the archive was written in"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "description": "What the archive holds: `tenant` for a whole environment"
+                            },
+                            "cutAt": {
+                              "type": "string",
+                              "description": "The instant the archive was cut"
+                            },
+                            "tables": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Each table it holds, and how many rows"
+                            },
+                            "missingObjects": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The hash of each file lost before the export was made, restored without its bytes"
+                            },
+                            "secrets": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "reference": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reference",
+                                  "kind"
+                                ]
+                              },
+                              "description": "Each secret left out of the archive, which arrives switched off"
+                            },
+                            "issuers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "issuer": {
+                                    "type": "string"
+                                  },
+                                  "people": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "issuer",
+                                  "people"
+                                ]
+                              },
+                              "description": "Each sign-in provider its people sign in by, and how many"
+                            },
+                            "groups": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many groups it holds"
+                            },
+                            "externals": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many people from outside it holds"
+                            },
+                            "serviceIdentities": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many service identities it holds"
+                            },
+                            "leftOut": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What does not travel, and why"
+                            },
+                            "rebuilt": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What is made again here, and from what"
+                            }
+                          },
+                          "required": [
+                            "format",
+                            "scope",
+                            "cutAt",
+                            "tables",
+                            "missingObjects",
+                            "secrets",
+                            "issuers",
+                            "groups",
+                            "externals",
+                            "serviceIdentities",
+                            "leftOut",
+                            "rebuilt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What it would do: set once the archive is checked"
+                    },
+                    "answers": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "issuers": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                            },
+                            "switchedOff": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                            }
+                          },
+                          "required": [
+                            "issuers",
+                            "switchedOff"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "refusal": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it stopped. Nothing has changed."
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The issuers this environment already signs in by"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "requestedAt",
+                    "finishedAt",
+                    "plan",
+                    "answers",
+                    "refusal",
+                    "providers"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "state": "awaiting_archive",
+                  "requestedAt": "example",
+                  "finishedAt": "example",
+                  "plan": {
+                    "format": -9007199254740991,
+                    "scope": "example",
+                    "cutAt": "example",
+                    "tables": {},
+                    "missingObjects": [],
+                    "secrets": [],
+                    "issuers": [],
+                    "groups": -9007199254740991,
+                    "externals": -9007199254740991,
+                    "serviceIdentities": -9007199254740991,
+                    "leftOut": {},
+                    "rebuilt": {}
+                  },
+                  "answers": {
+                    "issuers": {},
+                    "switchedOff": []
+                  },
+                  "refusal": {
+                    "code": "example",
+                    "message": "example"
+                  },
+                  "providers": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such restoration in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`restoration_not_previewed` or `restoration_unanswered`: it is not ready to apply",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restorations/{id}/archive": {
+      "put": {
+        "operationId": "sendTenantRestorationArchive",
+        "summary": "Send the archive, as bytes; a job then checks it",
+        "description": "Sends the archive as `application/x-tar`, up to 5 GiB, once. A job then reads it as untrusted input, every digest and hash worked out again, and says what would happen.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "allOf": [
+                {
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ],
+              "description": "The restoration's id"
+            }
+          },
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-tar": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/x-tar",
+                "maxLength": 5368709120
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kept, and being checked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "awaiting_archive",
+                        "checking",
+                        "previewed",
+                        "refused",
+                        "applying",
+                        "restored",
+                        "failed"
+                      ]
+                    },
+                    "requestedAt": {
+                      "type": "string"
+                    },
+                    "finishedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "plan": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "format": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "The format the archive was written in"
+                            },
+                            "scope": {
+                              "type": "string",
+                              "description": "What the archive holds: `tenant` for a whole environment"
+                            },
+                            "cutAt": {
+                              "type": "string",
+                              "description": "The instant the archive was cut"
+                            },
+                            "tables": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Each table it holds, and how many rows"
+                            },
+                            "missingObjects": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "The hash of each file lost before the export was made, restored without its bytes"
+                            },
+                            "secrets": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "reference": {
+                                    "type": "string"
+                                  },
+                                  "kind": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "reference",
+                                  "kind"
+                                ]
+                              },
+                              "description": "Each secret left out of the archive, which arrives switched off"
+                            },
+                            "issuers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "issuer": {
+                                    "type": "string"
+                                  },
+                                  "people": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "issuer",
+                                  "people"
+                                ]
+                              },
+                              "description": "Each sign-in provider its people sign in by, and how many"
+                            },
+                            "groups": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many groups it holds"
+                            },
+                            "externals": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many people from outside it holds"
+                            },
+                            "serviceIdentities": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "How many service identities it holds"
+                            },
+                            "leftOut": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What does not travel, and why"
+                            },
+                            "rebuilt": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "string"
+                              },
+                              "description": "What is made again here, and from what"
+                            }
+                          },
+                          "required": [
+                            "format",
+                            "scope",
+                            "cutAt",
+                            "tables",
+                            "missingObjects",
+                            "secrets",
+                            "issuers",
+                            "groups",
+                            "externals",
+                            "serviceIdentities",
+                            "leftOut",
+                            "rebuilt"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "What it would do: set once the archive is checked"
+                    },
+                    "answers": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "issuers": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "description": "For every provider the plan names: another this environment has, or null to keep it, those people unable to sign in until it is added"
+                            },
+                            "switchedOff": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Every secret the plan names: each arrives switched off, to be set afterwards"
+                            }
+                          },
+                          "required": [
+                            "issuers",
+                            "switchedOff"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "refusal": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why it stopped. Nothing has changed."
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The issuers this environment already signs in by"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "state",
+                    "requestedAt",
+                    "finishedAt",
+                    "plan",
+                    "answers",
+                    "refusal",
+                    "providers"
+                  ]
+                },
+                "example": {
+                  "id": "example",
+                  "state": "awaiting_archive",
+                  "requestedAt": "example",
+                  "finishedAt": "example",
+                  "plan": {
+                    "format": -9007199254740991,
+                    "scope": "example",
+                    "cutAt": "example",
+                    "tables": {},
+                    "missingObjects": [],
+                    "secrets": [],
+                    "issuers": [],
+                    "groups": -9007199254740991,
+                    "externals": -9007199254740991,
+                    "serviceIdentities": -9007199254740991,
+                    "leftOut": {},
+                    "rebuilt": {}
+                  },
+                  "answers": {
+                    "issuers": {},
+                    "switchedOff": []
+                  },
+                  "refusal": {
+                    "code": "example",
+                    "message": "example"
+                  },
+                  "providers": []
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such restoration in this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`restoration_filled`: this restoration already has its archive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "`archive_too_large`: past 5 GiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restore-review": {
+      "get": {
+        "operationId": "getRestoreReview",
+        "summary": "What would fall due in a restored environment once dates and reminders run",
+        "description": "Returns what falls due in a restored environment: revisions that would take effect and review dates already past. Dates and reminders are held until this review ends.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restoredAt": {
+                      "description": "When this environment was restored, if it was",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "underReview": {
+                      "type": "boolean",
+                      "description": "Whether dates and reminders are still held"
+                    },
+                    "datesPast": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Revisions that would take effect as soon as they run"
+                    },
+                    "reviewDatesPast": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Review dates already past"
+                    }
+                  },
+                  "required": [
+                    "restoredAt",
+                    "underReview",
+                    "datesPast",
+                    "reviewDatesPast"
+                  ]
+                },
+                "example": {
+                  "restoredAt": "example",
+                  "underReview": false,
+                  "datesPast": -9007199254740991,
+                  "reviewDatesPast": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restore-review/end": {
+      "post": {
+        "operationId": "endRestoreReview",
+        "summary": "Let dates and reminders run again in a restored environment",
+        "description": "Ends the review of a restored environment, so its dates and reminders run again, which may act on everything past due at once. Recorded in the audit log, once.",
+        "tags": [
+          "Restoring"
+        ],
+        "x-alloy-token-enabled": true,
+        "x-alloy-permission": "import_environment",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "token": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "Optional caller-supplied trace identifier (up to 128 safe characters).",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Use the same key to retry this mutation without applying it twice.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The review, ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restoredAt": {
+                      "description": "When this environment was restored, if it was",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "underReview": {
+                      "type": "boolean",
+                      "description": "Whether dates and reminders are still held"
+                    },
+                    "datesPast": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Revisions that would take effect as soon as they run"
+                    },
+                    "reviewDatesPast": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Review dates already past"
+                    }
+                  },
+                  "required": [
+                    "restoredAt",
+                    "underReview",
+                    "datesPast",
+                    "reviewDatesPast"
+                  ]
+                },
+                "example": {
+                  "restoredAt": "example",
+                  "underReview": false,
+                  "datesPast": -9007199254740991,
+                  "reviewDatesPast": -9007199254740991
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "True when this answer is a replay of an earlier keyed request.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or not one this environment issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`import_environment` is not held at this environment, or `reauthentication_required`: sign in again, then ask again",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error, in the one shape every error takes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable and machine-readable: branch on this, never on the message"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "For people. It may change between releases"
+                    },
+                    "rule": {
+                      "description": "The requirement or rule that refused the request, where one did",
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "description": "Quote this when reporting a problem"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "description": "Trace identifier assigned to this request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/retention": {
       "get": {
         "operationId": "getRetention",
@@ -284827,7 +288448,8 @@
                                 "hold",
                                 "rotate_secrets",
                                 "configure_services",
-                                "configure_webhooks"
+                                "configure_webhooks",
+                                "import_environment"
                               ]
                             }
                           }
@@ -285149,7 +288771,8 @@
                         "hold",
                         "rotate_secrets",
                         "configure_services",
-                        "configure_webhooks"
+                        "configure_webhooks",
+                        "import_environment"
                       ]
                     },
                     "description": "What it holds, each once. Without read it can only be granted as a denial"
@@ -285210,7 +288833,8 @@
                               "hold",
                               "rotate_secrets",
                               "configure_services",
-                              "configure_webhooks"
+                              "configure_webhooks",
+                              "import_environment"
                             ]
                           }
                         }
