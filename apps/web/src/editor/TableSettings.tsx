@@ -72,7 +72,7 @@ function Counter({
           }}
         />
         <IconButton label={more} {...step(value + 1, enabled && value < max)}>
-          <Icon name="Plus" size={14} />
+          <Icon name="Add" size={14} />
         </IconButton>
       </div>
     </div>

@@ -164,7 +164,6 @@ export function TablePanel({ view, table, enabled, number, ref }: TablePanelProp
       className={styles['panel']}
     >
       <div className={styles['head']}>
-        <h3>{words('editor.table')}</h3>
         {number != null && <Chip tone="accent">{number}</Chip>}
         <IconButton
           label={words('editor.table-go-to')}

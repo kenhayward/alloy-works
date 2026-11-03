@@ -106,9 +106,6 @@ export function mountEditor(place: HTMLElement, options: MountOptions): EditorVi
       ...(options.editable() ? {} : { tabindex: '-1' }),
     }),
     dispatchTransaction: (transaction) => options.dispatch(transaction, view),
-    // Room above the caret as it is scrolled to, past where a table's floating toolbar sticks, so that
-    // never hides the line being written (WCAG 2.4.11; ADR-0079).
-    scrollMargin: { top: 64, right: 5, bottom: 5, left: 5 },
     // **A key acts on the caret the author sees.** The browser tells ProseMirror where an arrow or a
     // click left the caret only by a `selectionchange` that arrives later, so a shortcut pressed
     // before it ran over the caret before: Ctrl Alt G found no word past the full stop just left,

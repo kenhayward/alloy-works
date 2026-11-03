@@ -15,7 +15,7 @@ had it redrawn on 3 November 2026 ([the handoff](../interface/handoffs/table-pan
 
 1. **The quick changes float on a plain table**: while editing with the cursor in it, above its top
    edge, whichever of caption and cells comes first, at its left. It moves no text, and may sit over what
-   is above the table. It sticks to the desk's top until the table has gone, and the surface keeps room so
+   is above the table. It sticks to the desk's top until the table has gone, and a move of the selection beneath it scrolls clear, so
    the caret is never under it (WCAG 2.4.11). This amends
    [ADR-0055](0055-a-figure-is-one-line-and-its-settings-a-dialog.md) decision 1 for tables: no second line.
 2. **It stands outside the sheet**, in the reader's theme rather than the paper's.
@@ -49,5 +49,3 @@ had it redrawn on 3 November 2026 ([the handoff](../interface/handoffs/table-pan
 
 - `onTable` tells whether the cursor is in a table, not a count of entries.
 - Tests that assumed the tab was showing choose it, and one for a tab's name allows for the dot.
-- The surface scrolls with 64px of room at its top everywhere, not only in a table: a view's scroll margin
-  is one setting.

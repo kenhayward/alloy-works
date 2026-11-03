@@ -22,18 +22,21 @@ const GROUPS: readonly (readonly GridAction[])[] = [
 export const TABLE_TOOLBAR_HEIGHT = 44;
 const GAP = 8;
 
-/** Where a table's scrolled ancestors and the page's header leave the desk's top. */
-function deskTop(from: Element): number {
-  let top = 0;
-  let scrolled = false;
+/** The nearest ancestor that scrolls up and down, or null where the window does. */
+function scrollerOf(from: Element): Element | null {
   for (let at = from.parentElement; at !== null; at = at.parentElement) {
     const { overflowY } = getComputedStyle(at);
     if ((overflowY === 'auto' || overflowY === 'scroll') && at.scrollHeight > at.clientHeight) {
-      top = Math.max(top, at.getBoundingClientRect().top);
-      scrolled = true;
+      return at;
     }
   }
-  if (scrolled) return top;
+  return null;
+}
+
+/** Where a table's scrolling ancestor, or the page's header, leaves the desk's top. */
+function deskTop(from: Element): number {
+  const scroller = scrollerOf(from);
+  if (scroller !== null) return scroller.getBoundingClientRect().top;
   const header = getComputedStyle(document.documentElement).getPropertyValue('--header-height');
   return Number.parseFloat(header) || 0;
 }
@@ -84,6 +87,21 @@ function useFollowTable(view: EditorView, table: TableAt) {
     };
     // Again with each change of the text, which can move the table without resizing anything.
   }, [view, table.pos, view.state.doc]);
+  // **The caret is never under it** (WCAG 2.4.11): an arrow moves the caret natively, which knows nothing
+  // of the toolbar, so each move of the selection that lands beneath it scrolls clear. A scroll by hand
+  // is the reader's own, and left alone.
+  useLayoutEffect(() => {
+    const own = element.current;
+    const figure = view.nodeDOM(table.pos);
+    if (own === null || own.hidden || !(figure instanceof Element)) return;
+    if (figure.getBoundingClientRect().height === 0) return;
+    const under =
+      own.getBoundingClientRect().bottom + GAP - view.coordsAtPos(view.state.selection.head).top;
+    if (under <= 0) return;
+    const scroller = scrollerOf(figure);
+    if (scroller !== null) scroller.scrollBy(0, -under);
+    else window.scrollBy(0, -under);
+  }, [view, table.pos, view.state.selection]);
   return element;
 }
 

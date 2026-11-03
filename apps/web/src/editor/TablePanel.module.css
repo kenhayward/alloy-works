@@ -11,10 +11,16 @@
   outline: none;
 }
 
-.panel h3 {
+/* The page's own margins and frame for a section and a label do not belong in here. */
+.panel section {
   margin: 0;
-  font-size: var(--size-16);
-  font-weight: 600;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.settings label {
+  margin-inline: 0;
 }
 
 .panel h4 {
