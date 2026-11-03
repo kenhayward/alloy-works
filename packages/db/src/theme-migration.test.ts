@@ -489,6 +489,7 @@ describe('migration 0024, which gives every environment its default theme', () =
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     // The one trigger held off during the migration stands enabled again, as does every other.
@@ -1320,6 +1321,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     expect((await themeChain(tenant)).map((each) => each.id)).toEqual([
@@ -1522,6 +1524,7 @@ describe("migration 0026, which gives the default theme's maths face its Word fa
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     const chain = await themeChain(tenant);
@@ -2353,6 +2356,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     // The theme is at 0.6, under its fixed identifier, unauthored, on top of 0.5; the value catalogue
@@ -2622,6 +2626,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     // The theme is left at the environment's own version, with nothing of the product's on top; the
@@ -2794,6 +2799,7 @@ describe('migration 0048, which gives the default theme its value catalogue', ()
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
     return (await chainOf(tenant, DEFAULT_THEME_ID)).slice(4).map((each) => each.id);
   };

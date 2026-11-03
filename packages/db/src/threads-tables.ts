@@ -16,6 +16,8 @@ export interface ThreadCommentTable {
   id: ColumnType<string, string | undefined, never>;
   thread_id: ColumnType<string, string, never>;
   author: ColumnType<string, string, never>;
+  /** The proposal that drafted it (0196; GEN-063), set only as it is inserted. */
+  drafted_by: ColumnType<string | null, string | undefined, never>;
   created_at: ColumnType<Date, never, never>;
 }
 
@@ -38,6 +40,13 @@ export interface ThreadInternalTable {
   thread_id: ColumnType<string, string, never>;
   marked_by: ColumnType<string, string, never>;
   marked_at: ColumnType<Date, never, never>;
+}
+
+/** How far a person has read a thread (0196; COL-070): theirs, and never moved back. */
+export interface ThreadReadTable {
+  thread_id: ColumnType<string, string, never>;
+  principal_id: ColumnType<string, string, never>;
+  read_to: ColumnType<Date, Date, Date>;
 }
 
 /** One person's notification (0076; COL-063): never the text (COL-036). */

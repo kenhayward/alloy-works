@@ -1243,6 +1243,7 @@ export {
   type StoredComment,
   internalThreads,
   markThreadInternal,
+  markThreadsRead,
   type StoredThread,
   type ThreadAnswer,
   type ThreadSummary,

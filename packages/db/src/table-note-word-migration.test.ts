@@ -237,6 +237,7 @@ describe("migration 0056, which gives the default layout the word a table's note
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
     expect((await layoutChain(tenant)).at(-6)).toMatchObject({
       version_no: 9,

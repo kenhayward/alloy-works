@@ -6,11 +6,13 @@ import type {
   ThreadListQuery,
   ThreadParams,
   ThreadSummaryView,
+  ThreadsReadBody,
   ThreadView,
 } from '@alloy-works/api-contract';
 import {
   internalThreads,
   markThreadInternal,
+  markThreadsRead,
   addComment,
   deletedOnceReferenced,
   editComment,
@@ -24,6 +26,8 @@ import {
   resolveThread,
   startThread,
   type StoredThread,
+  type Tenant,
+  type TenantDatabase,
   type TenantTransaction,
   type ThreadAnswer,
   type ThreadSummary,
@@ -35,7 +39,7 @@ import {
   readOutline,
   type ThreadAnchor,
 } from '@alloy-works/domain';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { notFound, type Authorised } from './access.js';
 import type { AppError } from './errors.js';
 import { keysetAfter, keysetCursor } from './keyset.js';
@@ -54,7 +58,14 @@ const person = (who: {
   ...(who.external ? { external: true as const } : {}),
 });
 
-const threadView = (thread: StoredThread): ThreadView => ({
+/** Whether the caller is from outside the organisation (IAM-045), as their decision read them. */
+const outside = (authorised: Authorised) => authorised.facts.principal.kind === 'external';
+
+/**
+ * A thread as the wire carries it. Which model drafted a comment is an endpoint's business, kept from
+ * a reader from outside (GEN-063).
+ */
+export const threadView = (thread: StoredThread, fromOutside: boolean): ThreadView => ({
   id: thread.id,
   internal: thread.internal,
   on: { id: thread.on, kind: thread.onKind },
@@ -70,6 +81,9 @@ const threadView = (thread: StoredThread): ThreadView => ({
     id: comment.id,
     author: person(comment.author),
     at: comment.createdAt.toISOString(),
+    ...(comment.drafted === undefined
+      ? {}
+      : { drafted: { model: fromOutside ? null : comment.drafted.model } }),
     texts: comment.texts.map((text) => ({
       parts: text.parts as unknown as Record<string, unknown>[],
       at: text.writtenAt.toISOString(),
@@ -77,10 +91,14 @@ const threadView = (thread: StoredThread): ThreadView => ({
   })),
 });
 
-async function viewOf(trx: TenantTransaction, thread: string): Promise<ThreadView> {
+async function viewOf(
+  trx: TenantTransaction,
+  thread: string,
+  authorised: Authorised,
+): Promise<ThreadView> {
   const read = await readThread(trx, thread);
   if (!read) throw new Error(`The thread ${thread} was not recorded`);
-  return threadView(read);
+  return threadView(read, outside(authorised));
 }
 
 /** A store's refusal as the wire carries it; `done` is the caller's to answer. */
@@ -98,9 +116,6 @@ function refuse(answer: Exclude<ThreadAnswer, { answer: 'done' }>): AppError {
       return refused(403, 'comment.not_yours', 'Only its author edits a comment.');
   }
 }
-
-/** Whether the caller is from outside the organisation (IAM-045), as their decision read them. */
-const outside = (authorised: Authorised) => authorised.facts.principal.kind === 'external';
 
 /**
  * An internal thread is no thread at all to somebody from outside (COL-038; the R13 plan, R13-D):
@@ -160,6 +175,12 @@ const summaryView = (
   comments: thread.comments,
   lastAt: thread.lastAt.toISOString(),
   said: [...thread.said],
+  participants: thread.participants.map(person),
+  mentioned: [...thread.mentioned],
+  words: thread.words,
+  drafted: thread.drafted,
+  // Listed but never opening once its component is gone (COL-067), it could never be read.
+  new: thread.isNew && places?.length !== 0,
   orphaned,
   ...(places === undefined ? {} : { places }),
 });
@@ -196,7 +217,7 @@ export function threadHandlers() {
       if (answer.answer === 'missing')
         throw refused(400, 'version.not_held', `That version is not one of this ${kind}'s.`);
       if (answer.answer !== 'done') throw refuse(answer);
-      return { ...(await viewOf(trx, answer.thread)), untold: [...answer.untold] };
+      return { ...(await viewOf(trx, answer.thread, authorised)), untold: [...answer.untold] };
     };
 
   const list =
@@ -243,6 +264,7 @@ export function threadHandlers() {
         limit,
         stands,
         outside(authorised),
+        principalId,
       );
     };
 
@@ -260,9 +282,11 @@ export function threadHandlers() {
     limit: number,
     stands: ReturnType<typeof standing>,
     hideInternal: boolean,
+    reader: string,
   ): Promise<ThreadList> => {
     const page = await listThreads(trx, {
       on: [id, ...occurrences.keys()],
+      reader,
       ...(hideInternal ? { hideInternal: true } : {}),
       ...(query.state === undefined ? {} : { state: query.state }),
       ...(query.author === undefined ? {} : { author: query.author }),
@@ -340,6 +364,7 @@ export function threadHandlers() {
         limit,
         standing(trx),
         outside(authorised),
+        principalId,
       );
     },
     startComponentThread: start('component'),
@@ -353,7 +378,7 @@ export function threadHandlers() {
       await keptFrom(trx, id, authorised);
       const read = await readThread(trx, id);
       if (!read) throw notFound();
-      return threadView(read);
+      return threadView(read, outside(authorised));
     },
 
     addComment: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
@@ -363,7 +388,7 @@ export function threadHandlers() {
       const { parts } = request.body as CommentBody;
       const answer = await addComment(trx, { thread: id, parts, author: principalId });
       if (answer.answer !== 'done') throw refuse(answer);
-      return { ...(await viewOf(trx, id)), untold: [...answer.untold] };
+      return { ...(await viewOf(trx, id, authorised)), untold: [...answer.untold] };
     },
 
     editComment: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
@@ -373,7 +398,7 @@ export function threadHandlers() {
       const { parts } = request.body as CommentBody;
       const answer = await editComment(trx, { thread: id, comment, parts, author: principalId });
       if (answer.answer !== 'done') throw refuse(answer);
-      return { ...(await viewOf(trx, id)), untold: [...answer.untold] };
+      return { ...(await viewOf(trx, id, authorised)), untold: [...answer.untold] };
     },
 
     /** Kept from outside from now on, by somebody inside (COL-038; the R13 plan, R13-C). */
@@ -388,7 +413,7 @@ export function threadHandlers() {
       const answer = await markThreadInternal(trx, { thread: id, by: principalId });
       if (answer === 'missing') throw notFound();
       if (answer === 'resolved') throw refused(409, 'thread.resolved', 'This thread is resolved.');
-      return viewOf(trx, id);
+      return viewOf(trx, id, authorised);
     },
 
     resolveThread: async (request: FastifyRequest, authorised: Authorised): Promise<ThreadView> => {
@@ -399,7 +424,52 @@ export function threadHandlers() {
       if (answer === 'missing') throw notFound();
       if (answer === 'resolved.already')
         throw refused(409, 'thread.resolved', 'This thread is resolved.');
-      return viewOf(trx, id);
+      return viewOf(trx, id, authorised);
+    },
+  };
+}
+
+/**
+ * A person's read marks (COL-070): on a session, each thread decided for itself, as a list may have
+ * gathered them from places a document no longer holds. One the caller may not read is passed over.
+ */
+export function threadReadHandlers(
+  db: TenantDatabase,
+  tenantOf: (request: FastifyRequest) => Tenant,
+  principalOf: (request: FastifyRequest) => { readonly principalId: string },
+) {
+  return {
+    markThreadsRead: async (
+      request: FastifyRequest,
+      reply: FastifyReply,
+    ): Promise<FastifyReply> => {
+      const { threads } = request.body as ThreadsReadBody;
+      const { principalId } = principalOf(request);
+      await db.withTenant(tenantOf(request), async (trx) => {
+        const rows = await trx
+          .selectFrom('thread')
+          .select(['id', 'on_id'])
+          .where('id', 'in', [...threads])
+          .execute();
+        const facts = await loadFactsFor(trx, principalId, [
+          ...new Set(rows.map((each) => each.on_id)),
+        ]);
+        const held = await internalThreads(
+          trx,
+          rows.map((each) => each.id),
+        );
+        const readable = rows.filter((each) => {
+          const known = facts.get(each.on_id);
+          if (!known || !decide('read', known).allowed) return false;
+          return known.principal.kind !== 'external' || !held.has(each.id);
+        });
+        await markThreadsRead(
+          trx,
+          principalId,
+          readable.map((each) => each.id),
+        );
+      });
+      return reply.status(204).send();
     },
   };
 }

@@ -205,6 +205,7 @@ describe('migration 0042, over a sign-in configured before it', () => {
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     const read = async () =>

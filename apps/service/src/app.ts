@@ -128,7 +128,7 @@ import {
   type SignInStart,
 } from './oidc.js';
 import { baselineHandlers } from './baselines.js';
-import { threadHandlers } from './threads.js';
+import { threadHandlers, threadReadHandlers } from './threads.js';
 import { attentionHandlers } from './attention.js';
 import { inboxHandlers } from './inbox.js';
 import { roundHandlers } from './rounds.js';
@@ -852,6 +852,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     ...comparisonHandlers(tenantOf, options.objects),
     ...changesHandlers(db, tenantOf),
     ...threadHandlers(),
+    ...threadReadHandlers(db, tenantOf, principalOf),
     ...inboxHandlers(db, tenantOf, principalOf),
     ...attentionHandlers(db, tenantOf, principalOf),
     ...suggestionHandlers(),

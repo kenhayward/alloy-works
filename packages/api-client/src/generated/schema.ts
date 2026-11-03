@@ -7595,6 +7595,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/threads/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark threads read, as far as each has been commented on
+         * @description Moves the caller’s read mark on each thread to its latest comment, never back, so that the lists stop calling it new until somebody else comments. A thread the caller may not read is passed over silently, as one that does not exist.
+         */
+        post: operations["markThreadsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tokens": {
         parameters: {
             query?: never;
@@ -16559,6 +16579,24 @@ export interface operations {
                             said: {
                                 [key: string]: unknown;
                             }[];
+                            /** @description Whoever has commented, in the order each first did */
+                            participants: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
+                            }[];
+                            /** @description The people its comments name as they read now, each once */
+                            mentioned: (string & (unknown & unknown))[];
+                            /** @description The words of every comment as it reads now, a line each */
+                            words: string;
+                            /** @description Whether a comment on it was drafted by the assistant (GEN-063) */
+                            drafted: boolean;
+                            /** @description Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens */
+                            new: boolean;
                             /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
                             orphaned: boolean;
                             /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */
@@ -27761,6 +27799,24 @@ export interface operations {
                             said: {
                                 [key: string]: unknown;
                             }[];
+                            /** @description Whoever has commented, in the order each first did */
+                            participants: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
+                            }[];
+                            /** @description The people its comments name as they read now, each once */
+                            mentioned: (string & (unknown & unknown))[];
+                            /** @description The words of every comment as it reads now, a line each */
+                            words: string;
+                            /** @description Whether a comment on it was drafted by the assistant (GEN-063) */
+                            drafted: boolean;
+                            /** @description Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens */
+                            new: boolean;
                             /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
                             orphaned: boolean;
                             /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */
@@ -28001,6 +28057,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -67155,6 +67216,24 @@ export interface operations {
                             said: {
                                 [key: string]: unknown;
                             }[];
+                            /** @description Whoever has commented, in the order each first did */
+                            participants: {
+                                id: string & (unknown & unknown);
+                                name: string | null;
+                                /**
+                                 * @description True where the person is from outside the organisation; absent otherwise
+                                 * @constant
+                                 */
+                                external?: true;
+                            }[];
+                            /** @description The people its comments name as they read now, each once */
+                            mentioned: (string & (unknown & unknown))[];
+                            /** @description The words of every comment as it reads now, a line each */
+                            words: string;
+                            /** @description Whether a comment on it was drafted by the assistant (GEN-063) */
+                            drafted: boolean;
+                            /** @description Whether somebody else has commented since the caller last read it (COL-070); never for a thread that no longer opens */
+                            new: boolean;
                             /** @description Its anchor no longer stands (COL-017): in a component’s list, on its latest version; in a document’s, a node on the latest outline and a component’s anchor on every version its occurrences resolve to */
                             orphaned: boolean;
                             /** @description In a document’s list, a component’s thread: each occurrence placing it, and whether it stands there */
@@ -67395,6 +67474,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -123860,6 +123944,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -124071,6 +124160,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -124323,6 +124417,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -124560,6 +124659,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -124777,6 +124881,11 @@ export interface operations {
                             };
                             /** Format: date-time */
                             at: string;
+                            /** @description Drafted by the assistant and accepted by its author (GEN-063); absent otherwise */
+                            drafted?: {
+                                /** @description The model that drafted it; null where the run named none, or for a reader from outside */
+                                model: string | null;
+                            };
                             /** @description Every text it has had, the latest last */
                             texts: {
                                 parts: {
@@ -124853,6 +124962,123 @@ export interface operations {
             };
             /** @description `thread_resolved`: the thread is resolved, and takes nothing more */
             409: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description An error, in the one shape every error takes */
+            default: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+        };
+    };
+    markThreadsRead: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional caller-supplied trace identifier (up to 128 safe characters). */
+                "X-Request-Id"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "threads": [
+                 *         "00000000-0000-4000-8000-000000000001"
+                 *       ]
+                 *     }
+                 */
+                "application/json": {
+                    /** @description The threads the caller has now read */
+                    threads: (string & (unknown & unknown))[];
+                };
+            };
+        };
+        responses: {
+            /** @description Marked */
+            204: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `invalid_request`: not a list of threads */
+            400: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description No session, or not one this environment issued */
+            401: {
+                headers: {
+                    /** @description Trace identifier assigned to this request. */
+                    "X-Request-Id"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Stable and machine-readable: branch on this, never on the message */
+                        code: string;
+                        /** @description For people. It may change between releases */
+                        message: string;
+                        /** @description The requirement or rule that refused the request, where one did */
+                        rule?: string;
+                        /** @description Quote this when reporting a problem */
+                        traceId: string;
+                    };
+                };
+            };
+            /** @description `token_not_allowed`: a read mark is a person’s, never a token’s */
+            403: {
                 headers: {
                     /** @description Trace identifier assigned to this request. */
                     "X-Request-Id"?: string;

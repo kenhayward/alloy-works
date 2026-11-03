@@ -381,6 +381,60 @@ describe('threads over HTTP (collaboration.md, Threads)', () => {
     );
   });
 
+  it('COL-018 COL-071 lists each thread with who spoke, who is named and every comment\'s latest words', async () => {
+    const version = await component([para('p1', 'Set the tray, then wait.')]);
+    const thread = (await start(version, SPAN, 'grace')).json<ThreadView>();
+    const replied = await call('POST', `/v1/threads/${thread.id}/comments`, 'ada', {
+      parts: [{ text: 'Yes, ' }, { mention: ids.grace }, { text: ' it is.' }],
+    });
+    const comment = replied.json<ThreadView>().comments[1]!.id;
+    await call('PUT', `/v1/threads/${thread.id}/comments/${comment}`, 'ada', {
+      parts: [{ text: 'Yes, ' }, { mention: ids.grace }, { text: ' it was.' }],
+    });
+    const listed = await call('GET', `/v1/components/${version.artifactId}/threads`, 'ada');
+    const [summary] = listed.json<ThreadList>().threads;
+    expect(summary!.participants.map((each) => each.id)).toEqual([ids.grace, ids.ada]);
+    expect(summary!.mentioned).toEqual([ids.grace]);
+    expect(summary!.words).toBe('Is this right?\nYes,  it was.');
+    expect(summary!.drafted).toBe(false);
+  });
+
+  it('COL-070 calls a thread new for a comment by somebody else after the reader\'s mark, never for their own', async () => {
+    const version = await component([para('p1', 'Set the tray, then wait.')]);
+    const thread = (await start(version, SPAN, 'grace')).json<ThreadView>();
+    const isNew = async (who: string) =>
+      (
+        await call('GET', `/v1/components/${version.artifactId}/threads`, who)
+      ).json<ThreadList>().threads[0]!.new;
+    expect(await isNew('grace')).toBe(false);
+    expect(await isNew('ada')).toBe(true);
+    const marked = await call('POST', '/v1/threads/read', 'ada', { threads: [thread.id] });
+    expect(marked.statusCode, marked.body).toBe(204);
+    expect(await isNew('ada')).toBe(false);
+    await call('POST', `/v1/threads/${thread.id}/comments`, 'ada', { parts: said('Mine.') });
+    expect(await isNew('ada')).toBe(false);
+    expect(await isNew('grace')).toBe(true);
+    await call('POST', `/v1/threads/${thread.id}/comments`, 'grace', { parts: said('Hers.') });
+    expect(await isNew('ada')).toBe(true);
+    // A mark taken twice stands, and never moves back.
+    await call('POST', '/v1/threads/read', 'ada', { threads: [thread.id] });
+    await call('POST', '/v1/threads/read', 'ada', { threads: [thread.id] });
+    expect(await isNew('ada')).toBe(false);
+  });
+
+  it('COL-070 passes over a thread its reader may not read, marking nothing', async () => {
+    const version = await component([para('p1', 'Set the tray, then wait.')], quality, 'grace');
+    const thread = (await start(version, SPAN, 'grace')).json<ThreadView>();
+    const marked = await call('POST', '/v1/threads/read', 'ada', {
+      threads: [thread.id, '00000000-0000-4000-8000-000000000000'],
+    });
+    expect(marked.statusCode, marked.body).toBe(204);
+    const held = await tenantDb.withTenant(tenant, (trx) =>
+      trx.selectFrom('thread_read').selectAll().where('thread_id', '=', thread.id).execute(),
+    );
+    expect(held).toEqual([]);
+  });
+
   it('COL-051 keeps every text of a comment its author edits, and refuses anybody else’s edit', async () => {
     const version = await component([para('p1', 'Set the tray.')]);
     const thread = (await start(version, { kind: 'component' })).json<ThreadView>();

@@ -270,6 +270,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
     expect(applied[own.id]).toEqual([
       '0058_query_roles',
@@ -410,6 +411,7 @@ describe('migration 0058, which starts every environment with Query builder and 
       '0193_space_language',
       '0194_moving',
       '0195_outline_proposals',
+      '0196_thread_panel',
     ]);
 
     expect(await queryRoles(development)).toEqual([

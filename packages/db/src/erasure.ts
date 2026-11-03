@@ -2,6 +2,7 @@ import { sql } from 'kysely';
 import { lockAccessForChange } from './access-facts.js';
 import { erasePersonalPrompts } from './personal-prompts.js';
 import { erasePersonLimit } from './generation-limits.js';
+import { eraseThreadReads } from './threads.js';
 import { eraseQueryEmbeddings } from './embeddings.js';
 import { revokeApiToken } from './api-tokens.js';
 import { eraseLabels, labels, principalLabel, recordEvent } from './audit.js';
@@ -194,6 +195,8 @@ export async function erasePerson(
   // Their own saved words go: nobody else reads them (G5-G).
   await erasePersonalPrompts(trx, state.person.id);
   await erasePersonLimit(trx, state.person.id);
+  // How far they read each thread (COL-070).
+  await eraseThreadReads(trx, state.person.id);
   // What they searched for, by meaning (the G7 plan, G7-G).
   await eraseQueryEmbeddings(trx, state.person.id);
   // The accepted invitation's row holds their address; it records nothing anything reads after.

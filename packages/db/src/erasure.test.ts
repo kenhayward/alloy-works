@@ -14,6 +14,7 @@ import { createComponent } from './creation.js';
 import { createDefinition } from './definitions.js';
 import { claimLock, saveIteration } from './editing.js';
 import { ERASED_NAME, erasePerson, erasureOf, holdPrincipal } from './erasure.js';
+import { markThreadsRead, startThread } from './threads.js';
 import { grant } from './grants.js';
 import { addToGroup, createGroup, setGroupMembers, syncProviderGroups } from './groups.js';
 import { claimInvitation, invite } from './invitations.js';
@@ -284,6 +285,33 @@ describe('erasure of a person', () => {
   afterAll(async () => {
     await service.close();
     await db.drop();
+  });
+
+  it('COL-070 removes their read marks as they are erased', async () => {
+    const { id, authored } = await grace();
+    const marks = () =>
+      as((trx) =>
+        trx.selectFrom('thread_read').selectAll().where('principal_id', '=', id).execute(),
+      );
+    await as(async (trx) => {
+      const version = await trx
+        .selectFrom('artifact_version')
+        .select('id')
+        .where('artifact_id', '=', authored)
+        .executeTakeFirstOrThrow();
+      const started = await startThread(trx, {
+        on: authored,
+        version: version.id,
+        anchor: { kind: 'component' },
+        parts: [{ text: 'Which tray?' }],
+        author: ada,
+      });
+      if (started.answer !== 'done') throw new Error(started.answer);
+      await markThreadsRead(trx, id, [started.thread]);
+    }, adaActs);
+    expect(await marks()).toHaveLength(1);
+    await as((trx) => erasePerson(trx, id, ada), adaActs);
+    expect(await marks()).toEqual([]);
   });
 
   it('VER-038 erases their name, address and every label naming them, and keeps their id, identity and what they wrote', async () => {
