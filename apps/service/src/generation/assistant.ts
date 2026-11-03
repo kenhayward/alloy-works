@@ -510,7 +510,11 @@ export function assistantHandlers(
             return await inDocument(async (trx) => {
               const found = await placed(trx, document, principal);
               if (!found) return missing('document');
-              const answer = await searchWords(trx, principal, query, { limit: 50 });
+              // A thread's entry is on its component too; a comment reaches no model.
+              const answer = await searchWords(trx, principal, query, {
+                limit: 50,
+                filters: { kinds: ['component'] },
+              });
               const hits =
                 typeof answer === 'object' && answer.outcome === 'results'
                   ? answer.items.filter((item) => found.readable.has(item.artifactId)).slice(0, 10)
