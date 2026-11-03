@@ -66,12 +66,21 @@ describe('a query definition over the whole system', () => {
   let general = '';
 
   const call = async (method: string, path: string, body?: unknown) => {
-    const response = await fetch(`${SERVICE}${path}`, {
-      method,
-      headers: { cookie, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-    return { status: response.status, body: (await response.json()) as Json };
+    // The connector answers 503 `connector_busy` at its concurrency cap and says to try again in a
+    // moment; the suite runs its tests in parallel against one connector, so a describe or sample
+    // can hit the cap (issue #478). Wait a moment and try again, as it says, a few times.
+    for (let attempt = 0; ; attempt++) {
+      const response = await fetch(`${SERVICE}${path}`, {
+        method,
+        headers: { cookie, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+      const parsed = (await response.json()) as Json;
+      if (response.status !== 503 || parsed['code'] !== 'connector_busy' || attempt >= 10) {
+        return { status: response.status, body: parsed };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
   };
 
   /** A connection to the development source as `account`, its password set and so tested. */

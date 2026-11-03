@@ -22,3 +22,7 @@
 - The style measurement test polled for the document page to render with the default five seconds; a
   loaded runner can take longer for the first render, and the poll timed out before the page drew.
   The polls now allow 30s, as the wait beside them already did. Fixes #813.
+- The query definition test hit the connector's concurrency cap when the suite ran its tests in
+  parallel: the connector answered 503 `connector_busy` and said to try again in a moment, and the
+  test took the refusal as a failure. It now waits a moment and tries again, as the connector says.
+  Fixes #478.
