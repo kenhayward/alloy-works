@@ -93,7 +93,7 @@ corpus.
 
 | ID          | Requirement                                                                                                                                                                                                                                                                                             | Tranche    | Status    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **GEN-007** | The assistant's tools must be the product's own capabilities - search, read, propose an edit, run a declared query - and nothing else                                                                                                                                                                   | Constraint | Specified |
+| **GEN-007** | The assistant's tools must be the product's own capabilities - search, read, and propose a change a person accepts - and nothing else                                                                                                                                                                   | Constraint | Specified |
 | **GEN-008** | Every tool call must be authorised exactly as the equivalent user action would be, using the calling user's identity (**IAM-036**)                                                                                                                                                                      | Constraint | Specified |
 | **GEN-009** | A tool call that changes anything must be confirmed by the user before it takes effect                                                                                                                                                                                                                  | Constraint | Specified |
 | **GEN-010** | The assistant must show what it did: which tools it called, with what arguments, and what came back                                                                                                                                                                                                     | T5         | Specified |
@@ -350,4 +350,4 @@ identifier, and only its tranche changes.
 
 ### The assistant reads comments, 2026-11-03
 
-GEN-061 added: Ken's answer to the AT plan, that comments reach a model through `read_comments` alone. GEN-062 added: the same plan's outline proposals.
+GEN-061 added: Ken's answer to the AT plan, that comments reach a model through `read_comments` alone. GEN-062 added: the same plan's outline proposals. GEN-007 reworded to what is built: it named a declared query, and no tool runs one; a query reaches a document through a binding.

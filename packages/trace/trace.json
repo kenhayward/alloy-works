@@ -5214,7 +5214,7 @@
     {
       "id": "GEN-007",
       "area": "GEN",
-      "statement": "The assistant's tools must be the product's own capabilities - search, read, propose an edit, run a declared query - and nothing else",
+      "statement": "The assistant's tools must be the product's own capabilities - search, read, and propose a change a person accepts - and nothing else",
       "tranche": "Constraint",
       "status": "Specified",
       "document": "GEN-generative-ai.md",
