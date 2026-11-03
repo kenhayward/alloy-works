@@ -161,6 +161,9 @@ describe("a bound table's notes and Wide, in Chromium (the TB3 plan, task 5)", (
       const surface = page.getByRole('textbox', { name: /^Content of / });
       await surface.waitFor();
       await surface.focus();
+      // Nothing chooses the Table tab for the reader (ADR-0079).
+      await page.getByRole('tab', { name: /^Table/ }).click();
+      await surface.focus();
       const panel = page.getByRole('group', { name: 'Bound table' });
       await panel.waitFor();
       const adding = panel.getByRole('group', { name: 'Add note' });

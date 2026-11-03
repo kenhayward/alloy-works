@@ -8,7 +8,16 @@ import { describe, expect, it } from 'vitest';
 import { blockCommand } from './blocks.js';
 import { fromEditor, toEditor } from './mapping.js';
 import { createEditorState, placeholderDecorations } from './state.js';
-import { setTableHeaders, setTableNumbered, tableAt, tableCommand } from './tables.js';
+import {
+  goToCell,
+  setTableHeaders,
+  setTableNumbered,
+  tableActionUnavailable,
+  tableAt,
+  tableCommand,
+  tableCursor,
+  tableGrid,
+} from './tables.js';
 
 const counter = (prefix = 'n') => {
   let next = 0;
@@ -363,5 +372,105 @@ describe('a table in the editor', () => {
         run(stateOf(documentOf(paragraph('p1', 'x')), 1), setTableNumbered(false)).handled,
       ).toBe(false);
     });
+  });
+});
+
+describe('what the Table tab reads of a table (the TT plan)', () => {
+  const opened = () => stateOf(documentOf(readings));
+  const at = (what: string) => stateOf(documentOf(readings), inside(opened().doc, what));
+
+  it('CNT-016 reads each cell by its place in the grid, with its spans, its words and whether it heads', () => {
+    const state = opened();
+    const grid = tableGrid(state.doc.nodeAt(0)!);
+    expect(grid.rows).toBe(3);
+    expect(grid.columns).toBe(3);
+    expect(grid.cells).toEqual([
+      { row: 0, column: 0, rowSpan: 1, colSpan: 1, words: 'Site', header: true },
+      { row: 0, column: 1, rowSpan: 1, colSpan: 2, words: 'Values', header: true },
+      { row: 1, column: 0, rowSpan: 2, colSpan: 1, words: 'York', header: true },
+      { row: 1, column: 1, rowSpan: 1, colSpan: 1, words: '1', header: false },
+      { row: 1, column: 2, rowSpan: 1, colSpan: 1, words: '2', header: false },
+      { row: 2, column: 1, rowSpan: 1, colSpan: 1, words: '3', header: false },
+      { row: 2, column: 2, rowSpan: 1, colSpan: 1, words: '4', header: false },
+    ]);
+    // Read once per table node, which an unchanged table keeps across a change elsewhere.
+    expect(tableGrid(state.doc.nodeAt(0)!)).toBe(grid);
+  });
+
+  it('says where the cursor stands: a cell with its spans, the caption, or the note', () => {
+    expect(tableCursor(at('c5'))).toEqual({
+      where: 'cell',
+      row: 1,
+      column: 2,
+      rowSpan: 1,
+      colSpan: 1,
+      selected: null,
+    });
+    expect(tableCursor(at('c3'))).toMatchObject({ row: 1, column: 0, rowSpan: 2 });
+    expect(tableCursor(at('caption'))).toEqual({ where: 'caption' });
+    let note = -1;
+    opened().doc.descendants((node, pos) => {
+      if (node.type.name === 'tableNote') note = pos + 1;
+    });
+    expect(tableCursor(stateOf(documentOf(readings), note))).toEqual({ where: 'note' });
+  });
+
+  it('counts a selection of cells by the cells it holds, not the places they cover', () => {
+    const widened = run(at('c4'), goToCell(2, 2, { extend: true })).next;
+    expect(widened.selection).toBeInstanceOf(CellSelection);
+    expect(tableCursor(widened)).toMatchObject({
+      row: 2,
+      column: 2,
+      selected: { top: 1, left: 1, bottom: 3, right: 3, cells: 4 },
+    });
+    // A selection of one cell is no selection of cells: there is nothing to merge.
+    expect(tableCursor(run(at('c4'), goToCell(1, 1, { extend: true })).next)).toMatchObject({
+      selected: null,
+    });
+  });
+
+  it('CNT-016 moves the cursor to a cell by its place, a place a span covers meaning the cell that covers it', () => {
+    const moved = run(at('c4'), goToCell(2, 2));
+    expect(moved.handled).toBe(true);
+    expect(moved.next.selection).toBeInstanceOf(TextSelection);
+    expect(moved.next.selection.$from.parent.textContent).toBe('4');
+    // Row 2, column 0 is under York, which spans rows 1 and 2.
+    expect(run(at('c4'), goToCell(2, 0)).next.selection.$from.parent.textContent).toBe('York');
+    expect(run(at('c4'), goToCell(9, 0)).handled).toBe(false);
+    expect(run(at('c4'), goToCell(0, 9)).handled).toBe(false);
+  });
+
+  it('moves to a table named by where it stands, from anywhere in the text', () => {
+    const state = stateOf(documentOf(paragraph('p1', 'Before'), readings), 1);
+    expect(tableAt(state)).toBeNull();
+    let pos = -1;
+    state.doc.descendants((node, place) => {
+      if (node.type.name === 'tableFigure') pos = place;
+    });
+    const moved = run(state, goToCell(0, 0, { pos })).next;
+    expect(moved.selection.$from.parent.textContent).toBe('Site');
+    expect(tableAt(moved)?.pos).toBe(pos);
+  });
+
+  it('gives the reason a command would do nothing, and none where it would act', () => {
+    expect(tableActionUnavailable('rowAbove', at('c4'))).toBeNull();
+    expect(tableActionUnavailable('rowAbove', at('caption'))).toBe('cell');
+    expect(tableActionUnavailable('merge', at('caption'))).toBe('cell');
+    expect(tableActionUnavailable('merge', at('c4'))).toBe('merge');
+    expect(tableActionUnavailable('split', at('c4'))).toBe('split');
+    expect(tableActionUnavailable('split', at('c3'))).toBeNull();
+    const two = run(at('c4'), goToCell(1, 2, { extend: true })).next;
+    expect(tableActionUnavailable('merge', two)).toBeNull();
+    const single: BlockNode = {
+      ...readings,
+      headerRows: 0,
+      headerColumns: 0,
+      keyColumns: [],
+      rows: [{ cells: [cell('only', 'One')] }],
+    };
+    const one = stateOf(documentOf(single), inside(stateOf(documentOf(single)).doc, 'only'));
+    expect(tableActionUnavailable('deleteRow', one)).toBe('lastRow');
+    expect(tableActionUnavailable('deleteColumn', one)).toBe('lastColumn');
+    expect(tableActionUnavailable('deleteTable', one)).toBeNull();
   });
 });

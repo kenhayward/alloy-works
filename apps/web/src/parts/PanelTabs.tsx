@@ -14,6 +14,8 @@ export interface PanelTab {
   readonly name?: string;
   /** `warn` where it holds the page back (ADR-0050, decision 3). */
   readonly tone?: 'warn';
+  /** A small accent dot: something here bears on where the cursor is (ADR-0079). Say so in `name`. */
+  readonly dot?: boolean;
   /** How many it lists, drawn after the label and named after it. */
   readonly count?: number;
   /** Not available yet: marked so, passed over by the arrows, and a click does nothing. */
@@ -101,6 +103,7 @@ export function PanelTabs({
           {tab.count !== undefined && (
             <span className={styles['tabCount']}>{formats().number(tab.count)}</span>
           )}
+          {tab.dot && <span className={styles['tabDot']} data-dot aria-hidden="true" />}
         </button>
       ))}
     </div>

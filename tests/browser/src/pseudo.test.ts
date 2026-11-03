@@ -48,6 +48,8 @@ interface Graces {
   readonly token: string;
   /** Her component holding a figure. */
   readonly figured: string;
+  /** Her component holding a table. */
+  readonly tabled: string;
 }
 
 /** What Ada's walk opens its dialogs over. */
@@ -293,6 +295,27 @@ const surfaces = (grace: Graces): readonly Surface[] => [
         })
         .click();
       return page.getByRole('dialog', { name: say(language, 'editor.figure-settings') });
+    },
+  },
+  {
+    // A table's settings, from its floating toolbar with the caret in a cell (ADR-0079).
+    name: 'The Table settings popover',
+    dialog: 'editor/TableToolbar.tsx',
+    address: `#/components/${grace.tabled}`,
+    regions: ['[role="dialog"]'],
+    ready: (page, language) =>
+      page.getByRole('button', { name: say(language, 'pm.command.strong'), exact: true }),
+    open: async (page, language) => {
+      await page.locator('.ProseMirror').getByText('The cell', { exact: true }).click();
+      await page
+        .getByRole('button', {
+          name: say(language, 'editor.table-settings-of', {
+            named: say(language, 'editor.table'),
+          }),
+          exact: true,
+        })
+        .click();
+      return page.getByRole('dialog', { name: say(language, 'editor.table-settings') });
     },
   },
   // The component's own header: what it may be, where it is used, and its relationships.
@@ -807,6 +830,31 @@ async function graces(): Promise<Graces> {
           imageStyle: 'figure',
           caption: words('The figure'),
           alternative: { kind: 'own', text: 'A blue rectangle' },
+        },
+      ])
+    ).id,
+    tabled: (
+      await makeComponent(grace, 'Pseudo table', [
+        {
+          type: 'table',
+          id: 't1',
+          style: 'table',
+          caption: words('The table'),
+          headerRows: 0,
+          headerColumns: 0,
+          rows: [
+            {
+              cells: [
+                {
+                  content: [
+                    { type: 'paragraph', id: 'c1', style: 'body', content: words('The cell') },
+                  ],
+                  colspan: 1,
+                  rowspan: 1,
+                },
+              ],
+            },
+          ],
         },
       ])
     ).id,

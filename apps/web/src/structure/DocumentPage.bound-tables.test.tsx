@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { shimRangeMeasurement } from '../test/range.js';
 import { DEFAULT_PRESENTATION } from '../theme/presentation.fixture.js';
-import { DocumentPage } from './DocumentPage.js';
+import { DOCK_KEY, DocumentPage, selectionMayTake } from './DocumentPage.js';
 import {
   ADA,
   client,
@@ -249,6 +249,11 @@ describe("a document's bound table", () => {
   }
 
   const textRegion = () => screen.findByRole('region', { name: "The document's text" });
+  /** Chooses the Table tab, which nothing chooses for the reader, unless a test before chose it. */
+  const chooseTableTab = async (user: ReturnType<typeof userEvent.setup>) => {
+    const tab = await screen.findByRole('tab', { name: /^Table/ });
+    if (tab.getAttribute('aria-selected') !== 'true') await user.click(tab);
+  };
   const rowsAsked = (asked: readonly string[]) => asked.filter((each) => each.includes('/rows'));
 
   it('draws its first rows from the rows route, once, laid out by the page', async () => {
@@ -295,18 +300,25 @@ describe("a document's bound table", () => {
     );
   });
 
-  it('offers the Table tab first while a component holding a table is open in place, chosen as the cursor enters it (ADR-0052)', async () => {
+  it('offers the Table tab first while a component holding a table is open in place, marked rather than chosen as the cursor enters it (ADR-0052, ADR-0079)', async () => {
     const user = userEvent.setup();
+    localStorage.removeItem(DOCK_KEY);
     opened(3, true);
     const text = await textRegion();
     await within(text).findByRole('rowheader', { name: 'S0' });
     const tabs = screen.getByRole('tablist', { name: 'Document panels' });
     expect(within(tabs).queryByRole('tab', { name: 'Table' })).toBeNull();
     await user.click(within(text).getByText('Readings by site'));
-    const panel = await screen.findByRole('group', { name: 'Bound table' });
-    const table = within(tabs).getByRole('tab', { name: 'Table' });
+    const table = await within(tabs).findByRole('tab', { name: 'Table, the cursor is in a table' });
     expect(within(tabs).getAllByRole('tab')[0]).toBe(table);
-    expect(table).toHaveAttribute('aria-selected', 'true');
+    expect(table).toHaveAttribute('aria-selected', 'false');
+    expect(table.querySelector('[data-dot]')).not.toBeNull();
+    await user.click(table);
+    const panel = await screen.findByRole('group', { name: 'Bound table' });
+    expect(within(tabs).getByRole('tab', { name: 'Table' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(screen.getByRole('tabpanel', { name: 'Table' })).toContainElement(panel);
     // Not under the toolbar: the text keeps its width.
     expect(within(text).queryByRole('group', { name: 'Bound table' })).toBeNull();
@@ -317,6 +329,13 @@ describe("a document's bound table", () => {
     await user.keyboard('{ArrowLeft}');
     expect(edge).toHaveAttribute('aria-valuenow', '450');
     expect(edge.closest('[data-dock-collapsed]')).toHaveStyle({ '--dock-panel': '450px' });
+  });
+
+  it('leaves Threads and the Assistant alone when a selection offers something, and takes other panels (ADR-0079)', () => {
+    expect(selectionMayTake('threads')).toBe(false);
+    expect(selectionMayTake('assistant')).toBe(false);
+    expect(selectionMayTake('part')).toBe(true);
+    expect(selectionMayTake('table')).toBe(true);
   });
 
   it('takes Ctrl S from the browser while a component is open in place, and cuts no version by it (ADR-0076)', async () => {
@@ -347,6 +366,7 @@ describe("a document's bound table", () => {
     const surface = await within(text).findByRole('textbox', {
       name: 'Content of Install the printer',
     });
+    await chooseTableTab(user);
     const panel = await screen.findByRole('group', { name: 'Bound table' });
     await user.click(within(panel).getByRole('button', { name: /^Notes/ }));
     const adding = within(panel).getByRole('group', { name: 'Add note' });
@@ -398,6 +418,7 @@ describe("a document's bound table", () => {
       name: 'Content of Install the printer',
     });
     // Opened where the caption was clicked, so the panel shapes its table.
+    await chooseTableTab(user);
     const panel = await screen.findByRole('group', { name: 'Bound table' });
     await waitFor(() =>
       expect(within(panel).getByRole('button', { name: 'Add column' })).toHaveAttribute(

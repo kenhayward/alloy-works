@@ -369,8 +369,10 @@ decisions FN-A to FN-F these follow:
   (equations 1), and so does a citation (CId). What it holds is the footnote's
   node content, so identity, the adjacency rule and the annotation repair reach it as they reach any
   paragraph, and one undo stack covers both editors.
-- **The table's note** (CNT-038) is added and removed from the Table panel (**Add note**, **Remove
-  note**) and edited in place beneath the table, a line of inline content as a caption is.
+- **The table's note** (CNT-038) is added and removed from the table's settings (**Note beneath the
+  table**) and edited in place beneath the table, a line of inline content as a caption is.
+- **A plain table's controls** are a floating toolbar and the Table tab as a map, each asking the same
+  commands ([ADR-0079](../decisions/0079-a-tables-toolbar-floats-and-its-tab-is-a-map.md)).
 
 A footnote's content is a nested editor on the **restricted schema** - paragraphs only, holding the
 inline content CNT-129 allows, and no table or image - so the restriction is structural, not a check.

@@ -69,6 +69,8 @@ import {
   listAt,
   preformattedAt,
   tableAt,
+  tableGrid,
+  goToCell,
   tablesIn,
   mountEditor,
   openFootnote,
@@ -169,6 +171,7 @@ import {
 } from './recovery.js';
 import { RecoveryPanel } from './RecoveryPanel.js';
 import { TablePanel } from './TablePanel.js';
+import { TableToolbar } from './TableToolbar.js';
 import { ValuePanel } from './ValuePanel.js';
 import type { BindingState } from '../structure/bindingContexts.js';
 import { MarkPrompt, type Refused } from './MarkPrompt.js';
@@ -299,10 +302,10 @@ export interface ComponentEditorProps {
    */
   readonly tableHost?: HTMLElement | null;
   /**
-   * Told whether the component holds a table, and how many times the cursor has entered one: the
-   * page offers the Table tab while it holds one, and chooses it each time the count goes up.
+   * Told whether the component holds a table, and whether the cursor is in one: the page offers the
+   * Table tab while it holds one, and marks it while the cursor is in one (ADR-0079).
    */
-  readonly onTable?: (table: { readonly holds: boolean; readonly entered: number }) => void;
+  readonly onTable?: (table: { readonly holds: boolean; readonly inHand: boolean }) => void;
   /** Its section number, where it is open in place in a document; there is none standalone. */
   readonly number?: string;
   /**
@@ -724,6 +727,7 @@ export function ComponentEditor({
   const preformattedRegion = useRef<HTMLDivElement | null>(null);
   // The table panel's, which comes and goes the same way, with a table (tables 1).
   const tableRegion = useRef<HTMLDivElement | null>(null);
+  const tableToolbarRegion = useRef<HTMLDivElement | null>(null);
   // The figure panel's, while the cursor stands in a figure (figures 2, ruling R5).
   const figureRegion = useRef<HTMLDivElement | null>(null);
   const frameRegion = useRef<HTMLDivElement | null>(null);
@@ -2127,6 +2131,7 @@ export function ComponentEditor({
       frameRegion.current,
       headerRegion.current,
       toolbarRegion.current,
+      tableToolbarRegion.current,
       listRegion.current,
       preformattedRegion.current,
       tableRegion.current,
@@ -2179,9 +2184,8 @@ export function ComponentEditor({
     return headerOf(view.state.doc);
   };
 
-  // Whether the component holds a table, and each entry of the cursor into one (ADR-0052): the page
-  // offers the Table tab while it holds one, and chooses it as the cursor enters one. Above the
-  // returns below, as every hook is.
+  // Whether the component holds a table, and whether the cursor is in one (ADR-0052, ADR-0079): the
+  // page offers the Table tab and marks it. Above the returns below, as every hook is.
   const holdsTable = surface !== null && holdsATable(surface.state.doc);
   const tableKey =
     surface === null
@@ -2192,24 +2196,21 @@ export function ComponentEditor({
           const plain = tableAt(surface.state);
           return plain === null ? null : `table-${plain.id ?? plain.pos}`;
         })();
-  const lastTable = useRef<string | null>(null);
   // The table the cursor was last in, which the Table tab shows read only once it leaves (TF-E).
   const [lastSeenTable, setLastSeenTable] = useState<string | null>(null);
-  const [entered, setEntered] = useState(0);
   useEffect(() => {
-    if (tableKey !== null && tableKey !== lastTable.current) setEntered((count) => count + 1);
     if (tableKey !== null) setLastSeenTable(tableKey);
-    lastTable.current = tableKey;
   }, [tableKey]);
-  // Closed, it holds no table, and the next editor's first entry is a new one.
+  const tableInHand = tableKey !== null;
+  // Closed, it holds no table.
   const toldTable = useRef(onTable);
   toldTable.current = onTable;
-  useEffect(() => () => toldTable.current?.({ holds: false, entered: 0 }), []);
+  useEffect(() => () => toldTable.current?.({ holds: false, inHand: false }), []);
   useEffect(() => {
-    onTable?.({ holds: holdsTable, entered });
+    onTable?.({ holds: holdsTable, inHand: tableInHand });
     // Told what changed, not each new callback the page hands down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdsTable, entered]);
+  }, [holdsTable, tableInHand]);
   const activeHandle = usePublishActiveEditor();
   // Whether the selection stands where the panels' Selection tab has something to say, set past the
   // returns below, where what it depends on is known, and told once the render is done.
@@ -2334,12 +2335,26 @@ export function ComponentEditor({
             }
           : null;
   const mayFormat = shown.mayEdit && isEditablePhase(phase);
+  // The table's number in the document it is open in (ADR-0079), from what the document offers a
+  // reference, so a number IAM-073 withholds stays withheld; none standalone, where nothing numbers it.
+  const tableNumber =
+    table === null
+      ? null
+      : (referenceContext?.targets.find(
+          (each) => each.target.kind === 'block' && each.target.block === table.id,
+        )?.label ?? null);
   /** A table's panels, plain or bound, while the cursor stands in one. */
   const tablePanels = () => (
     <>
       {/* And only while the cursor stands in a table: its header counts and its grid's acts. */}
       {surface !== null && table !== null && (
-        <TablePanel ref={tableRegion} view={surface} table={table} enabled={mayFormat} />
+        <TablePanel
+          ref={tableRegion}
+          view={surface}
+          table={table}
+          enabled={mayFormat}
+          number={tableNumber}
+        />
       )}
       {/* And while the cursor stands in a bound table (TB2-F): its presentation, a band whose
           first line is its value (ADR-0051). */}
@@ -2441,7 +2456,30 @@ export function ComponentEditor({
     }
     const plain =
       table ?? found.plain.find((each) => keyOf('table', each) === lastSeenTable) ?? found.plain[0];
-    return plain === undefined ? null : <TableReadOnly key={keyOf('table', plain)} table={plain} />;
+    if (plain === undefined) return null;
+    const figure = surface.state.doc.nodeAt(plain.pos)!;
+    return (
+      <TableReadOnly
+        key={keyOf('table', plain)}
+        table={plain}
+        grid={tableGrid(figure)}
+        caption={figure.child(0).textContent}
+        number={
+          referenceContext?.targets.find(
+            (each) => each.target.kind === 'block' && each.target.block === plain.id,
+          )?.label ?? null
+        }
+        onGoTo={() => {
+          // Editing, into its first cell; reading, where it stands, since no cursor can go there.
+          if (mayFormat) {
+            goToCell(0, 0, { pos: plain.pos })(surface.state, surface.dispatch);
+            surface.focus();
+          } else if (surface.nodeDOM(plain.pos) instanceof Element) {
+            (surface.nodeDOM(plain.pos) as Element).scrollIntoView({ block: 'center' });
+          }
+        }}
+      />
+    );
   };
 
   /** The Value panel, one line, on what `valued` names. */
@@ -3330,6 +3368,21 @@ export function ComponentEditor({
               />
             )}
             {placeTables(tablePanels())}
+            {/* On the table, in the reader's theme, whichever tab the panel shows (ADR-0079). Not
+                while a footnote is open over it, nor a dialog. */}
+            {surface !== null &&
+              table !== null &&
+              mayFormat &&
+              !behindDialog &&
+              openFootnote(surface) === null && (
+                <TableToolbar
+                  ref={tableToolbarRegion}
+                  view={surface}
+                  table={table}
+                  enabled={mayFormat}
+                  number={tableNumber}
+                />
+              )}
             {/* What the last paste changed, while the surface takes changes: a report about a paste
                 into a component that has since been lost to someone else is about nothing here. */}
             {surface !== null && pasteReport !== null && mayFormat && (

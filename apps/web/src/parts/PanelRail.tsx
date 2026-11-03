@@ -133,6 +133,7 @@ export function PanelRail({
               {tab.tone === 'warn' && tab.count === undefined && (
                 <span className={styles['dot']} aria-hidden="true" />
               )}
+              {tab.dot && <span className={styles['accentDot']} data-dot aria-hidden="true" />}
               <span
                 className={styles['name']}
                 data-rail-name=""

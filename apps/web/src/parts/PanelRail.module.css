@@ -93,13 +93,18 @@
   background: var(--warn);
 }
 
-.dot {
+.dot,
+.accentDot {
   position: absolute;
   top: 4px;
   inset-inline-end: 4px;
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
+}
+
+.accentDot {
+  background: var(--accent);
 }
 
 /* Towards the text: the start side, whichever way the line runs. */

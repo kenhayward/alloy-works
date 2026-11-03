@@ -16,6 +16,7 @@ import {
   addColumnBefore,
   addRowAfter,
   addRowBefore,
+  CellSelection,
   deleteColumn,
   deleteRow,
   mergeCells,
@@ -407,6 +408,198 @@ export function tableCommand(action: TableAction): Command {
     case 'removeNote':
       return removeNote;
   }
+}
+
+/** Why a command in the panel or on the toolbar would do nothing: each a sentence in `apps/web`. */
+export type TableUnavailable = 'cell' | 'merge' | 'split' | 'lastRow' | 'lastColumn';
+
+/**
+ * **Why this command would do nothing here**, or null where it would act: asked of the command itself,
+ * so a button's state and its reason cannot disagree. A command with no reason to give (a note already
+ * added, say) answers null as well, and no control offers one where it cannot act.
+ */
+export function tableActionUnavailable(
+  action: TableAction,
+  state: EditorState,
+): TableUnavailable | null {
+  if (tableCommand(action)(state)) return null;
+  switch (action) {
+    case 'merge':
+      return tableCursor(state)?.where === 'cell' ? 'merge' : 'cell';
+    case 'split':
+      return tableCursor(state)?.where === 'cell' ? 'split' : 'cell';
+    case 'deleteRow':
+      return tableCursor(state)?.where === 'cell' ? 'lastRow' : 'cell';
+    case 'deleteColumn':
+      return tableCursor(state)?.where === 'cell' ? 'lastColumn' : 'cell';
+    case 'rowAbove':
+    case 'rowBelow':
+    case 'columnBefore':
+    case 'columnAfter':
+      return 'cell';
+    default:
+      return null;
+  }
+}
+
+/** One cell of a table, by the first place in the grid it covers (the TT plan). */
+export interface TableGridCell {
+  readonly row: number;
+  readonly column: number;
+  readonly rowSpan: number;
+  readonly colSpan: number;
+  /** Its text alone, which the Table tab's map shows of a heading or a row's label. */
+  readonly words: string;
+  readonly header: boolean;
+}
+
+/** A table's grid, as the Table tab's map draws it. */
+export interface TableGrid {
+  readonly rows: number;
+  readonly columns: number;
+  readonly cells: readonly TableGridCell[];
+}
+
+const grids = new WeakMap<Node, TableGrid>();
+
+/** The grid of a `tableFigure`, read once per table node: nodes never change, so nor does this. */
+export function tableGrid(figure: Node): TableGrid {
+  const table = figure.child(1);
+  const held = grids.get(table);
+  if (held !== undefined) return held;
+  const map = TableMap.get(table);
+  const cells = [...new Set(map.map)].map((cellPos) => {
+    const cell = table.nodeAt(cellPos)!;
+    const place = map.findCell(cellPos);
+    return {
+      row: place.top,
+      column: place.left,
+      rowSpan: place.bottom - place.top,
+      colSpan: place.right - place.left,
+      words: cell.textContent,
+      header: cell.type === headerNode,
+    };
+  });
+  const grid = { rows: map.height, columns: map.width, cells };
+  grids.set(table, grid);
+  return grid;
+}
+
+/** Where the cursor stands in the table it is in: a cell, or the caption or the note, which have no row. */
+export type TableCursor =
+  | { readonly where: 'caption' | 'note' }
+  | {
+      readonly where: 'cell';
+      readonly row: number;
+      readonly column: number;
+      readonly rowSpan: number;
+      readonly colSpan: number;
+      /** A selection of two cells or more, as a rectangle of the grid, or null. */
+      readonly selected: {
+        readonly top: number;
+        readonly left: number;
+        readonly bottom: number;
+        readonly right: number;
+        readonly cells: number;
+      } | null;
+    };
+
+/** Where the selection stands in its table, or null outside any. */
+export function tableCursor(state: EditorState): TableCursor | null {
+  const { selection } = state;
+  if (selection instanceof CellSelection) {
+    const table = selection.$headCell.node(-1);
+    const start = selection.$headCell.start(-1);
+    const map = TableMap.get(table);
+    const rect = map.rectBetween(
+      selection.$anchorCell.pos - start,
+      selection.$headCell.pos - start,
+    );
+    const head = map.findCell(selection.$headCell.pos - start);
+    const cells = map.cellsInRect(rect).length;
+    return {
+      where: 'cell',
+      row: head.top,
+      column: head.left,
+      rowSpan: head.bottom - head.top,
+      colSpan: head.right - head.left,
+      selected:
+        cells < 2
+          ? null
+          : {
+              top: rect.top,
+              left: rect.left,
+              bottom: rect.bottom,
+              right: rect.right,
+              cells,
+            },
+    };
+  }
+  const { $from } = selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+    if (node.type === tableCaptionNode) return { where: 'caption' };
+    if (node.type.name === 'tableNote') return { where: 'note' };
+    if (node.type === cellNode || node.type === headerNode) {
+      const table = $from.node(depth - 2);
+      if (table.type !== tableNode) return null;
+      const place = TableMap.get(table).findCell($from.before(depth) - $from.start(depth - 2));
+      return {
+        where: 'cell',
+        row: place.top,
+        column: place.left,
+        rowSpan: place.bottom - place.top,
+        colSpan: place.right - place.left,
+        selected: null,
+      };
+    }
+    if (node.type === tableFigureNode) return null;
+  }
+  return null;
+}
+
+/**
+ * **Moves the cursor to a cell by its place in the grid**, the Table tab's map's act (the TT plan): into
+ * the cell covering that place, or, with `extend`, a selection of cells from where the selection is
+ * anchored to it. In the table the cursor stands in, or the one at `pos`. Declines a place the table does
+ * not have.
+ */
+export function goToCell(
+  row: number,
+  column: number,
+  { extend = false, pos }: { readonly extend?: boolean; readonly pos?: number } = {},
+): Command {
+  return (state, dispatch) => {
+    const figureAt = pos ?? tableAt(state)?.pos;
+    if (figureAt === undefined) return false;
+    const figure = state.doc.nodeAt(figureAt);
+    if (figure?.type !== tableFigureNode) return false;
+    const table = figure.child(1);
+    const map = TableMap.get(table);
+    if (row < 0 || column < 0 || row >= map.height || column >= map.width) return false;
+    const start = figureAt + 1 + figure.child(0).nodeSize + 1;
+    const cell = start + map.map[row * map.width + column]!;
+    if (dispatch) {
+      const here = tableCursor(state);
+      const anchor = !extend
+        ? null
+        : state.selection instanceof CellSelection
+          ? state.selection.$anchorCell.pos
+          : here?.where === 'cell'
+            ? start + map.map[here.row * map.width + here.column]!
+            : null;
+      dispatch(
+        state.tr
+          .setSelection(
+            anchor === null
+              ? TextSelection.near(state.doc.resolve(cell + 1))
+              : CellSelection.create(state.doc, anchor, cell),
+          )
+          .scrollIntoView(),
+      );
+    }
+    return true;
+  };
 }
 
 const boundTableNode = editorSchema.nodes.boundTable!;
