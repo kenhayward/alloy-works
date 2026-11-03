@@ -677,8 +677,7 @@ export async function archiveHeldElsewhere(
                     and id is distinct from ${except.tenantExport ?? null}::uuid)
         or exists (select from import where object_key = ${archive.key}) as held`.execute(trx);
   return (
-    rows[0]!.held ||
-    (await objectInUse(trx, archive.key, '00000000-0000-0000-0000-000000000000'))
+    rows[0]!.held || (await objectInUse(trx, archive.key, '00000000-0000-0000-0000-000000000000'))
   );
 }
 
@@ -708,7 +707,9 @@ async function restoreIdentities(
                scim_claim = ${here.scim_claim}, closed_at = ${here.closed_at}
          where issuer = ${issuer}`.execute(trx);
     } else {
-      await sql`update identity_provider set closed_at = now() where issuer = ${issuer}`.execute(trx);
+      await sql`update identity_provider set closed_at = now() where issuer = ${issuer}`.execute(
+        trx,
+      );
     }
   }
   // Each person mapped signs in by the provider they were mapped to; an actor is never reassigned.

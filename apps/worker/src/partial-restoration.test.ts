@@ -436,28 +436,32 @@ describe('a part of a tenant imported into one in use (the EI plan, EId)', () =>
       rows: readonly Record<string, unknown>[],
       columns: string[],
     ) =>
-      forged(archive, (entry, content) => {
-        // The table's file takes the place of a references list it would otherwise lack.
-        if (entry === 'manifest.json') {
-          const manifest = JSON.parse(content.toString()) as {
-            tables: Record<string, unknown>;
-          };
-          manifest.tables[name] = {
-            file: `tables/${name}.jsonl.gz`,
-            rows: rows.length,
-            bytes: 100_000,
-          };
-          return Buffer.from(JSON.stringify(manifest));
-        }
-        if (entry === 'schema.json') {
-          const schema = JSON.parse(content.toString()) as {
-            tables: Record<string, unknown>;
-          };
-          schema.tables[name] = { columns: columns.map((column) => ({ name: column })) };
-          return Buffer.from(JSON.stringify(schema));
-        }
-        return undefined;
-      }, [[path, file]]);
+      forged(
+        archive,
+        (entry, content) => {
+          // The table's file takes the place of a references list it would otherwise lack.
+          if (entry === 'manifest.json') {
+            const manifest = JSON.parse(content.toString()) as {
+              tables: Record<string, unknown>;
+            };
+            manifest.tables[name] = {
+              file: `tables/${name}.jsonl.gz`,
+              rows: rows.length,
+              bytes: 100_000,
+            };
+            return Buffer.from(JSON.stringify(manifest));
+          }
+          if (entry === 'schema.json') {
+            const schema = JSON.parse(content.toString()) as {
+              tables: Record<string, unknown>;
+            };
+            schema.tables[name] = { columns: columns.map((column) => ({ name: column })) };
+            return Buffer.from(JSON.stringify(schema));
+          }
+          return undefined;
+        },
+        [[path, file]],
+      );
 
     it('IMP-039 a part holding access', async () => {
       await refused(withTable('access_grant', [], ['id']), 'export_invalid', /cannot hold/);

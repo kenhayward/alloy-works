@@ -446,11 +446,7 @@ export async function sweepRestorations(
       });
       for (const { id, key, sha256 } of expired) {
         await db.withTenant(tenant, async (trx) => {
-          const elsewhere = await archiveHeldElsewhere(
-            trx,
-            { key, sha256 },
-            { restoration: id },
-          );
+          const elsewhere = await archiveHeldElsewhere(trx, { key, sha256 }, { restoration: id });
           if (!elsewhere) await store.remove(key);
           await forgetRestorationArchive(trx, id);
         });

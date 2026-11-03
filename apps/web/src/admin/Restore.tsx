@@ -14,8 +14,8 @@ interface Report {
 }
 const sum = (counts: Readonly<Record<string, number>>) =>
   Object.values(counts).reduce((total, rows) => total + rows, 0);
-const reportWords = (report: Report) =>
-  words('admin.restore-part-counts', {
+const reportWords = (report: Report, done: boolean) =>
+  words(done ? 'admin.restore-part-did' : 'admin.restore-part-would', {
     added: sum(report.added),
     already: sum(report.already),
     conflicts: report.conflictCount,
@@ -202,7 +202,7 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
       {current?.state === 'applying' && <p role="status">{words('admin.restore-applying')}</p>}
       {current?.state === 'restored' && (
         <p role="status">
-          {current.report ? reportWords(current.report) : words('admin.restore-done')}
+          {current.report ? reportWords(current.report, true) : words('admin.restore-done')}
         </p>
       )}
       {(current?.state === 'refused' || current?.state === 'failed') && current.refusal && (
@@ -228,7 +228,7 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
           </p>
           {plan.would && (
             <>
-              <p>{reportWords(plan.would)}</p>
+              <p>{reportWords(plan.would, false)}</p>
               <p>{words('admin.restore-part-waits')}</p>
             </>
           )}
@@ -244,12 +244,18 @@ export function Restore({ client, followMs = 2000 }: { client: Client; followMs?
                 value={mapped[issuer] ?? KEEP}
                 onChange={(event) => setMapped((was) => ({ ...was, [issuer]: event.target.value }))}
               >
-                <option value={KEEP}>{words('admin.restore-issuer-keep')}</option>
-                {current.providers.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
-                  </option>
-                ))}
+                <option value={KEEP}>
+                  {current.providers.includes(issuer)
+                    ? words('admin.restore-issuer-here')
+                    : words('admin.restore-issuer-keep')}
+                </option>
+                {current.providers
+                  .filter((provider) => provider !== issuer)
+                  .map((provider) => (
+                    <option key={provider} value={provider}>
+                      {provider}
+                    </option>
+                  ))}
               </select>
             </label>
           ))}
