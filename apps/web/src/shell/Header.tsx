@@ -10,6 +10,7 @@ import { useGoToKeysOn } from './commands/useGoToKeys.js';
 import { useHeaderHost } from './HeaderSlot.js';
 import styles from './Header.module.css';
 import type { ModuleName } from './moduleOf.js';
+import { WaysIn } from './WaysIn.js';
 import { useLanguageChoice } from '../words/language.js';
 import { INTERFACE_LOCALES } from '../words/locales.js';
 import { useWords, type WordKey } from '../words/words.js';
@@ -237,14 +238,6 @@ export function Header({
     window.addEventListener('hashchange', moved);
     return () => window.removeEventListener('hashchange', moved);
   }, []);
-  const signInAt = (route: string, provider?: string) => {
-    const to = here.replace(/^#\//, '');
-    const query = new URLSearchParams();
-    if (provider !== undefined) query.set('provider', provider);
-    if (/^[a-z]+(\/[a-z0-9-]+)*$/.test(to) && to.length <= 200) query.set('to', to);
-    const asked = query.toString();
-    return asked === '' ? `/v1/sign-in/${route}` : `/v1/sign-in/${route}?${asked}`;
-  };
   const [managingTokens, setManagingTokens] = useState(false);
   const [seeingSessions, setSeeingSessions] = useState(false);
   const [readingInbox, setReadingInbox] = useState(false);
@@ -371,27 +364,9 @@ export function Header({
       </button>
       <div ref={toolsHost} className={styles['slot']} />
       {(who === undefined || who === 'nobody') && <ThemeMenu />}
-      {who === 'nobody' && ways.includes('organisation') && providers.length <= 1 && (
-        <a className={styles['chip']} href={signInAt('organisation')}>
-          {words('shell.signIn')}
-        </a>
-      )}
-      {who === 'nobody' &&
-        ways.includes('organisation') &&
-        providers.length > 1 &&
-        providers.map((provider) => (
-          <a
-            key={provider.id}
-            className={styles['chip']}
-            href={signInAt('organisation', provider.id)}
-          >
-            {words('shell.signInThrough', { name: provider.name })}
-          </a>
-        ))}
-      {who === 'nobody' && ways.includes('google') && (
-        <a className={styles['chip']} href={signInAt('google')}>
-          {words('shell.signInGoogle')}
-        </a>
+      {/* Reached where the page opened on no answer, and the service has said 401 since. */}
+      {who === 'nobody' && (
+        <WaysIn here={here} ways={ways} providers={providers} className={styles['chip']} />
       )}
       {who !== undefined && who !== 'nobody' && (
         <Menu

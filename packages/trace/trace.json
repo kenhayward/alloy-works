@@ -25228,7 +25228,7 @@
     {
       "id": "LOC-044",
       "file": "apps/web/src/App.test.tsx",
-      "line": 136,
+      "line": 143,
       "kind": "title"
     },
     {
@@ -27389,6 +27389,18 @@
       "id": "IAM-011",
       "file": "apps/web/src/shell/Header.test.tsx",
       "line": 106,
+      "kind": "title"
+    },
+    {
+      "id": "ADM-051",
+      "file": "apps/web/src/shell/SignInScreen.test.tsx",
+      "line": 170,
+      "kind": "title"
+    },
+    {
+      "id": "IAM-011",
+      "file": "apps/web/src/shell/SignInScreen.test.tsx",
+      "line": 99,
       "kind": "title"
     },
     {

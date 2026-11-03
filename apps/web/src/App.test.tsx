@@ -40,7 +40,7 @@ function ShowsAbout() {
   return <section aria-label="About">{useAbout()}</section>;
 }
 const aboutWorkspace = <ShowsAbout />;
-const about = () => screen.getByRole('region', { name: 'About' });
+const about = () => screen.findByRole('region', { name: 'About' });
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -57,9 +57,10 @@ afterEach(() => {
 
 describe('App', () => {
   it('shows the header band, and the workspace under it', async () => {
+    vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
 
-    const band = screen.getByRole('banner');
+    const band = await screen.findByRole('banner');
     const rail = screen.getByRole('navigation', { name: 'Modules' });
     // The mark stands on the rail now, which also marks the module; the band names it (ADR-0075).
     expect(within(rail).getByRole('link', { name: /Alloy Works/ })).toBeInTheDocument();
@@ -67,10 +68,11 @@ describe('App', () => {
     expect(within(band).getByText('Home')).toBeInTheDocument();
     const main = screen.getByRole('main');
     expect(within(main).getByText('the workspace')).toBeInTheDocument();
-    expect(await within(band).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+    expect(await within(band).findByRole('button', { name: 'Ada' })).toBeInTheDocument();
   });
 
   it('moves between the header band, the module rail and the page with F6, and back with Shift-F6', async () => {
+    vi.stubGlobal('fetch', signedIn);
     render(
       <App
         bridge={desktopBridge}
@@ -78,7 +80,7 @@ describe('App', () => {
         workspace={<button type="button">In the page</button>}
       />,
     );
-    const rail = screen.getByRole('navigation', { name: 'Modules' });
+    const rail = await screen.findByRole('navigation', { name: 'Modules' });
 
     const search = screen.getByRole('button', {
       name: 'Search components, documents, or run a command',
@@ -95,9 +97,10 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'In the page' })).toHaveFocus();
   });
 
-  it('puts one status bar along the foot of every page, after the page', () => {
+  it('puts one status bar along the foot of every page, after the page', async () => {
+    vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
-    const bar = screen.getByRole('contentinfo');
+    const bar = await screen.findByRole('contentinfo');
     expect(within(bar).getByRole('status')).toBeInTheDocument();
     expect(screen.getByRole('main').compareDocumentPosition(bar)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -106,7 +109,10 @@ describe('App', () => {
 
   it("keeps the environment panel off every page, for Administration's About", async () => {
     vi.stubGlobal('fetch', signedIn);
-    render(<App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />);
+    const { unmount } = render(
+      <App bridge={desktopBridge} environment={noPanel} workspace={noWorkspace} />,
+    );
+    await screen.findByRole('banner');
     expect(screen.queryByText('the environment')).not.toBeInTheDocument();
 
     act(() => {
@@ -121,15 +127,16 @@ describe('App', () => {
     expect(screen.queryByText('the environment')).not.toBeInTheDocument();
 
     // Given to Administration's About alone.
+    unmount();
     render(<App bridge={desktopBridge} environment={noPanel} workspace={aboutWorkspace} />);
-    expect(within(about()).getByText('the environment')).toBeInTheDocument();
+    expect(within(await about()).getByText('the environment')).toBeInTheDocument();
   });
 
   it('names the delivery it is running under, in About', async () => {
     vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={aboutWorkspace} />);
 
-    expect(await within(about()).findByText(/desktop/i)).toBeInTheDocument();
+    expect(await within(await about()).findByText(/desktop/i)).toBeInTheDocument();
     expect(screen.getByText(/Electron 44\.3\.0/)).toBeInTheDocument();
   });
 
@@ -137,11 +144,12 @@ describe('App', () => {
     vi.stubGlobal('fetch', signedIn);
     render(<App bridge={desktopBridge} environment={noPanel} workspace={aboutWorkspace} />);
 
+    const shown = await about();
     expect(
-      within(about()).getByText(/^Locale data: FormatJS .*, CLDR 48\.2\.0$/),
+      within(shown).getByText(/^Locale data: FormatJS .*, CLDR 48\.2\.0$/),
     ).toBeInTheDocument();
     expect(
-      within(about()).getByText(
+      within(shown).getByText(
         "What this window sorts on its own, it sorts by the browser's collation.",
       ),
     ).toBeInTheDocument();
@@ -174,6 +182,6 @@ describe('App', () => {
     };
     render(<App bridge={pending} environment={noPanel} workspace={aboutWorkspace} />);
 
-    expect(within(about()).getByText(/checking/i)).toBeInTheDocument();
+    expect(within(await about()).getByText(/checking/i)).toBeInTheDocument();
   });
 });
