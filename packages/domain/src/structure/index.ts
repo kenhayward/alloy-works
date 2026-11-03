@@ -70,6 +70,7 @@ export { contents, listOf } from './lists.js';
 export type { ContentsEntry, ListEntry } from './lists.js';
 
 export {
+  blockForms,
   documentTargets,
   formsFor,
   kindWord,

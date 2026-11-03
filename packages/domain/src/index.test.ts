@@ -247,6 +247,7 @@ describe('the domain package', () => {
         // What a document offers a reference and what one prints, promoted in the plan that builds
         // them (docs/plans/2026-09-23-cross-references-01-references-in-the-editor.md).
         'documentTargets',
+        'blockForms',
         'formsFor',
         'kindWord',
         'printed',
@@ -977,7 +978,14 @@ describe('the domain package', () => {
         // XRc: the assistant's reference tools, a citation awaiting its entry, and what it carries.
         'CITE_REFERENCE',
         'PENDING_ENTRY',
+        'PROPOSE_INSERT',
         'READ_REFERENCE',
+        'READ_VARIABLES',
+        'boundValueIn',
+        'footnoteFrom',
+        'bare',
+        'insertIn',
+        'proposeInsertInputSchema',
         'SEARCH_COMPONENTS',
         'SEARCH_REFERENCES',
         'citeIn',
